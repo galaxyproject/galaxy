@@ -3,13 +3,11 @@ Provides factory methods to assemble the Galaxy web application
 """
 import atexit
 import logging
-import os
 import sys
 import threading
 import traceback
 
 from paste import httpexceptions
-from six.moves import configparser
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -34,16 +32,13 @@ class GalaxyWebApplication(galaxy.web.framework.webapp.WebApplication):
     pass
 
 
-def app_factory(global_conf, **kwargs):
-    return paste_app_factory(global_conf, **kwargs)
-
-
-def paste_app_factory(global_conf, **kwargs):
+def app_factory(global_conf, load_app_kwds={}, **kwargs):
     """
     Return a wsgi application serving the root object
     """
     kwargs = load_app_properties(
-        kwds=kwargs
+        kwds=kwargs,
+        **load_app_kwds
     )
     # Create the Galaxy application unless passed in
     if 'app' in kwargs:
@@ -58,7 +53,7 @@ def paste_app_factory(global_conf, **kwargs):
             sys.exit(1)
     # Call app's shutdown method when the interpeter exits, this cleanly stops
     # the various Galaxy application daemon threads
-    atexit.register(app.shutdown)
+    app.application_stack.register_postfork_function(atexit.register, app.shutdown)
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie='galaxysession', name='galaxy')
 
@@ -120,6 +115,7 @@ def paste_app_factory(global_conf, **kwargs):
     webapp.add_client_route('/pages/edit')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
+    webapp.add_client_route('/histories/import')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
@@ -166,27 +162,16 @@ def paste_app_factory(global_conf, **kwargs):
     return webapp
 
 
-def uwsgi_app_factory():
-    # TODO: synchronize with galaxy.web.framework.webapp.build_native_uwsgi_app - should
-    # at least be using nice_config_parser for instance.
-    import uwsgi
-    root = os.path.abspath(uwsgi.opt.get('galaxy_root', os.getcwd()))
-    config_file = uwsgi.opt.get('galaxy_config_file', os.path.join(root, 'config', 'galaxy.ini'))
-    global_conf = {
-        '__file__': config_file if os.path.exists(__file__) else None,
-        'here': root}
-    parser = configparser.ConfigParser()
-    parser.read(config_file)
-    try:
-        kwargs = dict(parser.items('app:main'))
-    except configparser.NoSectionError:
-        kwargs = {}
-    return app_factory(global_conf, **kwargs)
+def uwsgi_app():
+    return galaxy.web.framework.webapp.build_native_uwsgi_app(app_factory, "galaxy")
+
+
+# For backwards compatibility
+uwsgi_app_factory = uwsgi_app
 
 
 def postfork_setup():
     from galaxy.app import app
-    app.application_stack.set_postfork_server_name(app)
     app.control_worker.bind_and_start()
 
 
@@ -378,6 +363,15 @@ def populate_api_routes(webapp, app):
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
+                          action="index_jobs_summary",
+                          controller='history_contents',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect("/api/histories/{history_id}/contents/{type:%s}s/{id}/jobs_summary" % "|".join(valid_history_contents_types),
+                          action="show_jobs_summary",
+                          controller='history_contents',
+                          conditions=dict(method=["GET"]))
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route('/visualization/show/{visualization_name}', controller='visualization', action='render', visualization_name=None)

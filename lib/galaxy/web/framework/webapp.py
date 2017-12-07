@@ -37,6 +37,7 @@ from galaxy.web.framework import (
     helpers,
     url_for
 )
+from galaxy.web.stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
@@ -961,17 +962,9 @@ def build_native_uwsgi_app(paste_factory, config_section):
     """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
 
     In particular these are useful with --yaml or --json for config."""
-    import uwsgi
-    uwsgi_opt = uwsgi.opt
-    config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-    if not config_file:
-        # Probably loaded via --ini-paste - expect paste app.
-        return None
-
-    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
-        "config_file": config_file,
-        "config_section": config_section,
-    })
+    # TODO: just move this to a classmethod on stack?
+    app_kwds = get_app_kwds(config_section)
+    uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
     return uwsgi_app
 
 

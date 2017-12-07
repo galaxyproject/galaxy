@@ -153,6 +153,10 @@ class HasDriver:
             **kwds
         )
 
+    def click(self, selector_template):
+        element = self.driver.find_element(*selector_template.element_locator)
+        element.click()
+
     def _wait_on(self, condition, on_str=None, **kwds):
         if on_str is None:
             on_str = str(condition)

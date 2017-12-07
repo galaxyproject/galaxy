@@ -1,10 +1,8 @@
 /**
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
-import Utils from "utils/utils";
-var View = Backbone.View.extend({
+export var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.collection = new Backbone.Collection();
         this.model =
             (options && options.model) ||

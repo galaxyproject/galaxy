@@ -12,6 +12,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException
 )
 from galaxy.tools.parameters import params_to_strings
+from galaxy.tools.repositories import ValidationContext
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.tool_search import ToolSearch
@@ -163,10 +164,11 @@ class ToolsController(BaseAPIController):
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 
-        tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                         changeset,
-                                                                         found_tool.tool_config)
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
+            repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
+                                                                             changeset,
+                                                                             found_tool.tool_config)
         if message:
             status = 'error'
             return dict(message=message, status=status)

@@ -15,7 +15,7 @@ import requests
 from BeautifulSoup import BeautifulSoup
 from six.moves.urllib.request import urlretrieve
 
-from util import (
+from util import (  # noqa: I202
     get_bed_from_genbank,
     get_bed_from_GeneMark,
     get_bed_from_GeneMarkHMM,

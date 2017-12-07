@@ -26,6 +26,24 @@ class Otu(Text):
         super(Otu, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
+        """
+        Set metadata for Otu files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch()
+        >>> dataset.metadata = Bunch
+        >>> otu = Otu()
+        >>> dataset.file_name = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
+        >>> dataset.has_data = lambda: True
+        >>> otu.set_meta(dataset)
+        >>> dataset.metadata.columns
+        100
+        >>> len(dataset.metadata.labels) == 37
+        True
+        >>> len(dataset.metadata.otulabels) == 98
+        True
+        """
         super(Otu, self).set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
@@ -37,6 +55,8 @@ class Otu(Text):
 
             headers = iter_headers(dataset.file_name, sep='\t', count=-1)
             first_line = get_headers(dataset.file_name, sep='\t', count=1)
+            if first_line:
+                first_line = first_line[0]
             # set otulabels
             if len(first_line) > 2:
                 otulabel_names = first_line[2:]

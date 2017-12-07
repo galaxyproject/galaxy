@@ -24,7 +24,6 @@ boltons==17.1.0
 Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.14
-wchartype==0.1
 repoze.lru==0.6
 Routes==2.4.1
 WebOb==1.4.1

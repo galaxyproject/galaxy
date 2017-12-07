@@ -300,6 +300,7 @@ $.extend(Workflow.prototype, {
             this.active_node.make_inactive();
             this.active_node = null;
         }
+        document.activeElement.blur();
         this.app.showAttributes();
     },
     activate_node: function(node) {

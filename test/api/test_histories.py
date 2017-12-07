@@ -5,7 +5,7 @@ from requests import (
     put
 )
 
-from base import api  # noqa: I100
+from base import api  # noqa: I100,I202
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,

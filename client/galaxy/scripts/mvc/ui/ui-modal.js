@@ -1,4 +1,4 @@
-var View = Backbone.View.extend({
+export var View = Backbone.View.extend({
     className: "ui-modal",
 
     // defaults

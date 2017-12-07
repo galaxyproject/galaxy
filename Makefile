@@ -17,6 +17,7 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
+CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -128,15 +129,22 @@ update-and-commit-dependencies:  ## update and commit linting + dev dependencies
 node-deps: ## Install NodeJS dependencies.
 	cd client && yarn install --check-files
 
-client: node-deps ## Rebuild all client-side artifacts
+client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
+	@echo $(CLIENT_COMMIT_WARNING)
+
+client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
+	cd client && yarn run build-production
+
+client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment, and include sourcemaps to aid in debugging efforts.
+	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
 	cd client && yarn run prettier
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
-	@echo "Remember to 'make client' when finished developing!"
+	@echo $(CLIENT_COMMIT_WARNING)
 
 client-test: client ## Run qunit tests via Karma
 	cd client && yarn run test

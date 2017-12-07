@@ -2,7 +2,8 @@
 import Utils from "utils/utils";
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
-var View = Backbone.View.extend({
+
+export var View = Backbone.View.extend({
     initialize: function(options) {
         this.list = {};
         this.options = Utils.merge(options, {
@@ -17,7 +18,9 @@ var View = Backbone.View.extend({
             tooltip: `Add new ${this.options.title} block`,
             cls: "ui-button-icon ui-clear-float form-repeat-add",
             onclick: function() {
-                options.onnew && options.onnew();
+                if (options.onnew) {
+                    options.onnew();
+                }
             }
         });
         this.setElement(
@@ -43,7 +46,9 @@ var View = Backbone.View.extend({
             tooltip: "Delete this repeat block",
             cls: "ui-button-icon-plain form-repeat-delete",
             onclick: function() {
-                options.ondel && options.ondel();
+                if (options.ondel) {
+                    options.ondel();
+                }
             }
         });
         var portlet = new Portlet.View({
@@ -56,7 +61,9 @@ var View = Backbone.View.extend({
         portlet.$el.addClass("section-row").hide();
         this.list[options.id] = portlet;
         this.$list.append(portlet.$el.fadeIn("fast"));
-        this.options.max > 0 && this.size() >= this.options.max && this.button_new.disable();
+        if (this.options.max > 0 && this.size() >= this.options.max) {
+            this.button_new.disable();
+        }
         this._refresh();
     },
 
@@ -85,12 +92,13 @@ var View = Backbone.View.extend({
         _.each(this.list, portlet => {
             portlet.hideOperation("button_delete");
         });
-        _.isEmpty(this.list) &&
+        if (_.isEmpty(this.list)) {
             this.$el.append(
                 $("<div/>")
                     .addClass("ui-form-info")
                     .html(this.options.empty_text)
             );
+        }
     },
 
     /** Refresh view */

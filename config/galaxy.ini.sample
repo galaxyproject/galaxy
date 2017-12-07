@@ -425,15 +425,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #citation_cache_data_dir = database/citations/data
 #citation_cache_lock_dir = database/citations/lock
 
-# External service types config file, defining what types of external_services
-# configurations are available in Galaxy (.sample is used if default does not
-# exist).
-#external_service_type_config_file = config/external_service_types_conf.xml
-
-# Path to the directory containing the external_service_types defined in the
-# config.
-#external_service_type_path = external_service_types
-
 # Tools with a number of outputs not known until runtime can write these
 # outputs to a directory for collection by Galaxy when the job is done.
 # Previously, this directory was new_file_path, but using one global directory
@@ -1130,6 +1121,14 @@ use_interactive = True
 # scheduling state in seconds. Set to -1 to disable this maximum and allow any workflow
 # invocation to schedule indefinitely. The default corresponds to 1 month.
 #maximum_workflow_invocation_duration = 2678400
+
+# Specify a maximum number of jobs that any given workflow scheduling iteration can create.
+# Set this to a positive integer to prevent large collection jobs in a workflow from
+# preventing other jobs from executing. This may also mitigate memory issues associated with
+# scheduling workflows at the expense of increased total DB traffic because model objects
+# are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
+# Set to -1 to disable any such maximum (the default).
+#maximum_workflow_jobs_per_scheduling_iteration = -1
 
 # Force serial scheduling of workflows within the context of a particular history
 #history_local_serial_workflow_scheduling=False

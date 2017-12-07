@@ -176,6 +176,22 @@
             }
         }
     }
+
+    &.state-loading {
+        background: @state-default-bg;
+        .state-icon {
+            .state-icon-running;
+        }
+    }
+
+}
+
+.blinking {
+  animation: blinker 500ms linear infinite;
+}
+
+@keyframes blinker {
+  50% { opacity: 0; }
 }
 
 // ---------------------------------------------------------------------------- datasets as list-items

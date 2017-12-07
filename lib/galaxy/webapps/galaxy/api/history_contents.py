@@ -21,6 +21,7 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
     get_hda_and_element_identifiers
 )
+from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
@@ -126,33 +127,133 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         return rval
 
-    def __collection_dict(self, trans, dataset_collection_instance, view="collection"):
+    def __collection_dict(self, trans, dataset_collection_instance, **kwds):
         return dictify_dataset_collection_instance(dataset_collection_instance,
-            security=trans.security, parent=dataset_collection_instance.history, view=view)
+            security=trans.security, parent=dataset_collection_instance.history, **kwds)
 
     @expose_api_anonymous
     def show(self, trans, id, history_id, **kwd):
         """
-        show( self, trans, id, history_id, **kwd )
         * GET /api/histories/{history_id}/contents/{id}
-            return detailed information about an HDA within a history
+        * GET /api/histories/{history_id}/contents/{type}/{id}
+            return detailed information about an HDA or HDCA within a history
         .. note:: Anonymous users are allowed to get their current history contents
 
         :type   id:         str
-        :param  id:        the encoded id of the HDA to return
+        :param  id:         the encoded id of the HDA or HDCA to return
+        :type   type:       str
+        :param  id:         'dataset' or 'dataset_collection'
         :type   history_id: str
-        :param  history_id: encoded id string of the HDA's History
+        :param  history_id: encoded id string of the HDA's or HDCA's History
+        :type   view:       str
+        :param  view:       if fetching a dataset collection - the view style of
+                            the dataset collection to produce.
+                            'collection' returns no element information, 'element'
+                            returns detailed element information for all datasets,
+                            'element-reference' returns a minimal set of information
+                            about datasets (for instance id, type, and state but not
+                            metadata, peek, info, or name). The default is 'element'.
+        :type  fuzzy_count: int
+        :param fuzzy_count: this value can be used to broadly restrict the magnitude
+                            of the number of elements returned via the API for large
+                            collections. The number of actual elements returned may
+                            be "a bit" more than this number or "a lot" less - varying
+                            on the depth of nesting, balance of nesting at each level,
+                            and size of target collection. The consumer of this API should
+                            not expect a stable number or pre-calculable number of
+                            elements to be produced given this parameter - the only
+                            promise is that this API will not respond with an order
+                            of magnitude more elements estimated with this value.
+                            The UI uses this parameter to fetch a "balanced" concept of
+                            the "start" of large collections at every depth of the
+                            collection.
 
         :rtype:     dict
-        :returns:   dictionary containing detailed HDA information
+        :returns:   dictionary containing detailed HDA or HDCA information
         """
-        contents_type = kwd.get('type', 'dataset')
+        contents_type = self.__get_contents_type(trans, kwd)
         if contents_type == 'dataset':
             return self.__show_dataset(trans, id, **kwd)
         elif contents_type == 'dataset_collection':
             return self.__show_dataset_collection(trans, id, history_id, **kwd)
+
+    @expose_api_anonymous
+    def index_jobs_summary(self, trans, history_id, **kwd):
+        """
+        * GET /api/histories/{history_id}/jobs_summary
+            return detailed information about an HDA or HDCAs jobs
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's or the HDCA's History
+        :type   ids:        str[]
+        :param  ids:        the encoded ids of job summary objects to return - if ids
+                            is specified types must also be specified and have same length.
+        :type   types:      str[]
+        :param  types:      type of object represented by elements in the ids array - either
+                            Job or ImplicitCollectionJob.
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries.
+        """
+        ids = kwd.get("ids", None)
+        types = kwd.get("types", None)
+        if ids is None:
+            assert types is None
+            # TODO: ...
+            pass
         else:
-            return self.__handle_unknown_contents_type(trans, contents_type)
+            ids = util.listify(ids)
+            types = util.listify(types)
+        return map(lambda s: self.encode_all_ids(trans, s), fetch_job_states(self.app, trans.sa_session, ids, types))
+
+    @expose_api_anonymous
+    def show_jobs_summary(self, trans, id, history_id, **kwd):
+        """
+        * GET /api/histories/{history_id}/contents/{type}/{id}/jobs_summary
+            return detailed information about an HDA or HDCAs jobs
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :type   id:         str
+        :param  id:         the encoded id of the HDA to return
+        :type   history_id: str
+        :param  history_id: encoded id string of the HDA's or the HDCA's History
+
+        :rtype:     dict
+        :returns:   dictionary containing jobs summary object
+        """
+        contents_type = self.__get_contents_type(trans, kwd)
+        # At most one of job or implicit_collection_jobs should be found.
+        job = None
+        implicit_collection_jobs = None
+        if contents_type == 'dataset':
+            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            job = hda.creating_job
+        elif contents_type == 'dataset_collection':
+            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
+            job_source_type = dataset_collection_instance.job_source_type
+            if job_source_type == "Job":
+                job = dataset_collection_instance.job
+            elif job_source_type == "ImplicitCollectionJobs":
+                implicit_collection_jobs = dataset_collection_instance.implicit_collection_jobs
+
+        assert job is None or implicit_collection_jobs is None
+        return self.encode_all_ids(trans, summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
+
+    def __get_contents_type(self, trans, kwd):
+        contents_type = kwd.get('type', 'dataset')
+        if contents_type not in ['dataset', 'dataset_collection']:
+            self.__handle_unknown_contents_type(trans, contents_type)
+
+        return contents_type
 
     def __show_dataset(self, trans, id, **kwd):
         hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
@@ -162,18 +263,19 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                                                      **self._parse_serialization_params(kwd, 'detailed'))
 
     def __show_dataset_collection(self, trans, id, history_id, **kwd):
-        try:
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.get_dataset_collection_instance(
-                trans=trans,
-                instance_type='history',
-                id=id,
-            )
-            return self.__collection_dict(trans, dataset_collection_instance, view="element")
-        except Exception as e:
-            log.exception("Error in history API at listing dataset collection")
-            trans.response.status = 500
-            return {'error': str(e)}
+        dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
+        view = kwd.get("view", "element")
+        fuzzy_count = kwd.get("fuzzy_count", None)
+        if fuzzy_count:
+            fuzzy_count = int(fuzzy_count)
+        return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
+
+    def __get_accessible_collection(self, trans, id, history_id):
+        return trans.app.dataset_collections_service.get_dataset_collection_instance(
+            trans=trans,
+            instance_type="history",
+            id=id
+        )
 
     @expose_api_raw_anonymous
     def download_dataset_collection(self, trans, id, history_id=None, **kwd):
@@ -188,14 +290,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :param history_id: encoded id string of the HDCA's History
         """
         try:
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.get_dataset_collection_instance(
-                trans=trans,
-                instance_type='history',
-                id=id,
-            )
+            dataset_collection_instance = self.__get_accessible_collection(trans, id, history_id)
             return self.__stream_dataset_collection(trans, dataset_collection_instance)
-
         except Exception as e:
             log.exception("Error in API while creating dataset collection archive")
             trans.response.status = 500

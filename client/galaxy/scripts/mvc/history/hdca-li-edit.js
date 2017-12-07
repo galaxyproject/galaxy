@@ -14,18 +14,7 @@ var HDCAListItemEdit = _super.extend(
 
         /** Override to return editable versions of the collection panels */
         _getFoldoutPanelClass: function() {
-            var collectionType = this.model.get("collection_type");
-            switch (collectionType) {
-                case "list":
-                    return DC_VIEW_EDIT.ListCollectionViewEdit;
-                case "paired":
-                    return DC_VIEW_EDIT.PairCollectionViewEdit;
-                case "list:paired":
-                    return DC_VIEW_EDIT.ListOfPairsCollectionViewEdit;
-                case "list:list":
-                    return DC_VIEW_EDIT.ListOfListsCollectionViewEdit;
-            }
-            throw new TypeError(`Unknown collection_type: ${collectionType}`);
+            return DC_VIEW_EDIT.CollectionViewEdit;
         },
 
         // ......................................................................... delete
