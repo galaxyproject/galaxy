@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
@@ -131,7 +132,7 @@ function _addLabelAnnotation(form) {
         name: "__label",
         label: "Label",
         value: node.label,
-        help: "Add a step label.",
+        help: _l("Add a step label."),
         fixed: true,
         onchange: function(new_label) {
             var duplicate = false;
@@ -272,7 +273,7 @@ function _makeSection(output_id, options) {
                 help: "This action will remove tags for the dataset."
             },
             {
-                title: "Assign columns",
+                title: _l("Assign columns"),
                 type: "section",
                 flat: true,
                 inputs: [
@@ -340,7 +341,7 @@ function _addSections(form) {
             type: "boolean",
             value: String(Boolean(post_job_actions[`EmailAction${output_id}`])),
             ignore: "false",
-            help: "An email notification will be sent when the job has completed.",
+            help: _l("An email notification will be sent when the job has completed."),
             payload: {
                 host: window.location.host
             }
