@@ -142,9 +142,13 @@ model.SocialAuthPartial = Table(
 model.UserAuthnAssociation.table = Table(
     "social_auth_usersocialauth", metadata,
     Column('id', Integer, primary_key=True),
-    Column('provider', VARCHAR(32)),
-    Column('uid', VARCHAR(255)),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('uid', VARCHAR(255)),
+    Column('provider', VARCHAR(32)),
+    Column("state_token", TEXT, nullable=False, index=True),
+    Column("access_token", TEXT),
+    Column("id_token", TEXT),
+    Column("refresh_token", TEXT),
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
