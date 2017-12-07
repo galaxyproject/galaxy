@@ -1,11 +1,11 @@
 <%def name="render_checkbox(checkbox, disabled=False, refresh_on_change=False)">
     <% from galaxy.web.form_builder import CheckboxField %>
-    <input type="checkbox" id="${checkbox.name}" name="${checkbox.name}" value="true" refresh_on_change=${refresh_on_change} ${"checked" if CheckboxField.is_checked(checkbox.value) else ""} ${"disabled" if disabled else ""}
+    <input type="checkbox" id="${checkbox.name}" name="${checkbox.name}" value="true" refresh_on_change="${refresh_on_change}" ${"checked" if CheckboxField.is_checked(checkbox.value) else ""} ${"disabled" if disabled else ""}
     >
 </%def>
 
 <%def name="render_select(select)">
-    <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}">
+    <select id="${select.field_id}" name="${select.name}" multiple="${select.multiple}" refresh_on_change="${select.refresh_on_change}">
         %for o in select.options:
             <option value="${o[1]}">${o[0]}</option>
         %endfor
