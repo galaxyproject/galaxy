@@ -77,7 +77,6 @@
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
             <div class="form-row">
                 <label >${param.label or param.name}:</label>
-                <div class="form-row-input">${param.to_dict().get('type')}</div>
                 %if param.help:
                     <div class="toolParamHelp" style="clear: both;">
                         ${param.help}
