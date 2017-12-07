@@ -266,7 +266,7 @@ export default Backbone.View.extend({
 
         // add operation popup menus
         _.each(options.items, (item, index) => {
-            var button = self.$(`#grid-${index}-popup`).off();
+            var button = self.$(`#grid-${item.encode_id}-popup`).off();
             var popup = new PopupMenu(button);
             _.each(options.operations, operation => {
                 self._add_operation(popup, operation, item);

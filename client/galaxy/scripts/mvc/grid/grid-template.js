@@ -124,9 +124,6 @@ export default {
 
         // create rows
         for (let item of options.items) {
-            // encode ids
-            var encoded_id = item.encode_id;
-
             // Tag current
             tmpl += "<tr ";
             if (options.current_item_id == item.id) {
@@ -136,14 +133,13 @@ export default {
 
             // Item selection column
             if (options.show_item_checkboxes) {
-                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${encoded_id}" id="${
-                    encoded_id
+                tmpl += `<td style="width: 1.5em;"><input type="checkbox" name="id" value="${item.encode_id}" id="${
+                    item.encode_id
                 }" class="grid-row-select-checkbox" /></td>`;
             }
 
             // Data columns
-            for (var j in options.columns) {
-                var column = options.columns[j];
+            for (let column of options.columns) {
                 if (column.visible) {
                     // Nowrap
                     var nowrap = "";
@@ -168,7 +164,7 @@ export default {
                     var id = "";
                     var cls = "";
                     if (column.attach_popup) {
-                        id = `grid-${encoded_id}-popup`;
+                        id = `grid-${item.encode_id}-popup`;
                         cls = "menubutton";
                         if (link !== "") {
                             cls += " split";
@@ -192,8 +188,8 @@ export default {
                         }
                     } else {
                         tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${
-                            encoded_id
-                        }" for="${encoded_id}">${value || ""}</label></div>`;
+                            item.encode_id
+                        }" for="${item.encode_id}">${value || ""}</label></div>`;
                     }
                     tmpl += "</td>";
                 }
