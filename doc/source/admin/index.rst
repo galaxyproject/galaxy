@@ -6,6 +6,7 @@ This documentation is in the midst of being ported and unified based on resource
 .. toctree::
    :maxdepth: 2
 
+   config
    production
    cluster
    scaling

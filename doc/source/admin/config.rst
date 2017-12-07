@@ -92,18 +92,27 @@ Additional configuration files and their purposes are:
 .. _Data Managers documentation: https://galaxyproject.org/admin/tools/data-managers/
 
 
-Configuration
+Configuration Basics
 ----------------------------
 
-- Configure ``config/reports.yml`` in the same manner as your main galaxy instance (i.e., same database connection, but different port). This is a uwsgi YAML configuration file and should contain a reports section with app-specific configuration (options described below).
+- Edit ``config/galaxy.yml`` (copy it from ``config/galaxy.yml.sample`` if it does not exist) to make configuration
+  changes. This is a `uWSGI YAML configuration file`_ and should contain two sections, one named ``uwsgi`` for uWSGI and
+  one named ``galaxy`` for Galaxy.
 
-    - The default port for the reports application is ``9001``, and like Galaxy it only binds to localhost by default.
-    - ``database_connection`` should match the value used in your Galaxy configuration
-    - ``database_connection`` should point at a Postgres database, experimental support for MySQL is available but sqlite is not supported at all.
+    - The default port for the Galaxy web server is ``8080``, and it only binds to localhost by default. To configure
+      uWSGI to listen on all available network addresses, set ``http`` to ``0.0.0.0:<port>`` (e.g. ``http:
+      0.0.0.0:8080``).
+    - Some uWSGI options are required for uWSGI to run Galaxy properly and will be added to the ``uwsgi`` command line
+      by ``run.sh`` if not specified in ``galaxy.yml``.
+    - uWSGI has a `large number of options`_. The Galaxy documentation refers to some of them, but many additional
+      advanced deployment scenarios are available.
 
-- Run reports in a uWSGI server with ``sh run_reports.sh``
-- Use a web browser and go to the address you configured in ``reports.yml`` (defaults to http://localhost:9001/)
+- Run Galaxy in a uWSGI server with ``GALAXY_UWSGI=1 sh run.sh``
+- Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
 
+.. _uWSGI YAML configuration file: http://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
+.. _large number of options: http://uwsgi-docs.readthedocs.io/en/latest/Options.html
+  
 .. ----------------------------
 .. Configuration Options
 .. ----------------------------

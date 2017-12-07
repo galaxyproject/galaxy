@@ -1,63 +1,80 @@
 # Scaling and Load Balancing
 
-The Galaxy framework is written in Python and makes extensive use of threads.  However, one of the drawbacks of Python is the [Global Interpreter Lock](http://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock), which prevents more than one thread from being on CPU at a time.  Because of this, having a multi-core system will not improve the Galaxy framework's performance out of the box since Galaxy can use (at most) one core at a time.  However, Galaxy can easily run in multiple separate processes, which solves this problem.  For a more thorough explanation of this problem and why you will almost surely want to switch to the load balanced configuration if running for more than a small handful of users, see the [production configuration](production.html) page.
+The Galaxy framework is written in Python and makes extensive use of threads.  However, one of the drawbacks of Python is the [Global Interpreter Lock](http://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock), which prevents more than one thread from being on CPU at a time.  Because of this, having a multi-core system will not improve the Galaxy framework's performance out of the box since Galaxy can use (at most) one core at a time in its default configuration.  However, Galaxy can easily run in multiple separate processes, which solves this problem.  For a more thorough explanation of this problem and why you will almost surely want to switch to the multiprocess configuration if running for more than a small handful of users, see the [production configuration](production.html) page.
 
 Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` or the number of plugin workers in `job_conf.xml` will not make you Galaxy server much more responsive.  The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which co-operatively work on the same database.
 
-A simple configuration:
-* 1 "job handler" process - responsible for starting and monitoring jobs, submitting jobs to a cluster (if configured), and for setting metadata (externally or internally).
-* 1 "web server" process - responsible for servicing web pages to users.
+## Terminology
 
-An advanced configuration:
-* Multiple "job handler" processes.
-* Multiple "web server" processes, proxied through a load-balancing capable web server (e.g. nginx or apache).
+* **web worker** - Galaxy server process responsible for servicing web requests for the UI/API 
+* **job handler** - Galaxy server process responsible for starting and monitoring jobs, submitting jobs to a cluster (if configured), and for setting metadata (if not set on the cluster)
+* **[uWSGI][uwsgi]** - Powerful application server written in C that implements the HTTP and Python WSGI protocols
+  * **[Mules][uwsgi-mules]** - uWSGI processes started after the main application (Galaxy) that can run separate code and receive messages from uWSGI web workers
+  * **[Zerg Mode][uwsgi-zerg-mode]** - uWSGI configuration where multiple copies of the same application can be started simultaneously in order to maintain availability during application restarts
+  * **[Emperor Mode][uwsgi-emperor-mode]** - uWSGI configuration where multiple distinct applications can be started by a single master uWSGI process
+* **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/WSGI server
+* **[Paste][paste]** - Application server written in pure Python that implements the HTTP and Python WSGI protocols
 
-### Web Server(s)
+[uwsgi]: http://uwsgi-docs.readthedocs.io/
+[uwsgi-mules]: http://uwsgi-docs.readthedocs.io/en/latest/Mules.html
+[uwsgi-zerg-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
+[uwsgi-emperor-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Emperor.html
+[paste]: http://paste.readthedocs.io/
 
-There are a few different ways you can run multiple web server processes:
+### Deployment Options
 
-**Standalone Paste-based processes:**
-* Pros:
-  * Simplest setup, especially if only using a single web server process
-  * No additional dependencies
-  * Proxy not required if only using a single web server process
-* Cons:
-  * Not as resilient to failure
-  * Load balancing typically round-robin regardless of individual process load
-  * No dynamic scaling
+There are multiple deployment strategies for the Galaxy application that you can choose from. The right one depends on the configuration of the infrastructure on which you are deploying.
 
-**uWSGI:**
-* Pros:
-  * Higher performance server than Paste
-  * Better scalability and fault tolerance
-  * Easier process management and Galaxy server restartability
-* Cons:
-  * Requires uWSGI
+#### uWSGI with jobs handled by web workers (default configuration)
 
-Using uWSGI for production servers is recommended by the Galaxy team.
+* Easily runs multiple processes by increasing `processes` config option
+* Load balanced internally
+* Speaks native uWSGI protocol supported by nginx and Apache or direct HTTP (and SSL)
+* Written in C and designed to be high performance
+* Supports WebSockets, which enable Galaxy Interactive Environments out-of-the-box without a proxy server or Node.js
+* Incredibly featureful, supports a wide array of deployment scenarios
+* The default as of Galaxy Release 18.01
+* Jobs are handled by uWSGI web workers (but all Galaxy job features such as [running on a cluster](cluster.html) are still supported) 
 
-#### Standalone Paste-based processes
+Under this strategy, jobs will be handled by the web worker that receives the job request from the UI/API. Having web processes handle jobs will negatively impact UI/API performance.
 
-In `galaxy.ini`, define one or more `[server:...]` sections:
+#### uWSGI for web serving with Mules as job handlers
 
-```ini
-[server:web0]
-use = egg:Paste#http
-port = 8080
-host = 127.0.0.1
-use_threadpool = true
-threadpool_workers = 7
+* Job handlers run as children of the uWSGI process
+* Jobs are dispatched from web workers to job handlers via native *mule messaging*
+* Jobs can only be dispatched to mules on the same host
+* Trivially easy to enable (disabled by default for simplicity reasons)
 
-[server:web1]
-use = egg:Paste#http
-port = 8081
-host = 127.0.0.1
-use_threadpool = true
-threadpool_workers = 7
-```
+Under this strategy, job handling is offloaded to dedicated non-web-serving processes that are started and stopped directly by the master uWSGI process. As a benefit of using mule messaging, only job handlers that are alive will be selected to run jobs.
 
+**uWSGI + Mule job handlers is the recommended deployment strategy** for Galaxy servers that run web servers and job handlers **on the same host**.
 
-Two are shown, you should create as many as are suitable for your usage and hardware.  On our eight-core server, I run six web server processes.  You may find you only need one, which is a slightly simpler configuration.
+#### uWSGI for web serving and Webless Galaxy applications as job handlers
+
+* Galaxy is started as a standalone Python application with no web stack
+* Jobs are dispatched from web workers to job handlers via the Galaxy database
+* Jobs can be dispatched to job handlers running on any host
+* The recommended deployment strategy for production Galaxy instances prior to 18.01
+
+Like mules, under this strategy, job handling is offloaded to dedicated non-web-serving processes, but those processes are [managed by the administrator](#starting-and-stopping). Because the handler is randomly assigned by the web worker when the job is submitted via the UI/API, jobs may be assigned to dead handlers.
+
+**uWSGI + Webless job handlers is the recommended deployment strategy** for Galaxy servers that run web servers and job handlers **on different hosts**.
+
+#### Legacy Deployment Options
+
+Certain deployment strategies were commonly used prior to the introduction of new features described above. These are still possible but should no longer be used.
+
+##### uWSGI for web serving with Paste Galaxy applications as job handlers
+
+This is essentially the same as **uWSGI + Webless job handlers** but needlessly starts handlers with a web stack. This was recommended before the Webless method existed
+
+##### Paste for web serving with Paste or Webless job handlers
+
+Unlike uWSGI, Paste cannot start multiple server processes on its own. Prior to uWSGI support, this was the only way to run multiple Galaxy processes, but each web worker and job handler process had to be configured and managed separately.
+
+##### Paste web serving and job handling in a single process
+
+This was the default configuration prior to the 18.01 Galaxy release and offered the simplest out-of-the-box setup at the expense of performance and scalability.
 
 #### uWSGI
 
