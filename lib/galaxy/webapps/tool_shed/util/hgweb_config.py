@@ -1,6 +1,6 @@
-import os
 import ConfigParser
 import logging
+import os
 import shutil
 import threading
 from datetime import date

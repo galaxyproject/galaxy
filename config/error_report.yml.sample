@@ -29,7 +29,8 @@
 #   directory: /tmp/reports/
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
-# galaxy.ini, then Galaxy will submit the job error to Sentry.
+# galaxy.ini, then Galaxy will submit the job error to Sentry. You may supply a
+# separate DSN for tool reports by supplying a ``custom_dsn`` parameter.
 - type: sentry
   user_submission: false
 

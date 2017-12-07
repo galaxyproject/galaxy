@@ -1,15 +1,15 @@
 /**
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
-*/
+ */
 import _l from "utils/localization";
 /** Builds a basic iframe */
-function iframe(src) {
+export function iframe(src) {
     return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
 }
 
 /** Traverse through json */
-function deepeach(dict, callback) {
+export function deepeach(dict, callback) {
     for (var i in dict) {
         var d = dict[i];
         if (_.isObject(d)) {
@@ -21,7 +21,7 @@ function deepeach(dict, callback) {
 }
 
 /** Identifies urls and replaces them with anchors */
-function linkify(inputText) {
+export function linkify(inputText) {
     var replacedText;
     var replacePattern1;
     var replacePattern2;
@@ -43,15 +43,15 @@ function linkify(inputText) {
 }
 
 /** Clone */
-function clone(obj) {
+export function clone(obj) {
     return JSON.parse(JSON.stringify(obj) || null);
 }
 
 /**
-     * Check if a string is a json string
-     * @param{String}   text - Content to be validated
-     */
-function isJSON(text) {
+ * Check if a string is a json string
+ * @param{String}   text - Content to be validated
+ */
+export function isJSON(text) {
     return /^[\],:{}\s]*$/.test(
         text
             .replace(/\\["\\\/bfnrtu]/g, "@")
@@ -61,21 +61,21 @@ function isJSON(text) {
 }
 
 /**
-     * Sanitize/escape a string
-     * @param{String}   content - Content to be sanitized
-     */
-function sanitize(content) {
+ * Sanitize/escape a string
+ * @param{String}   content - Content to be sanitized
+ */
+export function sanitize(content) {
     return $("<div/>")
         .text(content)
         .html();
 }
 
 /**
-     * Checks if a value or list of values is `empty`
-     * usually used for selectable options
-     * @param{String}   value - Value or list to be validated
-     */
-function isEmpty(value) {
+ * Checks if a value or list of values is `empty`
+ * usually used for selectable options
+ * @param{String}   value - Value or list to be validated
+ */
+export function isEmpty(value) {
     if (!(value instanceof Array)) {
         value = [value];
     }
@@ -91,12 +91,12 @@ function isEmpty(value) {
 }
 
 /**
-     * Convert list to pretty string
-     * @param{String}   lst - List of strings to be converted in human readable list sentence
-     */
-function textify(lst) {
+ * Convert list to pretty string
+ * @param{String}   lst - List of strings to be converted in human readable list sentence
+ */
+export function textify(lst) {
     if ($.isArray(lst)) {
-        var lst = lst.toString().replace(/,/g, ", ");
+        lst = lst.toString().replace(/,/g, ", ");
         var pos = lst.lastIndexOf(", ");
         if (pos != -1) {
             lst = `${lst.substr(0, pos)} or ${lst.substr(pos + 2)}`;
@@ -107,13 +107,13 @@ function textify(lst) {
 }
 
 /**
-     * Request handler for GET
-     * @param{String}   url     - Url request is made to
-     * @param{Function} success - Callback on success
-     * @param{Function} error   - Callback on error
-     * @param{Boolean}  cache   - Use cached data if available
-     */
-function get(options) {
+ * Request handler for GET
+ * @param{String}   url     - Url request is made to
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ * @param{Boolean}  cache   - Use cached data if available
+ */
+export function get(options) {
     top.__utils__get__ = top.__utils__get__ || {};
     var cache_key = JSON.stringify(options);
     if (options.cache && top.__utils__get__[cache_key]) {
@@ -135,14 +135,14 @@ function get(options) {
 }
 
 /**
-     * Request handler
-     * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
-     * @param{String}   url     - Url request is made to
-     * @param{Object}   data    - Data send to url
-     * @param{Function} success - Callback on success
-     * @param{Function} error   - Callback on error
-     */
-function request(options) {
+ * Request handler
+ * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
+ * @param{String}   url     - Url request is made to
+ * @param{Object}   data    - Data send to url
+ * @param{Function} success - Callback on success
+ * @param{Function} error   - Callback on error
+ */
+export function request(options) {
     // prepare ajax
     var ajaxConfig = {
         contentType: "application/json",
@@ -191,11 +191,11 @@ function request(options) {
 }
 
 /**
-     * Read a property value from CSS
-     * @param{String}   classname   - CSS class
-     * @param{String}   name        - CSS property
-     */
-function cssGetAttribute(classname, name) {
+ * Read a property value from CSS
+ * @param{String}   classname   - CSS class
+ * @param{String}   name        - CSS property
+ */
+export function cssGetAttribute(classname, name) {
     var el = $(`<div class="${classname}"></div>`);
     el.appendTo(":eq(0)");
     var value = el.css(name);
@@ -204,21 +204,21 @@ function cssGetAttribute(classname, name) {
 }
 
 /**
-     * Load a CSS file
-     * @param{String}   url - Url of CSS file
-     */
-function cssLoadFile(url) {
+ * Load a CSS file
+ * @param{String}   url - Url of CSS file
+ */
+export function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
         $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
     }
 }
 
 /**
-     * Safely merge to dictionaries
-     * @param{Object}   options         - Target dictionary
-     * @param{Object}   optionsDefault  - Source dictionary
-     */
-function merge(options, optionsDefault) {
+ * Safely merge to dictionaries
+ * @param{Object}   options         - Target dictionary
+ * @param{Object}   optionsDefault  - Source dictionary
+ */
+export function merge(options, optionsDefault) {
     if (options) {
         return _.defaults(options, optionsDefault);
     } else {
@@ -227,11 +227,11 @@ function merge(options, optionsDefault) {
 }
 
 /**
-     * Round floaing point 'number' to 'numPlaces' number of decimal places.
-     * @param{Object}   number      a floaing point number
-     * @param{Object}   numPlaces   number of decimal places
-     */
-function roundToDecimalPlaces(number, numPlaces) {
+ * Round floaing point 'number' to 'numPlaces' number of decimal places.
+ * @param{Object}   number      a floaing point number
+ * @param{Object}   numPlaces   number of decimal places
+ */
+export function roundToDecimalPlaces(number, numPlaces) {
     var placesMultiplier = 1;
     for (var i = 0; i < numPlaces; i++) {
         placesMultiplier *= 10;
@@ -246,11 +246,11 @@ var mb = kb * kb;
 var gb = mb * kb;
 var tb = gb * kb;
 /**
-     * Format byte size to string with units
-     * @param{Integer}   size           - Size in bytes
-     * @param{Boolean}   normal_font    - Switches font between normal and bold
-     */
-function bytesToString(size, normal_font, numberPlaces) {
+ * Format byte size to string with units
+ * @param{Integer}   size           - Size in bytes
+ * @param{Boolean}   normal_font    - Switches font between normal and bold
+ */
+export function bytesToString(size, normal_font, numberPlaces) {
     numberPlaces = numberPlaces !== undefined ? numberPlaces : 1;
     // identify unit
     var unit = "";
@@ -281,13 +281,13 @@ function bytesToString(size, normal_font, numberPlaces) {
 }
 
 /** Create a unique id */
-function uid() {
+export function uid() {
     top.__utils__uid__ = top.__utils__uid__ || 0;
     return `uid-${top.__utils__uid__++}`;
 }
 
 /** Create a time stamp */
-function time() {
+export function time() {
     var d = new Date();
     var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
     var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
@@ -295,7 +295,7 @@ function time() {
 }
 
 /** Append script and style tags to Galaxy main application */
-function appendScriptStyle(data) {
+export function appendScriptStyle(data) {
     // create a script tag inside head tag
     if (data.script && data.script !== "") {
         $("<script/>", { type: "text/javascript" })
@@ -311,7 +311,7 @@ function appendScriptStyle(data) {
 }
 
 /** Get querystrings from url */
-function getQueryString(key) {
+export function getQueryString(key) {
     return decodeURIComponent(
         window.location.search.replace(
             new RegExp(`^(?:.*[&\\?]${encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&")}(?:\\=([^&]*))?)?.*$`, "i"),
@@ -320,7 +320,7 @@ function getQueryString(key) {
     );
 }
 
-function setWindowTitle(title) {
+export function setWindowTitle(title) {
     if (title) {
         window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""} | ${_l(
             title

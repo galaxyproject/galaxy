@@ -25,7 +25,6 @@ from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
-
 log = logging.getLogger(__name__)
 
 # Currently these supported binary data types must be manually set on upload
@@ -34,36 +33,16 @@ log = logging.getLogger(__name__)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
-    sniffable_binary_formats = []
-    unsniffable_binary_formats = []
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
-        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext.lower(), "class": type_class})
+        """Deprecated method."""
+        pass
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
-        Binary.unsniffable_binary_formats.append(ext.lower())
-
-    @staticmethod
-    def is_sniffable_binary(filename):
-        format_information = None
-        for format in Binary.sniffable_binary_formats:
-            format_instance = format["class"]()
-            try:
-                if format_instance.sniff(filename):
-                    format_information = (format["type"], format["ext"])
-                    break
-            except Exception:
-                # Sniffer raised exception, could be any number of
-                # reasons for this so there is not much to do besides
-                # trying next sniffer.
-                pass
-        return format_information
-
-    @staticmethod
-    def is_ext_unsniffable(ext):
-        return ext in Binary.unsniffable_binary_formats
+        """Deprecated method."""
+        pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -110,9 +89,6 @@ class Ab1(Binary):
             return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_unsniffable_binary_ext("ab1")
-
-
 class Idat(Binary):
     """Binary data in idat format"""
     file_ext = "idat"
@@ -127,9 +103,6 @@ class Idat(Binary):
             return False
         except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
 class Cel(Binary):
@@ -161,9 +134,6 @@ class Cel(Binary):
             return False
 
 
-Binary.register_sniffable_binary_format("cel", "cel", Cel)
-
-
 class CompressedArchive(Binary):
     """
         Class describing an compressed binary file
@@ -185,9 +155,6 @@ class CompressedArchive(Binary):
             return dataset.peek
         except Exception:
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("compressed_archive")
 
 
 class CompressedZipArchive(CompressedArchive):
@@ -212,17 +179,11 @@ class CompressedZipArchive(CompressedArchive):
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_unsniffable_binary_ext("zip")
-
-
 class GenericAsn1Binary(Binary):
     """Class for generic ASN.1 binary format"""
     file_ext = "asn1-binary"
     edam_format = "format_1966"
     edam_data = "data_0849"
-
-
-Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
 @dataproviders.decorators.has_dataproviders
@@ -596,9 +557,6 @@ class Bam(Binary):
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
 
 
-Binary.register_sniffable_binary_format("bam", "bam", Bam)
-
-
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
@@ -668,13 +626,9 @@ class CRAM(Binary):
             return False
 
 
-Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
-
-
 class BaseBcf(Binary):
     edam_format = "format_3020"
     edam_data = "data_3498"
-    file_ext = "bcf"
 
 
 class Bcf(BaseBcf):
@@ -689,6 +643,7 @@ class Bcf(BaseBcf):
     >>> Bcf().sniff(fname)
     False
     """
+    file_ext = "bcf"
 
     MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
 
@@ -732,9 +687,6 @@ class Bcf(BaseBcf):
         dataset.metadata.bcf_index = index_file
 
 
-Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
-
-
 class BcfUncompressed(Bcf):
     """
     Class describing an uncompressed BCF file
@@ -758,9 +710,6 @@ class BcfUncompressed(Bcf):
             return False
         except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("bcf_uncompressed", "bcf_uncompressed", BcfUncompressed)
 
 
 class H5(Binary):
@@ -890,8 +839,57 @@ class Biom2(H5):
             return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
-Binary.register_sniffable_binary_format("h5", "h5", H5)
+class Cool(H5):
+    """
+    Class describing the cool format (https://github.com/mirnylab/cooler)
+    """
+
+    file_ext = "cool"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'matrix.cool' )
+        >>> Cool().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'wiggle.wig' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
+        >>> Cool().sniff( fname )
+        False
+        """
+
+        MAGIC = "HDF5::Cooler"
+        URL = "https://github.com/mirnylab/cooler"
+
+        if super(Cool, self).sniff(filename):
+            keys = ['chroms', 'bins', 'pixels', 'indexes']
+            with h5py.File(filename, 'r') as handle:
+                fmt = handle.attrs.get('format', None)
+                url = handle.attrs.get('format-url', None)
+                if fmt == MAGIC or url == URL:
+                    if not all(name in handle.keys() for name in keys):
+                        return False
+                    return True
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Cool (HDF5) file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
 class Scf(Binary):
@@ -913,9 +911,6 @@ class Scf(Binary):
             return dataset.peek
         except Exception:
             return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("scf")
 
 
 class Sff(Binary):
@@ -950,9 +945,6 @@ class Sff(Binary):
             return "Binary sff file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("sff", "sff", Sff)
-
-
 class BigWig(Binary):
     """
     Accessing binary BigWig files from UCSC.
@@ -961,6 +953,7 @@ class BigWig(Binary):
     """
     edam_format = "format_3006"
     edam_data = "data_3002"
+    file_ext = "bigwig"
     track_type = "LineTrack"
     data_sources = {"data_standalone": "bigwig"}
 
@@ -994,22 +987,17 @@ class BigWig(Binary):
             return "Binary UCSC %s file (%s)" % (self._name, nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
-
-
 class BigBed(BigWig):
     """BigBed support from UCSC."""
     edam_format = "format_3004"
     edam_data = "data_3002"
+    file_ext = "bigbed"
     data_sources = {"data_standalone": "bigbed"}
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-
-
-Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 
 class TwoBit(Binary):
@@ -1035,16 +1023,13 @@ class TwoBit(Binary):
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+            return super(TwoBit, self).set_peek(dataset)
 
     def display_peek(self, dataset):
         try:
             return dataset.peek
         except Exception:
             return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1136,9 +1121,6 @@ class SQlite(Binary):
     def sqlite_datadictprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.dataset.SQliteDataDictProvider(dataset_source, **settings)
-
-
-# Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
 
 class GeminiSQLite(SQlite):
@@ -1269,14 +1251,6 @@ class IdpDB(SQlite):
             return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("gemini.sqlite", "gemini.sqlite", GeminiSQLite)
-Binary.register_sniffable_binary_format("idpdb", "idpdb", IdpDB)
-Binary.register_sniffable_binary_format("mz.sqlite", "mz.sqlite", MzSQlite)
-# FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
-# ignores sniff order declared in datatypes_conf.xml
-Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
-
-
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
     file_ext = "xlsx"
@@ -1291,9 +1265,6 @@ class Xlsx(Binary):
             return False
         except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
 
 class ExcelXls(Binary):
@@ -1322,9 +1293,6 @@ class ExcelXls(Binary):
             return dataset.peek
         except Exception:
             return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("excel.xls", "excel.xls", ExcelXls)
 
 
 class Sra(Binary):
@@ -1359,9 +1327,6 @@ class Sra(Binary):
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format('sra', 'sra', Sra)
-
-
 class RData(Binary):
     """Generic R Data file datatype implementation"""
     file_ext = 'rdata'
@@ -1378,9 +1343,6 @@ class RData(Binary):
                 return True
         except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
 
 class OxliBinary(Binary):
@@ -1419,13 +1381,10 @@ class OxliCountGraph(OxliBinary):
     >>> OxliCountGraph().sniff( fname )
     True
     """
+    file_ext = 'oxlicg'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"01")
-
-
-Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
-                                        OxliCountGraph)
 
 
 class OxliNodeGraph(OxliBinary):
@@ -1447,13 +1406,10 @@ class OxliNodeGraph(OxliBinary):
     >>> OxliNodeGraph().sniff( fname )
     True
     """
+    file_ext = 'oxling'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"02")
-
-
-Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
-                                        OxliNodeGraph)
 
 
 class OxliTagSet(OxliBinary):
@@ -1476,12 +1432,10 @@ class OxliTagSet(OxliBinary):
     >>> OxliTagSet().sniff( fname )
     True
     """
+    file_ext = 'oxlits'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"03")
-
-
-Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
 
 
 class OxliStopTags(OxliBinary):
@@ -1499,13 +1453,10 @@ class OxliStopTags(OxliBinary):
     >>> OxliStopTags().sniff( fname )
     True
     """
+    file_ext = 'oxlist'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"04")
-
-
-Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
-                                        OxliStopTags)
 
 
 class OxliSubset(OxliBinary):
@@ -1528,12 +1479,10 @@ class OxliSubset(OxliBinary):
     >>> OxliSubset().sniff( fname )
     True
     """
+    file_ext = 'oxliss'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"05")
-
-
-Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
 
 
 class OxliGraphLabels(OxliBinary):
@@ -1557,13 +1506,10 @@ class OxliGraphLabels(OxliBinary):
     >>> OxliGraphLabels().sniff( fname )
     True
     """
+    file_ext = 'oxligl'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"06")
-
-
-Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
-                                        OxliGraphLabels)
 
 
 class PostgresqlArchive(CompressedArchive):
@@ -1614,9 +1560,6 @@ class PostgresqlArchive(CompressedArchive):
             return dataset.peek
         except Exception:
             return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("postgresql_archiv", "postgresql", PostgresqlArchive)
 
 
 class Fast5Archive(CompressedArchive):
@@ -1719,11 +1662,6 @@ class Fast5ArchiveBz2(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
-Binary.register_sniffable_binary_format("fast5_archive_bz2", "fast5.tar.bz2", Fast5ArchiveBz2)
-Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
-Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
-
-
 class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
     MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
@@ -1775,9 +1713,6 @@ class SearchGuiArchive(CompressedArchive):
             return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
 
 
-Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
-
-
 class NetCDF(Binary):
     """Binary data in netCDF format"""
     file_ext = "netcdf"
@@ -1807,9 +1742,6 @@ class NetCDF(Binary):
             return False
         except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
 
 
 class DMND(Binary):
@@ -1842,7 +1774,27 @@ class DMND(Binary):
             return False
 
 
-Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
+class ICM(Binary):
+    """
+    Class describing an ICM (interpolated context model) file, used by Glimmer
+    """
+    file_ext = "icm"
+    edam_data = "data_0950"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary ICM (interpolated context model) file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff(self, dataset):
+        line = open(dataset).read(100)
+        if '>ver = ' in line and 'len = ' in line and 'depth = ' in line and 'periodicity =' in line and 'nodes = ' in line:
+            return True
+
+        return False
 
 
 if __name__ == '__main__':

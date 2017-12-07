@@ -13,7 +13,6 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
-
 from . import (
     binary,
     coverage,
@@ -250,6 +249,7 @@ class Registry(object):
                                         datatype_class.edam_format = edam_format
                                     if edam_data:
                                         datatype_class.edam_data = edam_data
+                                datatype_class.is_subclass = make_subclass
                                 self.datatypes_by_extension[extension] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -313,15 +313,14 @@ class Registry(object):
         self.set_default_values()
 
         def append_to_sniff_order():
-            # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext, datatype in self.datatypes_by_extension.items():
-                included = False
-                for atype in self.sniff_order:
-                    if isinstance(atype, datatype.__class__):
-                        included = True
-                        break
-                if not included:
+            sniff_order_classes = set(type(_) for _ in self.sniff_order)
+            for datatype in self.datatypes_by_extension.values():
+                # Add a datatype only if it is not already in sniff_order, it
+                # has a sniff() method and was not defined with subclass="true"
+                if type(datatype) not in sniff_order_classes and \
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass:
                     self.sniff_order.append(datatype)
+
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
@@ -465,6 +464,10 @@ class Registry(object):
                                     if sniffer_class is not None:
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
+
+    def is_extension_unsniffable_binary(self, ext):
+        datatype = self.get_datatype_by_extension(ext)
+        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, 'sniff')
 
     def get_datatype_class_by_name(self, name):
         """

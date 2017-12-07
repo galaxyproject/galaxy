@@ -388,8 +388,8 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     /**
-   * Save the changes made to the library dataset.
-   */
+     * Save the changes made to the library dataset.
+     */
     saveModifications: function(options) {
         var is_changed = false;
         var ld = this.model;
@@ -480,8 +480,8 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     /**
-   * Extract the role ids from Select2 elements's 'data'
-   */
+     * Extract the role ids from Select2 elements's 'data'
+     */
     _extractIds: function(roles_list) {
         var ids_list = [];
         for (var i = roles_list.length - 1; i >= 0; i--) {
@@ -491,8 +491,8 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     /**
-   * Save the permissions for roles entered in the select boxes.
-   */
+     * Save the permissions for roles entered in the select boxes.
+     */
     savePermissions: function(event) {
         var self = this;
         var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
@@ -515,9 +515,9 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     /**
-   * If needed request all extensions and/or genomes from Galaxy
-   * and save them in sorted arrays.
-   */
+     * If needed request all extensions and/or genomes from Galaxy
+     * and save them in sorted arrays.
+     */
     fetchExtAndGenomes: function() {
         var self = this;
         if (this.list_genomes.length == 0) {

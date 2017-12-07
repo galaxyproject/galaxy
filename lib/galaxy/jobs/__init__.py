@@ -32,7 +32,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.handlers import ConfiguresHandlers
 from galaxy.util.xml_macros import load
-
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output
@@ -47,6 +46,7 @@ TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
+DEFAULT_LOCAL_WORKERS = 4
 
 DEFAULT_CLEANUP_JOB = "always"
 
@@ -140,7 +140,15 @@ class JobConfiguration(object, ConfiguresHandlers):
         self.resource_groups = {}
         self.default_resource_group = None
         self.resource_parameters = {}
-        self.limits = Bunch()
+        self.limits = Bunch(registered_user_concurrent_jobs=None,
+                            anonymous_user_concurrent_jobs=None,
+                            walltime=None,
+                            walltime_delta=None,
+                            total_walltime={},
+                            output_size=None,
+                            destination_user_concurrent_jobs={},
+                            destination_total_concurrent_jobs={})
+        self._is_handler = None
 
         default_resubmits = []
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
@@ -160,10 +168,10 @@ class JobConfiguration(object, ConfiguresHandlers):
             tree = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
-            log.warning('Job configuration "%s" does not exist, using legacy'
-                        ' job configuration from Galaxy config file "%s" instead'
-                        % (self.app.config.job_config_file, self.app.config.config_file))
-            self.__parse_job_conf_legacy()
+            log.warning('Job configuration "%s" does not exist, using default'
+                        ' job configuration (this server will run jobs)',
+                        self.app.config.job_config_file)
+            self.__set_default_job_conf()
         except Exception as e:
             raise config_exception(e, job_config_file)
 
@@ -204,11 +212,21 @@ class JobConfiguration(object, ConfiguresHandlers):
         handlers_conf = root.find('handlers')
         self._init_handlers(handlers_conf)
 
-        # Must define at least one handler to have a default.
-        if not self.handlers:
-            raise ValueError("Job configuration file defines no valid handler elements.")
         # Determine the default handler(s)
-        self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
+        try:
+            self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
+        except Exception:
+            pass
+        # For tets, this may not exist
+        try:
+            base_server_name = self.app.config.base_server_name
+        except AttributeError:
+            base_server_name = self.app.config.get('base_server_name', None)
+        if (self.default_handler_id is None
+                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
+            # Shortcut for compatibility with existing job confs that use the default handlers block,
+            # there are no defined handlers, or there's only one handler and it's this server
+            self.__set_default_job_handler()
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -278,15 +296,6 @@ class JobConfiguration(object, ConfiguresHandlers):
                      total_walltime=str,
                      output_size=util.size_to_bytes)
 
-        self.limits = Bunch(registered_user_concurrent_jobs=None,
-                            anonymous_user_concurrent_jobs=None,
-                            walltime=None,
-                            walltime_delta=None,
-                            total_walltime={},
-                            output_size=None,
-                            destination_user_concurrent_jobs={},
-                            destination_total_concurrent_jobs={})
-
         # Parse job limits
         limits = root.find('limits')
         if limits is not None:
@@ -328,72 +337,38 @@ class JobConfiguration(object, ConfiguresHandlers):
                 self.handler_runner_plugins[handler_id] = []
             self.handler_runner_plugins[handler_id].append(plugin.get('id'))
 
-    def __parse_job_conf_legacy(self):
-        """Loads the old-style job configuration from options in the galaxy config file (by default, config/galaxy.ini).
-        """
-        log.debug('Loading job configuration from %s' % self.app.config.config_file)
-
-        # Always load local
-        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers)]
+    def __set_default_job_conf(self):
+        # Run jobs locally
+        self.runner_plugins = [dict(id='local', load='local', workers=DEFAULT_LOCAL_WORKERS)]
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
-            self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
-        for runner in self.app.config.start_job_runners:
-            self.runner_plugins.append(dict(id=runner, load=runner, workers=self.app.config.cluster_job_queue_workers))
-
+            self.runner_plugins.append(dict(id='tasks', load='tasks', workers=DEFAULT_LOCAL_WORKERS))
         # Set the handlers
-        for id in self.app.config.job_handlers:
-            self.handlers[id] = (id,)
-
-        self.handlers['default_job_handlers'] = self.app.config.default_job_handlers
-        self.default_handler_id = 'default_job_handlers'
-
-        # Set tool handler configs
-        for id, tool_handlers in self.app.config.tool_handlers.items():
-            self.tools[id] = list()
-            for handler_config in tool_handlers:
-                # rename the 'name' key to 'handler'
-                handler_config['handler'] = handler_config.pop('name')
-                self.tools[id].append(JobToolConfiguration(**handler_config))
-
-        # Set tool runner configs
-        for id, tool_runners in self.app.config.tool_runners.items():
-            # Might have been created in the handler parsing above
-            if id not in self.tools:
-                self.tools[id] = list()
-            for runner_config in tool_runners:
-                url = runner_config['url']
-                if url not in self.destinations:
-                    # Create a new "legacy" JobDestination - it will have its URL converted to a destination params once the appropriate plugin has loaded
-                    self.destinations[url] = (JobDestination(id=url, runner=url.split(':', 1)[0], url=url, legacy=True, converted=False),)
-                for tool_conf in self.tools[id]:
-                    if tool_conf.params == runner_config.get('params', {}):
-                        tool_conf['destination'] = url
-                        break
-                else:
-                    # There was not an existing config (from the handlers section) with the same params
-                    # rename the 'url' key to 'destination'
-                    runner_config['destination'] = runner_config.pop('url')
-                    self.tools[id].append(JobToolConfiguration(**runner_config))
-
-        self.destinations[self.app.config.default_cluster_job_runner] = (JobDestination(id=self.app.config.default_cluster_job_runner,
-                                                                                        runner=self.app.config.default_cluster_job_runner.split(':', 1)[0],
-                                                                                        url=self.app.config.default_cluster_job_runner,
-                                                                                        legacy=True,
-                                                                                        converted=False),)
-        self.default_destination_id = self.app.config.default_cluster_job_runner
-
-        # Set the job limits
-        self.limits = Bunch(registered_user_concurrent_jobs=self.app.config.registered_user_job_limit,
-                            anonymous_user_concurrent_jobs=self.app.config.anonymous_user_job_limit,
-                            walltime=self.app.config.job_walltime,
-                            walltime_delta=self.app.config.job_walltime_delta,
-                            total_walltime={},
-                            output_size=self.app.config.output_size_limit,
-                            destination_user_concurrent_jobs={},
-                            destination_total_concurrent_jobs={})
-
+        self.__set_default_job_handler()
+        # Set the destination
+        self.default_destination_id = 'local'
+        self.destinations['local'] = [JobDestination(id='local', runner='local')]
         log.debug('Done loading job configuration')
+
+    def __set_default_job_handler(self):
+        # Called when self.default_handler_id is None
+        if self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
+            if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS)):
+                log.info("Found job handler pool managed by application stack, this server (%s) is a member of pool: "
+                         "%s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
+                self._is_handler = True
+            else:
+                log.info("Found job handler pool managed by application stack, this server (%s) will submit jobs to "
+                         "pool: %s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
+        else:
+            log.info('Did not find job handler pool managed by application stack, this server (%s) will handle jobs '
+                     'submitted to it', self.app.config.server_name)
+            self._is_handler = True
+            self.app.application_stack.register_postfork_function(self.make_self_default_handler)
+
+    def make_self_default_handler(self):
+        self.default_handler_id = self.app.config.server_name
+        self.handlers[self.app.config.server_name] = [self.app.config.server_name]
 
     def get_tool_resource_xml(self, tool_id, tool_type):
         """ Given a tool id, return XML elements describing parameters to
@@ -1065,7 +1040,7 @@ class JobWrapper(object, HasResourceParameters):
         destination_params = job.destination_params
         if "__resubmit_delay_seconds" in destination_params:
             delay = float(destination_params["__resubmit_delay_seconds"])
-            if job.seconds_since_update < delay:
+            if job.seconds_since_updated < delay:
                 return False
 
         return True
@@ -1312,15 +1287,9 @@ class JobWrapper(object, HasResourceParameters):
                         dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)
                     try:
                         assert context.get('line_count', None) is not None
-                        if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
-                            dataset.set_peek(line_count=context['line_count'], is_multi_byte=True)
-                        else:
-                            dataset.set_peek(line_count=context['line_count'])
+                        dataset.set_peek(line_count=context['line_count'])
                     except Exception:
-                        if (not dataset.datatype.composite_type and dataset.dataset.is_multi_byte()) or self.tool.is_multi_byte:
-                            dataset.set_peek(is_multi_byte=True)
-                        else:
-                            dataset.set_peek()
+                        dataset.set_peek()
                 else:
                     # Handle an empty dataset.
                     dataset.blurb = "empty"

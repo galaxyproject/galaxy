@@ -10,7 +10,7 @@ import time
 
 from six.moves.urllib.parse import urljoin
 
-from common import get, post  # noqa: I100
+from common import get, post  # noqa: I100,I202
 
 DEFAULT_SLEEP_TIME = 3
 FETCH_GENOME_TOOL_ID = 'testtoolshed.g2.bx.psu.edu/repos/blankenberg/data_manager_fetch_genome_all_fasta/data_manager_fetch_genome_all_fasta/0.0.1'

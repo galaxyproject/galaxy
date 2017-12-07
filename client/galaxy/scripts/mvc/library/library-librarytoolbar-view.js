@@ -42,8 +42,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Renders the element that shows pages into its div within the toolbar.
-   */
+     * Renders the element that shows pages into its div within the toolbar.
+     */
     renderPaginator: function(options) {
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
@@ -59,9 +59,9 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * User clicked on 'New library' button. Show modal to
-   * satisfy the wish.
-   */
+     * User clicked on 'New library' button. Show modal to
+     * satisfy the wish.
+     */
     createLibraryFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -83,8 +83,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Create the new library using the API asynchronously.
-   */
+     * Create the new library using the API asynchronously.
+     */
     createNewLibrary: function() {
         var libraryDetails = this.serializeNewLibrary();
         if (this.validateNewLibrary(libraryDetails)) {
@@ -113,8 +113,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Show user the propmpt to change the number of libs shown on page.
-   */
+     * Show user the propmpt to change the number of libs shown on page.
+     */
     showPageSizePrompt: function(e) {
         e.preventDefault();
         var library_page_size = prompt(
@@ -130,8 +130,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Clear the library modal once it is saved.
-   */
+     * Clear the library modal once it is saved.
+     */
     clearLibraryModal: function() {
         $("input[name='Name']").val("");
         $("input[name='Description']").val("");
@@ -139,8 +139,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Prepare new library variables to be submitted to API.
-   */
+     * Prepare new library variables to be submitted to API.
+     */
     serializeNewLibrary: function() {
         return {
             name: $("input[name='Name']").val(),
@@ -150,15 +150,15 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Check whether entered values are valid.
-   */
+     * Check whether entered values are valid.
+     */
     validateNewLibrary: function(libraryDetails) {
         return libraryDetails.name !== "";
     },
 
     /**
-   * Include or exclude deleted libraries in the view.
-   */
+     * Include or exclude deleted libraries in the view.
+     */
     includeDeletedChecked: function(event) {
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ with_deleted: true });
@@ -170,8 +170,8 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Include or exclude restricted libraries in the view.
-   */
+     * Include or exclude restricted libraries in the view.
+     */
     excludeRestrictedChecked: function(event) {
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ without_restricted: true });
@@ -182,9 +182,9 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-   * Take the contents of the search field and send it to the list view
-   * to query the collection of libraries.
-   */
+     * Take the contents of the search field and send it to the list view
+     * to query the collection of libraries.
+     */
     searchLibraries: function(event) {
         var search_term = $(".library-search-input").val();
         this.options.search_term = search_term;

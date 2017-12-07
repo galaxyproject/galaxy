@@ -16,10 +16,26 @@ Complete Client Build
 
 There are many moving parts to the client build system, but the entrypoint for
 most people is the 'client' rule in the Makefile at the root of the Galaxy
-repository.  Execute the following to perform a complete build including
-dependency staging, style building, script processing and bundling.
+repository.  Execute the following to perform a complete build suitable for
+local development, including dependency staging, style building, script
+processing and bundling.
 
     make client
+
+Note: Don't commit the files that 'make client' creates.  This is a
+development-specific build which includes extra debugging features, and
+excludes several production optimizations made during the build process.
+
+For a production build, suitable for committing to the repository, or deploying
+to a live server, use the following:
+
+    make client-production
+
+And, lastly, if you want a production build that includes sourcemaps to allow
+for perusal of the page-level javascript to facilitate live-server debugging,
+use:
+
+    make client-production-maps
 
 
 Automatic Rebuilding (Watch Mode)

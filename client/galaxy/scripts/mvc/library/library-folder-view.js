@@ -158,8 +158,8 @@ var FolderView = Backbone.View.extend({
     },
 
     /**
-   * Extract the role ids from Select2 elements's 'data'
-   */
+     * Extract the role ids from Select2 elements's 'data'
+     */
     _extractIds: function(roles_list) {
         var ids_list = [];
         for (var i = roles_list.length - 1; i >= 0; i--) {
@@ -169,8 +169,8 @@ var FolderView = Backbone.View.extend({
     },
 
     /**
-   * Save the permissions for roles entered in the select boxes.
-   */
+     * Save the permissions for roles entered in the select boxes.
+     */
     savePermissions: function(event) {
         var self = this;
         var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));

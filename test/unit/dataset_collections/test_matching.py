@@ -117,6 +117,7 @@ class MockCollection(object):
     def __init__(self, collection_type, elements):
         self.collection_type = collection_type
         self.elements = elements
+        self.populated = True
 
 
 class MockCollectionElement(object):

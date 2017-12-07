@@ -16,16 +16,19 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
-from galaxy.util import compression_utils
-from galaxy.util import FILENAME_VALID_CHARS
-from galaxy.util import inflector
-from galaxy.util import unicodify
+from galaxy.util import (
+    compression_utils,
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
-
-from . import dataproviders
-from . import metadata
+from . import (
+    dataproviders,
+    metadata
+)
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -192,7 +195,12 @@ class Data(object):
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
     def set_peek(self, dataset, is_multi_byte=False):
-        """Set the peek and blurb text"""
+        """
+        Set the peek and blurb text
+
+        :param is_multi_byte: deprecated
+        :type  is_multi_byte: bool
+        """
         if not dataset.dataset.purged:
             dataset.peek = ''
             dataset.blurb = 'data'
@@ -835,7 +843,7 @@ class Text(Data):
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+            dataset.peek = get_file_peek(dataset.file_name, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -1043,7 +1051,10 @@ def get_test_fname(fname):
 
 def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
     """
-    Returns the first LINE_COUNT lines wrapped to WIDTH
+    Returns the first LINE_COUNT lines wrapped to WIDTH.
+
+    :param is_multi_byte: deprecated
+    :type  is_multi_byte: bool
 
     >>> fname = get_test_fname('4.bed')
     >>> get_file_peek(fname, LINE_COUNT=1)
@@ -1058,20 +1069,12 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
         skipchars = []
     lines = []
     count = 0
-    file_type = None
-    data_checked = False
     with compression_utils.get_fileobj(file_name, "U") as temp:
         while count < LINE_COUNT:
-            line = temp.readline(WIDTH)
-            if line and not is_multi_byte and not data_checked:
-                # See if we have a compressed or binary file
-                for char in line:
-                    if ord(char) > 128:
-                        file_type = 'binary'
-                        break
-                data_checked = True
-                if file_type == 'binary':
-                    break
+            try:
+                line = temp.readline(WIDTH)
+            except UnicodeDecodeError:
+                return "binary file"
             if not line_wrap:
                 if line.endswith('\n'):
                     line = line[:-1]
@@ -1088,11 +1091,4 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
             if not skip_line:
                 lines.append(line)
                 count += 1
-    if file_type == 'binary':
-        text = "%s file" % file_type
-    else:
-        try:
-            text = util.unicodify('\n'.join(lines))
-        except UnicodeDecodeError:
-            text = "binary/unknown file"
-    return text
+    return '\n'.join(lines)

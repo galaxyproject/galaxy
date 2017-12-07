@@ -3,11 +3,11 @@ import jQuery from "jquery";
 
 var $ = jQuery;
 /** Builds (twitter bootstrap styled) pagination controls.
-     *  If the totalDataSize is not null, a horizontal list of page buttons is displayed.
-     *  If totalDataSize is null, two links ('Prev' and 'Next) are displayed.
-     *  When pages are changed, a 'pagination.page-change' event is fired
-     *      sending the event and the (0-based) page requested.
-     */
+ *  If the totalDataSize is not null, a horizontal list of page buttons is displayed.
+ *  If totalDataSize is null, two links ('Prev' and 'Next) are displayed.
+ *  When pages are changed, a 'pagination.page-change' event is fired
+ *      sending the event and the (0-based) page requested.
+ */
 function Pagination(element, options) {
     /** the total number of pages */
     this.numPages = null;
@@ -31,9 +31,9 @@ Pagination.prototype.defaults = {
 };
 
 /** init the control, calc numPages if possible, and render
-     *  @param {jQuery} the element that will contain the pagination control
-     *  @param {Object} options a map containing overrides to the pagination default options
-     */
+ *  @param {jQuery} the element that will contain the pagination control
+ *  @param {Object} options a map containing overrides to the pagination default options
+ */
 Pagination.prototype.init = function _init($element, options) {
     options = options || {};
     this.$element = $element;

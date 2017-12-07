@@ -5,47 +5,47 @@ var $ = jQuery;
 
 //==============================================================================
 /** Column selection using the peek display as the control.
-     *  Adds rows to the bottom of the peek with clickable areas in each cell
-     *      to allow the user to select columns.
-     *  Column selection can be limited to a single column or multiple.
-     *  (Optionally) adds a left hand column of column selection prompts.
-     *  (Optionally) allows the column headers to be clicked/renamed
-     *      and set to some initial value.
-     *  (Optionally) hides comment rows.
-     *  (Optionally) allows pre-selecting and disabling certain columns for
-     *      each row control.
-     *
-     *  Construct by selecting a peek table to be used with jQuery and
-     *      calling 'peekColumnSelector' with options.
-     *  Options must include a 'controls' array and can include other options
-     *      listed below.
-     *  @example:
-     *  $( 'pre.peek' ).peekColumnSelector({
-     *          columnNames : ["Chromosome", "Start", "Base", "", "", "Qual" ],
-     *          controls : [
-     *              { label: 'X Column',  id: 'xColumn' },
-     *              { label: 'Y Column',  id: 'yColumn', selected: 2 },
-     *              { label: 'ID Column', id: 'idColumn', selected: 4, disabled: [ 1, 5 ] },
-     *              { label: 'Heatmap',   id: 'heatmap', selected: [ 2, 4 ], disabled: [ 0, 1 ], multiselect: true,
-     *                selectedText: 'Included', unselectedText: 'Excluded' }
-     *          ],
-     *          renameColumns       : true,
-     *          hideCommentRows     : true,
-     *          includePrompts      : true,
-     *          topLeftContent      : 'Data sample:'
-     *      }).on( 'peek-column-selector.change', function( ev, selection ){
-     *          console.info( 'new selection:', selection );
-     *          //{ yColumn: 2 }
-     *      }).on( 'peek-column-selector.rename', function( ev, names ){
-     *          console.info( 'column names', names );
-     *          //[ 'Bler', 'Start', 'Base', '', '', 'Qual' ]
-     *      });
-     *
-     *  An event is fired when column selection is changed and the event
-     *      is passed an object in the form: { the row id : the new selection value }.
-     *  An event is also fired when the table headers are re-named and
-     *      is passed the new array of column names.
-     */
+ *  Adds rows to the bottom of the peek with clickable areas in each cell
+ *      to allow the user to select columns.
+ *  Column selection can be limited to a single column or multiple.
+ *  (Optionally) adds a left hand column of column selection prompts.
+ *  (Optionally) allows the column headers to be clicked/renamed
+ *      and set to some initial value.
+ *  (Optionally) hides comment rows.
+ *  (Optionally) allows pre-selecting and disabling certain columns for
+ *      each row control.
+ *
+ *  Construct by selecting a peek table to be used with jQuery and
+ *      calling 'peekColumnSelector' with options.
+ *  Options must include a 'controls' array and can include other options
+ *      listed below.
+ *  @example:
+ *  $( 'pre.peek' ).peekColumnSelector({
+ *          columnNames : ["Chromosome", "Start", "Base", "", "", "Qual" ],
+ *          controls : [
+ *              { label: 'X Column',  id: 'xColumn' },
+ *              { label: 'Y Column',  id: 'yColumn', selected: 2 },
+ *              { label: 'ID Column', id: 'idColumn', selected: 4, disabled: [ 1, 5 ] },
+ *              { label: 'Heatmap',   id: 'heatmap', selected: [ 2, 4 ], disabled: [ 0, 1 ], multiselect: true,
+ *                selectedText: 'Included', unselectedText: 'Excluded' }
+ *          ],
+ *          renameColumns       : true,
+ *          hideCommentRows     : true,
+ *          includePrompts      : true,
+ *          topLeftContent      : 'Data sample:'
+ *      }).on( 'peek-column-selector.change', function( ev, selection ){
+ *          console.info( 'new selection:', selection );
+ *          //{ yColumn: 2 }
+ *      }).on( 'peek-column-selector.rename', function( ev, names ){
+ *          console.info( 'column names', names );
+ *          //[ 'Bler', 'Start', 'Base', '', '', 'Qual' ]
+ *      });
+ *
+ *  An event is fired when column selection is changed and the event
+ *      is passed an object in the form: { the row id : the new selection value }.
+ *  An event is also fired when the table headers are re-named and
+ *      is passed the new array of column names.
+ */
 
 /** option defaults */
 var defaults = {

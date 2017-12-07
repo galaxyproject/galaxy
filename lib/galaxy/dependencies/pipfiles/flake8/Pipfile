@@ -12,3 +12,4 @@ name = "pypi"
 [packages]
 
 "flake8" = "*"
+"flake8-import-order" = "*"

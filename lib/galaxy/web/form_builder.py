@@ -4,11 +4,15 @@ Classes for generating HTML forms
 from __future__ import print_function
 
 import logging
-
 from cgi import escape
+
 from six import string_types
 
-from galaxy.util import restore_text, unicodify
+from galaxy.util import (
+    asbool,
+    restore_text,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +23,10 @@ class BaseField(object):
         self.label = label
         self.value = value
         self.disabled = kwds.get('disabled', False)
-        self.optional = kwds.get('optional', True) and kwds.get('required', 'optional') == 'optional'
+        if 'optional' in kwds:
+            self.optional = asbool(kwds.get('optional'))
+        else:
+            self.optional = kwds.get('required', 'optional') == 'optional'
         self.help = kwds.get('helptext')
 
     def get_html(self, prefix=""):

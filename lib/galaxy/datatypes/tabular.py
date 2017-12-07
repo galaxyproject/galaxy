@@ -23,7 +23,6 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.util import compression_utils
-
 from . import dataproviders
 
 if sys.version_info > (3,):
@@ -52,7 +51,7 @@ class TabularData(data.Text):
         raise NotImplementedError
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super(TabularData, self).set_peek(dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+        super(TabularData, self).set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % (dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -826,7 +825,7 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
+        with compression_utils.get_fileobj(filename, compressed_formats=['gzip']) as fh:
             count = 0
             while True:
                 line = fh.readline()

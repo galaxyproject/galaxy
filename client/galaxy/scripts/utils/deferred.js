@@ -10,7 +10,7 @@ export default Backbone.Model.extend({
 
     /** Adds a callback to the queue. Upon execution a deferred object is parsed to the callback i.e. callback( deferred ).
      *  If the callback does not take any arguments, the deferred is resolved instantly.
-    */
+     */
     execute: function(callback) {
         var self = this;
         var id = Utils.uid();
@@ -46,7 +46,7 @@ export default Backbone.Model.extend({
     },
 
     /** Resets the promise queue. All currently queued but unexecuted callbacks/promises will be rejected.
-    */
+     */
     reset: function() {
         Galaxy.emit.debug("deferred::execute()", "Reset");
         for (var i in this.active) {
@@ -55,7 +55,7 @@ export default Backbone.Model.extend({
     },
 
     /** Returns true if all processes are done.
-    */
+     */
     ready: function() {
         return $.isEmptyObject(this.active);
     }

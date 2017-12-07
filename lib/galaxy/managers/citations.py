@@ -1,11 +1,11 @@
 import functools
+import logging
 import os
-import requests
 
+import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-import logging
 log = logging.getLogger(__name__)
 
 

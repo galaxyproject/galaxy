@@ -23,6 +23,7 @@ from six import string_types
 from sqlalchemy import *  # noqa
 from sqlalchemy.orm import *  # noqa
 from sqlalchemy.exc import *  # noqa
+from sqlalchemy.sql import label  # noqa
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 

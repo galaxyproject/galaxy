@@ -10,7 +10,6 @@ from galaxy.jobs.mapper import (
     JobRunnerMapper,
 )
 from galaxy.util import bunch
-
 from . import test_rules
 
 WORKFLOW_UUID = uuid.uuid1().hex

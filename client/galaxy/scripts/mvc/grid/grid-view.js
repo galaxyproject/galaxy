@@ -474,7 +474,7 @@ export default Backbone.View.extend({
             id: item_ids,
             confirmation_text: confirmation_text
         };
-        if (operation.target == "top") {
+        if (operation.target == "top" || operation.target == "center") {
             options = _.extend(options, {
                 href: operation.href,
                 target: operation.target
@@ -566,6 +566,8 @@ export default Backbone.View.extend({
             // Do operation. If operation cannot be performed asynchronously, redirect to location.
             if (target == "top") {
                 window.top.location = `${href}?${$.param(this.grid.get_url_data())}`;
+            } else if (target == "center") {
+                $("#galaxy_main").attr("src", `${href}?${$.param(this.grid.get_url_data())}`);
             } else if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
             } else {

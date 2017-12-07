@@ -5,8 +5,8 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
-import CitationModel from "mvc/citation/citation-model";
-import CitationView from "mvc/citation/citation-view";
+import Citations from "components/Citations.vue";
+import Vue from "libs/vue";
 export default FormBase.extend({
     initialize: function(options) {
         var self = this;
@@ -122,6 +122,7 @@ export default FormBase.extend({
 
         // button for options e.g. search, help
         var menu_button = new Ui.ButtonMenu({
+            id: "options",
             icon: "fa-caret-down",
             title: (!options.narrow && "Options") || null,
             tooltip: "View available options"
@@ -224,16 +225,15 @@ export default FormBase.extend({
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
         if (options.citations) {
-            var $citations = $("<div/>");
-            var citations = new CitationModel.ToolCitationCollection();
-            citations.tool_id = options.id;
-            var citation_list_view = new CitationView.CitationListView({
-                el: $citations,
-                collection: citations
-            });
-            citation_list_view.render();
-            citations.fetch();
-            $el.append($citations);
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement("div");
+            $el.append(vm);
+            new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
         }
         return $el;
     },

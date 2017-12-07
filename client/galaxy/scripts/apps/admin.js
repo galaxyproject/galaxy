@@ -9,6 +9,8 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
+import Vue from "libs/vue";
+import UserAPIKeys from "components/UserAPIKeys.vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -24,7 +26,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)quotas": "show_quotas",
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
-            "(/)admin(/)form(/)(:form_id)": "show_form"
+            "(/)admin(/)form(/)(:form_id)": "show_form",
+            "(/)admin/api_keys": "show_user_api_keys"
         },
 
         authenticate: function(args, name) {
@@ -89,6 +92,12 @@ window.app = function app(options, bootstrapped) {
                     dict_format: true
                 })
             );
+        },
+
+        show_user_api_keys: function() {
+            var vuemount = document.createElement("div");
+            this.page.display(vuemount);
+            new Vue(UserAPIKeys).$mount(vuemount);
         },
 
         show_forms: function() {

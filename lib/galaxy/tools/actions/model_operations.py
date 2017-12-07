@@ -21,7 +21,7 @@ class ModelOperationToolAction(DefaultToolAction):
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, mapping_over_collection=False, execution_cache=None, **kwargs):
+    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, **kwargs):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
 
@@ -42,7 +42,7 @@ class ModelOperationToolAction(DefaultToolAction):
             tool=tool,
             tool_action=self,
             input_collections=input_collections,
-            mapping_over_collection=mapping_over_collection,
+            dataset_collection_elements=kwargs.get("dataset_collection_elements", None),
             on_text=on_text,
             incoming=incoming,
             params=wrapped_params.params,
@@ -61,7 +61,7 @@ class ModelOperationToolAction(DefaultToolAction):
         trans.sa_session.flush()  # ensure job.id are available
 
         # Queue the job for execution
-        # trans.app.job_queue.put( job.id, tool.id )
+        # trans.app.job_manager.job_queue.put( job.id, tool.id )
         # trans.log_event( "Added database job action to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         log.info("Calling produce_outputs, tool is %s" % tool)
         return job, out_data

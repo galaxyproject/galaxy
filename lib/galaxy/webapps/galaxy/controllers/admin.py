@@ -2,28 +2,37 @@ import imp
 import logging
 import os
 from datetime import datetime, timedelta
-import six
 from string import punctuation as PUNCTUATION
-from sqlalchemy import and_, false, func, or_
+
+import six
+from sqlalchemy import and_, false, or_
 
 import galaxy.queue_worker
-from galaxy import util
-from galaxy import model
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.util import nice_size, sanitize_text, url_get
+from galaxy.tools import global_tool_errors
+from galaxy.util import (
+    nice_size,
+    sanitize_text,
+    url_get
+)
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
 from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
-from galaxy.tools import global_tool_errors
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import repository_util
+from tool_shed.util import (
+    common_util,
+    encoding_util,
+    repository_util
+)
 from tool_shed.util.web_util import escape
 
 
@@ -1467,15 +1476,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         else:
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
-
-    @web.expose
-    @web.require_admin
-    def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
-        """Return autocomplete data for user emails"""
-        ac_data = ""
-        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(q.lower() + "%")):
-            ac_data = ac_data + user.email + "\n"
-        return ac_data
 
     @web.expose_api
     @web.require_admin

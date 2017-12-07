@@ -165,8 +165,7 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
 // ============================================================================
 /** An interface for building collections.
  */
-var ListCollectionCreator = Backbone.View
-    .extend(BASE_MVC.LoggableMixin)
+var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
     .extend(baseCreator.CollectionCreatorMixin)
     .extend({
         _logNamespace: logNamespace,
@@ -174,7 +173,7 @@ var ListCollectionCreator = Backbone.View
         /** the class used to display individual elements */
         elementViewClass: DatasetCollectionElementView,
         /** the class this creator will create and save */
-        collectionClass: HDCA.HistoryListDatasetCollection,
+        collectionClass: HDCA.HistoryDatasetCollection,
         className: "list-collection-creator collection-creator flex-row-container",
 
         /** minimum number of valid elements to start with in order to build a collection of this type */
@@ -520,8 +519,8 @@ var ListCollectionCreator = Backbone.View
         },
 
         /** create the collection via the API
-     *  @returns {jQuery.xhr Object} the jquery ajax request
-     */
+         *  @returns {jQuery.xhr Object} the jquery ajax request
+         */
         createList: function(name) {
             if (!this.workingElements.length) {
                 var message = `${_l("No valid elements for final list")}. `;
@@ -696,8 +695,8 @@ var ListCollectionCreator = Backbone.View
         },
 
         /** get the nearest element based on the mouse's Y coordinate.
-     *  If the y is at the end of the list, return an empty jQuery object.
-     */
+         *  If the y is at the end of the list, return an empty jQuery object.
+         */
         _getNearestElement: function(y) {
             var WIGGLE = 4;
 

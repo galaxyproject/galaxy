@@ -6,33 +6,50 @@ import json
 import logging
 import os
 import sgmllib
-import requests
 
+import requests
+from markupsafe import escape
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
-from markupsafe import escape
 
-from tool_shed.util import encoding_util
-
-from galaxy import model
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import unicodify
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    unicodify
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import grids, time_ago, to_unicode
-from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.extract import summarize
-from galaxy.workflow.modules import module_factory
-from galaxy.workflow.modules import WorkflowModuleInjector
-from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
+from galaxy.web.base.controller import (
+    BaseUIController,
+    SharableMixin,
+    UsesStoredWorkflowMixin
+)
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago,
+)
+from galaxy.workflow.extract import (
+    extract_workflow,
+    summarize
+)
+from galaxy.workflow.modules import (
+    module_factory,
+    WorkflowModuleInjector
+)
+from galaxy.workflow.render import (
+    STANDALONE_SVG_TEMPLATE,
+    WorkflowCanvas
+)
+from tool_shed.util import encoding_util
 
 log = logging.getLogger(__name__)
 
@@ -366,28 +383,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
             message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for(controller='workflow'), referer_message), use_panels=True)
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def rename(self, trans, id, new_name=None, **kwargs):
-        stored = self.get_stored_workflow(trans, id)
-        if new_name is not None:
-            san_new_name = sanitize_html(new_name)
-            stored.name = san_new_name
-            stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
-            message = 'Workflow renamed to: %s' % escape(san_new_name)
-            trans.set_message(message)
-            # Take care of proxy prefix in url as well
-            redirect_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
-            return trans.response.send_redirect(redirect_url)
-        else:
-            return form(url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id)),
-                        "Rename workflow",
-                        submit_text="Rename",
-                        use_panels=True) \
-                .add_text("new_name", "Workflow Name", value=to_unicode(stored.name))
+            % (stored.name, web.url_for('/workflows/list'), referer_message))
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -518,14 +514,26 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
         trans.response.send_redirect(return_url)
 
-    @web.expose
-    @web.require_login("create workflows")
-    def create(self, trans, workflow_name=None, workflow_annotation=""):
-        """
-        Create a new stored workflow with name `workflow_name`.
-        """
-        user = trans.get_user()
-        if workflow_name is not None:
+    @web.expose_api
+    def create(self, trans, payload=None, **kwd):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Create Workflow',
+                'inputs' : [{
+                    'name'  : 'workflow_name',
+                    'label' : 'Name',
+                    'value' : 'Unnamed workflow'
+                }, {
+                    'name'  : 'workflow_annotation',
+                    'label' : 'Annotation',
+                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                }]}
+        else:
+            user = trans.get_user()
+            workflow_name = payload.get('workflow_name')
+            workflow_annotation = payload.get('workflow_annotation')
+            if not workflow_name:
+                return self.message_exception(trans, 'Please provide a workflow name.')
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
@@ -543,14 +551,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return self.editor(trans, id=trans.security.encode_id(stored_workflow.id))
-        else:
-            return form(url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True) \
-                .add_text("workflow_name", "Workflow Name", value="Unnamed workflow") \
-                .add_text("workflow_annotation",
-                          "Workflow Annotation",
-                          value="",
-                          help="A description of the workflow; annotation is shown alongside shared or published workflows.")
+            return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
@@ -715,6 +716,32 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
 
+    @web.json_pretty
+    def export_to_file(self, trans, id):
+        """
+        Get the latest Workflow for the StoredWorkflow identified by `id` and
+        encode it as a json string that can be imported back into Galaxy
+
+        This has slightly different information than the above. In particular,
+        it does not attempt to decode forms and build UIs, it just stores
+        the raw state.
+        """
+
+        # Get workflow.
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
+
+        # Stream workflow to file.
+        stored_dict = self._workflow_to_dict(trans, stored)
+        if not stored_dict:
+            # This workflow has a tool that's missing from the distribution
+            trans.response.status = 400
+            return "Workflow cannot be exported due to missing tools."
+        sname = stored.name
+        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
+        trans.response.set_content_type('application/galaxy-archive')
+        return stored_dict
+
     @web.expose
     @web.json
     def upload_import_workflow(self, trans, cntrller='workflow', **kwd):
@@ -877,12 +904,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                                                                         id=repository_id,
                                                                         message=message,
                                                                         status=status))
-                    redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+                    redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
                     return trans.response.send_redirect(redirect_url)
         if cntrller == 'api':
             return status, message
         if status == 'error':
-            redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+            redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
             return trans.response.send_redirect(redirect_url)
         else:
             return {

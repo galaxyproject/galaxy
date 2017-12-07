@@ -16,7 +16,7 @@ except ImportError:
     Display = None
 from six.moves.urllib.parse import urljoin
 
-from base import populators  # noqa: I100
+from base import populators  # noqa: I100,I202
 from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
@@ -24,11 +24,14 @@ from base.workflows_format_2 import (  # noqa: I100
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-from galaxy_selenium import (  # noqa: I100
+from galaxy_selenium import (  # noqa: I100,I201
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions  # noqa: I100
-from galaxy.util import asbool
+from galaxy_selenium.navigates_galaxy import (  # noqa: I100
+    NavigatesGalaxy,
+    retry_during_transitions
+)
+from galaxy.util import asbool  # noqa: I201
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -42,6 +45,7 @@ DEFAULT_ADMIN_PASSWORD = "testpass"
 
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
+GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
 # Test browser can be ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", DEFAULT_SELENIUM_REMOTE)
@@ -56,6 +60,14 @@ GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAI
 GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
 GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+
+# JS code to execute in Galaxy JS console to setup localStorage of session for logging and
+# logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
+# the first argument to console.XXX when recovering the browser log.
+SETUP_LOGGING_JS = '''
+window.localStorage && window.localStorage.setItem("galaxy:debug", true);
+window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
+'''
 
 try:
     from nose.tools import nottest
@@ -107,8 +119,11 @@ def dump_test_information(self, name_prefix):
             snapshot.write_to_error_directory(write_file)
 
         for log_type in ["browser", "driver"]:
+            full_log = self.driver.get_log(log_type)
+            trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
             try:
-                write_file("%s.log.json" % log_type, json.dumps(self.driver.get_log(log_type)))
+                write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
+                write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
                 continue
         iframes = self.driver.find_elements_by_css_selector("iframe")
@@ -214,7 +229,32 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
             raise exception
 
     def snapshot(self, description):
+        """Create a debug snapshot (DOM, screenshot, etc...) that is written out on tool failure.
+
+        This information will be automatically written to a per-test directory created for all
+        failed tests.
+        """
         self.snapshots.append(TestSnapshot(self.driver, len(self.snapshots), description))
+
+    def screenshot(self, label):
+        """If GALAXY_TEST_SCREENSHOTS_DIRECTORY is set create a screenshot there named <label>.png.
+
+        Unlike the above "snapshot" feature, this will be written out regardless and not in a per-test
+        directory. The above method is used for debugging failures within a specific test. This method
+        if more for creating a set of images to augment automated testing with manual human inspection
+        after a test or test suite has executed.
+        """
+        if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
+            return
+        if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
+            os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + ".png")
+        copy = 1
+        while os.path.exists(target):
+            # Maybe previously a test re-run - keep the original.
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d.png" % (label, copy))
+            copy += 1
+        self.driver.save_screenshot(target)
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
@@ -227,8 +267,14 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         # to increase this.
         self.driver.set_window_size(1280, 900)
 
+        self._setup_galaxy_logging()
+
         if self.ensure_registered:
             self.login()
+
+    def _setup_galaxy_logging(self):
+        self.home()
+        self.driver.execute_script(SETUP_LOGGING_JS)
 
     def login(self):
         if GALAXY_TEST_SELENIUM_USER_EMAIL:
@@ -295,6 +341,14 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         )
         with self.main_panel():
             self.assert_no_error_message()
+
+    @property
+    def dataset_populator(self):
+        return SeleniumSessionDatasetPopulator(self)
+
+    @property
+    def dataset_collection_populator(self):
+        return SeleniumSessionDatasetCollectionPopulator(self)
 
     @property
     def workflow_populator(self):
@@ -422,11 +476,18 @@ class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route):
-        return self.selenium_test_case.api_get(route)
+        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
+        response = requests.get(full_url, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        return response
 
     def _post(self, route, data={}):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
         response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        return response
+
+    def _delete(self, route, data={}):
+        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
+        response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
     def __url(self, route):

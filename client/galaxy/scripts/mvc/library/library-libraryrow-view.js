@@ -1,6 +1,4 @@
 // dependencies
-import mod_masthead from "layout/masthead";
-import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
@@ -61,9 +59,9 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     /**
-   * Function modifies the visibility of buttons for
-   * the filling of the row template of given library.
-   */
+     * Function modifies the visibility of buttons for
+     * the filling of the row template of given library.
+     */
     prepareButtons: function(library) {
         var vis_config = this.element_visibility_config;
 

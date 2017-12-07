@@ -1,6 +1,5 @@
 /* This class maps the form dom to an api compatible javascript dictionary. */
-import Utils from "utils/utils";
-var Manager = Backbone.Model.extend({
+export var Manager = Backbone.Model.extend({
     initialize: function(app) {
         this.app = app;
     },
@@ -33,7 +32,9 @@ var Manager = Backbone.Model.extend({
         function add(flat_id, input_id, input_value) {
             self.flat_dict[flat_id] = input_id;
             result_dict[flat_id] = input_value;
-            self.app.element_list[input_id] && self.app.element_list[input_id].$el.attr("tour_id", flat_id);
+            if (self.app.element_list[input_id]) {
+                self.app.element_list[input_id].$el.attr("tour_id", flat_id);
+            }
         }
         // converter between raw dictionary and job dictionary
         function convert(identifier, head) {
@@ -42,7 +43,7 @@ var Manager = Backbone.Model.extend({
                 if (node.input) {
                     var input = node.input;
                     var flat_id = identifier;
-                    if (identifier != "") {
+                    if (identifier !== "") {
                         flat_id += "|";
                     }
                     flat_id += input.name;
@@ -62,7 +63,7 @@ var Manager = Backbone.Model.extend({
                                 }
                             }
                             block_indices.sort((a, b) => a - b);
-                            var index = 0;
+                            index = 0;
                             for (var i in block_indices) {
                                 convert(`${flat_id}_${index++}`, node[block_prefix + block_indices[i]]);
                             }
@@ -81,7 +82,7 @@ var Manager = Backbone.Model.extend({
                         default:
                             var field = self.app.field_list[input.id];
                             if (field && field.value) {
-                                var value = field.value();
+                                value = field.value();
                                 if (input.ignore === undefined || input.ignore != value) {
                                     if (field.collapsed && input.collapsible_value) {
                                         value = input.collapsible_value;
@@ -103,36 +104,40 @@ var Manager = Backbone.Model.extend({
     },
 
     /** Matches flat ids to corresponding input element
-         * @param{string} flat_id - Flat input id to be looked up.
-         */
+     * @param{string} flat_id - Flat input id to be looked up.
+     */
     match: function(flat_id) {
         return this.flat_dict && this.flat_dict[flat_id];
     },
 
     /** Match conditional values to selected cases
-        */
+     */
     matchCase: function(input, value) {
         return matchCase(input, value);
     },
 
     /** Matches a new tool model to the current input elements e.g. used to update dynamic options
-        */
+     */
     matchModel: function(model, callback) {
         var self = this;
         visitInputs(model.inputs, (input, name) => {
-            self.flat_dict[name] && callback(input, self.flat_dict[name]);
+            if (self.flat_dict[name]) {
+                callback(input, self.flat_dict[name]);
+            }
         });
     },
 
     /** Matches identifier from api response to input elements e.g. used to display validation errors
-        */
+     */
     matchResponse: function(response) {
         var result = {};
         var self = this;
         function search(id, head) {
             if (typeof head === "string") {
                 var input_id = self.flat_dict[id];
-                input_id && (result[input_id] = head);
+                if (input_id) {
+                    result[input_id] = head;
+                }
             } else {
                 for (var i in head) {
                     var new_id = i;
@@ -152,7 +157,7 @@ var Manager = Backbone.Model.extend({
     },
 
     /** Map dom tree to dictionary tree with input elements.
-        */
+     */
     _iterate: function(parent, dict) {
         var self = this;
         var children = $(parent).children();
@@ -171,10 +176,10 @@ var Manager = Backbone.Model.extend({
 });
 
 /** Match conditional values to selected cases
-     * @param{dict}   input     - Definition of conditional input parameter
-     * @param{dict}   value     - Current value
-     */
-var matchCase = (input, value) => {
+ * @param{dict}   input     - Definition of conditional input parameter
+ * @param{dict}   value     - Current value
+ */
+export var matchCase = (input, value) => {
     if (input.test_param.type == "boolean") {
         if (value == "true") {
             value = input.test_param.truevalue || "true";
@@ -191,10 +196,10 @@ var matchCase = (input, value) => {
 };
 
 /** Visits tool inputs
-     * @param{dict}   inputs    - Nested dictionary of input elements
-     * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
-     */
-var visitInputs = (inputs, callback, prefix, context) => {
+ * @param{dict}   inputs    - Nested dictionary of input elements
+ * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
+ */
+export var visitInputs = (inputs, callback, prefix, context) => {
     context = $.extend(true, {}, context);
     _.each(inputs, input => {
         if (input && input.type && input.name) {

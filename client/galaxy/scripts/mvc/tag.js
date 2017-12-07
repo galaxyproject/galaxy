@@ -5,8 +5,7 @@ import _l from "utils/localization";
  *      Incorporates the select2 jQuery plugin for tags display/editing:
  *      http://ivaynberg.github.io/select2/
  */
-var TagsEditor = Backbone.View
-    .extend(baseMVC.LoggableMixin)
+var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
     .extend(baseMVC.HiddenUntilActivatedViewMixin)
     .extend({
         tagName: "div",
@@ -104,7 +103,7 @@ var TagsEditor = Backbone.View
 
         _renderTags: function() {
             var tags = this.model.get("tags");
-            var addButton = "static/images/fugue/tag--plus.png";
+            var addButton = `${Galaxy.root}static/images/fugue/tag--plus.png`;
             var renderedArray = [];
             _.each(tags, tag => {
                 tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;
@@ -161,8 +160,8 @@ var TagsEditor = Backbone.View
         },
 
         /** add a new tag (if not already there) to the list of all tags used by the user
-     *  @param {String} newTag  the tag to add to the list of used
-     */
+         *  @param {String} newTag  the tag to add to the list of used
+         */
         _addNewTagToTagsUsed: function(newTag) {
             //TODO: global
             var tagsUsed = Galaxy.user.get("tags_used");

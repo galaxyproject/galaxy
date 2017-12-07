@@ -6,7 +6,6 @@
 from __future__ import division, print_function
 
 import sys
-
 from ast import Module, parse, walk
 from json import loads
 

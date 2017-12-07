@@ -3,6 +3,7 @@ import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
+import _l from "utils/localization";
 /** View of the individual workflows */
 var WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
@@ -36,7 +37,7 @@ var WorkflowItemView = Backbone.View.extend({
         this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
-        window.location = `${Galaxy.root}workflow`;
+        window.location = `${Galaxy.root}workflows/list`;
     },
 
     removeWorkflow: function() {
@@ -97,20 +98,18 @@ var WorkflowItemView = Backbone.View.extend({
     _rowTemplate: function() {
         var show = this.model.get("show_in_tool_panel");
         var wfId = this.model.id;
-        var checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${show
-            ? `checked="${show}"`
-            : ""} value="${wfId}">`;
+        var checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
+            show ? `checked="${show}"` : ""
+        } value="${wfId}">`;
         var trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
             this.model.get("name")
-        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${wfId} tags-display"></div></td><td>${this.model.get(
-            "owner"
-        ) === Galaxy.user.attributes.username
-            ? "You"
-            : this.model.get("owner")}</span></td><td>${this.model.get("number_of_steps")}</td><td>${this.model.get(
-            "published"
-        )
-            ? "Yes"
-            : "No"}</td><td>${checkboxHtml}</td>`;
+        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${
+            wfId
+        } tags-display"></div></td><td>${
+            this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")
+        }</span></td><td>${this.model.get("number_of_steps")}</td><td>${
+            this.model.get("published") ? "Yes" : "No"
+        }</td><td>${checkboxHtml}</td>`;
         return trHtml;
     },
 
@@ -127,19 +126,27 @@ var WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
-            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${this.model
-                .id}">Edit</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model
-                .id}">Run</a></li><li><a href="${Galaxy.root}workflow/sharing?id=${this.model
-                .id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${this.model
-                .id}/download?format=json-download">Download</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li><li><a href="${Galaxy.root}workflow/display_by_id?id=${this
-                .model.id}">View</a></li><li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li></ul>`;
+            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${
+                this.model.id
+            }">Edit</a></li><li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li><li><a href="${
+                Galaxy.root
+            }workflow/sharing?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
+                this.model.id
+            }/download?format=json-download">Download</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li><li><a href="${
+                Galaxy.root
+            }workflow/display_by_id?id=${
+                this.model.id
+            }">View</a></li><li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li></ul>`;
         } else {
-            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get(
-                "owner"
-            )}&slug=${this.model.get("slug")}">View</a></li><li><a href="${Galaxy.root}workflow/run?id=${this.model
-                .id}">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${this
-                .model.id}" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model
-                .id}">Remove</a></li></ul>`;
+            return `<ul class="dropdown-menu action-dpd"><li><a href="${
+                Galaxy.root
+            }workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get(
+                "slug"
+            )}">View</a></li><li><a href="${Galaxy.root}workflows/run?id=${
+                this.model.id
+            }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
+                this.model.id
+            }" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
         }
     }
 });
@@ -297,7 +304,11 @@ var WorkflowListView = Backbone.View.extend({
 
     /** Template for actions buttons */
     _templateActionButtons: function() {
-        return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${Galaxy.root}workflow/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${Galaxy.root}workflow/import_workflow"></a></li></ul>`;
+        return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${
+            Galaxy.root
+        }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
+            Galaxy.root
+        }workflows/import_workflow"></a></li></ul>`;
     },
 
     /** Template for workflow table */
@@ -312,7 +323,9 @@ var WorkflowListView = Backbone.View.extend({
             "<th>Published</th>" +
             "<th>Show in tools panel</th>" +
             "</tr></thead>";
-        return `${tableHtml}<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
+        return `${
+            tableHtml
+        }<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
     },
 
     /** Main template */
@@ -321,7 +334,7 @@ var WorkflowListView = Backbone.View.extend({
             '<div class="page-container">' +
             '<div class="user-workflows wf">' +
             '<div class="response-message"></div>' +
-            "<h2>Your workflows</h2>" +
+            "<h2>"+_l('Your workflows')+"</h2>" +
             "</div>" +
             "</div>"
         );
@@ -344,7 +357,13 @@ var ImportWorkflowView = Backbone.View.extend({
 
     /** Template for the import workflow page */
     _mainTemplate: function(options) {
-        return `<div class='toolForm'><div class='toolFormTitle'>Import Galaxy workflow</div><div class='toolFormBody'><form name='import_workflow' id='import_workflow' action='${Galaxy.root}workflow/upload_import_workflow' enctype='multipart/form-data' method='POST'><div class='form-row'><label>Galaxy workflow URL:</label><input type='text' name='url' class='input-url' value='${options.url}' size='40'><div class='toolParamHelp' style='clear: both;'>If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><label>Galaxy workflow file:</label><div class='form-row-input'><input type='file' name='file_data' class='input-file'/></div><div class='toolParamHelp' style='clear: both;'>If the workflow is in a file on your computer, choose it and then click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><input type='submit' class='primary-button wf-import' name='import_button' value='Import'></div></form><hr/><div class='form-row'><label>Import a Galaxy workflow from myExperiment:</label><div class='form-row-input'><a href='${options.myexperiment_target_url}'> Visit myExperiment</a></div><div class='toolParamHelp' style='clear: both;'>Click the link above to visit myExperiment and browse for Galaxy workflows.</div><div style='clear: both'></div></div></div></div>`;
+        return `<div class='toolForm'><div class='toolFormTitle'>Import Galaxy workflow</div><div class='toolFormBody'><form name='import_workflow' id='import_workflow' action='${
+            Galaxy.root
+        }workflow/upload_import_workflow' enctype='multipart/form-data' method='POST'><div class='form-row'><label>Galaxy workflow URL:</label><input type='text' name='url' class='input-url' value='${
+            options.url
+        }' size='40'><div class='toolParamHelp' style='clear: both;'>If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><label>Galaxy workflow file:</label><div class='form-row-input'><input type='file' name='file_data' class='input-file'/></div><div class='toolParamHelp' style='clear: both;'>If the workflow is in a file on your computer, choose it and then click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><input type='submit' class='primary-button wf-import' name='import_button' value='Import'></div></form><hr/><div class='form-row'><label>Import a Galaxy workflow from myExperiment:</label><div class='form-row-input'><a href='${
+            options.myexperiment_target_url
+        }'> Visit myExperiment</a></div><div class='toolParamHelp' style='clear: both;'>Click the link above to visit myExperiment and browse for Galaxy workflows.</div><div style='clear: both'></div></div></div></div>`;
     }
 });
 

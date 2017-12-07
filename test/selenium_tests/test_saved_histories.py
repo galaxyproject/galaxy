@@ -18,6 +18,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def test_history_switch(self):
         self._login()
         self.navigate_to_saved_histories_page()
+        self.screenshot("histories_saved_grid")
         self.click_popup_option(self.history2_name, 'Switch')
         self.sleep_for(self.wait_types.UX_RENDER)
 

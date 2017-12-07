@@ -263,7 +263,7 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Enable Galaxy to fetch Docker containers registered with quay.io generated
 # from tool requirements resolved through conda. These containers (when
 # available) have been generated using mulled - https://github.com/mulled.
-# These containers are highly beta and availablity will vary by tool.
+# These containers are highly beta and availability will vary by tool.
 # This option will additionally only be used for job destinations with
 # Docker enabled.
 #enable_beta_mulled_containers = False
@@ -411,8 +411,8 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #check_job_script_integrity_sleep = .25
 
 # Set the default shell used by non-containerized jobs Galaxy-wide. This
-# defaults to bash for all jobs and can be overidden at the destination
-# level for heterogenous clusters. conda job resolution requires bash or zsh
+# defaults to bash for all jobs and can be overridden at the destination
+# level for heterogeneous clusters. conda job resolution requires bash or zsh
 # so if this is switched to /bin/sh for instance - conda resolution
 # should be disabled. Containerized jobs always use /bin/sh - so more maximum
 # portability tool authors should assume generated commands run in sh.
@@ -424,15 +424,6 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #citation_cache_type = file
 #citation_cache_data_dir = database/citations/data
 #citation_cache_lock_dir = database/citations/lock
-
-# External service types config file, defining what types of external_services
-# configurations are available in Galaxy (.sample is used if default does not
-# exist).
-#external_service_type_config_file = config/external_service_types_conf.xml
-
-# Path to the directory containing the external_service_types defined in the
-# config.
-#external_service_type_path = external_service_types
 
 # Tools with a number of outputs not known until runtime can write these
 # outputs to a directory for collection by Galaxy when the job is done.
@@ -951,19 +942,6 @@ use_interactive = True
 # communicate with this manager over the port specified here.
 #transfer_manager_port = 8163
 
-# Search data libraries with whoosh
-#enable_whoosh_library_search = True
-# Whoosh indexes are stored in this directory.
-#whoosh_index_dir = database/whoosh_indexes
-
-# Search data libraries with lucene
-#enable_lucene_library_search = False
-# maximum file size to index for searching, in MB
-#fulltext_max_size = 500
-#fulltext_noindex_filetypes = bam,sam,wig,bigwig,fasta,fastq,fastqsolexa,fastqillumina,fastqsanger
-# base URL of server providing search functionality using lucene
-#fulltext_url = http://localhost:8081
-
 # -- Toolbox Search
 
 # The following boosts are used to customize this instance's toolbox search.
@@ -1098,15 +1076,6 @@ use_interactive = True
 
 # -- Beta features
 
-# Enable new run workflow form
-#run_workflow_toolform_upgrade = True
-
-# Enable new preferences which showcases new UI for the user preferences
-#enable_new_user_preferences = False
-
-# Enable Galaxy to communicate directly with a sequencer
-#enable_sequencer_communication = False
-
 # Enable the new interface for installing tools from Tool Shed
 # via the API. Admin menu will list both if enabled.
 #enable_beta_ts_api_install = True
@@ -1127,9 +1096,11 @@ use_interactive = True
 # stable API.
 #enable_beta_workflow_modules = False
 
+# Following options only apply to workflows scheduled using the legacy workflow
+# run API (running workflows via a POST to /api/workflows).
 # Force usage of Galaxy's beta workflow scheduler under certain circumstances -
 # this workflow scheduling forces Galaxy to schedule workflows in the background
-# so initial submission of the workflows is signficantly sped up. This does
+# so initial submission of the workflows is significantly sped up. This does
 # however force the user to refresh their history manually to see newly scheduled
 # steps (for "normal" workflows - steps are still scheduled far in advance of
 # them being queued and scheduling here doesn't refer to actual cluster job
@@ -1150,6 +1121,14 @@ use_interactive = True
 # scheduling state in seconds. Set to -1 to disable this maximum and allow any workflow
 # invocation to schedule indefinitely. The default corresponds to 1 month.
 #maximum_workflow_invocation_duration = 2678400
+
+# Specify a maximum number of jobs that any given workflow scheduling iteration can create.
+# Set this to a positive integer to prevent large collection jobs in a workflow from
+# preventing other jobs from executing. This may also mitigate memory issues associated with
+# scheduling workflows at the expense of increased total DB traffic because model objects
+# are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
+# Set to -1 to disable any such maximum (the default).
+#maximum_workflow_jobs_per_scheduling_iteration = -1
 
 # Force serial scheduling of workflows within the context of a particular history
 #history_local_serial_workflow_scheduling=False
@@ -1195,7 +1174,6 @@ use_interactive = True
 # Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
 # configure an FTP server (we've used ProFTPd since it can use Galaxy's
 # database for authentication) and set the following two options.
-
 # This should point to a directory containing subdirectories matching users'
 # identifier (defaults to e-mail), where Galaxy will look for files.
 #ftp_upload_dir = None
@@ -1230,19 +1208,23 @@ use_interactive = True
 # variables).
 #expose_potentially_sensitive_job_metrics = False
 
-# Data manager configuration options
+# Enable the API for sample tracking
+#enable_legacy_sample_tracking_api = False
+
+# -- Data manager configuration options
+
 # Allow non-admin users to view available Data Manager options.
 #enable_data_manager_user_view = False
+
 # File where Data Managers are configured (.sample used if default does not
 # exist).
 #data_manager_config_file = config/data_manager_conf.xml
+
 # File where Tool Shed based Data Managers are configured.
 #shed_data_manager_config_file = config/shed_data_manager_conf.xml
+
 # Directory to store Data Manager based tool-data; defaults to tool_data_path.
 #galaxy_data_manager_data_path = tool-data
-
-# Enable the API for sample tracking
-#enable_legacy_sample_tracking_api = False
 
 # -- Job Execution
 
@@ -1378,7 +1360,7 @@ use_interactive = True
 # user has dispatched to a given destination.  By default, these queries will
 # happen for every job that is waiting to run, but if cache_user_job_count is
 # set to True, it will only happen once per iteration of the handler queue.
-# Although better for performance due to reduced queries, the tradeoff is a
+# Although better for performance due to reduced queries, the trade-off is a
 # greater possibility that jobs will be dispatched past the configured limits
 # if running many handlers.
 #cache_user_job_count = False

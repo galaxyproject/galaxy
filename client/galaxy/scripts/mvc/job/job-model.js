@@ -58,8 +58,8 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** set up any event listeners
-     *  event: state:ready  fired when this DA moves into/is already in a ready state
-     */
+             *  event: state:ready  fired when this DA moves into/is already in a ready state
+             */
             _setUpListeners: function() {
                 // if the state has changed and the new state is a ready state, fire an event
                 this.on("change:state", function(currModel, newState) {
@@ -72,8 +72,8 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ common queries
             /** Is this job in a 'ready' state; where 'Ready' states are states where no
-     *      processing is left to do on the server.
-     */
+             *      processing is left to do on the server.
+             */
             inReadyState: function() {
                 return _.contains(STATES.READY_STATES, this.get("state"));
             },
@@ -126,15 +126,15 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
 
         // ........................................................................ common queries
         /** Get the ids of every item in this collection
-     *  @returns array of encoded ids
-     */
+         *  @returns array of encoded ids
+         */
         ids: function() {
             return this.map(item => item.get("id"));
         },
 
         /** Get jobs that are not ready
-     *  @returns array of content models
-     */
+         *  @returns array of content models
+         */
         notReady: function() {
             return this.filter(job => !job.inReadyState());
         },

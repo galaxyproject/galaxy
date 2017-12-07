@@ -1,4 +1,3 @@
-import argparse
 import os.path
 import sys
 
@@ -11,41 +10,14 @@ from galaxy.config import (
     parse_dependency_options,
 )
 from galaxy.tools.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
-from galaxy.util.properties import find_config_file, load_app_properties
+from galaxy.util.script import main_factory
 
 DESCRIPTION = "Script to manage tool dependencies (with focus on a Conda environments)."
 
 
-def main(argv=None):
-    """Entry point for conversion process."""
-    if argv is None:
-        argv = sys.argv[1:]
-    args = _arg_parser().parse_args(argv)
-    action = args.action
-    action_func = ACTIONS[action]
-    action_func(args)
-
-
-def _init_if_needed(args):
-    kwargs = _app_properties(args)
-
+def _init_if_needed(args, kwargs):
     # If conda_auto_init is set, simply building the Conda resolver will call handle installation.
     _build_dependency_manager_no_config(kwargs)
-
-
-def _app_properties(args):
-    config_file = find_config_file("config/galaxy.ini", "universe_wsgi.ini", args.config_file)
-    app_properties = load_app_properties(ini_file=config_file)
-    return app_properties
-
-
-def _arg_parser():
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=ACTIONS.keys(),
-                        help='action to perform')
-    parser.add_argument("-c", "--config-file", default=None)
-    return parser
 
 
 def _build_dependency_manager_no_config(kwargs):
@@ -84,4 +56,5 @@ ACTIONS = {
 
 
 if __name__ == '__main__':
+    main = main_factory(description=DESCRIPTION, actions=ACTIONS)
     main()

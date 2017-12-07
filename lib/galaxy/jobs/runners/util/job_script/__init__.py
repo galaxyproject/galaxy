@@ -19,6 +19,9 @@ DEFAULT_JOB_FILE_TEMPLATE = Template(
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
     resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
 
+MEMORY_STATEMENT_DEFAULT = \
+    resource_string(__name__, 'MEMORY_STATEMENT.sh').decode('UTF-8')
+
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
 """
@@ -43,6 +46,7 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'headers': '',
     'env_setup_commands': [],
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
+    'memory_statement': MEMORY_STATEMENT_DEFAULT,
     'instrument_pre_commands': '',
     'instrument_post_commands': '',
     'integrity_injection': INTEGRITY_INJECTION,
@@ -73,6 +77,9 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
     >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
+    True
+    >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
+    >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
     True
     """
     if any([param not in kwds for param in REQUIRED_TEMPLATE_PARAMS]):
@@ -126,7 +133,7 @@ def _handle_script_integrity(path, config):
                 script_integrity_verified = True
                 break
 
-            log.debug("Script integrity error: returncode was %d", returncode)
+            log.debug("Script integrity error for file '%s': returncode was %d", path, returncode)
 
             # Else we will sync and wait to see if the script becomes
             # executable.
@@ -144,7 +151,7 @@ def _handle_script_integrity(path, config):
         time.sleep(sleep_amt)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script, could not verify job script integrity.")
+        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
 
 
 __all__ = (

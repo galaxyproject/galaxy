@@ -8,8 +8,6 @@ import "libs/farbtastic";
 /**
  * Utility class for working with SVG.
  */
-// load css
-mod_utils.cssLoadFile("static/style/circster.css");
 
 var SVGUtils = Backbone.Model.extend({
     /**
@@ -1099,6 +1097,8 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
 // circster app loader
 var Circster = Backbone.View.extend({
     initialize: function() {
+        // load css
+        mod_utils.cssLoadFile("static/style/circster.css");
         // -- Configure visualization --
         var genome = new visualization.Genome(galaxy_config.app.genome);
 
