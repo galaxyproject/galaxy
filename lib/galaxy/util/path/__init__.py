@@ -2,11 +2,11 @@
 """
 from __future__ import absolute_import
 
+import logging
 import errno
 import imp
 from functools import partial
 from grp import getgrgid
-import logging
 from itertools import starmap
 from operator import getitem
 from os import (
