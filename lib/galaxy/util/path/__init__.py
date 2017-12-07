@@ -2,9 +2,9 @@
 """
 from __future__ import absolute_import
 
-import logging
 import errno
 import imp
+import logging
 from functools import partial
 from grp import getgrgid
 from itertools import starmap
