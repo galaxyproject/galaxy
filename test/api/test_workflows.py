@@ -1691,6 +1691,10 @@ test_data:
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
+        # Revert after https://github.com/galaxyproject/galaxy/issues/5146 is fixed.
+        # state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        # if assert_ok:
+        #    assert state == "scheduled", state
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         time.sleep(.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
@@ -1784,6 +1788,29 @@ test_data:
         self._assert_status_code_is(run_workflow_response, 200)
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced"
+
+    @skip_without_tool("output_filter")
+    def test_optional_workflow_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+inputs: []
+outputs:
+  - id: wf_output_1
+    source: output_filter#out_1
+steps:
+  - tool_id: output_filter
+    label: output_filter
+    state:
+      produce_out_1: False
+      filter_text_1: '1'
+test_data: {}
+    """, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 1
+            okay_dataset = contents[0]
+            assert okay_dataset["state"] == "ok"
 
     @skip_without_tool("cat")
     def test_run_rename_collection_element(self):
@@ -2494,12 +2521,17 @@ steps:
 
     def __assert_lines_hid_line_count_is(self, history, hid, lines):
         contents_url = "histories/%s/contents" % history
-        history_contents_response = self._get(contents_url)
-        self._assert_status_code_is(history_contents_response, 200)
-        hda_summary = next(hc for hc in history_contents_response.json() if hc["hid"] == hid)
+        history_contents = self.__history_contents(history)
+        hda_summary = next(hc for hc in history_contents if hc["hid"] == hid)
         hda_info_response = self._get("%s/%s" % (contents_url, hda_summary["id"]))
         self._assert_status_code_is(hda_info_response, 200)
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
+
+    def __history_contents(self, history_id):
+        contents_url = "histories/%s/contents" % history_id
+        history_contents_response = self._get(contents_url)
+        self._assert_status_code_is(history_contents_response, 200)
+        return history_contents_response.json()
 
     def __invoke_workflow(self, *args, **kwds):
         return self.workflow_populator.invoke_workflow(*args, **kwds)
