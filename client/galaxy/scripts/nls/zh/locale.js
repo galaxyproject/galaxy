@@ -390,9 +390,9 @@ define({
 
 // ---------------------------------------------------------------------------- Scratchbook
 "Enable/Disable Scratchbook":
-    false,
+    "启用/禁用 Scratchbook",
 "Show/Hide Scratchbook":
-    false,
+    "显示/隐藏 Scratchbook",
 
 // ---------------------------------------------------------------------------- misc. MVC
 "Tags" :
