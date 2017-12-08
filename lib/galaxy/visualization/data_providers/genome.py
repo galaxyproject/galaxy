@@ -8,6 +8,8 @@ import os
 import random
 import re
 import sys
+import tempfile
+from contextlib import contextmanager
 from json import loads
 
 import pysam
@@ -158,6 +160,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         raise Exception("Unimplemented Function")
 
+    @contextmanager
     def open_data_file(self):
         """
         Open data file for reading data.
@@ -186,17 +189,9 @@ class GenomeDataProvider(BaseDataProvider):
             dataset_type, data
         """
         start, end = int(low), int(high)
-        data_file = self.open_data_file()
-        iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
-        data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
-        try:
-            data_file.close()
-        except AttributeError:
-            # FIXME: some data providers do not have a close function implemented.
-            # Providers without a close function include:
-            #  bx IntervalIndex
-            pass
-
+        with self.open_data_file() as data_file:
+            iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
+            data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
         return data
 
     def get_genome_data(self, chroms_info, **kwargs):
@@ -322,9 +317,17 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
 
     col_name_data_attr_mapping = {4: {'index': 4, 'name': 'Score'}}
 
+    @contextmanager
     def open_data_file(self):
-        return pysam.Tabixfile(self.dependencies['bgzip'].file_name,
-                               index=self.converted_dataset.file_name)
+        # We create a symlnk to the index file. This is
+        # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
+        fd, symlink_path = tempfile.mkstemp(suffix='.tbi')
+        os.close(fd)
+        os.unlink(symlink_path)
+        os.symlink(self.converted_dataset.file_name, symlink_path)
+        with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=symlink_path) as f:
+            yield f
+        os.unlink(symlink_path)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # chrom must be a string, start/end integers.
@@ -347,19 +350,12 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
         return iterator
 
     def write_data_to_file(self, regions, filename):
-        out = open(filename, "w")
-
-        data_file = self.open_data_file()
-        for region in regions:
-            # Write data in region.
-            iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-            for line in iterator:
-                out.write("%s\n" % line)
-
-        # TODO: once Pysam is updated and Tabixfile has a close() method,
-        # data_file.close()
-
-        out.close()
+        with self.open_data_file() as data_file, open(filename, 'w') as out:
+            for region in regions:
+                # Write data in region.
+                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
+                for line in iterator:
+                    out.write("%s\n" % line)
 
 #
 # -- Interval data providers --
@@ -528,20 +524,16 @@ class BedDataProvider(GenomeDataProvider):
         return {'data': rval, 'dataset_type': self.dataset_type, 'message': message}
 
     def write_data_to_file(self, regions, filename):
-        out = open(filename, "w")
-
-        for region in regions:
-            # Write data in region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-            data_file = self.open_data_file()
-            iterator = self.get_iterator(data_file, chrom, start, end)
-            for line in iterator:
-                out.write("%s\n" % line)
-            data_file.close()
-
-        out.close()
+        with open(filename, "w") as out:
+            for region in regions:
+                # Write data in region.
+                chrom = region.chrom
+                start = region.start
+                end = region.end
+                with self.open_data_file() as data_file:
+                    iterator = self.get_iterator(data_file, chrom, start, end)
+                    for line in iterator:
+                        out.write("%s\n" % line)
 
 
 class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
@@ -569,18 +561,19 @@ class RawBedDataProvider(BedDataProvider):
         data_file.seek(0)
 
         def line_filter_iter():
-            for line in open(self.original_dataset.file_name):
-                if line.startswith("track") or line.startswith("browser"):
-                    continue
-                feature = line.split()
-                feature_chrom = feature[0]
-                feature_start = int(feature[1])
-                feature_end = int(feature[2])
-                if (chrom is not None and feature_chrom != chrom) \
-                        or (start is not None and feature_start > end) \
-                        or (end is not None and feature_end < start):
-                    continue
-                yield line
+            with open(self.original_dataset.file_name) as data_file:
+                for line in data_file:
+                    if line.startswith("track") or line.startswith("browser"):
+                        continue
+                    feature = line.split()
+                    feature_chrom = feature[0]
+                    feature_start = int(feature[1])
+                    feature_end = int(feature[2])
+                    if (chrom is not None and feature_chrom != chrom) \
+                            or (start is not None and feature_start > end) \
+                            or (end is not None and feature_end < start):
+                        continue
+                    yield line
 
         return line_filter_iter()
 
@@ -733,14 +726,12 @@ class VcfDataProvider(GenomeDataProvider):
 
     def write_data_to_file(self, regions, filename):
         out = open(filename, "w")
-        data_file = self.open_data_file()
-
-        for region in regions:
-            # Write data in region.
-            iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-            for line in iterator:
-                out.write("%s\n" % line)
-        out.close()
+        with self.open_data_file() as data_file:
+            for region in regions:
+                # Write data in region.
+                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
+                for line in iterator:
+                    out.write("%s\n" % line)
 
 
 class VcfTabixDataProvider(TabixDataProvider, VcfDataProvider):
@@ -759,8 +750,10 @@ class RawVcfDataProvider(VcfDataProvider):
     for large datasets.
     """
 
+    @contextmanager
     def open_data_file(self):
-        return open(self.original_dataset.file_name)
+        with open(self.original_dataset.file_name) as f:
+            yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # Skip comments.
@@ -856,10 +849,12 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         new_bamfile.close()
         bamfile.close()
 
+    @contextmanager
     def open_data_file(self):
         # Attempt to open the BAM file with index
-        return pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
-                                   index_filename=self.converted_dataset.file_name)
+        with pysam.AlignmentFile(self.original_dataset.file_name, mode='rb',
+                                 index_filename=self.converted_dataset.file_name) as f:
+            yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         """
@@ -1268,33 +1263,30 @@ class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
     dataset_type = 'interval_index'
 
     def write_data_to_file(self, regions, filename):
-        source = open(self.original_dataset.file_name)
         index = Indexes(self.converted_dataset.file_name)
-        out = open(filename, 'w')
+        with open(self.original_dataset.file_name) as source, open(filename, 'w') as out:
+            for region in regions:
+                # Write data from region.
+                chrom = region.chrom
+                start = region.start
+                end = region.end
+                for start, end, offset in index.find(chrom, start, end):
+                    source.seek(offset)
 
-        for region in regions:
-            # Write data from region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-            for start, end, offset in index.find(chrom, start, end):
-                source.seek(offset)
+                    # HACK: write differently depending on original dataset format.
+                    if self.original_dataset.ext not in ['gff', 'gff3', 'gtf']:
+                        line = source.readline()
+                        out.write(line)
+                    else:
+                        reader = GFFReaderWrapper(source, fix_strand=True)
+                        feature = reader.next()
+                        for interval in feature.intervals:
+                            out.write('\t'.join(interval.fields) + '\n')
 
-                # HACK: write differently depending on original dataset format.
-                if self.original_dataset.ext not in ['gff', 'gff3', 'gtf']:
-                    line = source.readline()
-                    out.write(line)
-                else:
-                    reader = GFFReaderWrapper(source, fix_strand=True)
-                    feature = reader.next()
-                    for interval in feature.intervals:
-                        out.write('\t'.join(interval.fields) + '\n')
-
-        source.close()
-        out.close()
-
+    @contextmanager
     def open_data_file(self):
-        return Indexes(self.converted_dataset.file_name)
+        i = Indexes(self.converted_dataset.file_name)
+        yield i
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         """
@@ -1309,34 +1301,31 @@ class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
     def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
         results = []
         message = None
-        source = open(self.original_dataset.file_name)
+        with open(self.original_dataset.file_name) as source:
+            # Build data to return. Payload format is:
+            # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
+            #   <thick_end>, <blocks> ]
+            #
+            # First three entries are mandatory, others are optional.
+            filter_cols = loads(kwargs.get("filter_cols", "[]"))
+            no_detail = ("no_detail" in kwargs)
+            for count, val in enumerate(iterator):
+                offset = val[2]
+                if count < start_val:
+                    continue
+                if count - start_val >= max_vals:
+                    message = self.error_max_vals % (max_vals, "features")
+                    break
+                source.seek(offset)
+                # TODO: can we use column metadata to fill out payload?
 
-        #
-        # Build data to return. Payload format is:
-        # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
-        #   <thick_end>, <blocks> ]
-        #
-        # First three entries are mandatory, others are optional.
-        #
-        filter_cols = loads(kwargs.get("filter_cols", "[]"))
-        no_detail = ("no_detail" in kwargs)
-        for count, val in enumerate(iterator):
-            offset = val[2]
-            if count < start_val:
-                continue
-            if count - start_val >= max_vals:
-                message = self.error_max_vals % (max_vals, "features")
-                break
-            source.seek(offset)
-            # TODO: can we use column metadata to fill out payload?
+                # GFF dataset.
+                reader = GFFReaderWrapper(source, fix_strand=True)
+                feature = reader.next()
+                payload = package_gff_feature(feature, no_detail, filter_cols)
+                payload.insert(0, offset)
 
-            # GFF dataset.
-            reader = GFFReaderWrapper(source, fix_strand=True)
-            feature = reader.next()
-            payload = package_gff_feature(feature, no_detail, filter_cols)
-            payload.insert(0, offset)
-
-            results.append(payload)
+                results.append(payload)
 
         return {'data': results, 'message': message}
 
