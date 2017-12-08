@@ -10,14 +10,16 @@
     %if select.display == "checkboxes":
         %for o in select.options:
             <div>
-                <input type="checkbox" name="${select.name}" value="${escape(o[1])}" refresh_on_change="${select.refresh_on_change}" ${"disabled" if disabled else ""}>
+                <% selected = o[1] in listify(select.value) or o[2] %>
+                <input type="checkbox" name="${select.name}" value="${escape(o[1])}" refresh_on_change="${select.refresh_on_change}" ${"checked" if selected else ""} ${"disabled" if disabled else ""}>
                 ${escape(o[0])}
             </div>
         %endfor
     %else:
         <select id="${select.field_id}" name="${select.name}" ${"multiple" if select.multiple else ""} refresh_on_change="${select.refresh_on_change}">
             %for o in select.options:
-                <option value="${escape(o[1])}" ${"selected" if o[1] in listify(select.value) or o[2] else ""}>${escape(o[0])}</option>
+                <% selected = o[1] in listify(select.value) or o[2] %>
+                <option value="${escape(o[1])}" ${"selected" if selected else ""}>${escape(o[0])}</option>
             %endfor
         </select>
     %endif
