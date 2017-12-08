@@ -5056,6 +5056,12 @@ class UserAuthnzToken(UserMixin):
         self.lifetime = lifetime
         self.assoc_type = assoc_type
 
+    def get_id_token(self):
+        return self.extra_data.get('id_token', None) if self.extra_data is not None else None
+
+    def get_access_token(self):
+        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
+
     # TODO: all the following functions should be checked and fixed.
     @classmethod
     def username_max_length(cls):
@@ -5075,9 +5081,10 @@ class UserAuthnzToken(UserMixin):
         cls._save_instance(user)
 
     def set_extra_data(self, extra_data=None):
-        print '#' * 200, '\nat set extra data\n', '#' * 200
-        # TODO: unicode conversion is temporary -- any better approach ?
-        if extra_data is not None: extra_data = unicode(extra_data)
+        # Note: the following unicode conversion is a temporary solution for a
+        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
+        if extra_data is not None:
+            extra_data = unicode(extra_data)
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self._save_instance(self)
 
