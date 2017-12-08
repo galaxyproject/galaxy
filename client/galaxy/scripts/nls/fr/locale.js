@@ -233,8 +233,8 @@ define({
     "Form Definitions": "Définitions de formulaires",
 
     // ---------------------------------------------------------------------------- Scratchbook
-    "Enable/Disable Scratchbook": false,
-    "Show/Hide Scratchbook": false,
+    "Enable/Disable Scratchbook": "Activer/Désactiver la visu Scratchbook",
+    "Show/Hide Scratchbook": "Montrer/cacher la visu Scratchbook",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Mots-clés",
@@ -246,24 +246,24 @@ define({
     Trackster: false,
     Visualize: false,
     // ---------------------------------------------------------------------------- dataset-error
-    "Any additional comments you can provide regarding what you were doing at the time of the bug.": false,
-    "Your email address": false,
+    "Any additional comments you can provide regarding what you were doing at the time of the bug.": "N'importe quels commentaires que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
+    "Your email address": "Votre adresse e-mail",
     Report: false,
-    "Error Report": false,
+    "Error Report": "Rapoprt d'erreur",
     // ---------------------------------------------------------------------------- dataset-li
-    "Dataset details": false,
+    "Dataset details": "Détails du jeu de données",
     // ---------------------------------------------------------------------------- dataset-edit-attributes
-    "Save permissions.": false,
-    "Change the datatype to a new type.": false,
-    "Convert the datatype to a new format.": false,
-    "Save attributes of the dataset.": false,
-    "Change data type": false,
-    "Edit dataset attributes": false,
-    "Save permissions": false,
-    "Manage dataset permissions": false,
-    "Change datatype": false,
-    "Convert datatype": false,
-    "Convert to new format": false,
+    "Save permissions.": "Sauvegarder les permissions",
+    "Change the datatype to a new type.": "Changer en un nouveau format de données",
+    "Convert the datatype to a new format.": "Convertir le format de données",
+    "Save attributes of the dataset.": "Sauvegarder les attributs du jeu de données",
+    "Change data type": "Changer le format de données",
+    "Edit dataset attributes": "Modifier les attributs du jeu de données",
+    "Save permissions": "Sauvegarder les permissions",
+    "Manage dataset permissions": "Gérer les permissions sur les jeux de données",
+    "Change datatype": "Changer le format de données",
+    "Convert datatype": "Convertir le format de données",
+    "Convert to new format": "Convertir en un nouveau format de données",
     Save: false,
     Permissions: false,
     Datatypes: false,
@@ -272,16 +272,16 @@ define({
     // ---------------------------------------------------------------------------- dataset-li-edit
     Visualization: false,
     // ---------------------------------------------------------------------------- library-dataset-view
-    "Import into History": false,
+    "Import into History": "Importer dans l'historique",
     // ---------------------------------------------------------------------------- library-foldertoolbar-view
-    "Location Details": false,
-    "Deleting selected items": false,
-    "Please select folders or files": false,
-    "Please enter paths to import": false,
-    "Adding datasets from your history": false,
-    "Create New Folder": false,
+    "Location Details": "Détails de localisation",
+    "Deleting selected items": "Suppression des objets sélectionnés",
+    "Please select folders or files": "S'il vous plaît sélectionnez des dossiers ou fichiers",
+    "Please enter paths to import": "S'il vous plaît entrer des chemins/URLs à importer",
+    "Adding datasets from your history": "Ajouts de jeux de données à partir de votre historique",
+    "Create New Folder": "Créer un nouveau dossier",
     // ---------------------------------------------------------------------------- library-librarytoolbar-view
-    "Create New Library": false,
+    "Create New Library": "Créer une nouvelle librairie",
     // ---------------------------------------------------------------------------- tours
     Tours: false,
     // ---------------------------------------------------------------------------- user-preferences
