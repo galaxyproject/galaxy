@@ -212,7 +212,7 @@ define({
     // ---------------------------------------------------------------------------- admin
     "Reset passwords": "Réinitialiser les mots de passe",
     "Search Tool Shed": "Chercher via un Tool Shed",
-    "Monitor installing repositories": "Gérer les dépôts installés",
+    "Monitor installing repositories": "Contrôler les dépôts installés",
     "Manage installed tools": "Gérer les outils installés",
     "Reset metadata": "Réinitialiser les métadonnées",
     "Download local tool": "Télécharger un outil en local",
@@ -220,7 +220,7 @@ define({
     "Reload a tool's configuration": "Recharger une configuration d'outils",
     "Review tool migration stages": "Vérifier les étapes de migration d'outils",
     "View Tool Error Logs": "Voir les logs d'erreur d'outils",
-    "Manage Display Whitelist": "Gérer la liste blanche d'aoutils graphiques",
+    "Manage Display Whitelist": "Gérer la liste blanche d'outils graphiques",
     "Manage Tool Dependencies": "Gérer les dépendances d'outils",
     Users: false,
     Groups: false,
