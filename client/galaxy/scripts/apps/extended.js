@@ -17,7 +17,7 @@ import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
 import addLogging from "utils/add-logging";
 
-if (window.Galaxy){
+if (window.Galaxy && window.Galaxy.debug === undefined){
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
     //here; remove when imports are all fixed.
     addLogging(window.Galaxy, "GalaxyApp");
