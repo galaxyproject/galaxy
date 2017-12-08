@@ -15,6 +15,13 @@ import MultiPanel from "mvc/history/multi-panel";
 import HistoryView from "mvc/history/history-view";
 import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
+import addLogging from "utils/add-logging";
+
+if (window.Galaxy){
+    //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
+    //here; remove when imports are all fixed.
+    addLogging(window.Galaxy, "GalaxyApp");
+}
 
 export function mastheadEntry(options) {
     if (!Galaxy.user) {
