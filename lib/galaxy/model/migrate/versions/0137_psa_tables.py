@@ -45,16 +45,12 @@ social_auth_partial = Table(
     Column('backend', VARCHAR(32)))
 
 
-social_auth_usersocialauth = Table(
-    "social_auth_usersocialauth", metadata,
+oidc_rp_user_authnz_tokens = Table(
+    "oidc_rp_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
     Column('provider', VARCHAR(32)),
-    Column("state_token", TEXT, nullable=False, index=True),
-    Column("access_token", TEXT),
-    Column("id_token", TEXT),
-    Column("refresh_token", TEXT),
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
@@ -74,7 +70,7 @@ def upgrade(migrate_engine):
         social_auth_code.create()
         social_auth_nonce.create()
         social_auth_partial.create()
-        social_auth_usersocialauth.create()
+        oidc_rp_user_authnz_tokens.create()
     except Exception as e:
         log.exception("Creating UserOAuth2 table failed: %s" % str(e))
 
@@ -89,6 +85,6 @@ def downgrade(migrate_engine):
         social_auth_code.drop()
         social_auth_nonce.drop()
         social_auth_partial.drop()
-        social_auth_usersocialauth.drop()
+        oidc_rp_user_authnz_tokens.drop()
     except Exception as e:
         log.exception("Dropping UserOAuth2 table failed: %s" % str(e))

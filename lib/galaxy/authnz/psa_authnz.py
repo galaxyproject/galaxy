@@ -152,7 +152,7 @@ class PSAAuthnz(IdentityProvider):
         _trans = trans
 
         # TODO:
-        trans.app.model.UserAuthnAssociation._trans = trans
+        trans.app.model.UserAuthnzToken._trans = trans
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
@@ -402,11 +402,11 @@ class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
     """Partial pipeline storage"""
     pass
 
-from ..model import UserAuthnAssociation
+from ..model import UserAuthnzToken
 from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
-    user = UserAuthnAssociation  # UserSocialAuth
+    user = UserAuthnzToken  # UserSocialAuth
     nonce = Nonce
     association = Association
     code = Code

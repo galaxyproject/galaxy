@@ -5042,7 +5042,7 @@ class SocialAuthPartial(object):
         self.backend = backend
 
 
-class UserAuthnAssociation(UserMixin):
+class UserAuthnzToken(UserMixin):
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None, password=None):
@@ -5078,7 +5078,7 @@ class UserAuthnAssociation(UserMixin):
         print '#' * 200, '\nat set extra data\n', '#' * 200
         # TODO: unicode conversion is temporary -- any better approach ?
         if extra_data is not None: extra_data = unicode(extra_data)
-        if super(UserAuthnAssociation, self).set_extra_data(extra_data):
+        if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self._save_instance(self)
 
     @classmethod

@@ -139,16 +139,12 @@ model.SocialAuthPartial = Table(
     Column('backend', VARCHAR(32)))
 
 
-model.UserAuthnAssociation.table = Table(
-    "social_auth_usersocialauth", metadata,
+model.UserAuthnzToken.table = Table(
+    "oidc_rp_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
     Column('provider', VARCHAR(32)),
-    Column("state_token", TEXT, nullable=False, index=True),
-    Column("access_token", TEXT),
-    Column("id_token", TEXT),
-    Column("refresh_token", TEXT),
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
@@ -1646,9 +1642,9 @@ mapper(model.UserOAuth2, model.UserOAuth2.table, properties=dict(
         primaryjoin=(model.UserOAuth2.table.c.user_id == model.User.table.c.id))
 ))
 
-mapper(model.UserAuthnAssociation, model.UserAuthnAssociation.table, properties=dict(
+mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
-                  primaryjoin=(model.UserAuthnAssociation.table.c.user_id == model.User.table.c.id),
+                  primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
 ))
 
