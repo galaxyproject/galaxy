@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import inspect
+import json
 import logging
 import os
 
@@ -14,6 +15,7 @@ try:
 except ImportError:
     uwsgi = None
 
+import yaml
 from six import string_types
 
 from galaxy.util.bunch import Bunch
@@ -175,6 +177,25 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     postfork_functions = []
 
+    @staticmethod
+    def _get_config_file(confs, loader, section):
+        """uWSGI allows config merging, in which case the corresponding config file option will be a list.
+        """
+        conf = None
+        if isinstance(confs, list):
+            gconfs = filter(lambda x: os.path.exists(x) and section in loader(open(x)), confs)
+            if len(gconfs) == 1:
+                conf = gconfs[0]
+            elif len(gconfs) == 0:
+                log.warning('Could not locate a config file containing a Galaxy config from: %s',
+                            ', '.join(confs))
+            else:
+                log.warning('Multiple config files contain Galaxy configs, merging is not supported: %s',
+                            ', '.join(gconfs))
+        else:
+            conf = confs
+        return conf
+
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None):
         kwds = {
@@ -189,7 +210,8 @@ class UWSGIApplicationStack(MessageApplicationStack):
             config_file = uwsgi_opt.get("galaxy_config_file")
         # check for --yaml or --json uWSGI config options next
         if config_file is None:
-            config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
+            config_file = (UWSGIApplicationStack._get_config_file(uwsgi_opt.get("yaml"), yaml.safe_load, config_section)
+                           or UWSGIApplicationStack._get_config_file(uwsgi_opt.get("json"), json.load, config_section))
         # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
         # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
         # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
