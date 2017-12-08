@@ -304,4 +304,4 @@ server {          # This you should already have.
 ### External User Authentication
 
 - [Nginx for External Authentication](https://galaxyproject.org/admin/config/nginx-external-user-auth/)
-- [Built-in Galaxy External Authentication](../authentication.md)
+- [Built-in Galaxy External Authentication](../authentication.html)
