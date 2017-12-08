@@ -50,7 +50,7 @@ $.extend(CollectionTypeDescription.prototype, {
             return this;
         }
         if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
-            return otherCollectionType;
+            return otherCollectionTypeDescription;
         }
         return new CollectionTypeDescription(`${this.collectionType}:${otherCollectionTypeDescription.collectionType}`);
     },
