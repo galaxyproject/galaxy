@@ -10,6 +10,7 @@ import re
 import sys
 import tempfile
 from contextlib import contextmanager
+from distutils.version import LooseVersion
 from json import loads
 
 import pysam
@@ -25,6 +26,8 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 #
 # Utility functions.
 #
+
+PYSAM_INDEX_SYMLINK_NECESSARY = LooseVersion(pysam.__version__) <= LooseVersion('0.13.0')
 
 
 def float_nan(n):
@@ -321,13 +324,17 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
     def open_data_file(self):
         # We create a symlnk to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
-        fd, symlink_path = tempfile.mkstemp(suffix='.tbi')
-        os.close(fd)
-        os.unlink(symlink_path)
-        os.symlink(self.converted_dataset.file_name, symlink_path)
-        with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=symlink_path) as f:
+        if PYSAM_INDEX_SYMLINK_NECESSARY:
+            fd, index_path = tempfile.mkstemp(suffix='.tbi')
+            os.close(fd)
+            os.unlink(index_path)
+            os.symlink(self.converted_dataset.file_name, index_path)
+        else:
+            index_path = self.converted_dataset.file_name
+        with pysam.TabixFile(self.dependencies['bgzip'].file_name, index=index_path) as f:
             yield f
-        os.unlink(symlink_path)
+        if PYSAM_INDEX_SYMLINK_NECESSARY:
+            os.unlink(index_path)
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         # chrom must be a string, start/end integers.
