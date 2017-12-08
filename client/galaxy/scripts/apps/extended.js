@@ -8,6 +8,7 @@ import Masthead from "layout/masthead";
 import user from "mvc/user/user-model";
 import Modal from "mvc/ui/ui-modal";
 import pagesEditorOnload from "galaxy.pages";
+import Data from "mvc/dataset/data";
 
 export function mastheadEntry(options) {
     if (!Galaxy.user) {
@@ -49,6 +50,7 @@ export const bundleEntries = {
     adminToolshed: adminToolshedEntry,
     pages: pagesEditorOnload,
     phyloviz: Phyloviz.PhylovizView,
+    createTabularDatasetChunkedView: Data.createTabularDatasetChunkedView
 };
 
 window.bundleEntries = bundleEntries;
