@@ -98,6 +98,12 @@ class _OptionAction(object):
         pass
 
 
+class _DeprecatedAction(_OptionAction):
+
+    def lint(self, args, app_desc, key, value):
+        print("Option [%s] has been deprecated, this will likely be dropped in future releases of Galaxy." % key)
+
+
 class _DeprecatedAndDroppedAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
@@ -120,7 +126,7 @@ class _PasteAppFactoryAction(_OptionAction):
             print("Problem - unknown paste app factory encountered [%s]" % value)
 
 
-class _ProductionNotReady(_OptionAction):
+class _ProductionUnsafe(_OptionAction):
 
     def __init__(self, unsafe_value):
         self.unsafe_value = unsafe_value
@@ -132,11 +138,33 @@ class _ProductionNotReady(_OptionAction):
             print(message)
 
 
+class _ProductionPerformance(_OptionAction):
+
+    def lint(self, args, app_desc, key, value):
+        template = "Problem - option [%s] should not be set to [%s] in production environments - it may cause performance issues or instability."
+        message = template % (key, value)
+        print(message)
+
+
 class _HandleFilterWithAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
         print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
         return DROP_OPTION_VALUE
+
+
+class _RenameAction(_OptionAction):
+
+    def __init__(self, new_name):
+        self.new_name = new_name
+
+    def converted(self, args, app_desc, key, value):
+        return (self.new_name, value)
+
+    def lint(self, args, app_desc, key, value):
+        template = "Problem - option [%s] has been renamed (possibly with slightly different behavior) to [%s]."
+        message = template % (key, self.new_name)
+        print(message)
 
 
 OPTION_ACTIONS = {
@@ -147,12 +175,33 @@ OPTION_ACTIONS = {
     'session_secret': _DeprecatedAndDroppedAction(),
     'paste.app_factory': _PasteAppFactoryAction(),
     'filter-with': _HandleFilterWithAction(),
-    'debug': _ProductionNotReady(True),
-    'serve_xss_vulnerable_mimetypes': _ProductionNotReady(True),
-    'use_printdebug': _ProductionNotReady(True),
-    'use_interactive': _ProductionNotReady(True),
-    'id_secret': _ProductionNotReady('USING THE DEFAULT IS NOT SECURE!'),
-    'master_api_key': _ProductionNotReady('changethis'),
+    'debug': _ProductionUnsafe(True),
+    'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
+    'use_printdebug': _ProductionUnsafe(True),
+    'use_interactive': _ProductionUnsafe(True),
+    'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
+    'master_api_key': _ProductionUnsafe('changethis'),
+    'external_service_type_config_file': _DeprecatedAndDroppedAction(),
+    'external_service_type_path': _DeprecatedAndDroppedAction(),
+    'enable_sequencer_communication': _DeprecatedAndDroppedAction(),
+    'run_workflow_toolform_upgrade': _DeprecatedAndDroppedAction(),
+    # Next 4 were from library search which is no longer available.
+    'enable_lucene_library_search': _DeprecatedAndDroppedAction(),
+    'fulltext_max_size': _DeprecatedAndDroppedAction(),
+    'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
+    'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_legacy_sample_tracking_api': _DeprecatedAction(),
+    'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
+    'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),
+    'force_beta_workflow_scheduled_min_steps': _DeprecatedAction(),
+    'history_local_serial_workflow_scheduling': _ProductionPerformance(),
+    'allow_library_path_paste': _RenameAction("allow_path_paste"),
+    'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
+    'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
+    'single_user': _ProductionUnsafe(True),
+    'tool_submission_burst_threads': _ProductionPerformance(),
+    'tool_submission_burst_at': _ProductionPerformance(),
+    'toolform_upgrade': _DeprecatedAndDroppedAction(),
 }
 
 
@@ -508,7 +557,12 @@ def _run_conversion(args, app_desc):
 
         if key in OPTION_ACTIONS:
             option_action = OPTION_ACTIONS.get(key)
-            value = option_action.converted(args, app_desc, key, value)
+            new_value = option_action.converted(args, app_desc, key, value)
+            if new_value:
+                if isinstance(new_value, tuple):
+                    key, value = new_value
+                else:
+                    value = new_value
 
         if value is DROP_OPTION_VALUE:
             continue
@@ -521,7 +575,7 @@ def _run_conversion(args, app_desc):
         app_dict[key] = option_value
 
     f = StringIO()
-    _write_section(args, f, "uwsgi", uwsgi_dict)
+    _write_section(args, f, "uwsgi", uwsgi_dict, uwsgi_hack=True)
     _write_section(args, f, app_desc.app_name, app_dict)
     destination = os.path.join(args.galaxy_root, app_desc.destination)
     _replace_file(args, f, app_desc, ini_config, destination)
@@ -603,10 +657,10 @@ def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsg
         _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
 
 
-def _write_section(args, f, section_header, section_dict):
+def _write_section(args, f, section_header, section_dict, uwsgi_hack=False):
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
-        _write_option(args, f, key, option_value)
+        _write_option(args, f, key, option_value, uwsgi_hack=uwsgi_hack)
 
 
 def _write_header(f, section_header):
@@ -634,6 +688,10 @@ def _parse_option_value(option_value):
     if isinstance(option_value, OptionValue):
         option = option_value.option
         value = option_value.value
+        option = option_value.option
+        # Hack to get nicer YAML values during conversion
+        if option.get("type", "str") == "bool":
+            value = str(value).lower() == "true"
     else:
         value = option_value
         option = OPTION_DEFAULTS
