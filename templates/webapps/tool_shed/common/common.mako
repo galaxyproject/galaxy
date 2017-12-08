@@ -6,6 +6,7 @@
 
 <%def name="render_select(select)">
     <% from markupsafe import escape %>
+    <% from galaxy.util import listify %>
     %if select.display == "checkboxes":
         %for o in select.options:
             <div>
@@ -16,7 +17,7 @@
     %else:
         <select id="${select.field_id}" name="${select.name}" ${"multiple" if select.multiple else ""} refresh_on_change="${select.refresh_on_change}">
             %for o in select.options:
-                <option value="${escape(o[1])}">${escape(o[0])}</option>
+                <option value="${escape(o[1])}" ${"selected" if o[1] in listify(select.value) or o[2] else ""}>${escape(o[0])}</option>
             %endfor
         </select>
     %endif
