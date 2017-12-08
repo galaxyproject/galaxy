@@ -23,8 +23,8 @@ def get_dataset(file, index_attr='bam_index', dataset_id=1, has_data=True):
 
 
 @contextmanager
-def get_tmp_path(should_exist=False):
-    _, path = tempfile.mkstemp()
+def get_tmp_path(should_exist=False, suffix=''):
+    _, path = tempfile.mkstemp(suffix=suffix)
     if not should_exist:
         os.remove(path)
     yield path
