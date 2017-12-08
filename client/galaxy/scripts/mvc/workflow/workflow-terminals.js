@@ -143,7 +143,7 @@ var Terminal = Backbone.Model.extend({
     },
     destroyInvalidConnections: function() {
         _.each(this.connectors, connector => {
-            if (connector){
+            if (connector) {
                 connector.destroyIfInvalid();
             }
         });
