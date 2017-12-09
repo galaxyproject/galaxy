@@ -72,7 +72,7 @@ class CheckboxField(BaseField):
     """
     @staticmethod
     def is_checked(value):
-        if value in [True, "true"]:
+        if value in [True, "True", "true"]:
             return True
         return False
 
