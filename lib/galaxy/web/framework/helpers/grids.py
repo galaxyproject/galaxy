@@ -24,8 +24,6 @@ class Grid(object):
     exposed = True
     model_class = None
     show_item_checkboxes = False
-    template = "grid_base.mako"
-    async_template = "grid_base_async.mako"
     use_async = False
     use_hide_message = True
     global_actions = []
@@ -65,7 +63,6 @@ class Grid(object):
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
         status = kwargs.get('status', None)
         message = kwargs.get('message', None)
-        dict_format = kwargs.get('dict_format', False)
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -286,33 +283,6 @@ class Grid(object):
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        if not dict_format:
-            page = trans.fill_template(iff(async_request, self.async_template, self.template),
-                                       grid=self,
-                                       query=query,
-                                       cur_page_num=page_num,
-                                       num_pages=num_pages,
-                                       num_page_links=self.num_page_links,
-                                       default_filter_dict=self.default_filter,
-                                       cur_filter_dict=cur_filter_dict,
-                                       sort_key=sort_key,
-                                       current_item=current_item,
-                                       ids=kwargs.get('id', []),
-                                       url=url,
-                                       status=status,
-                                       message=message,
-                                       info_text=self.info_text,
-                                       use_panels=self.use_panels,
-                                       use_hide_message=self.use_hide_message,
-                                       advanced_search=self.advanced_search,
-                                       show_item_checkboxes=(self.show_item_checkboxes or
-                                                             kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
-                                       # Pass back kwargs so that grid template can set and use args without
-                                       # grid explicitly having to pass them.
-                                       kwargs=kwargs)
-            trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
-            return page
-
         grid_config = {
             'title'                         : self.title,
             'url_base'                      : trans.request.path_url,
