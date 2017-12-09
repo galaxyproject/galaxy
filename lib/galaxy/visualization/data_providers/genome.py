@@ -322,7 +322,7 @@ class TabixDataProvider(FilterableMixin, GenomeDataProvider):
 
     @contextmanager
     def open_data_file(self):
-        # We create a symlnk to the index file. This is
+        # We create a symlink to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
         if PYSAM_INDEX_SYMLINK_NECESSARY:
             fd, index_path = tempfile.mkstemp(suffix='.tbi')

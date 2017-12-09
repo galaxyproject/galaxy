@@ -16,7 +16,6 @@ from cgi import escape
 from json import dumps
 
 import pysam
-import pysam.bcftools
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
@@ -740,7 +739,7 @@ class Vcf(BaseVcf):
     def sniff(self, filename):
         if is_gzip(filename):
             return False
-        return BaseVcf.sniff(self, filename)
+        return super(Vcf, self).sniff(filename)
 
 
 class VcfGz(BaseVcf, binary.Binary):
@@ -752,7 +751,7 @@ class VcfGz(BaseVcf, binary.Binary):
     def sniff(self, filename):
         if not is_gzip(filename):
             return False
-        return BaseVcf.sniff(self, filename)
+        return super(VcfGz, self).sniff(filename)
 
     def set_meta(self, dataset, **kwd):
         super(BaseVcf, self).set_meta(dataset, **kwd)

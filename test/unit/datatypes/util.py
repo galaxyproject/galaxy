@@ -9,12 +9,12 @@ from galaxy.util.hash_util import md5_hash_file
 
 
 @contextmanager
-def get_dataset(file, index_attr='bam_index', dataset_id=1, has_data=True):
+def get_dataset(filename, index_attr='bam_index', dataset_id=1, has_data=True):
     dataset = Bunch()
     dataset.has_data = lambda: True
     dataset.id = dataset_id
     dataset.metadata = Bunch()
-    with get_input_files(file) as input_files, get_tmp_path() as index_path:
+    with get_input_files(filename) as input_files, get_tmp_path() as index_path:
         dataset.file_name = input_files[0]
         index = Bunch()
         index.file_name = index_path
@@ -39,9 +39,9 @@ def get_input_files(*args):
     temp_dir = tempfile.mkdtemp()
     test_files = []
     try:
-        for file in args:
-            shutil.copy(get_test_fname(file), temp_dir)
-            test_files.append(os.path.join(temp_dir, file))
+        for filename in args:
+            shutil.copy(get_test_fname(filename), temp_dir)
+            test_files.append(os.path.join(temp_dir, filename))
         md5_sums = [md5_hash_file(f) for f in test_files]
         yield test_files
         new_md5_sums = [md5_hash_file(f) for f in test_files]

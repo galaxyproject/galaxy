@@ -210,7 +210,7 @@ class Bam(Binary):
     @staticmethod
     def merge(split_files, output_file):
         """
-        Merges Bam files
+        Merges BAM files
 
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
@@ -232,7 +232,7 @@ class Bam(Binary):
             with open(os.devnull, 'w') as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
             needs_sorting = False
-        except Exception:
+        except subprocess.CalledProcessError:
             needs_sorting = True
         try:
             os.unlink(index_name)
@@ -242,10 +242,10 @@ class Bam(Binary):
 
     def groom_dataset_content(self, file_name):
         """
-        Ensures that the Bam file contents are sorted.  This function is called
+        Ensures that the BAM file contents are sorted.  This function is called
         on an output dataset after the content is initially generated.
         """
-        # Use pysam to sort the Bam file
+        # Use pysam to sort the BAM file
         # This command may also creates temporary files <out.prefix>.%d.bam when the
         # whole alignment cannot fit into memory.
         # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
@@ -254,7 +254,7 @@ class Bam(Binary):
             return
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
+        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
         slots = os.environ.get('GALAXY_SLOTS', 1)
         try:
             pysam.sort("-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
