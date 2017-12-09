@@ -1,5 +1,5 @@
 <%!
-    from galaxy.web.framework.helpers.grids import TextColumn
+    from galaxy.webapps.reports.framework.grids import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )
