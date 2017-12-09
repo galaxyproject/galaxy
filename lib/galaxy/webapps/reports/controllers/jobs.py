@@ -17,8 +17,8 @@ from sqlalchemy import and_, not_, or_
 
 from galaxy import model, util
 from galaxy.web.base.controller import BaseUIController, web
-from galaxy.web.framework.helpers import grids
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
+from galaxy.webapps.reports.framework import grids
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +179,6 @@ class SpecifiedDateListGrid(grids.Grid):
     use_async = False
     model_class = model.Job
     title = "Jobs"
-    template = '/webapps/reports/grid.mako'
     default_sort_key = "id"
     columns = [
         JobIdColumn("Id",
