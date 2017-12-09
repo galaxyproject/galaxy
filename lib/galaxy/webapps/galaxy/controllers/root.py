@@ -57,7 +57,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             'toolbox'                       : app.toolbox.to_dict(trans, in_panel=False),
             'toolbox_in_panel'              : app.toolbox.to_dict(trans),
             'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
+            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active
         }
 
         # TODO: move to user
