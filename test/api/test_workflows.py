@@ -1165,7 +1165,11 @@ test_data:
     @skip_without_tool("cat_list")
     @skip_without_tool("random_lines1")
     @skip_without_tool("split")
-    def test_subworkflow_recover_mapping(self):
+    def test_subworkflow_recover_mapping_1(self):
+        # This test case tests an outer workflow continues to scheduling and handle
+        # collection mapping properly after the last step of a subworkflow requires delayed
+        # evaluation. Testing rescheduling and propagating connections within a subworkflow
+        # is handled by the next test case.
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs("""
 class: GalaxyWorkflow
@@ -1210,6 +1214,72 @@ steps:
     state:
       input1:
         $link: split#output
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""", history_id=history_id, wait=True)
+            self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
+
+    @skip_without_tool("cat_list")
+    @skip_without_tool("random_lines1")
+    @skip_without_tool("split")
+    def test_subworkflow_recover_mapping_2(self):
+        # Like the above test case, this test case tests an outer workflow continues to
+        # schedule and handle collection mapping properly after a subworkflow needs to be
+        # delayed, but this also tests recovering and handling scheduling within the subworkflow
+        # since the delayed step (split) isn't the last step of the subworkflow.
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: inner_cat#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          state:
+            num_lines: 2
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+        - tool_id: split
+          label: split
+          state:
+            input1:
+              $link: random_lines#out_file1
+        - tool_id: cat1
+          label: inner_cat
+          state:
+            input1:
+              $link: split#output
+
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat_list
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#workflow_output
 
 test_data:
   outer_input:
@@ -1621,6 +1691,10 @@ test_data:
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
+        # Revert after https://github.com/galaxyproject/galaxy/issues/5146 is fixed.
+        # state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        # if assert_ok:
+        #    assert state == "scheduled", state
         self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
         time.sleep(.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
@@ -1714,6 +1788,29 @@ test_data:
         self._assert_status_code_is(run_workflow_response, 200)
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced"
+
+    @skip_without_tool("output_filter")
+    def test_optional_workflow_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+inputs: []
+outputs:
+  - id: wf_output_1
+    source: output_filter#out_1
+steps:
+  - tool_id: output_filter
+    label: output_filter
+    state:
+      produce_out_1: False
+      filter_text_1: '1'
+test_data: {}
+    """, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 1
+            okay_dataset = contents[0]
+            assert okay_dataset["state"] == "ok"
 
     @skip_without_tool("cat")
     def test_run_rename_collection_element(self):
@@ -2424,12 +2521,17 @@ steps:
 
     def __assert_lines_hid_line_count_is(self, history, hid, lines):
         contents_url = "histories/%s/contents" % history
-        history_contents_response = self._get(contents_url)
-        self._assert_status_code_is(history_contents_response, 200)
-        hda_summary = next(hc for hc in history_contents_response.json() if hc["hid"] == hid)
+        history_contents = self.__history_contents(history)
+        hda_summary = next(hc for hc in history_contents if hc["hid"] == hid)
         hda_info_response = self._get("%s/%s" % (contents_url, hda_summary["id"]))
         self._assert_status_code_is(hda_info_response, 200)
         self.assertEqual(hda_info_response.json()["metadata_data_lines"], lines)
+
+    def __history_contents(self, history_id):
+        contents_url = "histories/%s/contents" % history_id
+        history_contents_response = self._get(contents_url)
+        self._assert_status_code_is(history_contents_response, 200)
+        return history_contents_response.json()
 
     def __invoke_workflow(self, *args, **kwds):
         return self.workflow_populator.invoke_workflow(*args, **kwds)

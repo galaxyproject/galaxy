@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 var View = Backbone.View.extend({
@@ -19,7 +20,7 @@ var View = Backbone.View.extend({
         var workflows = that.model.models;
         that.$el.html(
             workflows_missing_tools({
-                title: "Workflows Missing Tools",
+                title: _l("Workflows Missing Tools"),
                 workflows: workflows,
                 queue: toolshed_util.queueLength()
             })
