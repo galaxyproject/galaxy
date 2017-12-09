@@ -83,7 +83,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                             
                             # Initialize Private check box.
                             private_check_box_name = '%s%sprivate' % ( component_name, STRSEP )
-                            private_check_box = CheckboxField( name=private_check_box_name, value=private )
+                            private_check_box = CheckboxField( name=private_check_box_name, value=False if private == False else True )
                             
                             # Initialize star rating.
                             rating_name = '%s%srating' % ( component_name, STRSEP )
