@@ -1322,7 +1322,7 @@ class Tool(object, Dictifiable):
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None):
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
@@ -1335,6 +1335,7 @@ class Tool(object, Dictifiable):
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
+                completed_job=completed_job,
             )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
