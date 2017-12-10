@@ -131,7 +131,6 @@ class HistoryListGrid(grids.Grid):
     default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
     num_rows_per_page = 15
     preserve_state = False
-    use_async = True
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
@@ -194,7 +193,6 @@ class HistoryAllPublishedGrid(grids.Grid):
     default_filter = dict(public_url="All", username="All", tags="All")
     use_paging = True
     num_rows_per_page = 50
-    use_async = True
     columns = [
         NameURLColumn("Name", key="name", filterable="advanced"),
         grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced"),

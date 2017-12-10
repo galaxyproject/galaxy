@@ -85,7 +85,6 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(name="All", deleted="False", tags="All")
     preserve_state = False
-    use_async = True
     use_paging = True
     num_rows_per_page = 50
 

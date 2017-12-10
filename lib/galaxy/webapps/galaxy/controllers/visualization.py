@@ -118,7 +118,6 @@ class TracksterSelectionGrid(grids.Grid):
     title = "Insert into visualization"
     model_class = model.Visualization
     default_sort_key = "-update_time"
-    use_async = True
     use_paging = False
     show_item_checkboxes = True
     columns = [
@@ -193,7 +192,6 @@ class VisualizationListGrid(grids.Grid):
 class VisualizationAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
-    use_async = True
     title = "Published Visualizations"
     model_class = model.Visualization
     default_sort_key = "update_time"
