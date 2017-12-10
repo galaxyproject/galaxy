@@ -3,7 +3,7 @@ import logging
 from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.web import url_for
-from galaxy.web.framework.helpers import iff, grids
+from galaxy.web.framework.helpers import grids, iff
 from tool_shed.util import repository_util
 
 log = logging.getLogger(__name__)

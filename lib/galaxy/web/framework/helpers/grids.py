@@ -10,7 +10,6 @@ from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemR
 from galaxy.util import restore_text, sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
-from galaxy.web.framework.helpers import iff
 
 
 log = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import restore_text, sanitize_text, unicodify
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
