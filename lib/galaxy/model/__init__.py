@@ -5065,16 +5065,18 @@ class UserAuthnzToken(UserMixin):
     # TODO: all the following functions should be checked and fixed.
     @classmethod
     def username_max_length(cls):
-        return 255  # TODO: This is a temporary solution, this number should be retrieved from user table.
+        # Note: This is the maximum field length set for the username column of the galaxy_user table.
+        # A better alternative is to retrieve this number from the table, instead of this const value.
+        return 255
 
     @classmethod
     def user_model(cls):
         return User
 
-    @declared_attr
-    def extra_data(cls):
-        print '%' * 200, '\nat extra data\n', '%' * 200
-        return Column(MutableDict.as_mutable(JSONType))
+    # @declared_attr
+    # def extra_data(cls):
+    #     print '%' * 200, '\nat extra data\n', '%' * 200
+    #     return Column(MutableDict.as_mutable(JSONType))
 
     @classmethod
     def changed(cls, user):
@@ -5087,25 +5089,6 @@ class UserAuthnzToken(UserMixin):
             extra_data = unicode(extra_data)
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self._save_instance(self)
-
-    @classmethod
-    def allowed_to_disconnect(cls, user, backend_name, association_id=None):
-        if association_id is not None:
-            qs = cls._query().filter(cls.id != association_id)
-        else:
-            qs = cls._query().filter(cls.provider != backend_name)
-        qs = qs.filter(cls.user == user)
-
-        if hasattr(user, 'has_usable_password'):  # TODO
-            valid_password = user.has_usable_password()
-        else:
-            valid_password = True
-        return valid_password or qs.count() > 0
-
-    @classmethod
-    def disconnect(cls, entry):
-        cls._session().delete(entry)
-        cls._flush()
 
     @classmethod
     def user_query(cls):

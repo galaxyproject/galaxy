@@ -25,3 +25,7 @@ class OAuth2(BaseUIController):
             # TODO: inform the user why he/she is being re-authenticated.
             # self.google_authn(trans) # maybe not needed.
             pass
+
+    @web.expose
+    def disconnect(self, trans, **kwargs):
+        return trans.response.send_redirect(trans.app.authnz_manager.disconnect('Google', trans))

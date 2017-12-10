@@ -89,6 +89,13 @@ class PSAAuthnz(IdentityProvider):
             'social_core.backends.instagram.InstagramOAuth2'
         )
 
+        config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
+
+        config[setting_name('SOCIAL_AUTH_DISCONNECT_PIPELINE')] = (
+            'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
+            'social_core.backends.instagram.InstagramOAuth2'
+        )
+
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
 
@@ -102,6 +109,9 @@ class PSAAuthnz(IdentityProvider):
         return do_import and module_member(this_config) or this_config
 
     def get_current_user(self, trans):
+        if trans.user is not None:
+            return trans.user
+        # TODO: the above code is recently added, the following is what I had before. Check which of the methods is more appropriate.
         if not hasattr(self, '_user'):
             # if trans.session.get('logged_in'):
             if self.strategy.session_get('logged_in'):
@@ -169,6 +179,26 @@ class PSAAuthnz(IdentityProvider):
         self.trans = trans
         return do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
 
+    def disconnect(self, provider, trans, association_id=None):
+        _trans = trans
+
+        # TODO:
+        trans.app.model.UserAuthnzToken._trans = trans
+        backend_label = 'google-openidconnect'
+        uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
+
+        self.strategy = Strategy(trans, Storage)  # self.load_strategy()
+        # the following line is temporary, find a better solution.
+        self.backend = self.load_backend(self.strategy, backend_label, uri)
+        # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
+        # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
+        # google. The following is a temporary patch. This problem should be solved properly.
+        # might be able to the following using absolute_uri function in the strategy
+        self.backend.redirect_uri = "http://" + self.backend.redirect_uri
+        # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
+        self.trans = trans
+        return do_disconnect(self.backend, self.get_current_user(trans), association_id)
+
 # TODO: find a better way to do this
 _trans = None
 
@@ -182,6 +212,7 @@ class Strategy(BaseStrategy):
         self.request = trans.request
         self.session = trans.session if trans.session else {}
         config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
+        config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
 
         # Both the following are fine
         # config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_ID_TOKEN_MAX_AGE'] = 3600
@@ -262,12 +293,6 @@ class Strategy(BaseStrategy):
 
     def continue_pipeline(self, *args, **kwargs):
         return self.backend.continue_pipeline(*args, **kwargs)
-
-    def disconnect(self, user, association_id=None, *args, **kwargs):
-        return self.backend.disconnect(
-            user=user, association_id=association_id,
-            *args, **kwargs
-        )
 
     # TODO: a function very similar to this exists in the basestrategy, check if I need this implementation or that.
     # def authenticate(self, *args, **kwargs):
@@ -462,6 +487,12 @@ AUTH_PIPELINE = (
 )
 
 
+DISCONNECT_PIPELINE = (
+    'galaxy.authnz.psa_authnz.allowed_to_disconnect',
+    'galaxy.authnz.psa_authnz.disconnect'
+)
+
+
 def create_user(strategy, details, backend, user=None, *args, **kwargs):
     print '\n\n', '@' * 50
     if user:
@@ -476,3 +507,46 @@ def create_user(strategy, details, backend, user=None, *args, **kwargs):
         'is_new': True,
         'user': strategy.create_user(**fields)
     }
+
+
+def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,
+                          backend=None, request=None, details=None, **kwargs):
+    """
+    Disconnect is the process of disassociating a Galaxy user and a third-party authnz.
+    In other words, it is the process of removing any access and/or ID tokens of a user.
+    This function should raise an exception if disconnection is NOT permitted. Do NOT
+    return any value (except an empty dictionary) if disconnect is allowed. Because, at
+    least until PSA social_core v.1.5.0, any returned value (e.g., Boolean) will result
+    in ignoring the rest of the disconnect pipeline.
+    See the following condition in `run_pipeline` function:
+    https://github.com/python-social-auth/social-core/blob/master/social_core/backends/base.py#L114
+    :param name: name of the backend (e.g., google-openidconnect)
+    :type user: galaxy.model.User
+    :type user_storage: galaxy.model.UserAuthnzToken
+    :type strategy: galaxy.authnz.psa_authnz.Strategy
+    :type backend: PSA backend object (e.g., social_core.backends.google_openidconnect.GoogleOpenIdConnect)
+    :type request: webob.multidict.MultiDict
+    :type details: dict
+    :return: empty dict
+    """
+    pass
+
+
+def disconnect(name=None, user=None, user_storage=None, strategy=None,
+               backend=None, request=None, details=None, **kwargs):
+    """
+    Disconnect is the process of disassociating a Galaxy user and a third-party authnz.
+    In other words, it is the process of removing any access and/or ID tokens of a user.
+    :param name: name of the backend (e.g., google-openidconnect)
+    :type user: galaxy.model.User
+    :type user_storage: galaxy.model.UserAuthnzToken
+    :type strategy: galaxy.authnz.psa_authnz.Strategy
+    :type backend: PSA backend object (e.g., social_core.backends.google_openidconnect.GoogleOpenIdConnect)
+    :type request: webob.multidict.MultiDict
+    :type details: dict
+    :return:
+    """
+    user_authnz = _trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
+                                                               user_storage.table.c.provider == name).first()
+    user_authnz.extra_data = None
+    _trans.sa_session.flush()

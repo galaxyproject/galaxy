@@ -67,6 +67,9 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
+    def disconnect(self, provider, trans):
+        raise NotImplementedError()
+
 
 class AuthnzManager(object):
 
@@ -141,3 +144,6 @@ class AuthnzManager(object):
                 raise
         else:
             raise NameError("The provider '{}' is not a recognized and expected provider.".format(provider))
+
+    def disconnect(self, provider, trans):
+        return self.providers[provider].disconnect(provider, trans)
