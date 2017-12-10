@@ -331,7 +331,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
 
         var grid = new GridView({
-            url_base: item_info.list_ajax_url
+            url_base: item_info.list_ajax_url,
             embedded: true
         });
         Galaxy.modal.show({
@@ -424,7 +424,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
 
         var grid = new GridView({
-            url_base: item_info.list_ajax_url
+            url_base: item_info.list_ajax_url,
             embedded: true
         });
         Galaxy.modal.show({

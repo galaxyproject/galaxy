@@ -458,7 +458,7 @@ var TracksterView = Backbone.View.extend({
     // view
     view_in_saved: function(dataset_params) {
         var tracks_grid = new GridView({
-            url_base: `${Galaxy.root}visualization/list_tracks`
+            url_base: `${Galaxy.root}visualization/list_tracks`,
             embedded: true
         });
         Galaxy.modal.show({
