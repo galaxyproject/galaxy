@@ -20,7 +20,6 @@ class Grid(object):
     Specifies the content and format of a grid (data table).
     """
     title = ""
-    exposed = True
     model_class = None
     show_item_checkboxes = False
     use_hide_message = True
