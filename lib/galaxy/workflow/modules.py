@@ -882,6 +882,7 @@ class ToolModule(WorkflowModule):
                     tool_version=tool.version,
                     param=param,
                     param_dump=tool.params_to_strings(param, trans.app, nested=True),
+                    job_state=None,
                 )
             else:
                 completed_jobs[i] = None

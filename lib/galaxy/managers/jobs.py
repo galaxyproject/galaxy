@@ -53,7 +53,6 @@ class JobSearch(object):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
-        input_ids = defaultdict(list)
 
         def populate_input_data_input_id(path, key, value):
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
@@ -74,7 +73,6 @@ class JobSearch(object):
                                              'id': value,
                                              'identifier': identifier,
                                              })
-                input_ids[src].append(value)
                 return key, "__id_wildcard__"
             return key, value
 
@@ -85,10 +83,9 @@ class JobSearch(object):
                              input_data=input_data,
                              job_state=job_state,
                              param_dump=param_dump,
-                             wildcard_param_dump=wildcard_param_dump,
-                             input_ids=input_ids)
+                             wildcard_param_dump=wildcard_param_dump)
 
-    def __search(self, tool_id, tool_version, user, input_data, input_ids=None, job_state=None, param_dump=None, wildcard_param_dump=None):
+    def __search(self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
 
         def replace_dataset_ids(path, key, value):
@@ -110,13 +107,11 @@ class JobSearch(object):
 
         if job_state is None:
             conditions.append(
-                or_(
-                    model.Job.state == 'running',
-                    model.Job.state == 'queued',
-                    model.Job.state == 'waiting',
-                    model.Job.state == 'running',
-                    model.Job.state == 'ok',
-                )
+                model.Job.state.in_([model.Job.states.NEW,
+                                     model.Job.states.QUEUED,
+                                     model.Job.states.WAITING,
+                                     model.Job.states.RUNNING,
+                                     model.Job.states.OK])
             )
         else:
             if isinstance(job_state, string_types):

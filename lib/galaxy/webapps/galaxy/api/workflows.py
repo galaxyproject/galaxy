@@ -255,6 +255,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
         :type   allow_tool_state_corrections:  bool
+
+        :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
+                                             and will copy the outputs of the previously executed step.
         """
         ways_to_create = set([
             'workflow_id',

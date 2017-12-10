@@ -1305,6 +1305,7 @@ class Tool(object, Dictifiable):
                         tool_version=self.version,
                         param=param,
                         param_dump=self.params_to_strings(param, self.app, nested=True),
+                        job_state=None,
                     )
                 else:
                     completed_jobs[i] = None
