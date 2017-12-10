@@ -24,7 +24,6 @@ class Grid(object):
     exposed = True
     model_class = None
     show_item_checkboxes = False
-    use_async = False
     use_hide_message = True
     global_actions = []
     columns = []
@@ -277,7 +276,6 @@ class Grid(object):
 
         self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
         self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
-        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
@@ -286,7 +284,6 @@ class Grid(object):
         grid_config = {
             'title'                         : self.title,
             'url_base'                      : trans.request.path_url,
-            'async'                         : self.use_async,
             'async_ops'                     : [],
             'categorical_filters'           : {},
             'filters'                       : cur_filter_dict,
