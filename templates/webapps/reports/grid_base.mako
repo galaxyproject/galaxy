@@ -64,7 +64,7 @@
 
     ## load javascript
     <script type="text/javascript">
-        require(['mvc/grid/grid-view'], function(GridView) {
+        require(['reports/grid/grid-view'], function(GridView) {
             $(function() {
                 var gridView = new GridView.default( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
             });
