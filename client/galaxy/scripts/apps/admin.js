@@ -39,8 +39,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/users_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -49,8 +48,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/roles_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -59,8 +57,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/groups_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -69,8 +66,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin_toolshed/browse_repositories`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -79,8 +75,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/tool_versions_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -89,8 +84,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/quotas_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -105,8 +99,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}forms/forms_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },

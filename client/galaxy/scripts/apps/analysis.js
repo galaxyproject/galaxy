@@ -115,8 +115,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}workflow/list_published`
                 })
             );
         },
@@ -160,8 +159,7 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}dataset/list`
                 })
             );
         },

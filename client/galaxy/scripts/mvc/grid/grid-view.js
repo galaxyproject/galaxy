@@ -15,7 +15,6 @@ export default Backbone.View.extend({
     // Initialize
     initialize: function(grid_config) {
         this.grid = new GridModel();
-        this.dict_format = grid_config.dict_format;
         this.title = grid_config.title;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
@@ -30,26 +29,21 @@ export default Backbone.View.extend({
         };
 
         // set element
-        if (this.dict_format) {
-            this.setElement("<div/>");
-            if (grid_config.url_base && !grid_config.items) {
-                var url_data = grid_config.url_data || {};
-                _.each(grid_config.filters, (v, k) => {
-                    url_data[`f-${k}`] = v;
-                });
-                $.ajax({
-                    url: `${grid_config.url_base}?${$.param(url_data)}`,
-                    success: function(response) {
-                        response.embedded = grid_config.embedded;
-                        response.filters = grid_config.filters || {};
-                        self.init_grid(response);
-                    }
-                });
-            } else {
-                this.init_grid(grid_config);
-            }
+        this.setElement("<div/>");
+        if (grid_config.url_base && !grid_config.items) {
+            var url_data = grid_config.url_data || {};
+            _.each(grid_config.filters, (v, k) => {
+                url_data[`f-${k}`] = v;
+            });
+            $.ajax({
+                url: `${grid_config.url_base}?${$.param(url_data)}`,
+                success: function(response) {
+                    response.embedded = grid_config.embedded;
+                    response.filters = grid_config.filters || {};
+                    self.init_grid(response);
+                }
+            });
         } else {
-            this.setElement("#grid-container");
             this.init_grid(grid_config);
         }
 
@@ -641,7 +635,7 @@ export default Backbone.View.extend({
                 var advanced_search = self.$el.find("#advanced-search").is(":visible");
 
                 // request new configuration
-                var json = self.dict_format ? response_text : $.parseJSON(response_text);
+                var json = response_text;
 
                 // update
                 json.embedded = embedded;
