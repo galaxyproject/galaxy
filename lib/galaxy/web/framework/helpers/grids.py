@@ -236,7 +236,6 @@ class Grid(object):
         context = text_type(self.__class__.__name__)
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
-        params['async'] = ('async' in kwargs)
 
         # TODO:??
         # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
