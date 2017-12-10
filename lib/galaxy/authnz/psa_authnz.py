@@ -91,6 +91,16 @@ class PSAAuthnz(IdentityProvider):
 
         config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
 
+        # TODO: set the following parameter
+        # config[setting_name('SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SCOPE')] =
+        # config[setting_name('SCOPE')] =
+
+        # TODO: set the following parameter
+        # config[setting_name('VERIFY_SSL')] =
+
+        # TODO: set the following parameter
+        # config[setting_name('REQUESTS_TIMEOUT')] =
+
         config[setting_name('SOCIAL_AUTH_DISCONNECT_PIPELINE')] = (
             'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
             'social_core.backends.instagram.InstagramOAuth2'
@@ -544,9 +554,11 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     :type backend: PSA backend object (e.g., social_core.backends.google_openidconnect.GoogleOpenIdConnect)
     :type request: webob.multidict.MultiDict
     :type details: dict
-    :return:
     """
     user_authnz = _trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
                                                                user_storage.table.c.provider == name).first()
-    user_authnz.extra_data = None
+    # option A
+    _trans.sa_session.delete(user_authnz)
+    # option B
+    # user_authnz.extra_data = None
     _trans.sa_session.flush()
