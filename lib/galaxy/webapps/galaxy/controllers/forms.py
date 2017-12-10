@@ -39,7 +39,6 @@ class FormsGrid(grids.Grid):
     model_class = model.FormDefinitionCurrent
     default_sort_key = "-update_time"
     num_rows_per_page = 50
-    preserve_state = True
     use_paging = True
     default_filter = dict(deleted="False")
     columns = [

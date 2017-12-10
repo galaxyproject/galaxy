@@ -32,7 +32,6 @@ class Grid(object):
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter = {}
     default_sort_key = None
-    preserve_state = False
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
@@ -69,14 +68,6 @@ class Grid(object):
             # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            if pref_name in trans.get_user().preferences:
-                saved_filter = loads(trans.get_user().preferences[pref_name])
-                base_filter.update(saved_filter)
-            pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-            if pref_name in trans.get_user().preferences:
-                base_sort_key = loads(trans.get_user().preferences[pref_name])
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
@@ -224,14 +215,7 @@ class Grid(object):
         # There are some places in grid templates where it's useful for a grid
         # to have its current filter.
         self.cur_filter_dict = cur_filter_dict
-        # Preserve grid state: save current filter and sort key.
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            trans.get_user().preferences[pref_name] = text_type(dumps(cur_filter_dict))
-            if sort_key:
-                pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-                trans.get_user().preferences[pref_name] = text_type(dumps(sort_key))
-            trans.sa_session.flush()
+
         # Log grid view.
         context = text_type(self.__class__.__name__)
         params = cur_filter_dict.copy()

@@ -222,7 +222,6 @@ class SpecifiedDateListGrid(grids.Grid):
     standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):

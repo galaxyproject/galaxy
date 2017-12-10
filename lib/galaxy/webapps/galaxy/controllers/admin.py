@@ -154,7 +154,6 @@ class UserListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def get_current_item(self, trans, **kwargs):
@@ -255,7 +254,6 @@ class RoleListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -335,7 +333,6 @@ class GroupListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -447,7 +444,6 @@ class QuotaListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -499,7 +495,6 @@ class ToolVersionListGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):

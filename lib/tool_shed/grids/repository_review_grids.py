@@ -45,7 +45,6 @@ class ComponentGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -349,7 +348,6 @@ class RepositoryReviewsByUserGrid(grids.Grid):
     ]
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):

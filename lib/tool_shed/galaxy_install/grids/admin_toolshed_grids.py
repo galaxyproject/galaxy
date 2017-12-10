@@ -215,7 +215,6 @@ class InstalledRepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):

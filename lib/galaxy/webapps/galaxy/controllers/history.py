@@ -130,7 +130,6 @@ class HistoryListGrid(grids.Grid):
     ]
     default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
     num_rows_per_page = 15
-    preserve_state = False
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
