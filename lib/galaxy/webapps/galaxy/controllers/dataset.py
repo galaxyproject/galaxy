@@ -569,7 +569,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     kwargs['refresh_frames'] = ['history']
 
         # Render the list view
-        kwargs['dict_format'] = True
         return self.stored_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose

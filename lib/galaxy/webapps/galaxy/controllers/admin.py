@@ -559,7 +559,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd['dict_format'] = True
         return self.user_list_grid(trans, **kwd)
 
     @web.expose_api
@@ -592,7 +591,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status or 'done'
-        kwargs['dict_format'] = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -902,7 +900,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
-        kwd['dict_format'] = True
         return self.tool_version_list_grid(trans, **kwd)
 
     @web.expose
@@ -923,7 +920,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_role(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_role(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1168,7 +1164,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_group(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_group(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status

@@ -240,7 +240,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     @web.require_login("see all available libraries")
     def list_libraries(self, trans, **kwargs):
         """List all libraries that can be used for selecting datasets."""
-        kwargs['dict_format'] = True
         return self._libraries_grid(trans, **kwargs)
 
     @web.expose
@@ -249,7 +248,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     def list_history_datasets(self, trans, **kwargs):
         """List a history's datasets that can be added to a visualization."""
         kwargs['show_item_checkboxes'] = 'True'
-        kwargs['dict_format'] = True
         return self._history_datasets_grid(trans, **kwargs)
 
     @web.expose
@@ -258,19 +256,16 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     def list_library_datasets(self, trans, **kwargs):
         """List a library's datasets that can be added to a visualization."""
         kwargs['show_item_checkboxes'] = 'True'
-        kwargs['dict_format'] = True
         return self._library_datasets_grid(trans, **kwargs)
 
     @web.expose
     @web.json
     def list_tracks(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self._tracks_grid(trans, **kwargs)
 
     @web.expose
     @web.json
     def list_published(self, trans, *args, **kwargs):
-        kwargs['dict_format'] = True
         grid = self._published_list_grid(trans, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -292,7 +287,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     self.copy(trans, **kwargs)
             session.flush()
         kwargs['embedded'] = True
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = sanitize_text(message)
             kwargs['status'] = status

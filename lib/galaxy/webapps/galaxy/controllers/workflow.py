@@ -201,7 +201,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose

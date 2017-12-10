@@ -244,7 +244,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -314,7 +313,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
                 trans.sa_session.flush()
         # Render the list view
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = sanitize_text(message)
             kwargs['status'] = status
@@ -452,7 +450,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 message = "Unshared %d shared histories" % len(ids)
                 status = 'done'
         # Render the list view
-        kwargs['dict_format'] = True
         return self.shared_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose
