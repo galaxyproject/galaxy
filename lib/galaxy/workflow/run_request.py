@@ -41,13 +41,20 @@ class WorkflowRunConfig(object):
     :type param_map: dict
     """
 
-    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False):
+    def __init__(self, target_history,
+                 replacement_dict,
+                 copy_inputs_to_history=False,
+                 inputs={},
+                 param_map={},
+                 allow_tool_state_corrections=False,
+                 use_cached_jobs=False):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
         self.inputs = inputs
         self.param_map = param_map
         self.allow_tool_state_corrections = allow_tool_state_corrections
+        self.use_cached_jobs = use_cached_jobs
 
 
 def _normalize_inputs(steps, inputs, inputs_by):
@@ -197,6 +204,7 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
 def build_workflow_run_configs(trans, workflow, payload):
     app = trans.app
     allow_tool_state_corrections = payload.get('allow_tool_state_corrections', False)
+    use_cached_jobs = payload.get('use_cached_jobs', False)
 
     # Sanity checks.
     if len(workflow.steps) == 0:
@@ -301,7 +309,8 @@ def build_workflow_run_configs(trans, workflow, payload):
             replacement_dict=payload.get('replacement_params', {}),
             inputs=normalized_inputs,
             param_map=param_map,
-            allow_tool_state_corrections=allow_tool_state_corrections
+            allow_tool_state_corrections=allow_tool_state_corrections,
+            use_cached_jobs=use_cached_jobs,
         ))
 
     return run_configs

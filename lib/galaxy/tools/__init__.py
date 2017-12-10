@@ -1281,7 +1281,7 @@ class Tool(object, Dictifiable):
         log.debug('Validated and populated state for tool request %s' % validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None):
+    def handle_input(self, trans, incoming, history=None, use_cached_job=False):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1298,13 +1298,16 @@ class Tool(object, Dictifiable):
             mapping_params = MappingParameters(incoming, all_params)
             completed_jobs = {}
             for i, param in enumerate(all_params):
-                completed_jobs[i] = self.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=self.id,
-                    tool_version=self.version,
-                    param=param,
-                    param_dump=self.params_to_strings(param, self.app, nested=True),
-                )
+                if use_cached_job:
+                    completed_jobs[i] = self.job_search.by_tool_input(
+                        trans=trans,
+                        tool_id=self.id,
+                        tool_version=self.version,
+                        param=param,
+                        param_dump=self.params_to_strings(param, self.app, nested=True),
+                    )
+                else:
+                    completed_jobs[i] = None
             execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)
             # Raise an exception if there were jobs to execute and none of them were submitted,
             # if at least one is submitted or there are no jobs to execute - return aggregate
