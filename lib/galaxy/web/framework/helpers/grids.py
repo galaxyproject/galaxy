@@ -36,7 +36,6 @@ class Grid(object):
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
-    pass_through_operations = {}
     legend = None
     info_text = None
 
