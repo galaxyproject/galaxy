@@ -29,7 +29,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation, column_property
+from sqlalchemy.orm import backref, class_mapper, column_property, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
