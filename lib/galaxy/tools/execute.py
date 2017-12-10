@@ -110,7 +110,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             t.daemon = True
             t.start()
 
-        for execution_slice in execution_tracker.new_execution_slices():
+        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
