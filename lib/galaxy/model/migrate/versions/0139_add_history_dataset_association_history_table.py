@@ -7,6 +7,7 @@ import datetime
 import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+
 from galaxy.model.custom_types import MetadataType, TrimmedString
 
 now = datetime.datetime.utcnow
