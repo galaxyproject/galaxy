@@ -218,13 +218,6 @@ class Grid(object):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
 
-        # TODO:??
-        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
-        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
-        # in mapping.py. If you change that to False, the log_action doesn't affect the query
-        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
-        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
-
         # Render grid.
         def url(*args, **kwargs):
             route_name = kwargs.pop('__route_name__', None)
