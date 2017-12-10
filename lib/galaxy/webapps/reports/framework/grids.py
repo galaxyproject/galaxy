@@ -24,8 +24,8 @@ class Grid(object):
     exposed = True
     model_class = None
     show_item_checkboxes = False
-    template = "grid_base.mako"
-    async_template = "grid_base_async.mako"
+    template = "webapps/reports/grid_base.mako"
+    async_template = "webapps/reports/grid_base_async.mako"
     use_async = False
     use_hide_message = True
     global_actions = []
