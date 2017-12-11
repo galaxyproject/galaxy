@@ -75,9 +75,7 @@ var HDCAListItemView = _super.extend(
             } else if (!jobStatesSummary || !jobStatesSummary.hasDetails()) {
                 return `
                     <div class="progress state-progress">
-                        <span class="note">Loading job data for ${
-                            collectionTypeDescription
-                        }.<span class="blinking">..</span></span>
+                        <span class="note">Loading job data for ${collectionTypeDescription}.<span class="blinking">..</span></span>
                         <div class="progress-bar info" style="width:100%">
                     </div>`;
             } else {
