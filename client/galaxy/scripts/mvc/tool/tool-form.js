@@ -148,6 +148,18 @@ var View = Backbone.View.extend({
                     "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run."
             });
         }
+
+        // Job Re-use Options
+       options.inputs.push({
+           label: "BETA: Attempt to re-use jobs with identical parameters ?",
+           help: "This may skip executing jobs that you have already run",
+           name: "use_cached_job",
+           type: "select",
+           display: "radio",
+           ignore: "__ignore__",
+           value: "__ignore__",
+           options: [["No", false], ["Yes", true]],
+       });
     },
 
     /** Submit a regular job.
