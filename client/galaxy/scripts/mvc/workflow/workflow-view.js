@@ -764,13 +764,15 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
-        buttons.append(
-            $("<div/>")
-                .addClass("fa-icon-button fa fa-files-o")
-                .click(e => {
-                    node.clone();
-                })
-        );
+        if (type !== "subworkflow") {
+            buttons.append(
+                $("<div/>")
+                    .addClass("fa-icon-button fa fa-files-o")
+                    .click(e => {
+                        node.clone();
+                    })
+            );
+        }
         buttons.append(
             $("<div/>")
                 .addClass("fa-icon-button fa fa-times")
