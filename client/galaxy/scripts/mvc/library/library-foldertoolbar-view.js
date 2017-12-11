@@ -3,7 +3,9 @@ import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
+import LIST_CREATOR from "mvc/collection/list-collection-creator";
+import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
+import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import HDCA_MODEL from "mvc/history/hdca-model";
 import "libs/jquery/jstree";
 
@@ -1214,11 +1216,11 @@ var FolderToolbarView = Backbone.View.extend({
         var checked_items = this.findCheckedItems();
         var template = this.templateCollectionSelectModal();
         this.modal = Galaxy.modal;
-        console.log(checked_items.dataset_ids.length);
+        console.log('checked: ', checked_items.dataset_ids.length);
         this.modal.show({
             closing_events: true,
-            title: "Create Collection from Datasets",
-            body: template({ selected_datasets: checked_items.dataset_ids.length }),
+            title: "Create History Collection from Datasets",
+            body: template({selected_datasets: checked_items.dataset_ids.length}),
             buttons: {
                 Continue: () => {
                     this.showColectionBuilder(checked_items.dataset_ids);
@@ -1274,9 +1276,8 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showColectionBuilder: function(checked_items) {
-        console.log(this.collectionType);
-        var collection_elements = [];
-        var elements_source = this.modal.$('input[type="radio"]:checked').val();
+        let collection_elements = [];
+        let elements_source = this.modal.$('input[type="radio"]:checked').val();
         if (elements_source === "selection") {
             for (let i = checked_items.length - 1; i >= 0; i--) {
                 let collection_item = {};
@@ -1292,7 +1293,7 @@ var FolderToolbarView = Backbone.View.extend({
                 Galaxy.libraries.folderListView.folder_container.get("folder").where({type: "file"})
             ).toJSON();
         }
-        var new_history_name = this.modal.$("input[name=history_name]").val();
+        let new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .done(new_history => {
@@ -1303,45 +1304,66 @@ var FolderToolbarView = Backbone.View.extend({
                     mod_toastr.error("An error occurred.");
                 });
         } else {
-            var selected_history_id = this.select_collection_history.value();
-            var selected_history_name = this.select_collection_history.text();
+            let selected_history_id = this.select_collection_history.value();
+            let selected_history_name = this.select_collection_history.text();
             this.collectionImport(collection_elements, selected_history_id, selected_history_name);
         }
     },
 
     collectionImport: function(collection_elements, history_id, history_name) {
-        var modal_title = `Creating collection in ${history_name}`;
-        var createFunc = LIST_COLLECTION_CREATOR.ListCollectionCreator;
-        var creationFn = (elements, name, hideSourceItems = true) => {
-            elements = elements.map(element => ({
-                id: element.id,
-                name: element.name,
-                src: "ldda"
-            }));
-            return this.createHDCA(elements, "list", name, hideSourceItems, history_id);
-        };
-        var deferred = LIST_COLLECTION_CREATOR.collectionCreatorModal(
+        let modal_title = `Creating Collection in ${history_name}`;
+        let creator_class;
+        let creationFn;
+        if (this.collectionType === "list"){
+            creator_class = LIST_CREATOR.ListCollectionCreator;
+            creationFn = (elements, name, hideSourceItems) => {
+                elements = elements.map(element => ({
+                    id: element.id,
+                    name: element.name,
+                    src: "ldda"
+                }));
+                console.log('list elements: ', elements);
+                return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
+            };
+        } else if (this.collectionType === "paired"){
+            creator_class = PAIR_CREATOR.PairCollectionCreator;
+            creationFn = (elements, name, hideSourceItems) => {
+                elements = [
+                { name: "forward", src: "ldda", id: elements[0].id },
+                { name: "reverse", src: "ldda", id: elements[1].id }
+                ];
+                console.log('pair elements: ', elements);
+                return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
+            };
+        } else if (this.collectionType === "list:paired"){
+            creator_class = PAIRED_CREATOR.PairedCollectionCreator;
+            creationFn = (elements, hideSourceItems) => {
+                console.log('PRE list:pair elements: ', elements);
+                elements = elements.map(element => ({
+                    id: element.id,
+                    name: element.name,
+                    src: "ldda"
+                }));
+                console.log('POST list:pair elements: ', elements);
+                return PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, defaultHideSourceItems: hideSourceItems});
+            };
+        }
+        LIST_CREATOR.collectionCreatorModal(
             collection_elements,
-            { creationFn: creationFn, title: modal_title },
-            createFunc
+            {creationFn: creationFn, title: modal_title},
+            creator_class
         );
     },
 
     createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, history_id, options) {
-        var hdca = new HDCA_MODEL.HistoryListDatasetCollection({
+        let hdca = new HDCA_MODEL.HistoryDatasetCollection({
             history_content_type: "dataset_collection",
             collection_type: collectionType,
             history_id: history_id,
             name: name,
             hide_source_items: hideSourceItems || false,
-            // should probably be able to just send in a bunch of json here and restruct per class
-            // note: element_identifiers is now (incorrectly) an attribute
             element_identifiers: elementIdentifiers
-            // do not create the model on the client until the ajax returns
         });
-        // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
-        //precondition: elementIdentifiers is an array of plain js objects
-        //  in the proper form to create the collectionType
         return hdca.save(options);
     },
 
