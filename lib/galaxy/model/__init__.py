@@ -5092,7 +5092,6 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def user_query(cls):
-        print '\n\n **** session: {}\n\n'.format(cls._session())
         return cls._session().query(cls.user_model())
 
     # @classmethod
@@ -5123,7 +5122,6 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def get_social_auth(cls, provider, uid):
-        #if not isinstance(uid, six.string_types):
         uid = str(uid)
         try:
             return cls._query().filter_by(provider=provider,
@@ -5182,11 +5180,7 @@ class UserAuthnzToken(UserMixin):
         try:
             cls._session().flush()
         except AssertionError:
-            if transaction:
-                with transaction.manager as manager:
-                    manager.commit()
-            else:
-                cls._session().commit()
+            cls._session().commit()
 
     def save(self):
         self._save_instance(self)
