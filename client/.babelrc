@@ -1,5 +1,6 @@
 {
   "presets": ["env"],
+  "plugins": ["transform-unicode-property-regex"],
   "moduleIds": true,
   "ignore": [
     "i18n.js",
