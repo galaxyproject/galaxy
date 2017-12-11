@@ -12,7 +12,9 @@ import numbers
 import operator
 import os
 import pwd
+import random
 import socket
+import string
 import time
 from datetime import datetime, timedelta
 from string import Template
@@ -5134,7 +5136,6 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def create_social_auth(cls, user, uid, provider):
-        # if not isinstance(uid, six.string_types):
         uid = str(uid)
         return cls._new_instance(cls, user=user, uid=uid, provider=provider)
 
@@ -5153,8 +5154,11 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def _new_instance(cls, model, *args, **kwargs):
-        # TODO: VERY IMPORTANT: THIS IS TEMPORARY !!!!
-        kwargs['password'] = 'qazwsx'
+        # TODO: password is a required field for a galaxy user record. However, it should not be required
+        # if the user is authenticated by an external identity provider. Once this logic is incorporated
+        # in the galaxy user, the following argument setting should be removed.
+        kwargs['password'] = ''.join(
+            random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
         return cls._save_instance(model(*args, **kwargs))
 
     @classmethod
