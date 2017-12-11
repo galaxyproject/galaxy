@@ -91,7 +91,7 @@
     "qunitjs": "^2.4.1",
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
-    "vue-template-compiler": "^2.5.3",
+    "vue-template-compiler": "^2.5.9",
     "webpack": "^3.10.0"
   }
 }
