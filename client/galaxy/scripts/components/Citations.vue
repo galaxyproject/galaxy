@@ -28,9 +28,7 @@
 </template>
 <script>
 import axios from "axios";
-import * as bibtexParse from "libs/bibtexParse";
-import { convertLaTeX } from "latex-to-unicode-converter";
-import { stringifyLaTeX } from "latex-parser";
+import Cite from "citation-js";
 
 export default {
     props: {
@@ -67,19 +65,8 @@ export default {
                 this.content = "";
                 for (var rawCitation of response.data) {
                     try {
-                        var citation = {
-                            fields: {},
-                            entryType: undefined
-                        };
-                        var parsed = bibtexParse.toJSON(rawCitation.content);
-                        if (parsed) {
-                            parsed = _.first(parsed);
-                            citation.entryType = parsed.entryType || undefined;
-                            for (var key in parsed.entryTags) {
-                                citation.fields[key.toLowerCase()] = parsed.entryTags[key];
-                            }
-                        }
-                        this.citations.push(citation);
+                        let cite = new Cite(rawCitation.content);
+                        this.citations.push(cite);
                         this.content += rawCitation.content;
                     } catch (err) {
                         console.warn("Error parsing bibtex: " + err);
@@ -92,93 +79,7 @@ export default {
     },
     methods: {
         formattedReference: function(citation) {
-            var entryType = citation.entryType;
-            var fields = citation.fields;
-
-            var ref = "";
-            var authorsAndYear = `${this._asSentence(
-                (fields.author ? fields.author : "") + (fields.year ? ` (${fields.year})` : "")
-            )} `;
-            var title = fields.title || "";
-            var pages = fields.pages ? `pp. ${fields.pages}` : "";
-            var address = fields.address;
-            if (entryType == "article") {
-                var volume =
-                    (fields.volume ? fields.volume : "") +
-                    (fields.number ? ` (${fields.number})` : "") +
-                    (pages ? `, ${pages}` : "");
-                ref = `${authorsAndYear +
-                    this._asSentence(title) +
-                    (fields.journal ? `In <em>${fields.journal}, ` : "") +
-                    this._asSentence(volume) +
-                    this._asSentence(fields.address)}</em>`;
-            } else if (entryType == "inproceedings" || entryType == "proceedings") {
-                ref = `${authorsAndYear +
-                    this._asSentence(title) +
-                    (fields.booktitle ? `In <em>${fields.booktitle}, ` : "") +
-                    (pages ? pages : "") +
-                    (address ? `, ${address}` : "")}.</em>`;
-            } else if (entryType == "mastersthesis" || entryType == "phdthesis") {
-                ref =
-                    authorsAndYear +
-                    this._asSentence(title) +
-                    (fields.howpublished ? `${fields.howpublished}. ` : "") +
-                    (fields.note ? `${fields.note}.` : "");
-            } else if (entryType == "techreport") {
-                ref =
-                    authorsAndYear +
-                    this._asSentence(title) +
-                    this._asSentence(fields.institution) +
-                    this._asSentence(fields.number) +
-                    this._asSentence(fields.type);
-            } else if (entryType == "book" || entryType == "inbook" || entryType == "incollection") {
-                ref = `${authorsAndYear} ${this._formatBookInfo(fields)}`;
-            } else {
-                ref = `${authorsAndYear} ${this._asSentence(title)}${this._asSentence(
-                    fields.howpublished
-                )}${this._asSentence(fields.note)}`;
-            }
-            var doiUrl = "";
-            if (fields.doi) {
-                doiUrl = `http://dx.doi.org/${fields.doi}`;
-                ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
-            }
-            var url = fields.url || doiUrl;
-            if (url) {
-                ref += `[<a href="${url}" target="_blank">Link</a>]`;
-            }
-            return convertLaTeX({ onError: (error, latex) => `{${stringifyLaTeX(latex)}}` }, ref);
-        },
-        _formatBookInfo: function(fields) {
-            var info = "";
-            if (fields.chapter) {
-                info += `${fields.chapter} in `;
-            }
-            if (fields.title) {
-                info += `<em>${fields.title}</em>`;
-            }
-            if (fields.editor) {
-                info += `, Edited by ${fields.editor}, `;
-            }
-            if (fields.publisher) {
-                info += `, ${fields.publisher}`;
-            }
-            if (fields.pages) {
-                info += `, pp. ${fields.pages}`;
-            }
-            if (fields.series) {
-                info += `, <em>${fields.series}</em>`;
-            }
-            if (fields.volume) {
-                info += `, Vol.${fields.volume}`;
-            }
-            if (fields.issn) {
-                info += `, ISBN: ${fields.issn}`;
-            }
-            return `${info}.`;
-        },
-        _asSentence: function(str) {
-            return str && str.trim() ? `${str}. ` : "";
+            return citation.get({ format: 'string', type: 'html', style: "citation-apa"});
         },
         toggleViewRender: function() {
             this.viewRender = !this.viewRender;
