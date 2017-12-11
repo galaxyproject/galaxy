@@ -200,6 +200,7 @@ var View = Backbone.View.extend({
         this._renderMessage();
         this._renderParameters();
         this._renderHistory();
+        this._renderUseCachedJob();
         _.each(this.steps, step => {
             self._renderStep(step);
         });
@@ -309,6 +310,28 @@ var View = Backbone.View.extend({
             ]
         });
         this._append(this.$steps, this.history_form.$el);
+    },
+
+    /** Render job caching option */
+    _renderUseCachedJob: function() {
+        this.job_options_form = new Form({
+            cls: "ui-portlet-narrow",
+            title: "<b>Job re-use Options</b>",
+            inputs: [
+                        {
+                            type: "conditional",
+                            name: "use_cached_job",
+                            test_param: {
+                                name: "check",
+                                label: "BETA: Attempt to reuse jobs with identical parameters?",
+                                type: "boolean",
+                                value: "false",
+                                help: "This may skip executing jobs that you have already run."
+                            },
+                        }
+                    ]
+       });
+       this._append(this.$steps, this.job_options_form.$el);
     },
 
     /** Render step */
@@ -497,8 +520,10 @@ var View = Backbone.View.extend({
     _submit: function() {
         var self = this;
         var history_form_data = this.history_form.data.create();
+        var job_options_form_data = this.job_options_form.data.create();
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
+            use_cached_job: true ? job_options_form_data["use_cached_job|check"] === 'true' : false,
             history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
             replacement_params: this.wp_form ? this.wp_form.data.create() : {},
             parameters: {},
