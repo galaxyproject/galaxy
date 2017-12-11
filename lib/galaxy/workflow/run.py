@@ -136,7 +136,7 @@ class WorkflowInvoker(object):
             self.workflow_invocation = workflow_invocation
 
         self.workflow_invocation.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
-        self.workflow_invocation.use_cached_job = workflow_run_config.use_cached_jobs
+        self.workflow_invocation.use_cached_job = workflow_run_config.use_cached_job
         self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
 
         module_injector = modules.WorkflowModuleInjector(trans)

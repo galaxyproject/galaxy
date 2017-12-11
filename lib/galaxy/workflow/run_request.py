@@ -47,14 +47,14 @@ class WorkflowRunConfig(object):
                  inputs={},
                  param_map={},
                  allow_tool_state_corrections=False,
-                 use_cached_jobs=False):
+                 use_cached_job=False):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
         self.inputs = inputs
         self.param_map = param_map
         self.allow_tool_state_corrections = allow_tool_state_corrections
-        self.use_cached_jobs = use_cached_jobs
+        self.use_cached_job = use_cached_job
 
 
 def _normalize_inputs(steps, inputs, inputs_by):
@@ -204,7 +204,7 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
 def build_workflow_run_configs(trans, workflow, payload):
     app = trans.app
     allow_tool_state_corrections = payload.get('allow_tool_state_corrections', False)
-    use_cached_jobs = payload.get('use_cached_jobs', False)
+    use_cached_job = payload.get('use_cached_job', False)
 
     # Sanity checks.
     if len(workflow.steps) == 0:
@@ -310,7 +310,7 @@ def build_workflow_run_configs(trans, workflow, payload):
             inputs=normalized_inputs,
             param_map=param_map,
             allow_tool_state_corrections=allow_tool_state_corrections,
-            use_cached_jobs=use_cached_jobs,
+            use_cached_job=use_cached_job,
         ))
 
     return run_configs

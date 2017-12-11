@@ -258,9 +258,9 @@ class JobSearch(object):
                 n_parameters += 1
             if not n_parameters == len(param_dump):
                 continue
-            log.info("Searching jobs finished %s", search_timer)
+            log.info("Found equivalent job %s", search_timer)
             return job
-        log.info("Searching jobs finished %s", search_timer)
+        log.info("No equivalent jobs found %s", search_timer)
         return None
 
 

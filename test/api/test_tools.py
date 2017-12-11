@@ -307,7 +307,6 @@ class ToolsTestCase(api.ApiTestCase):
     def test_run_cat1_use_cached_job(self):
         with self.dataset_populator.test_history() as history_id:
             # Run simple non-upload tool with an input data parameter.
-            history_id = self.dataset_populator.new_history()
             new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test')
             inputs = dict(
                 input1=dataset_to_param(new_dataset),
