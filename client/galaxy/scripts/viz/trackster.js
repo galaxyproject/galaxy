@@ -2,13 +2,7 @@ import _l from "utils/localization";
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
-
-// global variables
-var ui = null;
-var view = null;
-var browser_router = null;
-
-// trackster viewer
+//import * as $ from 'jquery';
 import * as _ from "libs/underscore";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
@@ -25,6 +19,12 @@ import "libs/farbtastic";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
+
+// trackster global variables
+var ui = null;
+var view = null;
+var browser_router = null;
+
 /**
  * Base Object/Model for inhertiance.
  */
@@ -250,7 +250,7 @@ var TracksterUI = Base.extend({
         // Create view.
         var self = this;
 
-        var view = new tracks.TracksterView(_.extend(view_config, { header: false }));
+        view = new tracks.TracksterView(_.extend(view_config, { header: false }));
 
         view.editor = true;
         $.when(view.load_chroms_deferred).then(chrom_info => {
