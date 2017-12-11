@@ -7577,9 +7577,9 @@ webpack@^1.14.0:
     watchpack "^0.2.1"
     webpack-core "~0.6.9"
 
-webpack@^3.6.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-3.7.0.tgz#9081d0b1ba4950e34ddc54195721eba4bf205e83"
+webpack@^3.10.0:
+  version "3.10.0"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-3.10.0.tgz#5291b875078cf2abf42bdd23afe3f8f96c17d725"
   dependencies:
     acorn "^5.0.0"
     acorn-dynamic-import "^2.0.0"
