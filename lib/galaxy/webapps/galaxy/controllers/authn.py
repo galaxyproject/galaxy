@@ -12,11 +12,7 @@ from galaxy.web.base.controller import BaseUIController
 class OAuth2(BaseUIController):
 
     @web.expose
-    @web.require_login("authenticate against Google identity provider")
     def login(self, trans, **kwargs):
-        if trans.user is None:
-            # Only logged in users are allowed here.
-            return
         return trans.response.send_redirect(web.url_for(trans.app.authnz_manager.authenticate("Google", trans)))
 
     @web.expose

@@ -5094,23 +5094,17 @@ class UserAuthnzToken(UserMixin):
     def user_query(cls):
         return cls._session().query(cls.user_model())
 
-    # @classmethod
-    # def user_exists(cls, *args, **kwargs):
-    #     """
-    #     Return True/False if a User instance exists with the given arguments.
-    #     Arguments are directly passed to filter() manager method.
-    #     """
-    #     print '\n............... checking if user exists; args: {}\tkwargs: {}'.format(args, kwargs)
-    #     return cls.user_query().filter_by(*args, **kwargs).count() > 0
+    @classmethod
+    def user_exists(cls, *args, **kwargs):
+        return cls.user_query().filter_by(*args, **kwargs).count() > 0
 
     @classmethod
     def get_username(cls, user):
         return getattr(user, 'username', None)
 
-    # @classmethod
-    # def create_user(cls, *args, **kwargs):
-    #     print '\n.............. creating a users; args: {}\tkwargs: {}'.format(args, kwargs)
-    #     return cls._new_instance(cls.user_model(), *args, **kwargs)
+    @classmethod
+    def create_user(cls, *args, **kwargs):
+        return cls._new_instance(cls.user_model(), *args, **kwargs)
 
     @classmethod
     def get_user(cls, pk):
@@ -5161,13 +5155,11 @@ class UserAuthnzToken(UserMixin):
     def _new_instance(cls, model, *args, **kwargs):
         # TODO: VERY IMPORTANT: THIS IS TEMPORARY !!!!
         kwargs['password'] = 'qazwsx'
-        print '\n\n\n args: \t{}\n\nkwargs: \t{}\nmodel: \t{}\n\n\n'.format(args, kwargs, model)
         return cls._save_instance(model(*args, **kwargs))
 
     @classmethod
     def _save_instance(cls, instance):
         cls._session().add(instance)
-        print '\n\n\n\n saving this instnace: {}\n\n\n\n'.format(instance)
         if cls.COMMIT_SESSION:
             # cls._session().commit()
             cls._session().flush()

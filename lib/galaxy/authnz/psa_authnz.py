@@ -155,6 +155,7 @@ class PSAAuthnz(IdentityProvider):
         # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
         global _user
         _user = trans.user
+        print '\n\n...................... _user: {}\n\n'.format(_user)
         _trans = trans
 
         backend_label = 'google-openidconnect'
