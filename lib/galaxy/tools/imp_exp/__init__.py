@@ -16,6 +16,11 @@ from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
+ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
+ATTRS_FILENAME_DATASETS = 'datasets_attrs.txt'
+ATTRS_FILENAME_JOBS = 'jobs_attrs.txt'
+ATTRS_FILENAME_COLLECTIONS = 'collections_attrs.txt'
+
 
 class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
     """
@@ -76,7 +81,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 user = jiha.job.user
 
                 # Bioblend previous to 17.01 exported histories with an extra subdir.
-                if not os.path.exists(os.path.join(archive_dir, 'history_attrs.txt')):
+                if not os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)):
                     for d in os.listdir(archive_dir):
                         if os.path.isdir(os.path.join(archive_dir, d)):
                             archive_dir = os.path.join(archive_dir, d)
@@ -85,7 +90,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 #
                 # Create history.
                 #
-                history_attr_file_name = os.path.join(archive_dir, 'history_attrs.txt')
+                history_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)
                 history_attr_str = read_file_contents(history_attr_file_name)
                 history_attrs = loads(history_attr_str)
 
@@ -111,7 +116,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 #
                 # Create collections.
                 #
-                collections_attrs_file_name = os.path.join(archive_dir, 'collections_attrs.txt')
+                collections_attrs_file_name = os.path.join(archive_dir, ATTRS_FILENAME_COLLECTIONS)
                 collections_attr_str = read_file_contents(collections_attrs_file_name)
                 collections_attrs = loads(collections_attr_str)
 
@@ -136,7 +141,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 #
                 # Create datasets.
                 #
-                datasets_attrs_file_name = os.path.join(archive_dir, 'datasets_attrs.txt')
+                datasets_attrs_file_name = os.path.join(archive_dir, ATTRS_FILENAME_DATASETS)
                 datasets_attr_str = read_file_contents(datasets_attrs_file_name)
                 datasets_attrs = loads(datasets_attr_str)
 
@@ -264,7 +269,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 #
 
                 # Read jobs attributes.
-                jobs_attr_file_name = os.path.join(archive_dir, 'jobs_attrs.txt')
+                jobs_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_JOBS)
                 jobs_attr_str = read_file_contents(jobs_attr_file_name)
 
                 # Decode jobs attributes.
@@ -515,7 +520,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             "includes_hidden_datasets": include_hidden,
             "includes_deleted_datasets": include_deleted
         }
-        history_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
         history_attrs_out = open(history_attrs_filename, 'w')
         history_attrs_out.write(dumps(history_attrs))
         history_attrs_out.close()
@@ -533,7 +538,8 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             else:
                 datasets_attrs.append(dataset)
                 included_datasets.append(dataset)
-        datasets_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+
+        datasets_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs_out = open(datasets_attrs_filename, 'w')
         datasets_attrs_out.write(dumps(datasets_attrs, cls=HistoryDatasetAssociationEncoder))
         datasets_attrs_out.close()
@@ -558,7 +564,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
             for collection_dataset in collection.dataset_instances:
                 included_datasets.append(collection_dataset)
 
-        collections_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        collections_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_COLLECTIONS)
         collections_attrs_out = open(collections_attrs_filename, 'w')
         collections_attrs_out.write(dumps(collections_attrs, cls=CollectionsEncoder))
         collections_attrs_out.close()
@@ -634,7 +640,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
 
             jobs_attrs.append(job_attrs)
 
-        jobs_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        jobs_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_JOBS)
         jobs_attrs_out = open(jobs_attrs_filename, 'w')
         jobs_attrs_out.write(dumps(jobs_attrs, cls=HistoryDatasetAssociationEncoder))
         jobs_attrs_out.close()
@@ -645,10 +651,7 @@ class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
         options = ""
         if jeha.compressed:
             options = "-G"
-        return "%s %s %s %s %s" % (options, history_attrs_filename,
-                                   datasets_attrs_filename,
-                                   jobs_attrs_filename,
-                                   collections_attrs_filename)
+        return "%s %s" % (options, temp_output_dir)
 
     def cleanup_after_job(self, db_session):
         """ Remove temporary directory and attribute files generated during setup for this job. """
