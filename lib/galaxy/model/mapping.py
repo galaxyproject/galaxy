@@ -103,8 +103,7 @@ model.UserOAuth2.table = Table(
     Column("expiration_date", DateTime),
     Column("access_token", String))
 
-# TODO: add '.table'
-model.SocialAuthAssociation = Table(
+model.SocialAuthAssociation.table = Table(
     "social_auth_association", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
@@ -114,30 +113,26 @@ model.SocialAuthAssociation = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-# TODO: add '.table'
-model.SocialAuthCode = Table(
+model.SocialAuthCode.table = Table(
     "social_auth_code", metadata,
     Column('id', Integer, primary_key=True),
     Column('email', VARCHAR(200)),
     Column('code', VARCHAR(32)))
 
-# TODO: add '.table'
-model.SocialAuthNonce = Table(
+model.SocialAuthNonce.table = Table(
     "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('timestamp', Integer),
     Column('salt', VARCHAR(40)))
 
-# TODO: add '.table'
-model.SocialAuthPartial = Table(
+model.SocialAuthPartial.table = Table(
     "social_auth_partial", metadata,
     Column('id', Integer, primary_key=True),
     Column('token', VARCHAR(32)),
     Column('data', TEXT),
     Column('next_step', Integer),
     Column('backend', VARCHAR(32)))
-
 
 model.UserAuthnzToken.table = Table(
     "oidc_rp_user_authnz_tokens", metadata,
@@ -148,7 +143,6 @@ model.UserAuthnzToken.table = Table(
     Column('extra_data', TEXT),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
-
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
