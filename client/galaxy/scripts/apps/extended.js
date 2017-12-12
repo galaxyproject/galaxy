@@ -15,6 +15,7 @@ import HistoryContents from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
 import HistoryView from "mvc/history/history-view";
 import HistoryViewEdit from "mvc/history/history-view-edit";
+import HistoryViewAnnotated from "mvc/history/history-view-annotated";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
 import addLogging from "utils/add-logging";
 
@@ -171,7 +172,10 @@ export const bundleEntries = {
     multiHistory: multiHistoryEntry,
     history: historyEntry,
     History: History.History,
-    HistoryContents: HistoryContents.HistoryContents
+    HistoryContents: HistoryContents.HistoryContents,
+    HistoryCopyDialog,
+    HistoryViewAnnotated
 };
 
+console.debug(bundleEntries);
 window.bundleEntries = bundleEntries;
