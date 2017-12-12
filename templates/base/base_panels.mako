@@ -98,13 +98,13 @@
 
     %if self.has_left_panel:
         var lp = new panels.LeftPanel({ el: '#left' });
-        force_left_panel = function( x ) { lp.force_panel( x ) };
+        window.force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
         var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-        force_right_panel = function( x ) { rp.force_panel( x ) };
+        window.force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:

@@ -1,7 +1,7 @@
 import _l from "utils/localization";
 import * as _ from "libs/underscore";
 import * as d3 from "d3";
-import {event as currentEvent} from "d3";
+import { event as currentEvent } from "d3";
 import visualization from "viz/visualization";
 import mod_utils from "utils/utils";
 import config from "utils/config";
@@ -1099,9 +1099,9 @@ var Circster = Backbone.View.extend({
         // load css
         mod_utils.cssLoadFile("static/style/circster.css");
         // -- Configure visualization --
-        var genome = new visualization.Genome(galaxy_config.app.genome);
+        var genome = new visualization.Genome(window.galaxy_config.app.genome);
 
-        var vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config);
+        var vis = new visualization.GenomeVisualization(window.galaxy_config.app.viz_config);
 
         // Add Circster-specific config options.
         vis.get("config").add([
@@ -1141,7 +1141,7 @@ var Circster = Backbone.View.extend({
 
         // setup title
         $("#center .unified-panel-header-inner").append(
-            `${galaxy_config.app.viz_config.title} ${galaxy_config.app.viz_config.dbkey}`
+            `${window.galaxy_config.app.viz_config.title} ${window.galaxy_config.app.viz_config.dbkey}`
         );
 
         // setup menu

@@ -152,7 +152,7 @@ var TracksterUI = Base.extend({
                     title: _l("Bookmarks"),
                     on_click: function() {
                         // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                        force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
+                        window.force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
                     }
                 },
                 {
@@ -408,10 +408,10 @@ var TracksterView = Backbone.View.extend({
         });
 
         // hide right panel
-        force_right_panel("hide");
+        window.force_right_panel("hide");
 
         // check if id is available
-        if (galaxy_config.app.id) {
+        if (window.galaxy_config.app.id) {
             this.view_existing();
         } else if (query_string.get("dataset_id")) {
             this.choose_existing_or_new();
@@ -484,7 +484,7 @@ var TracksterView = Backbone.View.extend({
     // view
     view_existing: function() {
         // get config
-        var viz_config = galaxy_config.app.viz_config;
+        var viz_config = window.galaxy_config.app.viz_config;
 
         // view
         view = ui.create_visualization(
@@ -534,8 +534,8 @@ var TracksterView = Backbone.View.extend({
 
                 // select default
                 var dbkeys_in_genomes = response.map(r => r[1]);
-                if (galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes, galaxy_config.app.default_dbkey)) {
-                    $("#new-dbkey").val(galaxy_config.app.default_dbkey);
+                if (window.galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes, window.galaxy_config.app.default_dbkey)) {
+                    $("#new-dbkey").val(window.galaxy_config.app.default_dbkey);
                 }
 
                 // change focus
@@ -589,7 +589,7 @@ var TracksterView = Backbone.View.extend({
                 name: name,
                 dbkey: dbkey
             },
-            galaxy_config.app.gene_region
+            window.galaxy_config.app.gene_region
         );
 
         // initialize editor
@@ -605,9 +605,9 @@ var TracksterView = Backbone.View.extend({
         $("#center .unified-panel-title").text(`${view.config.get_value("name")} (${view.dbkey})`);
 
         // add dataset
-        if (galaxy_config.app.add_dataset)
+        if (window.galaxy_config.app.add_dataset)
             $.ajax({
-                url: `${Galaxy.root}api/datasets/${galaxy_config.app.add_dataset}`,
+                url: `${Galaxy.root}api/datasets/${window.galaxy_config.app.add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
                 dataType: "json",
                 success: function(track_data) {
