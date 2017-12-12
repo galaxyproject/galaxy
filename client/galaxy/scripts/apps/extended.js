@@ -174,7 +174,8 @@ export const bundleEntries = {
     History: History.History,
     HistoryContents: HistoryContents.HistoryContents,
     HistoryCopyDialog,
-    HistoryViewAnnotated
+    HistoryViewAnnotated,
+    Trackster
 };
 
 console.debug(bundleEntries);
