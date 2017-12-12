@@ -383,48 +383,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    subscribe_checked=False,
                                    openids=openids)
 
-    @web.expose
-    @web.require_login('manage OpenIDs')
-    def openid_disassociate(self, trans, **kwd):
-        '''Disassociates a user with an OpenID'''
-        if not trans.app.config.enable_openid:
-            return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        params = util.Params(kwd)
-        ids = params.get('id', None)
-        message = params.get('message', None)
-        status = params.get('status', None)
-        use_panels = params.get('use_panels', False)
-        user_openids = []
-        if not ids:
-            message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
-            status = 'error'
-        else:
-            ids = util.listify(params.id)
-            for id in ids:
-                id = trans.security.decode_id(id)
-                user_openid = trans.sa_session.query(trans.app.model.UserOpenID).get(int(id))
-                if not user_openid or (trans.user.id != user_openid.user_id):
-                    message = 'The selected OpenID(s) are not associated with your Galaxy account.'
-                    status = 'error'
-                    user_openids = []
-                    break
-                user_openids.append(user_openid)
-            if user_openids:
-                deleted_urls = []
-                for user_openid in user_openids:
-                    trans.sa_session.delete(user_openid)
-                    deleted_urls.append(user_openid.openid)
-                trans.sa_session.flush()
-                for deleted_url in deleted_urls:
-                    trans.log_event("User disassociated OpenID: %s" % deleted_url)
-                message = '%s OpenIDs were disassociated from your Galaxy account.' % len(ids)
-                status = 'done'
-        return trans.response.send_redirect(url_for(controller='user',
-                                                    action='openid_manage',
-                                                    use_panels=use_panels,
-                                                    message=message,
-                                                    status=status))
-
     @web.expose_api
     @web.require_login('manage OpenIDs')
     def openids_list(self, trans, **kwd):
