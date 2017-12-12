@@ -11,13 +11,14 @@ import Modal from "mvc/ui/ui-modal";
 import pagesEditorOnload from "galaxy.pages";
 import Data from "mvc/dataset/data";
 import History from "mvc/history/history-model";
+import HistoryContents from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
 import HistoryView from "mvc/history/history-view";
 import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
 import addLogging from "utils/add-logging";
 
-if (window.Galaxy && window.Galaxy.debug === undefined){
+if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
     //here; remove when imports are all fixed.
     addLogging(window.Galaxy, "GalaxyApp");
@@ -168,7 +169,9 @@ export const bundleEntries = {
     phyloviz: Phyloviz.PhylovizView,
     createTabularDatasetChunkedView: Data.createTabularDatasetChunkedView,
     multiHistory: multiHistoryEntry,
-    history: historyEntry
+    history: historyEntry,
+    History: History.History,
+    HistoryContents: HistoryContents.HistoryContents
 };
 
 window.bundleEntries = bundleEntries;

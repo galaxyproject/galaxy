@@ -57,10 +57,7 @@
         $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' );
 
         $(function(){
-            var HISTORY = require( 'mvc/history/history-model' );
-            var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
-
-            var HistoryContentsWithAnnotations = HISTORY_CONTENTS.default.HistoryContents.extend({
+            var HistoryContentsWithAnnotations = window.bundleEntries.HistoryContents.extend({
                 _buildFetchData : function( options ){
                     console.log( '_buildFetchData:' );
                     options = options || {};
@@ -68,10 +65,10 @@
                         options.view = 'summary';
                         options.keys = 'annotation,tags';
                     }
-                    return HISTORY_CONTENTS.default.HistoryContents.prototype._buildFetchData.call( this, options );
+                    return window.bundleEntries.HistoryContents.prototype._buildFetchData.call( this, options );
                 }
             });
-            var HistoryWithAnnotations = HISTORY.default.History.extend({
+            var HistoryWithAnnotations = window.bundleEntries.History.extend({
                 contentsClass : HistoryContentsWithAnnotations
             });
 
