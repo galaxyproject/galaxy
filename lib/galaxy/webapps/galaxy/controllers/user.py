@@ -62,10 +62,8 @@ can also copy and paste it into your browser.
 
 
 class UserOpenIDGrid(grids.Grid):
-    use_panels = False
     title = "OpenIDs linked to your account"
     model_class = model.UserOpenID
-    template = '/user/openid_manage.mako'
     default_filter = {"openid": "All"}
     default_sort_key = "-create_time"
     columns = [
@@ -427,22 +425,23 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                                     message=message,
                                                     status=status))
 
-    @web.expose
+    @web.expose_api
     @web.require_login('manage OpenIDs')
-    def openid_manage(self, trans, **kwd):
+    def openids_list(self, trans, **kwd):
         '''Manage OpenIDs for user'''
-        if not trans.app.config.enable_openid:
-            return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        use_panels = kwd.get('use_panels', False)
-        if 'operation' in kwd:
-            operation = kwd['operation'].lower()
-            if operation == "delete":
-                return trans.response.send_redirect(url_for(controller='user',
-                                                            action='openid_disassociate',
-                                                            use_panels=use_panels,
-                                                            id=kwd['id']))
-        kwd['redirect'] = kwd.get('redirect', url_for(controller='user', action='openid_manage', use_panels=True)).strip()
-        kwd['openid_providers'] = trans.app.openid_providers
+        #if not trans.app.config.enable_openid:
+        #    return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
+        #use_panels = kwd.get('use_panels', False)
+        #if 'operation' in kwd:
+        #    operation = kwd['operation'].lower()
+        #    if operation == "delete":
+        #        return trans.response.send_redirect(url_for(controller='user',
+        #                                                    action='openid_disassociate',
+        #                                                    use_panels=use_panels,
+        #                                                    id=kwd['id']))
+        #kwd['redirect'] = kwd.get('redirect', url_for(controller='user', action='openid_manage', use_panels=True)).strip()
+        #kwd['openid_providers'] = trans.app.openid_providers
+        kwd['dict_format'] = True
         return self.user_openid_grid(trans, **kwd)
 
     @web.expose
