@@ -71,7 +71,7 @@ class UserOpenIDGrid(grids.Grid):
         grids.GridColumn("Created", key="create_time", format=time_ago),
     ]
     global_actions = [
-        grids.GridAction("Add new account", url_args=dict(controller="", action="openids/create"))
+        grids.GridAction("Add new account", url_args=dict(action="create_openid"))
     ]
     operations = [
         grids.GridOperation("Delete", async_compatible=True),
@@ -386,27 +386,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    subscribe_checked=False,
                                    openids=openids)
 
-    @web.expose_api
+    @web.expose
     @web.require_admin
     def create_openid(self, trans, **kwd):
-        #kwd['openid_providers'] = trans.app.openid_providers
-        if trans.request.method == 'GET':
-            return {
-                'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
-                            {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
-            }
-        else:
-            #password = payload.get('password')
-            #confirm = payload.get('confirm')
-            #if len(password) < 6:
-            return self.message_exception(trans, 'Use a password of at least 6 characters.')
-            #elif password != confirm:
-            #    return self.message_exception(trans, 'Passwords do not match.')
-            #for user in users.itervalues():
-            #    user.set_password_cleartext(password)
-            #    trans.sa_session.add(user)
-            #    trans.sa_session.flush()
-            #return {'message': 'Passwords reset for %d user(s).' % len(users)}
+        return trans.fill_template('/user/openid_manage.mako',
+           openid_providers=trans.app.openid_providers,
+           redirect=kwd.get('redirect', url_for(controller='openids', action='list')).strip())
 
     @web.expose_api
     @web.require_login('manage OpenIDs')
