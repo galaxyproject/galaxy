@@ -71,7 +71,7 @@ class UserOpenIDGrid(grids.Grid):
         grids.GridColumn("Created", key="create_time", format=time_ago),
     ]
     global_actions = [
-        grids.GridAction("Add new account", url_args=dict(action="create_openid"))
+        grids.GridAction("Add new account", url_args=dict(action="create_openid"), target="center")
     ]
     operations = [
         grids.GridOperation("Delete", async_compatible=True),
