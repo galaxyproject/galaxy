@@ -2,7 +2,6 @@
 // === MAIN GALAXY LIBRARY MODULE ====
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-import mod_masthead from "layout/masthead";
 import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_baseMVC from "mvc/base-mvc";

@@ -1,2 +1,56 @@
-define("mvc/upload/upload-extension",["exports","utils/utils","mvc/ui/ui-popover"],function(e,t,i){"use strict";function n(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});n(t);var o=n(i);e.default=Backbone.View.extend({initialize:function(e){this.model=new Backbone.Model(e),this.setElement("<div/>"),this.render()},render:function(){var e=this.model.attributes,t=_.findWhere(e.list,{id:e.extension});this.extension_popup&&this.extension_popup.remove(),this.extension_popup=new o.default.View({placement:e.placement||"bottom",container:e.$el}),this.extension_popup.title(e.title),this.extension_popup.empty(),this.extension_popup.append(this._templateDescription(t)),this.extension_popup.show()},_templateDescription:function(e){if(e.description){var t=e.description;return e.description_url&&(t+='&nbsp;(<a href="'+e.description_url+'" target="_blank">read more</a>)'),t}return"There is no description available for this file extension."}})});
+define("mvc/upload/upload-extension", ["exports", "utils/utils", "mvc/ui/ui-popover"], function(exports, _utils, _uiPopover) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uiPopover2 = _interopRequireDefault(_uiPopover);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    exports.default = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.model = new Backbone.Model(options);
+            this.setElement("<div/>");
+            this.render();
+        },
+
+        render: function render() {
+            var self = this;
+            var options = this.model.attributes;
+            var description = _.findWhere(options.list, {
+                id: options.extension
+            });
+            this.extension_popup && this.extension_popup.remove();
+            this.extension_popup = new _uiPopover2.default.View({
+                placement: options.placement || "bottom",
+                container: options.$el
+            });
+            this.extension_popup.title(options.title);
+            this.extension_popup.empty();
+            this.extension_popup.append(this._templateDescription(description));
+            this.extension_popup.show();
+        },
+
+        /** Template for extensions description */
+        _templateDescription: function _templateDescription(options) {
+            if (options.description) {
+                var tmpl = options.description;
+                if (options.description_url) {
+                    tmpl += "&nbsp;(<a href=\"" + options.description_url + "\" target=\"_blank\">read more</a>)";
+                }
+                return tmpl;
+            } else {
+                return "There is no description available for this file extension.";
+            }
+        }
+    });
+});
 //# sourceMappingURL=../../../maps/mvc/upload/upload-extension.js.map

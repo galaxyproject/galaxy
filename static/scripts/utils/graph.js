@@ -1,2 +1,688 @@
-define("utils/graph",["exports"],function(e){"use strict";function t(e,t){for(var r in t)if(t.hasOwnProperty(r)&&(!e.hasOwnProperty(r)||e[r]!==t[r]))return!1;return!0}function r(e,r){var n="function"==typeof r?r:void 0,o="object"===(void 0===r?"undefined":i(r))?r:void 0,s=[],c=0;for(var a in e)if(e.hasOwnProperty(a)){var u=e[a];n?s.push(n.call(u,u,a,c)):o?"object"===(void 0===u?"undefined":i(u))&&t(u,o)&&s.push(u):s.push(u),c+=1}return s}function n(e,t,r){var n=this;return n.source=void 0!==e?e:null,n.target=void 0!==t?t:null,n.data=r||null,n}function o(e,t){var r=this;return r.name=void 0!==e?e:"(unnamed)",r.data=t||null,r.edges={},r.degree=0,r}function s(e,t,r){return this.directed=e||!1,this.init(r).read(t)}Object.defineProperty(e,"__esModule",{value:!0});var i="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e};n.prototype.toString=function(){return this.source+"->"+this.target},n.prototype.toJSON=function(){var e={source:this.source,target:this.target};return this.data&&(e.data=this.data),e},o.prototype.toString=function(){return"Vertex("+this.name+")"},o.prototype.eachEdge=function(e){return r(this.edges,e)},o.prototype.toJSON=function(){return{name:this.name,data:this.data}};var c=function(e,t){var r=this;return r.graph=e,r.processFns=t||{vertexEarly:function(e,t){},edge:function(e,t,r){},vertexLate:function(e,t){}},r._cache={},r};c.prototype.search=function(e){var t=this;return e in t._cache?t._cache[e]:(e instanceof o||(e=t.graph.vertices[e]),t._cache[e.name]=t._search(e))},c.prototype._search=function(e,t){return t=t||{discovered:{},edges:[]}},c.prototype.searchTree=function(e){return this._searchTree(this.search(e))},c.prototype._searchTree=function(e){var t=this;return new s(!0,{edges:e.edges,vertices:Object.keys(e.discovered).map(function(e){return t.graph.vertices[e].toJSON()})})};var a=function(e,t){var r=this;return c.call(this,e,t),r};(a.prototype=new c).constructor=a,a.prototype._search=function(e,t){var r=this,n=[];for((t=t||{discovered:{},edges:[]}).discovered[e.name]=!0,n.push(e);n.length;){var o=n.shift();r.processFns.vertexEarly&&r.processFns.vertexEarly.call(r,o,t),r.graph.eachAdjacent(o,function(e,o){var s=this;r.processFns.edge&&r.processFns.edge.call(r,s,o,t),t.discovered[e.name]||(t.discovered[e.name]=!0,t.edges.push({source:s.name,target:e.name}),n.push(e))}),r.processFns.vertexLate&&r.processFns.vertexLate.call(r,o,t)}return t};var u=function(e,t){var r=this;return c.call(this,e,t),r};u.prototype=new c,u.prototype.constructor=u,u.prototype._search=function(e,t){function r(e,r){var s=this;o.processFns.edge&&o.processFns.edge.call(o,s,r,t),t.discovered[e.name]||(t.edges.push({source:s.name,target:e.name}),n(e))}function n(e){t.discovered[e.name]=!0,o.processFns.vertexEarly&&o.processFns.vertexEarly.call(o,e,t),t.entryTimes[e.name]=s++,o.graph.eachAdjacent(e,r),o.processFns.vertexLate&&o.processFns.vertexLate.call(o,e,t),t.exitTimes[e.name]=s++}t=t||{discovered:{},edges:[],entryTimes:{},exitTimes:{}};var o=this,s=0;return n(e),t},window.Graph=s,s.prototype.init=function(e){e=e||{};var t=this;return t.allowReflexiveEdges=e.allowReflexiveEdges||!1,t.vertices={},t.numEdges=0,t},s.prototype.read=function(e){if(!e)return this;var t=this;return e.hasOwnProperty("nodes")?t.readNodesAndLinks(e):e.hasOwnProperty("vertices")?t.readVerticesAndEdges(e):t},s.prototype.readNodesAndLinks=function(e){if(!e||!e.hasOwnProperty("nodes"))return this;var t=this;return e.nodes.forEach(function(e){t.createVertex(e.name,e.data)}),(e.links||[]).forEach(function(r,n){var o=e.nodes[r.source].name,s=e.nodes[r.target].name;t.createEdge(o,s,t.directed)}),t},s.prototype.readVerticesAndEdges=function(e){if(!e||!e.hasOwnProperty("vertices"))return this;var t=this;return e.vertices.forEach(function(e){t.createVertex(e.name,e.data)}),(e.edges||[]).forEach(function(e,r){t.createEdge(e.source,e.target,t.directed)}),t},s.prototype.createVertex=function(e,t){return this.vertices[e]?this.vertices[e]:this.vertices[e]=new o(e,t)},s.prototype.createEdge=function(e,t,r,o){var s=e===t;if(!this.allowReflexiveEdges&&s)return null;var i=this.vertices[e],c=this.vertices[t];if(!i||!c)return null;var a=this,u=new n(e,t,o);return i.edges[t]=u,i.degree+=1,a.numEdges+=1,s||r||a.createEdge(t,e,!0),u},s.prototype.edges=function(e){return Array.prototype.concat.apply([],this.eachVertex(function(t){return t.eachEdge(e)}))},s.prototype.eachVertex=function(e){return r(this.vertices,e)},s.prototype.adjacent=function(e){var t=this;return r(e.edges,function(e){return t.vertices[e.target]})},s.prototype.eachAdjacent=function(e,t){var n=this;return r(e.edges,function(r){var o=n.vertices[r.target];return t.call(e,o,r)})},s.prototype.print=function(){var e=this;return console.log("Graph has "+Object.keys(e.vertices).length+" vertices"),e.eachVertex(function(e){console.log(e.toString()),e.eachEdge(function(e){console.log("\t "+e)})}),e},s.prototype.toDOT=function(){var e=this,t=[];return t.push("graph bler {"),e.edges(function(e){t.push("\t"+e.from+" -- "+e.to+";")}),t.push("}"),t.join("\n")},s.prototype.toNodesAndLinks=function(){var e=this,t={};return{nodes:e.eachVertex(function(e,r,n){return t[e.name]=n,e.toJSON()}),links:e.edges(function(e){var r=e.toJSON();return r.source=t[e.source],r.target=t[e.target],r})}},s.prototype.toVerticesAndEdges=function(){var e=this;return{vertices:e.eachVertex(function(e,t){return e.toJSON()}),edges:e.edges(function(e){return e.toJSON()})}},s.prototype.breadthFirstSearch=function(e,t){return new a(this).search(e)},s.prototype.breadthFirstSearchTree=function(e,t){return new a(this).searchTree(e)},s.prototype.depthFirstSearch=function(e,t){return new u(this).search(e)},s.prototype.depthFirstSearchTree=function(e,t){return new u(this).searchTree(e)},s.prototype.weakComponents=function(){var e,t=this,r=this,n=[];for(t.directed&&(r=new s(!1,t.toNodesAndLinks())),e=Object.keys(r.vertices);e.length;){var o=r.vertices[e.shift()];n.push(function(n){var o=new u(r)._search(n);return e=e.filter(function(e){return!(e in o.discovered)}),{vertices:Object.keys(o.discovered).map(function(e){return t.vertices[e].toJSON()}),edges:o.edges.map(function(e){var r=void 0!==t.vertices[e.target].edges[e.source];if(t.directed&&r){var n=e.source;e.source=e.target,e.target=n}return e})}}(o))}return n},s.prototype.weakComponentGraph=function(){var e=this.weakComponents();return new s(this.directed,{vertices:e.reduce(function(e,t){return e.concat(t.vertices)},[]),edges:e.reduce(function(e,t){return e.concat(t.edges)},[])})},s.prototype.weakComponentGraphArray=function(){var e=this;return this.weakComponents().map(function(t){return new s(e.directed,t)})},e.default={Vertex:o,Edge:n,BreadthFirstSearch:a,DepthFirstSearch:u,Graph:s,randGraph:function(e,t,r){function n(e){return Math.floor(Math.random()*e)}for(var o={nodes:[],links:[]},i=0;i<t;i++)o.nodes.push({name:i});for(i=0;i<r;i++)o.links.push({source:n(t),target:n(t)});return new s(e,o)}}});
+define("utils/graph", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function(obj) {
+        return typeof obj;
+    } : function(obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    };
+
+    /* ============================================================================
+    TODO:
+    
+    ============================================================================ */
+    //TODO: go ahead and move to underscore...
+    /** call fn on each key/value in d */
+    function each(d, fn) {
+        for (var k in d) {
+            if (d.hasOwnProperty(k)) {
+                fn(d[k], k, d);
+            }
+        }
+    }
+
+    /** copy key/values from d2 to d overwriting if present */
+    function extend(d, d2) {
+        for (var k in d2) {
+            if (d2.hasOwnProperty(k)) {
+                d[k] = d2[k];
+            }
+        }
+        return d;
+    }
+
+    /** deep equal of two dictionaries */
+    function matches(d, d2) {
+        for (var k in d2) {
+            if (d2.hasOwnProperty(k)) {
+                if (!d.hasOwnProperty(k) || d[k] !== d2[k]) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** map key/values in obj
+     *      if propsOrFn is an object, return only those k/v that match the object
+     *      if propsOrFn is function, call the fn and returned the mapped values from it
+     */
+    function iterate(obj, propsOrFn) {
+        var fn = typeof propsOrFn === "function" ? propsOrFn : undefined;
+        var props = (typeof propsOrFn === "undefined" ? "undefined" : _typeof(propsOrFn)) === "object" ? propsOrFn : undefined;
+        var returned = [];
+        var index = 0;
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var value = obj[key];
+                if (fn) {
+                    returned.push(fn.call(value, value, key, index));
+                } else if (props) {
+                    //TODO: break out to sep?
+                    if ((typeof value === "undefined" ? "undefined" : _typeof(value)) === "object" && matches(value, props)) {
+                        returned.push(value);
+                    }
+                } else {
+                    returned.push(value);
+                }
+                index += 1;
+            }
+        }
+        return returned;
+    }
+
+    // ============================================================================
+    /** A graph edge containing the name/id of both source and target and optional data
+     */
+    function Edge(source, target, data) {
+        var self = this;
+        self.source = source !== undefined ? source : null;
+        self.target = target !== undefined ? target : null;
+        self.data = data || null;
+        //if( typeof data === 'object' ){
+        //    extend( self, data );
+        //}
+        return self;
+    }
+    /** String representation */
+    Edge.prototype.toString = function() {
+        return this.source + "->" + this.target;
+    };
+
+    /** Return a plain object representing this edge */
+    Edge.prototype.toJSON = function() {
+        //TODO: this is safe in most browsers (fns will be stripped) - alter tests to incorporate this in order to pass data
+        //return this;
+        var json = {
+            source: this.source,
+            target: this.target
+        };
+        if (this.data) {
+            json.data = this.data;
+        }
+        return json;
+    };
+
+    // ============================================================================
+    /** A graph vertex with a (unique) name/id and optional data.
+     *      A vertex contains a list of Edges (whose sources are this vertex) and maintains the degree.
+     */
+    function Vertex(name, data) {
+        var self = this;
+        self.name = name !== undefined ? name : "(unnamed)";
+        self.data = data || null;
+        self.edges = {};
+        self.degree = 0;
+        return self;
+    }
+
+    /** String representation */
+    Vertex.prototype.toString = function() {
+        return "Vertex(" + this.name + ")";
+    };
+
+    //TODO: better name w no collision for either this.eachEdge or this.edges
+    /** Iterate over each edge from this vertex */
+    Vertex.prototype.eachEdge = function(propsOrFn) {
+        return iterate(this.edges, propsOrFn);
+    };
+
+    /** Return a plain object representing this vertex */
+    Vertex.prototype.toJSON = function() {
+        //return this;
+        return {
+            name: this.name,
+            data: this.data
+        };
+    };
+
+    // ============================================================================
+    /** Base (abstract) class for Graph search algorithms.
+     *      Pass in the graph to search
+     *      and an optional dictionary containing the 3 vertex/edge processing fns listed below.
+     */
+    var GraphSearch = function GraphSearch(graph, processFns) {
+        var self = this;
+        self.graph = graph;
+
+        self.processFns = processFns || {
+            vertexEarly: function vertexEarly(vertex, search) {
+                //console.debug( 'processing vertex:', vertex.name, vertex );
+            },
+            edge: function edge(from, _edge, search) {
+                //console.debug( this, 'edge:', from, edge, search );
+            },
+            vertexLate: function vertexLate(vertex, search) {
+                //console.debug( this, 'vertexLate:', vertex, search );
+            }
+        };
+
+        self._cache = {};
+        return self;
+    };
+
+    /** Search interface where start is the vertex (or the name/id of the vertex) to begin the search at
+     *      This public interface caches searches and returns the cached version if it's already been done.
+     */
+    GraphSearch.prototype.search = function _search(start) {
+        var self = this;
+        if (start in self._cache) {
+            return self._cache[start];
+        }
+        if (!(start instanceof Vertex)) {
+            start = self.graph.vertices[start];
+        }
+        return self._cache[start.name] = self._search(start);
+    };
+
+    /** Actual search (private) function (abstract here) */
+    GraphSearch.prototype._search = function __search(start, search) {
+        search = search || {
+            discovered: {},
+            //parents : {},
+            edges: []
+        };
+        return search;
+    };
+
+    /** Searches graph from start and returns a search tree of the results */
+    GraphSearch.prototype.searchTree = function _searchTree(start) {
+        return this._searchTree(this.search(start));
+    };
+
+    /** Helper fn that returns a graph (a search tree) based on the search object passed in (does not actually search) */
+    GraphSearch.prototype._searchTree = function __searchTree(search) {
+        var self = this;
+        return new Graph(true, {
+            edges: search.edges,
+            vertices: Object.keys(search.discovered).map(function(key) {
+                return self.graph.vertices[key].toJSON();
+            })
+        });
+    };
+
+    // ============================================================================
+    /** Breadth first search algo.
+     */
+    var BreadthFirstSearch = function BreadthFirstSearch(graph, processFns) {
+        var self = this;
+        GraphSearch.call(this, graph, processFns);
+        return self;
+    };
+    BreadthFirstSearch.prototype = new GraphSearch();
+    BreadthFirstSearch.prototype.constructor = BreadthFirstSearch;
+
+    /** (Private) implementation of BFS */
+    BreadthFirstSearch.prototype._search = function __search(start, search) {
+        search = search || {
+            discovered: {},
+            //parents : {},
+            edges: []
+        };
+
+        var self = this;
+        var queue = [];
+
+        function discoverAdjacent(adj, edge) {
+            var source = this;
+            if (self.processFns.edge) {
+                self.processFns.edge.call(self, source, edge, search);
+            }
+            if (!search.discovered[adj.name]) {
+                //console.debug( '\t\t\t', adj.name, 'is undiscovered:', search.discovered[ adj.name ] );
+                search.discovered[adj.name] = true;
+                //search.parents[ adj.name ] = source;
+                search.edges.push({
+                    source: source.name,
+                    target: adj.name
+                });
+                //console.debug( '\t\t\t queuing undiscovered: ', adj );
+                queue.push(adj);
+            }
+        }
+
+        //console.debug( 'BFS starting. start:', start );
+        search.discovered[start.name] = true;
+        queue.push(start);
+        while (queue.length) {
+            var vertex = queue.shift();
+            //console.debug( '\t Queue is shifting. Current:', vertex, 'queue:', queue );
+            if (self.processFns.vertexEarly) {
+                self.processFns.vertexEarly.call(self, vertex, search);
+            }
+            self.graph.eachAdjacent(vertex, discoverAdjacent);
+            if (self.processFns.vertexLate) {
+                self.processFns.vertexLate.call(self, vertex, search);
+            }
+        }
+        //console.debug( 'search.edges:', JSON.stringify( search.edges ) );
+        return search;
+    };
+
+    // ============================================================================
+    /** Depth first search algorithm.
+     */
+    var DepthFirstSearch = function DepthFirstSearch(graph, processFns) {
+        var self = this;
+        GraphSearch.call(this, graph, processFns);
+        return self;
+    };
+    DepthFirstSearch.prototype = new GraphSearch();
+    DepthFirstSearch.prototype.constructor = DepthFirstSearch;
+
+    /** (Private) implementation of DFS */
+    DepthFirstSearch.prototype._search = function(start, search) {
+        //console.debug( 'depthFirstSearch:', start );
+        search = search || {
+            discovered: {},
+            //parents    : {},
+            edges: [],
+            entryTimes: {},
+            exitTimes: {}
+        };
+        var self = this;
+        var time = 0;
+
+        // discover verts adjacent to the source (this):
+        //  processing each edge, saving the edge to the tree, and caching the reverse path with parents
+        function discoverAdjacentVertices(adjacent, edge) {
+            //console.debug( '\t\t adjacent:', adjacent, 'edge:', edge );
+            var sourceVertex = this;
+            if (self.processFns.edge) {
+                self.processFns.edge.call(self, sourceVertex, edge, search);
+            }
+            if (!search.discovered[adjacent.name]) {
+                //search.parents[ adjacent.name ] = sourceVertex;
+                search.edges.push({
+                    source: sourceVertex.name,
+                    target: adjacent.name
+                });
+                recurse(adjacent);
+            }
+        }
+
+        // use function stack for DFS stack process verts, times, and discover adjacent verts (recursing into them)
+        function recurse(vertex) {
+            //console.debug( '\t recursing into: ', vertex );
+            search.discovered[vertex.name] = true;
+            if (self.processFns.vertexEarly) {
+                self.processFns.vertexEarly.call(self, vertex, search);
+            }
+            search.entryTimes[vertex.name] = time++;
+
+            self.graph.eachAdjacent(vertex, discoverAdjacentVertices);
+
+            if (self.processFns.vertexLate) {
+                self.processFns.vertexLate.call(self, vertex, search);
+            }
+            search.exitTimes[vertex.name] = time++;
+        }
+        // begin recursion with the desired start
+        recurse(start);
+
+        return search;
+    };
+
+    // ============================================================================
+    /** A directed/non-directed graph object.
+     */
+    function Graph(directed, data, options) {
+        //TODO: move directed to options
+        this.directed = directed || false;
+        return this.init(options).read(data);
+    }
+    window.Graph = Graph;
+
+    /** Set up options and instance variables */
+    Graph.prototype.init = function(options) {
+        options = options || {};
+        var self = this;
+
+        self.allowReflexiveEdges = options.allowReflexiveEdges || false;
+
+        self.vertices = {};
+        self.numEdges = 0;
+        return self;
+    };
+
+    /** Read data from the plain object data - both in d3 form (nodes and links) or vertices and edges */
+    Graph.prototype.read = function(data) {
+        if (!data) {
+            return this;
+        }
+        var self = this;
+        if (data.hasOwnProperty("nodes")) {
+            return self.readNodesAndLinks(data);
+        }
+        if (data.hasOwnProperty("vertices")) {
+            return self.readVerticesAndEdges(data);
+        }
+        return self;
+    };
+
+    //TODO: the next two could be combined
+    /** Create the graph using a list of nodes and a list of edges (where source and target are indeces into nodes) */
+    Graph.prototype.readNodesAndLinks = function(data) {
+        if (!(data && data.hasOwnProperty("nodes"))) {
+            return this;
+        }
+        //console.debug( 'readNodesAndLinks:', data );
+        //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
+        var self = this;
+        data.nodes.forEach(function(node) {
+            self.createVertex(node.name, node.data);
+        });
+        //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
+
+        (data.links || []).forEach(function(edge, i) {
+            var sourceName = data.nodes[edge.source].name;
+            var targetName = data.nodes[edge.target].name;
+            self.createEdge(sourceName, targetName, self.directed);
+        });
+        //self.print();
+        //console.debug( JSON.stringify( self.toNodesAndLinks(), null, '  ' ) );
+        return self;
+    };
+
+    /** Create the graph using a list of nodes and a list of edges (where source and target are names of nodes) */
+    Graph.prototype.readVerticesAndEdges = function(data) {
+        if (!(data && data.hasOwnProperty("vertices"))) {
+            return this;
+        }
+        //console.debug( 'readVerticesAndEdges:', data );
+        //console.debug( 'data:\n' + JSON.stringify( data, null, '  ' ) );
+        var self = this;
+        data.vertices.forEach(function(node) {
+            self.createVertex(node.name, node.data);
+        });
+        //console.debug( JSON.stringify( self.vertices, null, '  ' ) );
+
+        (data.edges || []).forEach(function(edge, i) {
+            self.createEdge(edge.source, edge.target, self.directed);
+        });
+        //self.print();
+        //console.debug( JSON.stringify( self.toNodesAndLinks(), null, '  ' ) );
+        return self;
+    };
+
+    /** Return the vertex with name, creating it if necessary */
+    Graph.prototype.createVertex = function(name, data) {
+        //console.debug( 'createVertex:', name, data );
+        if (this.vertices[name]) {
+            return this.vertices[name];
+        }
+        return this.vertices[name] = new Vertex(name, data);
+    };
+
+    /** Create an edge in vertex named sourceName to targetName (optionally adding data to it)
+     *      If directed is false, create a second edge from targetName to sourceName.
+     */
+    Graph.prototype.createEdge = function(sourceName, targetName, directed, data) {
+        //note: allows multiple 'equivalent' edges (to/from same source/target)
+        //console.debug( 'createEdge:', source, target, directed );
+        var isReflexive = sourceName === targetName;
+        if (!this.allowReflexiveEdges && isReflexive) {
+            return null;
+        }
+
+        var sourceVertex = this.vertices[sourceName];
+        var targetVertex = this.vertices[targetName];
+        //note: silently ignores edges from/to unknown vertices
+        if (!(sourceVertex && targetVertex)) {
+            return null;
+        }
+
+        //TODO: prob. move to vertex
+        var self = this;
+
+        var edge = new Edge(sourceName, targetName, data);
+        sourceVertex.edges[targetName] = edge;
+        sourceVertex.degree += 1;
+        self.numEdges += 1;
+
+        //TODO:! don't like having duplicate edges for non-directed graphs
+        // mirror edges (reversing source and target) in non-directed graphs
+        //  but only if not reflexive
+        if (!isReflexive && !directed) {
+            // flip directed to prevent recursion loop
+            self.createEdge(targetName, sourceName, true);
+        }
+
+        return edge;
+    };
+
+    /** Walk over all the edges of the graph using the vertex.eachEdge iterator */
+    Graph.prototype.edges = function(propsOrFn) {
+        return Array.prototype.concat.apply([], this.eachVertex(function(vertex) {
+            return vertex.eachEdge(propsOrFn);
+        }));
+    };
+
+    /** Iterate over all the vertices in the graph */
+    Graph.prototype.eachVertex = function(propsOrFn) {
+        return iterate(this.vertices, propsOrFn);
+    };
+
+    /** Return a list of the vertices adjacent to vertex */
+    Graph.prototype.adjacent = function(vertex) {
+        var self = this;
+        return iterate(vertex.edges, function(edge) {
+            return self.vertices[edge.target];
+        });
+    };
+
+    /** Call fn on each vertex adjacent to vertex */
+    Graph.prototype.eachAdjacent = function(vertex, fn) {
+        var self = this;
+        return iterate(vertex.edges, function(edge) {
+            var adj = self.vertices[edge.target];
+            return fn.call(vertex, adj, edge);
+        });
+    };
+
+    /** Print the graph to the console (debugging) */
+    Graph.prototype.print = function() {
+        var self = this;
+        console.log("Graph has " + Object.keys(self.vertices).length + " vertices");
+        self.eachVertex(function(vertex) {
+            console.log(vertex.toString());
+            vertex.eachEdge(function(edge) {
+                console.log("\t " + edge);
+            });
+        });
+        return self;
+    };
+
+    /** Return a DOT format string of this graph */
+    Graph.prototype.toDOT = function() {
+        var self = this;
+        var strings = [];
+        strings.push("graph bler {");
+        self.edges(function(edge) {
+            strings.push("\t" + edge.from + " -- " + edge.to + ";");
+        });
+        strings.push("}");
+        return strings.join("\n");
+    };
+
+    /** Return vertices and edges of this graph in d3 node/link format */
+    Graph.prototype.toNodesAndLinks = function() {
+        var self = this;
+        var indeces = {};
+        return {
+            nodes: self.eachVertex(function(vertex, key, i) {
+                indeces[vertex.name] = i;
+                return vertex.toJSON();
+            }),
+            links: self.edges(function(edge) {
+                var json = edge.toJSON();
+                json.source = indeces[edge.source];
+                json.target = indeces[edge.target];
+                return json;
+            })
+        };
+    };
+
+    /** Return vertices and edges of this graph where edges use the name/id as source and target */
+    Graph.prototype.toVerticesAndEdges = function() {
+        var self = this;
+        return {
+            vertices: self.eachVertex(function(vertex, key) {
+                return vertex.toJSON();
+            }),
+            edges: self.edges(function(edge) {
+                return edge.toJSON();
+            })
+        };
+    };
+
+    /** Search this graph using BFS */
+    Graph.prototype.breadthFirstSearch = function(start, processFns) {
+        return new BreadthFirstSearch(this).search(start);
+    };
+
+    /** Return a searchtree of this graph using BFS */
+    Graph.prototype.breadthFirstSearchTree = function(start, processFns) {
+        return new BreadthFirstSearch(this).searchTree(start);
+    };
+
+    /** Search this graph using DFS */
+    Graph.prototype.depthFirstSearch = function(start, processFns) {
+        return new DepthFirstSearch(this).search(start);
+    };
+
+    /** Return a searchtree of this graph using DFS */
+    Graph.prototype.depthFirstSearchTree = function(start, processFns) {
+        return new DepthFirstSearch(this).searchTree(start);
+    };
+
+    //Graph.prototype.shortestPath = function( start, end ){
+    //};
+    //
+    //Graph.prototype.articulationVertices = function(){
+    //};
+    //
+    //Graph.prototype.isAcyclic = function(){
+    //};
+    //
+    //Graph.prototype.isBipartite = function(){
+    //};
+
+    /** Return an array of weakly connected (no edges between) sub-graphs in this graph */
+    Graph.prototype.weakComponents = function() {
+        //TODO: alternately, instead of returning graph-like objects:
+        //  - could simply decorate the vertices (vertex.component = componentIndex), or clone the graph and do that
+        var self = this;
+
+        var searchGraph = this;
+        var undiscovered;
+        var components = [];
+
+        function getComponent(undiscoveredVertex) {
+            //TODO: better interface on dfs (search v. searchTree)
+            var search = new DepthFirstSearch(searchGraph)._search(undiscoveredVertex);
+
+            // remove curr discovered from undiscovered
+            undiscovered = undiscovered.filter(function(name) {
+                return !(name in search.discovered);
+            });
+
+            return {
+                vertices: Object.keys(search.discovered).map(function(vertexName) {
+                    return self.vertices[vertexName].toJSON();
+                }),
+                edges: search.edges.map(function(edge) {
+                    // restore any reversed edges
+                    var hasBeenReversed = self.vertices[edge.target].edges[edge.source] !== undefined;
+                    if (self.directed && hasBeenReversed) {
+                        var swap = edge.source;
+                        edge.source = edge.target;
+                        edge.target = swap;
+                    }
+                    return edge;
+                })
+            };
+        }
+
+        if (self.directed) {
+            // if directed - convert to undirected for search
+            searchGraph = new Graph(false, self.toNodesAndLinks());
+        }
+        undiscovered = Object.keys(searchGraph.vertices);
+        //console.debug( '(initial) undiscovered:', undiscovered );
+        while (undiscovered.length) {
+            var undiscoveredVertex = searchGraph.vertices[undiscovered.shift()];
+            components.push(getComponent(undiscoveredVertex));
+            //console.debug( 'undiscovered now:', undiscovered );
+        }
+
+        //console.debug( 'components:\n', JSON.stringify( components, null, '  ' ) );
+        return components;
+    };
+
+    /** Return a single graph containing the weakly connected components in this graph */
+    Graph.prototype.weakComponentGraph = function() {
+        //note: although this can often look like the original graph - edges can be lost
+        var components = this.weakComponents();
+        return new Graph(this.directed, {
+            vertices: components.reduce(function(reduction, curr) {
+                return reduction.concat(curr.vertices);
+            }, []),
+            edges: components.reduce(function(reduction, curr) {
+                return reduction.concat(curr.edges);
+            }, [])
+        });
+    };
+
+    /** Return an array of graphs of the weakly connected components in this graph */
+    Graph.prototype.weakComponentGraphArray = function() {
+        //note: although this can often look like the original graph - edges can be lost
+        var graph = this;
+        return this.weakComponents().map(function(component) {
+            return new Graph(graph.directed, component);
+        });
+    };
+
+    // ============================================================================
+    /** Create a random graph with numVerts vertices and numEdges edges (for testing)
+     */
+    function randGraph(directed, numVerts, numEdges) {
+        //console.debug( 'randGraph', directed, numVerts, numEdges );
+        var data = {
+            nodes: [],
+            links: []
+        };
+
+        function randRange(range) {
+            return Math.floor(Math.random() * range);
+        }
+        for (var i = 0; i < numVerts; i++) {
+            data.nodes.push({
+                name: i
+            });
+        }
+        for (i = 0; i < numEdges; i++) {
+            data.links.push({
+                source: randRange(numVerts),
+                target: randRange(numVerts)
+            });
+        }
+        //console.debug( JSON.stringify( data, null, '  ' ) );
+        return new Graph(directed, data);
+    }
+
+    // ============================================================================
+    exports.default = {
+        Vertex: Vertex,
+        Edge: Edge,
+        BreadthFirstSearch: BreadthFirstSearch,
+        DepthFirstSearch: DepthFirstSearch,
+        Graph: Graph,
+        randGraph: randGraph
+    };
+});
 //# sourceMappingURL=../../maps/utils/graph.js.map

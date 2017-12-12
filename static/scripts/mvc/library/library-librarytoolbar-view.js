@@ -1,2 +1,244 @@
-define("mvc/library/library-librarytoolbar-view",["exports","libs/toastr","mvc/library/library-model"],function(e,a,i){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});var t=r(a),s=r(i),l=Backbone.View.extend({el:"#center",defaults:{search_term:""},events:{"click #create_new_library_btn":"createLibraryFromModal","click #include_deleted_chk":"includeDeletedChecked","click #exclude_restricted_chk":"excludeRestrictedChecked","click .page_size_prompt":"showPageSizePrompt","keyup .library-search-input":"searchLibraries"},initialize:function(e){this.options=_.defaults(this.options||{},e,this.defaults),this.render()},render:function(){var e=this.templateToolBar(),a=!1,i=!0;Galaxy.user&&(a=Galaxy.user.isAdmin(),i=Galaxy.user.isAnonymous()),this.$el.html(e({admin_user:a,anon_user:i})),a&&(this.$el.find("#include_deleted_chk")[0].checked=Galaxy.libraries.preferences.get("with_deleted"),this.$el.find("#exclude_restricted_chk")[0].checked=Galaxy.libraries.preferences.get("without_restricted"))},renderPaginator:function(e){this.options=_.extend(this.options,e);var a=this.templatePaginator();this.$el.find("#library_paginator").html(a({show_page:parseInt(this.options.show_page),page_count:parseInt(this.options.page_count),total_libraries_count:this.options.total_libraries_count,libraries_shown:this.options.libraries_shown,library_page_size:Galaxy.libraries.preferences.get("library_page_size")}))},createLibraryFromModal:function(e){e.preventDefault(),e.stopPropagation();var a=this;this.modal=Galaxy.modal,this.modal.show({closing_events:!0,title:"Create New Library",body:this.templateNewLibraryInModal(),buttons:{Create:function(){a.createNewLibrary()},Close:function(){a.modal.hide()}}})},createNewLibrary:function(){var e=this.serializeNewLibrary();if(this.validateNewLibrary(e)){var a=this;(new s.default.Library).save(e,{success:function(e){Galaxy.libraries.libraryListView.collection.add(e),a.modal.hide(),a.clearLibraryModal(),Galaxy.libraries.libraryListView.render(),t.default.success("Library created.")},error:function(e,a){void 0!==a.responseJSON?t.default.error(a.responseJSON.err_msg):t.default.error("An error occured.")}})}else t.default.error("Library's name is missing.");return!1},showPageSizePrompt:function(e){e.preventDefault();var a=prompt("How many libraries per page do you want to see?",Galaxy.libraries.preferences.get("library_page_size"));null!=a&&a==parseInt(a)&&(Galaxy.libraries.preferences.set({library_page_size:parseInt(a)}),Galaxy.libraries.libraryListView.render({show_page:1}))},clearLibraryModal:function(){$("input[name='Name']").val(""),$("input[name='Description']").val(""),$("input[name='Synopsis']").val("")},serializeNewLibrary:function(){return{name:$("input[name='Name']").val(),description:$("input[name='Description']").val(),synopsis:$("input[name='Synopsis']").val()}},validateNewLibrary:function(e){return""!==e.name},includeDeletedChecked:function(e){e.target.checked?(Galaxy.libraries.preferences.set({with_deleted:!0}),Galaxy.libraries.libraryListView.fetchDeleted()):(Galaxy.libraries.preferences.set({with_deleted:!1}),Galaxy.libraries.libraryListView.render())},excludeRestrictedChecked:function(e){e.target.checked?Galaxy.libraries.preferences.set({without_restricted:!0}):Galaxy.libraries.preferences.set({without_restricted:!1}),Galaxy.libraries.libraryListView.render()},searchLibraries:function(e){var a=$(".library-search-input").val();this.options.search_term=a,Galaxy.libraries.libraryListView.searchLibraries(a)},templateToolBar:function(){return _.template(['<div class="library_style_container">','<div id="toolbar_form">','<div id="library_toolbar">','<form class="form-inline" role="form">','<span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>','<span id="library_paginator" class="library-paginator">',"</span>",'<div class="form-group toolbar-item">','<input type="text" class="form-control library-search-input" placeholder="Search" size="30">',"</div>","<% if(admin_user === true) { %>",'<div class="checkbox toolbar-item" style="height: 20px;">',"<label>",'<input id="include_deleted_chk" type="checkbox">',"include deleted ","</input>","</label>","<label>",'<input id="exclude_restricted_chk" type="checkbox">',"exclude restricted","</input>","</label>","</div>",'<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">','<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',"</span>","<% } %>",'<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">','<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">','<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',"</a>","</span>","</form>","</div>","</div>",'<div id="libraries_element">',"</div>","</div>"].join(""))},templatePaginator:function(){return _.template(['<ul class="pagination pagination-sm">',"<% if ( ( show_page - 1 ) > 0 ) { %>","<% if ( ( show_page - 1 ) > page_count ) { %>",'<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>','<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',"<% } else { %>",'<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>','<li><a href="#page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',"<% } %>","<% } else { %>",'<li class="disabled"><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>','<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',"<% } %>",'<li class="active">','<a href="#page/<% print( show_page ) %>"><% print( show_page ) %></a>',"</li>","<% if ( ( show_page ) < page_count ) { %>",'<li><a href="#page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>','<li><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',"<% } else { %>",'<li class="disabled"><a href="#page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>','<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',"<% } %>","</ul>","<span>",' <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- library_page_size %> per page" class="page_size_prompt">(change)</a>',"</span>","<span>"," <%- total_libraries_count %> total","</span>"].join(""))},templateNewLibraryInModal:function(){return _.template(['<div id="new_library_modal">',"<form>",'<input type="text" name="Name" value="" placeholder="Name" autofocus>','<input type="text" name="Description" value="" placeholder="Description">','<input type="text" name="Synopsis" value="" placeholder="Synopsis">',"</form>","</div>"].join(""))}});e.default={LibraryToolbarView:l}});
+define("mvc/library/library-librarytoolbar-view", ["exports", "utils/localization", "libs/toastr", "mvc/library/library-model"], function(exports, _localization, _toastr, _libraryModel) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    var _toastr2 = _interopRequireDefault(_toastr);
+
+    var _libraryModel2 = _interopRequireDefault(_libraryModel);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /**
+     * This view represents the top part of the library page.
+     * It contains the tool bar with controls.
+     */
+    var LibraryToolbarView = Backbone.View.extend({
+        el: "#center",
+
+        defaults: {
+            search_term: ""
+        },
+
+        events: {
+            "click #create_new_library_btn": "createLibraryFromModal",
+            "click #include_deleted_chk": "includeDeletedChecked",
+            "click #exclude_restricted_chk": "excludeRestrictedChecked",
+            "click .page_size_prompt": "showPageSizePrompt",
+            "keyup .library-search-input": "searchLibraries"
+        },
+
+        initialize: function initialize(options) {
+            this.options = _.defaults(this.options || {}, options, this.defaults);
+            this.render();
+        },
+
+        render: function render() {
+            var toolbar_template = this.templateToolBar();
+            var is_admin = false;
+            var is_anonym = true;
+            if (Galaxy.user) {
+                is_admin = Galaxy.user.isAdmin();
+                is_anonym = Galaxy.user.isAnonymous();
+            }
+            this.$el.html(toolbar_template({
+                admin_user: is_admin,
+                anon_user: is_anonym
+            }));
+            if (is_admin) {
+                this.$el.find("#include_deleted_chk")[0].checked = Galaxy.libraries.preferences.get("with_deleted");
+                this.$el.find("#exclude_restricted_chk")[0].checked = Galaxy.libraries.preferences.get("without_restricted");
+            }
+        },
+
+        /**
+         * Renders the element that shows pages into its div within the toolbar.
+         */
+        renderPaginator: function renderPaginator(options) {
+            this.options = _.extend(this.options, options);
+            var paginator_template = this.templatePaginator();
+            this.$el.find("#library_paginator").html(paginator_template({
+                show_page: parseInt(this.options.show_page),
+                page_count: parseInt(this.options.page_count),
+                total_libraries_count: this.options.total_libraries_count,
+                libraries_shown: this.options.libraries_shown,
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+            }));
+        },
+
+        /**
+         * User clicked on 'New library' button. Show modal to
+         * satisfy the wish.
+         */
+        createLibraryFromModal: function createLibraryFromModal(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            var self = this;
+            this.modal = Galaxy.modal;
+            this.modal.show({
+                closing_events: true,
+                title: (0, _localization2.default)("Create New Library"),
+                body: this.templateNewLibraryInModal(),
+                buttons: {
+                    Create: function Create() {
+                        self.createNewLibrary();
+                    },
+                    Close: function Close() {
+                        self.modal.hide();
+                    }
+                }
+            });
+        },
+
+        /**
+         * Create the new library using the API asynchronously.
+         */
+        createNewLibrary: function createNewLibrary() {
+            var libraryDetails = this.serializeNewLibrary();
+            if (this.validateNewLibrary(libraryDetails)) {
+                var library = new _libraryModel2.default.Library();
+                var self = this;
+                library.save(libraryDetails, {
+                    success: function success(library) {
+                        Galaxy.libraries.libraryListView.collection.add(library);
+                        self.modal.hide();
+                        self.clearLibraryModal();
+                        Galaxy.libraries.libraryListView.render();
+                        _toastr2.default.success("Library created.");
+                    },
+                    error: function error(model, response) {
+                        if (typeof response.responseJSON !== "undefined") {
+                            _toastr2.default.error(response.responseJSON.err_msg);
+                        } else {
+                            _toastr2.default.error("An error occured.");
+                        }
+                    }
+                });
+            } else {
+                _toastr2.default.error("Library's name is missing.");
+            }
+            return false;
+        },
+
+        /**
+         * Show user the propmpt to change the number of libs shown on page.
+         */
+        showPageSizePrompt: function showPageSizePrompt(e) {
+            e.preventDefault();
+            var library_page_size = prompt("How many libraries per page do you want to see?", Galaxy.libraries.preferences.get("library_page_size"));
+            if (library_page_size != null && library_page_size == parseInt(library_page_size)) {
+                Galaxy.libraries.preferences.set({
+                    library_page_size: parseInt(library_page_size)
+                });
+                Galaxy.libraries.libraryListView.render({
+                    show_page: 1
+                });
+            }
+        },
+
+        /**
+         * Clear the library modal once it is saved.
+         */
+        clearLibraryModal: function clearLibraryModal() {
+            $("input[name='Name']").val("");
+            $("input[name='Description']").val("");
+            $("input[name='Synopsis']").val("");
+        },
+
+        /**
+         * Prepare new library variables to be submitted to API.
+         */
+        serializeNewLibrary: function serializeNewLibrary() {
+            return {
+                name: $("input[name='Name']").val(),
+                description: $("input[name='Description']").val(),
+                synopsis: $("input[name='Synopsis']").val()
+            };
+        },
+
+        /**
+         * Check whether entered values are valid.
+         */
+        validateNewLibrary: function validateNewLibrary(libraryDetails) {
+            return libraryDetails.name !== "";
+        },
+
+        /**
+         * Include or exclude deleted libraries in the view.
+         */
+        includeDeletedChecked: function includeDeletedChecked(event) {
+            if (event.target.checked) {
+                Galaxy.libraries.preferences.set({
+                    with_deleted: true
+                });
+                Galaxy.libraries.libraryListView.fetchDeleted();
+            } else {
+                Galaxy.libraries.preferences.set({
+                    with_deleted: false
+                });
+                Galaxy.libraries.libraryListView.render();
+            }
+        },
+
+        /**
+         * Include or exclude restricted libraries in the view.
+         */
+        excludeRestrictedChecked: function excludeRestrictedChecked(event) {
+            if (event.target.checked) {
+                Galaxy.libraries.preferences.set({
+                    without_restricted: true
+                });
+            } else {
+                Galaxy.libraries.preferences.set({
+                    without_restricted: false
+                });
+            }
+            Galaxy.libraries.libraryListView.render();
+        },
+
+        /**
+         * Take the contents of the search field and send it to the list view
+         * to query the collection of libraries.
+         */
+        searchLibraries: function searchLibraries(event) {
+            var search_term = $(".library-search-input").val();
+            this.options.search_term = search_term;
+            Galaxy.libraries.libraryListView.searchLibraries(search_term);
+        },
+
+        templateToolBar: function templateToolBar() {
+            return _.template(['<div class="library_style_container">', '<div id="toolbar_form">', '<div id="library_toolbar">', '<form class="form-inline" role="form">', '<span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>', '<span id="library_paginator" class="library-paginator">',
+                // paginator will append here
+                "</span>", '<div class="form-group toolbar-item">', '<input type="text" class="form-control library-search-input" placeholder="Search" size="30">', "</div>",
+                // only admins see the following
+                "<% if(admin_user === true) { %>", '<div class="checkbox toolbar-item" style="height: 20px;">', "<label>", '<input id="include_deleted_chk" type="checkbox">', "include deleted ", "</input>", "</label>", "<label>", '<input id="exclude_restricted_chk" type="checkbox">', "exclude restricted", "</input>", "</label>", "</div>", '<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">', '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>', "</span>", "<% } %>", '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">', '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">', '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>', "</a>", "</span>", "</form>", "</div>", "</div>", '<div id="libraries_element">',
+                // table with libraries will append here
+                "</div>", "</div>"
+            ].join(""));
+        },
+
+        templatePaginator: function templatePaginator() {
+            return _.template(['<ul class="pagination pagination-sm">', "<% if ( ( show_page - 1 ) > 0 ) { %>", "<% if ( ( show_page - 1 ) > page_count ) { %>", // we are on higher page than total page count
+                '<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>', '<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>', "<% } else { %>", '<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>', '<li><a href="#page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>', "<% } %>", "<% } else { %>", // we are on the first page
+                '<li class="disabled"><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>', '<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>', "<% } %>", '<li class="active">', '<a href="#page/<% print( show_page ) %>"><% print( show_page ) %></a>', "</li>", "<% if ( ( show_page ) < page_count ) { %>", '<li><a href="#page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>', '<li><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>', "<% } else { %>", '<li class="disabled"><a href="#page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>', '<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>', "<% } %>", "</ul>", "<span>", ' <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- library_page_size %> per page" class="page_size_prompt">(change)</a>', "</span>", "<span>", " <%- total_libraries_count %> total", "</span>"
+            ].join(""));
+        },
+
+        templateNewLibraryInModal: function templateNewLibraryInModal() {
+            return _.template(['<div id="new_library_modal">', "<form>", '<input type="text" name="Name" value="" placeholder="Name" autofocus>', '<input type="text" name="Description" value="" placeholder="Description">', '<input type="text" name="Synopsis" value="" placeholder="Synopsis">', "</form>", "</div>"].join(""));
+        }
+    });
+
+    exports.default = {
+        LibraryToolbarView: LibraryToolbarView
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/library/library-librarytoolbar-view.js.map

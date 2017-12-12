@@ -1,2 +1,149 @@
-define("mvc/workflow/workflow-view-data",["exports"],function(t){"use strict";Object.defineProperty(t,"__esModule",{value:!0}),window.workflow_globals=window.workflow_globals||{};var e=Backbone.View.extend({className:"form-row dataRow input-data-row",initialize:function(t){this.input=t.input,this.nodeView=t.nodeView,this.terminalElement=t.terminalElement,this.$el.attr("name",this.input.name).html(this.input.label),t.skipResize||(this.$el.css({position:"absolute",left:-1e3,top:-1e3,display:"none"}),$("body").append(this.el),this.nodeView.updateMaxWidth(this.$el.outerWidth()),this.$el.css({position:"",left:"",top:"",display:""}),this.$el.remove())}}),i=Backbone.View.extend({className:"form-row dataRow",initialize:function(t){this.output=t.output,this.terminalElement=t.terminalElement,this.nodeView=t.nodeView;var e=this.output,i=e.name,a=this.nodeView.node;if(e.extensions.indexOf("input")>=0||e.extensions.indexOf("input_collection")>=0||(i=i+" ("+e.extensions.join(", ")+")"),this.$el.html(i),this.calloutView=null,["tool","subworkflow"].indexOf(a.type)>=0){var o=new s({label:i,output:e,node:a});this.calloutView=o,this.$el.append(o.el),this.$el.hover(function(){o.hoverImage()},function(){o.resetImage()})}this.$el.css({position:"absolute",left:-1e3,top:-1e3,display:"none"}),$("body").append(this.el),this.nodeView.updateMaxWidth(this.$el.outerWidth()+17),this.$el.css({position:"",left:"",top:"",display:""}).detach()},redrawWorkflowOutput:function(){this.calloutView&&this.calloutView.resetImage()}}),s=Backbone.View.extend({tagName:"div",initialize:function(t){this.label=t.label,this.node=t.node,this.output=t.output;var e=this,i=this.node;this.$el.attr("class","callout "+this.label).css({display:"none"}).append($("<div class='buttons'></div>").append($("<img/>").attr("src",Galaxy.root+"static/images/fugue/asterisk-small-outline.png").click(function(){var t=e.output.name;i.isWorkflowOutput(t)?(i.removeWorkflowOutput(t),e.$("img").attr("src",Galaxy.root+"static/images/fugue/asterisk-small-outline.png")):(i.addWorkflowOutput(t),e.$("img").attr("src",Galaxy.root+"static/images/fugue/asterisk-small.png")),window.workflow_globals.workflow.has_changes=!0,window.workflow_globals.canvas_manager.draw_overview()}))).tooltip({delay:500,title:"Mark dataset as a workflow output. All unmarked datasets will be hidden."}),this.$el.css({top:"50%",margin:"-8px 0px 0px 0px",right:8}),this.$el.show(),this.resetImage()},resetImage:function(){this.node.isWorkflowOutput(this.output.name)?this.$("img").attr("src",Galaxy.root+"static/images/fugue/asterisk-small.png"):this.$("img").attr("src",Galaxy.root+"static/images/fugue/asterisk-small-outline.png")},hoverImage:function(){this.$("img").attr("src",Galaxy.root+"static/images/fugue/asterisk-small-yellow.png")}});t.default={DataInputView:e,DataOutputView:i}});
+define("mvc/workflow/workflow-view-data", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    // TODO; tie into Galaxy state?
+    window.workflow_globals = window.workflow_globals || {};
+
+    var DataInputView = Backbone.View.extend({
+        className: "form-row dataRow input-data-row",
+
+        initialize: function initialize(options) {
+            this.input = options.input;
+            this.nodeView = options.nodeView;
+            this.terminalElement = options.terminalElement;
+
+            this.$el.attr("name", this.input.name).html(this.input.label);
+
+            if (!options.skipResize) {
+                this.$el.css({
+                    position: "absolute",
+                    left: -1000,
+                    top: -1000,
+                    display: "none"
+                });
+                $("body").append(this.el);
+                this.nodeView.updateMaxWidth(this.$el.outerWidth());
+                this.$el.css({
+                    position: "",
+                    left: "",
+                    top: "",
+                    display: ""
+                });
+                this.$el.remove();
+            }
+        }
+    });
+
+    var DataOutputView = Backbone.View.extend({
+        className: "form-row dataRow",
+
+        initialize: function initialize(options) {
+            this.output = options.output;
+            this.terminalElement = options.terminalElement;
+            this.nodeView = options.nodeView;
+
+            var output = this.output;
+            var label = output.name;
+            var node = this.nodeView.node;
+
+            var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
+            if (!isInput) {
+                label = label + " (" + output.extensions.join(", ") + ")";
+            }
+            this.$el.html(label);
+            this.calloutView = null;
+            if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
+                var calloutView = new OutputCalloutView({
+                    label: label,
+                    output: output,
+                    node: node
+                });
+                this.calloutView = calloutView;
+                this.$el.append(calloutView.el);
+                this.$el.hover(function() {
+                    calloutView.hoverImage();
+                }, function() {
+                    calloutView.resetImage();
+                });
+            }
+            this.$el.css({
+                position: "absolute",
+                left: -1000,
+                top: -1000,
+                display: "none"
+            });
+            $("body").append(this.el);
+            this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
+            this.$el.css({
+                position: "",
+                left: "",
+                top: "",
+                display: ""
+            }).detach();
+        },
+        redrawWorkflowOutput: function redrawWorkflowOutput() {
+            if (this.calloutView) {
+                this.calloutView.resetImage();
+            }
+        }
+    });
+
+    var OutputCalloutView = Backbone.View.extend({
+        tagName: "div",
+
+        initialize: function initialize(options) {
+            this.label = options.label;
+            this.node = options.node;
+            this.output = options.output;
+
+            var view = this;
+            var node = this.node;
+            this.$el.attr("class", "callout " + this.label).css({
+                display: "none"
+            }).append($("<div class='buttons'></div>").append($("<img/>").attr("src", Galaxy.root + "static/images/fugue/asterisk-small-outline.png").click(function() {
+                var outputName = view.output.name;
+                if (node.isWorkflowOutput(outputName)) {
+                    node.removeWorkflowOutput(outputName);
+                    view.$("img").attr("src", Galaxy.root + "static/images/fugue/asterisk-small-outline.png");
+                } else {
+                    node.addWorkflowOutput(outputName);
+                    view.$("img").attr("src", Galaxy.root + "static/images/fugue/asterisk-small.png");
+                }
+                window.workflow_globals.workflow.has_changes = true;
+                window.workflow_globals.canvas_manager.draw_overview();
+            }))).tooltip({
+                delay: 500,
+                title: "Mark dataset as a workflow output. All unmarked datasets will be hidden."
+            });
+
+            this.$el.css({
+                top: "50%",
+                margin: "-8px 0px 0px 0px",
+                right: 8
+            });
+            this.$el.show();
+            this.resetImage();
+        },
+
+        resetImage: function resetImage() {
+            if (!this.node.isWorkflowOutput(this.output.name)) {
+                this.$("img").attr("src", Galaxy.root + "static/images/fugue/asterisk-small-outline.png");
+            } else {
+                this.$("img").attr("src", Galaxy.root + "static/images/fugue/asterisk-small.png");
+            }
+        },
+
+        hoverImage: function hoverImage() {
+            this.$("img").attr("src", Galaxy.root + "static/images/fugue/asterisk-small-yellow.png");
+        }
+    });
+
+    exports.default = {
+        DataInputView: DataInputView,
+        DataOutputView: DataOutputView
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-view-data.js.map

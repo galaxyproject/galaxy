@@ -1,2 +1,265 @@
-define("mvc/library/library-folderrow-view",["exports","libs/toastr","mvc/library/library-model","mvc/library/library-dataset-view"],function(t,e,a,i){"use strict";function o(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});var n=o(e),l=o(a),s=o(i),d=Backbone.View.extend({events:{"click .undelete_dataset_btn":"undeleteDataset","click .undelete_folder_btn":"undeleteFolder","click .edit_folder_btn":"startModifications","click .cancel_folder_btn":"cancelModifications","click .save_folder_btn":"saveModifications"},defaults:{type:null,visibility_config:{edit_folder_btn:!1,save_folder_btn:!1,cancel_folder_btn:!1,permission_folder_btn:!1},edit_mode:!1},initialize:function(t){this.options=_.defaults(t||{},this.defaults),this.render(this.options)},render:function(t){this.options=_.extend(this.options,t);var e=this.options.model,a=null;return"folder"===e.get("type")||"LibraryFolder"===e.get("model_class")?(this.options.type="folder",this.prepareButtons(e),a=e.get("deleted")?this.templateRowDeletedFolder():this.templateRowFolder()):"file"===e.get("type")||"LibraryDatasetDatasetAssociation"===e.get("model_class")||"LibraryDataset"===e.get("model_class")?(this.options.type="file",a=e.get("deleted")?this.templateRowDeletedFile():this.templateRowFile()):(Galaxy.emit.error("Unknown library item type found."),Galaxy.emit.error(e.get("type")||e.get("model_class"))),this.setElement(a({content_item:e,edit_mode:this.options.edit_mode,button_config:this.options.visibility_config})),this.$el.show(),this},prepareButtons:function(t){var e=this.options.visibility_config;!1===this.options.edit_mode?(e.save_folder_btn=!1,e.cancel_folder_btn=!1,!0===t.get("deleted")?(e.edit_folder_btn=!1,e.permission_folder_btn=!1):!1===t.get("deleted")&&(e.save_folder_btn=!1,e.cancel_folder_btn=!1,!0===t.get("can_modify")&&(e.edit_folder_btn=!0),!0===t.get("can_manage")&&(e.permission_folder_btn=!0))):!0===this.options.edit_mode&&(e.edit_folder_btn=!1,e.permission_folder_btn=!1,e.save_folder_btn=!0,e.cancel_folder_btn=!0),this.options.visibility_config=e},showDatasetDetails:function(){Galaxy.libraries.datasetView=new s.default.LibraryDatasetView({id:this.id})},undeleteDataset:function(t){$(".tooltip").hide();var e=this,a=$(t.target).closest("tr").data("id"),i=Galaxy.libraries.folderListView.collection.get(a);i.url=i.urlRoot+i.id+"?undelete=true",i.destroy({success:function(t,i){Galaxy.libraries.folderListView.collection.remove(a);var o=new l.default.Item(i);Galaxy.libraries.folderListView.collection.add(o),Galaxy.libraries.folderListView.collection.sortFolder("name","asc"),n.default.success("Dataset undeleted. Click this to see it.","",{onclick:function(){var t=e.model.get("folder_id");window.location=Galaxy.root+"library/list#folders/"+t+"/datasets/"+e.id}})},error:function(t,e){void 0!==e.responseJSON?n.default.error("Dataset was not undeleted. "+e.responseJSON.err_msg):n.default.error("An error occured! Dataset was not undeleted. Please try again.")}})},undeleteFolder:function(t){$(".tooltip").hide();var e=$(t.target).closest("tr").data("id"),a=Galaxy.libraries.folderListView.collection.get(e);a.url=a.urlRoot+a.id+"?undelete=true",a.destroy({success:function(t,a){Galaxy.libraries.folderListView.collection.remove(e);var i=new l.default.FolderAsModel(a);Galaxy.libraries.folderListView.collection.add(i),Galaxy.libraries.folderListView.collection.sortFolder("name","asc"),n.default.success("Folder undeleted.")},error:function(t,e){void 0!==e.responseJSON?n.default.error("Folder was not undeleted. "+e.responseJSON.err_msg):n.default.error("An error occured! Folder was not undeleted. Please try again.")}})},startModifications:function(){this.options.edit_mode=!0,this.repaint()},cancelModifications:function(){this.options.edit_mode=!1,this.repaint()},saveModifications:function(){var t=Galaxy.libraries.folderListView.collection.get(this.$el.data("id")),e=!1,a=this.$el.find(".input_folder_name").val();if(void 0!==a&&a!==t.get("name")){if(!(a.length>2))return void n.default.warning("Folder name has to be at least 3 characters long.");t.set("name",a),e=!0}var i=this.$el.find(".input_folder_description").val();if(void 0!==i&&i!==t.get("description")&&(t.set("description",i),e=!0),e){var o=this;t.save(null,{patch:!0,success:function(t){o.options.edit_mode=!1,o.repaint(t),n.default.success("Changes to folder saved.")},error:function(t,e){void 0!==e.responseJSON?n.default.error(e.responseJSON.err_msg):n.default.error("An error occured while attempting to update the folder.")}})}else this.options.edit_mode=!1,this.repaint(t),n.default.info("Nothing has changed.")},repaint:function(){$(".tooltip").hide();var t=this.$el;this.render(),t.replaceWith(this.$el),this.$el.find("[data-toggle]").tooltip()},templateRowFolder:function(){return _.template(['<tr class="folder_row light library-row" data-id="<%- content_item.id %>">',"<td>",'<span title="Folder" class="fa fa-folder-o"/>',"</td>",'<td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>',"<% if(!edit_mode) { %>","<td>",'<a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>',"</td>","<td>",'<%- content_item.get("description") %>',"</td>","<% } else if(edit_mode){ %>",'<td><textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea></td>','<td><textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea></td>',"<% } %>","<td>folder</td>","<td></td>","<td>",'<%= _.escape(content_item.get("update_time")) %>',"</td>","<td></td>","<td>","<% if(edit_mode) { %>",'<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_folder_btn" type="button" style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">','<span class="fa fa-floppy-o"/> Save',"</button>",'<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_folder_btn" type="button" style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">','<span class="fa fa-times"/> Cancel',"</button>","<% } else if (!edit_mode){%>",'<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- content_item.get("name") %>\'" class="primary-button btn-xs edit_folder_btn" type="button" style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">','<span class="fa fa-pencil"/> Edit',"</button>",'<a href="#/folders/<%- content_item.id %>/permissions">','<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permission_folder_btn" title="Permissions of \'<%- content_item.get("name") %>\'" style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">','<span class="fa fa-group"/> Manage',"</button>","</a>","<% } %>","</td>","</tr>"].join(""))},templateRowFile:function(){return _.template(['<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">',"<td>",'<span title="Dataset" class="fa fa-file-o"/>',"</td>",'<td style="text-align: center; ">','<input style="margin: 0;" type="checkbox">',"</td>","<td>",'<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset">','<%- content_item.get("name") %>',"<a>","</td>",'<td><%- content_item.get("message") %></td>','<td><%= _.escape(content_item.get("file_ext")) %></td>','<td><%= _.escape(content_item.get("file_size")) %></td>','<td><%= _.escape(content_item.get("update_time")) %></td>',"<td>",'<% if ( content_item.get("state") !== "ok" ) { %>','<%= _.escape(content_item.get("state")) %>',"<% } %>","</td>","<td>",'<% if (content_item.get("is_unrestricted")) { %>','<span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe fa-lg"/>',"<% } %>",'<% if (content_item.get("is_private")) { %>','<span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key fa-lg"/>',"<% } %>",'<% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>','<span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-shield fa-lg"/>',"<% } %>",'<% if (content_item.get("can_manage")) { %>','<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">','<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-dataset-btn" title="Permissions of \'<%- content_item.get("name") %>\'">','<span class="fa fa-group"/> Manage',"</button>","</a>","<% } %>","</td>","</tr>"].join(""))},templateRowDeletedFile:function(){return _.template(['<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">',"<td>",'<span title="Dataset" class="fa fa-file-o"/>',"</td>","<td></td>",'<td style="color:grey;">','<%- content_item.get("name") %>',"</td>","<td>",'<%- content_item.get("message") %>',"</td>","<td>",'<%= _.escape(content_item.get("file_ext")) %>',"</td>","<td>",'<%= _.escape(content_item.get("file_size")) %>',"</td>","<td>",'<%= _.escape(content_item.get("update_time")) %>',"</td>","<td>",'<% if ( content_item.get("state") !== "ok" ) { %>','<%= _.escape(content_item.get("state")) %>',"<% } %>","</td>","<td>",'<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>','<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-xs undelete_dataset_btn" type="button" style="margin-left:1em;">','<span class="fa fa-unlock"/> Undelete',"</button>","</td>","</tr>"].join(""))},templateRowDeletedFolder:function(){return _.template(['<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">',"<td>",'<span title="Folder" class="fa fa-folder-o"/>',"</td>","<td></td>",'<td style="color:grey;">','<%- content_item.get("name") %>',"</td>","<td>",'<%- content_item.get("description") %>',"</td>","<td>","folder","</td>","<td></td>","<td>",'<%= _.escape(content_item.get("update_time")) %>',"</td>","<td></td>","<td>",'<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>','<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-xs undelete_folder_btn" type="button" style="margin-left:1em;">','<span class="fa fa-unlock"/> Undelete',"</button>","</td>","</tr>"].join(""))}});t.default={FolderRowView:d}});
+define("mvc/library/library-folderrow-view", ["exports", "libs/toastr", "mvc/library/library-model", "mvc/library/library-dataset-view"], function(exports, _toastr, _libraryModel, _libraryDatasetView) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _toastr2 = _interopRequireDefault(_toastr);
+
+    var _libraryModel2 = _interopRequireDefault(_libraryModel);
+
+    var _libraryDatasetView2 = _interopRequireDefault(_libraryDatasetView);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var FolderRowView = Backbone.View.extend({
+        events: {
+            "click .undelete_dataset_btn": "undeleteDataset",
+            "click .undelete_folder_btn": "undeleteFolder",
+            "click .edit_folder_btn": "startModifications",
+            "click .cancel_folder_btn": "cancelModifications",
+            "click .save_folder_btn": "saveModifications"
+        },
+
+        defaults: {
+            type: null,
+            visibility_config: {
+                edit_folder_btn: false,
+                save_folder_btn: false,
+                cancel_folder_btn: false,
+                permission_folder_btn: false
+            },
+            edit_mode: false
+        },
+
+        initialize: function initialize(options) {
+            this.options = _.defaults(options || {}, this.defaults);
+            this.render(this.options);
+        },
+
+        render: function render(options) {
+            this.options = _.extend(this.options, options);
+            var folder_item = this.options.model;
+            var template = null;
+
+            if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
+                this.options.type = "folder";
+                this.prepareButtons(folder_item);
+                if (folder_item.get("deleted")) {
+                    template = this.templateRowDeletedFolder();
+                } else {
+                    template = this.templateRowFolder();
+                }
+            } else if (folder_item.get("type") === "file" || folder_item.get("model_class") === "LibraryDatasetDatasetAssociation" || folder_item.get("model_class") === "LibraryDataset") {
+                this.options.type = "file";
+                if (folder_item.get("deleted")) {
+                    template = this.templateRowDeletedFile();
+                } else {
+                    template = this.templateRowFile();
+                }
+            } else {
+                Galaxy.emit.error("Unknown library item type found.");
+                Galaxy.emit.error(folder_item.get("type") || folder_item.get("model_class"));
+            }
+            this.setElement(template({
+                content_item: folder_item,
+                edit_mode: this.options.edit_mode,
+                button_config: this.options.visibility_config
+            }));
+            this.$el.show();
+            return this;
+        },
+
+        /**
+         * Modify the visibility of buttons for
+         * the filling of the row template of a given folder.
+         */
+        prepareButtons: function prepareButtons(folder) {
+            var vis_config = this.options.visibility_config;
+            if (this.options.edit_mode === false) {
+                vis_config.save_folder_btn = false;
+                vis_config.cancel_folder_btn = false;
+                if (folder.get("deleted") === true) {
+                    vis_config.edit_folder_btn = false;
+                    vis_config.permission_folder_btn = false;
+                } else if (folder.get("deleted") === false) {
+                    vis_config.save_folder_btn = false;
+                    vis_config.cancel_folder_btn = false;
+                    if (folder.get("can_modify") === true) {
+                        vis_config.edit_folder_btn = true;
+                    }
+                    if (folder.get("can_manage") === true) {
+                        vis_config.permission_folder_btn = true;
+                    }
+                }
+            } else if (this.options.edit_mode === true) {
+                vis_config.edit_folder_btn = false;
+                vis_config.permission_folder_btn = false;
+                vis_config.save_folder_btn = true;
+                vis_config.cancel_folder_btn = true;
+            }
+            this.options.visibility_config = vis_config;
+        },
+
+        /* Show the page with dataset details. */
+        showDatasetDetails: function showDatasetDetails() {
+            Galaxy.libraries.datasetView = new _libraryDatasetView2.default.LibraryDatasetView({
+                id: this.id
+            });
+        },
+
+        /* Undelete the dataset on server and render the row again. */
+        undeleteDataset: function undeleteDataset(event) {
+            $(".tooltip").hide();
+            var that = this;
+            var dataset_id = $(event.target).closest("tr").data("id");
+            var dataset = Galaxy.libraries.folderListView.collection.get(dataset_id);
+            dataset.url = dataset.urlRoot + dataset.id + "?undelete=true";
+            dataset.destroy({
+                success: function success(model, response) {
+                    Galaxy.libraries.folderListView.collection.remove(dataset_id);
+                    var updated_dataset = new _libraryModel2.default.Item(response);
+                    Galaxy.libraries.folderListView.collection.add(updated_dataset);
+                    Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
+                    _toastr2.default.success("Dataset undeleted. Click this to see it.", "", {
+                        onclick: function onclick() {
+                            var folder_id = that.model.get("folder_id");
+                            window.location = Galaxy.root + "library/list#folders/" + folder_id + "/datasets/" + that.id;
+                        }
+                    });
+                },
+                error: function error(model, response) {
+                    if (typeof response.responseJSON !== "undefined") {
+                        _toastr2.default.error("Dataset was not undeleted. " + response.responseJSON.err_msg);
+                    } else {
+                        _toastr2.default.error("An error occured! Dataset was not undeleted. Please try again.");
+                    }
+                }
+            });
+        },
+
+        /* Undelete the folder on server and render the row again. */
+        undeleteFolder: function undeleteFolder(event) {
+            $(".tooltip").hide();
+            var that = this;
+            var folder_id = $(event.target).closest("tr").data("id");
+            var folder = Galaxy.libraries.folderListView.collection.get(folder_id);
+            folder.url = folder.urlRoot + folder.id + "?undelete=true";
+            folder.destroy({
+                success: function success(model, response) {
+                    Galaxy.libraries.folderListView.collection.remove(folder_id);
+                    var updated_folder = new _libraryModel2.default.FolderAsModel(response);
+                    Galaxy.libraries.folderListView.collection.add(updated_folder);
+                    Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
+                    _toastr2.default.success("Folder undeleted.");
+                },
+                error: function error(model, response) {
+                    if (typeof response.responseJSON !== "undefined") {
+                        _toastr2.default.error("Folder was not undeleted. " + response.responseJSON.err_msg);
+                    } else {
+                        _toastr2.default.error("An error occured! Folder was not undeleted. Please try again.");
+                    }
+                }
+            });
+        },
+
+        /* User clicked the 'edit' button on row so render the row as editable. */
+        startModifications: function startModifications() {
+            this.options.edit_mode = true;
+            this.repaint();
+        },
+
+        /* User clicked the 'cancel' button so render normal row */
+        cancelModifications: function cancelModifications() {
+            this.options.edit_mode = false;
+            this.repaint();
+        },
+
+        saveModifications: function saveModifications() {
+            var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
+            var is_changed = false;
+            var new_name = this.$el.find(".input_folder_name").val();
+            if (typeof new_name !== "undefined" && new_name !== folder.get("name")) {
+                if (new_name.length > 2) {
+                    folder.set("name", new_name);
+                    is_changed = true;
+                } else {
+                    _toastr2.default.warning("Folder name has to be at least 3 characters long.");
+                    return;
+                }
+            }
+            var new_description = this.$el.find(".input_folder_description").val();
+            if (typeof new_description !== "undefined" && new_description !== folder.get("description")) {
+                folder.set("description", new_description);
+                is_changed = true;
+            }
+            if (is_changed) {
+                var row_view = this;
+                folder.save(null, {
+                    patch: true,
+                    success: function success(folder) {
+                        row_view.options.edit_mode = false;
+                        row_view.repaint(folder);
+                        _toastr2.default.success("Changes to folder saved.");
+                    },
+                    error: function error(model, response) {
+                        if (typeof response.responseJSON !== "undefined") {
+                            _toastr2.default.error(response.responseJSON.err_msg);
+                        } else {
+                            _toastr2.default.error("An error occured while attempting to update the folder.");
+                        }
+                    }
+                });
+            } else {
+                this.options.edit_mode = false;
+                this.repaint(folder);
+                _toastr2.default.info("Nothing has changed.");
+            }
+        },
+
+        repaint: function repaint() {
+            /* need to hide manually because of the element removal in setElement
+            invoked in render() */
+            $(".tooltip").hide();
+            /* we need to store the old element to be able to replace it with
+            new one */
+            var old_element = this.$el;
+            /* if user canceled the folder param is undefined,
+            if user saved and succeeded the updated folder is rendered */
+            this.render();
+            old_element.replaceWith(this.$el);
+            /* now we attach new tooltips to the newly created row element */
+            this.$el.find("[data-toggle]").tooltip();
+        },
+
+        templateRowFolder: function templateRowFolder() {
+            return _.template(['<tr class="folder_row light library-row" data-id="<%- content_item.id %>">', "<td>", '<span title="Folder" class="fa fa-folder-o"/>', "</td>", '<td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>', "<% if(!edit_mode) { %>", "<td>", '<a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>', "</td>", "<td>", '<%- content_item.get("description") %>', "</td>", "<% } else if(edit_mode){ %>", '<td><textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea></td>', '<td><textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea></td>', "<% } %>", "<td>folder</td>", "<td></td>", "<td>", '<%= _.escape(content_item.get("update_time")) %>', "</td>", "<td></td>", "<td>", "<% if(edit_mode) { %>", // start edit mode
+                '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_folder_btn" type="button" style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">', '<span class="fa fa-floppy-o"/> Save', "</button>", '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_folder_btn" type="button" style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">', '<span class="fa fa-times"/> Cancel', "</button>", "<% } else if (!edit_mode){%>", // start no edit mode
+                '<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- content_item.get("name") %>\'" class="primary-button btn-xs edit_folder_btn" type="button" style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">', '<span class="fa fa-pencil"/> Edit', "</button>", '<a href="#/folders/<%- content_item.id %>/permissions">', '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permission_folder_btn" title="Permissions of \'<%- content_item.get("name") %>\'" style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">', '<span class="fa fa-group"/> Manage', "</button>", "</a>", "<% } %>", //end no edit mode
+                "</td>", "</tr>"
+            ].join(""));
+        },
+
+        templateRowFile: function templateRowFile() {
+            return _.template(['<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">', "<td>", '<span title="Dataset" class="fa fa-file-o"/>', "</td>", '<td style="text-align: center; ">', '<input style="margin: 0;" type="checkbox">', "</td>", "<td>", '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset">', '<%- content_item.get("name") %>', "<a>", "</td>", '<td><%- content_item.get("message") %></td>', '<td><%= _.escape(content_item.get("file_ext")) %></td>', '<td><%= _.escape(content_item.get("file_size")) %></td>', '<td><%= _.escape(content_item.get("update_time")) %></td>', "<td>", '<% if ( content_item.get("state") !== "ok" ) { %>', '<%= _.escape(content_item.get("state")) %>', "<% } %>", "</td>", "<td>", '<% if (content_item.get("is_unrestricted")) { %>', '<span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe fa-lg"/>', "<% } %>", '<% if (content_item.get("is_private")) { %>', '<span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key fa-lg"/>', "<% } %>", '<% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>', '<span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-shield fa-lg"/>', "<% } %>", '<% if (content_item.get("can_manage")) { %>', '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">', '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-xs permissions-dataset-btn" title="Permissions of \'<%- content_item.get("name") %>\'">', '<span class="fa fa-group"/> Manage', "</button>", "</a>", "<% } %>", "</td>", "</tr>"].join(""));
+        },
+
+        templateRowDeletedFile: function templateRowDeletedFile() {
+            return _.template(['<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">', "<td>", '<span title="Dataset" class="fa fa-file-o"/>', "</td>", "<td></td>", '<td style="color:grey;">', '<%- content_item.get("name") %>', "</td>", "<td>", '<%- content_item.get("message") %>', "</td>", "<td>", '<%= _.escape(content_item.get("file_ext")) %>', "</td>", "<td>", '<%= _.escape(content_item.get("file_size")) %>', "</td>", "<td>", '<%= _.escape(content_item.get("update_time")) %>', "</td>", "<td>", '<% if ( content_item.get("state") !== "ok" ) { %>', '<%= _.escape(content_item.get("state")) %>', "<% } %>", "</td>", "<td>", '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>', '<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-xs undelete_dataset_btn" type="button" style="margin-left:1em;">', '<span class="fa fa-unlock"/> Undelete', "</button>", "</td>", "</tr>"].join(""));
+        },
+
+        templateRowDeletedFolder: function templateRowDeletedFolder() {
+            return _.template(['<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">', "<td>", '<span title="Folder" class="fa fa-folder-o"/>', "</td>", "<td></td>", '<td style="color:grey;">', '<%- content_item.get("name") %>', "</td>", "<td>", '<%- content_item.get("description") %>', "</td>", "<td>", "folder", "</td>", "<td></td>", "<td>", '<%= _.escape(content_item.get("update_time")) %>', "</td>", "<td></td>", "<td>", '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban fa-lg"/>', '<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-xs undelete_folder_btn" type="button" style="margin-left:1em;">', '<span class="fa fa-unlock"/> Undelete', "</button>", "</td>", "</tr>"].join(""));
+        }
+    });
+
+    exports.default = {
+        FolderRowView: FolderRowView
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/library/library-folderrow-view.js.map

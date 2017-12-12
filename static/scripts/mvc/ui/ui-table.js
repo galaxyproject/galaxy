@@ -1,2 +1,186 @@
-define("mvc/ui/ui-table",["exports","utils/utils"],function(t,i){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var e=function(t){return t&&t.__esModule?t:{default:t}}(i),n=Backbone.View.extend({initialize:function(t){this.options=e.default.merge(t,{content:"No content available.",onchange:null,ondblclick:null,onconfirm:null,cls:"ui-table",selectable:!0,cls_tr:""}),this.setElement(this._template()),this.$thead=this.$("thead"),this.$tbody=this.$("tbody"),this.$tmessage=this.$("tmessage"),this.row=this._row(),this.row_count=0},events:{click:"_onclick",dblclick:"_ondblclick"},addHeader:function(t){this.row.append($("<th/>").append(t))},appendHeader:function(){this.$thead.append(this.row),this.row=$("<tr/>")},add:function(t,i,e){var n=$("<td/>");i&&n.css("width",i),e&&n.css("text-align",e),this.row.append(n.append(t))},append:function(t,i){this._commit(t,i,!1)},prepend:function(t,i){this._commit(t,i,!0)},get:function(t){return this.$("#"+t)},del:function(t){var i=this.$tbody.find("#"+t);i.length>0&&(i.remove(),this.row_count--,this._refresh())},delAll:function(){this.$tbody.empty(),this.row_count=0,this._refresh()},value:function(t){if(this.options.selectable){this.before=this.$tbody.find(".current").attr("id"),void 0!==t&&(this.$tbody.find("tr").removeClass("current"),t&&this.$tbody.find("#"+t).addClass("current"));var i=this.$tbody.find(".current").attr("id");return void 0===i?null:(i!=this.before&&this.options.onchange&&this.options.onchange(t),i)}},size:function(){return this.$tbody.find("tr").length},_commit:function(t,i,e){this.del(t),this.row.attr("id",t),e?this.$tbody.prepend(this.row):this.$tbody.append(this.row),i&&(this.row.hide(),this.row.fadeIn()),this.row=this._row(),this.row_count++,this._refresh()},_row:function(){return $('<tr class="'+this.options.cls_tr+'"></tr>')},_onclick:function(t){var i=this.value(),e=$(t.target).closest("tr").attr("id");""!=e&&e&&i!=e&&(this.options.onconfirm?this.options.onconfirm(e):this.value(e))},_ondblclick:function(t){var i=this.value();i&&this.options.ondblclick&&this.options.ondblclick(i)},_refresh:function(){0==this.row_count?this.$tmessage.show():this.$tmessage.hide()},_template:function(){return'<div><table class="'+this.options.cls+'"><thead/><tbody/></table><tmessage>'+this.options.content+"</tmessage><div>"}});t.default={View:n}});
+define("mvc/ui/ui-table", ["exports", "utils/utils"], function(exports, _utils) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var View = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.options = _utils2.default.merge(options, {
+                content: "No content available.",
+                onchange: null,
+                ondblclick: null,
+                onconfirm: null,
+                cls: "ui-table",
+                selectable: true,
+                cls_tr: ""
+            });
+            this.setElement(this._template());
+            this.$thead = this.$("thead");
+            this.$tbody = this.$("tbody");
+            this.$tmessage = this.$("tmessage");
+            this.row = this._row();
+            this.row_count = 0;
+        },
+
+        events: {
+            click: "_onclick",
+            dblclick: "_ondblclick"
+        },
+
+        /** Add cell to header row */
+        addHeader: function addHeader($el) {
+            this.row.append($("<th/>").append($el));
+        },
+
+        /** Append header row to table */
+        appendHeader: function appendHeader() {
+            this.$thead.append(this.row);
+            this.row = $("<tr/>");
+        },
+
+        /** Add cell to row */
+        add: function add($el, width, align) {
+            var wrapper = $("<td/>");
+            if (width) {
+                wrapper.css("width", width);
+            }
+            if (align) {
+                wrapper.css("text-align", align);
+            }
+            this.row.append(wrapper.append($el));
+        },
+
+        /** Append row to table */
+        append: function append(id, fade) {
+            this._commit(id, fade, false);
+        },
+
+        /** Prepend row to table */
+        prepend: function prepend(id, fade) {
+            this._commit(id, fade, true);
+        },
+
+        /** Helper to get row element */
+        get: function get(id) {
+            return this.$("#" + id);
+        },
+
+        /** Delete row by id */
+        del: function del(id) {
+            var item = this.$tbody.find("#" + id);
+            if (item.length > 0) {
+                item.remove();
+                this.row_count--;
+                this._refresh();
+            }
+        },
+
+        /** Delete all rows */
+        delAll: function delAll() {
+            this.$tbody.empty();
+            this.row_count = 0;
+            this._refresh();
+        },
+
+        /** Set a value i.e. selects/highlights a particular row by id */
+        value: function value(new_value) {
+            if (this.options.selectable) {
+                this.before = this.$tbody.find(".current").attr("id");
+                if (new_value !== undefined) {
+                    this.$tbody.find("tr").removeClass("current");
+                    if (new_value) {
+                        this.$tbody.find("#" + new_value).addClass("current");
+                    }
+                }
+                var after = this.$tbody.find(".current").attr("id");
+                if (after === undefined) {
+                    return null;
+                } else {
+                    if (after != this.before && this.options.onchange) {
+                        this.options.onchange(new_value);
+                    }
+                    return after;
+                }
+            }
+        },
+
+        /** Return the number of rows */
+        size: function size() {
+            return this.$tbody.find("tr").length;
+        },
+
+        /** Helper to append rows */
+        _commit: function _commit(id, fade, prepend) {
+            this.del(id);
+            this.row.attr("id", id);
+            if (prepend) {
+                this.$tbody.prepend(this.row);
+            } else {
+                this.$tbody.append(this.row);
+            }
+            if (fade) {
+                this.row.hide();
+                this.row.fadeIn();
+            }
+            this.row = this._row();
+            this.row_count++;
+            this._refresh();
+        },
+
+        /** Helper to create new row */
+        _row: function _row() {
+            return $("<tr class=\"" + this.options.cls_tr + "\"></tr>");
+        },
+
+        /** Handles onclick events */
+        _onclick: function _onclick(e) {
+            var old_value = this.value();
+            var new_value = $(e.target).closest("tr").attr("id");
+            if (new_value != "") {
+                if (new_value && old_value != new_value) {
+                    if (this.options.onconfirm) {
+                        this.options.onconfirm(new_value);
+                    } else {
+                        this.value(new_value);
+                    }
+                }
+            }
+        },
+
+        /** Handles ondblclick events */
+        _ondblclick: function _ondblclick(e) {
+            var value = this.value();
+            if (value && this.options.ondblclick) {
+                this.options.ondblclick(value);
+            }
+        },
+
+        /** Refresh helper */
+        _refresh: function _refresh() {
+            if (this.row_count == 0) {
+                this.$tmessage.show();
+            } else {
+                this.$tmessage.hide();
+            }
+        },
+
+        /** Template */
+        _template: function _template() {
+            return "<div><table class=\"" + this.options.cls + "\"><thead/><tbody/></table><tmessage>" + this.options.content + "</tmessage><div>";
+        }
+    }); /** This class creates a ui table element. */
+    exports.default = {
+        View: View
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-table.js.map

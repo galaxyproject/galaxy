@@ -31,7 +31,7 @@ class Triples(data.Data):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -55,7 +55,7 @@ class NTriples(data.Text, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'N-Triples triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -78,7 +78,7 @@ class N3(data.Text, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Notation-3 Triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -105,7 +105,7 @@ class Turtle(data.Text, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Turtle triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -132,7 +132,7 @@ class Rdf(xml.GenericXml, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'RDF/XML triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -158,7 +158,7 @@ class Jsonld(text.Json, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'JSON-LD triple data'
         else:
             dataset.peek = 'file does not exist'
@@ -181,11 +181,8 @@ class HDT(binary.Binary, Triples):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'HDT triple data'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-
-
-binary.Binary.register_sniffable_binary_format('HDT', 'HDT', HDT)

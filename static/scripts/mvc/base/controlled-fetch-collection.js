@@ -1,2 +1,374 @@
-define("mvc/base/controlled-fetch-collection",["exports","libs/underscore","libs/backbone","mvc/base-mvc"],function(t,e,i,r){"use strict";function n(t){if(t&&t.__esModule)return t;var e={};if(null!=t)for(var i in t)Object.prototype.hasOwnProperty.call(t,i)&&(e[i]=t[i]);return e.default=t,e}Object.defineProperty(t,"__esModule",{value:!0});var a=n(e),o=n(i),l=function(t){return t&&t.__esModule?t:{default:t}}(r),c=o.Collection.extend({initialize:function(t,e){o.Collection.prototype.initialize.call(this,t,e),this.setOrder(e.order||this.order,{silent:!0})},_setUpListeners:function(){return this.on({"changed-order":this.sort})},fetch:function(t){return t=this._buildFetchOptions(t),Galaxy.debug("fetch options:",t),o.Collection.prototype.fetch.call(this,t)},_buildFetchOptions:function(t){var e=this;(t=a.clone(t)||{}).traditional=!0,t.data=t.data||e._buildFetchData(t),Galaxy.debug("data:",t.data);var i=this._buildFetchFilters(t);return Galaxy.debug("filters:",i),a.isEmpty(i)||a.extend(t.data,this._fetchFiltersToAjaxData(i)),Galaxy.debug("data:",t.data),t},_buildFetchData:function(t){var e={};return this.order&&(e.order=this.order),a.defaults(a.pick(t,this._fetchParams),e)},_fetchParams:["order","limit","offset","view","keys"],_buildFetchFilters:function(t){return a.clone(t.filters||{})},_fetchFiltersToAjaxData:function(t){var e={q:[],qv:[]};return a.each(t,function(t,i){void 0!==t&&""!==t&&(!0===t&&(t="True"),!1===t&&(t="False"),null===t&&(t="None"),e.q.push(i),e.qv.push(t))}),e},reset:function(t,e){return this.allFetched=!1,o.Collection.prototype.reset.call(this,t,e)},order:null,comparators:{update_time:l.default.buildComparator("update_time",{ascending:!1}),"update_time-asc":l.default.buildComparator("update_time",{ascending:!0}),create_time:l.default.buildComparator("create_time",{ascending:!1}),"create_time-asc":l.default.buildComparator("create_time",{ascending:!0})},setOrder:function(t,e){e=e||{};var i=this,r=i.comparators[t];if(a.isUndefined(r))throw new Error("unknown order: "+t);if(r!==i.comparator)return i.order=t,i.comparator=r,e.silent||i.trigger("changed-order",e),i}}),s=c.extend({limitPerPage:500,initialize:function(t,e){c.prototype.initialize.call(this,t,e),this.currentPage=e.currentPage||0},getTotalItemCount:function(){return this.length},shouldPaginate:function(){return this.getTotalItemCount()>=this.limitPerPage},getLastPage:function(){return Math.floor(this.getTotalItemCount()/this.limitPerPage)},getPageCount:function(){return this.getLastPage()+1},getPageLimitOffset:function(t){return t=this.constrainPageNum(t),{limit:this.limitPerPage,offset:t*this.limitPerPage}},constrainPageNum:function(t){return Math.max(0,Math.min(t,this.getLastPage()))},fetchPage:function(t,e){var i=this;return t=i.constrainPageNum(t),i.currentPage=t,e=a.defaults(e||{},i.getPageLimitOffset(t)),i.trigger("fetching-more"),i.fetch(e).always(function(){i.trigger("fetching-more-done")})},fetchCurrentPage:function(t){return this.fetchPage(this.currentPage,t)},fetchPrevPage:function(t){return this.fetchPage(this.currentPage-1,t)},fetchNextPage:function(t){return this.fetchPage(this.currentPage+1,t)}}),h=c.extend({limitOnFirstFetch:null,limitPerFetch:100,initialize:function(t,e){c.prototype.initialize.call(this,t,e),this.limitOnFirstFetch=e.limitOnFirstFetch||this.limitOnFirstFetch,this.limitPerFetch=e.limitPerFetch||this.limitPerFetch,this.allFetched=!1,this.lastFetched=e.lastFetched||0},_buildFetchOptions:function(t){return t.remove=t.remove||!1,c.prototype._buildFetchOptions.call(this,t)},fetchFirst:function(t){return Galaxy.debug("ControlledFetchCollection.fetchFirst:",t),t=t?a.clone(t):{},this.allFetched=!1,this.lastFetched=0,this.fetchMore(a.defaults(t,{reset:!0,limit:this.limitOnFirstFetch}))},fetchMore:function(t){Galaxy.debug("ControlledFetchCollection.fetchMore:",t),t=a.clone(t||{});var e=this;if(Galaxy.debug("fetchMore, options.reset:",t.reset),!t.reset&&e.allFetched)return jQuery.when();t.reset?t.offset=0:void 0===t.offset&&(t.offset=e.lastFetched);var i=t.limit=t.limit||e.limitPerFetch||null;return Galaxy.debug("fetchMore, limit:",i,"offset:",t.offset),e.trigger("fetching-more"),e.fetch(t).always(function(){e.trigger("fetching-more-done")}).done(function(t){var r=a.isArray(t)?t.length:0;e.lastFetched+=r,Galaxy.debug("fetchMore, lastFetched:",e.lastFetched),(!i||r<i)&&(e.allFetched=!0,e.trigger("all-fetched",this))})},fetchAll:function(t){t=t||{};var e=this;return t=a.pick(t,"silent"),t.filters={},e.fetch(t).done(function(){e.allFetched=!0,e.trigger("all-fetched",e)})}});t.default={ControlledFetchCollection:c,PaginatedCollection:s,InfinitelyScrollingCollection:h}});
+define("mvc/base/controlled-fetch-collection", ["exports", "libs/underscore", "libs/backbone", "mvc/base-mvc"], function(exports, _underscore, _backbone, _baseMvc) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    var Backbone = _interopRequireWildcard(_backbone);
+
+    var _baseMvc2 = _interopRequireDefault(_baseMvc);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    //=============================================================================
+    /**
+     * A Collection that can be limited/offset/re-ordered/filtered.
+     * @type {Backbone.Collection}
+     */
+    var ControlledFetchCollection = Backbone.Collection.extend({
+        /** call setOrder on initialization to build the comparator based on options */
+        initialize: function initialize(models, options) {
+            Backbone.Collection.prototype.initialize.call(this, models, options);
+            this.setOrder(options.order || this.order, {
+                silent: true
+            });
+        },
+
+        /** set up to track order changes and re-sort when changed */
+        _setUpListeners: function _setUpListeners() {
+            return this.on({
+                "changed-order": this.sort
+            });
+        },
+
+        /** override to provide order and offsets based on instance vars, set limit if passed,
+         *  and set allFetched/fire 'all-fetched' when xhr returns
+         */
+        fetch: function fetch(options) {
+            options = this._buildFetchOptions(options);
+            Galaxy.debug("fetch options:", options);
+            return Backbone.Collection.prototype.fetch.call(this, options);
+        },
+
+        /** build ajax data/parameters from options */
+        _buildFetchOptions: function _buildFetchOptions(options) {
+            // note: we normally want options passed in to override the defaults built here
+            // so most of these fns will generate defaults
+            options = _.clone(options) || {};
+            var self = this;
+
+            // jquery ajax option; allows multiple q/qv for filters (instead of 'q[]')
+            options.traditional = true;
+
+            // options.data
+            // we keep limit, offset, etc. in options *as well as move it into data* because:
+            // - it makes fetch calling convenient to add it to a single options map (instead of as mult. args)
+            // - it allows the std. event handlers (for fetch, etc.) to have access
+            //   to the pagination options too
+            //      (i.e. this.on( 'sync', function( options ){ if( options.limit ){ ... } }))
+            // however, when we send to xhr/jquery we copy them to data also so that they become API query params
+            options.data = options.data || self._buildFetchData(options);
+            Galaxy.debug("data:", options.data);
+
+            // options.data.filters --> options.data.q, options.data.qv
+            var filters = this._buildFetchFilters(options);
+            Galaxy.debug("filters:", filters);
+            if (!_.isEmpty(filters)) {
+                _.extend(options.data, this._fetchFiltersToAjaxData(filters));
+            }
+            Galaxy.debug("data:", options.data);
+            return options;
+        },
+
+        /** Build the dictionary to send to fetch's XHR as data */
+        _buildFetchData: function _buildFetchData(options) {
+            var defaults = {};
+            if (this.order) {
+                defaults.order = this.order;
+            }
+            return _.defaults(_.pick(options, this._fetchParams), defaults);
+        },
+
+        /** These attribute keys are valid params to fetch/API-index */
+        _fetchParams: [
+            /** model dependent string to control the order of models returned */
+            "order",
+            /** limit the number of models returned from a fetch */
+            "limit",
+            /** skip this number of models when fetching */
+            "offset",
+            /** what series of attributes to return (model dependent) */
+            "view",
+            /** individual keys to return for the models (see api/histories.index) */
+            "keys"
+        ],
+
+        /** add any needed filters here based on collection state */
+        _buildFetchFilters: function _buildFetchFilters(options) {
+            // override
+            return _.clone(options.filters || {});
+        },
+
+        /** Convert dictionary filters to qqv style arrays */
+        _fetchFiltersToAjaxData: function _fetchFiltersToAjaxData(filters) {
+            // return as a map so ajax.data can extend from it
+            var filterMap = {
+                q: [],
+                qv: []
+            };
+            _.each(filters, function(v, k) {
+                // don't send if filter value is empty
+                if (v === undefined || v === "") {
+                    return;
+                }
+                // json to python
+                if (v === true) {
+                    v = "True";
+                }
+                if (v === false) {
+                    v = "False";
+                }
+                if (v === null) {
+                    v = "None";
+                }
+                // map to k/v arrays (q/qv)
+                filterMap.q.push(k);
+                filterMap.qv.push(v);
+            });
+            return filterMap;
+        },
+
+        /** override to reset allFetched flag to false */
+        reset: function reset(models, options) {
+            this.allFetched = false;
+            return Backbone.Collection.prototype.reset.call(this, models, options);
+        },
+
+        // ........................................................................ order
+        order: null,
+
+        /** @type {Object} map of collection available sorting orders containing comparator fns */
+        comparators: {
+            update_time: _baseMvc2.default.buildComparator("update_time", {
+                ascending: false
+            }),
+            "update_time-asc": _baseMvc2.default.buildComparator("update_time", {
+                ascending: true
+            }),
+            create_time: _baseMvc2.default.buildComparator("create_time", {
+                ascending: false
+            }),
+            "create_time-asc": _baseMvc2.default.buildComparator("create_time", {
+                ascending: true
+            })
+        },
+
+        /** set the order and comparator for this collection then sort with the new order
+         *  @event 'changed-order' passed the new order and the collection
+         */
+        setOrder: function setOrder(order, options) {
+            options = options || {};
+            var collection = this;
+            var comparator = collection.comparators[order];
+            if (_.isUndefined(comparator)) {
+                throw new Error("unknown order: " + order);
+            }
+            // if( _.isUndefined( comparator ) ){ return; }
+            if (comparator === collection.comparator) {
+                return;
+            }
+
+            collection.order = order;
+            collection.comparator = comparator;
+
+            if (!options.silent) {
+                collection.trigger("changed-order", options);
+            }
+            return collection;
+        }
+    });
+
+    //=============================================================================
+    /**
+     *
+     */
+    var PaginatedCollection = ControlledFetchCollection.extend({
+        /** @type {Number} limit used for each page's fetch */
+        limitPerPage: 500,
+
+        initialize: function initialize(models, options) {
+            ControlledFetchCollection.prototype.initialize.call(this, models, options);
+            this.currentPage = options.currentPage || 0;
+        },
+
+        getTotalItemCount: function getTotalItemCount() {
+            return this.length;
+        },
+
+        shouldPaginate: function shouldPaginate() {
+            return this.getTotalItemCount() >= this.limitPerPage;
+        },
+
+        getLastPage: function getLastPage() {
+            return Math.floor(this.getTotalItemCount() / this.limitPerPage);
+        },
+
+        getPageCount: function getPageCount() {
+            return this.getLastPage() + 1;
+        },
+
+        getPageLimitOffset: function getPageLimitOffset(pageNum) {
+            pageNum = this.constrainPageNum(pageNum);
+            return {
+                limit: this.limitPerPage,
+                offset: pageNum * this.limitPerPage
+            };
+        },
+
+        constrainPageNum: function constrainPageNum(pageNum) {
+            return Math.max(0, Math.min(pageNum, this.getLastPage()));
+        },
+
+        /** fetch the next page of data */
+        fetchPage: function fetchPage(pageNum, options) {
+            var self = this;
+            pageNum = self.constrainPageNum(pageNum);
+            self.currentPage = pageNum;
+            options = _.defaults(options || {}, self.getPageLimitOffset(pageNum));
+
+            self.trigger("fetching-more");
+            return self.fetch(options).always(function() {
+                self.trigger("fetching-more-done");
+            });
+        },
+
+        fetchCurrentPage: function fetchCurrentPage(options) {
+            return this.fetchPage(this.currentPage, options);
+        },
+
+        fetchPrevPage: function fetchPrevPage(options) {
+            return this.fetchPage(this.currentPage - 1, options);
+        },
+
+        fetchNextPage: function fetchNextPage(options) {
+            return this.fetchPage(this.currentPage + 1, options);
+        }
+    });
+
+    //=============================================================================
+    /**
+     * A Collection that will load more elements without reseting.
+     */
+    var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
+        /** @type {Number} limit used for the first fetch (or a reset) */
+        limitOnFirstFetch: null,
+        /** @type {Number} limit used for each subsequent fetch */
+        limitPerFetch: 100,
+
+        initialize: function initialize(models, options) {
+            ControlledFetchCollection.prototype.initialize.call(this, models, options);
+            /** @type {Integer} number of contents to return from the first fetch */
+            this.limitOnFirstFetch = options.limitOnFirstFetch || this.limitOnFirstFetch;
+            /** @type {Integer} limit for every fetch after the first */
+            this.limitPerFetch = options.limitPerFetch || this.limitPerFetch;
+            /** @type {Boolean} are all contents fetched? */
+            this.allFetched = false;
+            /** @type {Integer} what was the offset of the last content returned */
+            this.lastFetched = options.lastFetched || 0;
+        },
+
+        /** build ajax data/parameters from options */
+        _buildFetchOptions: function _buildFetchOptions(options) {
+            // options (options for backbone.fetch and jquery.ajax generally)
+            // backbone option; false here to make fetching an addititive process
+            options.remove = options.remove || false;
+            return ControlledFetchCollection.prototype._buildFetchOptions.call(this, options);
+        },
+
+        /** fetch the first 'page' of data */
+        fetchFirst: function fetchFirst(options) {
+            Galaxy.debug("ControlledFetchCollection.fetchFirst:", options);
+            options = options ? _.clone(options) : {};
+            this.allFetched = false;
+            this.lastFetched = 0;
+            return this.fetchMore(_.defaults(options, {
+                reset: true,
+                limit: this.limitOnFirstFetch
+            }));
+        },
+
+        /** fetch the next page of data */
+        fetchMore: function fetchMore(options) {
+            Galaxy.debug("ControlledFetchCollection.fetchMore:", options);
+            options = _.clone(options || {});
+            var collection = this;
+
+            Galaxy.debug("fetchMore, options.reset:", options.reset);
+            if (!options.reset && collection.allFetched) {
+                return jQuery.when();
+            }
+
+            // TODO: this fails in the edge case where
+            //  the first fetch offset === limit (limit 4, offset 4, collection.length 4)
+            if (options.reset) {
+                options.offset = 0;
+            } else if (options.offset === undefined) {
+                options.offset = collection.lastFetched;
+            }
+            var limit = options.limit = options.limit || collection.limitPerFetch || null;
+            Galaxy.debug("fetchMore, limit:", limit, "offset:", options.offset);
+
+            collection.trigger("fetching-more");
+            return collection.fetch(options).always(function() {
+                    collection.trigger("fetching-more-done");
+                })
+                // maintain allFetched flag and trigger if all were fetched this time
+                .done(function _postFetchMore(fetchedData) {
+                    var numFetched = _.isArray(fetchedData) ? fetchedData.length : 0;
+                    collection.lastFetched += numFetched;
+                    Galaxy.debug("fetchMore, lastFetched:", collection.lastFetched);
+                    // anything less than a full page means we got all there is to get
+                    if (!limit || numFetched < limit) {
+                        collection.allFetched = true;
+                        collection.trigger("all-fetched", this);
+                    }
+                });
+        },
+
+        /** fetch all the collection */
+        fetchAll: function fetchAll(options) {
+            // whitelist options to prevent allowing limit/offset/filters
+            // (use vanilla fetch instead)
+            options = options || {};
+            var self = this;
+            options = _.pick(options, "silent");
+            options.filters = {};
+            return self.fetch(options).done(function() {
+                self.allFetched = true;
+                self.trigger("all-fetched", self);
+            });
+        }
+    });
+
+    //==============================================================================
+    exports.default = {
+        ControlledFetchCollection: ControlledFetchCollection,
+        PaginatedCollection: PaginatedCollection,
+        InfinitelyScrollingCollection: InfinitelyScrollingCollection
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/base/controlled-fetch-collection.js.map

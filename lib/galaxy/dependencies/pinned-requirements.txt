@@ -24,7 +24,6 @@ boltons==17.1.0
 Paste==2.0.2
 PasteDeploy==1.5.2
 docutils==0.14
-wchartype==0.1
 repoze.lru==0.6
 Routes==2.4.1
 WebOb==1.4.1
@@ -73,7 +72,7 @@ psutil==4.1.0
 pulsar-galaxy-lib==0.8.0
 
 # sqlalchemy-migrate and dependencies
-sqlalchemy-migrate==0.10.0
+sqlalchemy-migrate==0.11.0
 decorator==4.0.2
 Tempita==0.5.3dev
 sqlparse==0.1.16

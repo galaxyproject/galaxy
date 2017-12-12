@@ -1,2 +1,47 @@
-define("utils/add-logging",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var o=["log","debug","info","warn","error","metric"];e.default=function(e,t){var i=void 0!==e.prototype?e.prototype:e;return void 0!==t&&(i._logNamespace=t),o.forEach(function(e){i[e]=function(){if(this.logger)return this.logger.emit?this.logger.emit(e,this._logNamespace,arguments):this.logger[e]?this.logger[e].apply(this.logger,arguments):void 0}}),e}});
+define("utils/add-logging", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    //==============================================================================
+    var LOGGING_FNS = ["log", "debug", "info", "warn", "error", "metric"];
+    /** adds logging functions to an obj.prototype (or obj directly) adding a namespace for filtering
+     *  @param {Object} obj
+     *  @param {String} namespace
+     */
+    function addLogging(obj, namespace) {
+        var addTo = obj.prototype !== undefined ? obj.prototype : obj;
+        if (namespace !== undefined) {
+            addTo._logNamespace = namespace;
+        }
+        //yagni?: without this, may not capture Galaxy.config.debug and add Galaxy.logger properly
+        // if( window.Galaxy && window.Galaxy.config && window.Galaxy.config.debug ){
+        //     addTo.logger = window.Galaxy.logger;
+        // }
+
+        // give the object each
+        LOGGING_FNS.forEach(function(logFn) {
+            addTo[logFn] = function() {
+                if (!this.logger) {
+                    return undefined;
+                }
+                if (this.logger.emit) {
+                    return this.logger.emit(logFn, this._logNamespace, arguments);
+                }
+                if (this.logger[logFn]) {
+                    //TODO:! there has to be a way to get the lineno/file into this
+                    // http://stackoverflow.com/questions/13815640/a-proper-wrapper-for-console-log-with-correct-line-number
+                    // http://www.paulirish.com/2009/log-a-lightweight-wrapper-for-consolelog/
+                    return this.logger[logFn].apply(this.logger, arguments);
+                }
+                return undefined;
+            };
+        });
+        return obj;
+    }
+
+    //==============================================================================
+    exports.default = addLogging;
+});
 //# sourceMappingURL=../../maps/utils/add-logging.js.map

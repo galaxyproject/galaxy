@@ -1,2 +1,246 @@
-define("ui/pagination",["jquery"],function(t){"use strict";function e(t,e){return this.numPages=null,this.currPage=0,this.init(t,e)}function i(t){return n(['<li><a href="javascript:void(0);">',t,"</a></li>"].join(""))}var a=function(t){return t&&t.__esModule?t:{default:t}}(t),n=a.default;e.prototype.DATA_KEY="pagination",e.prototype.defaults={startingPage:0,perPage:20,totalDataSize:null,currDataSize:null},e.prototype.init=function(t,i){return i=i||{},this.$element=t,this.options=a.default.extend(!0,{},this.defaults,i),this.currPage=this.options.startingPage,null!==this.options.totalDataSize&&(this.numPages=Math.ceil(this.options.totalDataSize/this.options.perPage),this.currPage>=this.numPages&&(this.currPage=this.numPages-1)),this.$element.data(e.prototype.DATA_KEY,this),this._render(),this},e.prototype._render=function(){return 0===this.options.totalDataSize?this:1===this.numPages?this:(this.numPages>0?(this._renderPages(),this._scrollToActivePage()):this._renderPrevNext(),this)},e.prototype._renderPrevNext=function(){var t=this,e=i("Prev"),a=i("Next"),r=n("<ul/>").addClass("pagination pagination-prev-next");return 0===this.currPage?e.addClass("disabled"):e.click(function(){t.prevPage()}),this.numPages&&this.currPage===this.numPages-1||this.options.currDataSize&&this.options.currDataSize<this.options.perPage?a.addClass("disabled"):a.click(function(){t.nextPage()}),this.$element.html(r.append([e,a])),this.$element},e.prototype._renderPages=function(){for(var t=this,e=n("<div>").addClass("pagination-scroll-container"),a=n("<ul/>").addClass("pagination pagination-page-list"),r=0;r<this.numPages;r+=1){var s=i(r+1).attr("data-page",r).click(function(e){t.goToPage(n(this).data("page"))});r===this.currPage&&s.addClass("active"),a.append(s)}return this.$element.html(e.html(a))},e.prototype._scrollToActivePage=function(){var t=this.$element.find(".pagination-scroll-container");if(!t.length)return this;var e=this.$element.find("li.active"),i=t.width()/2;return t.scrollLeft(t.scrollLeft()+e.position().left-i),this},e.prototype.goToPage=function(t){return t<=0&&(t=0),this.numPages&&t>=this.numPages&&(t=this.numPages-1),t===this.currPage?this:(this.currPage=t,this.$element.trigger("pagination.page-change",this.currPage),this._render(),this)},e.prototype.prevPage=function(){return this.goToPage(this.currPage-1)},e.prototype.nextPage=function(){return this.goToPage(this.currPage+1)},e.prototype.page=function(){return this.currPage},e.create=function(t,i){return new e(t,i)},a.default.fn.extend({pagination:function(t){var i=a.default.makeArray(arguments).slice(1);if("object"===a.default.type(t))return this.map(function(){return e.create(n(this),t),this});var r=n(this[0]).data(e.prototype.DATA_KEY);if(r){if("string"!==a.default.type(t))return r;var s=r[t];if("function"===a.default.type(s))return s.apply(r,i)}}})});
+define("ui/pagination", ["jquery"], function(_jquery) {
+    "use strict";
+
+    var _jquery2 = _interopRequireDefault(_jquery);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    "use_strict";
+
+    var $ = _jquery2.default;
+    /** Builds (twitter bootstrap styled) pagination controls.
+     *  If the totalDataSize is not null, a horizontal list of page buttons is displayed.
+     *  If totalDataSize is null, two links ('Prev' and 'Next) are displayed.
+     *  When pages are changed, a 'pagination.page-change' event is fired
+     *      sending the event and the (0-based) page requested.
+     */
+    function Pagination(element, options) {
+        /** the total number of pages */
+        this.numPages = null;
+        /** the current, active page */
+        this.currPage = 0;
+        return this.init(element, options);
+    }
+
+    /** data key under which this object will be stored in the element */
+    Pagination.prototype.DATA_KEY = "pagination";
+    /** default options */
+    Pagination.prototype.defaults = {
+        /** which page to begin at */
+        startingPage: 0,
+        /** number of data per page */
+        perPage: 20,
+        /** the total number of data (null == unknown) */
+        totalDataSize: null,
+        /** size of current data on current page */
+        currDataSize: null
+    };
+
+    /** init the control, calc numPages if possible, and render
+     *  @param {jQuery} the element that will contain the pagination control
+     *  @param {Object} options a map containing overrides to the pagination default options
+     */
+    Pagination.prototype.init = function _init($element, options) {
+        options = options || {};
+        this.$element = $element;
+        this.options = _jquery2.default.extend(true, {}, this.defaults, options);
+
+        this.currPage = this.options.startingPage;
+        if (this.options.totalDataSize !== null) {
+            this.numPages = Math.ceil(this.options.totalDataSize / this.options.perPage);
+            // limit currPage by numPages
+            if (this.currPage >= this.numPages) {
+                this.currPage = this.numPages - 1;
+            }
+        }
+        //console.debug( 'Pagination.prototype.init:', this.$element, this.currPage );
+        //console.debug( JSON.stringify( this.options ) );
+
+        // bind to data of element
+        this.$element.data(Pagination.prototype.DATA_KEY, this);
+
+        this._render();
+        return this;
+    };
+
+    /** helper to create a simple li + a combo */
+    function _make$Li(contents) {
+        return $(['<li><a href="javascript:void(0);">', contents, "</a></li>"].join(""));
+    }
+
+    /** render previous and next pagination buttons */
+    Pagination.prototype._render = function __render() {
+        // no data - no pagination
+        if (this.options.totalDataSize === 0) {
+            return this;
+        }
+        // only one page
+        if (this.numPages === 1) {
+            return this;
+        }
+
+        // when the number of pages are known, render each page as a link
+        if (this.numPages > 0) {
+            this._renderPages();
+            this._scrollToActivePage();
+
+            // when the number of pages is not known, render previous or next
+        } else {
+            this._renderPrevNext();
+        }
+        return this;
+    };
+
+    /** render previous and next pagination buttons */
+    Pagination.prototype._renderPrevNext = function __renderPrevNext() {
+        var pagination = this;
+        var $prev = _make$Li("Prev");
+        var $next = _make$Li("Next");
+
+        var $paginationContainer = $("<ul/>").addClass("pagination pagination-prev-next");
+
+        // disable if it either end
+        if (this.currPage === 0) {
+            $prev.addClass("disabled");
+        } else {
+            $prev.click(function() {
+                pagination.prevPage();
+            });
+        }
+        if (this.numPages && this.currPage === this.numPages - 1 || this.options.currDataSize && this.options.currDataSize < this.options.perPage) {
+            $next.addClass("disabled");
+        } else {
+            $next.click(function() {
+                pagination.nextPage();
+            });
+        }
+
+        this.$element.html($paginationContainer.append([$prev, $next]));
+        //console.debug( this.$element, this.$element.html() );
+        return this.$element;
+    };
+
+    /** render page links for each possible page (if we can) */
+    Pagination.prototype._renderPages = function __renderPages() {
+        // it's better to scroll the control and let the user see all pages
+        //  than to force her/him to change pages in order to find the one they want (as traditional << >> does)
+        var pagination = this;
+
+        var $scrollingContainer = $("<div>").addClass("pagination-scroll-container");
+
+        var $paginationContainer = $("<ul/>").addClass("pagination pagination-page-list");
+
+        var page$LiClick = function page$LiClick(ev) {
+            pagination.goToPage($(this).data("page"));
+        };
+
+        for (var i = 0; i < this.numPages; i += 1) {
+            // add html5 data tag 'page' for later click event handler use
+            var $pageLi = _make$Li(i + 1).attr("data-page", i).click(page$LiClick);
+            // highlight the current page
+            if (i === this.currPage) {
+                $pageLi.addClass("active");
+            }
+            //console.debug( '\t', $pageLi );
+            $paginationContainer.append($pageLi);
+        }
+        return this.$element.html($scrollingContainer.html($paginationContainer));
+    };
+
+    /** scroll scroll-container (if any) to show the active page */
+    Pagination.prototype._scrollToActivePage = function __scrollToActivePage() {
+        // scroll to show active page in center of scrollable area
+        var $container = this.$element.find(".pagination-scroll-container");
+        // no scroll container : don't scroll
+        if (!$container.length) {
+            return this;
+        }
+
+        var $activePage = this.$element.find("li.active");
+        var midpoint = $container.width() / 2;
+        //console.debug( $container, $activePage, midpoint );
+        $container.scrollLeft($container.scrollLeft() + $activePage.position().left - midpoint);
+        return this;
+    };
+
+    /** go to a certain page */
+    Pagination.prototype.goToPage = function goToPage(page) {
+        if (page <= 0) {
+            page = 0;
+        }
+        if (this.numPages && page >= this.numPages) {
+            page = this.numPages - 1;
+        }
+        if (page === this.currPage) {
+            return this;
+        }
+
+        //console.debug( '\t going to page ' + page )
+        this.currPage = page;
+        this.$element.trigger("pagination.page-change", this.currPage);
+        //console.info( 'pagination:page-change', this.currPage );
+        this._render();
+        return this;
+    };
+
+    /** go to the previous page */
+    Pagination.prototype.prevPage = function prevPage() {
+        return this.goToPage(this.currPage - 1);
+    };
+
+    /** go to the next page */
+    Pagination.prototype.nextPage = function nextPage() {
+        return this.goToPage(this.currPage + 1);
+    };
+
+    /** return the current page */
+    Pagination.prototype.page = function page() {
+        return this.currPage;
+    };
+
+    // alternate constructor invocation
+    Pagination.create = function _create($element, options) {
+        return new Pagination($element, options);
+    };
+
+    // as jq plugin
+    _jquery2.default.fn.extend({
+        pagination: function $pagination(options) {
+            var nonOptionsArgs = _jquery2.default.makeArray(arguments).slice(1);
+
+            // if passed an object - use that as an options map to create pagination for each selected
+            if (_jquery2.default.type(options) === "object") {
+                return this.map(function() {
+                    Pagination.create($(this), options);
+                    return this;
+                });
+            }
+
+            // (other invocations only work on the first element in selected)
+            var $firstElement = $(this[0]);
+
+            var previousControl = $firstElement.data(Pagination.prototype.DATA_KEY);
+            // if a pagination control was found for this element, either...
+            if (previousControl) {
+                // invoke a function on the pagination object if passed a string (the function name)
+                if (_jquery2.default.type(options) === "string") {
+                    var fn = previousControl[options];
+                    if (_jquery2.default.type(fn) === "function") {
+                        return fn.apply(previousControl, nonOptionsArgs);
+                    }
+
+                    // if passed nothing, return the previously set control
+                } else {
+                    return previousControl;
+                }
+            }
+            // if there is no control already set, return undefined
+            return undefined;
+        }
+    });
+});
 //# sourceMappingURL=../../maps/ui/pagination.js.map

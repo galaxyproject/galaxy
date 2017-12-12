@@ -1,2 +1,199 @@
-define("ui/mode-button",["jquery"],function(t){"use strict";function e(t,e){return this.currModeIndex=0,this._init(t,e)}var o=function(t){return t&&t.__esModule?t:{default:t}}(t).default;e.prototype.DATA_KEY="mode-button",e.prototype.defaults={switchModesOnClick:!0},e.prototype._init=function(t,e){if(e=e||{},this.$element=o(t),this.options=o.extend(!0,{},this.defaults,e),!e.modes)throw new Error('ModeButton requires a "modes" array');var n=this;return this.$element.click(function(t){n.callModeFn(),n.options.switchModesOnClick&&n._incModeIndex(),o(this).html(n.options.modes[n.currModeIndex].html)}),this.reset()},e.prototype._incModeIndex=function(){return this.currModeIndex+=1,this.currModeIndex>=this.options.modes.length&&(this.currModeIndex=0),this},e.prototype._getModeIndex=function(t){for(var e=0;e<this.options.modes.length;e+=1)if(this.options.modes[e].mode===t)return e;throw new Error("mode not found: "+t)},e.prototype._setModeByIndex=function(t){var e=this.options.modes[t];if(!e)throw new Error("mode index not found: "+t);return this.currModeIndex=t,e.html&&this.$element.html(e.html),this},e.prototype.currentMode=function(){return this.options.modes[this.currModeIndex]},e.prototype.current=function(){return this.currentMode().mode},e.prototype.getMode=function(t){return t?this.options.modes[this._getModeIndex(t)]:this.currentMode()},e.prototype.hasMode=function(t){try{return!!this.getMode(t)}catch(t){}return!1},e.prototype.setMode=function(t){return this._setModeByIndex(this._getModeIndex(t))},e.prototype.reset=function(){return this.currModeIndex=0,this.options.initialMode&&(this.currModeIndex=this._getModeIndex(this.options.initialMode)),this._setModeByIndex(this.currModeIndex)},e.prototype.callModeFn=function(t){var e=this.getMode(t).onclick;if(e&&o.type("function"===e))return e.call(this.$element.get(0))},o.fn.modeButton=function(t){if(!this.length)return this;if("object"===o.type(t))return this.map(function(){var n=o(this);return n.data("mode-button",new e(n,t)),this});var n=o(this[0]).data("mode-button");if(!n)throw new Error("modeButton needs an options object or string name of a function");if(n&&"string"===o.type(t)){var r=t;if(n&&"function"===o.type(n[r]))return n[r].apply(n,o.makeArray(arguments).slice(1))}return n}});
+define("ui/mode-button", ["jquery"], function(_jquery) {
+    "use strict";
+
+    var _jquery2 = _interopRequireDefault(_jquery);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    "use_strict";
+
+    var $ = _jquery2.default;
+
+    /** Multi 'mode' button (or any element really) that changes the html
+     *      contents of itself when clicked. Pass in an ordered list of
+     *      objects with 'html' and (optional) onclick functions.
+     *
+     *      When clicked in a particular node, the onclick function will
+     *      be called (with the element as this) and the element will
+     *      switch to the next mode, replacing its html content with
+     *      that mode's html.
+     *
+     *      If there is no next mode, the element will switch back to
+     *      the first mode.
+     * @example:
+     *     $( '.myElement' ).modeButton({
+     *         modes : [
+     *             {
+     *                 mode: 'bler',
+     *                 html: '<h5>Bler</h5>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'red' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'bloo',
+     *                 html: '<h4>Bloo</h4>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'blue' );
+     *                 }
+     *             },
+     *             {
+     *                 mode: 'blah',
+     *                 html: '<h3>Blah</h3>',
+     *                 onclick : function(){
+     *                     $( 'body' ).css( 'background-color', 'grey' );
+     *                 }
+     *             },
+     *         ]
+     *     });
+     *     $( '.myElement' ).modeButton( 'callModeFn', 'bler' );
+     */
+    /** constructor */
+    function ModeButton(element, options) {
+        this.currModeIndex = 0;
+        return this._init(element, options);
+    }
+
+    /** html5 data key to store this object inside an element */
+    ModeButton.prototype.DATA_KEY = "mode-button";
+    /** default options */
+    ModeButton.prototype.defaults = {
+        switchModesOnClick: true
+    };
+
+    // ---- private interface
+    /** set up options, intial mode, and the click handler */
+    ModeButton.prototype._init = function _init(element, options) {
+        //console.debug( 'ModeButton._init:', element, options );
+        options = options || {};
+        this.$element = $(element);
+        this.options = $.extend(true, {}, this.defaults, options);
+        if (!options.modes) {
+            throw new Error('ModeButton requires a "modes" array');
+        }
+
+        var modeButton = this;
+        this.$element.click(function _ModeButtonClick(event) {
+            // call the curr mode fn
+            modeButton.callModeFn();
+            // inc the curr mode index
+            if (modeButton.options.switchModesOnClick) {
+                modeButton._incModeIndex();
+            }
+            // set the element html
+            $(this).html(modeButton.options.modes[modeButton.currModeIndex].html);
+        });
+        return this.reset();
+    };
+    /** increment the mode index to the next in the array, looping back to zero if at the last */
+    ModeButton.prototype._incModeIndex = function _incModeIndex() {
+        this.currModeIndex += 1;
+        if (this.currModeIndex >= this.options.modes.length) {
+            this.currModeIndex = 0;
+        }
+        return this;
+    };
+    /** get the mode index in the modes array for the given key (mode name) */
+    ModeButton.prototype._getModeIndex = function _getModeIndex(modeKey) {
+        for (var i = 0; i < this.options.modes.length; i += 1) {
+            if (this.options.modes[i].mode === modeKey) {
+                return i;
+            }
+        }
+        throw new Error("mode not found: " + modeKey);
+    };
+    /** set the current mode to the one with the given index and set button html */
+    ModeButton.prototype._setModeByIndex = function _setModeByIndex(index) {
+        var newMode = this.options.modes[index];
+        if (!newMode) {
+            throw new Error("mode index not found: " + index);
+        }
+        this.currModeIndex = index;
+        if (newMode.html) {
+            this.$element.html(newMode.html);
+        }
+        return this;
+    };
+
+    // ---- public interface
+    /** get the current mode object (not just the mode name) */
+    ModeButton.prototype.currentMode = function currentMode() {
+        return this.options.modes[this.currModeIndex];
+    };
+    /** return the mode key of the current mode */
+    ModeButton.prototype.current = function current() {
+        // sugar for returning mode name
+        return this.currentMode().mode;
+    };
+    /** get the mode with the given modeKey or the current mode if modeKey is undefined */
+    ModeButton.prototype.getMode = function getMode(modeKey) {
+        if (!modeKey) {
+            return this.currentMode();
+        }
+        return this.options.modes[this._getModeIndex(modeKey)];
+    };
+    /** T/F if the button has the given mode */
+    ModeButton.prototype.hasMode = function hasMode(modeKey) {
+        try {
+            return !!this.getMode(modeKey);
+        } catch (err) {}
+        return false;
+    };
+    /** set the current mode to the mode with the given name */
+    ModeButton.prototype.setMode = function setMode(modeKey) {
+        return this._setModeByIndex(this._getModeIndex(modeKey));
+    };
+    /** reset to the initial mode */
+    ModeButton.prototype.reset = function reset() {
+        this.currModeIndex = 0;
+        if (this.options.initialMode) {
+            this.currModeIndex = this._getModeIndex(this.options.initialMode);
+        }
+        return this._setModeByIndex(this.currModeIndex);
+    };
+    /** manually call the click handler of the given mode */
+    ModeButton.prototype.callModeFn = function callModeFn(modeKey) {
+        var modeFn = this.getMode(modeKey).onclick;
+        if (modeFn && $.type(modeFn === "function")) {
+            // call with the element as context (std jquery pattern)
+            return modeFn.call(this.$element.get(0));
+        }
+        return undefined;
+    };
+
+    // as jq plugin
+    $.fn.modeButton = function $modeButton(options) {
+        if (!this.length) {
+            return this;
+        }
+
+        //TODO: does map still work with jq multi selection (i.e. $( '.class-for-many-btns' ).modeButton)?
+        if ($.type(options) === "object") {
+            return this.map(function() {
+                var $this = $(this);
+                $this.data("mode-button", new ModeButton($this, options));
+                return this;
+            });
+        }
+
+        var $first = $(this[0]);
+        var button = $first.data("mode-button");
+
+        if (!button) {
+            throw new Error("modeButton needs an options object or string name of a function");
+        }
+
+        if (button && $.type(options) === "string") {
+            var fnName = options;
+            if (button && $.type(button[fnName]) === "function") {
+                return button[fnName].apply(button, $.makeArray(arguments).slice(1));
+            }
+        }
+        return button;
+    };
+});
 //# sourceMappingURL=../../maps/ui/mode-button.js.map

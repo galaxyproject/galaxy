@@ -1,2 +1,629 @@
-define("mvc/base-mvc",["exports","libs/underscore","libs/backbone","utils/add-logging","utils/localization"],function(e,t,i,r,n){"use strict";function s(e){return e&&e.__esModule?e:{default:e}}function a(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var i in e)Object.prototype.hasOwnProperty.call(e,i)&&(t[i]=e[i]);return t.default=e,t}Object.defineProperty(e,"__esModule",{value:!0});var o=a(t),l=a(i),h=s(r),d=s(n),c={logger:null,_logNamespace:"."};(0,h.default)(c);var u=l.Model.extend({initialize:function(e){if(this._checkEnabledSessionStorage(),!e.id)throw new Error("SessionStorageModel requires an id in the initial attributes");this.id=e.id;var t=this.isNew()?{}:this._read(this);this.clear({silent:!0}),this.save(o.extend({},this.defaults,t,e),{silent:!0}),this.on("change",function(){this.save()})},_checkEnabledSessionStorage:function(){try{return window.sessionStorage.length>=0}catch(e){return alert("Please enable cookies in your browser for this Galaxy site"),!1}},sync:function(e,t,i){i.silent||t.trigger("request",t,{},i);var r={};switch(e){case"create":r=this._create(t);break;case"read":r=this._read(t);break;case"update":r=this._update(t);break;case"delete":r=this._delete(t)}return void 0!==r||null!==r?i.success&&i.success():i.error&&i.error(),r},_create:function(e){try{var t=e.toJSON(),i=sessionStorage.setItem(e.id,JSON.stringify(t));return null===i?i:t}catch(e){if(!(e instanceof DOMException&&navigator.userAgent.indexOf("Safari")>-1))throw e}return null},_read:function(e){return JSON.parse(sessionStorage.getItem(e.id))},_update:function(e){return e._create(e)},_delete:function(e){return sessionStorage.removeItem(e.id)},isNew:function(){return!sessionStorage.hasOwnProperty(this.id)},_log:function(){return JSON.stringify(this.toJSON(),null,"  ")},toString:function(){return"SessionStorageModel("+this.id+")"}});u.prototype=o.omit(u.prototype,"url","urlRoot");var g={searchAttributes:[],searchAliases:{},searchAttribute:function(e,t){var i=this.get(e);return!(!t||void 0===i||null===i)&&(o.isArray(i)?this._searchArrayAttribute(i,t):-1!==i.toString().toLowerCase().indexOf(t.toLowerCase()))},_searchArrayAttribute:function(e,t){return t=t.toLowerCase(),o.any(e,function(e){return-1!==e.toString().toLowerCase().indexOf(t.toLowerCase())})},search:function(e){var t=this;return o.filter(this.searchAttributes,function(i){return t.searchAttribute(i,e)})},matches:function(e){var t=e.split("=");if(t.length>=2){var i=t[0];return i=this.searchAliases[i]||i,this.searchAttribute(i,t[1])}return!!this.search(e).length},matchesAll:function(e){var t=this;return e=e.match(/(".*"|\w*=".*"|\S*)/g).filter(function(e){return!!e}),o.all(e,function(e){return e=e.replace(/"/g,""),t.matches(e)})}},f={hiddenUntilActivated:function(e,t){if(t=t||{},this.HUAVOptions={$elementShown:this.$el,showFn:jQuery.prototype.toggle,showSpeed:"fast"},o.extend(this.HUAVOptions,t||{}),this.HUAVOptions.hasBeenShown=this.HUAVOptions.$elementShown.is(":visible"),this.hidden=this.isHidden(),e){var i=this;e.on("click",function(e){i.toggle(i.HUAVOptions.showSpeed)})}},isHidden:function(){return this.HUAVOptions.$elementShown.is(":hidden")},toggle:function(){return this.hidden?(this.HUAVOptions.hasBeenShown||o.isFunction(this.HUAVOptions.onshowFirstTime)&&(this.HUAVOptions.hasBeenShown=!0,this.HUAVOptions.onshowFirstTime.call(this)),o.isFunction(this.HUAVOptions.onshow)&&(this.HUAVOptions.onshow.call(this),this.trigger("hiddenUntilActivated:shown",this)),this.hidden=!1):(o.isFunction(this.HUAVOptions.onhide)&&(this.HUAVOptions.onhide.call(this),this.trigger("hiddenUntilActivated:hidden",this)),this.hidden=!0),this.HUAVOptions.showFn.apply(this.HUAVOptions.$elementShown,arguments)}},S={initialize:function(e){this.draggable=e.draggable||!1},$dragHandle:function(){return this.$(".title-bar")},toggleDraggable:function(){this.draggable?this.draggableOff():this.draggableOn()},draggableOn:function(){this.draggable=!0,this.dragStartHandler=o.bind(this._dragStartHandler,this),this.dragEndHandler=o.bind(this._dragEndHandler,this);var e=this.$dragHandle().attr("draggable",!0).get(0);e.addEventListener("dragstart",this.dragStartHandler,!1),e.addEventListener("dragend",this.dragEndHandler,!1)},draggableOff:function(){this.draggable=!1;var e=this.$dragHandle().attr("draggable",!1).get(0);e.removeEventListener("dragstart",this.dragStartHandler,!1),e.removeEventListener("dragend",this.dragEndHandler,!1)},_dragStartHandler:function(e){return e.dataTransfer.effectAllowed="move",e.dataTransfer.setData("text",JSON.stringify(this.model.toJSON())),this.trigger("draggable:dragstart",e,this),!1},_dragEndHandler:function(e){return this.trigger("draggable:dragend",e,this),!1}},p={initialize:function(e){this.selectable=e.selectable||!1,this.selected=e.selected||!1},$selector:function(){return this.$(".selector")},_renderSelected:function(){this.$selector().find("span").toggleClass("fa-check-square-o",this.selected).toggleClass("fa-square-o",!this.selected)},toggleSelector:function(){this.$selector().is(":visible")?this.hideSelector():this.showSelector()},showSelector:function(e){e=void 0!==e?e:this.fxSpeed,this.selectable=!0,this.trigger("selectable",!0,this),this._renderSelected(),e?this.$selector().show(e):this.$selector().show()},hideSelector:function(e){e=void 0!==e?e:this.fxSpeed,this.selectable=!1,this.trigger("selectable",!1,this),e?this.$selector().hide(e):this.$selector().hide()},toggleSelect:function(e){this.selected?this.deselect(e):this.select(e)},select:function(e){return this.selected||(this.trigger("selected",this,e),this.selected=!0,this._renderSelected()),!1},deselect:function(e){return this.selected&&(this.trigger("de-selected",this,e),this.selected=!1,this._renderSelected()),!1}};e.default={LoggableMixin:c,SessionStorageModel:u,mixin:function(e,t){var i=Array.prototype.slice.call(arguments,0),r=i.pop();return i.unshift(r),o.defaults.apply(o,i)},SearchableModelMixin:g,HiddenUntilActivatedViewMixin:f,DraggableViewMixin:S,SelectableViewMixin:p,wrapTemplate:function(e,t){t=t||"model";var i=o.template(e.join(""));return function(e,r){var n={view:r||{},_l:d.default};return n[t]=e||{},i(n)}},buildComparator:function(e,t){var i=(t=t||{}).ascending?1:-1;return function(t,r){return t=t.get(e),r=r.get(e),(t<r?-1:t>r?1:0)*i}}}});
+define("mvc/base-mvc", ["exports", "libs/underscore", "libs/backbone", "utils/add-logging", "utils/localization"], function(exports, _underscore, _backbone, _addLogging, _localization) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    var Backbone = _interopRequireWildcard(_backbone);
+
+    var _addLogging2 = _interopRequireDefault(_addLogging);
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    //==============================================================================
+    /** @class Mixin to add logging capabilities to an object.
+     *      Designed to allow switching an objects log output off/on at one central
+     *      statement. Can be used with plain browser console (or something more
+     *      complex like an AJAX logger).
+     *  <br />NOTE: currently only uses the console.debug log function
+     *  (as opposed to debug, error, warn, etc.)
+     *  @name LoggableMixin
+     *
+     *  @example
+     *  // Add to your models/views at the definition using chaining:
+     *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
+     *
+     *  // or - more explicitly AFTER the definition:
+     *      var MyModel = Backbone.Model.extend({
+     *          logger  : console
+     *          // ...
+     *          this.log( '$#%& it! - broken already...' );
+     *      })
+     *      _.extend( MyModel.prototype, LoggableMixin )
+     *
+     */
+    var LoggableMixin = /** @lends LoggableMixin# */ {
+        // replace null with console (if available) to see all logs for a particular view/model
+        /** The logging object whose log function will be used to output
+         *      messages. Null will supress all logging. Commonly set to console.
+         */
+        logger: null,
+        /** @type {String} a namespace for filtering/focusing log output */
+        _logNamespace: "."
+    };
+    (0, _addLogging2.default)(LoggableMixin);
+
+    //==============================================================================
+    /** Backbone model that syncs to the browser's sessionStorage API.
+     *      This all largely happens behind the scenes and no special calls are required.
+     */
+    var SessionStorageModel = Backbone.Model.extend({
+        initialize: function initialize(initialAttrs) {
+            // check for sessionStorage and error if no id is provided
+            this._checkEnabledSessionStorage();
+            if (!initialAttrs.id) {
+                throw new Error("SessionStorageModel requires an id in the initial attributes");
+            }
+            this.id = initialAttrs.id;
+
+            // load existing from storage (if any), clear any attrs set by bbone before init is called,
+            //  layer initial over existing and defaults, and save
+            var existing = !this.isNew() ? this._read(this) : {};
+            this.clear({
+                silent: true
+            });
+            this.save(_.extend({}, this.defaults, existing, initialAttrs), {
+                silent: true
+            });
+
+            // save on any change to it immediately
+            this.on("change", function() {
+                this.save();
+            });
+        },
+
+        _checkEnabledSessionStorage: function _checkEnabledSessionStorage() {
+            try {
+                return window.sessionStorage.length >= 0;
+            } catch (err) {
+                alert("Please enable cookies in your browser for this Galaxy site");
+                return false;
+            }
+        },
+
+        /** override of bbone sync to save to sessionStorage rather than REST
+         *      bbone options (success, errror, etc.) should still apply
+         */
+        sync: function sync(method, model, options) {
+            if (!options.silent) {
+                model.trigger("request", model, {}, options);
+            }
+            var returned = {};
+            switch (method) {
+                case "create":
+                    returned = this._create(model);
+                    break;
+                case "read":
+                    returned = this._read(model);
+                    break;
+                case "update":
+                    returned = this._update(model);
+                    break;
+                case "delete":
+                    returned = this._delete(model);
+                    break;
+            }
+            if (returned !== undefined || returned !== null) {
+                if (options.success) {
+                    options.success();
+                }
+            } else {
+                if (options.error) {
+                    options.error();
+                }
+            }
+            return returned;
+        },
+
+        /** set storage to the stringified item */
+        _create: function _create(model) {
+            try {
+                var json = model.toJSON();
+                var set = sessionStorage.setItem(model.id, JSON.stringify(json));
+                return set === null ? set : json;
+                // DOMException is thrown in Safari if in private browsing mode and sessionStorage is attempted:
+                // http://stackoverflow.com/questions/14555347
+                // TODO: this could probably use a more general soln - like detecting priv. mode + safari => non-ajaxing Model
+            } catch (err) {
+                if (!(err instanceof DOMException && navigator.userAgent.indexOf("Safari") > -1)) {
+                    throw err;
+                }
+            }
+            return null;
+        },
+
+        /** read and parse json from storage */
+        _read: function _read(model) {
+            return JSON.parse(sessionStorage.getItem(model.id));
+        },
+
+        /** set storage to the item (alias to create) */
+        _update: function _update(model) {
+            return model._create(model);
+        },
+
+        /** remove the item from storage */
+        _delete: function _delete(model) {
+            return sessionStorage.removeItem(model.id);
+        },
+
+        /** T/F whether sessionStorage contains the model's id (data is present) */
+        isNew: function isNew() {
+            return !sessionStorage.hasOwnProperty(this.id);
+        },
+
+        _log: function _log() {
+            return JSON.stringify(this.toJSON(), null, "  ");
+        },
+        toString: function toString() {
+            return "SessionStorageModel(" + this.id + ")";
+        }
+    });
+    (function() {
+        SessionStorageModel.prototype = _.omit(SessionStorageModel.prototype, "url", "urlRoot");
+    })();
+
+    //==============================================================================
+    /** Function that allows mixing of hashs into bbone MVC while showing the mixins first
+     *      (before the more local class overrides/hash).
+     *      Basically, a simple reversal of param order on _.defaults() - to show mixins in top of definition.
+     *  @example:
+     *      var NewModel = Something.extend( mixin( MyMixinA, MyMixinB, { ... myVars : ... }) );
+     *
+     *  NOTE: this does not combine any hashes (like events, etc.) and you're expected to handle that
+     */
+    function mixin(mixinHash1, /* mixinHash2, etc: ... variadic */ propsHash) {
+        var args = Array.prototype.slice.call(arguments, 0);
+        var lastArg = args.pop();
+        args.unshift(lastArg);
+        return _.defaults.apply(_, args);
+    }
+
+    //==============================================================================
+    /** A mixin for models that allow T/F/Matching to their attributes - useful when
+     *      searching or filtering collections of models.
+     * @example:
+     *      see hda-model for searchAttribute and searchAliases definition examples.
+     *      see history-contents.matches for how collections are filtered
+     *      and see readonly-history-view.searchHdas for how user input is connected to the filtering
+     */
+    var SearchableModelMixin = {
+        /** what attributes of an HDA will be used in a text search */
+        searchAttributes: [
+            // override
+        ],
+
+        /** our attr keys don't often match the labels we display to the user - so, when using
+         *      attribute specifiers ('name="bler"') in a term, allow passing in aliases for the
+         *      following attr keys.
+         */
+        searchAliases: {
+            // override
+        },
+
+        /** search the attribute with key attrKey for the string searchFor; T/F if found */
+        searchAttribute: function searchAttribute(attrKey, searchFor) {
+            var attrVal = this.get(attrKey);
+            //this.debug( 'searchAttribute', attrKey, attrVal, searchFor );
+            // bail if empty searchFor or unsearchable values
+            if (!searchFor || attrVal === undefined || attrVal === null) {
+                return false;
+            }
+            // pass to sep. fn for deep search of array attributes
+            if (_.isArray(attrVal)) {
+                return this._searchArrayAttribute(attrVal, searchFor);
+            }
+            return attrVal.toString().toLowerCase().indexOf(searchFor.toLowerCase()) !== -1;
+        },
+
+        /** deep(er) search for array attributes; T/F if found */
+        _searchArrayAttribute: function _searchArrayAttribute(array, searchFor) {
+            //this.debug( '_searchArrayAttribute', array, searchFor );
+            searchFor = searchFor.toLowerCase();
+            //precondition: searchFor has already been validated as non-empty string
+            //precondition: assumes only 1 level array
+            //TODO: could possibly break up searchFor more (CSV...)
+            return _.any(array, function(elem) {
+                return elem.toString().toLowerCase().indexOf(searchFor.toLowerCase()) !== -1;
+            });
+        },
+
+        /** search all searchAttributes for the string searchFor,
+         *      returning a list of keys of attributes that contain searchFor
+         */
+        search: function search(searchFor) {
+            var model = this;
+            return _.filter(this.searchAttributes, function(key) {
+                return model.searchAttribute(key, searchFor);
+            });
+        },
+
+        /** alias of search, but returns a boolean; accepts attribute specifiers where
+         *      the attributes searched can be narrowed to a single attribute using
+         *      the form: matches( 'genome_build=hg19' )
+         *      (the attribute keys allowed can also be aliases to the true attribute key;
+         *          see searchAliases above)
+         *  @param {String} term   plain text or ATTR_SPECIFIER sep. key=val pair
+         *  @returns {Boolean} was term found in (any) attribute(s)
+         */
+        matches: function matches(term) {
+            var ATTR_SPECIFIER = "=";
+            var split = term.split(ATTR_SPECIFIER);
+            // attribute is specified - search only that
+            if (split.length >= 2) {
+                var attrKey = split[0];
+                attrKey = this.searchAliases[attrKey] || attrKey;
+                return this.searchAttribute(attrKey, split[1]);
+            }
+            // no attribute is specified - search all attributes in searchAttributes
+            return !!this.search(term).length;
+        },
+
+        /** an implicit AND search for all terms; IOW, a model must match all terms given
+         *      where terms is a whitespace separated value string.
+         *      e.g. given terms of: 'blah bler database=hg19'
+         *          an HDA would have to have attributes containing blah AND bler AND a genome_build == hg19
+         *      To include whitespace in terms: wrap the term in double quotations (name="blah bler").
+         */
+        matchesAll: function matchesAll(terms) {
+            var model = this;
+            // break the terms up by whitespace and filter out the empty strings
+            terms = terms.match(/(".*"|\w*=".*"|\S*)/g).filter(function(s) {
+                return !!s;
+            });
+            return _.all(terms, function(term) {
+                term = term.replace(/"/g, "");
+                return model.matches(term);
+            });
+        }
+    };
+
+    //==============================================================================
+    /** A view that renders hidden and shows when some activator is clicked.
+     *      options:
+     *          showFn: the effect used to show/hide the View (defaults to jq.toggle)
+     *          $elementShown: some jqObject (defaults to this.$el) to be shown/hidden
+     *          onShowFirstTime: fn called the first time the view is shown
+     *          onshow: fn called every time the view is shown
+     *          onhide: fn called every time the view is hidden
+     *      events:
+     *          hiddenUntilActivated:shown (the view is passed as an arg)
+     *          hiddenUntilActivated:hidden (the view is passed as an arg)
+     *      instance vars:
+     *          view.hidden {boolean} is the view in the hidden state
+     */
+    var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
+        //TODO: since this is a mixin, consider moving toggle, hidden into HUAVOptions
+
+        /** call this in your initialize to set up the mixin
+         *  @param {jQuery} $activator the 'button' that's clicked to show/hide the view
+         *  @param {Object} hash with mixin options
+         */
+        hiddenUntilActivated: function hiddenUntilActivated($activator, options) {
+            // call this in your view's initialize fn
+            options = options || {};
+            //TODO: flesh out options - show them all here
+            this.HUAVOptions = {
+                $elementShown: this.$el,
+                showFn: jQuery.prototype.toggle,
+                showSpeed: "fast"
+            };
+            _.extend(this.HUAVOptions, options || {});
+            /** has this been shown already (and onshowFirstTime called)? */
+            this.HUAVOptions.hasBeenShown = this.HUAVOptions.$elementShown.is(":visible");
+            this.hidden = this.isHidden();
+
+            if ($activator) {
+                var mixin = this;
+                $activator.on("click", function(ev) {
+                    mixin.toggle(mixin.HUAVOptions.showSpeed);
+                });
+            }
+        },
+
+        //TODO:?? remove? use .hidden?
+        /** returns T/F if the view is hidden */
+        isHidden: function isHidden() {
+            return this.HUAVOptions.$elementShown.is(":hidden");
+        },
+
+        /** toggle the hidden state, show/hide $elementShown, call onshow/hide, trigger events */
+        toggle: function toggle() {
+            //TODO: more specific name - toggle is too general
+            // can be called manually as well with normal toggle arguments
+            //TODO: better as a callback (when the show/hide is actually done)
+            // show
+            if (this.hidden) {
+                // fire the optional fns on the first/each showing - good for render()
+                if (!this.HUAVOptions.hasBeenShown) {
+                    if (_.isFunction(this.HUAVOptions.onshowFirstTime)) {
+                        this.HUAVOptions.hasBeenShown = true;
+                        this.HUAVOptions.onshowFirstTime.call(this);
+                    }
+                }
+                if (_.isFunction(this.HUAVOptions.onshow)) {
+                    this.HUAVOptions.onshow.call(this);
+                    this.trigger("hiddenUntilActivated:shown", this);
+                }
+                this.hidden = false;
+
+                // hide
+            } else {
+                if (_.isFunction(this.HUAVOptions.onhide)) {
+                    this.HUAVOptions.onhide.call(this);
+                    this.trigger("hiddenUntilActivated:hidden", this);
+                }
+                this.hidden = true;
+            }
+            return this.HUAVOptions.showFn.apply(this.HUAVOptions.$elementShown, arguments);
+        }
+    };
+
+    //==============================================================================
+    /** Mixin for views that can be dragged and dropped
+     *      Allows for the drag behavior to be turned on/off, setting/removing jQuery event
+     *          handlers each time.
+     *      dataTransfer data is set to the JSON string of the view's model.toJSON
+     *      Override '$dragHandle' to define the draggable DOM sub-element.
+     */
+    var DraggableViewMixin = {
+        /** set up instance vars to track whether this view is currently draggable */
+        initialize: function initialize(attributes) {
+            /** is the body of this hda view expanded/not? */
+            this.draggable = attributes.draggable || false;
+        },
+
+        /** what part of the view's DOM triggers the dragging */
+        $dragHandle: function $dragHandle() {
+            //TODO: make abstract/general - move this to listItem
+            // override to the element you want to be your view's handle
+            return this.$(".title-bar");
+        },
+
+        /** toggle whether this view is draggable */
+        toggleDraggable: function toggleDraggable() {
+            if (this.draggable) {
+                this.draggableOff();
+            } else {
+                this.draggableOn();
+            }
+        },
+
+        /** allow the view to be dragged, set up event handlers */
+        draggableOn: function draggableOn() {
+            this.draggable = true;
+            this.dragStartHandler = _.bind(this._dragStartHandler, this);
+            this.dragEndHandler = _.bind(this._dragEndHandler, this);
+
+            var handle = this.$dragHandle().attr("draggable", true).get(0);
+            handle.addEventListener("dragstart", this.dragStartHandler, false);
+            handle.addEventListener("dragend", this.dragEndHandler, false);
+        },
+
+        /** turn of view dragging and remove event listeners */
+        draggableOff: function draggableOff() {
+            this.draggable = false;
+            var handle = this.$dragHandle().attr("draggable", false).get(0);
+            handle.removeEventListener("dragstart", this.dragStartHandler, false);
+            handle.removeEventListener("dragend", this.dragEndHandler, false);
+        },
+
+        /** sets the dataTransfer data to the model's toJSON
+         *  @fires draggable:dragstart (bbone event) which is passed the event and this view
+         */
+        _dragStartHandler: function _dragStartHandler(event) {
+            event.dataTransfer.effectAllowed = "move";
+            //ASSUMES: this.model
+            //TODO: all except IE: should be 'application/json', IE: must be 'text'
+            event.dataTransfer.setData("text", JSON.stringify(this.model.toJSON()));
+            this.trigger("draggable:dragstart", event, this);
+            return false;
+        },
+
+        /** handle the dragend
+         *  @fires draggable:dragend (bbone event) which is passed the event and this view
+         */
+        _dragEndHandler: function _dragEndHandler(event) {
+            this.trigger("draggable:dragend", event, this);
+            return false;
+        }
+    };
+
+    //==============================================================================
+    /** Mixin that allows a view to be selected (gen. from a list).
+     *      Selection controls ($selector) may be hidden/shown/toggled.
+     *          The bbone event 'selectable' is fired when the controls are shown/hidden (passed T/F).
+     *      Default rendering is a font-awesome checkbox.
+     *      Default selector is '.selector' within the view's $el.
+     *      The bbone events 'selected' and 'de-selected' are fired when the $selector is clicked.
+     *          Both events are passed the view and the (jQuery) event.
+     */
+    var SelectableViewMixin = {
+        /** Set up instance state vars for whether the selector is shown and whether the view has been selected */
+        initialize: function initialize(attributes) {
+            /** is the view currently in selection mode? */
+            this.selectable = attributes.selectable || false;
+            /** is the view currently selected? */
+            this.selected = attributes.selected || false;
+        },
+
+        /** $el sub-element where the selector is rendered and what can be clicked to select. */
+        $selector: function $selector() {
+            return this.$(".selector");
+        },
+
+        /** How the selector is rendered - defaults to font-awesome checkbox */
+        _renderSelected: function _renderSelected() {
+            // override
+            this.$selector().find("span").toggleClass("fa-check-square-o", this.selected).toggleClass("fa-square-o", !this.selected);
+        },
+
+        /** Toggle whether the selector is shown */
+        toggleSelector: function toggleSelector() {
+            //TODO: use this.selectable
+            if (!this.$selector().is(":visible")) {
+                this.showSelector();
+            } else {
+                this.hideSelector();
+            }
+        },
+
+        /** Display the selector control.
+         *  @param {Number} a jQuery fx speed
+         *  @fires: selectable which is passed true (IOW, the selector is shown) and the view
+         */
+        showSelector: function showSelector(speed) {
+            speed = speed !== undefined ? speed : this.fxSpeed;
+            // make sure selected state is represented properly
+            this.selectable = true;
+            this.trigger("selectable", true, this);
+            this._renderSelected();
+            if (speed) {
+                this.$selector().show(speed);
+            } else {
+                this.$selector().show();
+            }
+        },
+
+        /** remove the selector control
+         *  @param {Number} a jQuery fx speed
+         *  @fires: selectable which is passed false (IOW, the selector is not shown) and the view
+         */
+        hideSelector: function hideSelector(speed) {
+            speed = speed !== undefined ? speed : this.fxSpeed;
+            // reverse the process from showSelect
+            this.selectable = false;
+            this.trigger("selectable", false, this);
+            if (speed) {
+                this.$selector().hide(speed);
+            } else {
+                this.$selector().hide();
+            }
+        },
+
+        /** Toggle whether the view is selected */
+        toggleSelect: function toggleSelect(event) {
+            if (this.selected) {
+                this.deselect(event);
+            } else {
+                this.select(event);
+            }
+        },
+
+        /** Select this view and re-render the selector control to show it
+         *  @param {Event} a jQuery event that caused the selection
+         *  @fires: selected which is passed the view and the DOM event that triggered it (optionally)
+         */
+        select: function select(event) {
+            // switch icon, set selected, and trigger event
+            if (!this.selected) {
+                this.trigger("selected", this, event);
+                this.selected = true;
+                this._renderSelected();
+            }
+            return false;
+        },
+
+        /** De-select this view and re-render the selector control to show it
+         *  @param {Event} a jQuery event that caused the selection
+         *  @fires: de-selected which is passed the view and the DOM event that triggered it (optionally)
+         */
+        deselect: function deselect(event) {
+            // switch icon, set selected, and trigger event
+            if (this.selected) {
+                this.trigger("de-selected", this, event);
+                this.selected = false;
+                this._renderSelected();
+            }
+            return false;
+        }
+    };
+
+    //==============================================================================
+    /** Return an underscore template fn from an array of strings.
+     *  @param {String[]} template      the template strings to compile into the underscore template fn
+     *  @param {String} jsonNamespace   an optional namespace for the json data passed in (defaults to 'model')
+     *  @returns {Function} the (wrapped) underscore template fn
+     *      The function accepts:
+     *
+     *  The template strings can access:
+     *      the json/model hash using model ("<%- model.myAttr %>) using the jsonNamespace above
+     *      _l: the localizer function
+     *      view (if passed): ostensibly, the view using the template (handy for view instance vars)
+     *      Because they're namespaced, undefined attributes will not throw an error.
+     *
+     *  @example:
+     *      templateBler : BASE_MVC.wrapTemplate([
+     *          '<div class="myclass <%- mynamespace.modelClass %>">',
+     *              '<span><% print( _l( mynamespace.message ) ); %>:<%= view.status %></span>'
+     *          '</div>'
+     *      ], 'mynamespace' )
+     *
+     *  Meant to be called in a View's definition in order to compile only once.
+     *
+     */
+    function wrapTemplate(template, jsonNamespace) {
+        jsonNamespace = jsonNamespace || "model";
+        var templateFn = _.template(template.join(""));
+        return function(json, view) {
+            var templateVars = {
+                view: view || {},
+                _l: _localization2.default
+            };
+            templateVars[jsonNamespace] = json || {};
+            return templateFn(templateVars);
+        };
+    }
+
+    //==============================================================================
+    /** Return a comparator function for sorted Collections */
+    function buildComparator(attribute_name, options) {
+        options = options || {};
+        var ascending = options.ascending ? 1 : -1;
+        return function __comparator(a, b) {
+            a = a.get(attribute_name);
+            b = b.get(attribute_name);
+            return (a < b ? -1 : a > b ? 1 : 0) * ascending;
+        };
+    }
+
+    //==============================================================================
+    exports.default = {
+        LoggableMixin: LoggableMixin,
+        SessionStorageModel: SessionStorageModel,
+        mixin: mixin,
+        SearchableModelMixin: SearchableModelMixin,
+        HiddenUntilActivatedViewMixin: HiddenUntilActivatedViewMixin,
+        DraggableViewMixin: DraggableViewMixin,
+        SelectableViewMixin: SelectableViewMixin,
+        wrapTemplate: wrapTemplate,
+        buildComparator: buildComparator
+    };
+});
 //# sourceMappingURL=../../maps/mvc/base-mvc.js.map

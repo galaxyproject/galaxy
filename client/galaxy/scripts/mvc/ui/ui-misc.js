@@ -1,15 +1,15 @@
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
  */
-import Utils from "utils/utils";
 import Select from "mvc/ui/ui-select-default";
 import Slider from "mvc/ui/ui-slider";
 import Options from "mvc/ui/ui-options";
 import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
+
 /** Label wrapper */
-var Label = Backbone.View.extend({
+export var Label = Backbone.View.extend({
     tagName: "label",
     initialize: function(options) {
         this.model = (options && options.model) || new Backbone.Model(options);
@@ -35,7 +35,7 @@ var Label = Backbone.View.extend({
 });
 
 /** Displays messages used e.g. in the tool form */
-var Message = Backbone.View.extend({
+export var Message = Backbone.View.extend({
     initialize: function(options) {
         this.model =
             (options && options.model) ||
@@ -85,14 +85,14 @@ var Message = Backbone.View.extend({
     }
 });
 
-var UnescapedMessage = Message.extend({
+export var UnescapedMessage = Message.extend({
     messageForDisplay: function() {
         return this.model.get("message");
     }
 });
 
 /** Renders an input element used e.g. in the tool form */
-var Input = Backbone.View.extend({
+export var Input = Backbone.View.extend({
     initialize: function(options) {
         this.model =
             (options && options.model) ||
@@ -158,7 +158,7 @@ var Input = Backbone.View.extend({
 });
 
 /** Creates a hidden element input field used e.g. in the tool form */
-var Hidden = Backbone.View.extend({
+export var Hidden = Backbone.View.extend({
     initialize: function(options) {
         this.model = (options && options.model) || new Backbone.Model(options);
         this.setElement(
@@ -182,7 +182,7 @@ var Hidden = Backbone.View.extend({
 });
 
 /** Creates a upload element input field */
-var Upload = Backbone.View.extend({
+export var Upload = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
         this.model = (options && options.model) || new Backbone.Model(options);
@@ -231,6 +231,21 @@ var Upload = Backbone.View.extend({
         }
     }
 });
+
+/* Make more Ui stuff directly available at this namespace (for backwards
+ * compatibility).  We should eliminate this practice, though, and just require
+ * what we need where we need it, allowing for better package optimization.
+ */
+
+export let Button = Buttons.ButtonDefault;
+export let ButtonIcon = Buttons.ButtonIcon;
+export let ButtonCheck = Buttons.ButtonCheck;
+export let ButtonMenu = Buttons.ButtonMenu;
+export let ButtonLink = Buttons.ButtonLink;
+export let Checkbox = Options.Checkbox;
+export let RadioButton = Options.RadioButton;
+export let Radio = Options.Radio;
+export { Select, Slider, Drilldown };
 
 export default {
     Button: Buttons.ButtonDefault,

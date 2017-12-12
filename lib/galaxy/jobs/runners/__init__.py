@@ -83,7 +83,7 @@ class BaseJobRunner(object):
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.setDaemon(True)
-            worker.start()
+            self.app.application_stack.register_postfork_function(worker.start)
             self.work_threads.append(worker)
 
     def run_next(self):
@@ -413,6 +413,7 @@ class JobState(object):
     runner_states = Bunch(
         WALLTIME_REACHED='walltime_reached',
         MEMORY_LIMIT_REACHED='memory_limit_reached',
+        JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
         UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
         OUTPUT_SIZE_LIMIT='output_size_limit'
@@ -612,6 +613,7 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
 
         # wait for the files to appear
         which_try = 0
+        collect_output_success = True
         while which_try < self.app.config.retry_job_output_collection + 1:
             try:
                 stdout = shrink_stream_by_size(open(job_state.output_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
@@ -620,11 +622,18 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
-                    stderr = 'Job output not returned from cluster'
+                    stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
                     log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
+                    collect_output_success = False
                 else:
                     time.sleep(1)
                 which_try += 1
+
+        if not collect_output_success:
+            job_state.fail_message = stderr
+            job_state.runner_state = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
+            self.mark_as_failed(job_state)
+            return
 
         try:
             # This should be an 8-bit exit code, but read ahead anyway:

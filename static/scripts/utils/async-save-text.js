@@ -1,2 +1,108 @@
-define("utils/async-save-text",["exports","jquery"],function(e,t){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var i=function(e){return e&&e.__esModule?e:{default:e}}(t).default;e.default=function(e,t,r,n,a,u,o,s,l){void 0===a&&(a=30),void 0===o&&(o=4),i("#"+e).click(function(){if(!(i("#renaming-active").length>0)){var e,c=i("#"+t),f=c.text();(e=u?i("<textarea></textarea>").attr({rows:o,cols:a}).text(i.trim(f)):i("<input type='text'></input>").attr({value:i.trim(f),size:a})).attr("id","renaming-active"),e.blur(function(){i(this).remove(),c.show(),l&&l(e)}),e.keyup(function(a){if(27===a.keyCode)i(this).trigger("blur");else if(13===a.keyCode){var u={};u[n]=i(this).val(),i(this).trigger("blur"),i.ajax({url:r,data:u,error:function(){alert("Text editing for elt "+t+" failed")},success:function(t){""!==t?c.text(t):c.html("<em>None</em>"),l&&l(e)}})}}),s&&s(e),c.hide(),e.insertAfter(c),e.focus(),e.select()}})}});
+define("utils/async-save-text", ["exports", "jquery"], function(exports, _jquery) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _jquery2 = _interopRequireDefault(_jquery);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    "use_strict";
+
+    var $ = _jquery2.default;
+    // ============================================================================
+    /**
+     * Edit and save text asynchronously.
+     */
+    function async_save_text(click_to_edit_elt, text_elt_id, save_url, text_parm_name, num_cols, use_textarea, num_rows, on_start, on_finish) {
+        // Set defaults if necessary.
+        if (num_cols === undefined) {
+            num_cols = 30;
+        }
+        if (num_rows === undefined) {
+            num_rows = 4;
+        }
+
+        // Set up input element.
+        $("#" + click_to_edit_elt).click(function() {
+            // Check if this is already active
+            if ($("#renaming-active").length > 0) {
+                return;
+            }
+            var text_elt = $("#" + text_elt_id);
+            var old_text = text_elt.text();
+            var t;
+
+            if (use_textarea) {
+                t = $("<textarea></textarea>").attr({
+                    rows: num_rows,
+                    cols: num_cols
+                }).text($.trim(old_text));
+            } else {
+                t = $("<input type='text'></input>").attr({
+                    value: $.trim(old_text),
+                    size: num_cols
+                });
+            }
+            t.attr("id", "renaming-active");
+            t.blur(function() {
+                $(this).remove();
+                text_elt.show();
+                if (on_finish) {
+                    on_finish(t);
+                }
+            });
+            t.keyup(function(e) {
+                if (e.keyCode === 27) {
+                    // Escape key
+                    $(this).trigger("blur");
+                } else if (e.keyCode === 13) {
+                    // Enter key submits
+                    var ajax_data = {};
+                    ajax_data[text_parm_name] = $(this).val();
+                    $(this).trigger("blur");
+                    $.ajax({
+                        url: save_url,
+                        data: ajax_data,
+                        error: function error() {
+                            alert("Text editing for elt " + text_elt_id + " failed");
+                            // TODO: call finish or no? For now, let's not because error occurred.
+                        },
+                        success: function success(processed_text) {
+                            // Set new text and call finish method.
+                            if (processed_text !== "") {
+                                text_elt.text(processed_text);
+                            } else {
+                                text_elt.html("<em>None</em>");
+                            }
+                            if (on_finish) {
+                                on_finish(t);
+                            }
+                        }
+                    });
+                }
+            });
+
+            if (on_start) {
+                on_start(t);
+            }
+            // Replace text with input object and focus & select.
+            text_elt.hide();
+            t.insertAfter(text_elt);
+            t.focus();
+            t.select();
+
+            return;
+        });
+    }
+
+    // ============================================================================
+    exports.default = async_save_text;
+});
 //# sourceMappingURL=../../maps/utils/async-save-text.js.map

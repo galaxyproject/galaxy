@@ -1,2 +1,319 @@
-define("mvc/ui/popup-menu",["exports"],function(t){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var n=Backbone.View.extend({initialize:function(t,n){this.$button=t,this.$button.length||(this.$button=$("<div/>")),this.options=n||[],this.$button.data("popupmenu",this);var i=this;this.$button.click(function(t){return $(".popmenu-wrapper").remove(),i._renderAndShow(t),!1})},_renderAndShow:function(t){this.render(),this.$el.appendTo("body").css(this._getShownPosition(t)).show(),this._setUpCloseBehavior()},render:function(){if(this.$el.addClass("popmenu-wrapper").hide().css({position:"absolute"}).html(this.template(this.$button.attr("id"),this.options)),this.options.length){var t=this;this.$el.find("li").each(function(n,i){var e=t.options[n];e.func&&$(this).children("a.popupmenu-option").click(function(n){e.func.call(t,n,e),n.preventDefault()})})}return this},template:function(t,n){return['<ul id="',t,'-menu" class="dropdown-menu">',this._templateOptions(n),"</ul>"].join("")},_templateOptions:function(t){return t.length?_.map(t,function(t){return t.divider?'<li class="divider"></li>':t.header?['<li class="head"><a href="javascript:void(0);">',t.html,"</a></li>"].join(""):['<li><a class="popupmenu-option" href="',t.href||"javascript:void(0);",'"',t.target?' target="'+t.target+'"':"",">",t.checked?'<span class="fa fa-check"></span>':"",t.html,"</a></li>"].join("")}).join(""):"<li>(no options)</li>"},_getShownPosition:function(t){var n=this.$el.width(),i=t.pageX-n/2;return i=Math.min(i,$(document).scrollLeft()+$(window).width()-n-5),i=Math.max(i,$(document).scrollLeft()+5),{top:t.pageY,left:i}},_setUpCloseBehavior:function(){function t(t){if($(document).off("click.close_popup"),window&&window.parent!==window)try{$(window.parent.document).off("click.close_popup")}catch(t){}else try{$("iframe#galaxy_main").contents().off("click.close_popup")}catch(t){}n.remove()}var n=this;if($("html").one("click.close_popup",t),window&&window.parent!==window)try{$(window.parent.document).find("html").one("click.close_popup",t)}catch(t){}else try{$("iframe#galaxy_main").contents().one("click.close_popup",t)}catch(t){}},addItem:function(t,n){return n=n>=0?n:this.options.length,this.options.splice(n,0,t),this},removeItem:function(t){return t>=0&&this.options.splice(t,1),this},findIndexByHtml:function(t){for(var n=0;n<this.options.length;n++)if(_.has(this.options[n],"html")&&this.options[n].html===t)return n;return null},findItemByHtml:function(t){return this.options[this.findIndexByHtml(t)]},toString:function(){return"PopupMenu"}});n.create=function(t,i){return new n(t,i)},n.make_popupmenu=function(t,i){var e=[];return _.each(i,function(t,n){var i={html:n};null===t?i.header=!0:"function"===jQuery.type(t)&&(i.func=t),e.push(i)}),new n($(t),e)},n.convertLinksToOptions=function(t,n){t=$(t),n=n||"a";var i=[];return t.find(n).each(function(t,n){var e={},o=$(t);if(e.html=o.text(),o.attr("href")){var r=o.attr("href"),s=o.attr("target"),a=o.attr("confirm");e.func=function(){if(!a||confirm(a))switch(s){case"_parent":window.parent.location=r;break;case"_top":window.top.location=r;break;default:window.location=r}}}i.push(e)}),i},n.fromExistingDom=function(t,i,e){t=$(t),i=$(i);var o=n.convertLinksToOptions(i,e);return i.remove(),new n(t,o)},n.make_popup_menus=function(t,i,e){t=t||document,i=i||"div[popupmenu]",e=e||function(t,n){return"#"+t.attr("popupmenu")};var o=[];return $(t).find(i).each(function(){var i=$(this),r=$(t).find(e(i,t));o.push(n.fromDom(r,i)),r.addClass("popup")}),o},t.default=n});
+define("mvc/ui/popup-menu", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    // =============================================================================
+    /**
+     * view for a popup menu
+     */
+    var PopupMenu = Backbone.View.extend({
+        //TODO: maybe better as singleton off the Galaxy obj
+        /** Cache the desired button element and options, set up the button click handler
+         *  NOTE: attaches this view as HTML/jQ data on the button for later use.
+         */
+        initialize: function initialize($button, options) {
+            // default settings
+            this.$button = $button;
+            if (!this.$button.length) {
+                this.$button = $("<div/>");
+            }
+            this.options = options || [];
+            this.$button.data("popupmenu", this);
+
+            // set up button click -> open menu behavior
+            var menu = this;
+            this.$button.click(function(event) {
+                // if there's already a menu open, remove it
+                $(".popmenu-wrapper").remove();
+                menu._renderAndShow(event);
+                return false;
+            });
+        },
+
+        // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
+        _renderAndShow: function _renderAndShow(clickEvent) {
+            this.render();
+            this.$el.appendTo("body").css(this._getShownPosition(clickEvent)).show();
+            this._setUpCloseBehavior();
+        },
+
+        // render the menu
+        // this menu doesn't attach itself to the DOM ( see _renderAndShow )
+        render: function render() {
+            // render the menu body absolute and hidden, fill with template
+            this.$el.addClass("popmenu-wrapper").hide().css({
+                position: "absolute"
+            }).html(this.template(this.$button.attr("id"), this.options));
+
+            // set up behavior on each link/anchor elem
+            if (this.options.length) {
+                var menu = this;
+                //precondition: there should be one option per li
+                this.$el.find("li").each(function(i, li) {
+                    var option = menu.options[i];
+
+                    // if the option has 'func', call that function when the anchor is clicked
+                    if (option.func) {
+                        $(this).children("a.popupmenu-option").click(function(event) {
+                            option.func.call(menu, event, option);
+                            // We must preventDefault otherwise clicking "cancel"
+                            // on a purge or something still navigates and causes
+                            // the action.
+                            event.preventDefault();
+                            // bubble up so that an option click will call the close behavior
+                        });
+                    }
+                });
+            }
+            return this;
+        },
+
+        template: function template(id, options) {
+            return ['<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions(options), "</ul>"].join("");
+        },
+
+        _templateOptions: function _templateOptions(options) {
+            if (!options.length) {
+                return "<li>(no options)</li>";
+            }
+            return _.map(options, function(option) {
+                if (option.divider) {
+                    return '<li class="divider"></li>';
+                } else if (option.header) {
+                    return ['<li class="head"><a href="javascript:void(0);">', option.html, "</a></li>"].join("");
+                }
+                var href = option.href || "javascript:void(0);";
+                var target = option.target ? " target=\"" + option.target + "\"" : "";
+
+                var check = option.checked ? '<span class="fa fa-check"></span>' : "";
+
+                return ['<li><a class="popupmenu-option" href="', href, '"', target, ">", check, option.html, "</a></li>"].join("");
+            }).join("");
+        },
+
+        // get the absolute position/offset for the menu
+        _getShownPosition: function _getShownPosition(clickEvent) {
+            // display menu horiz. centered on click...
+            var menuWidth = this.$el.width();
+            var x = clickEvent.pageX - menuWidth / 2;
+
+            // adjust to handle horiz. scroll and window dimensions ( draw entirely on visible screen area )
+            x = Math.min(x, $(document).scrollLeft() + $(window).width() - menuWidth - 5);
+            x = Math.max(x, $(document).scrollLeft() + 5);
+            return {
+                top: clickEvent.pageY,
+                left: x
+            };
+        },
+
+        // bind an event handler to all available frames so that when anything is clicked
+        // the menu is removed from the DOM and the event handler unbinds itself
+        _setUpCloseBehavior: function _setUpCloseBehavior() {
+            var menu = this;
+            //TODO: alternately: focus hack, blocking overlay, jquery.blockui
+
+            // function to close popup and unbind itself
+            function closePopup(event) {
+                $(document).off("click.close_popup");
+                if (window && window.parent !== window) {
+                    try {
+                        $(window.parent.document).off("click.close_popup");
+                    } catch (err) {}
+                } else {
+                    try {
+                        $("iframe#galaxy_main").contents().off("click.close_popup");
+                    } catch (err) {}
+                }
+                menu.remove();
+            }
+
+            $("html").one("click.close_popup", closePopup);
+            if (window && window.parent !== window) {
+                try {
+                    $(window.parent.document).find("html").one("click.close_popup", closePopup);
+                } catch (err) {}
+            } else {
+                try {
+                    $("iframe#galaxy_main").contents().one("click.close_popup", closePopup);
+                } catch (err) {}
+            }
+        },
+
+        // add a menu option/item at the given index
+        addItem: function addItem(item, index) {
+            // append to end if no index
+            index = index >= 0 ? index : this.options.length;
+            this.options.splice(index, 0, item);
+            return this;
+        },
+
+        // remove a menu option/item at the given index
+        removeItem: function removeItem(index) {
+            if (index >= 0) {
+                this.options.splice(index, 1);
+            }
+            return this;
+        },
+
+        // search for a menu option by its html
+        findIndexByHtml: function findIndexByHtml(html) {
+            for (var i = 0; i < this.options.length; i++) {
+                if (_.has(this.options[i], "html") && this.options[i].html === html) {
+                    return i;
+                }
+            }
+            return null;
+        },
+
+        // search for a menu option by its html
+        findItemByHtml: function findItemByHtml(html) {
+            return this.options[this.findIndexByHtml(html)];
+        },
+
+        // string representation
+        toString: function toString() {
+            return "PopupMenu";
+        }
+    });
+    /** shortcut to new for when you don't need to preserve the ref */
+    PopupMenu.create = function _create($button, options) {
+        return new PopupMenu($button, options);
+    };
+
+    // -----------------------------------------------------------------------------
+    // the following class functions are bridges from the original make_popupmenu and make_popup_menus
+    // to the newer backbone.js PopupMenu
+
+    /** Create a PopupMenu from simple map initial_options activated by clicking button_element.
+     *      Converts initial_options to object array used by PopupMenu.
+     *  @param {jQuery|DOMElement} button_element element which, when clicked, activates menu
+     *  @param {Object} initial_options map of key -> values, where
+     *      key is option text, value is fn to call when option is clicked
+     *  @returns {PopupMenu} the PopupMenu created
+     */
+    PopupMenu.make_popupmenu = function(button_element, initial_options) {
+        var convertedOptions = [];
+        _.each(initial_options, function(optionVal, optionKey) {
+            var newOption = {
+                html: optionKey
+            };
+
+            // keys with null values indicate: header
+            if (optionVal === null) {
+                // !optionVal? (null only?)
+                newOption.header = true;
+
+                // keys with function values indicate: a menu option
+            } else if (jQuery.type(optionVal) === "function") {
+                newOption.func = optionVal;
+            }
+            //TODO:?? any other special optionVals?
+            // there was no divider option originally
+            convertedOptions.push(newOption);
+        });
+        return new PopupMenu($(button_element), convertedOptions);
+    };
+
+    /** Find all anchors in $parent (using selector) and covert anchors into a PopupMenu options map.
+     *  @param {jQuery} $parent the element that contains the links to convert to options
+     *  @param {String} selector jq selector string to find links
+     *  @returns {Object[]} the options array to initialize a PopupMenu
+     */
+    //TODO: lose parent and selector, pass in array of links, use map to return options
+    PopupMenu.convertLinksToOptions = function($parent, selector) {
+        $parent = $($parent);
+        selector = selector || "a";
+        var options = [];
+        $parent.find(selector).each(function(elem, i) {
+            var option = {};
+            var $link = $(elem);
+
+            // convert link text to the option text (html) and the href into the option func
+            option.html = $link.text();
+            if ($link.attr("href")) {
+                var linkHref = $link.attr("href");
+                var linkTarget = $link.attr("target");
+                var confirmText = $link.attr("confirm");
+
+                option.func = function() {
+                    // if there's a "confirm" attribute, throw up a confirmation dialog, and
+                    //  if the user cancels - do nothing
+                    if (confirmText && !confirm(confirmText)) {
+                        return;
+                    }
+
+                    // if there's no confirm attribute, or the user accepted the confirm dialog:
+                    switch (linkTarget) {
+                        // relocate the center panel
+                        case "_parent":
+                            window.parent.location = linkHref;
+                            break;
+
+                            // relocate the entire window
+                        case "_top":
+                            window.top.location = linkHref;
+                            break;
+
+                            // relocate this panel
+                        default:
+                            window.location = linkHref;
+                    }
+                };
+            }
+            options.push(option);
+        });
+        return options;
+    };
+
+    /** Create a single popupmenu from existing DOM button and anchor elements
+     *  @param {jQuery} $buttonElement the element that when clicked will open the menu
+     *  @param {jQuery} $menuElement the element that contains the anchors to convert into a menu
+     *  @param {String} menuElementLinkSelector jq selector string used to find anchors to be made into menu options
+     *  @returns {PopupMenu} the PopupMenu (Backbone View) that can render, control the menu
+     */
+    PopupMenu.fromExistingDom = function($buttonElement, $menuElement, menuElementLinkSelector) {
+        $buttonElement = $($buttonElement);
+        $menuElement = $($menuElement);
+        var options = PopupMenu.convertLinksToOptions($menuElement, menuElementLinkSelector);
+        // we're done with the menu (having converted it to an options map)
+        $menuElement.remove();
+        return new PopupMenu($buttonElement, options);
+    };
+
+    /** Create all popupmenus within a document or a more specific element
+     *  @param {DOMElement} parent the DOM element in which to search for popupmenus to build (defaults to document)
+     *  @param {String} menuSelector jq selector string to find popupmenu menu elements (defaults to "div[popupmenu]")
+     *  @param {Function} buttonSelectorBuildFn the function to build the jq button selector.
+     *      Will be passed $menuElement, parent.
+     *      (Defaults to return '#' + $menuElement.attr( 'popupmenu' ); )
+     *  @returns {PopupMenu[]} array of popupmenus created
+     */
+    PopupMenu.make_popup_menus = function(parent, menuSelector, buttonSelectorBuildFn) {
+        parent = parent || document;
+        // orig. Glx popupmenu menus have a (non-std) attribute 'popupmenu'
+        //  which contains the id of the button that activates the menu
+        menuSelector = menuSelector || "div[popupmenu]";
+        // default to (orig. Glx) matching button to menu by using the popupmenu attr of the menu as the id of the button
+        buttonSelectorBuildFn = buttonSelectorBuildFn || function($menuElement, parent) {
+            return "#" + $menuElement.attr("popupmenu");
+        };
+
+        // aggregate and return all PopupMenus
+        var popupMenusCreated = [];
+        $(parent).find(menuSelector).each(function() {
+            var $menuElement = $(this);
+
+            var $buttonElement = $(parent).find(buttonSelectorBuildFn($menuElement, parent));
+
+            popupMenusCreated.push(PopupMenu.fromDom($buttonElement, $menuElement));
+            $buttonElement.addClass("popup");
+        });
+        return popupMenusCreated;
+    };
+
+    // =============================================================================
+    exports.default = PopupMenu;
+});
 //# sourceMappingURL=../../../maps/mvc/ui/popup-menu.js.map

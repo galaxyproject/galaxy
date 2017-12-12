@@ -1,2 +1,203 @@
-define("galaxy.interactive_environments",["exports"],function(t){"use strict";function e(){$("#spinner").remove(),$("#main").children().remove()}function n(){$("#main").append('<img id="spinner" src="'+galaxy_root+'static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">')}function i(t,e,n,i,o,a,r,s){return{type:void 0!==t?t:"GIE spin",ajax_timeout:void 0!==e?e:2e3,ajax_timeout_max:void 0!==n?n:16e3,ajax_timeout_step:void 0!==i?i:500,sleep:void 0!==o?o:500,sleep_max:void 0!==a?a:8e3,sleep_step:void 0!==r?r:100,log_attempts:void 0===s||s,count:0}}function o(t,n,i){console.log(t),i&&e(),"string"==typeof n&&(toastr.clear(),toastr.error(n,"Error",{closeButton:!0,timeOut:0,extendedTimeOut:0,tapToDismiss:!1}))}function a(t){t.sleep<t.sleep_max&&(t.sleep+=t.sleep_step),t.log_attempts&&console.log(t.type+" request "+t.count+" request timeout "+t.ajax_timeout+"ms sleeping "+t.sleep/1e3+"s"),window.setTimeout(t.spinner,t.sleep)}function r(t,e,n,i,o,r){var s=function(){var s={url:t,xhrFields:{withCredentials:!0},type:"GET",timeout:r.ajax_timeout,success:function(t,e,i){n(t,e,i)||(r.count++,a(r))},error:function(t,e,n){"timeout"==e?(r.ajax_timeout<r.ajax_timeout_max&&(r.ajax_timeout+=r.ajax_timeout_step),r.count++,i(t,e,n)||a(r)):(r.count++,o(t,e,n)||a(r))}};e&&(s.dataType="json"),$.ajax(s)};console.log("Setting up new spinner for "+r.type+" on "+t),r.spinner=s,window.setTimeout(s,r.sleep)}function s(t,i,a,s,c){var u=function(t,e){1==e.count&&(n(),toastr.info(t,null,{closeButton:!0,timeOut:0,extendedTimeOut:0,tapToDismiss:!1}))},l=function(t,e,n){return u(a.waiting,c),40==c.count&&toastr.warning(a.wait_warn,"Warning",{closeButton:!0,timeOut:0,extendedTimeOut:0,tapToDismiss:!1}),!1};r(t,i,function(t){if(!i||i&&1==t)console.log(a.success),e(),toastr.clear(),s();else{if(i&&0==t)return u(a.not_ready,c),!1;o("Invalid response to "+c.type+" request",a.invalid_response,!0)}return!0},l,l,c)}Object.defineProperty(t,"__esModule",{value:!0}),t.append_notebook=function(t){e(),$("#main").append('<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:hidden;" scrolling="no" src="'+t+'"></iframe>')},t.clear_main_area=e,t.display_spinner=n,t.make_spin_state=i,t.spin_error=o,t.spin=r,t.test_ie_availability=function(t,e){s(t,!1,{success:"IE connection succeeded, returning",waiting:"Interactive environment container is running, attempting to connect to the IE. Please wait...",wait_warn:"It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",error:"An error was encountered while attempting to connect to the interactive environment, contact your administrator."},e,i("IE availability"))},t.load_when_ready=function(t,e){s(t,!0,{success:"Galaxy reports IE container ready, returning",not_ready:"Galaxy is launching a container in which to run this interactive environment. Please wait...",unknown_response:"Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",waiting:"Galaxy is launching a container in which to run this interactive environment. Please wait...",wait_warn:"It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",error:"Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."},e,i("IE container readiness"))}});
+define("galaxy.interactive_environments", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.append_notebook = append_notebook;
+    exports.clear_main_area = clear_main_area;
+    exports.display_spinner = display_spinner;
+    exports.make_spin_state = make_spin_state;
+    exports.spin_error = spin_error;
+    exports.spin = spin;
+    exports.test_ie_availability = test_ie_availability;
+    exports.load_when_ready = load_when_ready;
+    /**
+     * Internal function to remove content from the main area and add the notebook.
+     * Not idempotent
+     * TODO: This isn't just internal, some notebooks are calling it?
+     */
+    function append_notebook(url) {
+        clear_main_area();
+        $("#main").append("<iframe frameBorder=\"0\" seamless=\"seamless\" style=\"width: 100%; height: 100%; overflow:hidden;\" scrolling=\"no\" src=\"" + url + "\"></iframe>");
+    }
+
+    function clear_main_area() {
+        $("#spinner").remove();
+        $("#main").children().remove();
+    }
+
+    function display_spinner() {
+        $("#main").append("<img id=\"spinner\" src=\"" + galaxy_root + "static/style/largespinner.gif\" style=\"position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;\">");
+    }
+
+    /* Create a spin_state object used by spin() and spin_again() */
+    function make_spin_state(type, ajax_timeout_init, ajax_timeout_max, ajax_timeout_step, sleep_init, sleep_max, sleep_step, log_attempts) {
+        var s = {
+            type: typeof type !== "undefined" ? type : "GIE spin",
+            ajax_timeout: typeof ajax_timeout_init !== "undefined" ? ajax_timeout_init : 2000,
+            ajax_timeout_max: typeof ajax_timeout_max !== "undefined" ? ajax_timeout_max : 16000,
+            ajax_timeout_step: typeof ajax_timeout_step !== "undefined" ? ajax_timeout_step : 500,
+            sleep: typeof sleep_init !== "undefined" ? sleep_init : 500,
+            sleep_max: typeof sleep_max !== "undefined" ? sleep_max : 8000,
+            sleep_step: typeof sleep_step !== "undefined" ? sleep_step : 100,
+            log_attempts: typeof log_attempts !== "undefined" ? log_attempts : true,
+            count: 0
+        };
+        return s;
+    }
+
+    /* Log/display an error when spinning fails. */
+    function spin_error(console_msg, user_msg, clear) {
+        console.log(console_msg);
+        if (clear) clear_main_area();
+        if (typeof user_msg == "string") {
+            toastr.clear();
+            toastr.error(user_msg, "Error", {
+                closeButton: true,
+                timeOut: 0,
+                extendedTimeOut: 0,
+                tapToDismiss: false
+            });
+        }
+    }
+
+    /* Increase sleep time and spin again. */
+    function spin_again(spin_state) {
+        if (spin_state.sleep < spin_state.sleep_max) {
+            spin_state.sleep += spin_state.sleep_step;
+        }
+        if (spin_state.log_attempts) {
+            console.log(spin_state.type + " request " + spin_state.count + " request timeout " + spin_state.ajax_timeout + "ms sleeping " + spin_state.sleep / 1000 + "s");
+        }
+        window.setTimeout(spin_state.spinner, spin_state.sleep);
+    }
+
+    /*
+     * Spin on a URL as long as it times out, otherwise, call the provided success or error callback. If the callback
+     * returns `true`, the condition is considered "resolved" and spinning stops. Otherwise, continue spinning, increasing
+     * AJAX timeouts and/or sleep values as configured in the spin_state.
+     */
+    function spin(url, bool_response, success_callback, timeout_callback, error_callback, spin_state) {
+        var spinner = function spinner() {
+            var ajax_params = {
+                url: url,
+                xhrFields: {
+                    withCredentials: true
+                },
+                type: "GET",
+                timeout: spin_state.ajax_timeout,
+                success: function success(data, status, jqxhr) {
+                    if (!success_callback(data, status, jqxhr)) {
+                        spin_state.count++;
+                        spin_again(spin_state);
+                    }
+                },
+                error: function error(jqxhr, status, _error) {
+                    if (status == "timeout") {
+                        if (spin_state.ajax_timeout < spin_state.ajax_timeout_max) {
+                            spin_state.ajax_timeout += spin_state.ajax_timeout_step;
+                        }
+                        spin_state.count++;
+                        if (!timeout_callback(jqxhr, status, _error)) spin_again(spin_state);
+                    } else {
+                        spin_state.count++;
+                        if (!error_callback(jqxhr, status, _error)) spin_again(spin_state);
+                    }
+                }
+            };
+            if (bool_response) ajax_params["dataType"] = "json";
+            $.ajax(ajax_params);
+        };
+        console.log("Setting up new spinner for " + spin_state.type + " on " + url);
+        spin_state.spinner = spinner;
+        window.setTimeout(spinner, spin_state.sleep);
+    }
+
+    /*
+     * Spin on a URL forever until there is an acceptable response. 
+     * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK).
+     * @param {Boolean} bool_response: If set to `true`, do not stop spinning until the response is `true`. Otherwise, stop
+     *     as soon as a successful response is received.
+     */
+    function spin_until(url, bool_response, messages, success_callback, spin_state) {
+        var warn_at = 40; // ~2 mins
+        var message_once = function message_once(message, spin_state) {
+            if (spin_state.count == 1) {
+                display_spinner();
+                toastr.info(message, null, {
+                    closeButton: true,
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    tapToDismiss: false
+                });
+            }
+        };
+        var wrapped_success = function wrapped_success(data) {
+            if (!bool_response || bool_response && data == true) {
+                console.log(messages["success"]);
+                clear_main_area();
+                toastr.clear();
+                success_callback();
+            } else if (bool_response && data == false) {
+                message_once(messages["not_ready"], spin_state);
+                return false; // keep spinning
+            } else {
+                spin_error("Invalid response to " + spin_state.type + " request", messages["invalid_response"], true);
+            }
+            return true; // stop spinning
+        };
+        var timeout_error = function timeout_error(jqxhr, status, error) {
+            message_once(messages["waiting"], spin_state);
+            if (spin_state.count == warn_at) {
+                toastr.warning(messages["wait_warn"], "Warning", {
+                    closeButton: true,
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    tapToDismiss: false
+                });
+            }
+            return false; // keep spinning
+        };
+        spin(url, bool_response, wrapped_success, timeout_error, timeout_error, spin_state);
+    }
+
+    /**
+     * Test availability of a URL, and call a callback when done.
+     * http://stackoverflow.com/q/25390206/347368
+     * @param {String} url: URL to test availability of. Must return a 200 (302->200 is OK).
+     * @param {String} callback: function to call once successfully connected.
+     *
+     */
+    function test_ie_availability(url, success_callback) {
+        var messages = {
+            success: "IE connection succeeded, returning",
+            waiting: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
+            wait_warn: "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
+            error: "An error was encountered while attempting to connect to the interactive environment, contact your administrator."
+        };
+        var spin_state = make_spin_state("IE availability");
+        spin_until(url, false, messages, success_callback, spin_state);
+    }
+
+    /**
+     * Test a boolean (json) response from a URL, and call a callback when done.
+     * http://stackoverflow.com/q/25390206/347368
+     * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK) and either `true` or `false`.
+     * @param {String} callback: function to call once successfully connected.
+     *
+     */
+    function load_when_ready(url, success_callback) {
+        var messages = {
+            success: "Galaxy reports IE container ready, returning",
+            not_ready: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+            unknown_response: "Galaxy failed to launch a container in which to run this interactive environment, contact a Galaxy administrator.",
+            waiting: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
+            wait_warn: "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
+            error: "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator."
+        };
+        var spin_state = make_spin_state("IE container readiness");
+        spin_until(url, true, messages, success_callback, spin_state);
+    }
+});
 //# sourceMappingURL=../maps/galaxy.interactive_environments.js.map

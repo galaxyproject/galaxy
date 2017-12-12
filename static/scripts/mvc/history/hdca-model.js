@@ -1,2 +1,63 @@
-define("mvc/history/hdca-model",["exports","mvc/collection/collection-model","mvc/history/history-content-model","utils/localization"],function(t,e,o,i){"use strict";function s(t){return t&&t.__esModule?t:{default:t}}function l(t){return function(e,o){return this.isNew()&&((o=o||{}).url=this.urlRoot+this.get("history_id")+"/contents",(e=e||{}).type="dataset_collection"),t.call(this,e,o)}}Object.defineProperty(t,"__esModule",{value:!0});var n=s(e),a=s(o),c=(s(i),a.default.HistoryContentMixin),r=n.default.ListDatasetCollection,d=n.default.PairDatasetCollection,y=n.default.ListPairedDatasetCollection,u=n.default.ListOfListsDatasetCollection,p=r.extend(c).extend({defaults:_.extend(_.clone(r.prototype.defaults),{history_content_type:"dataset_collection",collection_type:"list",model_class:"HistoryDatasetCollectionAssociation"}),save:l(r.prototype.save),toString:function(){return"History"+r.prototype.toString.call(this)}}),f=d.extend(c).extend({defaults:_.extend(_.clone(d.prototype.defaults),{history_content_type:"dataset_collection",collection_type:"paired",model_class:"HistoryDatasetCollectionAssociation"}),save:l(d.prototype.save),toString:function(){return"History"+d.prototype.toString.call(this)}}),h=y.extend(c).extend({defaults:_.extend(_.clone(y.prototype.defaults),{history_content_type:"dataset_collection",collection_type:"list:paired",model_class:"HistoryDatasetCollectionAssociation"}),save:l(y.prototype.save),toString:function(){return"History"+y.prototype.toString.call(this)}}),x=u.extend(c).extend({defaults:_.extend(_.clone(u.prototype.defaults),{history_content_type:"dataset_collection",collection_type:"list:list",model_class:"HistoryDatasetCollectionAssociation"}),save:l(u.prototype.save),toString:function(){return"HistoryListOfListsDatasetCollection("+this.get("name")+")"}});t.default={HistoryListDatasetCollection:p,HistoryPairDatasetCollection:f,HistoryListPairedDatasetCollection:h,HistoryListOfListsDatasetCollection:x}});
+define("mvc/history/hdca-model", ["exports", "mvc/collection/collection-model", "mvc/history/history-content-model", "utils/localization"], function(exports, _collectionModel, _historyContentModel, _localization) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _collectionModel2 = _interopRequireDefault(_collectionModel);
+
+    var _historyContentModel2 = _interopRequireDefault(_historyContentModel);
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /*==============================================================================
+    
+    Models for DatasetCollections contained within a history.
+    
+    ==============================================================================*/
+    var hcontentMixin = _historyContentModel2.default.HistoryContentMixin;
+
+    var DC = _collectionModel2.default.DatasetCollection;
+
+    //==============================================================================
+    /** @class Backbone model for List Dataset Collection within a History.
+     */
+    var HistoryDatasetCollection = DC.extend(hcontentMixin).extend(
+        /** @lends HistoryDatasetCollection.prototype */
+        {
+            defaults: _.extend(_.clone(DC.prototype.defaults), {
+                history_content_type: "dataset_collection",
+                model_class: "HistoryDatasetCollectionAssociation"
+            }),
+
+            //==============================================================================
+            /** Override to post to contents route w/o id. */
+            save: function save(attributes, options) {
+                if (this.isNew()) {
+                    options = options || {};
+                    options.url = this.urlRoot + this.get("history_id") + "/contents";
+                    attributes = attributes || {};
+                    attributes.type = "dataset_collection";
+                }
+                return DC.prototype.save.call(this, attributes, options);
+            },
+
+            /** String representation. */
+            toString: function toString() {
+                return "History" + DC.prototype.toString.call(this);
+            }
+        });
+
+    //==============================================================================
+    exports.default = {
+        HistoryDatasetCollection: HistoryDatasetCollection
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/history/hdca-model.js.map

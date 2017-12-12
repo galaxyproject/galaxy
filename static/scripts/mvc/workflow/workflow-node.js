@@ -1,2 +1,339 @@
-define("mvc/workflow/workflow-node",["exports","mvc/workflow/workflow-view-node"],function(t,e){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var o=function(t){return t&&t.__esModule?t:{default:t}}(e),n=Backbone.Model.extend({initialize:function(t,e){this.app=t,this.element=e.element,this.input_terminals={},this.output_terminals={},this.errors={},this.workflow_outputs=[]},getWorkflowOutput:function(t){return _.findWhere(this.workflow_outputs,{output_name:t})},isWorkflowOutput:function(t){return void 0!==this.getWorkflowOutput(t)},removeWorkflowOutput:function(t){for(;this.isWorkflowOutput(t);)this.workflow_outputs.splice(this.getWorkflowOutput(t),1)},addWorkflowOutput:function(t,e){if(!this.isWorkflowOutput(t)){var o={output_name:t};return e&&(o.label=e),this.workflow_outputs.push(o),!0}return!1},labelWorkflowOutput:function(t,e){var o=!1,n=null;if(this.isWorkflowOutput(t)){var i=this.getWorkflowOutput(t);n=i.label,i.label=e,o=n!=e}else o=this.addWorkflowOutput(t,e);return o&&(this.app.workflow.updateOutputLabel(n,e),this.markChanged(),this.nodeView.redrawWorkflowOutputs()),o},connectedOutputTerminals:function(){return this._connectedTerminals(this.output_terminals)},_connectedTerminals:function(t){var e=[];return $.each(t,function(t,o){o.connectors.length>0&&e.push(o)}),e},hasConnectedOutputTerminals:function(){var t=this.output_terminals;for(var e in t)if(t[e].connectors.length>0)return!0;return!1},connectedMappedInputTerminals:function(){return this._connectedMappedTerminals(this.input_terminals)},hasConnectedMappedInputTerminals:function(){var t=this.input_terminals;for(var e in t){var o=t[e];if(o.connectors.length>0&&o.isMappedOver())return!0}return!1},_connectedMappedTerminals:function(t){var e=[];return $.each(t,function(t,o){o.mapOver().isCollection&&o.connectors.length>0&&e.push(o)}),e},mappedInputTerminals:function(){return this._mappedTerminals(this.input_terminals)},_mappedTerminals:function(t){var e=[];return $.each(t,function(t,o){o.mapOver().isCollection&&e.push(o)}),e},hasMappedOverInputTerminals:function(){var t=!1;return _.each(this.input_terminals,function(e){e.mapOver().isCollection&&(t=!0)}),t},redraw:function(){$.each(this.input_terminals,function(t,e){e.redraw()}),$.each(this.output_terminals,function(t,e){e.redraw()})},destroy:function(){$.each(this.input_terminals,function(t,e){e.destroy()}),$.each(this.output_terminals,function(t,e){e.destroy()}),this.app.workflow.remove_node(this),$(this.element).remove()},make_active:function(){$(this.element).addClass("toolForm-active")},make_inactive:function(){var t=this.element.get(0);!function(e){e.removeChild(t),e.appendChild(t)}(t.parentNode),$(t).removeClass("toolForm-active")},init_field_data:function(t){t.type&&(this.type=t.type),this.name=t.name,this.config_form=t.config_form,this.tool_version=this.config_form&&this.config_form.version,this.tool_state=t.tool_state,this.errors=t.errors,this.tooltip=t.tooltip?t.tooltip:"",this.annotation=t.annotation,this.post_job_actions=t.post_job_actions?t.post_job_actions:{},this.label=t.label,this.uuid=t.uuid,this.workflow_outputs=t.workflow_outputs?t.workflow_outputs:[];var e=this,n=new o.default({el:this.element[0],node:e});e.nodeView=n,$.each(t.data_inputs,function(t,e){n.addDataInput(e)}),t.data_inputs.length>0&&t.data_outputs.length>0&&n.addRule(),$.each(t.data_outputs,function(t,e){n.addDataOutput(e)}),n.render(),this.app.workflow.node_changed(this,!0)},update_field_data:function(t){var e=this,o=e.nodeView,n=[];if($.each(o.outputViews,function(e,o){var i=o.output.name,r=t.data_outputs,u=!1;_.each(r,function(t){t.name==i&&(u=!0)}),!1===u&&n.push(i)}),_.each(n,function(t){_.each(o.outputViews[t].terminalElement.terminal.connectors,function(t){t&&t.destroy()}),o.outputViews[t].remove(),delete o.outputViews[t],delete e.output_terminals[t]}),$.each(e.workflow_outputs,function(t,o){o&&!e.output_terminals[o.output_name]&&e.workflow_outputs.splice(t,1)}),$.each(t.data_outputs,function(t,n){o.outputViews[n.name]?(e.output_terminals[n.name].datatypes=n.extensions,e.output_terminals[n.name].destroyInvalidConnections()):o.addDataOutput(n)}),this.tool_state=t.tool_state,this.config_form=t.config_form,this.tool_version=this.config_form&&this.config_form.version,this.errors=t.errors,this.annotation=t.annotation,this.label=t.label,"post_job_actions"in t){var i=t.post_job_actions;this.post_job_actions=i||{}}e.nodeView.renderToolErrors();var r=o.$("div.inputs"),u=o.newInputsDiv(),a={};_.each(t.data_inputs,function(t){var o=e.nodeView.addDataInput(t,u);a[t.name]=o}),_.each(_.difference(_.values(o.terminalViews),_.values(a)),function(t){t.el.terminal.destroy()}),o.terminalViews=a,e.nodeView.render(),1==t.data_outputs.length&&"collection_type"in t.data_outputs[0]&&o.updateDataOutput(t.data_outputs[0]),r.replaceWith(u),"workflow_outputs"in t&&(this.workflow_outputs=t.workflow_outputs?t.workflow_outputs:[]),this.markChanged(),this.redraw()},error:function(t){var e=$(this.element).find(".toolFormBody");e.find("div").remove();var o="<div style='color: red; text-style: italic;'>"+t+"</div>";this.config_form=o,e.html(o),this.app.workflow.node_changed(this)},markChanged:function(){this.app.workflow.node_changed(this)}});t.default=n});
+define("mvc/workflow/workflow-node", ["exports", "utils/utils", "mvc/workflow/workflow-view-node"], function(exports, _utils, _workflowViewNode) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _workflowViewNode2 = _interopRequireDefault(_workflowViewNode);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var Node = Backbone.Model.extend({
+        initialize: function initialize(app, attr) {
+            this.app = app;
+            this.element = attr.element;
+            this.input_terminals = {};
+            this.output_terminals = {};
+            this.errors = {};
+            this.workflow_outputs = [];
+        },
+        getWorkflowOutput: function getWorkflowOutput(outputName) {
+            return _.findWhere(this.workflow_outputs, {
+                output_name: outputName
+            });
+        },
+        isWorkflowOutput: function isWorkflowOutput(outputName) {
+            return this.getWorkflowOutput(outputName) !== undefined;
+        },
+        removeWorkflowOutput: function removeWorkflowOutput(outputName) {
+            while (this.isWorkflowOutput(outputName)) {
+                this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
+            }
+        },
+        addWorkflowOutput: function addWorkflowOutput(outputName, label) {
+            if (!this.isWorkflowOutput(outputName)) {
+                var output = {
+                    output_name: outputName
+                };
+                if (label) {
+                    output.label = label;
+                }
+                this.workflow_outputs.push(output);
+                return true;
+            }
+            return false;
+        },
+        labelWorkflowOutput: function labelWorkflowOutput(outputName, label) {
+            var changed = false;
+            var oldLabel = null;
+            if (this.isWorkflowOutput(outputName)) {
+                var workflowOutput = this.getWorkflowOutput(outputName);
+                oldLabel = workflowOutput.label;
+                workflowOutput.label = label;
+                changed = oldLabel != label;
+            } else {
+                changed = this.addWorkflowOutput(outputName, label);
+            }
+            if (changed) {
+                this.app.workflow.updateOutputLabel(oldLabel, label);
+                this.markChanged();
+                this.nodeView.redrawWorkflowOutputs();
+            }
+            return changed;
+        },
+        connectedOutputTerminals: function connectedOutputTerminals() {
+            return this._connectedTerminals(this.output_terminals);
+        },
+        _connectedTerminals: function _connectedTerminals(terminals) {
+            var connectedTerminals = [];
+            $.each(terminals, function(_, t) {
+                if (t.connectors.length > 0) {
+                    connectedTerminals.push(t);
+                }
+            });
+            return connectedTerminals;
+        },
+        hasConnectedOutputTerminals: function hasConnectedOutputTerminals() {
+            // return this.connectedOutputTerminals().length > 0; <- optimized this
+            var outputTerminals = this.output_terminals;
+            for (var outputName in outputTerminals) {
+                if (outputTerminals[outputName].connectors.length > 0) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        connectedMappedInputTerminals: function connectedMappedInputTerminals() {
+            return this._connectedMappedTerminals(this.input_terminals);
+        },
+        hasConnectedMappedInputTerminals: function hasConnectedMappedInputTerminals() {
+            // return this.connectedMappedInputTerminals().length > 0; <- optimized this
+            var inputTerminals = this.input_terminals;
+            for (var inputName in inputTerminals) {
+                var inputTerminal = inputTerminals[inputName];
+                if (inputTerminal.connectors.length > 0 && inputTerminal.isMappedOver()) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        _connectedMappedTerminals: function _connectedMappedTerminals(terminals) {
+            var mapped_outputs = [];
+            $.each(terminals, function(_, t) {
+                var mapOver = t.mapOver();
+                if (mapOver.isCollection) {
+                    if (t.connectors.length > 0) {
+                        mapped_outputs.push(t);
+                    }
+                }
+            });
+            return mapped_outputs;
+        },
+        mappedInputTerminals: function mappedInputTerminals() {
+            return this._mappedTerminals(this.input_terminals);
+        },
+        _mappedTerminals: function _mappedTerminals(terminals) {
+            var mappedTerminals = [];
+            $.each(terminals, function(_, t) {
+                var mapOver = t.mapOver();
+                if (mapOver.isCollection) {
+                    mappedTerminals.push(t);
+                }
+            });
+            return mappedTerminals;
+        },
+        hasMappedOverInputTerminals: function hasMappedOverInputTerminals() {
+            var found = false;
+            _.each(this.input_terminals, function(t) {
+                var mapOver = t.mapOver();
+                if (mapOver.isCollection) {
+                    found = true;
+                }
+            });
+            return found;
+        },
+        redraw: function redraw() {
+            $.each(this.input_terminals, function(_, t) {
+                t.redraw();
+            });
+            $.each(this.output_terminals, function(_, t) {
+                t.redraw();
+            });
+        },
+        clone: function clone() {
+            var _this = this;
+
+            var copiedData = {
+                name: this.name,
+                label: this.label,
+                annotation: this.annotation,
+                post_job_actions: this.post_job_actions
+            };
+            var node = this.app.workflow.create_node(this.type, this.name, this.content_id);
+
+            _utils2.default.request({
+                type: "POST",
+                url: Galaxy.root + "api/workflows/build_module",
+                data: {
+                    type: this.type,
+                    tool_id: this.content_id,
+                    inputs: this.tool_state
+                },
+                success: function success(data) {
+                    var newData = Object.assign({}, data, copiedData);
+                    node.init_field_data(newData);
+                    node.update_field_data(newData);
+                    _this.app.workflow.activate_node(node);
+                }
+            });
+        },
+        destroy: function destroy() {
+            $.each(this.input_terminals, function(k, t) {
+                t.destroy();
+            });
+            $.each(this.output_terminals, function(k, t) {
+                t.destroy();
+            });
+            this.app.workflow.remove_node(this);
+            $(this.element).remove();
+        },
+        make_active: function make_active() {
+            $(this.element).addClass("toolForm-active");
+        },
+        make_inactive: function make_inactive() {
+            // Keep inactive nodes stacked from most to least recently active
+            // by moving element to the end of parent's node list
+            var element = this.element.get(0);
+            (function(p) {
+                p.removeChild(element);
+                p.appendChild(element);
+            })(element.parentNode);
+            // Remove active class
+            $(element).removeClass("toolForm-active");
+        },
+        init_field_data: function init_field_data(data) {
+            if (data.type) {
+                this.type = data.type;
+            }
+            this.name = data.name;
+            this.config_form = data.config_form;
+            this.tool_version = this.config_form && this.config_form.version;
+            this.tool_state = data.tool_state;
+            this.errors = data.errors;
+            this.tooltip = data.tooltip ? data.tooltip : "";
+            this.annotation = data.annotation;
+            this.post_job_actions = data.post_job_actions ? data.post_job_actions : {};
+            this.label = data.label;
+            this.uuid = data.uuid;
+            this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
+            var node = this;
+            var nodeView = new _workflowViewNode2.default({
+                el: this.element[0],
+                node: node
+            });
+            node.nodeView = nodeView;
+            $.each(data.data_inputs, function(i, input) {
+                nodeView.addDataInput(input);
+            });
+            if (data.data_inputs.length > 0 && data.data_outputs.length > 0) {
+                nodeView.addRule();
+            }
+            $.each(data.data_outputs, function(i, output) {
+                nodeView.addDataOutput(output);
+            });
+            nodeView.render();
+            this.app.workflow.node_changed(this, true);
+        },
+        update_field_data: function update_field_data(data) {
+            var node = this;
+            var nodeView = node.nodeView;
+            // remove unused output views and remove pre-existing output views from data.data_outputs,
+            // so that these are not added twice.
+            var unused_outputs = [];
+            // nodeView.outputViews contains pre-existing outputs,
+            // while data.data_output contains what should be displayed.
+            // Now we gather the unused outputs
+            $.each(nodeView.outputViews, function(i, output_view) {
+                var cur_name = output_view.output.name;
+                var data_names = data.data_outputs;
+                var cur_name_in_data_outputs = false;
+                _.each(data_names, function(data_name) {
+                    if (data_name.name == cur_name) {
+                        cur_name_in_data_outputs = true;
+                    }
+                });
+                if (cur_name_in_data_outputs === false) {
+                    unused_outputs.push(cur_name);
+                }
+            });
+
+            // Remove the unused outputs
+            _.each(unused_outputs, function(unused_output) {
+                _.each(nodeView.outputViews[unused_output].terminalElement.terminal.connectors, function(x) {
+                    if (x) {
+                        x.destroy(); // Removes the noodle connectors
+                    }
+                });
+                nodeView.outputViews[unused_output].remove(); // removes the rendered output
+                delete nodeView.outputViews[unused_output]; // removes the reference to the output
+                delete node.output_terminals[unused_output]; // removes the output terminal
+            });
+            $.each(node.workflow_outputs, function(i, wf_output) {
+                if (wf_output && !node.output_terminals[wf_output.output_name]) {
+                    node.workflow_outputs.splice(i, 1); // removes output from list of workflow outputs
+                }
+            });
+            $.each(data.data_outputs, function(i, output) {
+                if (!nodeView.outputViews[output.name]) {
+                    nodeView.addDataOutput(output); // add data output if it does not yet exist
+                } else {
+                    // the output already exists, but the output formats may have changed.
+                    // Therefore we update the datatypes and destroy invalid connections.
+                    node.output_terminals[output.name].datatypes = output.extensions;
+                    node.output_terminals[output.name].destroyInvalidConnections();
+                }
+            });
+            this.tool_state = data.tool_state;
+            this.config_form = data.config_form;
+            this.tool_version = this.config_form && this.config_form.version;
+            this.errors = data.errors;
+            this.annotation = data.annotation;
+            this.label = data.label;
+            if ("post_job_actions" in data) {
+                // Won't be present in response for data inputs
+                var pja_in = data.post_job_actions;
+                this.post_job_actions = pja_in ? pja_in : {};
+            }
+            node.nodeView.renderToolErrors();
+            // Update input rows
+            var old_body = nodeView.$("div.inputs");
+            var new_body = nodeView.newInputsDiv();
+            var newTerminalViews = {};
+            _.each(data.data_inputs, function(input) {
+                var terminalView = node.nodeView.addDataInput(input, new_body);
+                newTerminalViews[input.name] = terminalView;
+            });
+            // Cleanup any leftover terminals
+            _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), function(unusedView) {
+                unusedView.el.terminal.destroy();
+            });
+            nodeView.terminalViews = newTerminalViews;
+            node.nodeView.render();
+            // In general workflow editor assumes tool outputs don't change in # or
+            // type (not really valid right?) but adding special logic here for
+            // data collection input parameters that can have their collection
+            // change.
+            if (data.data_outputs.length == 1 && "collection_type" in data.data_outputs[0]) {
+                nodeView.updateDataOutput(data.data_outputs[0]);
+            }
+            old_body.replaceWith(new_body);
+            if ("workflow_outputs" in data) {
+                // Won't be present in response for data inputs
+                this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
+            }
+            // If active, reactivate with new config_form
+            this.markChanged();
+            this.redraw();
+        },
+        error: function error(text) {
+            var b = $(this.element).find(".toolFormBody");
+            b.find("div").remove();
+            var tmp = "<div style='color: red; text-style: italic;'>" + text + "</div>";
+            this.config_form = tmp;
+            b.html(tmp);
+            this.app.workflow.node_changed(this);
+        },
+        markChanged: function markChanged() {
+            this.app.workflow.node_changed(this);
+        }
+    });
+    exports.default = Node;
+});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-node.js.map

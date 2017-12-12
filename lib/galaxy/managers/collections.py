@@ -46,6 +46,40 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
+    def precreate_dataset_collection_instance(self, trans, parent, name, implicit_inputs, implicit_output_name, structure):
+        # TODO: prebuild all required HIDs and send them in so no need to flush in between.
+        dataset_collection = self.precreate_dataset_collection(structure)
+        instance = self._create_instance_for_collection(
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False
+        )
+        return instance
+
+    def precreate_dataset_collection(self, structure):
+        if structure.is_leaf or not structure.children_known:
+            return model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
+        else:
+            collection_type_description = structure.collection_type_description
+            dataset_collection = model.DatasetCollection(populated=False)
+            dataset_collection.collection_type = collection_type_description.collection_type
+            elements = []
+            for index, (identifier, substructure) in enumerate(structure.children):
+                # TODO: Open question - populate these now or later?
+                if substructure.is_leaf:
+                    element = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
+                else:
+                    element = self.precreate_dataset_collection(substructure)
+
+                element = model.DatasetCollectionElement(
+                    element=element,
+                    element_identifier=identifier,
+                    element_index=index,
+                )
+                elements.append(element)
+            dataset_collection.elements = elements
+            dataset_collection.element_count = len(elements)
+
+            return dataset_collection
+
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
                hide_source_items=False, tags=None):
@@ -68,27 +102,30 @@ class DatasetCollectionManager(object):
             hide_source_items=hide_source_items,
         )
 
+        implicit_inputs = []
+        if implicit_collection_info:
+            implicit_inputs = implicit_collection_info.get('implicit_inputs', [])
+
+        implicit_output_name = None
+        if implicit_collection_info:
+            implicit_output_name = implicit_collection_info["implicit_output_name"]
+
+        return self._create_instance_for_collection(
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, tags=tags
+        )
+
+    def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, flush=True):
         if isinstance(parent, model.History):
             dataset_collection_instance = self.model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
             )
-            if implicit_collection_info:
-                for input_name, input_collection in implicit_collection_info["implicit_inputs"]:
+            if implicit_inputs:
+                for input_name, input_collection in implicit_inputs:
                     dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
-                for output_dataset in implicit_collection_info.get("outputs"):
-                    if output_dataset not in trans.sa_session:
-                        output_dataset = trans.sa_session.query(type(output_dataset)).get(output_dataset.id)
-                    if isinstance(output_dataset, model.HistoryDatasetAssociation):
-                        output_dataset.hidden_beneath_collection_instance = dataset_collection_instance
-                    elif isinstance(output_dataset, model.HistoryDatasetCollectionAssociation):
-                        dataset_collection_instance.add_implicit_input_collection(input_name, input_collection)
-                    else:
-                        # dataset collection, don't need to do anything...
-                        pass
-                    trans.sa_session.add(output_dataset)
 
-                dataset_collection_instance.implicit_output_name = implicit_collection_info["implicit_output_name"]
+            if implicit_output_name:
+                dataset_collection_instance.implicit_output_name = implicit_output_name
 
             log.debug("Created collection with %d elements" % (len(dataset_collection_instance.collection.elements)))
             # Handle setting hid
@@ -105,37 +142,26 @@ class DatasetCollectionManager(object):
             message = "Internal logic error - create called with unknown parent type %s" % type(parent)
             log.exception(message)
             raise MessageException(message)
-        tags = tags or {}
-        if implicit_collection_info:
-            for _, v in implicit_collection_info.get('implicit_inputs', []):
-                for tag in [t for t in v.tags if t.user_tname == 'name']:
-                    tags[tag.value] = tag
-        for _, tag in tags.items():
-            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
-        return self.__persist(dataset_collection_instance)
+        tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
+        return self.__persist(dataset_collection_instance, flush=flush)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
                                   hide_source_items=None):
+        # Make sure at least one of these is None.
+        assert element_identifiers is None or elements is None
+
         if element_identifiers is None and elements is None:
             raise RequestParameterInvalidException(ERROR_INVALID_ELEMENTS_SPECIFICATION)
         if not collection_type:
             raise RequestParameterInvalidException(ERROR_NO_COLLECTION_TYPE)
+
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
-            if collection_type_description.has_subcollections():
-                # Nested collection - recursively create collections and update identifiers.
-                self.__recursively_create_collections(trans, element_identifiers)
-            new_collection = False
-            for element_identifier in element_identifiers:
-                if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
-                    new_collection = True
-                    elements = self.__load_elements(trans, element_identifier['element_identifiers'])
-            if not new_collection:
-                elements = self.__load_elements(trans, element_identifiers)
-
+            elements = self._element_identifiers_to_elements(trans, collection_type_description, element_identifiers)
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
@@ -149,6 +175,28 @@ class DatasetCollectionManager(object):
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
+
+    def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers):
+        if collection_type_description.has_subcollections():
+            # Nested collection - recursively create collections and update identifiers.
+            self.__recursively_create_collections(trans, element_identifiers)
+        new_collection = False
+        for element_identifier in element_identifiers:
+            if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
+                new_collection = True
+                elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+        if not new_collection:
+            elements = self.__load_elements(trans, element_identifiers)
+        return elements
+
+    def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None):
+        tags = tags or {}
+        implicit_inputs = implicit_inputs or []
+        for _, v in implicit_inputs:
+            for tag in [t for t in v.tags if t.user_tname == 'name']:
+                tags[tag.value] = tag
+        for _, tag in tags.items():
+            dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
 
     def set_collection_elements(self, dataset_collection, dataset_instances):
         if dataset_collection.populated:
@@ -240,10 +288,11 @@ class DatasetCollectionManager(object):
         collections = list(filter(query.direct_match, collections))
         return collections
 
-    def __persist(self, dataset_collection_instance):
+    def __persist(self, dataset_collection_instance, flush=True):
         context = self.model.context
         context.add(dataset_collection_instance)
-        context.flush()
+        if flush:
+            context.flush()
         return dataset_collection_instance
 
     def __recursively_create_collections(self, trans, element_identifiers):

@@ -1,2 +1,46 @@
-define("utils/natural-sort",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0}),e.default=function(e,t){var r=/(-?[0-9\.]+)/g,n=e.toString().toLowerCase()||"",a=t.toString().toLowerCase()||"",i=String.fromCharCode(0),o=n.replace(r,i+"$1"+i).split(i),l=a.replace(r,i+"$1"+i).split(i),u=new Date(n).getTime(),f=u?new Date(a).getTime():null;if(f){if(u<f)return-1;if(u>f)return 1}for(var s,g,p=0,c=Math.max(o.length,l.length);p<c;p++){if(s=parseFloat(o[p])||o[p],g=parseFloat(l[p])||l[p],s<g)return-1;if(s>g)return 1}return 0}});
+define("utils/natural-sort", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    // Alphanumeric/natural sort fn
+    function naturalSort(a, b) {
+        // setup temp-scope variables for comparison evauluation
+        var re = /(-?[0-9\.]+)/g;
+
+        var x = a.toString().toLowerCase() || "";
+        var y = b.toString().toLowerCase() || "";
+        var nC = String.fromCharCode(0);
+        var xN = x.replace(re, nC + "$1" + nC).split(nC);
+        var yN = y.replace(re, nC + "$1" + nC).split(nC);
+        var xD = new Date(x).getTime();
+        var yD = xD ? new Date(y).getTime() : null;
+        // natural sorting of dates
+        if (yD) {
+            if (xD < yD) {
+                return -1;
+            } else if (xD > yD) {
+                return 1;
+            }
+        }
+
+        // natural sorting through split numeric strings and default strings
+        var oFxNcL;
+
+        var oFyNcL;
+        for (var cLoc = 0, numS = Math.max(xN.length, yN.length); cLoc < numS; cLoc++) {
+            oFxNcL = parseFloat(xN[cLoc]) || xN[cLoc];
+            oFyNcL = parseFloat(yN[cLoc]) || yN[cLoc];
+            if (oFxNcL < oFyNcL) {
+                return -1;
+            } else if (oFxNcL > oFyNcL) {
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    exports.default = naturalSort;
+});
 //# sourceMappingURL=../../maps/utils/natural-sort.js.map

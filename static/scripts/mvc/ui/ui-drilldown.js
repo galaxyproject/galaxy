@@ -1,2 +1,115 @@
-define("mvc/ui/ui-drilldown",["exports","utils/utils","mvc/ui/ui-options"],function(e,a,t){"use strict";function i(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});var s=i(a),n=i(t),d=n.default.BaseIcons.extend({initialize:function(e){e.type=e.display||"checkbox",e.multiple="checkbox"==e.type,n.default.BaseIcons.prototype.initialize.call(this,e)},_setValue:function(e){if(n.default.BaseIcons.prototype._setValue.call(this,e),void 0!==e&&null!==e&&this.header_index){var a=this,t=$.isArray(e)?e:[e];_.each(t,function(e){var t=a.header_index[e];_.each(t,function(e){a._setState(e,!0)})})}},_setState:function(e,a){var t=this.$(".button-"+e),i=this.$(".subgroup-"+e);t.data("is_expanded",a),a?(i.show(),t.removeClass("fa-plus-square").addClass("fa-minus-square")):(i.hide(),t.removeClass("fa-minus-square").addClass("fa-plus-square"))},_templateOptions:function(){function e(e,a){var i=e.find(".button-"+a);i.on("click",function(){t._setState(a,!i.data("is_expanded"))})}function a(i,n,d){d=d||[];for(var l in n){var u=n[l],o=u.options&&u.options.length>0,r=d.slice(0);t.header_index[u.value]=r.slice(0);var p=$("<div/>");if(o){var c=s.default.uid(),f=$("<span/>").addClass("button-"+c).addClass("ui-drilldown-button fa fa-plus-square"),v=$("<div/>").addClass("subgroup-"+c).addClass("ui-drilldown-subgroup");p.append($("<div/>").append(f).append(t._templateOption({label:u.name,value:u.value}))),r.push(c),a(v,u.options,r),p.append(v),e(p,c)}else p.append(t._templateOption({label:u.name,value:u.value}));i.append(p)}}var t=this;this.header_index={};var i=$("<div/>");return a(i,this.model.get("data")),i},_template:function(){return $("<div/>").addClass("ui-options-list drilldown-container").attr("id",this.model.id)}});e.default={View:d}});
+define("mvc/ui/ui-drilldown", ["exports", "utils/utils", "mvc/ui/ui-options"], function(exports, _utils, _uiOptions) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uiOptions2 = _interopRequireDefault(_uiOptions);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /** This class creates/wraps a drill down element. */
+    var View = _uiOptions2.default.BaseIcons.extend({
+        initialize: function initialize(options) {
+            options.type = options.display || "checkbox";
+            options.multiple = options.type == "checkbox";
+            _uiOptions2.default.BaseIcons.prototype.initialize.call(this, options);
+        },
+
+        /** Set states for selected values */
+        _setValue: function _setValue(new_value) {
+            _uiOptions2.default.BaseIcons.prototype._setValue.call(this, new_value);
+            if (new_value !== undefined && new_value !== null && this.header_index) {
+                var self = this;
+                var values = $.isArray(new_value) ? new_value : [new_value];
+                _.each(values, function(v) {
+                    var list = self.header_index[v];
+                    _.each(list, function(element) {
+                        self._setState(element, true);
+                    });
+                });
+            }
+        },
+
+        /** Expand/collapse a sub group */
+        _setState: function _setState(header_id, is_expanded) {
+            var $button = this.$(".button-" + header_id);
+            var $subgroup = this.$(".subgroup-" + header_id);
+            $button.data("is_expanded", is_expanded);
+            if (is_expanded) {
+                $subgroup.show();
+                $button.removeClass("fa-plus-square").addClass("fa-minus-square");
+            } else {
+                $subgroup.hide();
+                $button.removeClass("fa-minus-square").addClass("fa-plus-square");
+            }
+        },
+
+        /** Template to create options tree */
+        _templateOptions: function _templateOptions() {
+            var self = this;
+            this.header_index = {};
+
+            // attach event handler
+            function attach($el, header_id) {
+                var $button = $el.find(".button-" + header_id);
+                $button.on("click", function() {
+                    self._setState(header_id, !$button.data("is_expanded"));
+                });
+            }
+
+            // recursive function which iterates through options
+            function iterate($tmpl, options, header) {
+                header = header || [];
+                for (var i in options) {
+                    var level = options[i];
+                    var has_options = level.options && level.options.length > 0;
+                    var new_header = header.slice(0);
+                    self.header_index[level.value] = new_header.slice(0);
+                    var $group = $("<div/>");
+                    if (has_options) {
+                        var header_id = _utils2.default.uid();
+                        var $button = $("<span/>").addClass("button-" + header_id).addClass("ui-drilldown-button fa fa-plus-square");
+                        var $subgroup = $("<div/>").addClass("subgroup-" + header_id).addClass("ui-drilldown-subgroup");
+                        $group.append($("<div/>").append($button).append(self._templateOption({
+                            label: level.name,
+                            value: level.value
+                        })));
+                        new_header.push(header_id);
+                        iterate($subgroup, level.options, new_header);
+                        $group.append($subgroup);
+                        attach($group, header_id);
+                    } else {
+                        $group.append(self._templateOption({
+                            label: level.name,
+                            value: level.value
+                        }));
+                    }
+                    $tmpl.append($group);
+                }
+            }
+
+            // iterate through options and create dom
+            var $tmpl = $("<div/>");
+            iterate($tmpl, this.model.get("data"));
+            return $tmpl;
+        },
+
+        /** Template for drill down view */
+        _template: function _template() {
+            return $("<div/>").addClass("ui-options-list drilldown-container").attr("id", this.model.id);
+        }
+    });
+
+    exports.default = {
+        View: View
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-drilldown.js.map

@@ -61,7 +61,7 @@ var PairCollectionCreator = _super.extend({
     /** the class used to display individual elements */
     elementViewClass: PairedDatasetCollectionElementView,
     /** the class this creator will create and save */
-    collectionClass: HDCA.HistoryPairDatasetCollection,
+    collectionClass: HDCA.HistoryDatasetCollection,
     className: "pair-collection-creator collection-creator flex-row-container",
 
     /** override to no-op */

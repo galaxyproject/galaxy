@@ -1,2 +1,130 @@
-define("mvc/ui/ui-thumbnails",["exports","utils/utils","mvc/ui/ui-misc","mvc/ui/ui-tabs"],function(t,i,e,l){"use strict";function s(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});var n=s(i),a=(s(e),s(l)),u=Backbone.View.extend({events:{"click .ui-thumbnails-item":"_onclick","dblclick .ui-thumbnails-item":"_ondblclick"},initialize:function(t){this.model=t.model||new Backbone.Model(t),this.collection=new Backbone.Collection(this.model.get("collection")),this.tabs=new a.default.View({}),this.setElement(this.tabs.$el.addClass("ui-thumbnails")),this.render(),this.listenTo(this.model,"change",this.render,this),this.listenTo(this.collection,"reset change add remove",this.render,this)},render:function(){this.first=null,this.tabs.delAll(),this._renderDefault(),this._renderList()},_renderDefault:function(){var t=this,i=$("<div/>").addClass("ui-thumbnails-grid");this.collection.each(function(e){if(-1!==e.get("keywords").indexOf("default")){var l=e.get("title");i.append($(t._templateThumbnailItem({id:e.id,title:l.length<20?l:l.substr(0,20)+"...",title_icon:e.get("title_icon"),image_src:e.get("image_src")})).tooltip({title:e.get("description"),placement:"bottom"}))}}),i.children().length>0&&this.tabs.add({id:n.default.uid(),title:t.model.get("title_default"),$el:i})},_renderList:function(){var t=this;if(this.collection.length>0){this.first=this.first||this.collection.first().id;var i=$("<div/>").addClass("ui-thumbnails-grid");this.collection.each(function(e){i.append(t._templateRegularItem(e.attributes))}),this.tabs.add({id:n.default.uid(),title:t.model.get("title_list"),$el:i})}},value:function(t){if(void 0!==t){t="__first"==t?this.first:t;var i=this.$(".ui-thumbnail-current").attr("value");this.$(".ui-thumbnail-current").removeClass("ui-thumbnail-current"),this.$('[value="'+t+'"]').addClass("ui-thumbnail-current");var e=this.$(".ui-thumbnail-current").attr("value"),l=this.model.get("onchange");e!=i&&l&&l(e)}return this.$(".ui-thumbnail-current").attr("value")},_onclick:function(t){this.value($(t.target).closest(".ui-thumbnails-item").attr("value"))},_ondblclick:function(t){this.model.get("ondblclick")&&this.model.get("ondblclick")(this.value())},_templateThumbnailItem:function(t){return'<div class="ui-thumbnails-item ui-thumbnails-item-float" value="'+t.id+'"><img class="ui-thumbnails-image" src="'+t.image_src+'"><div class="ui-thumbnails-title ui-form-info"><span class="fa '+t.title_icon+'"/>'+t.title+"</div><div>"},_templateRegularItem:function(t){return'<div class="ui-thumbnails-item" value="'+t.id+'"><table><tr><td><img class="ui-thumbnails-image" src="'+t.image_src+'"></td><td><div class="ui-thumbnails-description-title ui-form-info">'+t.title+'</div><div class="ui-thumbnails-description-text ui-form-info">'+t.description+"</div></td></tr><div>"}});t.default={View:u}});
+define("mvc/ui/ui-thumbnails", ["exports", "utils/utils", "mvc/ui/ui-tabs"], function(exports, _utils, _uiTabs) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.View = undefined;
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uiTabs2 = _interopRequireDefault(_uiTabs);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /** This class renders the selection grid. */
+    var View = exports.View = Backbone.View.extend({
+        events: {
+            "click .ui-thumbnails-item": "_onclick",
+            "dblclick .ui-thumbnails-item": "_ondblclick"
+        },
+
+        initialize: function initialize(options) {
+            this.model = options.model || new Backbone.Model(options);
+            this.collection = new Backbone.Collection(this.model.get("collection"));
+            this.tabs = new _uiTabs2.default.View({});
+            this.setElement(this.tabs.$el.addClass("ui-thumbnails"));
+            this.render();
+            this.listenTo(this.model, "change", this.render, this);
+            this.listenTo(this.collection, "reset change add remove", this.render, this);
+        },
+
+        render: function render() {
+            this.first = null;
+            this.tabs.delAll();
+            this._renderDefault();
+            this._renderList();
+        },
+
+        _renderDefault: function _renderDefault() {
+            var _this = this;
+
+            var title_length = 20;
+            var $el = $("<div/>").addClass("ui-thumbnails-grid");
+            this.collection.each(function(model) {
+                if (model.get("keywords").indexOf("default") !== -1) {
+                    var title = model.get("title");
+                    $el.append($(_this._templateThumbnailItem({
+                        id: model.id,
+                        title: title.length < title_length ? title : title.substr(0, title_length) + "...",
+                        title_icon: model.get("title_icon"),
+                        image_src: model.get("image_src")
+                    })).tooltip({
+                        title: model.get("description"),
+                        placement: "bottom"
+                    }));
+                }
+            });
+            if ($el.children().length > 0) {
+                this.tabs.add({
+                    id: _utils2.default.uid(),
+                    title: this.model.get("title_default"),
+                    $el: $el
+                });
+            }
+        },
+
+        _renderList: function _renderList() {
+            var self = this;
+            if (this.collection.length > 0) {
+                this.first = this.first || this.collection.first().id;
+                var $el = $("<div/>").addClass("ui-thumbnails-grid");
+                this.collection.each(function(model) {
+                    $el.append(self._templateRegularItem(model.attributes));
+                });
+                this.tabs.add({
+                    id: _utils2.default.uid(),
+                    title: self.model.get("title_list"),
+                    $el: $el
+                });
+            }
+        },
+
+        /** Set/Get value */
+        value: function value(new_value) {
+            if (new_value !== undefined) {
+                new_value = new_value == "__first" ? this.first : new_value;
+                var before = this.$(".ui-thumbnail-current").attr("value");
+                this.$(".ui-thumbnail-current").removeClass("ui-thumbnail-current");
+                this.$("[value=\"" + new_value + "\"]").addClass("ui-thumbnail-current");
+                var after = this.$(".ui-thumbnail-current").attr("value");
+                var change_handler = this.model.get("onchange");
+                if (after != before && change_handler) {
+                    change_handler(after);
+                }
+            }
+            return this.$(".ui-thumbnail-current").attr("value");
+        },
+
+        /** Add click handler */
+        _onclick: function _onclick(e) {
+            this.value($(e.target).closest(".ui-thumbnails-item").attr("value"));
+        },
+
+        /** Add double click handler */
+        _ondblclick: function _ondblclick() {
+            if (this.model.get("ondblclick")) {
+                this.model.get("ondblclick")(this.value());
+            }
+        },
+
+        /* Thumbnail template with image */
+        _templateThumbnailItem: function _templateThumbnailItem(options) {
+            return "<div class=\"ui-thumbnails-item ui-thumbnails-item-float\" value=\"" + options.id + "\"><img class=\"ui-thumbnails-image\" src=\"" + options.image_src + "\"><div class=\"ui-thumbnails-title ui-form-info\"><span class=\"fa " + options.title_icon + "\"/>" + options.title + "</div><div>";
+        },
+
+        /* Thumbnail template with image and description */
+        _templateRegularItem: function _templateRegularItem(options) {
+            return "<div class=\"ui-thumbnails-item\" value=\"" + options.id + "\"><table><tr><td><img class=\"ui-thumbnails-image\" src=\"" + options.image_src + "\"></td><td><div class=\"ui-thumbnails-description-title ui-form-info\">" + options.title + "</div><div class=\"ui-thumbnails-description-text ui-form-info\">" + options.description + "</div></td></tr><div>";
+        }
+    });
+
+    exports.default = {
+        View: View
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-thumbnails.js.map

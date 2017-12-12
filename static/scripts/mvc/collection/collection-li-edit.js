@@ -1,2 +1,136 @@
-define("mvc/collection/collection-li-edit",["exports","mvc/collection/collection-li","mvc/dataset/dataset-li-edit","mvc/base-mvc","utils/localization"],function(t,e,i,l,o){"use strict";function n(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});var d=n(e),s=n(i),a=(n(l),n(o),d.default.DCListItemView),m=a.extend({initialize:function(t){a.prototype.initialize.call(this,t)},toString:function(){return"DCListItemEdit("+(this.model?""+this.model:"(no model)")+")"}}),r=d.default.DCEListItemView,u=r.extend({initialize:function(t){r.prototype.initialize.call(this,t)},toString:function(){return"DCEListItemEdit("+(this.model?""+this.model:"(no model)")+")"}}),c=s.default.DatasetListItemEdit.extend({initialize:function(t){s.default.DatasetListItemEdit.prototype.initialize.call(this,t)},_fetchModelDetails:function(){var t=this;return t.model.inReadyState()&&!t.model.hasDetails()?t.model.fetch({silent:!0}):jQuery.when()},_renderDeleteButton:function(){return null},toString:function(){return"DatasetDCEListItemEdit("+(this.model?""+this.model:"(no model)")+")"}});c.prototype.templates=_.extend({},s.default.DatasetListItemEdit.prototype.templates,{titleBar:d.default.DatasetDCEListItemView.prototype.templates.titleBar});var f=d.default.NestedDCDCEListItemView.extend({toString:function(){return"NestedDCDCEListItemEdit("+(this.model?""+this.model:"(no model)")+")"}});t.default={DCListItemEdit:m,DCEListItemEdit:u,DatasetDCEListItemEdit:c,NestedDCDCEListItemEdit:f}});
+define("mvc/collection/collection-li-edit", ["exports", "mvc/collection/collection-li", "mvc/dataset/dataset-li-edit", "mvc/base-mvc", "utils/localization"], function(exports, _collectionLi, _datasetLiEdit, _baseMvc, _localization) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _collectionLi2 = _interopRequireDefault(_collectionLi);
+
+    var _datasetLiEdit2 = _interopRequireDefault(_datasetLiEdit);
+
+    var _baseMvc2 = _interopRequireDefault(_baseMvc);
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    //==============================================================================
+    var DCListItemView = _collectionLi2.default.DCListItemView;
+    /** @class Edit view for DatasetCollection.
+     */
+    var DCListItemEdit = DCListItemView.extend(
+        /** @lends DCListItemEdit.prototype */
+        {
+            /** override to add linkTarget */
+            initialize: function initialize(attributes) {
+                DCListItemView.prototype.initialize.call(this, attributes);
+            },
+
+            // ......................................................................... misc
+            /** String representation */
+            toString: function toString() {
+                var modelString = this.model ? "" + this.model : "(no model)";
+                return "DCListItemEdit(" + modelString + ")";
+            }
+        });
+
+    //==============================================================================
+    var DCEListItemView = _collectionLi2.default.DCEListItemView;
+    /** @class Read only view for DatasetCollectionElement.
+     */
+    var DCEListItemEdit = DCEListItemView.extend(
+        /** @lends DCEListItemEdit.prototype */
+        {
+            //TODO: this might be expendable - compacted with HDAListItemView
+
+            /** set up */
+            initialize: function initialize(attributes) {
+                DCEListItemView.prototype.initialize.call(this, attributes);
+            },
+
+            // ......................................................................... misc
+            /** String representation */
+            toString: function toString() {
+                var modelString = this.model ? "" + this.model : "(no model)";
+                return "DCEListItemEdit(" + modelString + ")";
+            }
+        });
+
+    //==============================================================================
+    // NOTE: this does not inherit from DatasetDCEListItemView as you would expect
+    //TODO: but should - if we can find something simpler than using diamond
+    /** @class Editable view for a DatasetCollectionElement that is also an DatasetAssociation
+     *      (a dataset contained in a dataset collection).
+     */
+    var DatasetDCEListItemEdit = _datasetLiEdit2.default.DatasetListItemEdit.extend(
+        /** @lends DatasetDCEListItemEdit.prototype */
+        {
+            /** set up */
+            initialize: function initialize(attributes) {
+                _datasetLiEdit2.default.DatasetListItemEdit.prototype.initialize.call(this, attributes);
+            },
+
+            // NOTE: this does not inherit from DatasetDCEListItemView - so we duplicate this here
+            //TODO: fix
+            /** In this override, only get details if in the ready state.
+             *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
+             */
+            _fetchModelDetails: function _fetchModelDetails() {
+                var view = this;
+                if (view.model.inReadyState() && !view.model.hasDetails()) {
+                    return view.model.fetch({
+                        silent: true
+                    });
+                }
+                return jQuery.when();
+            },
+
+            /** Override to remove delete button */
+            _renderDeleteButton: function _renderDeleteButton() {
+                return null;
+            },
+
+            // ......................................................................... misc
+            /** String representation */
+            toString: function toString() {
+                var modelString = this.model ? "" + this.model : "(no model)";
+                return "DatasetDCEListItemEdit(" + modelString + ")";
+            }
+        });
+
+    // ............................................................................ TEMPLATES
+    /** underscore templates */
+    DatasetDCEListItemEdit.prototype.templates = function() {
+        return _.extend({}, _datasetLiEdit2.default.DatasetListItemEdit.prototype.templates, {
+            titleBar: _collectionLi2.default.DatasetDCEListItemView.prototype.templates.titleBar
+        });
+    }();
+
+    //==============================================================================
+    /** @class Read only view for a DatasetCollectionElement that is also a DatasetCollection
+     *      (a nested DC).
+     */
+    var NestedDCDCEListItemEdit = _collectionLi2.default.NestedDCDCEListItemView.extend(
+        /** @lends NestedDCDCEListItemEdit.prototype */
+        {
+            /** String representation */
+            toString: function toString() {
+                var modelString = this.model ? "" + this.model : "(no model)";
+                return "NestedDCDCEListItemEdit(" + modelString + ")";
+            }
+        });
+
+    //==============================================================================
+    exports.default = {
+        DCListItemEdit: DCListItemEdit,
+        DCEListItemEdit: DCEListItemEdit,
+        DatasetDCEListItemEdit: DatasetDCEListItemEdit,
+        NestedDCDCEListItemEdit: NestedDCDCEListItemEdit
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/collection/collection-li-edit.js.map

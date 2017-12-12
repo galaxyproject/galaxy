@@ -1,2 +1,101 @@
-define("viz/bbi-data-manager",["exports","viz/visualization","libs/bbi/bigwig"],function(e,a,t){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var r=function(e){return e&&e.__esModule?e:{default:e}}(a),n=function(e){if(e&&e.__esModule)return e;var a={};if(null!=e)for(var t in e)Object.prototype.hasOwnProperty.call(e,t)&&(a[t]=e[t]);return a.default=e,a}(t),i=r.default.GenomeDataManager.extend({load_data:function(e,a,t,r){var i=$.Deferred();this.set_data(e,i);var o=Galaxy.root+"datasets/"+this.get("dataset").id+"/display",s=this;new $.Deferred;return $.when(n.makeBwg(o)).then(function(a,t){$.when(a.readWigData(e.get("chrom"),e.get("start"),e.get("end"))).then(function(a){var t=[],r={max:Number.MIN_VALUE};a.forEach(function(e){r.max!==e.min-1&&(t.push([r.max+1,0]),t.push([e.min-2,0])),t.push([e.min-1,e.score]),t.push([e.max,e.score]),r=e});var n={data:t,region:e,dataset_type:"bigwig"};s.set_data(e,n),i.resolve(n)})}),i}});e.default={BBIDataManager:i}});
+define("viz/bbi-data-manager", ["exports", "viz/visualization", "libs/bbi/bigwig"], function(exports, _visualization, _bigwig) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _visualization2 = _interopRequireDefault(_visualization);
+
+    var bigwig = _interopRequireWildcard(_bigwig);
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /**
+     * Data manager for BBI datasets/files, including BigWig and BigBed.
+     */
+    var BBIDataManager = _visualization2.default.GenomeDataManager.extend({
+        /**
+         * Load data from server and manage data entries. Adds a Deferred to manager
+         * for region; when data becomes available, replaces Deferred with data.
+         * Returns the Deferred that resolves when data is available.
+         */
+        load_data: function load_data(region, mode, resolution, extra_params) {
+            var deferred = $.Deferred();
+            this.set_data(region, deferred);
+
+            var url = Galaxy.root + "datasets/" + this.get("dataset").id + "/display";
+
+            var self = this;
+            var promise = new $.Deferred();
+            $.when(bigwig.makeBwg(url)).then(function(bb, err) {
+                $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(function(data) {
+                    // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
+                    // where each element is [position, score]; unlike real bigwig format, no gaps are allowed.
+                    var result = [];
+
+                    var prev = {
+                        max: Number.MIN_VALUE
+                    };
+                    data.forEach(function(d) {
+                        // If there is a gap between prev and d, fill it with an interval with score 0.
+                        // This is necessary for LinePainter to draw correctly.
+                        if (prev.max !== d.min - 1) {
+                            // +1 to start after previous region.
+                            result.push([prev.max + 1, 0]);
+                            // -2 = -1 for converting from 1-based to 0-based coordinates,
+                            //      -1 for ending before current region.
+                            result.push([d.min - 2, 0]);
+                        }
+
+                        // Add data point for entry start. -1 to convert from wiggle
+                        // 1-based coordinates to 0-based browser coordinates.
+                        result.push([d.min - 1, d.score]);
+
+                        // Add data point for entry end:
+                        result.push([d.max, d.score]);
+
+                        prev = d;
+                    });
+
+                    var entry = {
+                        data: result,
+                        region: region,
+                        dataset_type: "bigwig"
+                    };
+
+                    self.set_data(region, entry);
+                    deferred.resolve(entry);
+                });
+            });
+
+            return deferred;
+        }
+    });
+
+    exports.default = {
+        BBIDataManager: BBIDataManager
+    };
+});
 //# sourceMappingURL=../../maps/viz/bbi-data-manager.js.map

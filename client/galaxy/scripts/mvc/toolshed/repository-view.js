@@ -28,7 +28,15 @@ var ToolShedRepositoryView = Backbone.View.extend({
             tool_shed: this.model.tool_shed,
             queue: toolshed_util.queueLength()
         };
-        var changesets = Object.keys(this.options.repository.metadata);
+        var changesets = Object.keys(this.options.repository.metadata).sort(function(a, b) {
+            return parseInt(a.split(":")[0] - b.split(":")[0]);
+        });
+        var ordered_metadata = {};
+        var unordered_metadata = this.options.repository.metadata;
+        changesets.forEach(function(key) {
+            ordered_metadata[key] = unordered_metadata[key];
+        });
+        this.options.repository.metadata = ordered_metadata;
         this.options.current_changeset = this.options.current_changeset || changesets[changesets.length - 1];
         this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
         this.options.current_metadata.tool_shed_url = this.model.tool_shed_url;
@@ -40,7 +48,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.options.tps_select_options = this.templatePanelSelectOptions;
         this.options.tool_dependencies = models.get("tool_dependencies");
         this.options.shed_tool_conf = this.templateShedToolConf({
-            stc_html: models.get("shed_conf")
+            shed_tool_confs: models.get("shed_conf")
         });
         this.options.panel_section_dict = models.get("panel_section_dict");
         this.options.api_url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
@@ -59,7 +67,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 .text();
             that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
             that.checkInstalled(that.options.current_metadata);
-            that.reDraw();
+            that.reDraw(that.options);
         });
         $("#tool_panel_section_select").on("change", () => {
             that.tpsSelection();
@@ -250,7 +258,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     reDraw: function(options) {
         this.$el.empty();
-        this.initialize(options);
+        this.render(options);
     },
 
     repoQueued: function(metadata) {
@@ -258,13 +266,12 @@ var ToolShedRepositoryView = Backbone.View.extend({
         if (!localStorage.repositories) {
             return;
         }
-        var repository_queue = JSON.parse(localStorage.repositories);
-        var changeset = metadata.changeset_revision;
         var queue_key = that.queueKey(metadata);
+        var queued_repos;
         if (localStorage.repositories) {
             queued_repos = JSON.parse(localStorage.repositories);
         }
-        if (queued_repos.hasOwnProperty(queue_key)) {
+        if (queued_repos && queued_repos.hasOwnProperty(queue_key)) {
             return true;
         }
         return false;
@@ -467,7 +474,11 @@ var ToolShedRepositoryView = Backbone.View.extend({
             '<div class="toolFormTitle">Shed tool configuration file:</div>',
             '<div class="toolFormBody">',
             '<div class="form-row">',
-            "<%= stc_html %>",
+            '<select name="shed_tool_conf">',
+            "<% _.each(shed_tool_confs.options, function(conf) { %>",
+            '<option value="<%= conf.value %>"><%= conf.label %></option>',
+            "<% }); %>",
+            '</select>',
             '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
             "</div>",
             "</div>"

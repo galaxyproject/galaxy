@@ -1,2 +1,56 @@
-define("ui/fa-icon-button",["exports","jquery"],function(t,e){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var i=function(t){return t&&t.__esModule?t:{default:t}}(e).default;t.default=function(t){(t=t||{}).tooltipConfig=t.tooltipConfig||{placement:"bottom"},t.classes=["icon-btn"].concat(t.classes||[]),t.disabled&&t.classes.push("disabled");var e=['<a class="',t.classes.join(" "),'"',t.title?' title="'+t.title+'"':"",!t.disabled&&t.target?' target="'+t.target+'"':"",' href="',!t.disabled&&t.href?t.href:"javascript:void(0);",'">','<span class="fa ',t.faIcon,'"></span>',"</a>"].join(""),o=i(e).tooltip(t.tooltipConfig);return _.isFunction(t.onclick)&&o.click(t.onclick),o}});
+define("ui/fa-icon-button", ["exports", "jquery"], function(exports, _jquery) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _jquery2 = _interopRequireDefault(_jquery);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    "use_strict";
+
+    var $ = _jquery2.default;
+    //============================================================================
+    /** Returns a jQuery object containing a clickable font-awesome button.
+     *      options:
+     *          tooltipConfig   : option map for bootstrap tool tip
+     *          classes         : array of class names (will always be classed as icon-btn)
+     *          disabled        : T/F - add the 'disabled' class?
+     *          title           : tooltip/title string
+     *          target          : optional href target
+     *          href            : optional href
+     *          faIcon          : which font awesome icon to use
+     *          onclick         : function to call when the button is clicked
+     */
+    var faIconButton = function faIconButton(options) {
+        options = options || {};
+        options.tooltipConfig = options.tooltipConfig || {
+            placement: "bottom"
+        };
+
+        options.classes = ["icon-btn"].concat(options.classes || []);
+        if (options.disabled) {
+            options.classes.push("disabled");
+        }
+
+        var html = ['<a class="', options.classes.join(" "), '"', options.title ? " title=\"" + options.title + "\"" : "", !options.disabled && options.target ? " target=\"" + options.target + "\"" : "", ' href="', !options.disabled && options.href ? options.href : "javascript:void(0);", '">',
+            // could go with something less specific here - like 'html'
+            '<span class="fa ', options.faIcon, '"></span>', "</a>"
+        ].join("");
+        var $button = $(html).tooltip(options.tooltipConfig);
+        if (_.isFunction(options.onclick)) {
+            $button.click(options.onclick);
+        }
+        return $button;
+    };
+
+    //============================================================================
+    exports.default = faIconButton;
+});
 //# sourceMappingURL=../../maps/ui/fa-icon-button.js.map

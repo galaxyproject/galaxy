@@ -1,7 +1,7 @@
 import logging
 import tarfile
 
-from galaxy.datatypes.binary import Binary, CompressedArchive
+from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.util import nice_size
 
@@ -14,7 +14,7 @@ class SnapHmm(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "SNAP HMM model"
         else:
             dataset.peek = 'file does not exist'
@@ -82,6 +82,3 @@ class Augustus(CompressedArchive):
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)
         return False
-
-
-Binary.register_sniffable_binary_format("augustus", "augustus", Augustus)

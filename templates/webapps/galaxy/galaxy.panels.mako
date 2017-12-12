@@ -52,6 +52,11 @@
 </%def>
 
 <%def name="javascripts()">
+    <script>
+        window.Galaxy = window.Galaxy || {};
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        window.jQuery = window.jquery = window.$;
+    </script>
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}
@@ -67,6 +72,7 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
@@ -117,12 +123,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( jscript ){
-                require([ jscript ], function( js_lib ){
-                    $( function(){
-                        // load galaxy module application
-                        var module = new js_lib.default.GalaxyApp();
-                    });
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
+                $( function(){
+                    // load galaxy module application
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");

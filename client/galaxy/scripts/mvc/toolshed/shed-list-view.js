@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 var View = Backbone.View.extend({
@@ -25,7 +26,7 @@ var View = Backbone.View.extend({
         var toolshed_list_template = this.templateToolshedList;
         this.$el.html(
             toolshed_list_template({
-                title: "Configured Galaxy Tool Sheds",
+                title: _l("Configured Galaxy Tool Sheds"),
                 tool_sheds: this.model.models,
                 queue: toolshed_util.queueLength()
             })

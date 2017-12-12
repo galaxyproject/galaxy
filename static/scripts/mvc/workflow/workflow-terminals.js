@@ -1,2 +1,544 @@
-define("mvc/workflow/workflow-terminals",["exports"],function(t){"use strict";function e(t){this.collectionType=t,this.isCollection=!0,this.rank=t.split(":").length}Object.defineProperty(t,"__esModule",{value:!0}),window.workflow_globals=window.workflow_globals||{};var n={isCollection:!1,canMatch:function(t){return!1},canMapOver:function(t){return!1},toString:function(){return"NullCollectionType[]"},append:function(t){return t},equal:function(t){return t===this}},i={isCollection:!0,canMatch:function(t){return n!==t},canMapOver:function(t){return!1},toString:function(){return"AnyCollectionType[]"},append:function(t){throw"Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION"},equal:function(t){return t===this}};$.extend(e.prototype,{append:function(t){return t===n?this:t===i?otherCollectionType:new e(this.collectionType+":"+t.collectionType)},canMatch:function(t){return t!==n&&(t===i||t.collectionType==this.collectionType)},canMapOver:function(t){if(t===n)return!1;if(t===i)return!1;if(this.rank<=t.rank)return!1;var e=t.collectionType;return this._endsWith(this.collectionType,e)},effectiveMapOver:function(t){var n=t.collectionType;return new e(this.collectionType.substring(0,this.collectionType.length-n.length-1))},equal:function(t){return t.collectionType==this.collectionType},toString:function(){return"CollectionType["+this.collectionType+"]"},_endsWith:function(t,e){return-1!==t.indexOf(e,t.length-e.length)}});var o=Backbone.Model.extend({initialize:function(t){this.mapOver=t.mapOver||n,this.terminal=t.terminal,this.terminal.terminalMapping=this},disableMapOver:function(){this.setMapOver(n)},setMapOver:function(t){this.mapOver=t,this.trigger("change")}}),c=Backbone.Model.extend({initialize:function(t){this.element=t.element,this.connectors=[]},connect:function(t){this.connectors.push(t),this.node&&this.node.markChanged()},disconnect:function(t){this.connectors.splice($.inArray(t,this.connectors),1),this.node&&(this.node.markChanged(),this.resetMappingIfNeeded())},redraw:function(){$.each(this.connectors,function(t,e){e.redraw()})},destroy:function(){$.each(this.connectors.slice(),function(t,e){e.destroy()})},destroyInvalidConnections:function(){_.each(this.connectors,function(t){t&&t.destroyIfInvalid()})},setMapOver:function(t){this.multiple||this.mapOver().equal(t)||(this.terminalMapping.setMapOver(t),_.each(this.node.output_terminals,function(e){e.setMapOver(t)}))},mapOver:function(){return this.terminalMapping?this.terminalMapping.mapOver:n},isMappedOver:function(){return this.terminalMapping&&this.terminalMapping.mapOver.isCollection},resetMapping:function(){this.terminalMapping.disableMapOver()},resetMappingIfNeeded:function(){}}),a=c.extend({initialize:function(t){c.prototype.initialize.call(this,t),this.datatypes=t.datatypes},resetMappingIfNeeded:function(){this.node.hasConnectedOutputTerminals()||this.node.hasConnectedMappedInputTerminals()||_.each(this.node.mappedInputTerminals(),function(t){t.resetMappingIfNeeded()}),!this.node.hasMappedOverInputTerminals()&&this.resetMapping()},resetMapping:function(){this.terminalMapping.disableMapOver(),_.each(this.connectors,function(t){var e=t.handle2;e&&(e.resetMappingIfNeeded(),t.destroyIfInvalid())})}}),r=c.extend({initialize:function(t){c.prototype.initialize.call(this,t),this.update(t.input)},canAccept:function(t){return!this._inputFilled()&&this.attachable(t)},resetMappingIfNeeded:function(){this.mapOver().isCollection&&(this.node.hasConnectedMappedInputTerminals()||!this.node.hasConnectedOutputTerminals())&&this.resetMapping()},resetMapping:function(){this.terminalMapping.disableMapOver(),this.node.hasMappedOverInputTerminals()||_.each(this.node.output_terminals,function(t){t.resetMapping()})},connected:function(){return 0!==this.connectors.length},_inputFilled:function(){var t;return this.connected()?this.multiple?this._collectionAttached()?inputsFilled=!0:t=!1:t=!0:t=!1,t},_collectionAttached:function(){if(this.connected()){var t=this.connectors[0].handle1;return!!t&&!!(t.isCollection||t.isMappedOver()||t.datatypes.indexOf("input_collection")>0)}return!1},_mappingConstraints:function(){if(!this.node)return[];var t=this.mapOver();if(t.isCollection)return[t];var e=[];return this.node.hasConnectedOutputTerminals()?e.push(_.first(_.values(this.node.output_terminals)).mapOver()):_.each(this.node.connectedMappedInputTerminals(),function(t){e.push(t.mapOver())}),e},_producesAcceptableDatatype:function(t){for(var e in this.datatypes){var n=this.datatypes[e];if("input"==n)return!0;var i=new Array;if(i=i.concat(t.datatypes),t.node.post_job_actions)for(var o in t.node.post_job_actions){var c=t.node.post_job_actions[o];"ChangeDatatypeAction"!=c.action_type||""!=c.output_name&&c.output_name!=t.name||!c.action_arguments||i.push(c.action_arguments.newtype)}for(var a in i){var r=i[a];if("input"==r||"_sniff_"==r||"input_collection"==r||window.workflow_globals.app.isSubType(i[a],n))return!0}}return!1},_otherCollectionType:function(t){var e=n;t.isCollection&&(e=t.collectionType);var i=t.mapOver();return i.isCollection&&(e=i.append(e)),e}}),s=r.extend({update:function(t){this.datatypes=t.extensions,this.multiple=t.multiple,this.collection=!1},connect:function(t){r.prototype.connect.call(this,t);var e=t.handle1;if(e){var n=this._otherCollectionType(e);n.isCollection&&this.setMapOver(n)}},attachable:function(t){var e=this._otherCollectionType(t),n=this.mapOver();return e.isCollection?this.multiple?!(this.connected()&&!this._collectionAttached())&&(1==e.rank&&this._producesAcceptableDatatype(t)):n.isCollection&&n.canMatch(e)?this._producesAcceptableDatatype(t):!!this._mappingConstraints().every(_.bind(e.canMatch,e))&&this._producesAcceptableDatatype(t):!n.isCollection&&this._producesAcceptableDatatype(t)}}),l=r.extend({update:function(t){this.multiple=!1,this.collection=!0,this.datatypes=t.extensions;var n=[];t.collection_types?_.each(t.collection_types,function(t){n.push(new e(t))}):n.push(i),this.collectionTypes=n},connect:function(t){r.prototype.connect.call(this,t);var e=t.handle1;if(e){var n=this._effectiveMapOver(e);this.setMapOver(n)}},_effectiveMapOver:function(t){var e=this.collectionTypes,i=this._otherCollectionType(t);if(!_.some(e,function(t){return t.canMatch(i)}))for(var o in e){var c=e[o];if(i.canMapOver(c)){var a=i.effectiveMapOver(c);if(a!=n)return a}}return n},_effectiveCollectionTypes:function(){var t=this.mapOver();return _.map(this.collectionTypes,function(e){return t.append(e)})},attachable:function(t){var e=this._otherCollectionType(t);if(e.isCollection){var n=this._effectiveCollectionTypes(),i=this.mapOver();if(_.some(n,function(t){return t.canMatch(e)}))return this._producesAcceptableDatatype(t);if(i.isCollection)return!1;if(_.some(this.collectionTypes,function(t){return e.canMapOver(t)})){var o=this._effectiveMapOver(t);if(!o.isCollection)return!1;if(this._mappingConstraints().every(o.canMatch))return this._producesAcceptableDatatype(t)}}return!1}}),p=c.extend({initialize:function(t){c.prototype.initialize.call(this,t),this.datatypes=t.datatypes,t.collection_type?this.collectionType=new e(t.collection_type):(t.collection_type_source||console.log("Warning: No collection type or collection type source defined."),this.collectionType=i),this.isCollection=!0},update:function(t){var n;t.collection_type?n=new e(t.collection_type):(t.collection_type_source||console.log("Warning: No collection type or collection type source defined."),n=i),n.collectionType!=this.collectionType.collectionType&&_.each(this.connectors,function(t){t.destroy()}),this.collectionType=n}});t.default={InputTerminal:s,OutputTerminal:a,InputCollectionTerminal:l,OutputCollectionTerminal:p,TerminalMapping:o,CollectionTypeDescription:e,NULL_COLLECTION_TYPE_DESCRIPTION:n,ANY_COLLECTION_TYPE_DESCRIPTION:i}});
+define("mvc/workflow/workflow-terminals", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    // TODO; tie into Galaxy state?
+    window.workflow_globals = window.workflow_globals || {};
+
+    function CollectionTypeDescription(collectionType) {
+        this.collectionType = collectionType;
+        this.isCollection = true;
+        this.rank = collectionType.split(":").length;
+    }
+
+    var NULL_COLLECTION_TYPE_DESCRIPTION = {
+        isCollection: false,
+        canMatch: function canMatch() {
+            return false;
+        },
+        canMapOver: function canMapOver() {
+            return false;
+        },
+        toString: function toString() {
+            return "NullCollectionType[]";
+        },
+        append: function append(otherCollectionType) {
+            return otherCollectionType;
+        },
+        equal: function equal(other) {
+            return other === this;
+        }
+    };
+
+    var ANY_COLLECTION_TYPE_DESCRIPTION = {
+        isCollection: true,
+        canMatch: function canMatch(other) {
+            return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
+        },
+        canMapOver: function canMapOver() {
+            return false;
+        },
+        toString: function toString() {
+            return "AnyCollectionType[]";
+        },
+        append: function append() {
+            throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+        },
+        equal: function equal(other) {
+            return other === this;
+        }
+    };
+
+    $.extend(CollectionTypeDescription.prototype, {
+        append: function append(otherCollectionTypeDescription) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
+                return this;
+            }
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
+                return otherCollectionTypeDescription;
+            }
+            return new CollectionTypeDescription(this.collectionType + ":" + otherCollectionTypeDescription.collectionType);
+        },
+        canMatch: function canMatch(otherCollectionTypeDescription) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
+                return false;
+            }
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
+                return true;
+            }
+            return otherCollectionTypeDescription.collectionType == this.collectionType;
+        },
+        canMapOver: function canMapOver(otherCollectionTypeDescription) {
+            if (otherCollectionTypeDescription === NULL_COLLECTION_TYPE_DESCRIPTION) {
+                return false;
+            }
+            if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
+                return false;
+            }
+            if (this.rank <= otherCollectionTypeDescription.rank) {
+                // Cannot map over self...
+                return false;
+            }
+            var requiredSuffix = otherCollectionTypeDescription.collectionType;
+            return this._endsWith(this.collectionType, requiredSuffix);
+        },
+        effectiveMapOver: function effectiveMapOver(otherCollectionTypeDescription) {
+            var otherCollectionType = otherCollectionTypeDescription.collectionType;
+            var effectiveCollectionType = this.collectionType.substring(0, this.collectionType.length - otherCollectionType.length - 1);
+            return new CollectionTypeDescription(effectiveCollectionType);
+        },
+        equal: function equal(otherCollectionTypeDescription) {
+            return otherCollectionTypeDescription.collectionType == this.collectionType;
+        },
+        toString: function toString() {
+            return "CollectionType[" + this.collectionType + "]";
+        },
+        _endsWith: function _endsWith(str, suffix) {
+            return str.indexOf(suffix, str.length - suffix.length) !== -1;
+        }
+    });
+
+    var TerminalMapping = Backbone.Model.extend({
+        initialize: function initialize(attr) {
+            this.mapOver = attr.mapOver || NULL_COLLECTION_TYPE_DESCRIPTION;
+            this.terminal = attr.terminal;
+            this.terminal.terminalMapping = this;
+        },
+        disableMapOver: function disableMapOver() {
+            this.setMapOver(NULL_COLLECTION_TYPE_DESCRIPTION);
+        },
+        setMapOver: function setMapOver(collectionTypeDescription) {
+            // TODO: Can I use "attributes" or something to auto trigger "change"
+            // event?
+            this.mapOver = collectionTypeDescription;
+            this.trigger("change");
+        }
+    });
+
+    var Terminal = Backbone.Model.extend({
+        initialize: function initialize(attr) {
+            this.element = attr.element;
+            this.connectors = [];
+        },
+        connect: function connect(connector) {
+            this.connectors.push(connector);
+            if (this.node) {
+                this.node.markChanged();
+            }
+        },
+        disconnect: function disconnect(connector) {
+            this.connectors.splice($.inArray(connector, this.connectors), 1);
+            if (this.node) {
+                this.node.markChanged();
+                this.resetMappingIfNeeded();
+            }
+        },
+        redraw: function redraw() {
+            $.each(this.connectors, function(_, c) {
+                c.redraw();
+            });
+        },
+        destroy: function destroy() {
+            $.each(this.connectors.slice(), function(_, c) {
+                c.destroy();
+            });
+        },
+        destroyInvalidConnections: function destroyInvalidConnections() {
+            _.each(this.connectors, function(connector) {
+                if (connector) {
+                    connector.destroyIfInvalid();
+                }
+            });
+        },
+        setMapOver: function setMapOver(val) {
+            if (this.multiple) {
+                return; // Cannot set this to be multirun...
+            }
+
+            if (!this.mapOver().equal(val)) {
+                this.terminalMapping.setMapOver(val);
+                _.each(this.node.output_terminals, function(outputTerminal) {
+                    outputTerminal.setMapOver(val);
+                });
+            }
+        },
+        mapOver: function mapOver() {
+            if (!this.terminalMapping) {
+                return NULL_COLLECTION_TYPE_DESCRIPTION;
+            } else {
+                return this.terminalMapping.mapOver;
+            }
+        },
+        isMappedOver: function isMappedOver() {
+            return this.terminalMapping && this.terminalMapping.mapOver.isCollection;
+        },
+        resetMapping: function resetMapping() {
+            this.terminalMapping.disableMapOver();
+        },
+
+        resetMappingIfNeeded: function resetMappingIfNeeded() {} // Subclasses should override this...
+    });
+
+    var OutputTerminal = Terminal.extend({
+        initialize: function initialize(attr) {
+            Terminal.prototype.initialize.call(this, attr);
+            this.datatypes = attr.datatypes;
+        },
+
+        resetMappingIfNeeded: function resetMappingIfNeeded() {
+            // If inputs were only mapped over to preserve
+            // an output just disconnected reset these...
+            if (!this.node.hasConnectedOutputTerminals() && !this.node.hasConnectedMappedInputTerminals()) {
+                _.each(this.node.mappedInputTerminals(), function(mappedInput) {
+                    mappedInput.resetMappingIfNeeded();
+                });
+            }
+
+            var noMappedInputs = !this.node.hasMappedOverInputTerminals();
+            if (noMappedInputs) {
+                this.resetMapping();
+            }
+        },
+
+        resetMapping: function resetMapping() {
+            this.terminalMapping.disableMapOver();
+            _.each(this.connectors, function(connector) {
+                var connectedInput = connector.handle2;
+                if (connectedInput) {
+                    // Not exactly right because this is still connected.
+                    // Either rewrite resetMappingIfNeeded or disconnect
+                    // and reconnect if valid.
+                    connectedInput.resetMappingIfNeeded();
+                    connector.destroyIfInvalid();
+                }
+            });
+        }
+    });
+
+    var BaseInputTerminal = Terminal.extend({
+        initialize: function initialize(attr) {
+            Terminal.prototype.initialize.call(this, attr);
+            this.update(attr.input); // subclasses should implement this...
+        },
+        canAccept: function canAccept(other) {
+            if (this._inputFilled()) {
+                return false;
+            } else {
+                return this.attachable(other);
+            }
+        },
+        resetMappingIfNeeded: function resetMappingIfNeeded() {
+            var mapOver = this.mapOver();
+            if (!mapOver.isCollection) {
+                return;
+            }
+            // No output terminals are counting on this being mapped
+            // over if connected inputs are still mapped over or if none
+            // of the outputs are connected...
+            var reset = this.node.hasConnectedMappedInputTerminals() || !this.node.hasConnectedOutputTerminals();
+            if (reset) {
+                this.resetMapping();
+            }
+        },
+        resetMapping: function resetMapping() {
+            this.terminalMapping.disableMapOver();
+            if (!this.node.hasMappedOverInputTerminals()) {
+                _.each(this.node.output_terminals, function(terminal) {
+                    // This shouldn't be called if there are mapped over
+                    // outputs.
+                    terminal.resetMapping();
+                });
+            }
+        },
+        connected: function connected() {
+            return this.connectors.length !== 0;
+        },
+        _inputFilled: function _inputFilled() {
+            var inputFilled;
+            if (!this.connected()) {
+                inputFilled = false;
+            } else {
+                if (this.multiple) {
+                    if (this._collectionAttached()) {
+                        // Can only attach one collection to multiple input
+                        // data parameter.
+                        inputFilled = true;
+                    } else {
+                        inputFilled = false;
+                    }
+                } else {
+                    inputFilled = true;
+                }
+            }
+            return inputFilled;
+        },
+        _collectionAttached: function _collectionAttached() {
+            if (!this.connected()) {
+                return false;
+            } else {
+                var firstOutput = this.connectors[0].handle1;
+                if (!firstOutput) {
+                    return false;
+                } else {
+                    if (firstOutput.isCollection || firstOutput.isMappedOver() || firstOutput.datatypes.indexOf("input_collection") > 0) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        },
+        _mappingConstraints: function _mappingConstraints() {
+            // If this is a connected terminal, return list of collection types
+            // other terminals connected to node are constraining mapping to.
+            if (!this.node) {
+                return []; // No node - completely unconstrained
+            }
+            var mapOver = this.mapOver();
+            if (mapOver.isCollection) {
+                return [mapOver];
+            }
+
+            var constraints = [];
+            if (!this.node.hasConnectedOutputTerminals()) {
+                _.each(this.node.connectedMappedInputTerminals(), function(inputTerminal) {
+                    constraints.push(inputTerminal.mapOver());
+                });
+            } else {
+                // All outputs should have same mapOver status - least specific.
+                constraints.push(_.first(_.values(this.node.output_terminals)).mapOver());
+            }
+            return constraints;
+        },
+        _producesAcceptableDatatype: function _producesAcceptableDatatype(other) {
+            // other is a non-collection output...
+            for (var t in this.datatypes) {
+                var thisDatatype = this.datatypes[t];
+                if (thisDatatype == "input") {
+                    return true;
+                }
+                var cat_outputs = [];
+                cat_outputs = cat_outputs.concat(other.datatypes);
+                if (other.node.post_job_actions) {
+                    for (var pja_i in other.node.post_job_actions) {
+                        var pja = other.node.post_job_actions[pja_i];
+                        if (pja.action_type == "ChangeDatatypeAction" && (pja.output_name === "" || pja.output_name == other.name) && pja.action_arguments) {
+                            cat_outputs.push(pja.action_arguments.newtype);
+                        }
+                    }
+                }
+                // FIXME: No idea what to do about case when datatype is 'input'
+                for (var other_datatype_i in cat_outputs) {
+                    var other_datatype = cat_outputs[other_datatype_i];
+                    if (other_datatype == "input" || other_datatype == "_sniff_" || other_datatype == "input_collection" || window.workflow_globals.app.isSubType(cat_outputs[other_datatype_i], thisDatatype)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        },
+        _otherCollectionType: function _otherCollectionType(other) {
+            var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
+            if (other.isCollection) {
+                otherCollectionType = other.collectionType;
+            }
+            var otherMapOver = other.mapOver();
+            if (otherMapOver.isCollection) {
+                otherCollectionType = otherMapOver.append(otherCollectionType);
+            }
+            return otherCollectionType;
+        }
+    });
+
+    var InputTerminal = BaseInputTerminal.extend({
+        update: function update(input) {
+            this.datatypes = input.extensions;
+            this.multiple = input.multiple;
+            this.collection = false;
+        },
+        connect: function connect(connector) {
+            BaseInputTerminal.prototype.connect.call(this, connector);
+            var other_output = connector.handle1;
+            if (!other_output) {
+                return;
+            }
+            var otherCollectionType = this._otherCollectionType(other_output);
+            if (otherCollectionType.isCollection) {
+                this.setMapOver(otherCollectionType);
+            }
+        },
+        attachable: function attachable(other) {
+            var otherCollectionType = this._otherCollectionType(other);
+            var thisMapOver = this.mapOver();
+            if (otherCollectionType.isCollection) {
+                if (this.multiple) {
+                    if (this.connected() && !this._collectionAttached()) {
+                        // if single inputs attached, cannot also attach a
+                        // collection (yet...)
+                        return false;
+                    }
+                    if (otherCollectionType.rank == 1) {
+                        return this._producesAcceptableDatatype(other);
+                    } else {
+                        // TODO: Allow subcollection mapping over this as if it were
+                        // a list collection input.
+                        return false;
+                    }
+                }
+                if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
+                    return this._producesAcceptableDatatype(other);
+                } else {
+                    //  Need to check if this would break constraints...
+                    var mappingConstraints = this._mappingConstraints();
+                    if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
+                        return this._producesAcceptableDatatype(other);
+                    } else {
+                        return false;
+                    }
+                }
+            } else if (thisMapOver.isCollection) {
+                // Attempting to match a non-collection output to an
+                // explicitly collection input.
+                return false;
+            }
+            return this._producesAcceptableDatatype(other);
+        }
+    });
+
+    var InputCollectionTerminal = BaseInputTerminal.extend({
+        update: function update(input) {
+            this.multiple = false;
+            this.collection = true;
+            this.datatypes = input.extensions;
+            var collectionTypes = [];
+            if (input.collection_types) {
+                _.each(input.collection_types, function(collectionType) {
+                    collectionTypes.push(new CollectionTypeDescription(collectionType));
+                });
+            } else {
+                collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
+            }
+            this.collectionTypes = collectionTypes;
+        },
+        connect: function connect(connector) {
+            BaseInputTerminal.prototype.connect.call(this, connector);
+            var other = connector.handle1;
+            if (!other) {
+                return;
+            }
+
+            var effectiveMapOver = this._effectiveMapOver(other);
+            this.setMapOver(effectiveMapOver);
+        },
+        _effectiveMapOver: function _effectiveMapOver(other) {
+            var collectionTypes = this.collectionTypes;
+            var otherCollectionType = this._otherCollectionType(other);
+            var canMatch = _.some(collectionTypes, function(collectionType) {
+                return collectionType.canMatch(otherCollectionType);
+            });
+
+            if (!canMatch) {
+                for (var collectionTypeIndex in collectionTypes) {
+                    var collectionType = collectionTypes[collectionTypeIndex];
+                    if (otherCollectionType.canMapOver(collectionType)) {
+                        var effectiveMapOver = otherCollectionType.effectiveMapOver(collectionType);
+                        if (effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION) {
+                            return effectiveMapOver;
+                        }
+                    }
+                }
+            }
+            return NULL_COLLECTION_TYPE_DESCRIPTION;
+        },
+        _effectiveCollectionTypes: function _effectiveCollectionTypes() {
+            var thisMapOver = this.mapOver();
+            return _.map(this.collectionTypes, function(t) {
+                return thisMapOver.append(t);
+            });
+        },
+        attachable: function attachable(other) {
+            var otherCollectionType = this._otherCollectionType(other);
+            if (otherCollectionType.isCollection) {
+                var effectiveCollectionTypes = this._effectiveCollectionTypes();
+                var thisMapOver = this.mapOver();
+                var canMatch = _.some(effectiveCollectionTypes, function(effectiveCollectionType) {
+                    return effectiveCollectionType.canMatch(otherCollectionType);
+                });
+                if (canMatch) {
+                    // Only way a direct match...
+                    return this._producesAcceptableDatatype(other);
+                    // Otherwise we need to mapOver
+                } else if (thisMapOver.isCollection) {
+                    // In this case, mapOver already set and we didn't match skipping...
+                    return false;
+                } else if (_.some(this.collectionTypes, function(collectionType) {
+                        return otherCollectionType.canMapOver(collectionType);
+                    })) {
+                    var effectiveMapOver = this._effectiveMapOver(other);
+                    if (!effectiveMapOver.isCollection) {
+                        return false;
+                    }
+                    //  Need to check if this would break constraints...
+                    var mappingConstraints = this._mappingConstraints();
+                    if (mappingConstraints.every(effectiveMapOver.canMatch)) {
+                        return this._producesAcceptableDatatype(other);
+                    }
+                }
+            }
+            return false;
+        }
+    });
+
+    var OutputCollectionTerminal = Terminal.extend({
+        initialize: function initialize(attr) {
+            Terminal.prototype.initialize.call(this, attr);
+            this.datatypes = attr.datatypes;
+            if (attr.collection_type) {
+                this.collectionType = new CollectionTypeDescription(attr.collection_type);
+            } else {
+                var collectionTypeSource = attr.collection_type_source;
+                if (!collectionTypeSource) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                this.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+            this.isCollection = true;
+        },
+        update: function update(output) {
+            var newCollectionType;
+            if (output.collection_type) {
+                newCollectionType = new CollectionTypeDescription(output.collection_type);
+            } else {
+                var collectionTypeSource = output.collection_type_source;
+                if (!collectionTypeSource) {
+                    console.log("Warning: No collection type or collection type source defined.");
+                }
+                newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+            }
+
+            if (newCollectionType.collectionType != this.collectionType.collectionType) {
+                _.each(this.connectors, function(connector) {
+                    // TODO: consider checking if connection valid before removing...
+                    connector.destroy();
+                });
+            }
+            this.collectionType = newCollectionType;
+        }
+    });
+
+    exports.default = {
+        InputTerminal: InputTerminal,
+        OutputTerminal: OutputTerminal,
+        InputCollectionTerminal: InputCollectionTerminal,
+        OutputCollectionTerminal: OutputCollectionTerminal,
+        TerminalMapping: TerminalMapping,
+
+        // test export
+        CollectionTypeDescription: CollectionTypeDescription,
+        NULL_COLLECTION_TYPE_DESCRIPTION: NULL_COLLECTION_TYPE_DESCRIPTION,
+        ANY_COLLECTION_TYPE_DESCRIPTION: ANY_COLLECTION_TYPE_DESCRIPTION
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-terminals.js.map

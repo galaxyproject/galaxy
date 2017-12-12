@@ -1,2 +1,369 @@
-define("mvc/workflow/workflow-forms",["exports","utils/utils","mvc/form/form-view","mvc/tool/tool-form-base"],function(e,t,a,o){"use strict";function n(e){return e&&e.__esModule?e:{default:e}}function i(e){var t=e.model.attributes,a=t.workflow,o=t.node;t.inputs.unshift({type:"text",name:"__annotation",label:"Annotation",fixed:!0,value:o.annotation,area:!0,help:"Add an annotation or notes to this step. Annotations are available when a workflow is viewed."}),t.inputs.unshift({type:"text",name:"__label",label:"Label",value:o.label,help:"Add a step label.",fixed:!0,onchange:function(t){var n=!1;for(var i in a.nodes){var l=a.nodes[i];if(l.label&&l.label==t&&l.id!=o.id){n=!0;break}}var r=e.data.match("__label");e.element_list[r].model.set("error_text",n&&"Duplicate label. Please fix this before saving the workflow."),e.trigger("change")}})}function l(e,t,a,o){var n=o.node.post_job_actions;(t=t||[]).push(e);for(var i in e.inputs){var r=e.inputs[i];if(r.action){if(r.name="pja__"+a+"__"+r.action,r.pja_arg&&(r.name+="__"+r.pja_arg),r.payload)for(var s in r.payload)r.payload[r.name+"__"+s]=r.payload[s],delete r.payload[s];var u=n[r.action+a];if(u){for(var p in t)t[p].expanded=!0;r.pja_arg?r.value=u.action_arguments&&u.action_arguments[r.pja_arg]||r.value:r.value="true"}}r.inputs&&l(r,t.slice(0),a,o)}}function r(e,t){var a=[],o=[],n=t.datatypes,i=t.node,r=t.workflow;for(var s in n)a.push({0:n[s],1:n[s]});for(s in i.input_terminals)o.push(i.input_terminals[s].name);a.sort(function(e,t){return e.label>t.label?1:e.label<t.label?-1:0}),a.unshift({0:"Sequences",1:"Sequences"}),a.unshift({0:"Roadmaps",1:"Roadmaps"}),a.unshift({0:"Leave unchanged",1:"__empty__"});var u,p={title:"Configure Output: '"+e+"'",type:"section",flat:!0,inputs:[{label:"Label",type:"text",value:(u=i.getWorkflowOutput(e))&&u.label||"",help:"This will provide a short name to describe the output - this must be unique across workflows.",onchange:function(t){r.attemptUpdateOutputLabel(i,e,t)}},{action:"RenameDatasetAction",pja_arg:"newname",label:"Rename dataset",type:"text",value:"",ignore:"",help:'This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>'+o.join(", ")+"</strong>."},{action:"ChangeDatatypeAction",pja_arg:"newtype",label:"Change datatype",type:"select",ignore:"__empty__",value:"__empty__",options:a,help:"This action will change the datatype of the output to the indicated value."},{action:"TagDatasetAction",pja_arg:"tags",label:"Add Tags",type:"text",value:"",ignore:"",help:"This action will set tags for the dataset."},{action:"RemoveTagDatasetAction",pja_arg:"tags",label:"Remove Tags",type:"text",value:"",ignore:"",help:"This action will remove tags for the dataset."},{title:"Assign columns",type:"section",flat:!0,inputs:[{action:"ColumnSetAction",pja_arg:"chromCol",label:"Chrom column",type:"integer",value:"",ignore:""},{action:"ColumnSetAction",pja_arg:"startCol",label:"Start column",type:"integer",value:"",ignore:""},{action:"ColumnSetAction",pja_arg:"endCol",label:"End column",type:"integer",value:"",ignore:""},{action:"ColumnSetAction",pja_arg:"strandCol",label:"Strand column",type:"integer",value:"",ignore:""},{action:"ColumnSetAction",pja_arg:"nameCol",label:"Name column",type:"integer",value:"",ignore:""}],help:"This action will set column assignments in the output dataset. Blank fields are ignored."}]};return l(p,[],e,t),p}function s(e){var t=e.model.attributes,a=t.inputs,o=t.node,n=o.post_job_actions,i=o.output_terminals&&Object.keys(o.output_terminals)[0];if(i){a.push({name:"pja__"+i+"__EmailAction",label:"Email notification",type:"boolean",value:String(Boolean(n["EmailAction"+i])),ignore:"false",help:"An email notification will be sent when the job has completed.",payload:{host:window.location.host}}),a.push({name:"pja__"+i+"__DeleteIntermediatesAction",label:"Output cleanup",type:"boolean",value:String(Boolean(n["DeleteIntermediatesAction"+i])),ignore:"false",help:"Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."});for(var l in o.output_terminals)a.push(r(l,t))}}Object.defineProperty(e,"__esModule",{value:!0});var u=n(t),p=n(a),d=n(o),c=Backbone.View.extend({initialize:function(e){var t=this,a=e.node;this.form=new p.default(u.default.merge(e,{onchange:function(){u.default.request({type:"POST",url:Galaxy.root+"api/workflows/build_module",data:{id:a.id,type:a.type,content_id:a.content_id,inputs:t.form.data.create()},success:function(e){a.update_field_data(e)}})}})),i(this.form),this.form.render()}}),f=Backbone.View.extend({initialize:function(e){var t=this,a=e.node;this.form=new d.default(u.default.merge(e,{text_enable:"Set in Advance",text_disable:"Set at Runtime",narrow:!0,initial_errors:!0,cls:"ui-portlet-narrow",initialmodel:function(e,a){t._customize(a),e.resolve()},buildmodel:function(e,t){t.model.get("postchange")(e,t)},postchange:function(e,o){var n=o.model.attributes,i={tool_id:n.id,tool_version:n.version,type:"tool",inputs:$.extend(!0,{},o.data.create())};Galaxy.emit.debug("tool-form-workflow::postchange()","Sending current state.",i),u.default.request({type:"POST",url:Galaxy.root+"api/workflows/build_module",data:i,success:function(n){o.model.set(n.config_form),t._customize(o),o.update(n.config_form),o.errors(n.config_form),a.update_field_data(n),Galaxy.emit.debug("tool-form-workflow::postchange()","Received new model.",n),e.resolve()},error:function(t){Galaxy.emit.debug("tool-form-workflow::postchange()","Refresh request failed.",t),e.reject()}})}}))},_customize:function(e){var t=e.model.attributes;u.default.deepeach(t.inputs,function(e){e.type&&(-1!=["data","data_collection"].indexOf(e.type)?(e.type="hidden",e.info="Data input '"+e.name+"' ("+u.default.textify(e.extensions)+")",e.value={__class__:"RuntimeValue"}):e.fixed||(e.collapsible_value={__class__:"RuntimeValue"},e.is_workflow=e.options&&0===e.options.length||-1!=["integer","float"].indexOf(e.type)))}),u.default.deepeach(t.inputs,function(e){"conditional"===e.type&&(e.test_param.collapsible_value=void 0)}),s(e),i(e)}});e.default={Default:c,Tool:f}});
+define("mvc/workflow/workflow-forms", ["exports", "utils/localization", "utils/utils", "mvc/form/form-view", "mvc/tool/tool-form-base"], function(exports, _localization, _utils, _formView, _toolFormBase) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _formView2 = _interopRequireDefault(_formView);
+
+    var _toolFormBase2 = _interopRequireDefault(_toolFormBase);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /** Default form wrapper for non-tool modules in the workflow editor. */
+    var Default = Backbone.View.extend({
+        initialize: function initialize(options) {
+            var self = this;
+            var node = options.node;
+            this.form = new _formView2.default(_utils2.default.merge(options, {
+                onchange: function onchange() {
+                    _utils2.default.request({
+                        type: "POST",
+                        url: Galaxy.root + "api/workflows/build_module",
+                        data: {
+                            id: node.id,
+                            type: node.type,
+                            content_id: node.content_id,
+                            inputs: self.form.data.create()
+                        },
+                        success: function success(data) {
+                            node.update_field_data(data);
+                        }
+                    });
+                }
+            }));
+            _addLabelAnnotation(this.form);
+            this.form.render();
+        }
+    });
+
+    /** Tool form wrapper for the workflow editor. */
+    var Tool = Backbone.View.extend({
+        initialize: function initialize(options) {
+            var self = this;
+            var node = options.node;
+            this.form = new _toolFormBase2.default(_utils2.default.merge(options, {
+                text_enable: "Set in Advance",
+                text_disable: "Set at Runtime",
+                narrow: true,
+                initial_errors: true,
+                cls: "ui-portlet-narrow",
+                initialmodel: function initialmodel(process, form) {
+                    self._customize(form);
+                    process.resolve();
+                },
+                buildmodel: function buildmodel(process, form) {
+                    form.model.get("postchange")(process, form);
+                },
+                postchange: function postchange(process, form) {
+                    var options = form.model.attributes;
+                    var current_state = {
+                        tool_id: options.id,
+                        tool_version: options.version,
+                        type: "tool",
+                        inputs: $.extend(true, {}, form.data.create())
+                    };
+                    Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
+                    _utils2.default.request({
+                        type: "POST",
+                        url: Galaxy.root + "api/workflows/build_module",
+                        data: current_state,
+                        success: function success(data) {
+                            form.model.set(data.config_form);
+                            self._customize(form);
+                            form.update(data.config_form);
+                            form.errors(data.config_form);
+                            // This hasn't modified the workflow, just returned
+                            // module information for the tool to update the workflow
+                            // state stored on the client with. User needs to save
+                            // for this to take effect.
+                            node.update_field_data(data);
+                            Galaxy.emit.debug("tool-form-workflow::postchange()", "Received new model.", data);
+                            process.resolve();
+                        },
+                        error: function error(response) {
+                            Galaxy.emit.debug("tool-form-workflow::postchange()", "Refresh request failed.", response);
+                            process.reject();
+                        }
+                    });
+                }
+            }));
+        },
+
+        _customize: function _customize(form) {
+            var options = form.model.attributes;
+            _utils2.default.deepeach(options.inputs, function(input) {
+                if (input.type) {
+                    if (["data", "data_collection"].indexOf(input.type) != -1) {
+                        input.type = "hidden";
+                        input.info = "Data input '" + input.name + "' (" + _utils2.default.textify(input.extensions) + ")";
+                        input.value = {
+                            __class__: "RuntimeValue"
+                        };
+                    } else if (!input.fixed) {
+                        input.collapsible_value = {
+                            __class__: "RuntimeValue"
+                        };
+                        input.is_workflow = input.options && input.options.length === 0 || ["integer", "float"].indexOf(input.type) != -1;
+                    }
+                }
+            });
+            _utils2.default.deepeach(options.inputs, function(input) {
+                if (input.type === "conditional") {
+                    input.test_param.collapsible_value = undefined;
+                }
+            });
+            _addSections(form);
+            _addLabelAnnotation(form);
+        }
+    });
+
+    /** Augments the module form definition by adding label and annotation fields */
+    function _addLabelAnnotation(form) {
+        var options = form.model.attributes;
+        var workflow = options.workflow;
+        var node = options.node;
+        options.inputs.unshift({
+            type: "text",
+            name: "__annotation",
+            label: "Annotation",
+            fixed: true,
+            value: node.annotation,
+            area: true,
+            help: "Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+        });
+        options.inputs.unshift({
+            type: "text",
+            name: "__label",
+            label: "Label",
+            value: node.label,
+            help: (0, _localization2.default)("Add a step label."),
+            fixed: true,
+            onchange: function onchange(new_label) {
+                var duplicate = false;
+                for (var i in workflow.nodes) {
+                    var n = workflow.nodes[i];
+                    if (n.label && n.label == new_label && n.id != node.id) {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                var input_id = form.data.match("__label");
+                var input_element = form.element_list[input_id];
+                input_element.model.set("error_text", duplicate && "Duplicate label. Please fix this before saving the workflow.");
+                form.trigger("change");
+            }
+        });
+    }
+
+    /** Visit input nodes and enrich by name/value pairs from server data */
+    function _visit(head, head_list, output_id, options) {
+        var post_job_actions = options.node.post_job_actions;
+        head_list = head_list || [];
+        head_list.push(head);
+        for (var i in head.inputs) {
+            var input = head.inputs[i];
+            var action = input.action;
+            if (action) {
+                input.name = "pja__" + output_id + "__" + input.action;
+                if (input.pja_arg) {
+                    input.name += "__" + input.pja_arg;
+                }
+                if (input.payload) {
+                    for (var p_id in input.payload) {
+                        input.payload[input.name + "__" + p_id] = input.payload[p_id];
+                        delete input.payload[p_id];
+                    }
+                }
+                var d = post_job_actions[input.action + output_id];
+                if (d) {
+                    for (var j in head_list) {
+                        head_list[j].expanded = true;
+                    }
+                    if (input.pja_arg) {
+                        input.value = d.action_arguments && d.action_arguments[input.pja_arg] || input.value;
+                    } else {
+                        input.value = "true";
+                    }
+                }
+            }
+            if (input.inputs) {
+                _visit(input, head_list.slice(0), output_id, options);
+            }
+        }
+    }
+
+    /** Builds sub section with step actions/annotation */
+    function _makeSection(output_id, options) {
+        var extensions = [];
+        var input_terminal_names = [];
+        var datatypes = options.datatypes;
+        var node = options.node;
+        var workflow = options.workflow;
+
+        for (var key in datatypes) {
+            extensions.push({
+                0: datatypes[key],
+                1: datatypes[key]
+            });
+        }
+        for (key in node.input_terminals) {
+            input_terminal_names.push(node.input_terminals[key].name);
+        }
+        extensions.sort(function(a, b) {
+            return a.label > b.label ? 1 : a.label < b.label ? -1 : 0;
+        });
+        extensions.unshift({
+            0: "Sequences",
+            1: "Sequences"
+        });
+        extensions.unshift({
+            0: "Roadmaps",
+            1: "Roadmaps"
+        });
+        extensions.unshift({
+            0: "Leave unchanged",
+            1: "__empty__"
+        });
+        var output;
+        var input_config = {
+            title: "Configure Output: '" + output_id + "'",
+            type: "section",
+            flat: true,
+            inputs: [{
+                label: "Label",
+                type: "text",
+                value: (output = node.getWorkflowOutput(output_id)) && output.label || "",
+                help: "This will provide a short name to describe the output - this must be unique across workflows.",
+                onchange: function onchange(new_value) {
+                    workflow.attemptUpdateOutputLabel(node, output_id, new_value);
+                }
+            }, {
+                action: "RenameDatasetAction",
+                pja_arg: "newname",
+                label: "Rename dataset",
+                type: "text",
+                value: "",
+                ignore: "",
+                help: "This action will rename the output dataset. Click <a href=\"https://galaxyproject.org/learn/advanced-workflow/variables/\">here</a> for more information. Valid inputs are: <strong>" + input_terminal_names.join(", ") + "</strong>."
+            }, {
+                action: "ChangeDatatypeAction",
+                pja_arg: "newtype",
+                label: "Change datatype",
+                type: "select",
+                ignore: "__empty__",
+                value: "__empty__",
+                options: extensions,
+                help: "This action will change the datatype of the output to the indicated value."
+            }, {
+                action: "TagDatasetAction",
+                pja_arg: "tags",
+                label: "Add Tags",
+                type: "text",
+                value: "",
+                ignore: "",
+                help: "This action will set tags for the dataset."
+            }, {
+                action: "RemoveTagDatasetAction",
+                pja_arg: "tags",
+                label: "Remove Tags",
+                type: "text",
+                value: "",
+                ignore: "",
+                help: "This action will remove tags for the dataset."
+            }, {
+                title: (0, _localization2.default)("Assign columns"),
+                type: "section",
+                flat: true,
+                inputs: [{
+                    action: "ColumnSetAction",
+                    pja_arg: "chromCol",
+                    label: "Chrom column",
+                    type: "integer",
+                    value: "",
+                    ignore: ""
+                }, {
+                    action: "ColumnSetAction",
+                    pja_arg: "startCol",
+                    label: "Start column",
+                    type: "integer",
+                    value: "",
+                    ignore: ""
+                }, {
+                    action: "ColumnSetAction",
+                    pja_arg: "endCol",
+                    label: "End column",
+                    type: "integer",
+                    value: "",
+                    ignore: ""
+                }, {
+                    action: "ColumnSetAction",
+                    pja_arg: "strandCol",
+                    label: "Strand column",
+                    type: "integer",
+                    value: "",
+                    ignore: ""
+                }, {
+                    action: "ColumnSetAction",
+                    pja_arg: "nameCol",
+                    label: "Name column",
+                    type: "integer",
+                    value: "",
+                    ignore: ""
+                }],
+                help: "This action will set column assignments in the output dataset. Blank fields are ignored."
+            }]
+        };
+        _visit(input_config, [], output_id, options);
+        return input_config;
+    }
+
+    /** Builds all sub sections */
+    function _addSections(form) {
+        var options = form.model.attributes;
+        var inputs = options.inputs;
+        var node = options.node;
+        var post_job_actions = node.post_job_actions;
+        var output_id = node.output_terminals && Object.keys(node.output_terminals)[0];
+
+        if (output_id) {
+            inputs.push({
+                name: "pja__" + output_id + "__EmailAction",
+                label: "Email notification",
+                type: "boolean",
+                value: String(Boolean(post_job_actions["EmailAction" + output_id])),
+                ignore: "false",
+                help: (0, _localization2.default)("An email notification will be sent when the job has completed."),
+                payload: {
+                    host: window.location.host
+                }
+            });
+            inputs.push({
+                name: "pja__" + output_id + "__DeleteIntermediatesAction",
+                label: "Output cleanup",
+                type: "boolean",
+                value: String(Boolean(post_job_actions["DeleteIntermediatesAction" + output_id])),
+                ignore: "false",
+                help: "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
+            });
+            for (var i in node.output_terminals) {
+                inputs.push(_makeSection(i, options));
+            }
+        }
+    }
+
+    exports.default = {
+        Default: Default,
+        Tool: Tool
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-forms.js.map

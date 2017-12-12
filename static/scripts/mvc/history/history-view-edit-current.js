@@ -1,2 +1,490 @@
-define("mvc/history/history-view-edit-current",["exports","mvc/history/history-model","mvc/history/history-view-edit","mvc/base-mvc","utils/localization"],function(e,t,n,o,i){"use strict";function s(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});s(t);var r=s(n),a=s(o),l=s(i),d=a.default.SessionStorageModel.extend({defaults:{tagsEditorShown:!1,annotationEditorShown:!1,scrollPosition:0},toString:function(){return"HistoryViewPrefs("+JSON.stringify(this.toJSON())+")"}});d.storageKey=function(){return"history-panel"};var u=r.default.HistoryViewEdit,c=u.extend({className:u.prototype.className+" current-history-panel",HDCAViewClass:u.prototype.HDCAViewClass.extend({foldoutStyle:"drilldown"}),emptyMsg:[(0,l.default)("This history is empty"),". ",(0,l.default)("You can "),'<a class="uploader-link" href="javascript:void(0)">',(0,l.default)("load your own data"),"</a>",(0,l.default)(" or "),'<a class="get-data-link" href="javascript:void(0)">',(0,l.default)("get data from an external source"),"</a>"].join(""),initialize:function(e){e=e||{},this.preferences=new d(_.extend({id:d.storageKey()},_.pick(e,_.keys(d.prototype.defaults)))),u.prototype.initialize.call(this,e),this.panelStack=[],this.currentContentId=e.currentContentId||null},_setUpListeners:function(){u.prototype._setUpListeners.call(this);var e=this;this.on("new-model",function(){e.preferences.set("scrollPosition",0)})},loadCurrentHistory:function(){return this.loadHistory(null,{url:Galaxy.root+"history/current_history_json"})},switchToHistory:function(e,t){return Galaxy.user.isAnonymous()?(this.trigger("error",(0,l.default)("You must be logged in to switch histories"),(0,l.default)("Anonymous user")),$.when()):this.loadHistory(e,{url:Galaxy.root+"history/set_as_current?id="+e})},createNewHistory:function(e){return Galaxy.user.isAnonymous()?(this.trigger("error",(0,l.default)("You must be logged in to create histories"),(0,l.default)("Anonymous user")),$.when()):this.loadHistory(null,{url:Galaxy.root+"history/create_new_current"})},setModel:function(e,t,n){return u.prototype.setModel.call(this,e,t,n),this.model&&this.model.id&&(this.log("checking for updates"),this.model.checkForUpdates()),this},_setUpModelListeners:function(){return u.prototype._setUpModelListeners.call(this),this.listenTo(this.model,{"change:nice_size change:size":function(){this.trigger("history-size-change",this,this.model,arguments)},"change:id":function(){this.once("loading-done",function(){this.model.checkForUpdates()})}})},_setUpCollectionListeners:function(){u.prototype._setUpCollectionListeners.call(this),this.listenTo(this.collection,"state:ready",function(e,t,n){e.get("visible")||this.collection.storage.includeHidden()||this.removeItemView(e)})},_setUpBehaviors:function(e){e=e||this.$el;var t=this;return u.prototype._setUpBehaviors.call(t,e),this._debouncedScrollCaptureHandler||(this._debouncedScrollCaptureHandler=_.debounce(function(){t.$el.is(":visible")&&t.preferences.set("scrollPosition",$(this).scrollTop())},40)),t.$scrollContainer(e).off("scroll",this._debouncedScrollCaptureHandler).on("scroll",this._debouncedScrollCaptureHandler),t},_buildNewRender:function(){if(!this.model)return $();var e=u.prototype._buildNewRender.call(this);return e.find(".search").prependTo(e.find("> .controls")),this._renderQuotaMessage(e),e},_renderQuotaMessage:function(e){return e=e||this.$el,$(this.templates.quotaMsg({},this)).prependTo(e.find(".messages"))},_renderTags:function(e){var t=this;u.prototype._renderTags.call(t,e),t.preferences.get("tagsEditorShown")&&t.tagsEditor.toggle(!0),t.listenTo(t.tagsEditor,"hiddenUntilActivated:shown hiddenUntilActivated:hidden",function(e){t.preferences.set("tagsEditorShown",e.hidden)})},_renderAnnotation:function(e){var t=this;u.prototype._renderAnnotation.call(t,e),t.preferences.get("annotationEditorShown")&&t.annotationEditor.toggle(!0),t.listenTo(t.annotationEditor,"hiddenUntilActivated:shown hiddenUntilActivated:hidden",function(e){t.preferences.set("annotationEditorShown",e.hidden)})},_swapNewRender:function(e){u.prototype._swapNewRender.call(this,e);var t=this;return _.delay(function(){var e=t.preferences.get("scrollPosition");e&&t.scrollTo(e,0)},10),this},_attachItems:function(e){u.prototype._attachItems.call(this,e);var t=this;return t.currentContentId&&t._setCurrentContentById(t.currentContentId),this},addItemView:function(e,t,n){var o=u.prototype.addItemView.call(this,e,t,n);return o&&this.panelStack.length?this._collapseDrilldownPanel():o},_setUpItemViewListeners:function(e){var t=this;return u.prototype._setUpItemViewListeners.call(t,e),t.listenTo(e,{"expanded:drilldown":function(e,t){this._expandDrilldownPanel(t)},"collapsed:drilldown":function(e,t){this._collapseDrilldownPanel(t)}})},setCurrentContent:function(e){this.$(".history-content.current-content").removeClass("current-content"),e?(e.$el.addClass("current-content"),this.currentContentId=e.model.id):this.currentContentId=null},_setCurrentContentById:function(e){var t=this.viewFromModelId(e)||null;this.setCurrentContent(t)},_expandDrilldownPanel:function(e){this.panelStack.push(e),this.$controls().add(this.$list()).hide(),e.parentName=this.model.get("name"),e.delegateEvents().render().$el.appendTo(this.$el)},_collapseDrilldownPanel:function(e){this.panelStack.pop(),this.$controls().add(this.$list()).show()},events:_.extend(_.clone(u.prototype.events),{"click .uploader-link":function(e){Galaxy.upload.show(e)},"click .get-data-link":function(e){var t=$(".toolMenuContainer");t.parent().scrollTop(0),t.find('span:contains("Get Data")').click()}}),listenToGalaxy:function(e){this.listenTo(e,{"center-frame:load":function(e){var t=e.fullpath,n=null,o={display:/datasets\/([a-f0-9]+)\/display/,edit:/datasets\/([a-f0-9]+)\/edit/,report_error:/dataset\/errors\?id=([a-f0-9]+)/,rerun:/tool_runner\/rerun\?id=([a-f0-9]+)/,show_params:/datasets\/([a-f0-9]+)\/show_params/};_.find(o,function(e,o){return n=_.result(t.match(e),1)}),this._setCurrentContentById(n?"dataset-"+n:null)},"center-panel:load":function(e){this._setCurrentContentById()}})},connectToQuotaMeter:function(e){return e?(this.listenTo(e,"quota:over",this.showQuotaMessage),this.listenTo(e,"quota:under",this.hideQuotaMessage),this.on("rendered rendered:initial",function(){e&&e.isOverQuota()&&this.showQuotaMessage()}),this):this},clearMessages:function(e){var t=_.isUndefined(e)?this.$messages().children('[class$="message"]'):$(e.currentTarget);return(t=t.not(".quota-message")).fadeOut(this.fxSpeed,function(){$(this).remove()}),this},showQuotaMessage:function(){var e=this.$(".quota-message");e.is(":hidden")&&e.slideDown(this.fxSpeed)},hideQuotaMessage:function(){var e=this.$(".quota-message");e.is(":hidden")||e.slideUp(this.fxSpeed)},unhideHidden:function(){var e=this;return confirm((0,l.default)("Really unhide all hidden datasets?"))?e.model.contents._filterAndUpdate({visible:!1,deleted:"",purged:""},{visible:!0}).done(function(){e.model.contents.includeHidden||e.renderItems()}):jQuery.when()},deleteHidden:function(){var e=this;return confirm((0,l.default)("Really delete all hidden datasets?"))?e.model.contents._filterAndUpdate({visible:!1,deleted:"",purged:""},{deleted:!0,visible:!0}):jQuery.when()},toString:function(){return"CurrentHistoryView("+(this.model?this.model.get("name"):"")+")"}});c.prototype.templates=function(){var e=a.default.wrapTemplate(['<div class="quota-message errormessage">',(0,l.default)("You are over your disk quota"),". ",(0,l.default)("Tool execution is on hold until your disk usage drops below your allocated quota"),".","</div>"],"history");return _.extend(_.clone(u.prototype.templates),{quotaMsg:e})}(),e.default={CurrentHistoryView:c}});
+define("mvc/history/history-view-edit-current", ["exports", "mvc/history/history-model", "mvc/history/history-view-edit", "mvc/base-mvc", "utils/localization"], function(exports, _historyModel, _historyViewEdit, _baseMvc, _localization) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _historyModel2 = _interopRequireDefault(_historyModel);
+
+    var _historyViewEdit2 = _interopRequireDefault(_historyViewEdit);
+
+    var _baseMvc2 = _interopRequireDefault(_baseMvc);
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    // ============================================================================
+    /** session storage for history panel preferences (and to maintain state)
+     */
+    var HistoryViewPrefs = _baseMvc2.default.SessionStorageModel.extend(
+        /** @lends HistoryViewPrefs.prototype */
+        {
+            defaults: {
+                /** should the tags editor be shown or hidden initially? */
+                tagsEditorShown: false,
+                /** should the annotation editor be shown or hidden initially? */
+                annotationEditorShown: false,
+                ///** what is the currently focused content (dataset or collection) in the current history?
+                // *      (the history panel will highlight and scroll to the focused content view)
+                // */
+                //focusedContentId : null
+                /** Current scroll position */
+                scrollPosition: 0
+            },
+            toString: function toString() {
+                return "HistoryViewPrefs(" + JSON.stringify(this.toJSON()) + ")";
+            }
+        });
+
+    /** key string to store panel prefs (made accessible on class so you can access sessionStorage directly) */
+    HistoryViewPrefs.storageKey = function storageKey() {
+        return "history-panel";
+    };
+
+    /* =============================================================================
+    TODO:
+    
+    ============================================================================= */
+    var _super = _historyViewEdit2.default.HistoryViewEdit;
+    // used in root/index.mako
+    /** @class View/Controller for the user's current history model as used in the history
+     *      panel (current right hand panel) of the analysis page.
+     *
+     *  The only history panel that:
+     *      will poll for updates.
+     *      displays datasets in reverse hid order.
+     */
+    var CurrentHistoryView = _super.extend(
+        /** @lends CurrentHistoryView.prototype */
+        {
+            className: _super.prototype.className + " current-history-panel",
+
+            /** override to use drilldown (and not foldout) for how collections are displayed */
+            HDCAViewClass: _super.prototype.HDCAViewClass.extend({
+                foldoutStyle: "drilldown"
+            }),
+
+            emptyMsg: [(0, _localization2.default)("This history is empty"), ". ", (0, _localization2.default)("You can "), '<a class="uploader-link" href="javascript:void(0)">', (0, _localization2.default)("load your own data"), "</a>", (0, _localization2.default)(" or "), '<a class="get-data-link" href="javascript:void(0)">', (0, _localization2.default)("get data from an external source"), "</a>"].join(""),
+
+            // ......................................................................... SET UP
+            /** Set up the view, set up storage, bind listeners to HistoryContents events */
+            initialize: function initialize(attributes) {
+                attributes = attributes || {};
+
+                // ---- persistent preferences
+                /** maintain state / preferences over page loads */
+                this.preferences = new HistoryViewPrefs(_.extend({
+                    id: HistoryViewPrefs.storageKey()
+                }, _.pick(attributes, _.keys(HistoryViewPrefs.prototype.defaults))));
+
+                _super.prototype.initialize.call(this, attributes);
+
+                /** sub-views that will overlay this panel (collections) */
+                this.panelStack = [];
+
+                /** id of currently focused content */
+                this.currentContentId = attributes.currentContentId || null;
+                //NOTE: purposely not sent to localstorage since panel recreation roughly lines up with a reset of this value
+            },
+
+            /** Override to cache the current scroll position with a listener */
+            _setUpListeners: function _setUpListeners() {
+                _super.prototype._setUpListeners.call(this);
+
+                var panel = this;
+                // reset scroll position when there's a new history
+                this.on("new-model", function() {
+                    panel.preferences.set("scrollPosition", 0);
+                });
+            },
+
+            // ------------------------------------------------------------------------ loading history/item models
+            // TODO: next three more appropriate moved to the app level
+            /** (re-)loads the user's current history & contents w/ details */
+            loadCurrentHistory: function loadCurrentHistory() {
+                return this.loadHistory(null, {
+                    url: Galaxy.root + "history/current_history_json"
+                });
+            },
+
+            /** loads a history & contents w/ details and makes them the current history */
+            switchToHistory: function switchToHistory(historyId, attributes) {
+                if (Galaxy.user.isAnonymous()) {
+                    this.trigger("error", (0, _localization2.default)("You must be logged in to switch histories"), (0, _localization2.default)("Anonymous user"));
+                    return $.when();
+                }
+                return this.loadHistory(historyId, {
+                    url: Galaxy.root + "history/set_as_current?id=" + historyId
+                });
+            },
+
+            /** creates a new history on the server and sets it as the user's current history */
+            createNewHistory: function createNewHistory(attributes) {
+                if (Galaxy.user.isAnonymous()) {
+                    this.trigger("error", (0, _localization2.default)("You must be logged in to create histories"), (0, _localization2.default)("Anonymous user"));
+                    return $.when();
+                }
+                return this.loadHistory(null, {
+                    url: Galaxy.root + "history/create_new_current"
+                });
+            },
+
+            /** release/free/shutdown old models and set up panel for new models */
+            setModel: function setModel(model, attributes, render) {
+                _super.prototype.setModel.call(this, model, attributes, render);
+                if (this.model && this.model.id) {
+                    this.log("checking for updates");
+                    this.model.checkForUpdates();
+                }
+                return this;
+            },
+
+            // ------------------------------------------------------------------------ history/content event listening
+            /** listening for history events */
+            _setUpModelListeners: function _setUpModelListeners() {
+                _super.prototype._setUpModelListeners.call(this);
+                // re-broadcast any model change events so that listeners don't have to re-bind to each history
+                return this.listenTo(this.model, {
+                    "change:nice_size change:size": function changeNice_sizeChangeSize() {
+                        this.trigger("history-size-change", this, this.model, arguments);
+                    },
+                    "change:id": function changeId() {
+                        this.once("loading-done", function() {
+                            this.model.checkForUpdates();
+                        });
+                    }
+                });
+            },
+
+            /** listening for collection events */
+            _setUpCollectionListeners: function _setUpCollectionListeners() {
+                _super.prototype._setUpCollectionListeners.call(this);
+                // if a hidden item is created (gen. by a workflow), moves thru the updater to the ready state,
+                //  then: remove it from the collection if the panel is set to NOT show hidden datasets
+                this.listenTo(this.collection, "state:ready", function(model, newState, oldState) {
+                    if (!model.get("visible") && !this.collection.storage.includeHidden()) {
+                        this.removeItemView(model);
+                    }
+                });
+            },
+
+            // ------------------------------------------------------------------------ panel rendering
+            /** override to add a handler to capture the scroll position when the parent scrolls */
+            _setUpBehaviors: function _setUpBehaviors($where) {
+                $where = $where || this.$el;
+                // console.log( '_setUpBehaviors', this.$scrollContainer( $where ).get(0), this.$list( $where ) );
+                // we need to call this in _setUpBehaviors which is called after render since the $el
+                // may not be attached to $el.parent and $scrollContainer() may not work
+                var panel = this;
+                _super.prototype._setUpBehaviors.call(panel, $where);
+
+                // cache the handler to remove and re-add so we don't pile up the handlers
+                if (!this._debouncedScrollCaptureHandler) {
+                    this._debouncedScrollCaptureHandler = _.debounce(function scrollCapture() {
+                        // cache the scroll position (only if visible)
+                        if (panel.$el.is(":visible")) {
+                            panel.preferences.set("scrollPosition", $(this).scrollTop());
+                        }
+                    }, 40);
+                }
+
+                panel.$scrollContainer($where).off("scroll", this._debouncedScrollCaptureHandler).on("scroll", this._debouncedScrollCaptureHandler);
+                return panel;
+            },
+
+            /** In this override, handle null models and move the search input to the top */
+            _buildNewRender: function _buildNewRender() {
+                if (!this.model) {
+                    return $();
+                }
+                var $newRender = _super.prototype._buildNewRender.call(this);
+                $newRender.find(".search").prependTo($newRender.find("> .controls"));
+                this._renderQuotaMessage($newRender);
+                return $newRender;
+            },
+
+            /** render the message displayed when a user is over quota and can't run jobs */
+            _renderQuotaMessage: function _renderQuotaMessage($whereTo) {
+                $whereTo = $whereTo || this.$el;
+                return $(this.templates.quotaMsg({}, this)).prependTo($whereTo.find(".messages"));
+            },
+
+            /** In this override, get and set current panel preferences when editor is used */
+            _renderTags: function _renderTags($where) {
+                var panel = this;
+                // render tags and show/hide based on preferences
+                _super.prototype._renderTags.call(panel, $where);
+                if (panel.preferences.get("tagsEditorShown")) {
+                    panel.tagsEditor.toggle(true);
+                }
+                // store preference when shown or hidden
+                panel.listenTo(panel.tagsEditor, "hiddenUntilActivated:shown hiddenUntilActivated:hidden", function(tagsEditor) {
+                    panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
+                });
+            },
+
+            /** In this override, get and set current panel preferences when editor is used */
+            _renderAnnotation: function _renderAnnotation($where) {
+                var panel = this;
+                // render annotation and show/hide based on preferences
+                _super.prototype._renderAnnotation.call(panel, $where);
+                if (panel.preferences.get("annotationEditorShown")) {
+                    panel.annotationEditor.toggle(true);
+                }
+                // store preference when shown or hidden
+                panel.listenTo(panel.annotationEditor, "hiddenUntilActivated:shown hiddenUntilActivated:hidden", function(annotationEditor) {
+                    panel.preferences.set("annotationEditorShown", annotationEditor.hidden);
+                });
+            },
+
+            /** Override to scroll to cached position (in prefs) after swapping */
+            _swapNewRender: function _swapNewRender($newRender) {
+                _super.prototype._swapNewRender.call(this, $newRender);
+                var panel = this;
+                _.delay(function() {
+                    var pos = panel.preferences.get("scrollPosition");
+                    if (pos) {
+                        panel.scrollTo(pos, 0);
+                    }
+                }, 10);
+                //TODO: is this enough of a delay on larger histories?
+
+                return this;
+            },
+
+            // ------------------------------------------------------------------------ sub-views
+            /** Override to add the current-content highlight class to currentContentId's view */
+            _attachItems: function _attachItems($whereTo) {
+                _super.prototype._attachItems.call(this, $whereTo);
+                var panel = this;
+                if (panel.currentContentId) {
+                    panel._setCurrentContentById(panel.currentContentId);
+                }
+                return this;
+            },
+
+            /** Override to remove any drill down panels */
+            addItemView: function addItemView(model, collection, options) {
+                var view = _super.prototype.addItemView.call(this, model, collection, options);
+                if (!view) {
+                    return view;
+                }
+                if (this.panelStack.length) {
+                    return this._collapseDrilldownPanel();
+                }
+                return view;
+            },
+
+            // ------------------------------------------------------------------------ collection sub-views
+            /** In this override, add/remove expanded/collapsed model ids to/from web storage */
+            _setUpItemViewListeners: function _setUpItemViewListeners(view) {
+                var panel = this;
+                _super.prototype._setUpItemViewListeners.call(panel, view);
+                // use pub-sub to: handle drilldown expansion and collapse
+                return panel.listenTo(view, {
+                    "expanded:drilldown": function expandedDrilldown(v, drilldown) {
+                        this._expandDrilldownPanel(drilldown);
+                    },
+                    "collapsed:drilldown": function collapsedDrilldown(v, drilldown) {
+                        this._collapseDrilldownPanel(drilldown);
+                    }
+                });
+            },
+
+            /** display 'current content': add a visible highlight and store the id of a content item */
+            setCurrentContent: function setCurrentContent(view) {
+                this.$(".history-content.current-content").removeClass("current-content");
+                if (view) {
+                    view.$el.addClass("current-content");
+                    this.currentContentId = view.model.id;
+                } else {
+                    this.currentContentId = null;
+                }
+            },
+
+            /** find the view with the id and then call setCurrentContent on it */
+            _setCurrentContentById: function _setCurrentContentById(id) {
+                var view = this.viewFromModelId(id) || null;
+                this.setCurrentContent(view);
+            },
+
+            /** Handle drill down by hiding this panels list and controls and showing the sub-panel */
+            _expandDrilldownPanel: function _expandDrilldownPanel(drilldown) {
+                this.panelStack.push(drilldown);
+                // hide this panel's controls and list, set the name for back navigation, and attach to the $el
+                this.$controls().add(this.$list()).hide();
+                drilldown.parentName = this.model.get("name");
+                drilldown.delegateEvents().render().$el.appendTo(this.$el);
+            },
+
+            /** Handle drilldown close by freeing the panel and re-rendering this panel */
+            _collapseDrilldownPanel: function _collapseDrilldownPanel(drilldown) {
+                this.panelStack.pop();
+                //TODO: MEM: free the panel
+                this.$controls().add(this.$list()).show();
+            },
+
+            // ........................................................................ panel events
+            /** event map */
+            events: _.extend(_.clone(_super.prototype.events), {
+                // the two links in the empty message
+                "click .uploader-link": function clickUploaderLink(ev) {
+                    Galaxy.upload.show(ev);
+                },
+                "click .get-data-link": function clickGetDataLink(ev) {
+                    var $toolMenu = $(".toolMenuContainer");
+                    $toolMenu.parent().scrollTop(0);
+                    $toolMenu.find('span:contains("Get Data")').click();
+                }
+            }),
+
+            // ........................................................................ external objects/MVC
+            listenToGalaxy: function listenToGalaxy(galaxy) {
+                this.listenTo(galaxy, {
+                    // when the galaxy_main iframe is loaded with a new page,
+                    // compare the url to the following list and if there's a match
+                    // pull the id from url and indicate in the history view that
+                    // the dataset with that id is the 'current'ly active dataset
+                    "center-frame:load": function centerFrameLoad(data) {
+                        var pathToMatch = data.fullpath;
+                        var hdaId = null;
+                        var useToURLRegexMap = {
+                            display: /datasets\/([a-f0-9]+)\/display/,
+                            edit: /datasets\/([a-f0-9]+)\/edit/,
+                            report_error: /dataset\/errors\?id=([a-f0-9]+)/,
+                            rerun: /tool_runner\/rerun\?id=([a-f0-9]+)/,
+                            show_params: /datasets\/([a-f0-9]+)\/show_params/
+                            // no great way to do this here? (leave it in the dataset event handlers above?)
+                            // 'visualization' : 'visualization',
+                        };
+                        _.find(useToURLRegexMap, function(regex, use) {
+                            // grab the more specific match result (1), save, and use it as the find flag
+                            hdaId = _.result(pathToMatch.match(regex), 1);
+                            return hdaId;
+                        });
+                        // need to type mangle to go from web route to history contents
+                        this._setCurrentContentById(hdaId ? "dataset-" + hdaId : null);
+                    },
+                    // when the center panel is given a new view, clear the current indicator
+                    "center-panel:load": function centerPanelLoad(view) {
+                        this._setCurrentContentById();
+                    }
+                });
+            },
+
+            //TODO: remove quota meter from panel and remove this
+            /** add listeners to an external quota meter (mvc/user/user-quotameter.js) */
+            connectToQuotaMeter: function connectToQuotaMeter(quotaMeter) {
+                if (!quotaMeter) {
+                    return this;
+                }
+                // show/hide the 'over quota message' in the history when the meter tells it to
+                this.listenTo(quotaMeter, "quota:over", this.showQuotaMessage);
+                this.listenTo(quotaMeter, "quota:under", this.hideQuotaMessage);
+
+                // having to add this to handle re-render of hview while overquota (the above do not fire)
+                this.on("rendered rendered:initial", function() {
+                    if (quotaMeter && quotaMeter.isOverQuota()) {
+                        this.showQuotaMessage();
+                    }
+                });
+                return this;
+            },
+
+            /** Override to preserve the quota message */
+            clearMessages: function clearMessages(ev) {
+                var $target = !_.isUndefined(ev) ? $(ev.currentTarget) : this.$messages().children('[class$="message"]');
+                $target = $target.not(".quota-message");
+                $target.fadeOut(this.fxSpeed, function() {
+                    $(this).remove();
+                });
+                return this;
+            },
+
+            /** Show the over quota message (which happens to be in the history panel).
+             */
+            showQuotaMessage: function showQuotaMessage() {
+                var $msg = this.$(".quota-message");
+                if ($msg.is(":hidden")) {
+                    $msg.slideDown(this.fxSpeed);
+                }
+            },
+
+            /** Hide the over quota message (which happens to be in the history panel).
+             */
+            hideQuotaMessage: function hideQuotaMessage() {
+                var $msg = this.$(".quota-message");
+                if (!$msg.is(":hidden")) {
+                    $msg.slideUp(this.fxSpeed);
+                }
+            },
+
+            // ........................................................................ options menu
+            //TODO: remove to batch
+            /** unhide any hidden datasets */
+            unhideHidden: function unhideHidden() {
+                var self = this;
+                if (confirm((0, _localization2.default)("Really unhide all hidden datasets?"))) {
+                    // get all hidden, regardless of deleted/purged
+                    return self.model.contents._filterAndUpdate({
+                        visible: false,
+                        deleted: "",
+                        purged: ""
+                    }, {
+                        visible: true
+                    }).done(function() {
+                        // TODO: would be better to render these as they're unhidden instead of all at once
+                        if (!self.model.contents.includeHidden) {
+                            self.renderItems();
+                        }
+                    });
+                }
+                return jQuery.when();
+            },
+
+            /** delete any hidden datasets */
+            deleteHidden: function deleteHidden() {
+                var self = this;
+                if (confirm((0, _localization2.default)("Really delete all hidden datasets?"))) {
+                    return self.model.contents._filterAndUpdate(
+                        // get all hidden, regardless of deleted/purged
+                        {
+                            visible: false,
+                            deleted: "",
+                            purged: ""
+                        },
+                        // both delete *and* unhide them
+                        {
+                            deleted: true,
+                            visible: true
+                        });
+                }
+                return jQuery.when();
+            },
+
+            /** Return a string rep of the history */
+            toString: function toString() {
+                return "CurrentHistoryView(" + (this.model ? this.model.get("name") : "") + ")";
+            }
+        });
+
+    //------------------------------------------------------------------------------ TEMPLATES
+    CurrentHistoryView.prototype.templates = function() {
+        var quotaMsgTemplate = _baseMvc2.default.wrapTemplate(['<div class="quota-message errormessage">', (0, _localization2.default)("You are over your disk quota"), ". ", (0, _localization2.default)("Tool execution is on hold until your disk usage drops below your allocated quota"), ".", "</div>"], "history");
+        return _.extend(_.clone(_super.prototype.templates), {
+            quotaMsg: quotaMsgTemplate
+        });
+    }();
+
+    //==============================================================================
+    exports.default = {
+        CurrentHistoryView: CurrentHistoryView
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/history/history-view-edit-current.js.map

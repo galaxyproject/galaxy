@@ -1,2 +1,297 @@
-define("mvc/ui/ui-buttons",["exports","utils/utils"],function(t,i){"use strict";Object.defineProperty(t,"__esModule",{value:!0});var e=function(t){return t&&t.__esModule?t:{default:t}}(i),s=Backbone.View.extend({initialize:function(t){this.model=t&&t.model||new Backbone.Model({id:e.default.uid(),title:"",icon:"",cls:"btn btn-default",wait:!1,wait_text:"Sending...",wait_cls:"btn btn-info",disabled:!1,percentage:-1}).set(t),this.setElement($("<button/>").attr("type","button").append(this.$icon=$("<i/>")).append(this.$title=$("<span/>")).append(this.$progress=$("<div/>").append(this.$progress_bar=$("<div/>")))),this.listenTo(this.model,"change",this.render,this),this.render()},render:function(){var t=this,i=this.model.attributes;this.$el.removeClass().addClass("ui-button-default").addClass(i.disabled&&"disabled").attr("id",i.id).attr("disabled",i.disabled).off("click").on("click",function(){$(".tooltip").hide(),i.onclick&&!t.disabled&&i.onclick()}).tooltip({title:i.tooltip,placement:"bottom"}),this.$progress.addClass("progress").css("display",-1!==i.percentage?"block":"none"),this.$progress_bar.addClass("progress-bar").css({width:i.percentage+"%"}),this.$icon.removeClass().addClass("icon fa"),this.$title.removeClass().addClass("title"),i.wait?(this.$el.addClass(i.wait_cls).prop("disabled",!0),this.$icon.addClass("fa-spinner fa-spin ui-margin-right"),this.$title.html(i.wait_text)):(this.$el.addClass(i.cls),this.$icon.addClass(i.icon),this.$title.html(i.title),i.icon&&i.title&&this.$icon.addClass("ui-margin-right"))},show:function(){this.$el.show()},hide:function(){this.$el.hide()},disable:function(){this.model.set("disabled",!0)},enable:function(){this.model.set("disabled",!1)},wait:function(){this.model.set("wait",!0)},unwait:function(){this.model.set("wait",!1)},setIcon:function(t){this.model.set("icon",t)}}),l=s.extend({initialize:function(t){this.model=t&&t.model||new Backbone.Model({id:e.default.uid(),title:"",icon:"",cls:""}).set(t),this.setElement($("<a/>").append(this.$icon=$("<span/>"))),this.listenTo(this.model,"change",this.render,this),this.render()},render:function(){var t=this.model.attributes;this.$el.removeClass().addClass(t.cls).attr({id:t.id,href:t.href||"javascript:void(0)",title:t.title,target:t.target||"_top",disabled:t.disabled}).tooltip({placement:"bottom"}).off("click").on("click",function(){t.onclick&&!t.disabled&&t.onclick()}),this.$icon.removeClass().addClass(t.icon)}}),n=Backbone.View.extend({initialize:function(t){this.model=t&&t.model||new Backbone.Model({id:e.default.uid(),title:"Select/Unselect all",icons:["fa-square-o","fa-minus-square-o","fa-check-square-o"],value:0,onchange:function(){}}).set(t),this.setElement($("<div/>").append(this.$icon=$("<span/>")).append(this.$title=$("<span/>"))),this.listenTo(this.model,"change",this.render,this),this.render()},render:function(t){var i=this,t=this.model.attributes;this.$el.addClass("ui-button-check").off("click").on("click",function(){i.model.set("value",0===i.model.get("value")&&2||0),t.onclick&&t.onclick()}),this.$title.html(t.title),this.$icon.removeClass().addClass("icon fa ui-margin-right").addClass(t.icons[t.value])},value:function(t,i){return void 0!==t&&(i&&0!==t&&(t=t!==i&&1||2),this.model.set("value",t),this.model.get("onchange")(this.model.get("value"))),this.model.get("value")}}),o=s.extend({initialize:function(t){this.model=t&&t.model||new Backbone.Model({id:e.default.uid(),title:"",icon:"",cls:"ui-button-icon",disabled:!1}).set(t),this.setElement($("<div/>").append(this.$button=$("<div/>").append(this.$icon=$("<i/>")).append(this.$title=$("<span/>")))),this.listenTo(this.model,"change",this.render,this),this.render()},render:function(t){var t=this.model.attributes;this.$el.removeClass().addClass(t.cls).addClass(t.disabled&&"disabled").attr("disabled",t.disabled).attr("id",t.id).off("click").on("click",function(){$(".tooltip").hide(),!t.disabled&&t.onclick&&t.onclick()}),this.$button.addClass("button").tooltip({title:t.tooltip,placement:"bottom"}),this.$icon.removeClass().addClass("icon fa").addClass(t.icon),this.$title.addClass("title").html(t.title),t.icon&&t.title&&this.$icon.addClass("ui-margin-right")}}),d=s.extend({$menu:null,initialize:function(t){this.model=t&&t.model||new Backbone.Model({id:"",title:"",pull:"right",icon:null,onclick:null,cls:"ui-button-icon ui-button-menu",tooltip:"",target:"",href:"",onunload:null,visible:!0,tag:""}).set(t),this.collection=new Backbone.Collection,this.setElement($("<div/>").append(this.$root=$("<div/>").append(this.$icon=$("<i/>")).append(this.$title=$("<span/>")))),this.listenTo(this.model,"change",this.render,this),this.listenTo(this.collection,"change add remove reset",this.render,this),this.render()},render:function(){var t=this,i=this.model.attributes;this.$el.removeClass().addClass("dropdown").addClass(i.cls).attr("id",i.id).css({display:i.visible&&this.collection.where({visible:!0}).length>0?"block":"none"}),this.$root.addClass("root button dropdown-toggle").attr("data-toggle","dropdown").tooltip({title:i.tooltip,placement:"bottom"}).off("click").on("click",function(t){$(".tooltip").hide(),t.preventDefault(),i.onclick&&i.onclick()}),this.$icon.removeClass().addClass("icon fa").addClass(i.icon),this.$title.removeClass().addClass("title").html(i.title),i.icon&&i.title&&this.$icon.addClass("ui-margin-right"),this.$menu&&this.$menu.remove(),this.collection.length>0&&(this.$menu=$("<ul/>").addClass("menu dropdown-menu").addClass("pull-"+t.model.get("pull")).attr("role","menu"),this.$el.append(this.$menu)),this.collection.each(function(i){var e=i.attributes;if(e.visible){var s=$("<a/>").addClass("dropdown-item").attr({href:e.href,target:e.target}).append($("<i/>").addClass("fa").addClass(e.icon).css("display",e.icon?"inline-block":"none")).append(e.title).on("click",function(t){e.onclick&&(t.preventDefault(),e.onclick())});t.$menu.append($("<li/>").append(s)),e.divider&&t.$menu.append($("<li/>").addClass("divider"))}})},addMenu:function(t){this.collection.add(e.default.merge(t,{title:"",target:"",href:"",onclick:null,divider:!1,visible:!0,icon:null,cls:"button-menu btn-group"}))}});t.default={ButtonDefault:s,ButtonLink:l,ButtonIcon:o,ButtonCheck:n,ButtonMenu:d}});
+define("mvc/ui/ui-buttons", ["exports", "utils/utils"], function(exports, _utils) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /** This renders the default button which is used e.g. at the bottom of the upload modal. */
+    var ButtonDefault = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.model = options && options.model || new Backbone.Model({
+                id: _utils2.default.uid(),
+                title: "",
+                icon: "",
+                cls: "btn btn-default",
+                wait: false,
+                wait_text: "Sending...",
+                wait_cls: "btn btn-info",
+                disabled: false,
+                percentage: -1
+            }).set(options);
+            this.setElement($("<button/>").attr("type", "button").append(this.$icon = $("<i/>")).append(this.$title = $("<span/>")).append(this.$progress = $("<div/>").append(this.$progress_bar = $("<div/>"))));
+            this.listenTo(this.model, "change", this.render, this);
+            this.render();
+        },
+
+        render: function render() {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.removeClass().addClass("ui-button-default").addClass(options.disabled && "disabled").attr("id", options.id).attr("disabled", options.disabled).off("click").on("click", function() {
+                $(".tooltip").hide();
+                options.onclick && !self.disabled && options.onclick();
+            }).tooltip({
+                title: options.tooltip,
+                placement: "bottom"
+            });
+            this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
+            this.$progress_bar.addClass("progress-bar").css({
+                width: options.percentage + "%"
+            });
+            this.$icon.removeClass().addClass("icon fa");
+            this.$title.removeClass().addClass("title");
+            if (options.wait) {
+                this.$el.addClass(options.wait_cls).prop("disabled", true);
+                this.$icon.addClass("fa-spinner fa-spin ui-margin-right");
+                this.$title.html(options.wait_text);
+            } else {
+                this.$el.addClass(options.cls);
+                this.$icon.addClass(options.icon);
+                this.$title.html(options.title);
+                options.icon && options.title && this.$icon.addClass("ui-margin-right");
+            }
+        },
+
+        /** Show button */
+        show: function show() {
+            this.$el.show();
+        },
+
+        /** Hide button */
+        hide: function hide() {
+            this.$el.hide();
+        },
+
+        /** Disable button */
+        disable: function disable() {
+            this.model.set("disabled", true);
+        },
+
+        /** Enable button */
+        enable: function enable() {
+            this.model.set("disabled", false);
+        },
+
+        /** Show spinner to indicate that the button is not ready to be clicked */
+        wait: function wait() {
+            this.model.set("wait", true);
+        },
+
+        /** Hide spinner to indicate that the button is ready to be clicked */
+        unwait: function unwait() {
+            this.model.set("wait", false);
+        },
+
+        /** Change icon */
+        setIcon: function setIcon(icon) {
+            this.model.set("icon", icon);
+        }
+    });
+
+    /** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons. */
+    /** This module contains all button views. */
+    var ButtonLink = ButtonDefault.extend({
+        initialize: function initialize(options) {
+            this.model = options && options.model || new Backbone.Model({
+                id: _utils2.default.uid(),
+                title: "",
+                icon: "",
+                cls: ""
+            }).set(options);
+            this.setElement($("<a/>").append(this.$icon = $("<span/>")));
+            this.listenTo(this.model, "change", this.render, this);
+            this.render();
+        },
+
+        render: function render() {
+            var options = this.model.attributes;
+            this.$el.removeClass().addClass(options.cls).attr({
+                id: options.id,
+                href: options.href || "javascript:void(0)",
+                title: options.title,
+                target: options.target || "_top",
+                disabled: options.disabled
+            }).tooltip({
+                placement: "bottom"
+            }).off("click").on("click", function() {
+                options.onclick && !options.disabled && options.onclick();
+            });
+            this.$icon.removeClass().addClass(options.icon);
+        }
+    });
+
+    /** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected. */
+    var ButtonCheck = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.model = options && options.model || new Backbone.Model({
+                id: _utils2.default.uid(),
+                title: "Select/Unselect all",
+                icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
+                value: 0,
+                onchange: function onchange() {}
+            }).set(options);
+            this.setElement($("<div/>").append(this.$icon = $("<span/>")).append(this.$title = $("<span/>")));
+            this.listenTo(this.model, "change", this.render, this);
+            this.render();
+        },
+
+        render: function render(options) {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.addClass("ui-button-check").off("click").on("click", function() {
+                self.model.set("value", self.model.get("value") === 0 && 2 || 0);
+                options.onclick && options.onclick();
+            });
+            this.$title.html(options.title);
+            this.$icon.removeClass().addClass("icon fa ui-margin-right").addClass(options.icons[options.value]);
+        },
+
+        /* Sets a new value and/or returns the value.
+         * @param{Integer}   new_val - Set a new value 0=unchecked, 1=partial and 2=checked.
+         * OR:
+         * @param{Integer}   new_val - Number of selected options.
+         * @param{Integer}   total   - Total number of available options.
+         */
+        value: function value(new_val, total) {
+            if (new_val !== undefined) {
+                if (total && new_val !== 0) {
+                    new_val = new_val !== total && 1 || 2;
+                }
+                this.model.set("value", new_val);
+                this.model.get("onchange")(this.model.get("value"));
+            }
+            return this.model.get("value");
+        }
+    });
+
+    /** This renders a differently styled, more compact button version. */
+    var ButtonIcon = ButtonDefault.extend({
+        initialize: function initialize(options) {
+            this.model = options && options.model || new Backbone.Model({
+                id: _utils2.default.uid(),
+                title: "",
+                icon: "",
+                cls: "ui-button-icon",
+                disabled: false
+            }).set(options);
+            this.setElement($("<div/>").append(this.$button = $("<div/>").append(this.$icon = $("<i/>")).append(this.$title = $("<span/>"))));
+            this.listenTo(this.model, "change", this.render, this);
+            this.render();
+        },
+
+        render: function render(options) {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.removeClass().addClass(options.cls).addClass(options.disabled && "disabled").attr("disabled", options.disabled).attr("id", options.id).off("click").on("click", function() {
+                $(".tooltip").hide();
+                !options.disabled && options.onclick && options.onclick();
+            });
+            this.$button.addClass("button").tooltip({
+                title: options.tooltip,
+                placement: "bottom"
+            });
+            this.$icon.removeClass().addClass("icon fa").addClass(options.icon);
+            this.$title.addClass("title").html(options.title);
+            options.icon && options.title && this.$icon.addClass("ui-margin-right");
+        }
+    });
+
+    /** This class creates a button with dropdown menu. */
+    var ButtonMenu = ButtonDefault.extend({
+        $menu: null,
+        initialize: function initialize(options) {
+            this.model = options && options.model || new Backbone.Model({
+                id: "",
+                title: "",
+                pull: "right",
+                icon: null,
+                onclick: null,
+                cls: "ui-button-icon ui-button-menu",
+                tooltip: "",
+                target: "",
+                href: "",
+                onunload: null,
+                visible: true,
+                tag: ""
+            }).set(options);
+            this.collection = new Backbone.Collection();
+            this.setElement($("<div/>").append(this.$root = $("<div/>").append(this.$icon = $("<i/>")).append(this.$title = $("<span/>"))));
+            this.listenTo(this.model, "change", this.render, this);
+            this.listenTo(this.collection, "change add remove reset", this.render, this);
+            this.render();
+        },
+
+        render: function render() {
+            var self = this;
+            var options = this.model.attributes;
+            this.$el.removeClass().addClass("dropdown").addClass(options.cls).attr("id", options.id).css({
+                display: options.visible && this.collection.where({
+                    visible: true
+                }).length > 0 ? "block" : "none"
+            });
+            this.$root.addClass("root button dropdown-toggle").attr("data-toggle", "dropdown").tooltip({
+                title: options.tooltip,
+                placement: "bottom"
+            }).off("click").on("click", function(e) {
+                $(".tooltip").hide();
+                e.preventDefault();
+                options.onclick && options.onclick();
+            });
+            this.$icon.removeClass().addClass("icon fa").addClass(options.icon);
+            this.$title.removeClass().addClass("title").html(options.title);
+            options.icon && options.title && this.$icon.addClass("ui-margin-right");
+            this.$menu && this.$menu.remove();
+            if (this.collection.length > 0) {
+                this.$menu = $("<ul/>").addClass("menu dropdown-menu").addClass("pull-" + self.model.get("pull")).attr("role", "menu");
+                this.$el.append(this.$menu);
+            }
+            this.collection.each(function(submodel) {
+                var suboptions = submodel.attributes;
+                if (suboptions.visible) {
+                    var $link = $("<a/>").addClass("dropdown-item").attr({
+                        href: suboptions.href,
+                        target: suboptions.target
+                    }).append($("<i/>").addClass("fa").addClass(suboptions.icon).css("display", suboptions.icon ? "inline-block" : "none")).append(suboptions.title).on("click", function(e) {
+                        if (suboptions.onclick) {
+                            e.preventDefault();
+                            suboptions.onclick();
+                        }
+                    });
+                    self.$menu.append($("<li/>").append($link));
+                    suboptions.divider && self.$menu.append($("<li/>").addClass("divider"));
+                }
+            });
+        },
+
+        /** Add a new menu item */
+        addMenu: function addMenu(options) {
+            this.collection.add(_utils2.default.merge(options, {
+                title: "",
+                target: "",
+                href: "",
+                onclick: null,
+                divider: false,
+                visible: true,
+                icon: null,
+                cls: "button-menu btn-group"
+            }));
+        }
+    });
+
+    exports.default = {
+        ButtonDefault: ButtonDefault,
+        ButtonLink: ButtonLink,
+        ButtonIcon: ButtonIcon,
+        ButtonCheck: ButtonCheck,
+        ButtonMenu: ButtonMenu
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-buttons.js.map

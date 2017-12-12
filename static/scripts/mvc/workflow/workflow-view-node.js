@@ -1,2 +1,138 @@
-define("mvc/workflow/workflow-view-node",["exports","libs/underscore","mvc/workflow/workflow-view-terminals","mvc/workflow/workflow-view-data"],function(t,e,i,n){"use strict";function o(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});var l=function(t){if(t&&t.__esModule)return t;var e={};if(null!=t)for(var i in t)Object.prototype.hasOwnProperty.call(t,i)&&(e[i]=t[i]);return e.default=t,e}(e),a=o(i),u=o(n);t.default=Backbone.View.extend({initialize:function(t){this.node=t.node,this.output_width=Math.max(150,this.$el.width()),this.tool_body=this.$el.find(".toolFormBody"),this.tool_body.find("div").remove(),this.newInputsDiv().appendTo(this.tool_body),this.terminalViews={},this.outputViews={}},render:function(){this.renderToolLabel(),this.renderToolErrors(),this.$el.css("width",Math.min(250,Math.max(this.$el.width(),this.output_width)))},renderToolLabel:function(){this.$(".nodeTitle").text(this.node.label||this.node.name)},renderToolErrors:function(){this.node.errors?this.$el.addClass("tool-node-error"):this.$el.removeClass("tool-node-error")},newInputsDiv:function(){return $("<div/>").addClass("inputs")},updateMaxWidth:function(t){this.output_width=Math.max(this.output_width,t)},addRule:function(){this.tool_body.append($("<div/>").addClass("rule"))},addDataInput:function(t,e){var i=!0;e||(e=this.$(".inputs"),i=!1);var n=this.terminalViews[t.name],o="dataset_collection"==t.input_type?a.default.InputCollectionTerminalView:a.default.InputTerminalView;if(!n||n instanceof o||(n.el.terminal.destroy(),n=null),n){var l=n.el.terminal;l.update(t),l.destroyInvalidConnections()}else n=new o({node:this.node,input:t});this.terminalViews[t.name]=n;var r=n.el,d=new u.default.DataInputView({terminalElement:r,input:t,nodeView:this,skipResize:i}).$el;return e.append(d.prepend(n.terminalElements())),n},addDataOutput:function(t){var e=new(t.collection?a.default.OutputCollectionTerminalView:a.default.OutputTerminalView)({node:this.node,output:t}),i=new u.default.DataOutputView({output:t,terminalElement:e.el,nodeView:this});this.outputViews[t.name]=i,this.tool_body.append(i.$el.append(e.terminalElements()))},redrawWorkflowOutputs:function(){l.each(this.outputViews,function(t){t.redrawWorkflowOutput()})},updateDataOutput:function(t){this.node.output_terminals[t.name].update(t)}})});
+define("mvc/workflow/workflow-view-node", ["exports", "libs/underscore", "mvc/workflow/workflow-view-terminals", "mvc/workflow/workflow-view-data"], function(exports, _underscore, _workflowViewTerminals, _workflowViewData) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    var _workflowViewTerminals2 = _interopRequireDefault(_workflowViewTerminals);
+
+    var _workflowViewData2 = _interopRequireDefault(_workflowViewData);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    exports.default = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.node = options.node;
+            this.output_width = Math.max(150, this.$el.width());
+            this.tool_body = this.$el.find(".toolFormBody");
+            this.tool_body.find("div").remove();
+            this.newInputsDiv().appendTo(this.tool_body);
+            this.terminalViews = {};
+            this.outputViews = {};
+        },
+
+        render: function render() {
+            this.renderToolLabel();
+            this.renderToolErrors();
+            this.$el.css("width", Math.min(250, Math.max(this.$el.width(), this.output_width)));
+        },
+
+        renderToolLabel: function renderToolLabel() {
+            this.$(".nodeTitle").text(this.node.label || this.node.name);
+        },
+
+        renderToolErrors: function renderToolErrors() {
+            this.node.errors ? this.$el.addClass("tool-node-error") : this.$el.removeClass("tool-node-error");
+        },
+
+        newInputsDiv: function newInputsDiv() {
+            return $("<div/>").addClass("inputs");
+        },
+
+        updateMaxWidth: function updateMaxWidth(newWidth) {
+            this.output_width = Math.max(this.output_width, newWidth);
+        },
+
+        addRule: function addRule() {
+            this.tool_body.append($("<div/>").addClass("rule"));
+        },
+
+        addDataInput: function addDataInput(input, body) {
+            var skipResize = true;
+            if (!body) {
+                body = this.$(".inputs");
+                // initial addition to node - resize input to help calculate node
+                // width.
+                skipResize = false;
+            }
+            var terminalView = this.terminalViews[input.name];
+            var terminalViewClass = input.input_type == "dataset_collection" ? _workflowViewTerminals2.default.InputCollectionTerminalView : _workflowViewTerminals2.default.InputTerminalView;
+            if (terminalView && !(terminalView instanceof terminalViewClass)) {
+                terminalView.el.terminal.destroy();
+                terminalView = null;
+            }
+            if (!terminalView) {
+                terminalView = new terminalViewClass({
+                    node: this.node,
+                    input: input
+                });
+            } else {
+                var terminal = terminalView.el.terminal;
+                terminal.update(input);
+                terminal.destroyInvalidConnections();
+            }
+            this.terminalViews[input.name] = terminalView;
+            var terminalElement = terminalView.el;
+            var inputView = new _workflowViewData2.default.DataInputView({
+                terminalElement: terminalElement,
+                input: input,
+                nodeView: this,
+                skipResize: skipResize
+            });
+            var ib = inputView.$el;
+            body.append(ib.prepend(terminalView.terminalElements()));
+            return terminalView;
+        },
+
+        addDataOutput: function addDataOutput(output) {
+            var terminalViewClass = output.collection ? _workflowViewTerminals2.default.OutputCollectionTerminalView : _workflowViewTerminals2.default.OutputTerminalView;
+            var terminalView = new terminalViewClass({
+                node: this.node,
+                output: output
+            });
+            var outputView = new _workflowViewData2.default.DataOutputView({
+                output: output,
+                terminalElement: terminalView.el,
+                nodeView: this
+            });
+            this.outputViews[output.name] = outputView;
+            this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
+        },
+
+        redrawWorkflowOutputs: function redrawWorkflowOutputs() {
+            _.each(this.outputViews, function(outputView) {
+                outputView.redrawWorkflowOutput();
+            });
+        },
+
+        updateDataOutput: function updateDataOutput(output) {
+            var outputTerminal = this.node.output_terminals[output.name];
+            outputTerminal.update(output);
+        }
+    });
+});
 //# sourceMappingURL=../../../maps/mvc/workflow/workflow-view-node.js.map

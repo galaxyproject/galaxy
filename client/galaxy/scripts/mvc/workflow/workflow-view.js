@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
@@ -296,7 +297,7 @@ export default Backbone.View.extend({
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflow/run?id=${self.options.id}`;
+                    window.location = `${Galaxy.root}workflows/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
@@ -502,14 +503,14 @@ export default Backbone.View.extend({
                 var copy = new Ui.ButtonIcon({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
-                    tooltip: "Copy and insert individual steps",
+                    tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
-                                title: "Warning",
+                                title: _l("Warning"),
                                 body: `This will copy ${workflow.step_count} new steps into your workflow.`,
                                 buttons: {
                                     Cancel: function() {
@@ -763,6 +764,15 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
+        if (type !== "subworkflow") {
+            buttons.append(
+                $("<div/>")
+                    .addClass("fa-icon-button fa fa-files-o")
+                    .click(e => {
+                        node.clone();
+                    })
+            );
+        }
         buttons.append(
             $("<div/>")
                 .addClass("fa-icon-button fa fa-times")

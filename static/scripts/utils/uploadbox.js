@@ -1,2 +1,322 @@
-define("utils/uploadbox",[],function(){"use strict";!function(e){jQuery.event.props.push("dataTransfer"),e.uploadpost=function(n){var r=e.extend({},{data:{},success:function(){},error:function(){},progress:function(){},url:null,maxfilesize:2048,error_filesize:"File exceeds 2GB. Please use a FTP client.",error_default:"Please make sure the file is available.",error_server:"Upload request failed.",error_login:"Uploads require you to log in."},n),t=r.data;if(t.error_message)r.error(t.error_message);else{var o=new FormData;for(var a in t.payload)o.append(a,t.payload[a]);var i=0;for(var a in t.files){var s=t.files[a];o.append(s.name,s.file,s.file.name),i+=s.file.size}if(i>1048576*r.maxfilesize)r.error(r.error_filesize);else{var u=new XMLHttpRequest;u.open("POST",r.url,!0),u.setRequestHeader("Accept","application/json"),u.setRequestHeader("Cache-Control","no-cache"),u.setRequestHeader("X-Requested-With","XMLHttpRequest"),u.onreadystatechange=function(){if(u.readyState==u.DONE){var e=null,n="";if(u.responseText)try{e=jQuery.parseJSON(u.responseText),n=e.err_msg}catch(r){e=u.responseText,n=e}if(u.status<200||u.status>299){var t=u.statusText;403==u.status?t=r.error_login:0==u.status?t=r.error_server:t||(t=r.error_default),r.error(t+" ("+u.status+"). "+n)}else r.success(e)}},u.upload.addEventListener("progress",function(e){e.lengthComputable&&r.progress(Math.round(100*e.loaded/e.total))},!1),Galaxy.emit.debug("uploadbox::uploadpost()","Posting following data.",r),u.send(o)}}},e.fn.uploadinput=function(n){var r=this,t=e.extend({},{ondragover:function(){},ondragleave:function(){},onchange:function(){},multiple:!1},n),o=e('<input type="file" style="display: none" '+(t.multiple&&"multiple"||"")+"/>");return r.append(o.change(function(n){t.onchange(n.target.files),e(this).val("")})),r.on("drop",function(e){t.ondragleave(e),e.dataTransfer&&(t.onchange(e.dataTransfer.files),e.preventDefault())}),r.on("dragover",function(e){e.preventDefault(),t.ondragover(e)}),r.on("dragleave",function(e){e.stopPropagation(),t.ondragleave(e)}),{dialog:function(){o.trigger("click")}}},e.fn.uploadbox=function(n){function r(e){if(e&&e.length&&!l){var n=void 0;return _.each(e,function(e,n){"new"!==e.mode&&_.filter(i,function(n){return n.name===e.name&&n.size===e.size}).length&&(e.duplicate=!0)}),_.each(e,function(e){e.duplicate||(n=String(s++),i[n]=e,a.announce(n,i[n]),u++)}),n}}function t(e){i[e]&&(delete i[e],u--)}function o(){if(0==u||c)return c=!1,l=!1,void a.complete();l=!0;var n=-1;for(var r in i){n=r;break}i[n];t(n),e.uploadpost({url:a.url,data:a.initialize(n),success:function(e){a.success(n,e),o()},error:function(e){a.error(n,e),o()},progress:function(e){a.progress(n,e)}})}var a=e.extend({},{dragover:function(){},dragleave:function(){},announce:function(e){},initialize:function(e){},progress:function(e,n){},success:function(e,n){},error:function(e,n){alert(n)},complete:function(){}},n),i={},s=0,u=0,l=!1,c=!1,f=e(this).uploadinput({multiple:!0,onchange:function(e){r(e)},ondragover:n.ondragover,ondragleave:n.ondragleave});return{select:function(){f.dialog()},add:r,remove:t,start:function(){l||(l=!0,o())},stop:function(){c=!0},reset:function(e){for(e in i)t(e)},configure:function(n){return a=e.extend({},a,n)},compatible:function(){return window.File&&window.FormData&&window.XMLHttpRequest&&window.FileList}}}}(jQuery)});
+define("utils/uploadbox", [], function() {
+    "use strict";
+
+    /*
+        galaxy upload plugins - requires FormData and XMLHttpRequest
+    */
+    (function($) {
+        // add event properties
+        jQuery.event.props.push("dataTransfer");
+
+        /**
+            Posts file data to the API
+        */
+        $.uploadpost = function(config) {
+            // parse options
+            var cnf = $.extend({}, {
+                data: {},
+                success: function success() {},
+                error: function error() {},
+                progress: function progress() {},
+                url: null,
+                maxfilesize: 2048,
+                error_filesize: "File exceeds 2GB. Please use a FTP client.",
+                error_default: "Please make sure the file is available.",
+                error_server: "Upload request failed.",
+                error_login: "Uploads require you to log in."
+            }, config);
+
+            // link data
+            var data = cnf.data;
+
+            // check errors
+            if (data.error_message) {
+                cnf.error(data.error_message);
+                return;
+            }
+
+            // construct form data
+            var form = new FormData();
+            for (var key in data.payload) {
+                form.append(key, data.payload[key]);
+            }
+
+            // add files to submission
+            var sizes = 0;
+            for (var key in data.files) {
+                var d = data.files[key];
+                form.append(d.name, d.file, d.file.name);
+                sizes += d.file.size;
+            }
+
+            // check file size, unless it's an ftp file
+            if (sizes > 1048576 * cnf.maxfilesize) {
+                cnf.error(cnf.error_filesize);
+                return;
+            }
+
+            // prepare request
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", cnf.url, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Cache-Control", "no-cache");
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+            // captures state changes
+            xhr.onreadystatechange = function() {
+                // check for request completed, server connection closed
+                if (xhr.readyState == xhr.DONE) {
+                    // parse response
+                    var response = null;
+                    var extra_info = "";
+                    if (xhr.responseText) {
+                        try {
+                            response = jQuery.parseJSON(xhr.responseText);
+                            extra_info = response.err_msg;
+                        } catch (e) {
+                            response = xhr.responseText;
+                            extra_info = response;
+                        }
+                    }
+                    // pass any error to the error option
+                    if (xhr.status < 200 || xhr.status > 299) {
+                        var text = xhr.statusText;
+                        if (xhr.status == 403) {
+                            text = cnf.error_login;
+                        } else if (xhr.status == 0) {
+                            text = cnf.error_server;
+                        } else if (!text) {
+                            text = cnf.error_default;
+                        }
+                        cnf.error(text + " (" + xhr.status + "). " + extra_info);
+                    } else {
+                        cnf.success(response);
+                    }
+                }
+            };
+
+            // prepare upload progress
+            xhr.upload.addEventListener("progress", function(e) {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                }
+            }, false);
+
+            // send request
+            Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
+            xhr.send(form);
+        };
+
+        /**
+            Handles the upload events drag/drop etc.
+        */
+        $.fn.uploadinput = function(options) {
+            // initialize
+            var el = this;
+            var opts = $.extend({}, {
+                ondragover: function ondragover() {},
+                ondragleave: function ondragleave() {},
+                onchange: function onchange() {},
+                multiple: false
+            }, options);
+
+            // append hidden upload field
+            var $input = $("<input type=\"file\" style=\"display: none\" " + (opts.multiple && "multiple" || "") + "/>");
+            el.append($input.change(function(e) {
+                opts.onchange(e.target.files);
+                $(this).val("");
+            }));
+
+            // drag/drop events
+            el.on("drop", function(e) {
+                opts.ondragleave(e);
+                if (e.dataTransfer) {
+                    opts.onchange(e.dataTransfer.files);
+                    e.preventDefault();
+                }
+            });
+            el.on("dragover", function(e) {
+                e.preventDefault();
+                opts.ondragover(e);
+            });
+            el.on("dragleave", function(e) {
+                e.stopPropagation();
+                opts.ondragleave(e);
+            });
+
+            // exports
+            return {
+                dialog: function dialog() {
+                    $input.trigger("click");
+                }
+            };
+        };
+
+        /**
+            Handles the upload queue and events such as drag/drop etc.
+        */
+        $.fn.uploadbox = function(options) {
+            // parse options
+            var opts = $.extend({}, {
+                dragover: function dragover() {},
+                dragleave: function dragleave() {},
+                announce: function announce(d) {},
+                initialize: function initialize(d) {},
+                progress: function progress(d, m) {},
+                success: function success(d, m) {},
+                error: function error(d, m) {
+                    alert(m);
+                },
+                complete: function complete() {}
+            }, options);
+
+            // file queue
+            var queue = {};
+
+            // queue index/length counter
+            var queue_index = 0;
+            var queue_length = 0;
+
+            // indicates if queue is currently running
+            var queue_running = false;
+            var queue_stop = false;
+
+            // element
+            var uploadinput = $(this).uploadinput({
+                multiple: true,
+                onchange: function onchange(files) {
+                    add(files);
+                },
+                ondragover: options.ondragover,
+                ondragleave: options.ondragleave
+            });
+
+            // add new files to upload queue
+            function add(files) {
+                if (files && files.length && !queue_running) {
+                    var index = undefined;
+                    _.each(files, function(file, key) {
+                        if (file.mode !== "new" && _.filter(queue, function(f) {
+                                return f.name === file.name && f.size === file.size;
+                            }).length) {
+                            file.duplicate = true;
+                        }
+                    });
+                    _.each(files, function(file) {
+                        if (!file.duplicate) {
+                            index = String(queue_index++);
+                            queue[index] = file;
+                            opts.announce(index, queue[index]);
+                            queue_length++;
+                        }
+                    });
+                    return index;
+                }
+            }
+
+            // remove file from queue
+            function remove(index) {
+                if (queue[index]) {
+                    delete queue[index];
+                    queue_length--;
+                }
+            }
+
+            // process an upload, recursive
+            function process() {
+                // validate
+                if (queue_length == 0 || queue_stop) {
+                    queue_stop = false;
+                    queue_running = false;
+                    opts.complete();
+                    return;
+                } else {
+                    queue_running = true;
+                }
+
+                // get an identifier from the queue
+                var index = -1;
+                for (var key in queue) {
+                    index = key;
+                    break;
+                }
+
+                // get current file from queue
+                var file = queue[index];
+
+                // remove from queue
+                remove(index);
+
+                // create and submit data
+                $.uploadpost({
+                    url: opts.url,
+                    data: opts.initialize(index),
+                    success: function success(message) {
+                        opts.success(index, message);
+                        process();
+                    },
+                    error: function error(message) {
+                        opts.error(index, message);
+                        process();
+                    },
+                    progress: function progress(percentage) {
+                        opts.progress(index, percentage);
+                    }
+                });
+            }
+
+            /*
+                public interface
+            */
+
+            // open file browser for selection
+            function select() {
+                uploadinput.dialog();
+            }
+
+            // remove all entries from queue
+            function reset(index) {
+                for (index in queue) {
+                    remove(index);
+                }
+            }
+
+            // initiate upload process
+            function start() {
+                if (!queue_running) {
+                    queue_running = true;
+                    process();
+                }
+            }
+
+            // stop upload process
+            function stop() {
+                queue_stop = true;
+            }
+
+            // set options
+            function configure(options) {
+                opts = $.extend({}, opts, options);
+                return opts;
+            }
+
+            // verify browser compatibility
+            function compatible() {
+                return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
+            }
+
+            // export functions
+            return {
+                select: select,
+                add: add,
+                remove: remove,
+                start: start,
+                stop: stop,
+                reset: reset,
+                configure: configure,
+                compatible: compatible
+            };
+        };
+    })(jQuery);
+});
 //# sourceMappingURL=../../maps/utils/uploadbox.js.map

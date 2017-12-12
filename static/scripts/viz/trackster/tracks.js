@@ -1,2 +1,4688 @@
-define("viz/trackster/tracks",["exports","libs/underscore","viz/visualization","viz/viz_views","viz/trackster/util","viz/trackster/slotting","viz/trackster/painters","viz/trackster/filters","mvc/dataset/data","mvc/tool/tools","utils/config","viz/bbi-data-manager","ui/editable-text"],function(t,e,i,a,n,o,s,r,l,h,d,_){"use strict";function c(t){return t&&t.__esModule?t:{default:t}}function u(t,e){e||(e=0);var i=Math.pow(10,e);return Math.round(t*i)/i}function f(t){var e=$.Deferred();return $.ajax({type:"HEAD",url:t,beforeSend:function(t){t.setRequestHeader("Range","bytes=0-10")},success:function(t,i,a){e.resolve(206===a.status)}}),e}Object.defineProperty(t,"__esModule",{value:!0});var v=function(t){if(t&&t.__esModule)return t;var e={};if(null!=t)for(var i in t)Object.prototype.hasOwnProperty.call(t,i)&&(e[i]=t[i]);return e.default=t,e}(e),p=c(i),g=c(a),m=c(n),w=c(o),b=c(s),y=c(r),k=c(l),x=c(h),C=c(d),T=c(_),M=v.extend,z={},q=function(t,e){z[t.attr("id")]=e},S=function(t,e,i,a){i=".group",z[t.attr("id")]=a,t.bind("drag",{handle:"."+e,relative:!0},function(t,e){$(this);var a,n,o,s,r,l=$(this).parent(),h=l.children(".track,.group"),d=z[$(this).attr("id")];if(0!==(n=$(this).parents(i)).length){s=(o=n.position().top)+n.outerHeight();var _=z[n.attr("id")];if(e.offsetY<o)return $(this).insertBefore(n),_.remove_drawable(d),void _.container.add_drawable_before(d,_);if(e.offsetY>s)return $(this).insertAfter(n),_.remove_drawable(d),void _.container.add_drawable(d)}for(n=null,r=0;r<h.length;r++)if(a=$(h.get(r)),o=a.position().top,s=o+a.outerHeight(),a.is(i)&&this!==a.get(0)&&e.offsetY>=o&&e.offsetY<=s)return e.offsetY-o<s-e.offsetY?a.find(".content-div").prepend(this):a.find(".content-div").append(this),d.container&&d.container.remove_drawable(d),void z[a.attr("id")].add_drawable(d);for(r=0;r<h.length&&(a=$(h.get(r)),!(e.offsetY<a.position().top)||a.hasClass("reference-track")||a.hasClass("intro"));r++);r===h.length?this!==h.get(r-1)&&(l.append(this),z[l.attr("id")].move_drawable(d,r)):this!==h.get(r)&&($(this).insertBefore(h.get(r)),z[l.attr("id")].move_drawable(d,e.deltaY>0?r-1:r))}).bind("dragstart",function(){$(this).addClass("dragging")}).bind("dragend",function(){$(this).removeClass("dragging")})},A="A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",F=["Histogram","Line","Filled","Intensity"],D=function t(e,i,a){if(t.id_counter||(t.id_counter=0),this.id=t.id_counter++,this.view=e,this.container=i,this.drag_handle_class=a.drag_handle_class,this.is_overview=!1,this.action_icons={},this.config=C.default.ConfigSettingCollection.from_models_and_saved_values(this.config_params,a.prefs),this.config.get_value("name")||this.config.set_value("name",a.name),this.config_onchange&&this.config.on("change",this.config_onchange,this),this.container_div=this.build_container_div(),this.header_div=null,!1!==a.header){var n=new g.default.TrackHeaderView({model:this,id:this.id});this.header_div=n.$el,this.container_div.append(this.header_div);var o=n.icons_div;this.action_icons=n.action_icons,this.container_div.hover(function(){o.show()},function(){o.hide()})}};D.prototype.action_icons_def=[{name:"toggle_icon",title:"Hide/show content",css_class:"toggle",on_click_fn:function(t){t.config.get_value("content_visible")?(t.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle"),t.hide_contents(),t.config.set_value("content_visible",!1)):(t.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand"),t.config.set_value("content_visible",!0),t.show_contents())}},{name:"settings_icon",title:"Edit settings",css_class:"gear",on_click_fn:function(t){new C.default.ConfigSettingCollectionView({collection:t.config}).render_in_modal("Configure Track")}},{name:"remove_icon",title:"Remove",css_class:"remove-icon",on_click_fn:function(t){$(".tooltip").remove(),t.remove()}}],M(D.prototype,{config_params:[{key:"name",label:"Name",type:"text",default_value:""},{key:"content_visible",type:"bool",default_value:!0,hidden:!0}],config_onchange:function(){},init:function(){},changed:function(){this.view.changed()},can_draw:function(){return!(!this.enabled||!this.config.get_value("content_visible"))},request_draw:function(){},_draw:function(t){},to_dict:function(){},set_name:function(t){this.old_name=this.config.get_value("name"),this.config.set_value("name",t)},revert_name:function(){this.old_name&&this.config.set_value("name",this.old_name)},remove:function(){this.changed(),this.container.remove_drawable(this);var t=this.view;this.container_div.hide(0,function(){$(this).remove(),t.update_intro_div()})},build_container_div:function(){},update_icons:function(){},hide_contents:function(){},show_contents:function(){},get_drawables:function(){}});var V=function(t,e,i){D.call(this,t,e,i),this.obj_type=i.obj_type,this.drawables=[]};M(V.prototype,D.prototype,{unpack_drawables:function(t){this.drawables=[];for(var e,i=0;i<t.length;i++)e=et(t[i],this.view,this),this.add_drawable(e)},init:function(){for(var t=0;t<this.drawables.length;t++)this.drawables[t].init()},_draw:function(t){for(var e=0;e<this.drawables.length;e++)this.drawables[e]._draw(t)},to_dict:function(){for(var t=[],e=0;e<this.drawables.length;e++)t.push(this.drawables[e].to_dict());return{prefs:this.config.to_key_value_dict(),obj_type:this.obj_type,drawables:t}},add_drawable:function(t){this.drawables.push(t),t.container=this,this.changed()},add_drawable_before:function(t,e){this.changed();var i=this.drawables.indexOf(e);return-1!==i&&(this.drawables.splice(i,0,t),!0)},replace_drawable:function(t,e,i){var a=this.drawables.indexOf(t);return-1!==a&&(this.drawables[a]=e,i&&t.container_div.replaceWith(e.container_div),this.changed()),a},remove_drawable:function(t){var e=this.drawables.indexOf(t);return-1!==e&&(this.drawables.splice(e,1),t.container=null,this.changed(),!0)},move_drawable:function(t,e){var i=this.drawables.indexOf(t);return-1!==i&&(this.drawables.splice(i,1),this.drawables.splice(e,0,t),this.changed(),!0)},get_drawables:function(){return this.drawables},get_tracks:function(t){for(var e,i=this.drawables.slice(0),a=[];0!==i.length;)(e=i.shift())instanceof t?a.push(e):e.drawables&&(i=i.concat(e.drawables));return a}});var j=function(t,e,i){if(M(i,{obj_type:"DrawableGroup",drag_handle_class:"group-handle"}),V.call(this,t,e,i),this.content_div=$("<div/>").addClass("content-div").attr("id","group_"+this.id+"_content_div").appendTo(this.container_div),q(this.container_div,this),q(this.content_div,this),S(this.container_div,this.drag_handle_class,".group",this),this.filters_manager=new y.default.FiltersManager(this),this.header_div.after(this.filters_manager.parent_div),this.filters_manager.parent_div.after($("<div style='clear: both'/>")),this.saved_filters_managers=[],"drawables"in i&&this.unpack_drawables(i.drawables),"filters"in i){var a=this.filters_manager;this.filters_manager=new y.default.FiltersManager(this,i.filters),a.parent_div.replaceWith(this.filters_manager.parent_div),i.filters.visible&&this.setup_multitrack_filtering()}};M(j.prototype,D.prototype,V.prototype,{action_icons_def:[D.prototype.action_icons_def[0],D.prototype.action_icons_def[1],{name:"composite_icon",title:"Show composite track",css_class:"layers-stack",on_click_fn:function(t){$(".tooltip").remove(),t.show_composite_track()}},{name:"filters_icon",title:"Filters",css_class:"ui-slider-050",on_click_fn:function(t){t.filters_manager.visible()?(t.filters_manager.clear_filters(),t._restore_filter_managers()):(t.setup_multitrack_filtering(),t.request_draw({clear_tile_cache:!0})),t.filters_manager.toggle()}},D.prototype.action_icons_def[2]],build_container_div:function(){var t=$("<div/>").addClass("group").attr("id","group_"+this.id);return this.container&&this.container.content_div.append(t),t},hide_contents:function(){this.tiles_div.hide()},show_contents:function(){this.tiles_div.show(),this.request_draw()},update_icons:function(){var t=this.drawables.length;if(0===t)this.action_icons.composite_icon.hide(),this.action_icons.filters_icon.hide();else if(1===t)this.action_icons.composite_icon.toggle(this.drawables[0]instanceof E),this.action_icons.filters_icon.hide();else{var e,i,a,n=this.drawables[0].get_type(),o=0;for(e=0;e<t;e++){if((a=this.drawables[e]).get_type()!==n){can_composite=!1;break}a instanceof Z&&o++}if(this.drawables[0]instanceof W?this.action_icons.composite_icon.show():(this.action_icons.composite_icon.hide(),$(".tooltip").remove()),o>1&&o===this.drawables.length){var s,r={};for(a=this.drawables[0],i=0;i<a.filters_manager.filters.length;i++)r[(s=a.filters_manager.filters[i]).name]=[s];for(e=1;e<this.drawables.length;e++)for(a=this.drawables[e],i=0;i<a.filters_manager.filters.length;i++)(s=a.filters_manager.filters[i]).name in r&&r[s.name].push(s);this.filters_manager.remove_all();var l,h;for(var d in r)(l=r[d]).length===o&&(h=new y.default.NumberFilter({name:l[0].name,index:l[0].index}),this.filters_manager.add_filter(h));this.action_icons.filters_icon.toggle(this.filters_manager.filters.length>0)}else this.action_icons.filters_icon.hide()}},_restore_filter_managers:function(){for(var t=0;t<this.drawables.length;t++)this.drawables[t].filters_manager=this.saved_filters_managers[t];this.saved_filters_managers=[]},setup_multitrack_filtering:function(){if(this.filters_manager.filters.length>0){this.saved_filters_managers=[];for(var t=0;t<this.drawables.length;t++){var e=this.drawables[t];this.saved_filters_managers.push(e.filters_manager),e.filters_manager=this.filters_manager}}this.filters_manager.init_filters()},show_composite_track:function(){var t=new E(this.view,this.view,{name:this.config.get_value("name"),drawables:this.drawables});this.container.replace_drawable(this,t,!0);t.request_draw()},add_drawable:function(t){V.prototype.add_drawable.call(this,t),this.update_icons()},remove_drawable:function(t){V.prototype.remove_drawable.call(this,t),this.update_icons()},to_dict:function(){this.filters_manager.visible()&&this._restore_filter_managers();var t=M(V.prototype.to_dict.call(this),{filters:this.filters_manager.to_dict()});return this.filters_manager.visible()&&this.setup_multitrack_filtering(),t},request_draw:function(t){v.each(this.drawables,function(e){e.request_draw(t)})}});var G=Backbone.View.extend({initialize:function(t){M(t,{obj_type:"View"}),V.call(this,"View",t.container,t),this.chrom=null,this.vis_id=t.vis_id,this.dbkey=t.dbkey,this.stand_alone=void 0===t.stand_alone||t.stand_alone,this.label_tracks=[],this.tracks_to_be_redrawn=[],this.max_low=0,this.max_high=0,this.zoom_factor=3,this.min_separation=30,this.has_changes=!1,this.load_chroms_deferred=null,this.render(),this.canvas_manager=new p.default.CanvasManager(this.container.get(0).ownerDocument),this.reset(),this.config=C.default.ConfigSettingCollection.from_models_and_saved_values([{key:"name",label:"Name",type:"text",default_value:""},{key:"a_color",label:"A Color",type:"color",default_value:"#FF0000"},{key:"c_color",label:"C Color",type:"color",default_value:"#00FF00"},{key:"g_color",label:"G Color",type:"color",default_value:"#0000FF"},{key:"t_color",label:"T Color",type:"color",default_value:"#FF00FF"},{key:"n_color",label:"N Color",type:"color",default_value:"#AAAAAA"}],{name:t.name})},render:function(){this.requested_redraw=!1;var t=this.container,e=this;this.top_container=$("<div/>").addClass("top-container").appendTo(t),this.browser_content_div=$("<div/>").addClass("content").appendTo(t),this.bottom_container=$("<div/>").addClass("bottom-container").appendTo(t),this.top_labeltrack=$("<div/>").addClass("top-labeltrack").appendTo(this.top_container),this.viewport_container=$("<div/>").addClass("viewport-container").attr("id","viewport-container").appendTo(this.browser_content_div),this.content_div=this.viewport_container,q(this.viewport_container,e),this.intro_div=$("<div/>").addClass("intro").appendTo(this.viewport_container);$("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function(){p.default.select_datasets({dbkey:e.dbkey},function(t){v.each(t,function(t){e.add_drawable(et(t,e,e))})})});this.nav_container=$("<div/>").addClass("trackster-nav-container").prependTo(this.top_container),this.nav=$("<div/>").addClass("trackster-nav").appendTo(this.nav_container),this.stand_alone&&(this.nav_container.addClass("stand-alone"),this.nav.addClass("stand-alone")),this.overview=$("<div/>").addClass("overview").appendTo(this.bottom_container),this.overview_viewport=$("<div/>").addClass("overview-viewport").appendTo(this.overview),this.overview_close=$("<a/>").attr("title","Close overview").addClass("icon-button overview-close tooltip").hide().appendTo(this.overview_viewport),this.overview_highlight=$("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport),this.overview_box_background=$("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport),this.overview_box=$("<div/>").addClass("overview-box").appendTo(this.overview_viewport),this.default_overview_height=this.overview_box.height(),this.nav_controls=$("<div/>").addClass("nav-controls").appendTo(this.nav),this.chrom_select=$("<select/>").attr({name:"chrom"}).addClass("chrom-nav").append("<option value=''>Loading</option>").appendTo(this.nav_controls);this.nav_input=$("<input/>").addClass("nav-input").hide().bind("keyup focusout",function(t){"focusout"!==t.type&&13!==(t.keyCode||t.which)&&27!==(t.keyCode||t.which)||(27!==(t.keyCode||t.which)&&e.go_to($(this).val()),$(this).hide(),$(this).val(""),e.location_span.show(),e.chrom_select.show()),t.stopPropagation()}).appendTo(this.nav_controls),this.location_span=$("<span/>").addClass("location").attr("title","Click to change location").tooltip({placement:"bottom"}).appendTo(this.nav_controls),this.location_span.click(function(){e.location_span.hide(),e.chrom_select.hide(),e.nav_input.val(e.chrom+":"+e.low+"-"+e.high),e.nav_input.css("display","inline-block"),e.nav_input.select(),e.nav_input.focus(),e.nav_input.autocomplete({source:function(t,i){var a=[],n=$.map(e.get_tracks(Z),function(e){return e.data_manager.search_features(t.term).success(function(t){a=a.concat(t)})});$.when.apply($,n).done(function(){i($.map(a,function(t){return{label:t[0],value:t[1]}}))})},minLength:2})}),void 0!==this.vis_id&&(this.hidden_input=$("<input/>").attr("type","hidden").val(this.vis_id).appendTo(this.nav_controls)),this.zo_link=$("<a/>").attr("id","zoom-out").attr("title","Zoom out").tooltip({placement:"bottom"}).click(function(){e.zoom_out()}).appendTo(this.nav_controls),this.zi_link=$("<a/>").attr("id","zoom-in").attr("title","Zoom in").tooltip({placement:"bottom"}).click(function(){e.zoom_in()}).appendTo(this.nav_controls),this.load_chroms_deferred=this.load_chroms({low:0}),this.chrom_select.bind("change",function(){e.change_chrom(e.chrom_select.val())}),this.browser_content_div.click(function(t){$(this).find("input").trigger("blur")}),this.browser_content_div.bind("dblclick",function(t){e.zoom_in(t.pageX,this.viewport_container)}),this.overview_box.bind("dragstart",function(t,e){this.current_x=e.offsetX}).bind("drag",function(t,i){var a=i.offsetX-this.current_x;this.current_x=i.offsetX;var n=Math.round(a/e.viewport_container.width()*(e.max_high-e.max_low));e.move_delta(-n)}),this.overview_close.click(function(){e.reset_overview()}),this.viewport_container.bind("draginit",function(t,i){if(t.clientX>e.viewport_container.width()-16)return!1}).bind("dragstart",function(t,i){i.original_low=e.low,i.current_height=t.clientY,i.current_x=i.offsetX}).bind("drag",function(t,i){var a=$(this),n=i.offsetX-i.current_x,o=a.scrollTop()-(t.clientY-i.current_height);a.scrollTop(o),i.current_height=t.clientY,i.current_x=i.offsetX;var s=Math.round(n/e.viewport_container.width()*(e.high-e.low));e.move_delta(s)}),this.top_labeltrack.bind("dragstart",function(t,i){return $("<div/>").addClass("zoom-area").css("height",e.browser_content_div.height()+e.top_labeltrack.height()+1).appendTo($(this))}).bind("drag",function(t,i){$(i.proxy).css({left:Math.min(t.pageX,i.startX)-e.container.offset().left,width:Math.abs(t.pageX-i.startX)});var a=Math.min(t.pageX,i.startX)-e.container.offset().left,n=Math.max(t.pageX,i.startX)-e.container.offset().left,o=e.high-e.low,s=e.viewport_container.width();e.update_location(Math.round(a/s*o)+e.low,Math.round(n/s*o)+e.low)}).bind("dragend",function(t,i){var a=Math.min(t.pageX,i.startX),n=Math.max(t.pageX,i.startX),o=e.high-e.low,s=e.viewport_container.width(),r=e.low;e.low=Math.round(a/s*o)+r,e.high=Math.round(n/s*o)+r,$(i.proxy).remove(),e.request_redraw()}),this.add_label_track(new J(this,{content_div:this.top_labeltrack})),$(window).bind("resize",function(){this.resize_timer&&clearTimeout(this.resize_timer),this.resize_timer=setTimeout(function(){e.resize_window()},500)}),$(document).bind("redraw",function(){e.redraw()}),this.reset(),$(window).trigger("resize")},get_base_color:function(t){return this.config.get_value(t.toLowerCase()+"_color")||this.config.get_value("n_color")}});M(G.prototype,V.prototype,{changed:function(){this.has_changes=!0},update_intro_div:function(){this.intro_div.toggle(0===this.drawables.length)},trigger_navigate:function(t,e,i,a){if(this.timer&&clearTimeout(this.timer),a){var n=this;this.timer=setTimeout(function(){n.trigger("navigate",t+":"+e+"-"+i)},500)}else view.trigger("navigate",t+":"+e+"-"+i)},update_location:function(t,e){this.location_span.text(m.default.commatize(t)+" - "+m.default.commatize(e)),this.nav_input.val(this.chrom+":"+m.default.commatize(t)+"-"+m.default.commatize(e));var i=this.chrom_select.val();""!==i&&this.trigger_navigate(i,this.low,this.high,!0)},load_chroms:function(t){t.num=100;var e=this,i=$.Deferred();return $.ajax({url:Galaxy.root+"api/genomes/"+this.dbkey,data:t,dataType:"json",success:function(t){if(0!==t.chrom_info.length){if(t.reference){var a=new I(e);e.add_label_track(a),e.reference_track=a}e.chrom_data=t.chrom_info,e.chrom_select.html(""),e.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));for(var n=0,o=e.chrom_data.length;n<o;n++){var s=e.chrom_data[n].chrom,r=$("<option>");r.text(s),r.val(s),e.chrom_select.append(r)}t.prev_chroms&&e.chrom_select.append($('<option value="previous">Previous 100</option>')),t.next_chroms&&e.chrom_select.append($('<option value="next">Next 100</option>')),e.chrom_start_index=t.start_index,i.resolve(t.chrom_info)}},error:function(){alert("Could not load chroms for this dbkey: "+e.dbkey)}}),i},change_chrom:function(t,e,i){var a=this;if(a.chrom_data){if(t&&"None"!==t)if("previous"!==t)if("next"!==t){var n=$.grep(a.chrom_data,function(e,i){return e.chrom===t})[0];if(void 0!==n){if(t!==a.chrom){a.chrom=t,a.chrom_select.val(a.chrom),a.max_high=n.len-1,a.reset();for(var o=0,s=a.drawables.length;o<s;o++){var r=a.drawables[o];r.init&&r.init()}a.reference_track&&a.reference_track.init()}void 0===e&&void 0===i?(a.low=0,a.high=a.max_high):(a.low=void 0!==e?Math.max(e,0):0,void 0===i?(a.low=Math.max(a.low-15,0),a.high=a.low+30):a.high=Math.min(i,a.max_high)),a.request_redraw()}else a.load_chroms({chrom:t},function(){a.change_chrom(t,e,i)})}else a.load_chroms({low:this.chrom_start_index+100});else a.load_chroms({low:this.chrom_start_index-100})}else a.load_chroms_deferred.then(function(){a.change_chrom(t,e,i)})},go_to:function(t){var e=(t=(t=t.replace(/,/g,"")).replace(/:|\-/g," ")).split(/\s+/),i=e[0],a=e[1]?parseInt(e[1],10):void 0,n=e[2]?parseInt(e[2],10):void 0;this.change_chrom(i,a,n)},move_fraction:function(t){var e=this,i=e.high-e.low;this.move_delta(t*i)},move_delta:function(t){var e=this,i=e.high-e.low;e.low-t<e.max_low?(e.low=e.max_low,e.high=e.max_low+i):e.high-t>e.max_high?(e.high=e.max_high,e.low=e.max_high-i):(e.high-=t,e.low-=t),e.request_redraw({data_fetch:!1}),this.redraw_on_move_fn&&clearTimeout(this.redraw_on_move_fn),this.redraw_on_move_fn=setTimeout(function(){e.request_redraw()},200);var a=e.chrom_select.val();this.trigger_navigate(a,e.low,e.high,!0)},add_drawable:function(t){V.prototype.add_drawable.call(this,t),t.init(),this.changed(),this.update_intro_div();var e=this;t.config.on("change",function(){e.changed()})},add_label_track:function(t){t.view=this,t.init(),this.label_tracks.push(t)},remove_drawable:function(t,e){if(V.prototype.remove_drawable.call(this,t),e){var i=this;t.container_div.hide(0,function(){$(this).remove(),i.update_intro_div()})}},reset:function(){this.low=this.max_low,this.high=this.max_high,this.viewport_container.find(".yaxislabel").remove()},request_redraw:function(t,e){var i=this,a=e?[e]:i.drawables;v.each(a,function(e){var a=v.find(i.tracks_to_be_redrawn,function(t){return t[0]===e});a?a[1]=t:i.tracks_to_be_redrawn.push([e,t])}),this.requested_redraw||(requestAnimationFrame(function(){i._redraw()}),this.requested_redraw=!0)},_redraw:function(){this.requested_redraw=!1;var t=this.low,e=this.high;t<this.max_low&&(t=this.max_low),e>this.max_high&&(e=this.max_high);var i=this.high-this.low;0!==this.high&&i<this.min_separation&&(e=t+this.min_separation),this.low=Math.floor(t),this.high=Math.ceil(e),this.update_location(this.low,this.high),this.resolution_px_b=this.viewport_container.width()/(this.high-this.low);var a=this.low/(this.max_high-this.max_low)*this.overview_viewport.width()||0,n=(this.high-this.low)/(this.max_high-this.max_low)*this.overview_viewport.width()||0;this.overview_box.css({left:a,width:Math.max(13,n)}).show(),n<13&&this.overview_box.css("left",a-(13-n)/2),this.overview_highlight&&this.overview_highlight.css({left:a,width:n}),v.each(this.tracks_to_be_redrawn,function(t){var e=t[0],i=t[1];e&&e._draw(i)}),this.tracks_to_be_redrawn=[],v.each(this.label_tracks,function(t){t._draw()})},zoom_in:function(t,e){if(!(0===this.max_high||this.high-this.low<=this.min_separation)){var i=this.high-this.low,a=i/2+this.low,n=i/this.zoom_factor/2;t&&(a=t/this.viewport_container.width()*(this.high-this.low)+this.low),this.low=Math.round(a-n),this.high=Math.round(a+n),this.changed(),this.request_redraw()}},zoom_out:function(){if(0!==this.max_high){var t=this.high-this.low,e=t/2+this.low,i=t*this.zoom_factor/2;this.low=Math.round(e-i),this.high=Math.round(e+i),this.changed(),this.request_redraw()}},resize_viewport:function(){this.viewport_container.height(this.container.height()-this.top_container.height()-this.bottom_container.height())},resize_window:function(){this.resize_viewport(),this.request_redraw()},set_overview:function(t){if(this.overview_drawable){if(this.overview_drawable.dataset.id===t.dataset.id)return;this.overview_viewport.find(".track").remove()}var e=t.copy({content_div:this.overview_viewport}),i=this;e.header_div.hide(),e.is_overview=!0,i.overview_drawable=e,this.overview_drawable.postdraw_actions=function(){i.overview_highlight.show().height(i.overview_drawable.content_div.height()),i.overview_viewport.height(i.overview_drawable.content_div.height()+i.overview_box.outerHeight()),i.overview_close.show(),i.resize_window()},i.overview_drawable.request_draw(),this.changed()},reset_overview:function(){$(".tooltip").remove(),this.overview_viewport.find(".track-tile").remove(),this.overview_viewport.height(this.default_overview_height),this.overview_box.height(this.default_overview_height),this.overview_close.hide(),this.overview_highlight.hide(),view.resize_window(),view.overview_drawable=null}});var N=x.default.Tool.extend({defaults:{track:null},initialize:function(t){x.default.Tool.prototype.initialize.call(this,t);var e=!0;void 0!==t.tool_state&&void 0!==t.tool_state.hidden&&(e=t.tool_state.hidden),this.set("hidden",e),this.remove_inputs(["data","hidden_data","conditional"])},state_dict:function(t){return v.extend(this.get_inputs_dict(),{hidden:!this.is_visible()})}}),X=Backbone.View.extend({events:{"change :input":"update_value"},render:function(){var t=this.$el.addClass("param-row"),e=this.model;$("<div>").addClass("param-label").text(e.get("label")).appendTo(t);$("<div/>").addClass("param-input").html(e.get("html")).appendTo(t).find(":input").val(e.get("value")),$("<div style='clear: both;'/>").appendTo(t)},update_value:function(t){this.model.set_value($(t.target).val())}}),H=Backbone.View.extend({initialize:function(t){this.model.on("change:hidden",this.set_visible,this)},render:function(){var t=this,e=this.model,i=this.$el.addClass("dynamic-tool").hide();i.bind("drag",function(t){t.stopPropagation()}).click(function(t){t.stopPropagation()}).bind("dblclick",function(t){t.stopPropagation()}).keydown(function(t){t.stopPropagation()});$("<div class='tool-name'>").appendTo(i).text(e.get("name"));e.get("inputs").each(function(t){var e=new X({model:t});e.render(),i.append(e.$el)}),i.find("input").click(function(){$(this).select()});var a=$("<div>").addClass("param-row").appendTo(i),n=$("<input type='submit'>").attr("value","Run on complete dataset").appendTo(a);$("<input type='submit'>").attr("value","Run on visible region").appendTo(a).click(function(){t.run_on_region()}),n.click(function(){t.run_on_dataset()}),e.is_visible()&&this.$el.show()},set_visible:function(){this.$el.toggle(this.model.is_visible())},update_params:function(){for(var t=0;t<this.params.length;t++)this.params[t].update_value()},run_on_dataset:function(){var t=this.model;this.run({target_dataset_id:this.model.get("track").dataset.id,action:"rerun",tool_id:t.id},null,function(e){Galaxy.modal.show({title:t.get("name")+" is Running",body:t.get("name")+" is running on the complete dataset. Tool outputs are in dataset's history.",buttons:{Close:function(){Galaxy.modal.hide()}}})})},run_on_region:function(){var t,e=this.model.get("track"),i=this.model,a=new p.default.GenomeRegion({chrom:e.view.chrom,start:e.view.low,end:e.view.high}),n={target_dataset_id:e.dataset.id,action:"rerun",tool_id:i.id,regions:[a.toJSON()]},o=e,s=i.get("name")+o.tool_region_and_parameters_str(a);if(o.container===view){var r=new j(view,view,{name:e.config.get_value("name")}),l=o.container.replace_drawable(o,r,!1);r.container_div.insertBefore(o.view.content_div.children()[l]),r.add_drawable(o),o.container_div.appendTo(r.content_div),t=r}else t=o.container;var h=new o.constructor(view,t,{name:s,hda_ldda:"hda"});h.init_for_tool_data(),h.change_mode(o.mode),h.set_filters_manager(o.filters_manager.copy(h)),h.update_icons(),t.add_drawable(h),h.tiles_div.text("Starting job."),this.run(n,h,function(t){h.set_dataset(new k.default.Dataset(t)),h.tiles_div.text("Running job."),h.init()})},run:function(t,e,i){t.inputs=this.model.get_inputs_dict();var a=new m.default.ServerStateDeferred({ajax_settings:{url:Galaxy.root+"api/tools",data:JSON.stringify(t),dataType:"json",contentType:"application/json",type:"POST"},interval:2e3,success_fn:function(t){return"pending"!==t}});$.when(a.go()).then(function(t){"no converter"===t?(e.container_div.addClass("error"),e.content_div.text(A)):t.error?(e.container_div.addClass("error"),e.content_div.text("Tool cannot be rerun: "+t.message)):i(t)})}}),P=function(t,e){b.default.Scaler.call(this,e),this.filter=t};P.prototype.gen_val=function(t){return this.filter.high===Number.MAX_VALUE||this.filter.low===-Number.MAX_VALUE||this.filter.low===this.filter.high?this.default_val:(parseFloat(t[this.filter.index])-this.filter.low)/(this.filter.high-this.filter.low)};var O=function(t,e,i,a,n){this.track=t,this.region=e,this.low=e.get("start"),this.high=e.get("end"),this.w_scale=i,this.canvas=a,this.html_elt=$("<div class='track-tile'/>").append(a),this.data=n,this.stale=!1};O.prototype.predisplay_actions=function(){};var R=function(t,e,i,a,n){O.call(this,t,e,i,a,n)};R.prototype.predisplay_actions=function(){};var L=function(t,e,i,a,n,o,s,r,l,h,d){O.call(this,t,e,i,a,n),this.mode=o,this.all_slotted=r,this.feature_mapper=l,this.has_icons=!1,this.incomplete_features=h,this.other_tiles_features_drawn={},this.seq_data=d};M(L.prototype,O.prototype),L.prototype.predisplay_actions=function(){};var Y=function(t,e,i){M(i,{drag_handle_class:"draghandle"}),D.call(this,t,e,i),this.dataset=null,i.dataset&&(this.dataset=i.dataset instanceof Backbone.Model?i.dataset:new k.default.Dataset(i.dataset)),this.dataset_check_type="converted_datasets_state",this.data_url_extra_params={},this.data_query_wait="data_query_wait"in i?i.data_query_wait:5e3,this.data_manager="data_manager"in i?i.data_manager:new p.default.GenomeDataManager({dataset:this.dataset,genome:new p.default.Genome({key:t.dbkey,chroms_info:{chrom_info:t.chrom_data}}),data_mode_compatible:this.data_and_mode_compatible,can_subset:this.can_subset}),this.min_height_px=16,this.max_height_px=800,this.visible_height_px=this.config.get_value("height"),this.content_div=$("<div class='track-content'>").appendTo(this.container_div),this.container&&(this.container.content_div.append(this.container_div),"resize"in i&&!i.resize||this.add_resize_handle())};M(Y.prototype,D.prototype,{action_icons_def:[{name:"mode_icon",title:"Set display mode",css_class:"chevron-expand",on_click_fn:function(){}},D.prototype.action_icons_def[0],{name:"overview_icon",title:"Set as overview",css_class:"application-dock-270",on_click_fn:function(t){t.view.set_overview(t)}},D.prototype.action_icons_def[1],{name:"filters_icon",title:"Filters",css_class:"ui-slider-050",on_click_fn:function(t){t.filters_manager.visible()?t.filters_manager.clear_filters():t.filters_manager.init_filters(),t.filters_manager.toggle()}},{name:"tools_icon",title:"Tool",css_class:"hammer",on_click_fn:function(t){t.tool.toggle(),t.tool.is_visible()?t.set_name(t.config.get_value("name")+t.tool_region_and_parameters_str()):t.revert_name(),$(".tooltip").remove()}},{name:"param_space_viz_icon",title:"Tool parameter space visualization",css_class:"arrow-split",on_click_fn:function(t){var e="<strong>Tool</strong>:"+t.tool.get("name")+"<br/><strong>Dataset</strong>:"+t.config.get_value("name")+'<br/><strong>Region(s)</strong>: <select name="regions"><option value="cur">current viewing area</option><option value="bookmarks">bookmarks</option><option value="both">current viewing area and bookmarks</option></select>',i=function(){Galaxy.modal.hide(),$(window).unbind("keypress.check_enter_esc")},a=function(){var e,i=$('select[name="regions"] option:selected').val(),a=new p.default.GenomeRegion({chrom:view.chrom,start:view.low,end:view.high}),n=v.map($(".bookmark"),function(t){return new p.default.GenomeRegion({from_str:$(t).children(".position").text()})});e="cur"===i?[a]:"bookmarks"===i?n:[a].concat(n),Galaxy.modal.hide(),window.location.href=Galaxy.root+"visualization/sweepster?"+$.param({dataset_id:t.dataset.id,hda_ldda:t.dataset.get("hda_ldda"),regions:JSON.stringify(new Backbone.Collection(e).toJSON())})};Galaxy.modal.show({title:"Visualize tool parameter space and output from different parameter settings?",body:e,buttons:{No:i,Yes:a}})}},D.prototype.action_icons_def[2]],can_draw:function(){return this.dataset&&D.prototype.can_draw.call(this)},build_container_div:function(){return $("<div/>").addClass("track").attr("id","track_"+this.id)},set_dataset:function(t){this.dataset=t,this.data_manager.set("dataset",t)},on_resize:function(){this.request_draw({clear_tile_cache:!0})},add_resize_handle:function(){var t=this,e=!1,i=!1,a=$("<div class='track-resize'>");$(t.container_div).hover(function(){t.config.get_value("content_visible")&&(e=!0,a.show())},function(){e=!1,i||a.hide()}),a.hide().bind("dragstart",function(e,a){i=!0,a.original_height=$(t.content_div).height()}).bind("drag",function(e,i){var a=Math.min(Math.max(i.original_height+i.deltaY,t.min_height_px),t.max_height_px);$(t.tiles_div).css("height",a),t.visible_height_px=t.max_height_px===a?0:a,t.on_resize()}).bind("dragend",function(n,o){t.tile_cache.clear(),i=!1,e||a.hide(),t.config.set_value("height",t.visible_height_px),t.changed()}).appendTo(t.container_div)},hide_contents:function(){this.tiles_div.hide(),this.container_div.find(".yaxislabel, .track-resize").hide()},show_contents:function(){this.tiles_div.show(),this.container_div.find(".yaxislabel, .track-resize").show(),this.request_draw()},get_type:function(){return this instanceof J?"LabelTrack":this instanceof I?"ReferenceTrack":this instanceof W?"LineTrack":this instanceof Q?"ReadTrack":this instanceof K?"VariantTrack":this instanceof E?"CompositeTrack":this instanceof Z?"FeatureTrack":""},show_message:function(t){return this.tiles_div.remove(),$("<span/>").addClass("message").html(t).appendTo(this.content_div)},init:function(t){var e=this;if(e.enabled=!1,e.tile_cache.clear(),e.data_manager.clear(),e.content_div.children().remove(),e.container_div.removeClass("nodata error pending"),e.tiles_div=$("<div/>").addClass("tiles").appendTo(e.content_div),e.dataset.id){var i=$.Deferred(),a={hda_ldda:e.dataset.get("hda_ldda"),data_type:this.dataset_check_type,chrom:e.view.chrom,retry:t};return $.getJSON(this.dataset.url(),a,function(t){if(t&&"error"!==t&&"error"!==t.kind)"no converter"===t?(e.container_div.addClass("error"),e.show_message(A)):"no data"===t||void 0!==t.data&&(null===t.data||0===t.data.length)?(e.container_div.addClass("nodata"),e.show_message("No data for this chrom/contig.")):"pending"===t?(e.container_div.addClass("pending"),e.show_message("Preparing data. This can take a while for a large dataset. If the visualization is saved and closed, preparation will continue in the background."),setTimeout(function(){e.init()},e.data_query_wait)):"data"!==t&&"data"!==t.status||(t.valid_chroms&&(e.valid_chroms=t.valid_chroms,e.update_icons()),e.tiles_div.text("Ready for display"),e.view.chrom?(e.tiles_div.text(""),e.tiles_div.css("height",e.visible_height_px+"px"),e.enabled=!0,$.when.apply($,e.predraw_init()).done(function(){i.resolve(),e.container_div.removeClass("nodata error pending"),e.request_draw()})):i.resolve());else{e.container_div.addClass("error");var a=e.show_message("Cannot display dataset due to an error. ");t.message&&(a.append($("<a href='javascript:void(0);'></a>").text("View error").click(function(){Galaxy.modal.show({title:"Trackster Error",body:"<pre>"+t.message+"</pre>",buttons:{Close:function(){Galaxy.modal.hide()}}})})),a.append($("<span/>").text(" ")),a.append($("<a href='javascript:void(0);'></a>").text("Try again").click(function(){e.init(!0)})))}}),this.update_icons(),i}},predraw_init:function(){var t=this;return $.getJSON(t.dataset.url(),{data_type:"data",stats:!0,chrom:t.view.chrom,low:0,high:t.view.max_high,hda_ldda:t.dataset.get("hda_ldda")},function(e){var i=e.data;if(i&&void 0!==i.min&&void 0!==i.max){var a=i.min,n=i.max;a=Math.floor(Math.min(0,Math.max(a,i.mean-2*i.sd))),n=Math.ceil(Math.max(0,Math.min(n,i.mean+2*i.sd))),t.config.set_default_value("min_value",a),t.config.set_default_value("max_value",n),t.config.set_value("min_value",a),t.config.set_value("max_value",n)}})},get_drawables:function(){return this}});var B=function(t,e,i){Y.call(this,t,e,i);var a=this;if(S(a.container_div,a.drag_handle_class,".group",a),this.filters_manager=new y.default.FiltersManager(this,"filters"in i?i.filters:null),this.data_manager.set("filters_manager",this.filters_manager),this.filters_available=!1,this.tool=i.tool?new N(v.extend(i.tool,{track:this,tool_state:i.tool_state})):null,this.tile_cache=new p.default.Cache(10),this.left_offset=0,this.header_div&&(this.set_filters_manager(this.filters_manager),this.tool)){var n=new H({model:this.tool});n.render(),this.dynamic_tool_div=n.$el,this.header_div.after(this.dynamic_tool_div)}this.tiles_div=$("<div/>").addClass("tiles").appendTo(this.content_div),this.config.get_value("content_visible")||this.tiles_div.hide(),this.overlay_div=$("<div/>").addClass("overlay").appendTo(this.content_div),i.mode&&this.change_mode(i.mode)};M(B.prototype,D.prototype,Y.prototype,{action_icons_def:Y.prototype.action_icons_def.concat([{name:"show_more_rows_icon",title:"To minimize track height, not all feature rows are displayed. Click to display more rows.",css_class:"exclamation",on_click_fn:function(t){$(".tooltip").remove(),t.slotters[t.view.resolution_px_b].max_rows*=2,t.request_draw({clear_tile_cache:!0})},hide:!0}]),copy:function(t){var e=this.to_dict();M(e,{data_manager:this.data_manager});var i=new this.constructor(this.view,t,e);return i.change_mode(this.mode),i.enabled=this.enabled,i},set_filters_manager:function(t){this.filters_manager=t,this.header_div.after(this.filters_manager.parent_div)},to_dict:function(){return{track_type:this.get_type(),dataset:{id:this.dataset.id,hda_ldda:this.dataset.get("hda_ldda")},prefs:this.config.to_key_value_dict(),mode:this.mode,filters:this.filters_manager.to_dict(),tool_state:this.tool?this.tool.state_dict():{}}},set_min_max:function(){var t=this;return $.getJSON(t.dataset.url(),{data_type:"data",stats:!0,chrom:t.view.chrom,low:0,high:t.view.max_high,hda_ldda:t.dataset.get("hda_ldda")},function(e){var i=e.data;if(isNaN(parseFloat(t.config.get_value("min_value")))||isNaN(parseFloat(t.config.get_value("max_value")))){var a=i.min,n=i.max;a=Math.floor(Math.min(0,Math.max(a,i.mean-2*i.sd))),n=Math.ceil(Math.max(0,Math.min(n,i.mean+2*i.sd))),t.config.set_value("min_value",a),t.config.set_value("max_value",n)}})},change_mode:function(t){var e=this;return e.mode=t,e.config.set_value("mode",t),"Auto"===t&&this.data_manager.clear(),e.request_draw({clear_tile_cache:!0}),this.action_icons.mode_icon.attr("title","Set display mode (now: "+e.mode+")"),e},update_icons:function(){var t=this;t.action_icons.filters_icon.toggle(t.filters_available),t.action_icons.tools_icon.toggle(null!==t.tool),t.action_icons.param_space_viz_icon.toggle(null!==t.tool)},_gen_tile_cache_key:function(t,e){return t+"_"+e},request_draw:function(t){t&&t.clear_tile_cache&&this.tile_cache.clear(),this.view.request_redraw(t,this)},before_draw:function(){this.max_height_px=0},_draw:function(t){if(this.can_draw()){var e=t&&t.clear_after,i=this.view.low,a=this.view.high,n=this.view.container.width(),o=this.view.resolution_px_b,s=1/o;this.is_overview&&(i=this.view.max_low,a=this.view.max_high,s=1/(o=n/(view.max_high-view.max_low))),this.before_draw(),this.tiles_div.children().addClass("remove");for(var r,l,h=Math.floor(400*s),d=Math.floor(i/h),_=[],c=[];d*h<a;)r=new p.default.GenomeRegion({chrom:this.view.chrom,start:d*h,end:Math.min((d+1)*h,this.view.max_high)}),l=this.draw_helper(r,o,t),_.push(l),$.when(l).then(function(t){c.push(t)}),d+=1;e||this.tiles_div.children(".remove").removeClass("remove").remove();var u=this;$.when.apply($,_).then(function(){u.tiles_div.children(".remove").remove(),0!==(c=v.filter(c,function(t){return null!==t})).length&&u.postdraw_actions(c,n,o,e)})}},_add_yaxis_label:function(t,e){var i=this,a="max"===t?"top":"bottom",n="max"===t?"max":"min",o="max"===t?"max_value":"min_value",s=this.container_div.find(".yaxislabel."+a),r=u(i.config.get_value(o),1);e=e||function(){i.request_draw({clear_tile_cache:!0})},0!==s.length?s.text(r):(s=$("<div/>").text(r).make_text_editable({num_cols:12,on_finish:function(t){$(".tooltip").remove(),i.config.set_value(o,u(t,1)),e()},help_text:"Set "+n+" value"}).addClass("yaxislabel "+a).css("color",this.config.get_value("label_color")),this.container_div.prepend(s))},postdraw_actions:function(t,e,i,a){if(v.filter(t,function(t){return t instanceof R}).length>0){this.max_height_px=0;var n=this;v.each(t,function(t){t instanceof R||(t.html_elt.remove(),n.draw_helper(t.region,i,{force:!0,mode:"Coverage"}))}),n._add_yaxis_label("max")}else this.container_div.find(".yaxislabel").remove(),v.find(t,function(t){return t.has_icons})&&v.each(t,function(t){t.has_icons||t.html_elt.css("padding-top",20)})},get_mode:function(t){return this.mode},update_auto_mode:function(t){},_get_drawables:function(){return[this]},draw_helper:function(t,e,i){i||(i={});var a=i.force,n=i.mode||this.mode,o=1/e,s=this,r=this._get_drawables(),l=this._gen_tile_cache_key(e,t),h=a?void 0:s.tile_cache.get_elt(l);if(h)return function(t){return t&&"track"in t}(h)&&s.show_tile(h,e),h;if(!1===i.data_fetch)return null;var d=function(){var e=v.find(F,function(t){return t===n})?"Coverage":n,i=v.map(r,function(i){return i.data_manager.get_data(t,e,o,s.data_url_extra_params)});return view.reference_track&&i.push(view.reference_track.data_manager.get_data(t,n,o,view.reference_track.data_url_extra_params)),i},_=$.Deferred();return s.tile_cache.set_elt(l,_),$.when.apply($,d()).then(function(){var a,n=d(),o=n;if(v.find(n,function(t){return m.default.is_deferred(t)}))return s.tile_cache.set_elt(l,void 0),void $.when(s.draw_helper(t,e,i)).then(function(t){_.resolve(t)});view.reference_track&&(a=view.reference_track.data_manager.subset_entry(n.pop(),t));var h=[],c=[];v.each(r,function(t,i){var a=t.mode,n=o[i];"Auto"===a&&(a=t.get_mode(n),t.update_auto_mode(a)),h.push(a),c.push(t.get_canvas_height(n,a,e,w))});var u,f=s.view.canvas_manager.new_canvas(),p=t.get("start"),g=t.get("end"),w=Math.ceil((g-p)*e)+s.left_offset,b=v.max(c);f.width=w,f.height=i.height||b;var y=f.getContext("2d");y.translate(s.left_offset,0),r.length>1&&(y.globalAlpha=.5,y.globalCompositeOperation="source-over"),v.each(r,function(i,n){u=i.draw_tile(o[n],y,h[n],t,e,a)}),void 0!==u&&(s.tile_cache.set_elt(l,u),s.show_tile(u,e)),_.resolve(u)}),_},get_canvas_height:function(t,e,i,a){return this.visible_height_px},_draw_line_track_tile:function(t,e,i,a,n){-1!==[void 0,null].indexOf(this.config.get_value("min_value"))&&this.config.set_value("min_value",0),-1!==[void 0,null,0].indexOf(this.config.get_value("max_value"))&&this.config.set_value("max_value",v.max(v.map(t.data,function(t){return t[1]}))||0);var o=e.canvas;return new b.default.LinePainter(t.data,a.get("start"),a.get("end"),this.config.to_key_value_dict(),i).draw(e,o.width,o.height,n),new R(this,a,n,o,t.data)},draw_tile:function(t,e,i,a,n,o){},show_tile:function(t,e){var i=t.html_elt;t.predisplay_actions();var a=Math.round((t.low-(this.is_overview?this.view.max_low:this.view.low))*e);this.left_offset&&(a-=this.left_offset),i.css("left",a),i.hasClass("remove")?i.removeClass("remove"):this.tiles_div.append(i),i.css("height","auto"),this.max_height_px=Math.max(this.max_height_px,i.height()-2),i.parent().children().css("height",this.max_height_px+"px");var n=this.max_height_px;0!==this.visible_height_px&&(n=Math.min(this.max_height_px,this.visible_height_px)),this.tiles_div.css("height",n+"px")},tool_region_and_parameters_str:function(t){var e=this;return" - region=["+(void 0!==t?t.toString():"all")+"], parameters=["+v.values(e.tool.get_inputs_dict()).join(", ")+"]"},data_and_mode_compatible:function(t,e){return"Auto"===e||("Coverage"===e?"bigwig"===t.dataset_type:"bigwig"!==t.dataset_type&&"no_detail"!==t.extra_info)},can_subset:function(t){return!t.message&&"no_detail"!==t.extra_info&&("bigwig"!==t.dataset_type||t.data[1][0]-t.data[0][0]==1)},init_for_tool_data:function(){this.data_manager.set("data_type","raw_data"),this.data_query_wait=1e3,this.dataset_check_type="state"}});var J=function(t,e){Y.call(this,t,e,{resize:!1,header:!1}),this.container_div.addClass("label-track")};M(J.prototype,Y.prototype,{init:function(){this.enabled=!0},predraw_init:function(){},_draw:function(t){for(var e=this.view,i=e.high-e.low,a=Math.floor(Math.pow(10,Math.floor(Math.log(i)/Math.log(10)))),n=Math.floor(e.low/a)*a,o=this.view.container.width(),s=$("<div/>").addClass("label-container");n<e.high;){var r=Math.floor((n-e.low)/i*o);s.append($("<div/>").addClass("pos-label").text(m.default.commatize(n)).css({left:r})),n+=a}this.content_div.children(":first").remove(),this.content_div.append(s)}});var E=function(t,e,i){if(B.call(this,t,e,i),this.drawables=[],"drawables"in i){for(var a,n=0;n<i.drawables.length;n++)a=i.drawables[n],this.drawables[n]=et(a,t,null),a.left_offset>this.left_offset&&(this.left_offset=a.left_offset);this.enabled=!0}v.each(this.drawables,function(t){(t instanceof Z||t instanceof Q)&&t.change_mode("Coverage")}),this.update_icons(),this.obj_type="CompositeTrack"};M(E.prototype,B.prototype,{display_modes:F,build_config_params:function(){return v.union(D.prototype.config_params,[{key:"min_value",label:"Min Value",type:"float",default_value:void 0},{key:"max_value",label:"Max Value",type:"float",default_value:void 0},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:30,hidden:!0}])},action_icons_def:[{name:"composite_icon",title:"Show individual tracks",css_class:"layers-stack",on_click_fn:function(t){$(".tooltip").remove(),t.show_group()}}].concat(B.prototype.action_icons_def),to_dict:V.prototype.to_dict,add_drawable:V.prototype.add_drawable,unpack_drawables:V.prototype.unpack_drawables,config_onchange:function(){this.set_name(this.config.get_value("name")),this.request_draw({clear_tile_cache:!0})},on_resize:function(){var t=this.visible_height_px;v.each(this.drawables,function(e){e.visible_height_px=t}),Y.prototype.on_resize.call(this)},change_mode:function(t){B.prototype.change_mode.call(this,t);for(var e=0;e<this.drawables.length;e++)this.drawables[e].change_mode(t)},init:function(){for(var t=[],e=0;e<this.drawables.length;e++)t.push(this.drawables[e].init());var i=this;$.when.apply($,t).then(function(){i.enabled=!0,i.request_draw()})},update_icons:function(){this.action_icons.filters_icon.hide(),this.action_icons.tools_icon.hide(),this.action_icons.param_space_viz_icon.hide()},can_draw:D.prototype.can_draw,_get_drawables:function(){return this.drawables},show_group:function(){for(var t,e=new j(this.view,this.container,{name:this.config.get_value("name")}),i=0;i<this.drawables.length;i++)(t=this.drawables[i]).update_icons(),e.add_drawable(t),t.container=e,e.content_div.append(t.container_div);this.container.replace_drawable(this,e,!0);e.request_draw({clear_tile_cache:!0})},before_draw:function(){var t=v.min(v.map(this.drawables,function(t){return t.config.get_value("min_value")})),e=v.max(v.map(this.drawables,function(t){return t.config.get_value("max_value")}));this.config.set_value("min_value",t),this.config.set_value("max_value",e),v.each(this.drawables,function(i){i.config.set_value("min_value",t),i.config.set_value("max_value",e)})},update_all_min_max:function(){var t=this.config.get_value("min_value"),e=this.config.get_value("max_value");v.each(this.drawables,function(i){i.config.set_value("min_value",t),i.config.set_value("max_value",e)}),this.request_draw({clear_tile_cache:!0})},postdraw_actions:function(t,e,i,a){var n,o=-1;for(n=0;n<t.length;n++){var s=t[n].html_elt.find("canvas").height();s>o&&(o=s)}for(n=0;n<t.length;n++){var r=t[n];r.html_elt.find("canvas").height()!==o&&(this.draw_helper(r.region,i,{force:!0,height:o}),r.html_elt.remove())}var l=this,h=function(){l.update_all_min_max()};this._add_yaxis_label("min",h),this._add_yaxis_label("max",h)}});var I=function(t){B.call(this,t,{content_div:t.top_labeltrack},{resize:!1,header:!1}),this.left_offset=t.canvas_manager.char_width_px,this.container_div.addClass("reference-track"),this.data_url=Galaxy.root+"api/genomes/"+this.view.dbkey,this.data_url_extra_params={reference:!0},this.data_manager=new p.default.GenomeReferenceDataManager({data_url:this.data_url,can_subset:this.can_subset}),this.hide_contents()};M(I.prototype,D.prototype,B.prototype,{build_config_params:function(){return v.union(D.prototype.config_params,[{key:"height",type:"int",default_value:13,hidden:!0}])},init:function(){this.data_manager.clear(),this.enabled=!0},predraw_init:function(){},can_draw:D.prototype.can_draw,draw_helper:function(t,e,i){var a,n=this.tiles_div.is(":visible"),o=null;return e>this.view.canvas_manager.char_width_px?(this.tiles_div.show(),a=!0,o=B.prototype.draw_helper.call(this,t,e,i)):(a=!1,this.tiles_div.hide()),n!==a&&this.view.resize_viewport(),o},can_subset:function(t){return!0},draw_tile:function(t,e,i,a,n){var o=this.data_manager.subset_entry(t,a),s=o.data,r=e.canvas;e.font=e.canvas.manager.default_font,e.textAlign="center";for(var l=0,h=s.length;l<h;l++)e.fillStyle=this.view.get_base_color(s[l]),e.fillText(s[l],Math.floor(l*n),10);return new O(this,a,n,r,o)}});var W=function(t,e,i){this.mode="Histogram",B.call(this,t,e,i),this.left_offset=30;var a=this;$.when(f(Galaxy.root+"datasets/"+this.dataset.id+"/display")).then(function(t){t&&(a.data_manager=new T.default.BBIDataManager({dataset:a.dataset}))})};M(W.prototype,D.prototype,B.prototype,{display_modes:F,build_config_params:function(){return v.union(D.prototype.config_params,[{key:"color",label:"Color",type:"color"},{key:"min_value",label:"Min Value",type:"float",default_value:void 0},{key:"max_value",label:"Max Value",type:"float",default_value:void 0},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:30,hidden:!0}])},config_onchange:function(){this.set_name(this.config.get_value("name")),this.request_draw({clear_tile_cache:!0})},before_draw:function(){},draw_tile:function(t,e,i,a,n){return this._draw_line_track_tile(t,e,i,a,n)},can_subset:function(t){return t.data[1][0]-t.data[0][0]==1},postdraw_actions:function(t,e,i,a){this._add_yaxis_label("max"),this._add_yaxis_label("min")}});var U=function(t,e,i){this.mode="Heatmap",B.call(this,t,e,i)};M(U.prototype,D.prototype,B.prototype,{display_modes:["Heatmap"],build_config_params:function(){return v.union(D.prototype.config_params,[{key:"pos_color",label:"Positive Color",type:"color",default_value:"#FF8C00"},{key:"neg_color",label:"Negative Color",type:"color",default_value:"#4169E1"},{key:"min_value",label:"Min Value",type:"int",default_value:void 0},{key:"max_value",label:"Max Value",type:"int",default_value:void 0},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:500,hidden:!0}])},config_onchange:function(){this.set_name(this.config.get_value("name")),this.request_draw({clear_tile_cache:!0})},predraw_init:function(){var t=this;return $.getJSON(t.dataset.url(),{data_type:"data",stats:!0,chrom:t.view.chrom,low:0,high:t.view.max_high,hda_ldda:t.dataset.get("hda_ldda")},function(t){t.data})},draw_tile:function(t,e,i,a,n){var o=e.canvas;return new b.default.DiagonalHeatmapPainter(t.data,a.get("start"),a.get("end"),this.config.to_key_value_dict(),i).draw(e,o.width,o.height,n),new O(this,a,n,o,t.data)}});var Z=function(t,e,i){B.call(this,t,e,i),this.container_div.addClass("feature-track"),this.summary_draw_height=30,this.slotters={},this.start_end_dct={},this.left_offset=200,this.set_painter_from_config()};M(Z.prototype,D.prototype,B.prototype,{display_modes:["Auto","Coverage","Dense","Squish","Pack"],build_config_params:function(){return v.union(D.prototype.config_params,[{key:"block_color",label:"Block color",type:"color"},{key:"reverse_strand_color",label:"Antisense strand color",type:"color"},{key:"label_color",label:"Label color",type:"color",default_value:"black"},{key:"show_counts",label:"Show summary counts",type:"bool",default_value:!0,help:"Show the number of items in each bin when drawing summary histogram"},{key:"min_value",label:"Histogram minimum",type:"float",default_value:void 0,help:"clear value to set automatically"},{key:"max_value",label:"Histogram maximum",type:"float",default_value:void 0,help:"clear value to set automatically"},{key:"connector_style",label:"Connector style",type:"select",default_value:"fishbones",options:[{label:"Line with arrows",value:"fishbone"},{label:"Arcs",value:"arcs"}]},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:0,hidden:!0}])},config_onchange:function(){this.set_name(this.config.get_value("name")),this.set_painter_from_config(),this.request_draw({clear_tile_cache:!0})},set_painter_from_config:function(){"arcs"===this.config.get_value("connector_style")?this.painter=b.default.ArcLinkedFeaturePainter:this.painter=b.default.LinkedFeaturePainter},postdraw_actions:function(t,e,i,a){B.prototype.postdraw_actions.call(this,t,e,i,a);var n,o=this;if(0===v.filter(t,function(t){return t instanceof R}).length){var s={};v.each(v.pluck(t,"incomplete_features"),function(t){v.each(t,function(t){s[t[0]]=t})});var r=this;v.each(t,function(t){var e=v.omit(s,v.map(t.incomplete_features,function(t){return t[0]}));if(e=v.omit(e,v.keys(t.other_tiles_features_drawn)),0!==v.size(e)){var i={data:v.values(e)},a=r.view.canvas_manager.new_canvas(),n=a.getContext("2d");a.height=Math.max(t.canvas.height,r.get_canvas_height(i,t.mode,t.w_scale,100)),a.width=t.canvas.width,n.drawImage(t.canvas,0,0),n.translate(o.left_offset,0);var l=r.draw_tile(i,n,t.mode,t.region,t.w_scale,t.seq_data);$(t.canvas).replaceWith($(l.canvas)),t.canvas=a,v.extend(t.other_tiles_features_drawn,s)}})}if(o.filters_manager){var l,h=o.filters_manager.filters;for(l=0;l<h.length;l++)h[l].update_ui_elt();var d,_,c=!1;for(n=0;n<t.length;n++)if(t[n].data.length)for(d=t[n].data[0],l=0;l<h.length;l++)if((_=h[l]).applies_to(d)&&_.min!==_.max){c=!0;break}o.filters_available!==c&&(o.filters_available=c,o.filters_available||o.filters_manager.hide(),o.update_icons())}if(t[0]instanceof L){var u=!0;for(n=0;n<t.length;n++)if(!t[n].all_slotted){u=!1;break}this.action_icons.show_more_rows_icon.toggle(!u)}else this.action_icons.show_more_rows_icon.hide()},update_auto_mode:function(t){"Auto"===this.mode&&("no_detail"===t&&(t="feature spans"),this.action_icons.mode_icon.attr("title","Set display mode (now: Auto/"+t+")"))},incremental_slots:function(t,e,i){var a=this.view.canvas_manager.dummy_context,n=this.slotters[t];return n&&n.mode===i||(n=new w.default.FeatureSlotter(t,i,100,function(t){return a.measureText(t)}),this.slotters[t]=n),n.slot_features(e)},get_mode:function(t){return"no_detail"===t.extra_info||this.is_overview?"no_detail":this.view.high-this.view.low>12e3?"Squish":"Pack"},get_canvas_height:function(t,e,i,a){if("Coverage"===e||"bigwig"===t.dataset_type)return this.summary_draw_height;var n=this.incremental_slots(i,t.data,e),o=new this.painter(null,null,null,this.config.to_key_value_dict(),e);return Math.max(this.min_height_px,o.get_required_height(n,a))},draw_tile:function(t,e,i,a,n,o,s){var r=this,l=e.canvas,h=a.get("start"),d=a.get("end"),_=this.left_offset;if("bigwig"===t.dataset_type)return this._draw_line_track_tile(t,e,i,a,n);var c=[],u=this.slotters[n].slots,f=!0;if(t.data)for(var v=this.filters_manager.filters,p=0,g=t.data.length;p<g;p++){for(var m,w=t.data[p],b=!1,y=0,k=v.length;y<k;y++)if((m=v[y]).update_attrs(w),!m.keep(w)){b=!0;break}b||(c.push(w),w[0]in u||(f=!1))}var x=this.filters_manager.alpha_filter?new P(this.filters_manager.alpha_filter):null,$=this.filters_manager.height_filter?new P(this.filters_manager.height_filter):null,C=new this.painter(c,h,d,this.config.to_key_value_dict(),i,x,$,o,function(t){return r.view.get_base_color(t)}),T=null;if(e.fillStyle=this.config.get_value("block_color"),e.font=e.canvas.manager.default_font,e.textAlign="right",t.data){var M=C.draw(e,l.width,l.height,n,u);T=M.feature_mapper,incomplete_features=M.incomplete_features,T.translation=-_}return s?void 0:new L(r,a,n,l,t.data,i,t.message,f,T,incomplete_features,o)}});var K=function(t,e,i){B.call(this,t,e,i),this.painter=b.default.VariantPainter,this.summary_draw_height=30,this.left_offset=30};M(K.prototype,D.prototype,B.prototype,{display_modes:["Auto","Coverage","Dense","Squish","Pack"],build_config_params:function(){return v.union(D.prototype.config_params,[{key:"color",label:"Histogram color",type:"color"},{key:"show_sample_data",label:"Show sample data",type:"bool",default_value:!0},{key:"show_labels",label:"Show summary and sample labels",type:"bool",default_value:!0},{key:"summary_height",label:"Locus summary height",type:"float",default_value:20},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:0,hidden:!0}])},config_onchange:function(){this.set_name(this.config.get_value("name")),this.request_draw({clear_tile_cache:!0})},draw_tile:function(t,e,i,a,n){if("bigwig"===t.dataset_type)return this._draw_line_track_tile(t,e,"Histogram",a,n);var o=this.view;return new this.painter(t.data,a.get("start"),a.get("end"),this.config.to_key_value_dict(),i,function(t){return o.get_base_color(t)}).draw(e,e.canvas.width,e.canvas.height,n),new O(this,a,n,e.canvas,t.data)},get_canvas_height:function(t,e,i,a){if("bigwig"===t.dataset_type)return this.summary_draw_height;var n=this.dataset.get_metadata("sample_names")?this.dataset.get_metadata("sample_names").length:0;return 0===n&&0!==t.data.length&&(n=null===(n=t.data[0][7].match(/,/g))?1:n.length+1),new this.painter(null,null,null,this.config.to_key_value_dict(),e).get_required_height(n)},predraw_init:function(){var t=[Y.prototype.predraw_init.call(this)];return this.dataset.get_metadata("sample_names")||t.push(this.dataset.fetch()),t},postdraw_actions:function(t,e,i,a){B.prototype.postdraw_actions.call(this,t,e,i,a);var n=v.filter(t,function(t){return t instanceof R}),o=this.dataset.get_metadata("sample_names");if(0===n.length&&this.config.get_value("show_labels")&&o&&o.length>1){var s;if(0===this.container_div.find(".yaxislabel.variant").length&&(s=this.config.get_value("summary_height")/2,this.tiles_div.prepend($("<div/>").text("Summary").addClass("yaxislabel variant top").css({"font-size":s+"px",top:(this.config.get_value("summary_height")-s)/2+"px"})),this.config.get_value("show_sample_data"))){var r=o.join("<br/>");this.tiles_div.prepend($("<div/>").html(r).addClass("yaxislabel variant top sample").css({top:this.config.get_value("summary_height")}))}s=("Squish"===this.mode?5:10)+"px",$(this.tiles_div).find(".sample").css({"font-size":s,"line-height":s}),$(this.tiles_div).find(".yaxislabel").css("color",this.config.get_value("label_color"))}else this.container_div.find(".yaxislabel.variant").remove()}});var Q=function(t,e,i){Z.call(this,t,e,i),this.painter=b.default.ReadPainter,this.update_icons()};M(Q.prototype,D.prototype,B.prototype,Z.prototype,{build_config_params:function(){return v.union(D.prototype.config_params,[{key:"block_color",label:"Histogram color",type:"color"},{key:"detail_block_color",label:"Sense strand block color",type:"color",default_value:"#AAAAAA"},{key:"reverse_strand_color",label:"Antisense strand block color",type:"color",default_value:"#DDDDDD"},{key:"label_color",label:"Label color",type:"color",default_value:"black"},{key:"show_insertions",label:"Show insertions",type:"bool",default_value:!1},{key:"show_differences",label:"Show differences only",type:"bool",default_value:!0},{key:"show_counts",label:"Show summary counts",type:"bool",default_value:!0},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"min_value",label:"Histogram minimum",type:"float",default_value:void 0,help:"clear value to set automatically"},{key:"max_value",label:"Histogram maximum",type:"float",default_value:void 0,help:"clear value to set automatically"},{key:"height",type:"int",default_value:0,hidden:!0}])},config_onchange:function(){this.set_name(this.config.get_value("name")),this.request_draw({clear_tile_cache:!0})}});var tt={CompositeTrack:E,DrawableGroup:j,DiagonalHeatmapTrack:U,FeatureTrack:Z,LineTrack:W,ReadTrack:Q,VariantTrack:K,VcfTrack:K},et=function(t,e,i){if("copy"in t)return t.copy(i);var a=t.obj_type;return a||(a=t.track_type),new tt[a](e,i,t)};t.default={TracksterView:G,DrawableGroup:j,LineTrack:W,FeatureTrack:Z,DiagonalHeatmapTrack:U,ReadTrack:Q,VariantTrack:K,CompositeTrack:E,object_from_template:et}});
+define("viz/trackster/tracks", ["exports", "utils/localization", "libs/underscore", "viz/visualization", "viz/viz_views", "viz/trackster/util", "viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/filters", "mvc/dataset/data", "mvc/tool/tools", "utils/config", "viz/bbi-data-manager", "ui/editable-text"], function(exports, _localization, _underscore, _visualization, _viz_views, _util, _slotting, _painters, _filters, _data, _tools, _config, _bbiDataManager) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    var _visualization2 = _interopRequireDefault(_visualization);
+
+    var _viz_views2 = _interopRequireDefault(_viz_views);
+
+    var _util2 = _interopRequireDefault(_util);
+
+    var _slotting2 = _interopRequireDefault(_slotting);
+
+    var _painters2 = _interopRequireDefault(_painters);
+
+    var _filters2 = _interopRequireDefault(_filters);
+
+    var _data2 = _interopRequireDefault(_data);
+
+    var _tools2 = _interopRequireDefault(_tools);
+
+    var _config2 = _interopRequireDefault(_config);
+
+    var _bbiDataManager2 = _interopRequireDefault(_bbiDataManager);
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var extend = _.extend;
+
+    // ---- Web UI specific utilities ----
+
+    /**
+     * Dictionary of HTML element-JavaScript object relationships.
+     */
+    // TODO: probably should separate moveable objects from containers.
+    var html_elt_js_obj_dict = {};
+
+    /**
+     * Designates an HTML as a container.
+     */
+    var is_container = function is_container(element, obj) {
+        html_elt_js_obj_dict[element.attr("id")] = obj;
+    };
+
+    /**
+     * Make `element` moveable within parent and sibling elements by dragging `handle` (a selector).
+     * Function manages JS objects, containers as well.
+     *
+     * @param element HTML element to make moveable
+     * @param handle_class classname that denotes HTML element to be used as handle
+     * @param container_selector selector used to identify possible containers for this element
+     * @param element_js_obj JavaScript object associated with element; used
+     */
+    var moveable = function moveable(element, handle_class, container_selector, element_js_obj) {
+        // HACK: set default value for container selector.
+        container_selector = ".group";
+
+        // Register element with its object.
+        html_elt_js_obj_dict[element.attr("id")] = element_js_obj;
+
+        // Need to provide selector for handle, not class.
+        element.bind("drag", {
+            handle: "." + handle_class,
+            relative: true
+        }, function(e, d) {
+            var element = $(this);
+            var parent = $(this).parent();
+
+            var // Only sorting amongst tracks and groups.
+                children = parent.children(".track,.group");
+
+            var this_obj = html_elt_js_obj_dict[$(this).attr("id")];
+            var child;
+            var container;
+            var top;
+            var bottom;
+            var i;
+
+            //
+            // Enable three types of dragging: (a) out of container; (b) into container;
+            // (c) sibling movement, aka sorting. Handle in this order for simplicity.
+            //
+
+            // Handle dragging out of container.
+            container = $(this).parents(container_selector);
+            if (container.length !== 0) {
+                top = container.position().top;
+                bottom = top + container.outerHeight();
+                var cur_container = html_elt_js_obj_dict[container.attr("id")];
+                if (d.offsetY < top) {
+                    // Moving above container.
+                    $(this).insertBefore(container);
+                    cur_container.remove_drawable(this_obj);
+                    cur_container.container.add_drawable_before(this_obj, cur_container);
+                    return;
+                } else if (d.offsetY > bottom) {
+                    // Moving below container.
+                    $(this).insertAfter(container);
+                    cur_container.remove_drawable(this_obj);
+                    cur_container.container.add_drawable(this_obj);
+                    return;
+                }
+            }
+
+            // Handle dragging into container. Child is appended to container's content_div.
+            container = null;
+            for (i = 0; i < children.length; i++) {
+                child = $(children.get(i));
+                top = child.position().top;
+                bottom = top + child.outerHeight();
+                // Dragging into container if child is a container and offset is inside container.
+                if (child.is(container_selector) && this !== child.get(0) && d.offsetY >= top && d.offsetY <= bottom) {
+                    // Append/prepend based on where offsetY is closest to and return.
+                    if (d.offsetY - top < bottom - d.offsetY) {
+                        child.find(".content-div").prepend(this);
+                    } else {
+                        child.find(".content-div").append(this);
+                    }
+                    // Update containers. Object may not have container if it is being moved quickly.
+                    if (this_obj.container) {
+                        this_obj.container.remove_drawable(this_obj);
+                    }
+                    html_elt_js_obj_dict[child.attr("id")].add_drawable(this_obj);
+                    return;
+                }
+            }
+
+            // Handle sibling movement, aka sorting.
+
+            // Determine new position
+            for (i = 0; i < children.length; i++) {
+                child = $(children.get(i));
+                if (d.offsetY < child.position().top &&
+                    // Cannot move tracks above reference track or intro div.
+                    !(child.hasClass("reference-track") || child.hasClass("intro"))) {
+                    break;
+                }
+            }
+
+            // If not already in the right place, move. Need
+            // to handle the end specially since we don't have
+            // insert at index
+            if (i === children.length) {
+                if (this !== children.get(i - 1)) {
+                    parent.append(this);
+                    html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, i);
+                }
+            } else if (this !== children.get(i)) {
+                $(this).insertBefore(children.get(i));
+                // Need to adjust insert position if moving down because move is changing
+                // indices of all list items.
+                html_elt_js_obj_dict[parent.attr("id")].move_drawable(this_obj, d.deltaY > 0 ? i - 1 : i);
+            }
+        }).bind("dragstart", function() {
+            $(this).addClass("dragging");
+        }).bind("dragend", function() {
+            $(this).removeClass("dragging");
+        });
+    };
+
+    /**
+     * Init constants & functions used throughout trackster.
+     */
+    var // Padding at the top of tracks for error messages
+        ERROR_PADDING = 20;
+
+    var // Maximum number of rows un a slotted track
+        MAX_FEATURE_DEPTH = 100;
+
+    var // Minimum width for window for squish to be used.
+        MIN_SQUISH_VIEW_WIDTH = 12000;
+
+    var // Number of pixels per tile, not including left offset.
+        TILE_SIZE = 400;
+
+    var DEFAULT_DATA_QUERY_WAIT = 5000;
+
+    var // Maximum number of chromosomes that are selectable at any one time.
+        MAX_CHROMS_SELECTABLE = 100;
+
+    var DATA_ERROR = "Cannot display dataset due to an error. ";
+
+    var DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.";
+
+    var DATA_NONE = "No data for this chrom/contig.";
+
+    var DATA_PENDING = "Preparing data. This can take a while for a large dataset. " + "If the visualization is saved and closed, preparation will continue in the background.";
+
+    var DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ";
+    var DATA_LOADING = "Loading data...";
+    var DATA_OK = "Ready for display";
+    var TILE_CACHE_SIZE = 10;
+    var DATA_CACHE_SIZE = 20;
+
+    var // Numerical/continuous data display modes.
+        CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
+
+    /**
+     * Round a number to a given number of decimal places.
+     */
+    function round(num, places) {
+        // Default rounding is to integer.
+        if (!places) {
+            places = 0;
+        }
+
+        var val = Math.pow(10, places);
+        return Math.round(num * val) / val;
+    }
+
+    /**
+     * Check if a server can do byte range requests.
+     */
+    function supportsByteRanges(url) {
+        var promise = $.Deferred();
+        $.ajax({
+            type: "HEAD",
+            url: url,
+            beforeSend: function beforeSend(xhr) {
+                xhr.setRequestHeader("Range", "bytes=0-10");
+            },
+            success: function success(result, status, xhr) {
+                promise.resolve(xhr.status === 206);
+            }
+        });
+
+        return promise;
+    }
+
+    /**
+     * Drawables hierarchy:
+     *
+     * Drawable
+     *    --> DrawableCollection
+     *        --> DrawableGroup
+     *        --> View
+     *    --> Track
+     */
+
+    /**
+     * Base class for all drawable objects. Drawable objects are associated with a view and live in a
+     * container. They have the following HTML elements and structure:
+     *  <container_div>
+     *      <header_div>
+     *      <content_div>
+     *
+     * They optionally have a drag handle class.
+     */
+    var Drawable = function Drawable(view, container, obj_dict) {
+        if (!Drawable.id_counter) {
+            Drawable.id_counter = 0;
+        }
+        this.id = Drawable.id_counter++;
+        this.view = view;
+        this.container = container;
+        this.drag_handle_class = obj_dict.drag_handle_class;
+        this.is_overview = false;
+        this.action_icons = {};
+
+        // -- Set up drawable configuration. --
+        this.config = _config2.default.ConfigSettingCollection.from_models_and_saved_values(this.config_params, obj_dict.prefs);
+
+        // If there's no saved name, use object name.
+        if (!this.config.get_value("name")) {
+            this.config.set_value("name", obj_dict.name);
+        }
+        if (this.config_onchange) {
+            this.config.on("change", this.config_onchange, this);
+        }
+
+        // Build Drawable HTML and behaviors.
+        this.container_div = this.build_container_div();
+        this.header_div = null;
+
+        // Use opt-out policy on header creation because this is the more frequent approach:
+        // unless flag set, create header.
+        if (obj_dict.header !== false) {
+            var header_view = new _viz_views2.default.TrackHeaderView({
+                model: this,
+                id: this.id
+            });
+
+            this.header_div = header_view.$el;
+            this.container_div.append(this.header_div);
+
+            // Show icons when users is hovering over track.
+            var icons_div = header_view.icons_div;
+            this.action_icons = header_view.action_icons;
+            this.container_div.hover(function() {
+                icons_div.show();
+            }, function() {
+                icons_div.hide();
+            });
+        }
+    };
+
+    Drawable.prototype.action_icons_def = [
+        // Hide/show drawable content.
+        // FIXME: make this an odict for easier lookup.
+        {
+            name: "toggle_icon",
+            title: "Hide/show content",
+            css_class: "toggle",
+            on_click_fn: function on_click_fn(drawable) {
+                if (drawable.config.get_value("content_visible")) {
+                    drawable.action_icons.toggle_icon.addClass("toggle-expand").removeClass("toggle");
+                    drawable.hide_contents();
+                    drawable.config.set_value("content_visible", false);
+                } else {
+                    drawable.action_icons.toggle_icon.addClass("toggle").removeClass("toggle-expand");
+                    drawable.config.set_value("content_visible", true);
+                    drawable.show_contents();
+                }
+            }
+        },
+        // Edit settings.
+        {
+            name: "settings_icon",
+            title: (0, _localization2.default)("Edit settings"),
+            css_class: "gear",
+            on_click_fn: function on_click_fn(drawable) {
+                var view = new _config2.default.ConfigSettingCollectionView({
+                    collection: drawable.config
+                });
+                view.render_in_modal("Configure Track");
+            }
+        },
+        // Remove.
+        {
+            name: "remove_icon",
+            title: (0, _localization2.default)("Remove"),
+            css_class: "remove-icon",
+            on_click_fn: function on_click_fn(drawable) {
+                // Tooltip for remove icon must be deleted when drawable is deleted.
+                $(".tooltip").remove();
+                drawable.remove();
+            }
+        }
+    ];
+
+    extend(Drawable.prototype, {
+        config_params: [{
+            key: "name",
+            label: "Name",
+            type: "text",
+            default_value: ""
+        }, {
+            key: "content_visible",
+            type: "bool",
+            default_value: true,
+            hidden: true
+        }],
+
+        config_onchange: function config_onchange() {},
+
+        init: function init() {},
+
+        changed: function changed() {
+            this.view.changed();
+        },
+
+        can_draw: function can_draw() {
+            if (this.enabled && this.config.get_value("content_visible")) {
+                return true;
+            }
+
+            return false;
+        },
+
+        request_draw: function request_draw() {},
+
+        _draw: function _draw(options) {},
+
+        /**
+         * Returns representation of object in a dictionary for easy saving.
+         * Use from_dict to recreate object.
+         */
+        to_dict: function to_dict() {},
+
+        /**
+         * Set drawable name.
+         */
+        set_name: function set_name(new_name) {
+            this.old_name = this.config.get_value("name");
+            this.config.set_value("name", new_name);
+        },
+
+        /**
+         * Revert track name; currently name can be reverted only once.
+         */
+        revert_name: function revert_name() {
+            if (this.old_name) {
+                this.config.set_value("name", this.old_name);
+            }
+        },
+
+        /**
+         * Remove drawable (a) from its container and (b) from the HTML.
+         */
+        remove: function remove() {
+            this.changed();
+
+            this.container.remove_drawable(this);
+            var view = this.view;
+            this.container_div.hide(0, function() {
+                $(this).remove();
+                // HACK: is there a better way to update the view?
+                view.update_intro_div();
+            });
+        },
+
+        /**
+         * Build drawable's container div; this is the parent div for all drawable's elements.
+         */
+        build_container_div: function build_container_div() {},
+
+        /**
+         * Update icons.
+         */
+        update_icons: function update_icons() {},
+
+        /**
+         * Hide drawable's contents.
+         */
+        hide_contents: function hide_contents() {},
+
+        /**
+         * Show drawable's contents.
+         */
+        show_contents: function show_contents() {},
+
+        /**
+         * Returns a shallow copy of all drawables in this drawable.
+         */
+        get_drawables: function get_drawables() {}
+    });
+
+    /**
+     * A collection of drawable objects.
+     */
+    var DrawableCollection = function DrawableCollection(view, container, obj_dict) {
+        Drawable.call(this, view, container, obj_dict);
+
+        // Attribute init.
+        this.obj_type = obj_dict.obj_type;
+        this.drawables = [];
+    };
+
+    extend(DrawableCollection.prototype, Drawable.prototype, {
+        /**
+         * Unpack and add drawables to the collection.
+         */
+        unpack_drawables: function unpack_drawables(drawables_array) {
+            // Add drawables to collection.
+            this.drawables = [];
+            var drawable;
+            for (var i = 0; i < drawables_array.length; i++) {
+                drawable = object_from_template(drawables_array[i], this.view, this);
+                this.add_drawable(drawable);
+            }
+        },
+
+        /**
+         * Init each drawable in the collection.
+         */
+        init: function init() {
+            for (var i = 0; i < this.drawables.length; i++) {
+                this.drawables[i].init();
+            }
+        },
+
+        /**
+         * Draw each drawable in the collection.
+         */
+        _draw: function _draw(options) {
+            for (var i = 0; i < this.drawables.length; i++) {
+                this.drawables[i]._draw(options);
+            }
+        },
+
+        /**
+         * Returns representation of object in a dictionary for easy saving.
+         * Use from_dict to recreate object.
+         */
+        to_dict: function to_dict() {
+            var dictified_drawables = [];
+            for (var i = 0; i < this.drawables.length; i++) {
+                dictified_drawables.push(this.drawables[i].to_dict());
+            }
+            return {
+                prefs: this.config.to_key_value_dict(),
+                obj_type: this.obj_type,
+                drawables: dictified_drawables
+            };
+        },
+
+        /**
+         * Add a drawable to the end of the collection.
+         */
+        add_drawable: function add_drawable(drawable) {
+            this.drawables.push(drawable);
+            drawable.container = this;
+            this.changed();
+        },
+
+        /**
+         * Add a drawable before another drawable.
+         */
+        add_drawable_before: function add_drawable_before(drawable, other) {
+            this.changed();
+            var index = this.drawables.indexOf(other);
+            if (index !== -1) {
+                this.drawables.splice(index, 0, drawable);
+                return true;
+            }
+            return false;
+        },
+
+        /**
+         * Replace one drawable with another.
+         */
+        replace_drawable: function replace_drawable(old_drawable, new_drawable, update_html) {
+            var index = this.drawables.indexOf(old_drawable);
+            if (index !== -1) {
+                this.drawables[index] = new_drawable;
+                if (update_html) {
+                    old_drawable.container_div.replaceWith(new_drawable.container_div);
+                }
+                this.changed();
+            }
+            return index;
+        },
+
+        /**
+         * Remove drawable from this collection.
+         */
+        remove_drawable: function remove_drawable(drawable) {
+            var index = this.drawables.indexOf(drawable);
+            if (index !== -1) {
+                // Found drawable to remove.
+                this.drawables.splice(index, 1);
+                drawable.container = null;
+                this.changed();
+                return true;
+            }
+            return false;
+        },
+
+        /**
+         * Move drawable to another location in collection.
+         */
+        move_drawable: function move_drawable(drawable, new_position) {
+            var index = this.drawables.indexOf(drawable);
+            if (index !== -1) {
+                // Remove from current position:
+                this.drawables.splice(index, 1);
+                // insert into new position:
+                this.drawables.splice(new_position, 0, drawable);
+                this.changed();
+                return true;
+            }
+            return false;
+        },
+
+        /**
+         * Returns all drawables in this drawable.
+         */
+        get_drawables: function get_drawables() {
+            return this.drawables;
+        },
+
+        /**
+         * Returns all <track_type> tracks in collection.
+         */
+        get_tracks: function get_tracks(track_type) {
+            // Initialize queue with copy of drawables array.
+            var queue = this.drawables.slice(0);
+
+            var tracks = [];
+            var drawable;
+            while (queue.length !== 0) {
+                drawable = queue.shift();
+                if (drawable instanceof track_type) {
+                    tracks.push(drawable);
+                } else if (drawable.drawables) {
+                    queue = queue.concat(drawable.drawables);
+                }
+            }
+            return tracks;
+        }
+    });
+
+    /**
+     * A group of drawables that are moveable, visible.
+     */
+    var DrawableGroup = function DrawableGroup(view, container, obj_dict) {
+        extend(obj_dict, {
+            obj_type: "DrawableGroup",
+            drag_handle_class: "group-handle"
+        });
+        DrawableCollection.call(this, view, container, obj_dict);
+
+        // Set up containers/moving for group: register both container_div and content div as container
+        // because both are used as containers (container div to recognize container, content_div to
+        // store elements). Group can be moved.
+        this.content_div = $("<div/>").addClass("content-div").attr("id", "group_" + this.id + "_content_div").appendTo(this.container_div);
+        is_container(this.container_div, this);
+        is_container(this.content_div, this);
+        moveable(this.container_div, this.drag_handle_class, ".group", this);
+
+        // Set up filters.
+        this.filters_manager = new _filters2.default.FiltersManager(this);
+        this.header_div.after(this.filters_manager.parent_div);
+
+        // HACK: add div to clear floating elements.
+        this.filters_manager.parent_div.after($("<div style='clear: both'/>"));
+
+        // For saving drawables' filter managers when group-level filtering is done:
+        this.saved_filters_managers = [];
+
+        // Add drawables.
+        if ("drawables" in obj_dict) {
+            this.unpack_drawables(obj_dict.drawables);
+        }
+
+        // Restore filters.
+        if ("filters" in obj_dict) {
+            // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
+            var old_manager = this.filters_manager;
+            this.filters_manager = new _filters2.default.FiltersManager(this, obj_dict.filters);
+            old_manager.parent_div.replaceWith(this.filters_manager.parent_div);
+
+            if (obj_dict.filters.visible) {
+                this.setup_multitrack_filtering();
+            }
+        }
+    };
+
+    extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype, {
+        action_icons_def: [Drawable.prototype.action_icons_def[0], Drawable.prototype.action_icons_def[1],
+            // Replace group with composite track.
+            {
+                name: "composite_icon",
+                title: (0, _localization2.default)("Show composite track"),
+                css_class: "layers-stack",
+                on_click_fn: function on_click_fn(group) {
+                    $(".tooltip").remove();
+                    group.show_composite_track();
+                }
+            },
+            // Toggle track filters.
+            {
+                name: "filters_icon",
+                title: (0, _localization2.default)("Filters"),
+                css_class: "ui-slider-050",
+                on_click_fn: function on_click_fn(group) {
+                    // TODO: update Tooltip text.
+                    if (group.filters_manager.visible()) {
+                        // Hiding filters.
+                        group.filters_manager.clear_filters();
+                        group._restore_filter_managers();
+                        // TODO: maintain current filter by restoring and setting saved manager's
+                        // settings to current/shared manager's settings.
+                        // TODO: need to restore filter managers when moving drawable outside group.
+                    } else {
+                        // Showing filters.
+                        group.setup_multitrack_filtering();
+                        group.request_draw({
+                            clear_tile_cache: true
+                        });
+                    }
+                    group.filters_manager.toggle();
+                }
+            },
+            Drawable.prototype.action_icons_def[2]
+        ],
+
+        build_container_div: function build_container_div() {
+            var container_div = $("<div/>").addClass("group").attr("id", "group_" + this.id);
+            if (this.container) {
+                this.container.content_div.append(container_div);
+            }
+            return container_div;
+        },
+
+        hide_contents: function hide_contents() {
+            this.tiles_div.hide();
+        },
+
+        show_contents: function show_contents() {
+            // Show the contents div and labels (if present)
+            this.tiles_div.show();
+            // Request a redraw of the content
+            this.request_draw();
+        },
+
+        update_icons: function update_icons() {
+            //
+            // Handle update when there are no tracks.
+            //
+            var num_drawables = this.drawables.length;
+            if (num_drawables === 0) {
+                this.action_icons.composite_icon.hide();
+                this.action_icons.filters_icon.hide();
+            } else if (num_drawables === 1) {
+                this.action_icons.composite_icon.toggle(this.drawables[0] instanceof CompositeTrack);
+                this.action_icons.filters_icon.hide();
+            } else {
+                // There are 2 or more tracks.
+
+                //
+                // Determine if a composite track can be created. Current criteria:
+                // (a) all tracks are line tracks;
+                //      OR
+                // FIXME: this is not enabled right now because it has not been well tested:
+                // (b) there is a single FeatureTrack.
+                //
+
+                // All tracks the same?
+                var i;
+
+                var j;
+                var drawable;
+                var same_type = true;
+                var a_type = this.drawables[0].get_type();
+                var num_feature_tracks = 0;
+                for (i = 0; i < num_drawables; i++) {
+                    drawable = this.drawables[i];
+                    if (drawable.get_type() !== a_type) {
+                        can_composite = false;
+                        break;
+                    }
+                    if (drawable instanceof FeatureTrack) {
+                        num_feature_tracks++;
+                    }
+                }
+
+                if (same_type && this.drawables[0] instanceof LineTrack) {
+                    this.action_icons.composite_icon.show();
+                } else {
+                    this.action_icons.composite_icon.hide();
+                    $(".tooltip").remove();
+                }
+
+                //
+                // Set up group-level filtering and update filter icon.
+                //
+                if (num_feature_tracks > 1 && num_feature_tracks === this.drawables.length) {
+                    //
+                    // Find shared filters.
+                    //
+                    var shared_filters = {};
+
+                    var filter;
+
+                    // Init shared filters with filters from first drawable.
+                    drawable = this.drawables[0];
+                    for (j = 0; j < drawable.filters_manager.filters.length; j++) {
+                        filter = drawable.filters_manager.filters[j];
+                        shared_filters[filter.name] = [filter];
+                    }
+
+                    // Create lists of shared filters.
+                    for (i = 1; i < this.drawables.length; i++) {
+                        drawable = this.drawables[i];
+                        for (j = 0; j < drawable.filters_manager.filters.length; j++) {
+                            filter = drawable.filters_manager.filters[j];
+                            if (filter.name in shared_filters) {
+                                shared_filters[filter.name].push(filter);
+                            }
+                        }
+                    }
+
+                    //
+                    // Create filters for shared filters manager. Shared filters manager is group's
+                    // manager.
+                    //
+                    this.filters_manager.remove_all();
+                    var filters;
+                    var new_filter;
+                    var min;
+                    var max;
+                    for (var filter_name in shared_filters) {
+                        filters = shared_filters[filter_name];
+                        if (filters.length === num_feature_tracks) {
+                            // Add new filter.
+                            // FIXME: can filter.copy() be used?
+                            new_filter = new _filters2.default.NumberFilter({
+                                name: filters[0].name,
+                                index: filters[0].index
+                            });
+                            this.filters_manager.add_filter(new_filter);
+                        }
+                    }
+
+                    // Show/hide icon based on filter availability.
+                    this.action_icons.filters_icon.toggle(this.filters_manager.filters.length > 0);
+                } else {
+                    this.action_icons.filters_icon.hide();
+                }
+            }
+        },
+
+        /**
+         * Restore individual track filter managers.
+         */
+        _restore_filter_managers: function _restore_filter_managers() {
+            for (var i = 0; i < this.drawables.length; i++) {
+                this.drawables[i].filters_manager = this.saved_filters_managers[i];
+            }
+            this.saved_filters_managers = [];
+        },
+
+        /**
+         *
+         */
+        setup_multitrack_filtering: function setup_multitrack_filtering() {
+            // Save tracks' managers and set up shared manager.
+            if (this.filters_manager.filters.length > 0) {
+                // For all tracks, save current filter manager and set manager to shared (this object's) manager.
+                this.saved_filters_managers = [];
+                for (var i = 0; i < this.drawables.length; i++) {
+                    var drawable = this.drawables[i];
+                    this.saved_filters_managers.push(drawable.filters_manager);
+                    drawable.filters_manager = this.filters_manager;
+                }
+
+                //TODO: hide filters icons for each drawable?
+            }
+            this.filters_manager.init_filters();
+        },
+
+        /**
+         * Replace group with a single composite track that includes all group's tracks.
+         */
+        show_composite_track: function show_composite_track() {
+            var composite_track = new CompositeTrack(this.view, this.view, {
+                name: this.config.get_value("name"),
+                drawables: this.drawables
+            });
+            var index = this.container.replace_drawable(this, composite_track, true);
+            composite_track.request_draw();
+        },
+
+        add_drawable: function add_drawable(drawable) {
+            DrawableCollection.prototype.add_drawable.call(this, drawable);
+            this.update_icons();
+        },
+
+        remove_drawable: function remove_drawable(drawable) {
+            DrawableCollection.prototype.remove_drawable.call(this, drawable);
+            this.update_icons();
+        },
+
+        to_dict: function to_dict() {
+            // If filters are visible, need to restore original filter managers before converting to dict.
+            if (this.filters_manager.visible()) {
+                this._restore_filter_managers();
+            }
+
+            var obj_dict = extend(DrawableCollection.prototype.to_dict.call(this), {
+                filters: this.filters_manager.to_dict()
+            });
+
+            // Setup multi-track filtering again.
+            if (this.filters_manager.visible()) {
+                this.setup_multitrack_filtering();
+            }
+
+            return obj_dict;
+        },
+
+        request_draw: function request_draw(options) {
+            _.each(this.drawables, function(d) {
+                d.request_draw(options);
+            });
+        }
+    });
+
+    /**
+     * View object manages a trackster visualization, including tracks and user interactions.
+     * Events triggered:
+     *      navigate: when browser view changes to a new locations
+     */
+    var TracksterView = Backbone.View.extend({
+        initialize: function initialize(obj_dict) {
+            extend(obj_dict, {
+                obj_type: "View"
+            });
+            DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
+            this.chrom = null;
+            this.vis_id = obj_dict.vis_id;
+            this.dbkey = obj_dict.dbkey;
+            this.stand_alone = obj_dict.stand_alone !== undefined ? obj_dict.stand_alone : true;
+            this.label_tracks = [];
+            this.tracks_to_be_redrawn = [];
+            this.max_low = 0;
+            this.max_high = 0;
+            this.zoom_factor = 3;
+            this.min_separation = 30;
+            this.has_changes = false;
+            // Deferred object that indicates when view's chrom data has been loaded.
+            this.load_chroms_deferred = null;
+            this.render();
+            this.canvas_manager = new _visualization2.default.CanvasManager(this.container.get(0).ownerDocument);
+            this.reset();
+
+            // Define track configuration
+            this.config = _config2.default.ConfigSettingCollection.from_models_and_saved_values([{
+                key: "name",
+                label: "Name",
+                type: "text",
+                default_value: ""
+            }, {
+                key: "a_color",
+                label: "A Color",
+                type: "color",
+                default_value: "#FF0000"
+            }, {
+                key: "c_color",
+                label: "C Color",
+                type: "color",
+                default_value: "#00FF00"
+            }, {
+                key: "g_color",
+                label: "G Color",
+                type: "color",
+                default_value: "#0000FF"
+            }, {
+                key: "t_color",
+                label: "T Color",
+                type: "color",
+                default_value: "#FF00FF"
+            }, {
+                key: "n_color",
+                label: "N Color",
+                type: "color",
+                default_value: "#AAAAAA"
+            }], {
+                name: obj_dict.name
+            });
+        },
+
+        render: function render() {
+            // Attribute init.
+            this.requested_redraw = false;
+
+            // Create DOM elements
+            var parent_element = this.container;
+
+            var view = this;
+            // Top container for things that are fixed at the top
+            this.top_container = $("<div/>").addClass("top-container").appendTo(parent_element);
+            // Browser content, primary tracks are contained in here
+            this.browser_content_div = $("<div/>").addClass("content").appendTo(parent_element);
+            // Bottom container for things that are fixed at the bottom
+            this.bottom_container = $("<div/>").addClass("bottom-container").appendTo(parent_element);
+            // Label track fixed at top
+            this.top_labeltrack = $("<div/>").addClass("top-labeltrack").appendTo(this.top_container);
+            // Viewport for dragging tracks in center
+            this.viewport_container = $("<div/>").addClass("viewport-container").attr("id", "viewport-container").appendTo(this.browser_content_div);
+            // Alias viewport_container as content_div so that it matches function of DrawableCollection/Group content_div.
+            this.content_div = this.viewport_container;
+            is_container(this.viewport_container, view);
+            // Introduction div shown when there are no tracks.
+            this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container);
+            var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function() {
+                _visualization2.default.select_datasets({
+                    dbkey: view.dbkey
+                }, function(tracks) {
+                    _.each(tracks, function(track) {
+                        view.add_drawable(object_from_template(track, view, view));
+                    });
+                });
+            });
+
+            // Navigation at top
+            this.nav_container = $("<div/>").addClass("trackster-nav-container").prependTo(this.top_container);
+            this.nav = $("<div/>").addClass("trackster-nav").appendTo(this.nav_container);
+
+            if (this.stand_alone) {
+                this.nav_container.addClass("stand-alone");
+                this.nav.addClass("stand-alone");
+            }
+
+            // Overview (scrollbar and overview plot) at bottom
+            this.overview = $("<div/>").addClass("overview").appendTo(this.bottom_container);
+            this.overview_viewport = $("<div/>").addClass("overview-viewport").appendTo(this.overview);
+            this.overview_close = $("<a/>").attr("title", "Close overview").addClass("icon-button overview-close tooltip").hide().appendTo(this.overview_viewport);
+            this.overview_highlight = $("<div/>").addClass("overview-highlight").hide().appendTo(this.overview_viewport);
+            this.overview_box_background = $("<div/>").addClass("overview-boxback").appendTo(this.overview_viewport);
+            this.overview_box = $("<div/>").addClass("overview-box").appendTo(this.overview_viewport);
+            this.default_overview_height = this.overview_box.height();
+
+            this.nav_controls = $("<div/>").addClass("nav-controls").appendTo(this.nav);
+            this.chrom_select = $("<select/>").attr({
+                name: "chrom"
+            }).addClass("chrom-nav").append("<option value=''>Loading</option>").appendTo(this.nav_controls);
+            var submit_nav = function submit_nav(e) {
+                if (e.type === "focusout" || (e.keyCode || e.which) === 13 || (e.keyCode || e.which) === 27) {
+                    if ((e.keyCode || e.which) !== 27) {
+                        // Not escape key
+                        view.go_to($(this).val());
+                    }
+                    $(this).hide();
+                    $(this).val("");
+                    view.location_span.show();
+                    view.chrom_select.show();
+                }
+
+                // Suppress key presses so that they do impact viz.
+                e.stopPropagation();
+            };
+            this.nav_input = $("<input/>").addClass("nav-input").hide().bind("keyup focusout", submit_nav).appendTo(this.nav_controls);
+            this.location_span = $("<span/>").addClass("location").attr("title", "Click to change location").tooltip({
+                placement: "bottom"
+            }).appendTo(this.nav_controls);
+            this.location_span.click(function() {
+                view.location_span.hide();
+                view.chrom_select.hide();
+                view.nav_input.val(view.chrom + ":" + view.low + "-" + view.high);
+                view.nav_input.css("display", "inline-block");
+                view.nav_input.select();
+                view.nav_input.focus();
+                // Set up autocomplete for tracks' features.
+                view.nav_input.autocomplete({
+                    source: function source(request, response) {
+                        // Using current text, query each track and create list of all matching features.
+                        var all_features = [];
+
+                        var feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), function(t) {
+                            return t.data_manager.search_features(request.term).success(function(dataset_features) {
+                                all_features = all_features.concat(dataset_features);
+                            });
+                        });
+
+                        // When all searching is done, fill autocomplete.
+                        $.when.apply($, feature_search_deferreds).done(function() {
+                            response($.map(all_features, function(feature) {
+                                return {
+                                    label: feature[0],
+                                    value: feature[1]
+                                };
+                            }));
+                        });
+                    },
+                    minLength: 2
+                });
+            });
+            if (this.vis_id !== undefined) {
+                this.hidden_input = $("<input/>").attr("type", "hidden").val(this.vis_id).appendTo(this.nav_controls);
+            }
+
+            this.zo_link = $("<a/>").attr("id", "zoom-out").attr("title", "Zoom out").tooltip({
+                placement: "bottom"
+            }).click(function() {
+                view.zoom_out();
+            }).appendTo(this.nav_controls);
+            this.zi_link = $("<a/>").attr("id", "zoom-in").attr("title", "Zoom in").tooltip({
+                placement: "bottom"
+            }).click(function() {
+                view.zoom_in();
+            }).appendTo(this.nav_controls);
+
+            // Get initial set of chroms.
+            this.load_chroms_deferred = this.load_chroms({
+                low: 0
+            });
+            this.chrom_select.bind("change", function() {
+                view.change_chrom(view.chrom_select.val());
+            });
+
+            /*
+            this.browser_content_div.bind("mousewheel", function( e, delta ) {
+                if (Math.abs(delta) < 0.5) {
+                    return;
+                }
+                if (delta > 0) {
+                    view.zoom_in(e.pageX, this.viewport_container);
+                } else {
+                    view.zoom_out();
+                }
+                e.preventDefault();
+            });
+            */
+
+            // Blur tool/filter inputs when user clicks on content div.
+            this.browser_content_div.click(function(e) {
+                $(this).find("input").trigger("blur");
+            });
+
+            // Double clicking zooms in
+            this.browser_content_div.bind("dblclick", function(e) {
+                view.zoom_in(e.pageX, this.viewport_container);
+            });
+
+            // Dragging the overview box (~ horizontal scroll bar)
+            this.overview_box.bind("dragstart", function(e, d) {
+                this.current_x = d.offsetX;
+            }).bind("drag", function(e, d) {
+                var delta = d.offsetX - this.current_x;
+                this.current_x = d.offsetX;
+                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low));
+                view.move_delta(-delta_chrom);
+            });
+
+            this.overview_close.click(function() {
+                view.reset_overview();
+            });
+
+            // Dragging in the viewport scrolls
+            this.viewport_container.bind("draginit", function(e, d) {
+                // Disable interaction if started in scrollbar (for webkit)
+                if (e.clientX > view.viewport_container.width() - 16) {
+                    return false;
+                }
+            }).bind("dragstart", function(e, d) {
+                d.original_low = view.low;
+                d.current_height = e.clientY;
+                d.current_x = d.offsetX;
+            }).bind("drag", function(e, d) {
+                var container = $(this);
+                var delta = d.offsetX - d.current_x;
+                var new_scroll = container.scrollTop() - (e.clientY - d.current_height);
+                container.scrollTop(new_scroll);
+                d.current_height = e.clientY;
+                d.current_x = d.offsetX;
+                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
+                view.move_delta(delta_chrom);
+            });
+            /*
+            FIXME: Do not do this for now because it's too jittery. Some kind of gravity approach is
+            needed here because moving left/right should be difficult.
+             // Also capture mouse wheel for left/right scrolling
+            }).bind( 'mousewheel', function( e, d, dx, dy ) {
+                // Only handle x axis scrolling; y axis scrolling is
+                // handled by the browser when the event bubbles up.
+                if (dx) {
+                    var delta_chrom = Math.round( - dx / view.viewport_container.width() * (view.high - view.low) );
+                    view.move_delta( delta_chrom );
+                }
+            });
+            */
+
+            // Dragging in the top label track allows selecting a region to zoom in on selected region.
+            this.top_labeltrack.bind("dragstart", function(e, d) {
+                return $("<div/>").addClass("zoom-area").css("height", view.browser_content_div.height() + view.top_labeltrack.height() + 1).appendTo($(this));
+            }).bind("drag", function(e, d) {
+                $(d.proxy).css({
+                    left: Math.min(e.pageX, d.startX) - view.container.offset().left,
+                    width: Math.abs(e.pageX - d.startX)
+                });
+
+                var min = Math.min(e.pageX, d.startX) - view.container.offset().left;
+
+                var max = Math.max(e.pageX, d.startX) - view.container.offset().left;
+
+                var span = view.high - view.low;
+                var width = view.viewport_container.width();
+                view.update_location(Math.round(min / width * span) + view.low, Math.round(max / width * span) + view.low);
+            }).bind("dragend", function(e, d) {
+                var min = Math.min(e.pageX, d.startX);
+                var max = Math.max(e.pageX, d.startX);
+                var span = view.high - view.low;
+                var width = view.viewport_container.width();
+                var old_low = view.low;
+                view.low = Math.round(min / width * span) + old_low;
+                view.high = Math.round(max / width * span) + old_low;
+                $(d.proxy).remove();
+                view.request_redraw();
+            });
+
+            // FIXME: this is still wonky for embedded visualizations.
+            /*
+            // For vertical alignment, track mouse with simple line.
+            var mouse_tracker_div = $('<div/>').addClass('mouse-pos').appendTo(parent_element);
+             // Show tracker only when hovering over view.
+            parent_element.hover(
+                function() {
+                    mouse_tracker_div.show();
+                    parent_element.mousemove(function(e) {
+                        mouse_tracker_div.css({
+                            // -1 makes line appear next to the mouse w/o preventing mouse actions.
+                            left: e.pageX - parent_element.offset().left - 1
+                        });
+                    });
+                },
+                function() {
+                    parent_element.off('mousemove');
+                    mouse_tracker_div.hide();
+                }
+            );
+            */
+
+            this.add_label_track(new LabelTrack(this, {
+                content_div: this.top_labeltrack
+            }));
+
+            $(window).bind("resize", function() {
+                // Stop previous timer.
+                if (this.resize_timer) {
+                    clearTimeout(this.resize_timer);
+                }
+
+                // When function activated, resize window and redraw.
+                this.resize_timer = setTimeout(function() {
+                    view.resize_window();
+                }, 500);
+            });
+            $(document).bind("redraw", function() {
+                view.redraw();
+            });
+
+            this.reset();
+            $(window).trigger("resize");
+        },
+
+        get_base_color: function get_base_color(base) {
+            return this.config.get_value(base.toLowerCase() + "_color") || this.config.get_value("n_color");
+        }
+    });
+
+    // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
+    extend(TracksterView.prototype, DrawableCollection.prototype, {
+        changed: function changed() {
+            this.has_changes = true;
+        },
+
+        /** Add or remove intro div depending on view state. */
+        update_intro_div: function update_intro_div() {
+            this.intro_div.toggle(this.drawables.length === 0);
+        },
+
+        /**
+         * Triggers navigate events as needed. If there is a delay,
+         * then event is triggered only after navigation has stopped.
+         */
+        trigger_navigate: function trigger_navigate(new_chrom, new_low, new_high, delay) {
+            // Stop previous timer.
+            if (this.timer) {
+                clearTimeout(this.timer);
+            }
+
+            if (delay) {
+                // To aggregate calls, use timer and only navigate once
+                // location has stabilized.
+                var self = this;
+                this.timer = setTimeout(function() {
+                    self.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
+                }, 500);
+            } else {
+                view.trigger("navigate", new_chrom + ":" + new_low + "-" + new_high);
+            }
+        },
+
+        update_location: function update_location(low, high) {
+            this.location_span.text(_util2.default.commatize(low) + " - " + _util2.default.commatize(high));
+            this.nav_input.val(this.chrom + ":" + _util2.default.commatize(low) + "-" + _util2.default.commatize(high));
+
+            // Update location. Only update when there is a valid chrom; when loading vis, there may
+            // not be a valid chrom.
+            var chrom = this.chrom_select.val();
+            if (chrom !== "") {
+                this.trigger_navigate(chrom, this.low, this.high, true);
+            }
+        },
+
+        /**
+         * Load chrom data for the view. Returns a jQuery Deferred.
+         */
+        // FIXME: instead of loading chrom data, should load and store genome object.
+        load_chroms: function load_chroms(url_parms) {
+            url_parms.num = MAX_CHROMS_SELECTABLE;
+
+            var view = this;
+            var chrom_data = $.Deferred();
+            $.ajax({
+                url: Galaxy.root + "api/genomes/" + this.dbkey,
+                data: url_parms,
+                dataType: "json",
+                success: function success(result) {
+                    // Do nothing if could not load chroms.
+                    if (result.chrom_info.length === 0) {
+                        return;
+                    }
+
+                    // Load chroms.
+                    if (result.reference) {
+                        var ref_track = new ReferenceTrack(view);
+                        view.add_label_track(ref_track);
+                        view.reference_track = ref_track;
+                    }
+                    view.chrom_data = result.chrom_info;
+
+                    view.chrom_select.html("");
+                    view.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
+
+                    for (var i = 0, len = view.chrom_data.length; i < len; i++) {
+                        var chrom = view.chrom_data[i].chrom;
+                        var chrom_option = $("<option>");
+                        chrom_option.text(chrom);
+                        chrom_option.val(chrom);
+                        view.chrom_select.append(chrom_option);
+                    }
+                    if (result.prev_chroms) {
+                        view.chrom_select.append($("<option value=\"previous\">Previous " + MAX_CHROMS_SELECTABLE + "</option>"));
+                    }
+                    if (result.next_chroms) {
+                        view.chrom_select.append($("<option value=\"next\">Next " + MAX_CHROMS_SELECTABLE + "</option>"));
+                    }
+                    view.chrom_start_index = result.start_index;
+
+                    chrom_data.resolve(result.chrom_info);
+                },
+                error: function error() {
+                    alert("Could not load chroms for this dbkey: " + view.dbkey);
+                }
+            });
+            return chrom_data;
+        },
+
+        change_chrom: function change_chrom(chrom, low, high) {
+            var view = this;
+            // If chrom data is still loading, wait for it.
+            if (!view.chrom_data) {
+                view.load_chroms_deferred.then(function() {
+                    view.change_chrom(chrom, low, high);
+                });
+                return;
+            }
+
+            // Don't do anything if chrom is "None" (hackish but some browsers already have this set), or null/blank
+            if (!chrom || chrom === "None") {
+                return;
+            }
+
+            //
+            // If user is navigating to previous/next set of chroms, load new chrom set and return.
+            //
+            if (chrom === "previous") {
+                view.load_chroms({
+                    low: this.chrom_start_index - MAX_CHROMS_SELECTABLE
+                });
+                return;
+            }
+            if (chrom === "next") {
+                view.load_chroms({
+                    low: this.chrom_start_index + MAX_CHROMS_SELECTABLE
+                });
+                return;
+            }
+
+            //
+            // User is loading a particular chrom. Look first in current set; if not in current set, load new
+            // chrom set.
+            //
+            var found = $.grep(view.chrom_data, function(v, i) {
+                return v.chrom === chrom;
+            })[0];
+            if (found === undefined) {
+                // Try to load chrom and then change to chrom.
+                view.load_chroms({
+                    chrom: chrom
+                }, function() {
+                    view.change_chrom(chrom, low, high);
+                });
+                return;
+            } else {
+                // Switching to local chrom.
+                if (chrom !== view.chrom) {
+                    view.chrom = chrom;
+                    view.chrom_select.val(view.chrom);
+                    view.max_high = found.len - 1; // -1 because we're using 0-based indexing.
+                    view.reset();
+
+                    for (var i = 0, len = view.drawables.length; i < len; i++) {
+                        var drawable = view.drawables[i];
+                        if (drawable.init) {
+                            drawable.init();
+                        }
+                    }
+                    if (view.reference_track) {
+                        view.reference_track.init();
+                    }
+                }
+
+                // Resolve low, high.
+                if (low === undefined && high === undefined) {
+                    // Both are undefined, so view is whole chromosome.
+                    view.low = 0;
+                    view.high = view.max_high;
+                } else {
+                    // Low and/or high is defined.
+                    view.low = low !== undefined ? Math.max(low, 0) : 0;
+                    if (high === undefined) {
+                        // Center visualization around low.
+                        // HACK: max resolution is currently 30 bases.
+                        view.low = Math.max(view.low - 15, 0);
+                        view.high = view.low + 30;
+                    } else {
+                        // High is defined.
+                        view.high = Math.min(high, view.max_high);
+                    }
+                }
+
+                view.request_redraw();
+            }
+        },
+
+        /**
+         * Change viewing region to that denoted by string. General format of string is:
+         *
+         * <chrom>[ {separator}<start>[-<end>] ]
+         *
+         * where separator can be whitespace or a colon. Examples:
+         *
+         * chr22
+         * chr1:100-200
+         * chr7 89999
+         * chr8 90000 990000
+         */
+        go_to: function go_to(str) {
+            // Remove commas.
+            str = str.replace(/,/g, "");
+
+            // Replace colons and hyphens with space for easy parsing.
+            str = str.replace(/:|\-/g, " ");
+
+            // Parse new location.
+            var chrom_pos = str.split(/\s+/);
+
+            var chrom = chrom_pos[0];
+            var new_low = chrom_pos[1] ? parseInt(chrom_pos[1], 10) : undefined;
+            var new_high = chrom_pos[2] ? parseInt(chrom_pos[2], 10) : undefined;
+
+            this.change_chrom(chrom, new_low, new_high);
+        },
+
+        move_fraction: function move_fraction(fraction) {
+            var view = this;
+            var span = view.high - view.low;
+            this.move_delta(fraction * span);
+        },
+
+        move_delta: function move_delta(delta_chrom) {
+            //
+            // Update low, high.
+            //
+
+            var view = this;
+            var current_chrom_span = view.high - view.low;
+            // Check for left and right boundaries
+            if (view.low - delta_chrom < view.max_low) {
+                view.low = view.max_low;
+                view.high = view.max_low + current_chrom_span;
+            } else if (view.high - delta_chrom > view.max_high) {
+                view.high = view.max_high;
+                view.low = view.max_high - current_chrom_span;
+            } else {
+                view.high -= delta_chrom;
+                view.low -= delta_chrom;
+            }
+
+            //
+            // Redraw view.
+            //
+
+            // Redraw without requesting more data immediately.
+            view.request_redraw({
+                data_fetch: false
+            });
+
+            // Set up timeout to redraw with more data when moving stops.
+            if (this.redraw_on_move_fn) {
+                clearTimeout(this.redraw_on_move_fn);
+            }
+
+            this.redraw_on_move_fn = setTimeout(function() {
+                view.request_redraw();
+            }, 200);
+
+            // Navigate.
+            var chrom = view.chrom_select.val();
+            this.trigger_navigate(chrom, view.low, view.high, true);
+        },
+
+        /**
+         * Add a drawable to the view.
+         */
+        add_drawable: function add_drawable(drawable) {
+            DrawableCollection.prototype.add_drawable.call(this, drawable);
+            drawable.init();
+            this.changed();
+            this.update_intro_div();
+
+            // When drawable config changes, mark view as changed. This
+            // captures most (all?) state change that needs to be saved.
+            var self = this;
+            drawable.config.on("change", function() {
+                self.changed();
+            });
+        },
+
+        add_label_track: function add_label_track(label_track) {
+            label_track.view = this;
+            label_track.init();
+            this.label_tracks.push(label_track);
+        },
+
+        /**
+         * Remove drawable from the view.
+         */
+        remove_drawable: function remove_drawable(drawable, hide) {
+            DrawableCollection.prototype.remove_drawable.call(this, drawable);
+            if (hide) {
+                var view = this;
+                drawable.container_div.hide(0, function() {
+                    $(this).remove();
+                    view.update_intro_div();
+                });
+            }
+        },
+
+        reset: function reset() {
+            this.low = this.max_low;
+            this.high = this.max_high;
+            this.viewport_container.find(".yaxislabel").remove();
+        },
+
+        /**
+         * Request that view redraw one or more of view's drawables. If drawable is not specified,
+         * all drawables are redrawn.
+         */
+        request_redraw: function request_redraw(options, drawable) {
+            var view = this;
+
+            var // Either redrawing a single drawable or all view's drawables.
+                track_list = drawable ? [drawable] : view.drawables;
+
+            // Add/update tracks in track list to redraw list.
+            _.each(track_list, function(track) {
+                var track_options = _.find(view.tracks_to_be_redrawn, function(to) {
+                    return to[0] === track;
+                });
+
+                if (track_options) {
+                    // Track already in list; update options.
+                    track_options[1] = options;
+                } else {
+                    // Track not in list yet.
+                    view.tracks_to_be_redrawn.push([track, options]);
+                }
+            });
+
+            // Set up redraw if it has not been requested since last redraw.
+            if (!this.requested_redraw) {
+                requestAnimationFrame(function() {
+                    view._redraw();
+                });
+                this.requested_redraw = true;
+            }
+        },
+
+        /**
+         * Redraws view and tracks.
+         * NOTE: this method should never be called directly; request_redraw() should be used so
+         * that requestAnimationFrame can manage redrawing.
+         */
+        _redraw: function _redraw() {
+            // TODO: move this code to function that does location setting.
+
+            // Clear because requested redraw is being handled now.
+            this.requested_redraw = false;
+
+            var low = this.low;
+            var high = this.high;
+
+            if (low < this.max_low) {
+                low = this.max_low;
+            }
+            if (high > this.max_high) {
+                high = this.max_high;
+            }
+            var span = this.high - this.low;
+            if (this.high !== 0 && span < this.min_separation) {
+                high = low + this.min_separation;
+            }
+            this.low = Math.floor(low);
+            this.high = Math.ceil(high);
+
+            this.update_location(this.low, this.high);
+
+            // -- Drawing code --
+
+            // Resolution is a pixel density.
+            this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
+
+            // Overview
+            var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
+            var width_px = (this.high - this.low) / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
+            var min_width_px = 13;
+
+            this.overview_box.css({
+                left: left_px,
+                width: Math.max(min_width_px, width_px)
+            }).show();
+            if (width_px < min_width_px) {
+                this.overview_box.css("left", left_px - (min_width_px - width_px) / 2);
+            }
+            if (this.overview_highlight) {
+                this.overview_highlight.css({
+                    left: left_px,
+                    width: width_px
+                });
+            }
+
+            // Draw data tracks.
+            _.each(this.tracks_to_be_redrawn, function(track_options) {
+                var track = track_options[0];
+                var options = track_options[1];
+                if (track) {
+                    track._draw(options);
+                }
+            });
+            this.tracks_to_be_redrawn = [];
+
+            // Draw label tracks.
+            _.each(this.label_tracks, function(label_track) {
+                label_track._draw();
+            });
+        },
+
+        zoom_in: function zoom_in(point, container) {
+            if (this.max_high === 0 || this.high - this.low <= this.min_separation) {
+                return;
+            }
+            var span = this.high - this.low;
+            var cur_center = span / 2 + this.low;
+            var new_half = span / this.zoom_factor / 2;
+            if (point) {
+                cur_center = point / this.viewport_container.width() * (this.high - this.low) + this.low;
+            }
+            this.low = Math.round(cur_center - new_half);
+            this.high = Math.round(cur_center + new_half);
+
+            this.changed();
+            this.request_redraw();
+        },
+
+        zoom_out: function zoom_out() {
+            if (this.max_high === 0) {
+                return;
+            }
+            var span = this.high - this.low;
+            var cur_center = span / 2 + this.low;
+            var new_half = span * this.zoom_factor / 2;
+            this.low = Math.round(cur_center - new_half);
+            this.high = Math.round(cur_center + new_half);
+            this.changed();
+            this.request_redraw();
+        },
+
+        /** Resize viewport. Use this method if header/footer content has changed in size. */
+        resize_viewport: function resize_viewport() {
+            this.viewport_container.height(this.container.height() - this.top_container.height() - this.bottom_container.height());
+        },
+
+        /** Called when window is resized. */
+        resize_window: function resize_window() {
+            this.resize_viewport();
+            this.request_redraw();
+        },
+
+        /** Show a Drawable in the overview. */
+        set_overview: function set_overview(drawable) {
+            if (this.overview_drawable) {
+                // If drawable to be set as overview is already in overview, do nothing.
+                // Otherwise, remove overview.
+                if (this.overview_drawable.dataset.id === drawable.dataset.id) {
+                    return;
+                }
+                this.overview_viewport.find(".track").remove();
+            }
+
+            // Set new overview.
+            var overview_drawable = drawable.copy({
+                content_div: this.overview_viewport
+            });
+
+            var view = this;
+            overview_drawable.header_div.hide();
+            overview_drawable.is_overview = true;
+            view.overview_drawable = overview_drawable;
+            this.overview_drawable.postdraw_actions = function() {
+                view.overview_highlight.show().height(view.overview_drawable.content_div.height());
+                view.overview_viewport.height(view.overview_drawable.content_div.height() + view.overview_box.outerHeight());
+                view.overview_close.show();
+                view.resize_window();
+            };
+            view.overview_drawable.request_draw();
+            this.changed();
+        },
+
+        /** Close and reset overview. */
+        reset_overview: function reset_overview() {
+            // Update UI.
+            $(".tooltip").remove();
+            this.overview_viewport.find(".track-tile").remove();
+            this.overview_viewport.height(this.default_overview_height);
+            this.overview_box.height(this.default_overview_height);
+            this.overview_close.hide();
+            this.overview_highlight.hide();
+            view.resize_window();
+            view.overview_drawable = null;
+        }
+    });
+
+    /**
+     * Encapsulation of a tool that users can apply to tracks/datasets.
+     */
+    var TracksterTool = _tools2.default.Tool.extend({
+        defaults: {
+            track: null
+        },
+
+        initialize: function initialize(options) {
+            _tools2.default.Tool.prototype.initialize.call(this, options);
+
+            // Restore tool visibility from state; default to hidden.
+            var hidden = true;
+            if (options.tool_state !== undefined && options.tool_state.hidden !== undefined) {
+                hidden = options.tool_state.hidden;
+            }
+            this.set("hidden", hidden);
+
+            // FIXME: need to restore tool values from options.tool_state
+
+            // HACK: remove some inputs because Trackster does yet not work with them.
+            this.remove_inputs(["data", "hidden_data", "conditional"]);
+        },
+
+        state_dict: function state_dict(options) {
+            return _.extend(this.get_inputs_dict(), {
+                hidden: !this.is_visible()
+            });
+        }
+    });
+
+    /**
+     * View renders tool parameter HTML and updates parameter value as it is changed in the HTML.
+     */
+    var ToolParameterView = Backbone.View.extend({
+        events: {
+            "change :input": "update_value"
+        },
+
+        render: function render() {
+            var param_div = this.$el.addClass("param-row");
+            var param = this.model;
+
+            // Param label.
+            var label_div = $("<div>").addClass("param-label").text(param.get("label")).appendTo(param_div);
+            // Param HTML.
+            var html_div = $("<div/>").addClass("param-input").html(param.get("html")).appendTo(param_div);
+            // Set initial value.
+            html_div.find(":input").val(param.get("value"));
+
+            // Add to clear floating layout.
+            $("<div style='clear: both;'/>").appendTo(param_div);
+        },
+
+        update_value: function update_value(update_event) {
+            this.model.set_value($(update_event.target).val());
+        }
+    });
+
+    /**
+     * View for TracksterTool.
+     */
+    var TracksterToolView = Backbone.View.extend({
+        initialize: function initialize(options) {
+            this.model.on("change:hidden", this.set_visible, this);
+        },
+
+        /**
+         * Render tool UI.
+         */
+        render: function render() {
+            var self = this;
+            var tool = this.model;
+            var parent_div = this.$el.addClass("dynamic-tool").hide();
+
+            // Prevent div events from propogating to other elements.
+            parent_div.bind("drag", function(e) {
+                e.stopPropagation();
+            }).click(function(e) {
+                e.stopPropagation();
+            }).bind("dblclick", function(e) {
+                e.stopPropagation();
+            }).keydown(function(e) {
+                e.stopPropagation();
+            });
+
+            // Add name, inputs.
+            var name_div = $("<div class='tool-name'>").appendTo(parent_div).text(tool.get("name"));
+            tool.get("inputs").each(function(param) {
+                // Render parameter.
+                var param_view = new ToolParameterView({
+                    model: param
+                });
+                param_view.render();
+                parent_div.append(param_view.$el);
+            });
+
+            // Highlight value for inputs for easy replacement.
+            parent_div.find("input").click(function() {
+                $(this).select();
+            });
+
+            // Add buttons for running on dataset, region.
+            var run_tool_row = $("<div>").addClass("param-row").appendTo(parent_div);
+            var run_on_dataset_button = $("<input type='submit'>").attr("value", "Run on complete dataset").appendTo(run_tool_row);
+            var run_on_region_button = $("<input type='submit'>").attr("value", "Run on visible region").appendTo(run_tool_row);
+            run_on_region_button.click(function() {
+                // Run tool to create new track.
+                self.run_on_region();
+            });
+            run_on_dataset_button.click(function() {
+                self.run_on_dataset();
+            });
+
+            if (tool.is_visible()) {
+                this.$el.show();
+            }
+        },
+
+        /**
+         * Show or hide tool depending on tool visibility state.
+         */
+        set_visible: function set_visible() {
+            this.$el.toggle(this.model.is_visible());
+        },
+
+        /**
+         * Update tool parameters.
+         */
+        update_params: function update_params() {
+            for (var i = 0; i < this.params.length; i++) {
+                this.params[i].update_value();
+            }
+        },
+
+        /**
+         * Run tool on dataset. Output is placed in dataset's history and no changes to viz are made.
+         */
+        run_on_dataset: function run_on_dataset() {
+            var tool = this.model;
+            this.run(
+                // URL params.
+                {
+                    target_dataset_id: this.model.get("track").dataset.id,
+                    action: "rerun",
+                    tool_id: tool.id
+                }, null,
+                function(track_data) {
+                    Galaxy.modal.show({
+                        title: tool.get("name") + " is Running",
+                        body: tool.get("name") + " is running on the complete dataset. Tool outputs are in dataset's history.",
+                        buttons: {
+                            Close: function Close() {
+                                Galaxy.modal.hide();
+                            }
+                        }
+                    });
+                });
+        },
+
+        /**
+         * Run dataset on visible region. This creates a new track and sets the track's contents
+         * to the tool's output.
+         */
+        run_on_region: function run_on_region() {
+            //
+            // Create track for tool's output immediately to provide user feedback.
+            //
+            var track = this.model.get("track");
+
+            var tool = this.model;
+
+            var region = new _visualization2.default.GenomeRegion({
+                chrom: track.view.chrom,
+                start: track.view.low,
+                end: track.view.high
+            });
+
+            var url_params = {
+                target_dataset_id: track.dataset.id,
+                action: "rerun",
+                tool_id: tool.id,
+                regions: [region.toJSON()]
+            };
+
+            var current_track = track;
+
+            var // Set name of track to include tool name, parameters, and region used.
+                track_name = tool.get("name") + current_track.tool_region_and_parameters_str(region);
+
+            var container;
+
+            // If track not in a group, create a group for it and add new track to group. If track
+            // already in group, add track to group.
+            if (current_track.container === view) {
+                // Create new group.
+                var group = new DrawableGroup(view, view, {
+                    name: track.config.get_value("name")
+                });
+
+                // Replace track with group.
+                var index = current_track.container.replace_drawable(current_track, group, false);
+
+                // Update HTML.
+                // FIXME: this is ugly way to replace a track with a group -- make this easier via
+                // a Drawable or DrawableCollection function.
+                group.container_div.insertBefore(current_track.view.content_div.children()[index]);
+                group.add_drawable(current_track);
+                current_track.container_div.appendTo(group.content_div);
+                container = group;
+            } else {
+                // Use current group.
+                container = current_track.container;
+            }
+
+            // Create and init new track.
+            var new_track = new current_track.constructor(view, container, {
+                name: track_name,
+                hda_ldda: "hda"
+            });
+            new_track.init_for_tool_data();
+            new_track.change_mode(current_track.mode);
+            new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
+            new_track.update_icons();
+            container.add_drawable(new_track);
+            new_track.tiles_div.text("Starting job.");
+
+            // Run tool.
+            this.run(url_params, new_track, function(track_data) {
+                new_track.set_dataset(new _data2.default.Dataset(track_data));
+                new_track.tiles_div.text("Running job.");
+                new_track.init();
+            });
+        },
+
+        /**
+         * Run tool using a set of URL params and a success callback.
+         */
+        run: function run(url_params, new_track, success_callback) {
+            // Run tool.
+            url_params.inputs = this.model.get_inputs_dict();
+            var ss_deferred = new _util2.default.ServerStateDeferred({
+                ajax_settings: {
+                    url: Galaxy.root + "api/tools",
+                    data: JSON.stringify(url_params),
+                    dataType: "json",
+                    contentType: "application/json",
+                    type: "POST"
+                },
+                interval: 2000,
+                success_fn: function success_fn(response) {
+                    return response !== "pending";
+                }
+            });
+
+            // Start with this status message.
+            //new_track.container_div.addClass("pending");
+            //new_track.content_div.html(DATA_PENDING);
+
+            $.when(ss_deferred.go()).then(function(response) {
+                if (response === "no converter") {
+                    // No converter available for input datasets, so cannot run tool.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_NOCONVERTER);
+                } else if (response.error) {
+                    // General error.
+                    new_track.container_div.addClass("error");
+                    new_track.content_div.text(DATA_CANNOT_RUN_TOOL + response.message);
+                } else {
+                    // Job submitted and running.
+                    success_callback(response);
+                }
+            });
+        }
+    });
+
+    /**
+     * Generates scale values based on filter and feature's value for filter.
+     */
+    var FilterScaler = function FilterScaler(filter, default_val) {
+        _painters2.default.Scaler.call(this, default_val);
+        this.filter = filter;
+    };
+
+    FilterScaler.prototype.gen_val = function(feature_data) {
+        // If filter is not initalized yet, return default val.
+        if (this.filter.high === Number.MAX_VALUE || this.filter.low === -Number.MAX_VALUE || this.filter.low === this.filter.high) {
+            return this.default_val;
+        }
+
+        // Scaling value is ratio of (filter's value compared to low) to (complete filter range).
+        return (parseFloat(feature_data[this.filter.index]) - this.filter.low) / (this.filter.high - this.filter.low);
+    };
+
+    /**
+     * Tiles drawn by tracks.
+     */
+    var Tile = function Tile(track, region, w_scale, canvas, data) {
+        this.track = track;
+        this.region = region;
+        this.low = region.get("start");
+        this.high = region.get("end");
+        this.w_scale = w_scale;
+        this.canvas = canvas;
+        // Wrap element in div for background and to provide container for tile-specific elements.
+        this.html_elt = $("<div class='track-tile'/>").append(canvas);
+        this.data = data;
+        this.stale = false;
+    };
+
+    /**
+     * Perform pre-display actions.
+     */
+    Tile.prototype.predisplay_actions = function() {};
+
+    var LineTrackTile = function LineTrackTile(track, region, w_scale, canvas, data) {
+        Tile.call(this, track, region, w_scale, canvas, data);
+    };
+    LineTrackTile.prototype.predisplay_actions = function() {};
+
+    var FeatureTrackTile = function FeatureTrackTile(track, region, w_scale, canvas, data, mode, message, all_slotted, feature_mapper, incomplete_features, seq_data) {
+        // Attribute init.
+        Tile.call(this, track, region, w_scale, canvas, data);
+        this.mode = mode;
+        this.all_slotted = all_slotted;
+        this.feature_mapper = feature_mapper;
+        this.has_icons = false;
+        this.incomplete_features = incomplete_features;
+        // Features drawn based on data from other tiles.
+        this.other_tiles_features_drawn = {};
+        this.seq_data = seq_data;
+
+        // Add message + action icons to tile's html.
+        /*
+        This does not work right now because a random set of reads is returned by the server.
+        When the server can respond with more data systematically, renable these icons.
+        if (message) {
+            this.has_icons = true;
+             var
+                tile = this;
+                canvas = this.html_elt.children()[0],
+                message_div = $("<div/>").addClass("tile-message")
+                                // -1 to account for border.
+                                .css({'height': ERROR_PADDING, 'width': canvas.width}).prependTo(this.html_elt);
+             // Handle message; only message currently is that only the first N elements are displayed.
+            var tile_region = new visualization.GenomeRegion({
+                    chrom: track.view.chrom,
+                    start: this.low,
+                    end: this.high
+                }),
+                num_features = data.length,
+                more_down_icon = $("<a/>").addClass("icon more-down")
+                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data including depth")
+                                    .tooltip().appendTo(message_div),
+                more_across_icon = $("<a/>").addClass("icon more-across")
+                                    .attr("title", "For speed, only the first " + num_features + " features in this region were obtained from server. Click to get more data excluding depth")
+                                    .tooltip().appendTo(message_div);
+             // Set up actions for icons.
+            more_down_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile_region, track.mode, 1 / tile.w_scale, {}, track.data_manager.DEEP_DATA_REQ);
+                $(".tooltip").hide();
+                track.request_draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+             more_across_icon.click(function() {
+                // Mark tile as stale, request more data, and redraw track.
+                tile.stale = true;
+                track.data_manager.get_more_data(tile_region, track.mode, 1 / tile.w_scale, {}, track.data_manager.BROAD_DATA_REQ);
+                $(".tooltip").hide();
+                track.request_draw();
+            }).dblclick(function(e) {
+                // Do not propogate as this would normally zoom in.
+                e.stopPropagation();
+            });
+        }
+        */
+    };
+    extend(FeatureTrackTile.prototype, Tile.prototype);
+
+    /**
+     * Sets up support for popups.
+     */
+    FeatureTrackTile.prototype.predisplay_actions = function() {
+        /*
+        FIXME: use a canvas library to handle popups.
+        //
+        // Add support for popups.
+        //
+        var tile = this,
+            popups = {};
+         // Only show popups in Pack mode.
+        if (tile.mode !== "Pack") { return; }
+         $(this.html_elt).hover(
+        function() {
+            this.hovered = true;
+            $(this).mousemove();
+        },
+        function() {
+            this.hovered = false;
+            // Clear popup if it is still hanging around (this is probably not needed)
+            $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
+        } ).mousemove(function (e) {
+            // Use the hover plugin to get a delay before showing popup
+            if ( !this.hovered ) { return; }
+            // Get feature data for position.
+            var
+                this_offset = $(this).offset(),
+                offsetX = e.pageX - this_offset.left,
+                offsetY = e.pageY - this_offset.top,
+                feature_data = tile.feature_mapper.get_feature_data(offsetX, offsetY),
+                feature_uid = (feature_data ? feature_data[0] : null);
+            // Hide visible popup if not over a feature or over a different feature.
+            $(this).parents(".track-content").children(".overlay").children(".feature-popup").each(function() {
+                if ( !feature_uid ||
+                     $(this).attr("id") !== feature_uid.toString() ) {
+                    $(this).remove();
+                }
+            });
+             if (feature_data) {
+                // Get or create popup.
+                var popup = popups[feature_uid];
+                if (!popup) {
+                    // Create feature's popup element.
+                    var feature_dict = {
+                            name: feature_data[3],
+                            start: feature_data[1],
+                            end: feature_data[2],
+                            strand: feature_data[4]
+                        },
+                        filters = tile.track.filters_manager.filters,
+                        filter;
+                     // Add filter values to feature dict.
+                    for (var i = 0; i < filters.length; i++) {
+                        filter = filters[i];
+                        feature_dict[filter.name] = feature_data[filter.index];
+                    }
+                     // Build popup.
+                    popup = $("<div/>").attr("id", feature_uid).addClass("feature-popup");
+                    var table = $("<table/>"),
+                        key, value, row;
+                    for (key in feature_dict) {
+                        value = feature_dict[key];
+                        row = $("<tr/>").appendTo(table);
+                        $("<th/>").appendTo(row).text(key);
+                        $("<td/>").attr("align", "left").appendTo(row)
+                                  .text(typeof(value) === 'number' ? round(value, 2) : value);
+                    }
+                    popup.append( $("<div class='feature-popup-inner'>").append( table ) );
+                    popups[feature_uid] = popup;
+                }
+                 // Attach popup to track's overlay.
+                popup.appendTo( $(this).parents(".track-content").children(".overlay") );
+                 // Offsets are within canvas, but popup must be positioned relative to parent element.
+                // parseInt strips "px" from left, top measurements. +7 so that mouse pointer does not
+                // overlap popup.
+                var
+                    popupX = offsetX + parseInt( tile.html_elt.css("left"), 10 ) - popup.width() / 2,
+                    popupY = offsetY + parseInt( tile.html_elt.css("top"), 10 ) + 7;
+                popup.css("left", popupX + "px").css("top", popupY + "px");
+            }
+            else if (!e.isPropagationStopped()) {
+                // Propogate event to other tiles because overlapping tiles prevent mousemove from being
+                // called on tiles under this tile.
+                e.stopPropagation();
+                $(this).siblings().each(function() {
+                    $(this).trigger(e);
+                });
+            }
+        })
+        .mouseleave(function() {
+            $(this).parents(".track-content").children(".overlay").children(".feature-popup").remove();
+        });
+        */
+    };
+
+    /**
+     * Tracks are objects can be added to the View.
+     *
+     * Track object hierarchy:
+     * Track
+     * -> LabelTrack
+     * -> TiledTrack
+     * ----> LineTrack
+     * ----> ReferenceTrack
+     * ----> FeatureTrack
+     * -------> ReadTrack
+     * ----> VariantTrack
+     */
+    var Track = function Track(view, container, obj_dict) {
+        // For now, track's container is always view.
+        extend(obj_dict, {
+            drag_handle_class: "draghandle"
+        });
+        Drawable.call(this, view, container, obj_dict);
+
+        //
+        // Attribute init.
+        //
+
+        // Set or create dataset.
+        this.dataset = null;
+        if (obj_dict.dataset) {
+            // Dataset can be a Backbone model or a dict that can be used to create a model.
+            this.dataset = obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new _data2.default.Dataset(obj_dict.dataset);
+        }
+        this.dataset_check_type = "converted_datasets_state";
+        this.data_url_extra_params = {};
+        this.data_query_wait = "data_query_wait" in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT;
+        // A little ugly creating data manager right now due to transition to Backbone-based objects.
+        this.data_manager = "data_manager" in obj_dict ? obj_dict.data_manager : new _visualization2.default.GenomeDataManager({
+            dataset: this.dataset,
+            // HACK: simulate 'genome' attributes from view for now.
+            // View should eventually use Genome object.
+            genome: new _visualization2.default.Genome({
+                key: view.dbkey,
+                chroms_info: {
+                    chrom_info: view.chrom_data
+                }
+            }),
+            data_mode_compatible: this.data_and_mode_compatible,
+            can_subset: this.can_subset
+        });
+
+        // Height attributes: min height, max height, and visible height.
+        this.min_height_px = 16;
+        this.max_height_px = 800;
+        this.visible_height_px = this.config.get_value("height");
+
+        //
+        // Create content div, which is where track is displayed, and add to container if available.
+        //
+        this.content_div = $("<div class='track-content'>").appendTo(this.container_div);
+        if (this.container) {
+            this.container.content_div.append(this.container_div);
+            if (!("resize" in obj_dict) || obj_dict.resize) {
+                this.add_resize_handle();
+            }
+        }
+    };
+
+    extend(Track.prototype, Drawable.prototype, {
+        action_icons_def: [
+            // Change track mode.
+            {
+                name: "mode_icon",
+                title: (0, _localization2.default)("Set display mode"),
+                css_class: "chevron-expand",
+                on_click_fn: function on_click_fn() {}
+            },
+            // Hide/show content.
+            Drawable.prototype.action_icons_def[0],
+            // Set track as overview.
+            {
+                name: "overview_icon",
+                title: (0, _localization2.default)("Set as overview"),
+                css_class: "application-dock-270",
+                on_click_fn: function on_click_fn(track) {
+                    track.view.set_overview(track);
+                }
+            },
+            // Edit config.
+            Drawable.prototype.action_icons_def[1],
+            // Toggle track filters.
+            {
+                name: "filters_icon",
+                title: (0, _localization2.default)("Filters"),
+                css_class: "ui-slider-050",
+                on_click_fn: function on_click_fn(drawable) {
+                    // TODO: update Tooltip text.
+                    if (drawable.filters_manager.visible()) {
+                        drawable.filters_manager.clear_filters();
+                    } else {
+                        drawable.filters_manager.init_filters();
+                    }
+                    drawable.filters_manager.toggle();
+                }
+            },
+            // Toggle track tool.
+            {
+                name: "tools_icon",
+                title: (0, _localization2.default)("Tool"),
+                css_class: "hammer",
+                on_click_fn: function on_click_fn(track) {
+                    // TODO: update Tooltip text.
+
+                    track.tool.toggle();
+
+                    // Update track name.
+                    if (track.tool.is_visible()) {
+                        track.set_name(track.config.get_value("name") + track.tool_region_and_parameters_str());
+                    } else {
+                        track.revert_name();
+                    }
+                    // HACK: name change modifies icon placement, which leaves tooltip incorrectly placed.
+                    $(".tooltip").remove();
+                }
+            },
+            // Go to parameter exploration visualization.
+            {
+                name: "param_space_viz_icon",
+                title: (0, _localization2.default)("Tool parameter space visualization"),
+                css_class: "arrow-split",
+                on_click_fn: function on_click_fn(track) {
+                    var html = "<strong>Tool</strong>:" + track.tool.get("name") + "<br/><strong>Dataset</strong>:" + track.config.get_value("name") + "<br/><strong>Region(s)</strong>: <select name=\"regions\"><option value=\"cur\">current viewing area</option><option value=\"bookmarks\">bookmarks</option><option value=\"both\">current viewing area and bookmarks</option></select>";
+
+                    var cancel_fn = function cancel_fn() {
+                        Galaxy.modal.hide();
+                        $(window).unbind("keypress.check_enter_esc");
+                    };
+
+                    var ok_fn = function ok_fn() {
+                        var regions_to_use = $('select[name="regions"] option:selected').val(),
+                            regions,
+                            view_region = new _visualization2.default.GenomeRegion({
+                                chrom: view.chrom,
+                                start: view.low,
+                                end: view.high
+                            }),
+                            bookmarked_regions = _.map($(".bookmark"), function(elt) {
+                                return new _visualization2.default.GenomeRegion({
+                                    from_str: $(elt).children(".position").text()
+                                });
+                            });
+
+                        // Get regions for visualization.
+                        if (regions_to_use === "cur") {
+                            // Use only current region.
+                            regions = [view_region];
+                        } else if (regions_to_use === "bookmarks") {
+                            // Use only bookmarks.
+                            regions = bookmarked_regions;
+                        } else {
+                            // Use both current region and bookmarks.
+                            regions = [view_region].concat(bookmarked_regions);
+                        }
+
+                        Galaxy.modal.hide();
+
+                        // Go to visualization.
+                        window.location.href = Galaxy.root + "visualization/sweepster?" + $.param({
+                            dataset_id: track.dataset.id,
+                            hda_ldda: track.dataset.get("hda_ldda"),
+                            regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
+                        });
+                    };
+
+                    var check_enter_esc = function check_enter_esc(e) {
+                        if ((e.keyCode || e.which) === 27) {
+                            // Escape key
+                            cancel_fn();
+                        } else if ((e.keyCode || e.which) === 13) {
+                            // Enter key
+                            ok_fn();
+                        }
+                    };
+
+                    // show dialog
+                    Galaxy.modal.show({
+                        title: "Visualize tool parameter space and output from different parameter settings?",
+                        body: html,
+                        buttons: {
+                            No: cancel_fn,
+                            Yes: ok_fn
+                        }
+                    });
+                }
+            },
+            // Remove track.
+            Drawable.prototype.action_icons_def[2]
+        ],
+
+        can_draw: function can_draw() {
+            return this.dataset && Drawable.prototype.can_draw.call(this);
+        },
+
+        build_container_div: function build_container_div() {
+            return $("<div/>").addClass("track").attr("id", "track_" + this.id);
+        },
+
+        /**
+         * Set track's dataset.
+         */
+        set_dataset: function set_dataset(dataset) {
+            this.dataset = dataset;
+            this.data_manager.set("dataset", dataset);
+        },
+
+        /**
+         * Action to take during resize.
+         */
+        on_resize: function on_resize() {
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Add resizing handle to drawable's container_div.
+         */
+        add_resize_handle: function add_resize_handle() {
+            var track = this;
+            var in_handle = false;
+            var in_drag = false;
+            var drag_control = $("<div class='track-resize'>");
+            // Control shows on hover over track, stays while dragging
+            $(track.container_div).hover(function() {
+                if (track.config.get_value("content_visible")) {
+                    in_handle = true;
+                    drag_control.show();
+                }
+            }, function() {
+                in_handle = false;
+                if (!in_drag) {
+                    drag_control.hide();
+                }
+            });
+            // Update height and force redraw of current view while dragging,
+            // clear cache to force redraw of other tiles.
+            drag_control.hide().bind("dragstart", function(e, d) {
+                in_drag = true;
+                d.original_height = $(track.content_div).height();
+            }).bind("drag", function(e, d) {
+                var new_height = Math.min(Math.max(d.original_height + d.deltaY, track.min_height_px), track.max_height_px);
+                $(track.tiles_div).css("height", new_height);
+                track.visible_height_px = track.max_height_px === new_height ? 0 : new_height;
+                track.on_resize();
+            }).bind("dragend", function(e, d) {
+                track.tile_cache.clear();
+                in_drag = false;
+                if (!in_handle) {
+                    drag_control.hide();
+                }
+                track.config.set_value("height", track.visible_height_px);
+                track.changed();
+            }).appendTo(track.container_div);
+        },
+
+        /**
+         * Hide any elements that are part of the tracks contents area. Should
+         * remove as approprite, the track will be redrawn by show_contents.
+         */
+        hide_contents: function hide_contents() {
+            // Hide tiles.
+            this.tiles_div.hide();
+            // Hide any y axis labels (common to several track types)
+            this.container_div.find(".yaxislabel, .track-resize").hide();
+        },
+
+        show_contents: function show_contents() {
+            // Show the contents div and labels (if present)
+            this.tiles_div.show();
+            this.container_div.find(".yaxislabel, .track-resize").show();
+            // Request a redraw of the content
+            this.request_draw();
+        },
+
+        /**
+         * Returns track type.
+         */
+        get_type: function get_type() {
+            // Order is important: start with most-specific classes and go up the track hierarchy.
+            if (this instanceof LabelTrack) {
+                return "LabelTrack";
+            } else if (this instanceof ReferenceTrack) {
+                return "ReferenceTrack";
+            } else if (this instanceof LineTrack) {
+                return "LineTrack";
+            } else if (this instanceof ReadTrack) {
+                return "ReadTrack";
+            } else if (this instanceof VariantTrack) {
+                return "VariantTrack";
+            } else if (this instanceof CompositeTrack) {
+                return "CompositeTrack";
+            } else if (this instanceof FeatureTrack) {
+                return "FeatureTrack";
+            }
+            return "";
+        },
+
+        /**
+         * Remove visualization content and display message.
+         */
+        show_message: function show_message(msg_html) {
+            this.tiles_div.remove();
+            return $("<span/>").addClass("message").html(msg_html).appendTo(this.content_div);
+        },
+
+        /**
+         * Initialize and draw the track.
+         */
+        init: function init(retry) {
+            // FIXME: track should have a 'state' attribute that is checked on load; this state attribute should be
+            // used in this function to determine what action(s) to take.
+
+            var track = this;
+            track.enabled = false;
+            track.tile_cache.clear();
+            track.data_manager.clear();
+            /*
+            if (!track.content_div.text()) {
+                track.content_div.text(DATA_LOADING);
+            }
+            */
+            // Remove old track content (e.g. tiles, messages).
+            track.content_div.children().remove();
+            track.container_div.removeClass("nodata error pending");
+
+            track.tiles_div = $("<div/>").addClass("tiles").appendTo(track.content_div);
+
+            //
+            // Tracks with no dataset id are handled differently.
+            // FIXME: is this really necessary?
+            //
+            if (!track.dataset.id) {
+                return;
+            }
+
+            // Get dataset state; if state is fine, enable and draw track. Otherwise, show message
+            // about track status.
+            var init_deferred = $.Deferred();
+
+            var params = {
+                hda_ldda: track.dataset.get("hda_ldda"),
+                data_type: this.dataset_check_type,
+                chrom: track.view.chrom,
+                retry: retry
+            };
+
+            $.getJSON(this.dataset.url(), params, function(result) {
+                if (!result || result === "error" || result.kind === "error") {
+                    // Dataset is in error state.
+                    track.container_div.addClass("error");
+                    var msg_elt = track.show_message(DATA_ERROR);
+                    if (result.message) {
+                        // Add links to (a) show error and (b) try again.
+                        msg_elt.append($("<a href='javascript:void(0);'></a>").text("View error").click(function() {
+                            Galaxy.modal.show({
+                                title: (0, _localization2.default)("Trackster Error"),
+                                body: "<pre>" + result.message + "</pre>",
+                                buttons: {
+                                    Close: function Close() {
+                                        Galaxy.modal.hide();
+                                    }
+                                }
+                            });
+                        }));
+                        msg_elt.append($("<span/>").text(" "));
+                        msg_elt.append($("<a href='javascript:void(0);'></a>").text("Try again").click(function() {
+                            track.init(true);
+                        }));
+                    }
+                } else if (result === "no converter") {
+                    track.container_div.addClass("error");
+                    track.show_message(DATA_NOCONVERTER);
+                } else if (result === "no data" || result.data !== undefined && (result.data === null || result.data.length === 0)) {
+                    track.container_div.addClass("nodata");
+                    track.show_message(DATA_NONE);
+                } else if (result === "pending") {
+                    track.container_div.addClass("pending");
+                    track.show_message(DATA_PENDING);
+                    //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
+                    setTimeout(function() {
+                        track.init();
+                    }, track.data_query_wait);
+                } else if (result === "data" || result.status === "data") {
+                    if (result.valid_chroms) {
+                        track.valid_chroms = result.valid_chroms;
+                        track.update_icons();
+                    }
+                    track.tiles_div.text(DATA_OK);
+                    if (track.view.chrom) {
+                        track.tiles_div.text("");
+                        track.tiles_div.css("height", track.visible_height_px + "px");
+                        track.enabled = true;
+                        // predraw_init may be asynchronous, wait for it and then draw
+                        $.when.apply($, track.predraw_init()).done(function() {
+                            init_deferred.resolve();
+                            track.container_div.removeClass("nodata error pending");
+                            track.request_draw();
+                        });
+                    } else {
+                        init_deferred.resolve();
+                    }
+                }
+            });
+
+            this.update_icons();
+            return init_deferred;
+        },
+
+        /**
+         * Additional initialization required before drawing track for the first time.
+         */
+        predraw_init: function predraw_init() {
+            var track = this;
+            return $.getJSON(track.dataset.url(), {
+                data_type: "data",
+                stats: true,
+                chrom: track.view.chrom,
+                low: 0,
+                high: track.view.max_high,
+                hda_ldda: track.dataset.get("hda_ldda")
+            }, function(result) {
+                var data = result.data;
+
+                // Tracks may not have stat data either because there is no data or data is not yet ready.
+                if (data && data.min !== undefined && data.max !== undefined) {
+                    // Compute default minimum and maximum values
+                    var min_value = data.min;
+
+                    var max_value = data.max;
+                    // If mean and sd are present, use them to compute a ~95% window
+                    // but only if it would shrink the range on one side
+                    min_value = Math.floor(Math.min(0, Math.max(min_value, data.mean - 2 * data.sd)));
+                    max_value = Math.ceil(Math.max(0, Math.min(max_value, data.mean + 2 * data.sd)));
+                    // Update config, prefs
+                    track.config.set_default_value("min_value", min_value);
+                    track.config.set_default_value("max_value", max_value);
+                    track.config.set_value("min_value", min_value);
+                    track.config.set_value("max_value", max_value);
+                }
+            });
+        },
+
+        /**
+         * Returns all drawables in this drawable.
+         */
+        get_drawables: function get_drawables() {
+            return this;
+        }
+    });
+
+    var TiledTrack = function TiledTrack(view, container, obj_dict) {
+        Track.call(this, view, container, obj_dict);
+
+        var track = this;
+
+        // Make track moveable.
+        moveable(track.container_div, track.drag_handle_class, ".group", track);
+
+        // Attribute init.
+        this.filters_manager = new _filters2.default.FiltersManager(this, "filters" in obj_dict ? obj_dict.filters : null);
+        // HACK: set filters manager for data manager.
+        // FIXME: prolly need function to set filters and update data_manager reference.
+        this.data_manager.set("filters_manager", this.filters_manager);
+        this.filters_available = false;
+        this.tool = obj_dict.tool ? new TracksterTool(_.extend(obj_dict.tool, {
+            track: this,
+            tool_state: obj_dict.tool_state
+        })) : null;
+        this.tile_cache = new _visualization2.default.Cache(TILE_CACHE_SIZE);
+        this.left_offset = 0;
+
+        if (this.header_div) {
+            //
+            // Setup filters.
+            //
+            this.set_filters_manager(this.filters_manager);
+
+            //
+            // Create dynamic tool view.
+            //
+            if (this.tool) {
+                var tool_view = new TracksterToolView({
+                    model: this.tool
+                });
+                tool_view.render();
+                this.dynamic_tool_div = tool_view.$el;
+                this.header_div.after(this.dynamic_tool_div);
+            }
+        }
+
+        // Add tiles_div, overlay_div to content_div.
+        this.tiles_div = $("<div/>").addClass("tiles").appendTo(this.content_div);
+        if (!this.config.get_value("content_visible")) {
+            this.tiles_div.hide();
+        }
+        this.overlay_div = $("<div/>").addClass("overlay").appendTo(this.content_div);
+
+        if (obj_dict.mode) {
+            this.change_mode(obj_dict.mode);
+        }
+    };
+    extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
+        action_icons_def: Track.prototype.action_icons_def.concat([
+            // Show more rows when all features are not slotted.
+            {
+                name: "show_more_rows_icon",
+                title: "To minimize track height, not all feature rows are displayed. Click to display more rows.",
+                css_class: "exclamation",
+                on_click_fn: function on_click_fn(track) {
+                    $(".tooltip").remove();
+                    track.slotters[track.view.resolution_px_b].max_rows *= 2;
+                    track.request_draw({
+                        clear_tile_cache: true
+                    });
+                },
+                hide: true
+            }
+        ]),
+
+        /**
+         * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
+         */
+        copy: function copy(container) {
+            // Create copy.
+            var obj_dict = this.to_dict();
+            extend(obj_dict, {
+                data_manager: this.data_manager
+            });
+            var new_track = new this.constructor(this.view, container, obj_dict);
+            // Misc. init and return.
+            new_track.change_mode(this.mode);
+            new_track.enabled = this.enabled;
+            return new_track;
+        },
+
+        /**
+         * Set filters manager + HTML elements.
+         */
+        set_filters_manager: function set_filters_manager(filters_manager) {
+            this.filters_manager = filters_manager;
+            this.header_div.after(this.filters_manager.parent_div);
+        },
+
+        /**
+         * Returns representation of object in a dictionary for easy saving.
+         * Use from_dict to recreate object.
+         */
+        to_dict: function to_dict() {
+            return {
+                track_type: this.get_type(),
+                dataset: {
+                    id: this.dataset.id,
+                    hda_ldda: this.dataset.get("hda_ldda")
+                },
+                prefs: this.config.to_key_value_dict(),
+                mode: this.mode,
+                filters: this.filters_manager.to_dict(),
+                tool_state: this.tool ? this.tool.state_dict() : {}
+            };
+        },
+
+        /**
+         * Set track bounds for current chromosome.
+         */
+        set_min_max: function set_min_max() {
+            var track = this;
+
+            return $.getJSON(track.dataset.url(), {
+                data_type: "data",
+                stats: true,
+                chrom: track.view.chrom,
+                low: 0,
+                high: track.view.max_high,
+                hda_ldda: track.dataset.get("hda_ldda")
+            }, function(result) {
+                var data = result.data;
+                if (isNaN(parseFloat(track.config.get_value("min_value"))) || isNaN(parseFloat(track.config.get_value("max_value")))) {
+                    // Compute default minimum and maximum values
+                    var min_value = data.min;
+
+                    var max_value = data.max;
+                    // If mean and sd are present, use them to compute a ~95% window
+                    // but only if it would shrink the range on one side
+                    min_value = Math.floor(Math.min(0, Math.max(min_value, data.mean - 2 * data.sd)));
+                    max_value = Math.ceil(Math.max(0, Math.min(max_value, data.mean + 2 * data.sd)));
+                    // Update the prefs
+                    track.config.set_value("min_value", min_value);
+                    track.config.set_value("max_value", max_value);
+                }
+            });
+        },
+
+        /**
+         * Change track's mode.
+         */
+        change_mode: function change_mode(new_mode) {
+            var track = this;
+            // TODO: is it necessary to store the mode in two places (.mode and track_config)?
+            track.mode = new_mode;
+            track.config.set_value("mode", new_mode);
+            // FIXME: find a better way to get Auto data w/o clearing cache; using mode in the
+            // data manager would work if Auto data were checked for compatibility when a specific
+            // mode is chosen.
+            if (new_mode === "Auto") {
+                this.data_manager.clear();
+            }
+            track.request_draw({
+                clear_tile_cache: true
+            });
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
+            return track;
+        },
+
+        /**
+         * Update track's buttons.
+         */
+        update_icons: function update_icons() {
+            var track = this;
+
+            //
+            // Show/hide filter icon.
+            //
+            track.action_icons.filters_icon.toggle(track.filters_available);
+
+            //
+            // Show/hide tool icons.
+            //
+            track.action_icons.tools_icon.toggle(track.tool !== null);
+            track.action_icons.param_space_viz_icon.toggle(track.tool !== null);
+        },
+
+        /**
+         * Generate a key for the tile cache.
+         * TODO: create a TileCache object (like DataCache) and generate key internally.
+         */
+        _gen_tile_cache_key: function _gen_tile_cache_key(w_scale, tile_region) {
+            return w_scale + "_" + tile_region;
+        },
+
+        /**
+         * Request that track be drawn.
+         */
+        request_draw: function request_draw(options) {
+            if (options && options.clear_tile_cache) {
+                this.tile_cache.clear();
+            }
+            this.view.request_redraw(options, this);
+        },
+
+        /**
+         * Actions to be taken before drawing.
+         */
+        before_draw: function before_draw() {
+            // Clear because this is set when drawing.
+            this.max_height_px = 0;
+        },
+
+        /**
+         * Draw track. Options include:
+         * -force: force a redraw rather than use cached tiles (default: false)
+         * -clear_after: clear old tiles after drawing new tiles (default: false)
+         * -data_fetch: fetch data if necessary (default: true)
+         *
+         * NOTE: this function should never be called directly; use request_draw() so that drawing
+         * management can be used.
+         */
+        _draw: function _draw(options) {
+            if (!this.can_draw()) {
+                return;
+            }
+
+            var clear_after = options && options.clear_after;
+            var low = this.view.low;
+            var high = this.view.high;
+            var range = high - low;
+            var width = this.view.container.width();
+            var w_scale = this.view.resolution_px_b;
+            var resolution = 1 / w_scale;
+
+            // For overview, adjust high, low, resolution, and w_scale.
+            if (this.is_overview) {
+                low = this.view.max_low;
+                high = this.view.max_high;
+                w_scale = width / (view.max_high - view.max_low);
+                resolution = 1 / w_scale;
+            }
+
+            this.before_draw();
+
+            //
+            // Method for moving and/or removing tiles:
+            // (a) mark all elements for removal using class 'remove'
+            // (b) during tile drawing/placement, remove class for elements that are moved;
+            //     this occurs in show_tile()
+            // (c) after drawing tiles, remove elements still marked for removal
+            //     (i.e. that still have class 'remove').
+            //
+
+            // Step (a) for (re)moving tiles.
+            this.tiles_div.children().addClass("remove");
+
+            var // Tile width in bases.
+                tile_width = Math.floor(TILE_SIZE * resolution);
+
+            var // Index of first tile that overlaps visible region.
+                tile_index = Math.floor(low / tile_width);
+
+            var tile_region;
+            var tile_promise;
+            var tile_promises = [];
+            var tiles = [];
+            // Draw tiles.
+            while (tile_index * tile_width < high) {
+                // Get tile region.
+                tile_region = new _visualization2.default.GenomeRegion({
+                    chrom: this.view.chrom,
+                    start: tile_index * tile_width,
+                    // Tile high cannot be larger than view.max_high, which the chromosome length.
+                    end: Math.min((tile_index + 1) * tile_width, this.view.max_high)
+                });
+                tile_promise = this.draw_helper(tile_region, w_scale, options);
+                tile_promises.push(tile_promise);
+                $.when(tile_promise).then(function(tile) {
+                    tiles.push(tile);
+                });
+
+                // Go to next tile.
+                tile_index += 1;
+            }
+
+            // Step (c) for (re)moving tiles when clear_after is false.
+            if (!clear_after) {
+                this.tiles_div.children(".remove").removeClass("remove").remove();
+            }
+
+            // When all tiles are drawn, call post-draw actions.
+            var track = this;
+            $.when.apply($, tile_promises).then(function() {
+                // Step (c) for (re)moving tiles when clear_after is true:
+                track.tiles_div.children(".remove").remove();
+
+                // Only do postdraw actions for tiles; instances where tiles may not be drawn include:
+                // (a) ReferenceTrack without sufficient resolution;
+                // (b) data_fetch = false.
+                tiles = _.filter(tiles, function(t) {
+                    return t !== null;
+                });
+                if (tiles.length !== 0) {
+                    track.postdraw_actions(tiles, width, w_scale, clear_after);
+                }
+            });
+        },
+
+        /**
+         * Add a maximum/minimum label to track.
+         */
+        _add_yaxis_label: function _add_yaxis_label(type, on_change) {
+            var track = this;
+            var css_class = type === "max" ? "top" : "bottom";
+            var text = type === "max" ? "max" : "min";
+            var pref_name = type === "max" ? "max_value" : "min_value";
+            var label = this.container_div.find(".yaxislabel." + css_class);
+            var value = round(track.config.get_value(pref_name), 1);
+
+            // Default action for on_change is to redraw track.
+            on_change = on_change || function() {
+                track.request_draw({
+                    clear_tile_cache: true
+                });
+            };
+
+            if (label.length !== 0) {
+                // Label already exists, so update value.
+                label.text(value);
+            } else {
+                // Add label.
+                label = $("<div/>").text(value).make_text_editable({
+                    num_cols: 12,
+                    on_finish: function on_finish(new_val) {
+                        $(".tooltip").remove();
+                        track.config.set_value(pref_name, round(new_val, 1));
+                        on_change();
+                    },
+                    help_text: "Set " + text + " value"
+                }).addClass("yaxislabel " + css_class).css("color", this.config.get_value("label_color"));
+                this.container_div.prepend(label);
+            }
+        },
+
+        /**
+         * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
+         * drawn/fetched and shown.
+         */
+        postdraw_actions: function postdraw_actions(tiles, width, w_scale, clear_after) {
+            var line_track_tiles = _.filter(tiles, function(tile) {
+                return tile instanceof LineTrackTile;
+            });
+
+            //
+            // Take different actions depending on whether there are LineTrack/Coverage tiles.
+            //
+
+            if (line_track_tiles.length > 0) {
+                // -- Drawing in Coverage mode. --
+
+                // Clear because this is set when drawing.
+                this.max_height_px = 0;
+                var track = this;
+                _.each(tiles, function(tile) {
+                    if (!(tile instanceof LineTrackTile)) {
+                        tile.html_elt.remove();
+                        track.draw_helper(tile.region, w_scale, {
+                            force: true,
+                            mode: "Coverage"
+                        });
+                    }
+                });
+
+                track._add_yaxis_label("max");
+            } else {
+                // -- Drawing in non-Coverage mode. --
+
+                // Remove Y-axis labels because there are no line track tiles.
+                this.container_div.find(".yaxislabel").remove();
+
+                //
+                // If some tiles have icons, set padding of tiles without icons so features and rows align.
+                //
+                var icons_present = _.find(tiles, function(tile) {
+                    return tile.has_icons;
+                });
+
+                if (icons_present) {
+                    _.each(tiles, function(tile) {
+                        if (!tile.has_icons) {
+                            // Need to align with other tile(s) that have icons.
+                            tile.html_elt.css("padding-top", ERROR_PADDING);
+                        }
+                    });
+                }
+            }
+        },
+
+        /**
+         * Returns appropriate display mode based on data.
+         */
+        get_mode: function get_mode(data) {
+            return this.mode;
+        },
+
+        /**
+         * Update track interface to show display mode being used.
+         */
+        update_auto_mode: function update_auto_mode(display_mode) {
+            // FIXME: needs to be implemented.
+        },
+
+        /**
+         * Returns a list of drawables to draw. Defaults to current track.
+         */
+        _get_drawables: function _get_drawables() {
+            return [this];
+        },
+
+        /**
+         * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a
+         * jQuery.Deferred object that is fulfilled when tile can be drawn again. Options include:
+         * -force: force a redraw rather than use cached tiles (default: false)
+         * -data_fetch: fetch data if necessary (default: true)
+         */
+        draw_helper: function draw_helper(region, w_scale, options) {
+            // Init options if necessary to avoid having to check if options defined.
+            if (!options) {
+                options = {};
+            }
+
+            var force = options.force;
+            var mode = options.mode || this.mode;
+            var resolution = 1 / w_scale;
+
+            var // Useful vars.
+                track = this;
+
+            var drawables = this._get_drawables();
+            var key = this._gen_tile_cache_key(w_scale, region);
+
+            var is_tile = function is_tile(o) {
+                return o && "track" in o;
+            };
+
+            // Check tile cache, if found show existing tile in correct position
+            var tile = force ? undefined : track.tile_cache.get_elt(key);
+            if (tile) {
+                if (is_tile(tile)) {
+                    track.show_tile(tile, w_scale);
+                }
+                return tile;
+            }
+
+            // If not fetching data, nothing more to do because data is needed to draw tile.
+            if (options.data_fetch === false) {
+                return null;
+            }
+
+            // Function that returns data/Deferreds needed to draw tile.
+            var get_tile_data = function get_tile_data() {
+                // HACK: if display mode (mode) is in continuous data modes, data mode must be coverage to get coverage data.
+                var data_mode = _.find(CONTINUOUS_DATA_MODES, function(m) {
+                    return m === mode;
+                }) ? "Coverage" : mode;
+
+                // Map drawable object to data needed for drawing.
+                var tile_data = _.map(drawables, function(d // Get the track data/promise.
+                ) {
+                    return d.data_manager.get_data(region, data_mode, resolution, track.data_url_extra_params);
+                });
+
+                // Get reference data/promise.
+                if (view.reference_track) {
+                    tile_data.push(view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params));
+                }
+
+                return tile_data;
+            };
+
+            //
+            // When data is available, draw tile.
+            //
+            var tile_drawn = $.Deferred();
+            track.tile_cache.set_elt(key, tile_drawn);
+            $.when.apply($, get_tile_data()).then(function() {
+                var tile_data = get_tile_data();
+                var tracks_data = tile_data;
+                var seq_data;
+
+                // Deferreds may show up here if trying to fetch a subset of data from a superset data chunk
+                // that cannot be subsetted. This may occur if the superset has a message. If there is a
+                // Deferred, try again from the top. NOTE: this condition could (should?) be handled by the
+                // GenomeDataManager in visualization module.
+                if (_.find(tile_data, function(d) {
+                        return _util2.default.is_deferred(d);
+                    })) {
+                    track.tile_cache.set_elt(key, undefined);
+                    $.when(track.draw_helper(region, w_scale, options)).then(function(tile) {
+                        tile_drawn.resolve(tile);
+                    });
+                    return;
+                }
+
+                // If sequence data is available, subset to get only data in region.
+                if (view.reference_track) {
+                    seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
+                }
+
+                // Get drawing modes, heights for all tracks.
+                var drawing_modes = [];
+
+                var drawing_heights = [];
+
+                _.each(drawables, function(d, i) {
+                    var mode = d.mode;
+                    var data = tracks_data[i];
+                    if (mode === "Auto") {
+                        mode = d.get_mode(data);
+                        d.update_auto_mode(mode);
+                    }
+                    drawing_modes.push(mode);
+                    drawing_heights.push(d.get_canvas_height(data, mode, w_scale, width));
+                });
+
+                var canvas = track.view.canvas_manager.new_canvas();
+                var tile_low = region.get("start");
+                var tile_high = region.get("end");
+                var all_data_index = 0;
+
+                var width = Math.ceil((tile_high - tile_low) * w_scale) + track.left_offset;
+
+                var height = _.max(drawing_heights);
+                var tile;
+
+                //
+                // Draw all tracks on tile.
+                //
+                canvas.width = width;
+                // Height is specified in options or is the height found above.
+                canvas.height = options.height || height;
+                var ctx = canvas.getContext("2d");
+                ctx.translate(track.left_offset, 0);
+                if (drawables.length > 1) {
+                    ctx.globalAlpha = 0.5;
+                    ctx.globalCompositeOperation = "source-over";
+                }
+                _.each(drawables, function(d, i) {
+                    tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], region, w_scale, seq_data);
+                });
+
+                // Don't cache, show if no tile.
+                if (tile !== undefined) {
+                    track.tile_cache.set_elt(key, tile);
+                    track.show_tile(tile, w_scale);
+                }
+
+                tile_drawn.resolve(tile);
+            });
+
+            return tile_drawn;
+        },
+
+        /**
+         * Returns canvas height needed to display data; return value is an integer that denotes the
+         * number of pixels required.
+         */
+        get_canvas_height: function get_canvas_height(result, mode, w_scale, canvas_width) {
+            return this.visible_height_px;
+        },
+
+        /**
+         * Draw line (bigwig) data onto tile.
+         */
+        _draw_line_track_tile: function _draw_line_track_tile(result, ctx, mode, region, w_scale) {
+            // Set min/max if they are not already set.
+            // FIXME: checking for different null/undefined/0 is messy; it would be nice to
+            // standardize this.
+            if ([undefined, null].indexOf(this.config.get_value("min_value")) !== -1) {
+                this.config.set_value("min_value", 0);
+            }
+            if ([undefined, null, 0].indexOf(this.config.get_value("max_value")) !== -1) {
+                this.config.set_value("max_value", _.max(_.map(result.data, function(d) {
+                    return d[1];
+                })) || 0);
+            }
+
+            var canvas = ctx.canvas;
+
+            var painter = new _painters2.default.LinePainter(result.data, region.get("start"), region.get("end"), this.config.to_key_value_dict(), mode);
+
+            painter.draw(ctx, canvas.width, canvas.height, w_scale);
+
+            return new LineTrackTile(this, region, w_scale, canvas, result.data);
+        },
+
+        /**
+         * Draw a track tile.
+         * @param result result from server
+         * @param ctx canvas context to draw on
+         * @param mode mode to draw in
+         * @param region region to draw on tile
+         * @param w_scale pixels per base
+         * @param ref_seq reference sequence data
+         */
+        draw_tile: function draw_tile(result, ctx, mode, region, w_scale, ref_seq) {},
+
+        /**
+         * Show track tile and perform associated actions. Showing tile may actually move
+         * an existing tile rather than reshowing it.
+         */
+        show_tile: function show_tile(tile, w_scale) {
+            var track = this;
+            var tile_element = tile.html_elt;
+
+            // -- Show/move tile element. --
+
+            tile.predisplay_actions();
+
+            // Position tile element based on current viewport.
+            var left = Math.round((tile.low - (this.is_overview ? this.view.max_low : this.view.low)) * w_scale);
+            if (this.left_offset) {
+                left -= this.left_offset;
+            }
+            tile_element.css("left", left);
+
+            if (tile_element.hasClass("remove")) {
+                // Step (b) for (re)moving tiles. See _draw() function for description of algorithm
+                // for removing tiles.
+                tile_element.removeClass("remove");
+            } else {
+                // Showing new tile.
+                this.tiles_div.append(tile_element);
+            }
+
+            // -- Update track, tile heights based on new tile. --
+
+            tile_element.css("height", "auto");
+
+            // Update max height based on current tile's height.
+            // BUG/HACK: tile_element.height() returns a height that is always 2 pixels too big, so
+            // -2 to get the correct height.
+            this.max_height_px = Math.max(this.max_height_px, tile_element.height() - 2);
+
+            // Update height for all tiles based on max height.
+            tile_element.parent().children().css("height", this.max_height_px + "px");
+
+            // Update track height based on max height and visible height.
+            var track_height = this.max_height_px;
+            if (this.visible_height_px !== 0) {
+                track_height = Math.min(this.max_height_px, this.visible_height_px);
+            }
+            this.tiles_div.css("height", track_height + "px");
+        },
+
+        /**
+         * Utility function that creates a label string describing the region and parameters of a track's tool.
+         */
+        tool_region_and_parameters_str: function tool_region_and_parameters_str(region) {
+            var track = this;
+            var region_str = region !== undefined ? region.toString() : "all";
+            var param_str = _.values(track.tool.get_inputs_dict()).join(", ");
+            return " - region=[" + region_str + "], parameters=[" + param_str + "]";
+        },
+
+        /**
+         * Returns true if data is compatible with a given mode.
+         */
+        data_and_mode_compatible: function data_and_mode_compatible(data, mode) {
+            // Only handle modes that user can set.
+            if (mode === "Auto") {
+                return true;
+            } else if (mode === "Coverage") {
+                // Histogram mode requires bigwig data.
+                return data.dataset_type === "bigwig";
+            } else if (data.dataset_type === "bigwig" || data.extra_info === "no_detail") {
+                // All other modes--Dense, Squish, Pack--require data + details.
+                return false;
+            } else {
+                return true;
+            }
+        },
+
+        /**
+         * Returns true if entry can be subsetted.
+         */
+        can_subset: function can_subset(entry) {
+            // Do not subset entries with a message or data with no detail.
+            if (entry.message || entry.extra_info === "no_detail") {
+                return false;
+            } else if (entry.dataset_type === "bigwig") {
+                // Subset only if data is single-bp resolution.
+                return entry.data[1][0] - entry.data[0][0] === 1;
+            }
+
+            return true;
+        },
+
+        /**
+         * Set up track to receive tool data.
+         */
+        init_for_tool_data: function init_for_tool_data() {
+            // Set up track to fetch raw data rather than converted data.
+            this.data_manager.set("data_type", "raw_data");
+            this.data_query_wait = 1000;
+            this.dataset_check_type = "state";
+
+            // FIXME: this is optional and is disabled for now because it creates
+            // additional converter jobs without a clear benefit because indexing
+            // such a small dataset provides little benefit.
+            //
+            // Set up one-time, post-draw to clear tool execution settings.
+            //
+            /*
+            this.normal_postdraw_actions = this.postdraw_actions;
+            this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
+                var self = this;
+                 // Do normal postdraw init.
+                self.normal_postdraw_actions(tiles, width, w_scale, clear_after);
+                 // Tool-execution specific post-draw init:
+                 // Reset dataset check, wait time.
+                self.dataset_check_type = 'converted_datasets_state';
+                self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+                 // Reset data URL when dataset indexing has completed/when not pending.
+                var ss_deferred = new util.ServerStateDeferred({
+                    url: self.dataset_state_url,
+                    url_params: {dataset_id : self.dataset.id, hda_ldda: self.dataset.get('hda_ldda')},
+                    interval: self.data_query_wait,
+                    // Set up deferred to check dataset state until it is not pending.
+                    success_fn: function(result) { return result !== "pending"; }
+                });
+                $.when(ss_deferred.go()).then(function() {
+                    // Dataset is indexed, so use converted data.
+                    self.data_manager.set('data_type', 'data');
+                });
+                 // Reset post-draw actions function.
+                self.postdraw_actions = self.normal_postdraw_actions;
+            };
+            */
+        }
+    });
+
+    var LabelTrack = function LabelTrack(view, container) {
+        Track.call(this, view, container, {
+            resize: false,
+            header: false
+        });
+        this.container_div.addClass("label-track");
+    };
+    extend(LabelTrack.prototype, Track.prototype, {
+        init: function init() {
+            // Enable by default because there should always be data when drawing track.
+            this.enabled = true;
+        },
+
+        /**
+         * Additional initialization required before drawing track for the first time.
+         */
+        predraw_init: function predraw_init() {},
+
+        _draw: function _draw(options) {
+            var view = this.view;
+            var range = view.high - view.low;
+
+            var tickDistance = Math.floor(Math.pow(10, Math.floor(Math.log(range) / Math.log(10))));
+
+            var position = Math.floor(view.low / tickDistance) * tickDistance;
+            var width = this.view.container.width();
+            var new_div = $("<div/>").addClass("label-container");
+            while (position < view.high) {
+                var screenPosition = Math.floor((position - view.low) / range * width);
+                new_div.append($("<div/>").addClass("pos-label").text(_util2.default.commatize(position)).css({
+                    left: screenPosition
+                }));
+                position += tickDistance;
+            }
+            this.content_div.children(":first").remove();
+            this.content_div.append(new_div);
+        }
+    });
+
+    // FIXME: Composite tracks have code for showing composite tracks with line tracks and
+    // composite tracks with line + feature tracks. It's probably best if different classes
+    // are created for each type of composite track.
+
+    /**
+     * A tiled track composed of multiple other tracks. Composite tracks only work with
+     * bigwig data for now.
+     */
+    var CompositeTrack = function CompositeTrack(view, container, obj_dict) {
+        TiledTrack.call(this, view, container, obj_dict);
+
+        // Init drawables; each drawable is a copy so that config/preferences
+        // are independent of each other. Also init left offset.
+        this.drawables = [];
+        if ("drawables" in obj_dict) {
+            var drawable;
+            for (var i = 0; i < obj_dict.drawables.length; i++) {
+                drawable = obj_dict.drawables[i];
+                this.drawables[i] = object_from_template(drawable, view, null);
+
+                // Track's left offset is the max of all tracks.
+                if (drawable.left_offset > this.left_offset) {
+                    this.left_offset = drawable.left_offset;
+                }
+            }
+            this.enabled = true;
+        }
+
+        // Set all feature tracks to use Coverage mode.
+        _.each(this.drawables, function(d) {
+            if (d instanceof FeatureTrack || d instanceof ReadTrack) {
+                d.change_mode("Coverage");
+            }
+        });
+
+        this.update_icons();
+
+        // HACK: needed for saving object for now. Need to generalize get_type() to all Drawables and use
+        // that for object type.
+        this.obj_type = "CompositeTrack";
+    };
+
+    extend(CompositeTrack.prototype, TiledTrack.prototype, {
+        display_modes: CONTINUOUS_DATA_MODES,
+
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "min_value",
+                label: "Min Value",
+                type: "float",
+                default_value: undefined
+            }, {
+                key: "max_value",
+                label: "Max Value",
+                type: "float",
+                default_value: undefined
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 30,
+                hidden: true
+            }]);
+        },
+
+        action_icons_def: [
+            // Create composite track from group's tracks.
+            {
+                name: "composite_icon",
+                title: (0, _localization2.default)("Show individual tracks"),
+                css_class: "layers-stack",
+                on_click_fn: function on_click_fn(track) {
+                    $(".tooltip").remove();
+                    track.show_group();
+                }
+            }
+        ].concat(TiledTrack.prototype.action_icons_def),
+
+        // HACK: CompositeTrack should inherit from DrawableCollection as well.
+        /**
+         * Returns representation of object in a dictionary for easy saving.
+         * Use from_dict to recreate object.
+         */
+        to_dict: DrawableCollection.prototype.to_dict,
+
+        add_drawable: DrawableCollection.prototype.add_drawable,
+
+        unpack_drawables: DrawableCollection.prototype.unpack_drawables,
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Action to take during resize.
+         */
+        on_resize: function on_resize() {
+            // Propogate visible height to other tracks.
+            var visible_height = this.visible_height_px;
+            _.each(this.drawables, function(d) {
+                d.visible_height_px = visible_height;
+            });
+            Track.prototype.on_resize.call(this);
+        },
+
+        /**
+         * Change mode for all tracks.
+         */
+        change_mode: function change_mode(new_mode) {
+            TiledTrack.prototype.change_mode.call(this, new_mode);
+            for (var i = 0; i < this.drawables.length; i++) {
+                this.drawables[i].change_mode(new_mode);
+            }
+        },
+
+        /**
+         * Initialize component tracks and draw composite track when all components are initialized.
+         */
+        init: function init() {
+            // Init components.
+            var init_deferreds = [];
+            for (var i = 0; i < this.drawables.length; i++) {
+                init_deferreds.push(this.drawables[i].init());
+            }
+
+            // Draw composite when all tracks available.
+            var track = this;
+            $.when.apply($, init_deferreds).then(function() {
+                track.enabled = true;
+                track.request_draw();
+            });
+        },
+
+        update_icons: function update_icons() {
+            // For now, hide filters and tool.
+            this.action_icons.filters_icon.hide();
+            this.action_icons.tools_icon.hide();
+            this.action_icons.param_space_viz_icon.hide();
+        },
+
+        can_draw: Drawable.prototype.can_draw,
+
+        _get_drawables: function _get_drawables() {
+            return this.drawables;
+        },
+
+        /**
+         * Replace this track with group that includes individual tracks.
+         */
+        show_group: function show_group() {
+            // Create group with individual tracks.
+            var group = new DrawableGroup(this.view, this.container, {
+                name: this.config.get_value("name")
+            });
+
+            var track;
+            for (var i = 0; i < this.drawables.length; i++) {
+                track = this.drawables[i];
+                track.update_icons();
+                group.add_drawable(track);
+                track.container = group;
+                group.content_div.append(track.container_div);
+            }
+
+            // Replace track with group.
+            var index = this.container.replace_drawable(this, group, true);
+            group.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Actions taken before drawing.
+         */
+        before_draw: function before_draw() {
+            // FIXME: this is needed only if there are feature tracks in the composite track.
+            // TiledTrack.prototype.before_draw.call(this);
+
+            //
+            // Set min, max for tracks to be largest min, max.
+            //
+
+            // Get smallest min, biggest max.
+            var min = _.min(_.map(this.drawables, function(d) {
+                return d.config.get_value("min_value");
+            }));
+
+            var max = _.max(_.map(this.drawables, function(d) {
+                return d.config.get_value("max_value");
+            }));
+
+            this.config.set_value("min_value", min);
+            this.config.set_value("max_value", max);
+
+            // Set all tracks to smallest min, biggest max.
+            _.each(this.drawables, function(d) {
+                d.config.set_value("min_value", min);
+                d.config.set_value("max_value", max);
+            });
+        },
+
+        /**
+         * Update minimum, maximum for component tracks.
+         */
+        update_all_min_max: function update_all_min_max() {
+            var track = this;
+            var min_value = this.config.get_value("min_value");
+            var max_value = this.config.get_value("max_value");
+            _.each(this.drawables, function(d) {
+                d.config.set_value("min_value", min_value);
+                d.config.set_value("max_value", max_value);
+            });
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
+         * drawn/fetched and shown.
+         */
+        postdraw_actions: function postdraw_actions(tiles, width, w_scale, clear_after) {
+            // All tiles must be the same height in order to draw LineTracks, so redraw tiles as needed.
+            var max_height = -1;
+
+            var i;
+            for (i = 0; i < tiles.length; i++) {
+                var height = tiles[i].html_elt.find("canvas").height();
+                if (height > max_height) {
+                    max_height = height;
+                }
+            }
+
+            for (i = 0; i < tiles.length; i++) {
+                var tile = tiles[i];
+                if (tile.html_elt.find("canvas").height() !== max_height) {
+                    this.draw_helper(tile.region, w_scale, {
+                        force: true,
+                        height: max_height
+                    });
+                    tile.html_elt.remove();
+                }
+            }
+
+            // Wrap function so that it can be called without object reference.
+            var track = this;
+
+            var t = function t() {
+                track.update_all_min_max();
+            };
+
+            // Add min, max labels.
+            this._add_yaxis_label("min", t);
+            this._add_yaxis_label("max", t);
+        }
+    });
+
+    /**
+     * Displays reference genome data.
+     */
+    var ReferenceTrack = function ReferenceTrack(view) {
+        TiledTrack.call(this, view, {
+            content_div: view.top_labeltrack
+        }, {
+            resize: false,
+            header: false
+        });
+
+        // Use offset to ensure that bases at tile edges are drawn.
+        this.left_offset = view.canvas_manager.char_width_px;
+        this.container_div.addClass("reference-track");
+        this.data_url = Galaxy.root + "api/genomes/" + this.view.dbkey;
+        this.data_url_extra_params = {
+            reference: true
+        };
+        this.data_manager = new _visualization2.default.GenomeReferenceDataManager({
+            data_url: this.data_url,
+            can_subset: this.can_subset
+        });
+        this.hide_contents();
+    };
+    extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "height",
+                type: "int",
+                default_value: 13,
+                hidden: true
+            }]);
+        },
+
+        init: function init() {
+            this.data_manager.clear();
+            // Enable by default because there should always be data when drawing track.
+            this.enabled = true;
+        },
+
+        /**
+         * Additional initialization required before drawing track for the first time.
+         */
+        predraw_init: function predraw_init() {},
+
+        can_draw: Drawable.prototype.can_draw,
+
+        /**
+         * Draws and shows tile if reference data can be displayed; otherwise track is hidden.
+         */
+        draw_helper: function draw_helper(region, w_scale, options) {
+            var cur_visible = this.tiles_div.is(":visible");
+            var new_visible;
+            var tile = null;
+            if (w_scale > this.view.canvas_manager.char_width_px) {
+                this.tiles_div.show();
+                new_visible = true;
+                tile = TiledTrack.prototype.draw_helper.call(this, region, w_scale, options);
+            } else {
+                new_visible = false;
+                this.tiles_div.hide();
+            }
+
+            // NOTE: viewport resizing conceptually belongs in postdraw_actions(), but currently
+            // postdraw_actions is not called when reference track not shown due to no tiles. If
+            // it is moved to postdraw_actions, resize must be called each time because cannot
+            // easily detect showing/hiding.
+
+            // If showing or hiding reference track, resize viewport.
+            if (cur_visible !== new_visible) {
+                this.view.resize_viewport();
+            }
+
+            return tile;
+        },
+
+        can_subset: function can_subset(entry) {
+            return true;
+        },
+
+        /**
+         * Draw ReferenceTrack tile.
+         */
+        draw_tile: function draw_tile(data, ctx, mode, region, w_scale) {
+            // Try to subset data.
+            var subset = this.data_manager.subset_entry(data, region);
+
+            var seq_data = subset.data;
+
+            // Draw sequence data.
+            var canvas = ctx.canvas;
+            ctx.font = ctx.canvas.manager.default_font;
+            ctx.textAlign = "center";
+            for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+                ctx.fillStyle = this.view.get_base_color(seq_data[c]);
+                ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
+            }
+            return new Tile(this, region, w_scale, canvas, subset);
+        }
+    });
+
+    /**
+     * Track displays continuous/numerical data. Track expects position data in 1-based format, i.e. wiggle format.
+     */
+    var LineTrack = function LineTrack(view, container, obj_dict) {
+        this.mode = "Histogram";
+        TiledTrack.call(this, view, container, obj_dict);
+        // Need left offset for drawing overlap near tile boundaries.
+        this.left_offset = 30;
+
+        // If server has byte-range support, use BBI data manager to read directly from the BBI file.
+        // FIXME: there should be a flag to wait for this check to complete before loading the track.
+        var self = this;
+        $.when(supportsByteRanges(Galaxy.root + "datasets/" + this.dataset.id + "/display")).then(function(supportsByteRanges) {
+            if (supportsByteRanges) {
+                self.data_manager = new _bbiDataManager2.default.BBIDataManager({
+                    dataset: self.dataset
+                });
+            }
+        });
+    };
+
+    extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+        display_modes: CONTINUOUS_DATA_MODES,
+
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "color",
+                label: "Color",
+                type: "color"
+            }, {
+                key: "min_value",
+                label: "Min Value",
+                type: "float",
+                default_value: undefined
+            }, {
+                key: "max_value",
+                label: "Max Value",
+                type: "float",
+                default_value: undefined
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 30,
+                hidden: true
+            }]);
+        },
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Actions to be taken before drawing.
+         */
+        // FIXME: can the default behavior be used; right now it breaks during resize.
+        before_draw: function before_draw() {},
+
+        /**
+         * Draw track tile.
+         */
+        draw_tile: function draw_tile(result, ctx, mode, region, w_scale) {
+            return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
+        },
+
+        /**
+         * Subset data only if data is at single-base pair resolution.
+         */
+        can_subset: function can_subset(entry) {
+            return entry.data[1][0] - entry.data[0][0] === 1;
+        },
+
+        /**
+         * Add min, max labels.
+         */
+        postdraw_actions: function postdraw_actions(tiles, width, w_scale, clear_after) {
+            // Add min, max labels.
+            this._add_yaxis_label("max");
+            this._add_yaxis_label("min");
+        }
+    });
+
+    /**
+     * Diagonal heatmap for showing interactions data.
+     */
+    var DiagonalHeatmapTrack = function DiagonalHeatmapTrack(view, container, obj_dict) {
+        this.mode = "Heatmap";
+        TiledTrack.call(this, view, container, obj_dict);
+    };
+
+    extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+        display_modes: ["Heatmap"],
+
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "pos_color",
+                label: "Positive Color",
+                type: "color",
+                default_value: "#FF8C00"
+            }, {
+                key: "neg_color",
+                label: "Negative Color",
+                type: "color",
+                default_value: "#4169E1"
+            }, {
+                key: "min_value",
+                label: "Min Value",
+                type: "int",
+                default_value: undefined
+            }, {
+                key: "max_value",
+                label: "Max Value",
+                type: "int",
+                default_value: undefined
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 500,
+                hidden: true
+            }]);
+        },
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Additional initialization required before drawing track for the first time.
+         */
+        predraw_init: function predraw_init() {
+            var track = this;
+            return $.getJSON(track.dataset.url(), {
+                data_type: "data",
+                stats: true,
+                chrom: track.view.chrom,
+                low: 0,
+                high: track.view.max_high,
+                hda_ldda: track.dataset.get("hda_ldda")
+            }, function(result) {
+                var data = result.data;
+            });
+        },
+
+        /**
+         * Draw tile.
+         */
+        draw_tile: function draw_tile(result, ctx, mode, region, w_scale) {
+            // Paint onto canvas.
+            var canvas = ctx.canvas;
+
+            var painter = new _painters2.default.DiagonalHeatmapPainter(result.data, region.get("start"), region.get("end"), this.config.to_key_value_dict(), mode);
+
+            painter.draw(ctx, canvas.width, canvas.height, w_scale);
+
+            return new Tile(this, region, w_scale, canvas, result.data);
+        }
+    });
+
+    /**
+     * A track that displays features/regions. Track expects position data in BED format, i.e. 0-based, half-open.
+     */
+    var FeatureTrack = function FeatureTrack(view, container, obj_dict) {
+        TiledTrack.call(this, view, container, obj_dict);
+        this.container_div.addClass("feature-track");
+        this.summary_draw_height = 30;
+        this.slotters = {};
+        this.start_end_dct = {};
+        this.left_offset = 200;
+
+        // this.painter = painters.LinkedFeaturePainter;
+        this.set_painter_from_config();
+    };
+    extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+        display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "block_color",
+                label: "Block color",
+                type: "color"
+            }, {
+                key: "reverse_strand_color",
+                label: "Antisense strand color",
+                type: "color"
+            }, {
+                key: "label_color",
+                label: "Label color",
+                type: "color",
+                default_value: "black"
+            }, {
+                key: "show_counts",
+                label: "Show summary counts",
+                type: "bool",
+                default_value: true,
+                help: "Show the number of items in each bin when drawing summary histogram"
+            }, {
+                key: "min_value",
+                label: "Histogram minimum",
+                type: "float",
+                default_value: undefined,
+                help: "clear value to set automatically"
+            }, {
+                key: "max_value",
+                label: "Histogram maximum",
+                type: "float",
+                default_value: undefined,
+                help: "clear value to set automatically"
+            }, {
+                key: "connector_style",
+                label: "Connector style",
+                type: "select",
+                default_value: "fishbones",
+                options: [{
+                    label: "Line with arrows",
+                    value: "fishbone"
+                }, {
+                    label: "Arcs",
+                    value: "arcs"
+                }]
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 0,
+                hidden: true
+            }]);
+        },
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.set_painter_from_config();
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        set_painter_from_config: function set_painter_from_config() {
+            if (this.config.get_value("connector_style") === "arcs") {
+                this.painter = _painters2.default.ArcLinkedFeaturePainter;
+            } else {
+                this.painter = _painters2.default.LinkedFeaturePainter;
+            }
+        },
+
+        /**
+         * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
+         * drawn/fetched and shown.
+         */
+        postdraw_actions: function postdraw_actions(tiles, width, w_scale, clear_after) {
+            TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
+
+            var track = this;
+            var i;
+
+            var line_track_tiles = _.filter(tiles, function(t) {
+                return t instanceof LineTrackTile;
+            });
+
+            //
+            // Finish drawing of features that span multiple tiles. Features that span multiple tiles
+            // are labeled incomplete on the tile level because they cannot be completely drawn.
+            //
+            if (line_track_tiles.length === 0) {
+                // Gather incomplete features together.
+                var all_incomplete_features = {};
+                _.each(_.pluck(tiles, "incomplete_features"), function(inc_features) {
+                    _.each(inc_features, function(feature) {
+                        all_incomplete_features[feature[0]] = feature;
+                    });
+                });
+
+                // Draw incomplete features on each tile.
+                var self = this;
+                _.each(tiles, function(tile) {
+                    // Remove features already drawn on tile originally.
+                    var tile_incomplete_features = _.omit(all_incomplete_features, _.map(tile.incomplete_features, function(f) {
+                        return f[0];
+                    }));
+
+                    // Remove features already drawn on tile in past postdraw actions.
+                    tile_incomplete_features = _.omit(tile_incomplete_features, _.keys(tile.other_tiles_features_drawn));
+
+                    // Draw tile's incomplete features.
+                    if (_.size(tile_incomplete_features) !== 0) {
+                        // To draw incomplete features, create new canvas, copy original canvas/tile onto new
+                        // canvas, and then draw incomplete features on the new canvas.
+                        var features = {
+                            data: _.values(tile_incomplete_features)
+                        };
+
+                        var new_canvas = self.view.canvas_manager.new_canvas();
+                        var new_canvas_ctx = new_canvas.getContext("2d");
+                        new_canvas.height = Math.max(tile.canvas.height, self.get_canvas_height(features, tile.mode, tile.w_scale, 100));
+                        new_canvas.width = tile.canvas.width;
+                        new_canvas_ctx.drawImage(tile.canvas, 0, 0);
+                        new_canvas_ctx.translate(track.left_offset, 0);
+                        var new_tile = self.draw_tile(features, new_canvas_ctx, tile.mode, tile.region, tile.w_scale, tile.seq_data);
+                        $(tile.canvas).replaceWith($(new_tile.canvas));
+                        tile.canvas = new_canvas;
+                        _.extend(tile.other_tiles_features_drawn, all_incomplete_features);
+                    }
+                });
+            }
+
+            // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
+            /*
+            This code isn't used right now because Coverage mode uses predefined max in preferences.
+            if (track.mode === "Coverage") {
+                // Get global max.
+                var global_max = -1;
+                for (i = 0; i < tiles.length; i++) {
+                    var cur_max = tiles[i].max_val;
+                    if (cur_max > global_max) {
+                        global_max = cur_max;
+                    }
+                }
+                 for (i = 0; i < tiles.length; i++) {
+                    var tile = tiles[i];
+                    if (tile.max_val !== global_max) {
+                        tile.html_elt.remove();
+                        track.draw_helper(tile.index, w_scale, { more_tile_data: { force: true, max: global_max } } );
+                    }
+                }
+            }
+            */
+
+            //
+            // Update filter attributes, UI.
+            //
+
+            // Update filtering UI.
+            if (track.filters_manager) {
+                var filters = track.filters_manager.filters;
+                var f;
+                for (f = 0; f < filters.length; f++) {
+                    filters[f].update_ui_elt();
+                }
+
+                // Determine if filters are available; this is based on the tiles' data.
+                // Criteria for filter to be available: (a) it is applicable to tile data and (b) filter min != filter max.
+                var filters_available = false;
+
+                var example_feature;
+                var filter;
+                for (i = 0; i < tiles.length; i++) {
+                    if (tiles[i].data.length) {
+                        example_feature = tiles[i].data[0];
+                        for (f = 0; f < filters.length; f++) {
+                            filter = filters[f];
+                            if (filter.applies_to(example_feature) && filter.min !== filter.max) {
+                                filters_available = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If filter availability changed, hide filter div if necessary and update menu.
+                if (track.filters_available !== filters_available) {
+                    track.filters_available = filters_available;
+                    if (!track.filters_available) {
+                        track.filters_manager.hide();
+                    }
+                    track.update_icons();
+                }
+            }
+
+            //
+            // If not all features slotted, show icon for showing more rows (slots).
+            //
+            if (tiles[0] instanceof FeatureTrackTile) {
+                var all_slotted = true;
+                for (i = 0; i < tiles.length; i++) {
+                    if (!tiles[i].all_slotted) {
+                        all_slotted = false;
+                        break;
+                    }
+                }
+                this.action_icons.show_more_rows_icon.toggle(!all_slotted);
+            } else {
+                this.action_icons.show_more_rows_icon.hide();
+            }
+        },
+
+        /**
+         * Update track interface to show display mode being used.
+         */
+        update_auto_mode: function update_auto_mode(mode) {
+            if (this.mode === "Auto") {
+                if (mode === "no_detail") {
+                    mode = "feature spans";
+                }
+                this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
+            }
+        },
+
+        /**
+         * Place features in slots for drawing (i.e. pack features).
+         * this.slotters[level] is created in this method. this.slotters[level]
+         * is a Slotter object. Returns the number of slots used to pack features.
+         */
+        incremental_slots: function incremental_slots(level, features, mode) {
+            // Get/create incremental slots for level. If display mode changed,
+            // need to create new slots.
+
+            var dummy_context = this.view.canvas_manager.dummy_context;
+
+            var slotter = this.slotters[level];
+            if (!slotter || slotter.mode !== mode) {
+                slotter = new _slotting2.default.FeatureSlotter(level, mode, MAX_FEATURE_DEPTH, function(x) {
+                    return dummy_context.measureText(x);
+                });
+                this.slotters[level] = slotter;
+            }
+
+            return slotter.slot_features(features);
+        },
+
+        /**
+         * Returns appropriate display mode based on data.
+         */
+        get_mode: function get_mode(data) {
+            var mode;
+            // HACK: use no_detail mode track is in overview to prevent overview from being too large.
+            if (data.extra_info === "no_detail" || this.is_overview) {
+                mode = "no_detail";
+            } else {
+                // Choose b/t Squish and Pack.
+                // Proxy measures for using Squish:
+                // (a) error message re: limiting number of features shown;
+                // (b) X number of features shown;
+                // (c) size of view shown.
+                // TODO: cannot use (a) and (b) because it requires coordinating mode across tiles;
+                // fix this so that tiles are redrawn as necessary to use the same mode.
+                //if ( (result.message && result.message.match(/^Only the first [\d]+/)) ||
+                //     (result.data && result.data.length > 2000) ||
+                //var data = result.data;
+                // if ( (data.length && data.length < 4) ||
+                //      (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) ) {
+                if (this.view.high - this.view.low > MIN_SQUISH_VIEW_WIDTH) {
+                    mode = "Squish";
+                } else {
+                    mode = "Pack";
+                }
+            }
+            return mode;
+        },
+
+        /**
+         * Returns canvas height needed to display data; return value is an integer that denotes the
+         * number of pixels required.
+         */
+        get_canvas_height: function get_canvas_height(result, mode, w_scale, canvas_width) {
+            if (mode === "Coverage" || result.dataset_type === "bigwig") {
+                return this.summary_draw_height;
+            } else {
+                // All other modes require slotting.
+                var rows_required = this.incremental_slots(w_scale, result.data, mode);
+                // HACK: use dummy painter to get required height. Painter should be extended so that get_required_height
+                // works as a static function.
+                var dummy_painter = new this.painter(null, null, null, this.config.to_key_value_dict(), mode);
+                return Math.max(this.min_height_px, dummy_painter.get_required_height(rows_required, canvas_width));
+            }
+        },
+
+        /**
+         * Draw FeatureTrack tile.
+         * @param result result from server
+         * @param cxt canvas context to draw on
+         * @param mode mode to draw in
+         * @param region region to draw on tile
+         * @param w_scale pixels per base
+         * @param ref_seq reference sequence data
+         * @param cur_tile true if drawing is occurring on a currently visible tile.
+         */
+        draw_tile: function draw_tile(result, ctx, mode, region, w_scale, ref_seq, cur_tile) {
+            var track = this;
+            var canvas = ctx.canvas;
+            var tile_low = region.get("start");
+            var tile_high = region.get("end");
+            var left_offset = this.left_offset;
+
+            // If data is line track data, draw line track tile.
+            if (result.dataset_type === "bigwig") {
+                return this._draw_line_track_tile(result, ctx, mode, region, w_scale);
+            }
+
+            // Handle row-by-row tracks
+
+            // Preprocessing: filter features and determine whether all unfiltered features have been slotted.
+            var filtered = [];
+
+            var slots = this.slotters[w_scale].slots;
+            var all_slotted = true;
+            if (result.data) {
+                var filters = this.filters_manager.filters;
+                for (var i = 0, len = result.data.length; i < len; i++) {
+                    var feature = result.data[i];
+                    var hide_feature = false;
+                    var filter;
+                    for (var f = 0, flen = filters.length; f < flen; f++) {
+                        filter = filters[f];
+                        filter.update_attrs(feature);
+                        if (!filter.keep(feature)) {
+                            hide_feature = true;
+                            break;
+                        }
+                    }
+                    if (!hide_feature) {
+                        // Feature visible.
+                        filtered.push(feature);
+                        // Set flag if not slotted.
+                        if (!(feature[0] in slots)) {
+                            all_slotted = false;
+                        }
+                    }
+                }
+            }
+
+            // Create painter.
+            var filter_alpha_scaler = this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null;
+
+            var filter_height_scaler = this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null;
+
+            var painter = new this.painter(filtered, tile_low, tile_high, this.config.to_key_value_dict(), mode, filter_alpha_scaler, filter_height_scaler,
+                // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
+                ref_seq,
+                function(b) {
+                    return track.view.get_base_color(b);
+                });
+
+            var feature_mapper = null;
+
+            ctx.fillStyle = this.config.get_value("block_color");
+            ctx.font = ctx.canvas.manager.default_font;
+            ctx.textAlign = "right";
+
+            if (result.data) {
+                // Draw features.
+                var draw_results = painter.draw(ctx, canvas.width, canvas.height, w_scale, slots);
+                feature_mapper = draw_results.feature_mapper;
+                incomplete_features = draw_results.incomplete_features;
+                feature_mapper.translation = -left_offset;
+            }
+
+            // If not drawing on current tile, create new tile.
+            if (!cur_tile) {
+                return new FeatureTrackTile(track, region, w_scale, canvas, result.data, mode, result.message, all_slotted, feature_mapper, incomplete_features, ref_seq);
+            }
+        }
+    });
+
+    /**
+     * Displays variant data.
+     */
+    var VariantTrack = function VariantTrack(view, container, obj_dict) {
+        TiledTrack.call(this, view, container, obj_dict);
+        this.painter = _painters2.default.VariantPainter;
+        this.summary_draw_height = 30;
+
+        // Maximum resolution is ~45 pixels/base, so use this size left offset to ensure that full
+        // variant is drawn when variant is at start of tile.
+        this.left_offset = 30;
+    };
+
+    extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
+        display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
+
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "color",
+                label: "Histogram color",
+                type: "color"
+            }, {
+                key: "show_sample_data",
+                label: "Show sample data",
+                type: "bool",
+                default_value: true
+            }, {
+                key: "show_labels",
+                label: "Show summary and sample labels",
+                type: "bool",
+                default_value: true
+            }, {
+                key: "summary_height",
+                label: "Locus summary height",
+                type: "float",
+                default_value: 20
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 0,
+                hidden: true
+            }]);
+        },
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        },
+
+        /**
+         * Draw tile.
+         */
+        draw_tile: function draw_tile(result, ctx, mode, region, w_scale) {
+            // Data could be coverage data or variant data.
+            if (result.dataset_type === "bigwig") {
+                return this._draw_line_track_tile(result, ctx, "Histogram", region, w_scale);
+            } else {
+                // result.dataset_type === 'variant'
+                var view = this.view;
+
+                var painter = new this.painter(result.data, region.get("start"), region.get("end"), this.config.to_key_value_dict(), mode, function(b) {
+                    return view.get_base_color(b);
+                });
+
+                painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
+                return new Tile(this, region, w_scale, ctx.canvas, result.data);
+            }
+        },
+
+        /**
+         * Returns canvas height needed to display data; return value is an integer that denotes the
+         * number of pixels required.
+         */
+        get_canvas_height: function get_canvas_height(result, mode, w_scale, canvas_width) {
+            if (result.dataset_type === "bigwig") {
+                return this.summary_draw_height;
+            } else {
+                // HACK: sample_names is not be defined when dataset definition is fetched before
+                // dataset is complete (as is done when running tools). In that case, fall back on
+                // # of samples in data. This can be fixed by re-requesting dataset definition
+                // in init.
+                var num_samples = this.dataset.get_metadata("sample_names") ? this.dataset.get_metadata("sample_names").length : 0;
+                if (num_samples === 0 && result.data.length !== 0) {
+                    // Sample data is separated by commas, so this computes # of samples:
+                    num_samples = result.data[0][7].match(/,/g);
+                    if (num_samples === null) {
+                        num_samples = 1;
+                    } else {
+                        num_samples = num_samples.length + 1;
+                    }
+                }
+
+                var dummy_painter = new this.painter(null, null, null, this.config.to_key_value_dict(), mode);
+                return dummy_painter.get_required_height(num_samples);
+            }
+        },
+
+        /**
+         * Additional initialization required before drawing track for the first time.
+         */
+        predraw_init: function predraw_init() {
+            var deferreds = [Track.prototype.predraw_init.call(this)];
+            // FIXME: updating dataset metadata is only needed for visual analysis. Can
+            // this be moved somewhere else?
+            if (!this.dataset.get_metadata("sample_names")) {
+                deferreds.push(this.dataset.fetch());
+            }
+            return deferreds;
+        },
+
+        /**
+         * Actions to be taken after draw has been completed. Draw is completed when all tiles have been
+         * drawn/fetched and shown.
+         */
+        postdraw_actions: function postdraw_actions(tiles, width, w_scale, clear_after) {
+            TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
+
+            var line_track_tiles = _.filter(tiles, function(t) {
+                return t instanceof LineTrackTile;
+            });
+
+            // Add summary/sample labels if needed and not already included.
+            var sample_names = this.dataset.get_metadata("sample_names");
+            if (line_track_tiles.length === 0 && this.config.get_value("show_labels") && sample_names && sample_names.length > 1) {
+                var font_size;
+
+                // Add and/or style labels.
+                if (this.container_div.find(".yaxislabel.variant").length === 0) {
+                    // Add summary and sample labels.
+
+                    // Add summary label to middle of summary area.
+                    font_size = this.config.get_value("summary_height") / 2;
+                    this.tiles_div.prepend($("<div/>").text("Summary").addClass("yaxislabel variant top").css({
+                        "font-size": font_size + "px",
+                        top: (this.config.get_value("summary_height") - font_size) / 2 + "px"
+                    }));
+
+                    // Show sample labels.
+                    if (this.config.get_value("show_sample_data")) {
+                        var samples_div_html = sample_names.join("<br/>");
+
+                        this.tiles_div.prepend($("<div/>").html(samples_div_html).addClass("yaxislabel variant top sample").css({
+                            top: this.config.get_value("summary_height")
+                        }));
+                    }
+                }
+
+                // Style labels.
+
+                // Match sample font size to mode.
+                font_size = (this.mode === "Squish" ? 5 : 10) + "px";
+                $(this.tiles_div).find(".sample").css({
+                    "font-size": font_size,
+                    "line-height": font_size
+                });
+                // Color labels to preference color.
+                $(this.tiles_div).find(".yaxislabel").css("color", this.config.get_value("label_color"));
+            } else {
+                // Remove all labels.
+                this.container_div.find(".yaxislabel.variant").remove();
+            }
+        }
+    });
+
+    /**
+     * Track that displays mapped reads. Track expects position data in 1-based, closed format, i.e. SAM/BAM format.
+     */
+    var ReadTrack = function ReadTrack(view, container, obj_dict) {
+        FeatureTrack.call(this, view, container, obj_dict);
+        this.painter = _painters2.default.ReadPainter;
+        this.update_icons();
+    };
+
+    extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype, {
+        build_config_params: function build_config_params() {
+            return _.union(Drawable.prototype.config_params, [{
+                key: "block_color",
+                label: "Histogram color",
+                type: "color"
+            }, {
+                key: "detail_block_color",
+                label: "Sense strand block color",
+                type: "color",
+                default_value: "#AAAAAA"
+            }, {
+                key: "reverse_strand_color",
+                label: "Antisense strand block color",
+                type: "color",
+                default_value: "#DDDDDD"
+            }, {
+                key: "label_color",
+                label: "Label color",
+                type: "color",
+                default_value: "black"
+            }, {
+                key: "show_insertions",
+                label: "Show insertions",
+                type: "bool",
+                default_value: false
+            }, {
+                key: "show_differences",
+                label: "Show differences only",
+                type: "bool",
+                default_value: true
+            }, {
+                key: "show_counts",
+                label: "Show summary counts",
+                type: "bool",
+                default_value: true
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "min_value",
+                label: "Histogram minimum",
+                type: "float",
+                default_value: undefined,
+                help: "clear value to set automatically"
+            }, {
+                key: "max_value",
+                label: "Histogram maximum",
+                type: "float",
+                default_value: undefined,
+                help: "clear value to set automatically"
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 0,
+                hidden: true
+            }]);
+        },
+
+        config_onchange: function config_onchange() {
+            this.set_name(this.config.get_value("name"));
+            this.request_draw({
+                clear_tile_cache: true
+            });
+        }
+    });
+
+    /**
+     * Objects that can be added to a view.
+     */
+    var addable_objects = {
+        CompositeTrack: CompositeTrack,
+        DrawableGroup: DrawableGroup,
+        DiagonalHeatmapTrack: DiagonalHeatmapTrack,
+        FeatureTrack: FeatureTrack,
+        LineTrack: LineTrack,
+        ReadTrack: ReadTrack,
+        VariantTrack: VariantTrack,
+        // For backward compatibility, map vcf track to variant.
+        VcfTrack: VariantTrack
+    };
+
+    /**
+     * Create new object from a template. A template can be either an object dictionary or an
+     * object itself.
+     */
+    var object_from_template = function object_from_template(template, view, container) {
+        if ("copy" in template) {
+            // Template is an object.
+            return template.copy(container);
+        } else {
+            // Template is a dictionary.
+            var drawable_type = template.obj_type;
+            // For backward compatibility:
+            if (!drawable_type) {
+                drawable_type = template.track_type;
+            }
+            return new addable_objects[drawable_type](view, container, template);
+        }
+    };
+
+    exports.default = {
+        TracksterView: TracksterView,
+        DrawableGroup: DrawableGroup,
+        LineTrack: LineTrack,
+        FeatureTrack: FeatureTrack,
+        DiagonalHeatmapTrack: DiagonalHeatmapTrack,
+        ReadTrack: ReadTrack,
+        VariantTrack: VariantTrack,
+        CompositeTrack: CompositeTrack,
+        object_from_template: object_from_template
+    };
+});
 //# sourceMappingURL=../../../maps/viz/trackster/tracks.js.map

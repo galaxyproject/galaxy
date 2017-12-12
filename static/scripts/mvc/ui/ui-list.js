@@ -1,2 +1,170 @@
-define("mvc/ui/ui-list",["exports","utils/utils","mvc/ui/ui-portlet","mvc/ui/ui-misc"],function(t,i,e,s){"use strict";function l(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});var n=l(i),a=l(e),u=l(s),o=Backbone.View.extend({initialize:function(t){var i=this;this.options=t,this.name=t.name||"element",this.multiple=t.multiple||!1,this.message=new u.default.Message,this.portlet=new a.default.View({cls:"ui-portlet-section"}),this.select=new u.default.Select.View({optional:t.optional}),this.button=new u.default.ButtonIcon({icon:"fa fa-sign-in",tooltip:"Insert new "+this.name,onclick:function(){i.add({id:i.select.value(),name:i.select.text()})}}),this.setElement(this._template(t)),this.$(".ui-list-message").append(this.message.$el),this.$(".ui-list-portlet").append(this.portlet.$el),this.$(".ui-list-button").append(this.button.$el),this.$(".ui-list-select").append(this.select.$el)},value:function(t){if(void 0!==t){if(this.portlet.empty(),$.isArray(t))for(var i in t){var e=t[i],s=null,l=null;"string"!=$.type(e)?(s=e.id,l=e.name):s=l=e,null!=s&&this.add({id:s,name:l})}this._refresh()}var n=[];return this.$(".ui-list-id").each(function(){n.push({id:$(this).prop("id"),name:$(this).find(".ui-list-name").html()})}),0==n.length?null:n},add:function(t){var i=this;if(0===this.$('[id="'+t.id+'"]').length)if(n.default.isEmpty(t.id))this.message.update({message:"Please select a valid "+this.name+".",status:"danger"});else{var e=$(this._templateRow({id:t.id,name:t.name}));e.on("click",function(){e.remove(),i._refresh()}),e.on("mouseover",function(){e.addClass("portlet-highlight")}),e.on("mouseout",function(){e.removeClass("portlet-highlight")}),this.portlet.append(e),this._refresh()}else this.message.update({message:"This "+this.name+" is already in the list."})},update:function(t){this.select.update(t)},_refresh:function(){this.$(".ui-list-id").length>0?(!this.multiple&&this.button.disable(),this.$(".ui-list-portlet").show()):(this.button.enable(),this.$(".ui-list-portlet").hide()),this.options.onchange&&this.options.onchange()},_template:function(t){return'<div class="ui-list"><div class="ui-margin-top"><span class="ui-list-button"/><span class="ui-list-select"/></div><div class="ui-list-message"/><div class="ui-list-portlet"/></div>'},_templateRow:function(t){return'<div id="'+t.id+'" class="ui-list-id"><span class="ui-list-delete fa fa-trash"/><span class="ui-list-name">'+t.name+"</span></div>"}});t.default={View:o}});
+define("mvc/ui/ui-list", ["exports", "utils/utils", "mvc/ui/ui-portlet", "mvc/ui/ui-misc"], function(exports, _utils, _uiPortlet, _uiMisc) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uiPortlet2 = _interopRequireDefault(_uiPortlet);
+
+    var _uiMisc2 = _interopRequireDefault(_uiMisc);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    // ui list element
+    var View = Backbone.View.extend({
+        // create portlet to keep track of selected list elements
+        initialize: function initialize(options) {
+            // link this
+            var self = this;
+
+            // initialize options
+            this.options = options;
+            this.name = options.name || "element";
+            this.multiple = options.multiple || false;
+
+            // create message handler
+            this.message = new _uiMisc2.default.Message();
+
+            // create portlet
+            this.portlet = new _uiPortlet2.default.View({
+                cls: "ui-portlet-section"
+            });
+
+            // create select field containing the options which can be inserted into the list
+            this.select = new _uiMisc2.default.Select.View({
+                optional: options.optional
+            });
+
+            // create insert new list element button
+            this.button = new _uiMisc2.default.ButtonIcon({
+                icon: "fa fa-sign-in",
+                tooltip: "Insert new " + this.name,
+                onclick: function onclick() {
+                    self.add({
+                        id: self.select.value(),
+                        name: self.select.text()
+                    });
+                }
+            });
+
+            // build main element
+            this.setElement(this._template(options));
+            this.$(".ui-list-message").append(this.message.$el);
+            this.$(".ui-list-portlet").append(this.portlet.$el);
+            this.$(".ui-list-button").append(this.button.$el);
+            this.$(".ui-list-select").append(this.select.$el);
+        },
+
+        /** Return/Set currently selected list elements */
+        value: function value(val) {
+            // set new value
+            if (val !== undefined) {
+                this.portlet.empty();
+                if ($.isArray(val)) {
+                    for (var i in val) {
+                        var v = val[i];
+                        var v_id = null;
+                        var v_name = null;
+                        if ($.type(v) != "string") {
+                            v_id = v.id;
+                            v_name = v.name;
+                        } else {
+                            v_id = v_name = v;
+                        }
+                        if (v_id != null) {
+                            this.add({
+                                id: v_id,
+                                name: v_name
+                            });
+                        }
+                    }
+                }
+                this._refresh();
+            }
+            // get current value
+            var lst = [];
+            this.$(".ui-list-id").each(function() {
+                lst.push({
+                    id: $(this).prop("id"),
+                    name: $(this).find(".ui-list-name").html()
+                });
+            });
+            if (lst.length == 0) {
+                return null;
+            }
+            return lst;
+        },
+
+        /** Add row */
+        add: function add(options) {
+            var self = this;
+            if (this.$("[id=\"" + options.id + "\"]").length === 0) {
+                if (!_utils2.default.isEmpty(options.id)) {
+                    var $el = $(this._templateRow({
+                        id: options.id,
+                        name: options.name
+                    }));
+                    $el.on("click", function() {
+                        $el.remove();
+                        self._refresh();
+                    });
+                    $el.on("mouseover", function() {
+                        $el.addClass("portlet-highlight");
+                    });
+                    $el.on("mouseout", function() {
+                        $el.removeClass("portlet-highlight");
+                    });
+                    this.portlet.append($el);
+                    this._refresh();
+                } else {
+                    this.message.update({
+                        message: "Please select a valid " + this.name + ".",
+                        status: "danger"
+                    });
+                }
+            } else {
+                this.message.update({
+                    message: "This " + this.name + " is already in the list."
+                });
+            }
+        },
+
+        /** Update available options */
+        update: function update(options) {
+            this.select.update(options);
+        },
+
+        /** Refresh view */
+        _refresh: function _refresh() {
+            if (this.$(".ui-list-id").length > 0) {
+                !this.multiple && this.button.disable();
+                this.$(".ui-list-portlet").show();
+            } else {
+                this.button.enable();
+                this.$(".ui-list-portlet").hide();
+            }
+            this.options.onchange && this.options.onchange();
+        },
+
+        /** Main Template */
+        _template: function _template(options) {
+            return '<div class="ui-list">' + '<div class="ui-margin-top">' + '<span class="ui-list-button"/>' + '<span class="ui-list-select"/>' + "</div>" + '<div class="ui-list-message"/>' + '<div class="ui-list-portlet"/>' + "</div>";
+        },
+
+        /** Row Template */
+        _templateRow: function _templateRow(options) {
+            return "<div id=\"" + options.id + "\" class=\"ui-list-id\"><span class=\"ui-list-delete fa fa-trash\"/><span class=\"ui-list-name\">" + options.name + "</span></div>";
+        }
+    }); // dependencies
+    exports.default = {
+        View: View
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-list.js.map

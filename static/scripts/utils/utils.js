@@ -1,2 +1,372 @@
-define("utils/utils",["exports","utils/localization"],function(t,e){"use strict";function r(t,e){for(var n in t){var i=t[n];if(_.isObject(i)){var a=e(i);a&&(t[n]=a),r(i,e)}}}function n(t){var e={contentType:"application/json",type:t.type||"GET",data:t.data||{},url:t.url};"GET"==e.type||"DELETE"==e.type?($.isEmptyObject(e.data)||(e.url+=-1==e.url.indexOf("?")?"?":"&",e.url+=$.param(e.data,!0)),e.data=null):(e.dataType="json",e.url=e.url,e.data=JSON.stringify(e.data)),$.ajax(e).done(function(e){if("string"==typeof e)try{e=e.replace("Infinity,",'"Infinity",'),e=jQuery.parseJSON(e)}catch(t){console.debug(t)}t.success&&t.success(e)}).fail(function(e){var r=null;try{r=jQuery.parseJSON(e.responseText)}catch(t){r=e.responseText}t.error&&t.error(r,e.status)}).always(function(){t.complete&&t.complete()})}function i(t,e){for(var r=1,n=0;n<e;n++)r*=10;return Math.round(t*r)/r}Object.defineProperty(t,"__esModule",{value:!0});var a=function(t){return t&&t.__esModule?t:{default:t}}(e),s=1024,u=s*s,o=u*s,l=o*s;t.default={cssLoadFile:function(t){$('link[href^="'+t+'"]').length||$('<link href="'+Galaxy.root+t+'" rel="stylesheet">').appendTo("head")},cssGetAttribute:function(t,e){var r=$('<div class="'+t+'"></div>');r.appendTo(":eq(0)");var n=r.css(e);return r.remove(),n},get:function(t){top.__utils__get__=top.__utils__get__||{};var e=JSON.stringify(t);t.cache&&top.__utils__get__[e]?(t.success&&t.success(top.__utils__get__[e]),window.console.debug("utils.js::get() - Fetching from cache ["+t.url+"].")):n({url:t.url,data:t.data,success:function(r){top.__utils__get__[e]=r,t.success&&t.success(r)},error:function(e,r){t.error&&t.error(e,r)}})},merge:function(t,e){return t?_.defaults(t,e):e},iframe:function(t){return'<iframe src="'+t+'" frameborder="0" style="width: 100%; height: 100%;"/>'},bytesToString:function(t,e,r){r=void 0!==r?r:1;var n="";if(t>=l)t/=l,n="TB";else if(t>=o)t/=o,n="GB";else if(t>=u)t/=u,n="MB";else if(t>=s)t/=s,n="KB";else{if(!(t>0))return e?"0 b":"<strong>-</strong>";n="b"}var a="b"==n?t:i(t,r);return e?a+" "+n:"<strong>"+a+"</strong> "+n},uid:function(){return top.__utils__uid__=top.__utils__uid__||0,"uid-"+top.__utils__uid__++},time:function(){var t=new Date,e=(t.getHours()<10?"0":"")+t.getHours(),r=(t.getMinutes()<10?"0":"")+t.getMinutes();return t.getDate()+"/"+(t.getMonth()+1)+"/"+t.getFullYear()+", "+e+":"+r},request:n,sanitize:function(t){return $("<div/>").text(t).html()},textify:function(t){if($.isArray(t)){var e=(t=t.toString().replace(/,/g,", ")).lastIndexOf(", ");return-1!=e&&(t=t.substr(0,e)+" or "+t.substr(e+2)),t}return""},isEmpty:function(t){if(t instanceof Array||(t=[t]),0===t.length)return!0;for(var e in t)if(["__null__","__undefined__",null,void 0].indexOf(t[e])>-1)return!0;return!1},deepeach:r,isJSON:function(t){return/^[\],:{}\s]*$/.test(t.replace(/\\["\\\/bfnrtu]/g,"@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,"]").replace(/(?:^|:|,)(?:\s*\[)+/g,""))},clone:function(t){return JSON.parse(JSON.stringify(t)||null)},linkify:function(t){var e,r,n,i;return r=/(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim,e=t.replace(r,'<a href="$1" target="_blank">$1</a>'),n=/(^|[^\/])(www\.[\S]+(\b|$))/gim,e=e.replace(n,'$1<a href="http://$2" target="_blank">$2</a>'),i=/(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim,e=e.replace(i,'<a href="mailto:$1">$1</a>')},appendScriptStyle:function(t){t.script&&""!==t.script&&$("<script/>",{type:"text/javascript"}).text(t.script).appendTo("head"),t.styles&&""!==t.styles&&$("<style/>",{type:"text/css"}).text(t.styles).appendTo("head")},getQueryString:function(t){return decodeURIComponent(window.location.search.replace(new RegExp("^(?:.*[&\\?]"+encodeURIComponent(t).replace(/[\.\+\*]/g,"\\$&")+"(?:\\=([^&]*))?)?.*$","i"),"$1"))},setWindowTitle:function(t){window.document.title=t?"Galaxy "+(window.Galaxy.config.brand?" | "+window.Galaxy.config.brand:"")+" | "+(0,a.default)(t):"Galaxy "+(window.Galaxy.config.brand?" | "+window.Galaxy.config.brand:"")}}});
+define('utils/utils', ['exports', 'utils/localization'], function(exports, _localization) {
+    'use strict';
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    exports.iframe = iframe;
+    exports.deepeach = deepeach;
+    exports.linkify = linkify;
+    exports.clone = clone;
+    exports.isJSON = isJSON;
+    exports.sanitize = sanitize;
+    exports.isEmpty = isEmpty;
+    exports.textify = textify;
+    exports.get = get;
+    exports.request = request;
+    exports.cssGetAttribute = cssGetAttribute;
+    exports.cssLoadFile = cssLoadFile;
+    exports.merge = merge;
+    exports.roundToDecimalPlaces = roundToDecimalPlaces;
+    exports.bytesToString = bytesToString;
+    exports.uid = uid;
+    exports.time = time;
+    exports.appendScriptStyle = appendScriptStyle;
+    exports.getQueryString = getQueryString;
+    exports.setWindowTitle = setWindowTitle;
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    /** Builds a basic iframe */
+    function iframe(src) {
+        return '<iframe src="' + src + '" frameborder="0" style="width: 100%; height: 100%;"/>';
+    }
+
+    /** Traverse through json */
+    /**
+     * Galaxy utilities comprises small functions, which at this point
+     * do not require their own classes/files
+     */
+    function deepeach(dict, callback) {
+        for (var i in dict) {
+            var d = dict[i];
+            if (_.isObject(d)) {
+                var new_dict = callback(d);
+                new_dict && (dict[i] = new_dict);
+                deepeach(d, callback);
+            }
+        }
+    }
+
+    /** Identifies urls and replaces them with anchors */
+    function linkify(inputText) {
+        var replacedText;
+        var replacePattern1;
+        var replacePattern2;
+        var replacePattern3;
+
+        // URLs starting with http://, https://, or ftp://
+        replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+        replacedText = inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+
+        // URLs starting with "www." (without // before it, or it'd re-link the ones done above).
+        replacePattern2 = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+        replacedText = replacedText.replace(replacePattern2, '$1<a href="http://$2" target="_blank">$2</a>');
+
+        // Change email addresses to mailto:: links.
+        replacePattern3 = /(([a-zA-Z0-9\-\_\.])+@[a-zA-Z\_]+?(\.[a-zA-Z]{2,6})+)/gim;
+        replacedText = replacedText.replace(replacePattern3, '<a href="mailto:$1">$1</a>');
+
+        return replacedText;
+    }
+
+    /** Clone */
+    function clone(obj) {
+        return JSON.parse(JSON.stringify(obj) || null);
+    }
+
+    /**
+     * Check if a string is a json string
+     * @param{String}   text - Content to be validated
+     */
+    function isJSON(text) {
+        return (/^[\],:{}\s]*$/.test(text.replace(/\\["\\\/bfnrtu]/g, "@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").replace(/(?:^|:|,)(?:\s*\[)+/g, "")));
+    }
+
+    /**
+     * Sanitize/escape a string
+     * @param{String}   content - Content to be sanitized
+     */
+    function sanitize(content) {
+        return $("<div/>").text(content).html();
+    }
+
+    /**
+     * Checks if a value or list of values is `empty`
+     * usually used for selectable options
+     * @param{String}   value - Value or list to be validated
+     */
+    function isEmpty(value) {
+        if (!(value instanceof Array)) {
+            value = [value];
+        }
+        if (value.length === 0) {
+            return true;
+        }
+        for (var i in value) {
+            if (["__null__", "__undefined__", null, undefined].indexOf(value[i]) > -1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Convert list to pretty string
+     * @param{String}   lst - List of strings to be converted in human readable list sentence
+     */
+    function textify(lst) {
+        if ($.isArray(lst)) {
+            lst = lst.toString().replace(/,/g, ", ");
+            var pos = lst.lastIndexOf(", ");
+            if (pos != -1) {
+                lst = lst.substr(0, pos) + ' or ' + lst.substr(pos + 2);
+            }
+            return lst;
+        }
+        return "";
+    }
+
+    /**
+     * Request handler for GET
+     * @param{String}   url     - Url request is made to
+     * @param{Function} success - Callback on success
+     * @param{Function} error   - Callback on error
+     * @param{Boolean}  cache   - Use cached data if available
+     */
+    function get(options) {
+        top.__utils__get__ = top.__utils__get__ || {};
+        var cache_key = JSON.stringify(options);
+        if (options.cache && top.__utils__get__[cache_key]) {
+            options.success && options.success(top.__utils__get__[cache_key]);
+            window.console.debug('utils.js::get() - Fetching from cache [' + options.url + '].');
+        } else {
+            request({
+                url: options.url,
+                data: options.data,
+                success: function success(response) {
+                    top.__utils__get__[cache_key] = response;
+                    options.success && options.success(response);
+                },
+                error: function error(response, status) {
+                    options.error && options.error(response, status);
+                }
+            });
+        }
+    }
+
+    /**
+     * Request handler
+     * @param{String}   method  - Request method ['GET', 'POST', 'DELETE', 'PUT']
+     * @param{String}   url     - Url request is made to
+     * @param{Object}   data    - Data send to url
+     * @param{Function} success - Callback on success
+     * @param{Function} error   - Callback on error
+     */
+    function request(options) {
+        // prepare ajax
+        var ajaxConfig = {
+            contentType: "application/json",
+            type: options.type || "GET",
+            data: options.data || {},
+            url: options.url
+        };
+        // encode data into url
+        if (ajaxConfig.type == "GET" || ajaxConfig.type == "DELETE") {
+            if (!$.isEmptyObject(ajaxConfig.data)) {
+                ajaxConfig.url += ajaxConfig.url.indexOf("?") == -1 ? "?" : "&";
+                ajaxConfig.url += $.param(ajaxConfig.data, true);
+            }
+            ajaxConfig.data = null;
+        } else {
+            ajaxConfig.dataType = "json";
+            ajaxConfig.url = ajaxConfig.url;
+            ajaxConfig.data = JSON.stringify(ajaxConfig.data);
+        }
+
+        // make request
+        $.ajax(ajaxConfig).done(function(response) {
+            if (typeof response === "string") {
+                try {
+                    response = response.replace("Infinity,", '"Infinity",');
+                    response = jQuery.parseJSON(response);
+                } catch (e) {
+                    console.debug(e);
+                }
+            }
+            options.success && options.success(response);
+        }).fail(function(response) {
+            var response_text = null;
+            try {
+                response_text = jQuery.parseJSON(response.responseText);
+            } catch (e) {
+                response_text = response.responseText;
+            }
+            options.error && options.error(response_text, response.status);
+        }).always(function() {
+            options.complete && options.complete();
+        });
+    }
+
+    /**
+     * Read a property value from CSS
+     * @param{String}   classname   - CSS class
+     * @param{String}   name        - CSS property
+     */
+    function cssGetAttribute(classname, name) {
+        var el = $('<div class="' + classname + '"></div>');
+        el.appendTo(":eq(0)");
+        var value = el.css(name);
+        el.remove();
+        return value;
+    }
+
+    /**
+     * Load a CSS file
+     * @param{String}   url - Url of CSS file
+     */
+    function cssLoadFile(url) {
+        if (!$('link[href^="' + url + '"]').length) {
+            $('<link href="' + Galaxy.root + url + '" rel="stylesheet">').appendTo("head");
+        }
+    }
+
+    /**
+     * Safely merge to dictionaries
+     * @param{Object}   options         - Target dictionary
+     * @param{Object}   optionsDefault  - Source dictionary
+     */
+    function merge(options, optionsDefault) {
+        if (options) {
+            return _.defaults(options, optionsDefault);
+        } else {
+            return optionsDefault;
+        }
+    }
+
+    /**
+     * Round floaing point 'number' to 'numPlaces' number of decimal places.
+     * @param{Object}   number      a floaing point number
+     * @param{Object}   numPlaces   number of decimal places
+     */
+    function roundToDecimalPlaces(number, numPlaces) {
+        var placesMultiplier = 1;
+        for (var i = 0; i < numPlaces; i++) {
+            placesMultiplier *= 10;
+        }
+        return Math.round(number * placesMultiplier) / placesMultiplier;
+    }
+
+    // calculate on import
+    var kb = 1024;
+
+    var mb = kb * kb;
+    var gb = mb * kb;
+    var tb = gb * kb;
+    /**
+     * Format byte size to string with units
+     * @param{Integer}   size           - Size in bytes
+     * @param{Boolean}   normal_font    - Switches font between normal and bold
+     */
+    function bytesToString(size, normal_font, numberPlaces) {
+        numberPlaces = numberPlaces !== undefined ? numberPlaces : 1;
+        // identify unit
+        var unit = "";
+        if (size >= tb) {
+            size = size / tb;
+            unit = "TB";
+        } else if (size >= gb) {
+            size = size / gb;
+            unit = "GB";
+        } else if (size >= mb) {
+            size = size / mb;
+            unit = "MB";
+        } else if (size >= kb) {
+            size = size / kb;
+            unit = "KB";
+        } else if (size > 0) {
+            unit = "b";
+        } else {
+            return normal_font ? "0 b" : "<strong>-</strong>";
+        }
+        // return formatted string
+        var rounded = unit == "b" ? size : roundToDecimalPlaces(size, numberPlaces);
+        if (normal_font) {
+            return rounded + ' ' + unit;
+        } else {
+            return '<strong>' + rounded + '</strong> ' + unit;
+        }
+    }
+
+    /** Create a unique id */
+    function uid() {
+        top.__utils__uid__ = top.__utils__uid__ || 0;
+        return 'uid-' + top.__utils__uid__++;
+    }
+
+    /** Create a time stamp */
+    function time() {
+        var d = new Date();
+        var hours = (d.getHours() < 10 ? "0" : "") + d.getHours();
+        var minutes = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
+        return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear() + ', ' + hours + ':' + minutes;
+    }
+
+    /** Append script and style tags to Galaxy main application */
+    function appendScriptStyle(data) {
+        // create a script tag inside head tag
+        if (data.script && data.script !== "") {
+            $("<script/>", {
+                type: "text/javascript"
+            }).text(data.script).appendTo("head");
+        }
+        // create a style tag inside head tag
+        if (data.styles && data.styles !== "") {
+            $("<style/>", {
+                type: "text/css"
+            }).text(data.styles).appendTo("head");
+        }
+    }
+
+    /** Get querystrings from url */
+    function getQueryString(key) {
+        return decodeURIComponent(window.location.search.replace(new RegExp('^(?:.*[&\\?]' + encodeURIComponent(key).replace(/[\.\+\*]/g, "\\$&") + '(?:\\=([^&]*))?)?.*$', "i"), "$1"));
+    }
+
+    function setWindowTitle(title) {
+        if (title) {
+            window.document.title = 'Galaxy ' + (window.Galaxy.config.brand ? ' | ' + window.Galaxy.config.brand : "") + ' | ' + (0, _localization2.default)(title);
+        } else {
+            window.document.title = 'Galaxy ' + (window.Galaxy.config.brand ? ' | ' + window.Galaxy.config.brand : "");
+        }
+    }
+
+    exports.default = {
+        cssLoadFile: cssLoadFile,
+        cssGetAttribute: cssGetAttribute,
+        get: get,
+        merge: merge,
+        iframe: iframe,
+        bytesToString: bytesToString,
+        uid: uid,
+        time: time,
+        request: request,
+        sanitize: sanitize,
+        textify: textify,
+        isEmpty: isEmpty,
+        deepeach: deepeach,
+        isJSON: isJSON,
+        clone: clone,
+        linkify: linkify,
+        appendScriptStyle: appendScriptStyle,
+        getQueryString: getQueryString,
+        setWindowTitle: setWindowTitle
+    };
+});
 //# sourceMappingURL=../../maps/utils/utils.js.map

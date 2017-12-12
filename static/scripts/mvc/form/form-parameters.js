@@ -1,2 +1,267 @@
-define("mvc/form/form-parameters",["exports","utils/utils","mvc/ui/ui-misc","mvc/ui/ui-select-content","mvc/ui/ui-select-library","mvc/ui/ui-select-ftp","mvc/ui/ui-select-genomespace","mvc/ui/ui-color-picker"],function(e,i,l,a,t,n,d,o){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});var f=r(i),u=r(l),c=r(a),p=r(t),s=r(n),h=r(d),m=r(o);e.default=Backbone.Model.extend({types:{text:"_fieldText",password:"_fieldText",select:"_fieldSelect",data_column:"_fieldSelect",genomebuild:"_fieldSelect",data:"_fieldData",data_collection:"_fieldData",integer:"_fieldSlider",float:"_fieldSlider",boolean:"_fieldBoolean",drill_down:"_fieldDrilldown",color:"_fieldColor",hidden:"_fieldHidden",hidden_data:"_fieldHidden",baseurl:"_fieldHidden",library_data:"_fieldLibrary",ftpfile:"_fieldFtp",upload:"_fieldUpload",genomespacefile:"_fieldGenomeSpace"},create:function(e){var i=this.types[e.type],l="function"==typeof this[i]?this[i].call(this,e):null;return l||(l=e.options?this._fieldSelect(e):this._fieldText(e),Galaxy.emit.debug("form-parameters::_addRow()","Auto matched field type ("+e.type+").")),void 0===e.value&&(e.value=null),l.value(e.value),l},_fieldData:function(e){return new c.default.View({id:"field-"+e.id,extensions:e.extensions,optional:e.optional,multiple:e.multiple,type:e.type,flavor:e.flavor,data:e.options,onchange:e.onchange})},_fieldSelect:function(e){if(e.is_workflow)return this._fieldText(e);"data_column"==e.type&&(e.error_text="Missing columns in referenced dataset.");var i=e.data;i||(i=[],_.each(e.options,function(e){i.push({label:e[0],value:e[1]})}));var l=u.default.Select;switch(e.display){case"checkboxes":l=u.default.Checkbox;break;case"radio":l=u.default.Radio;break;case"radiobutton":l=u.default.RadioButton}return new l.View({id:"field-"+e.id,data:i,error_text:e.error_text||"No options available",readonly:e.readonly,multiple:e.multiple,optional:e.optional,onchange:e.onchange,individual:e.individual,searchable:"workflow"!==e.flavor})},_fieldDrilldown:function(e){return e.is_workflow?this._fieldText(e):new u.default.Drilldown.View({id:"field-"+e.id,data:e.options,display:e.display,optional:e.optional,onchange:e.onchange})},_fieldText:function(e){if(e.options&&e.data)if(e.area=e.multiple,f.default.isEmpty(e.value))e.value=null;else if($.isArray(e.value)){var i="";for(var l in e.value){if(i+=String(e.value[l]),!e.multiple)break;i+="\n"}e.value=i}return new u.default.Input({id:"field-"+e.id,type:e.type,area:e.area,readonly:e.readonly,placeholder:e.placeholder,datalist:e.datalist,onchange:e.onchange})},_fieldSlider:function(e){return new u.default.Slider.View({id:"field-"+e.id,precise:"float"==e.type,is_workflow:e.is_workflow,min:e.min,max:e.max,onchange:e.onchange})},_fieldHidden:function(e){return new u.default.Hidden({id:"field-"+e.id,info:e.info})},_fieldBoolean:function(e){return new u.default.RadioButton.View({id:"field-"+e.id,data:[{label:"Yes",value:"true"},{label:"No",value:"false"}],onchange:e.onchange})},_fieldColor:function(e){return new m.default({id:"field-"+e.id,onchange:e.onchange})},_fieldLibrary:function(e){return new p.default.View({id:"field-"+e.id,optional:e.optional,multiple:e.multiple,onchange:e.onchange})},_fieldFtp:function(e){return new s.default.View({id:"field-"+e.id,optional:e.optional,multiple:e.multiple,onchange:e.onchange})},_fieldGenomeSpace:function(e){var i=this;return new h.default.View({id:"field-"+e.id,onchange:function(){i.app.trigger("change")}})},_fieldUpload:function(e){return new u.default.Upload({id:"field-"+e.id,onchange:e.onchange})}})});
+define("mvc/form/form-parameters", ["exports", "utils/utils", "mvc/ui/ui-misc", "mvc/ui/ui-select-content", "mvc/ui/ui-select-library", "mvc/ui/ui-select-ftp", "mvc/ui/ui-select-genomespace", "mvc/ui/ui-color-picker"], function(exports, _utils, _uiMisc, _uiSelectContent, _uiSelectLibrary, _uiSelectFtp, _uiSelectGenomespace, _uiColorPicker) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uiMisc2 = _interopRequireDefault(_uiMisc);
+
+    var _uiSelectContent2 = _interopRequireDefault(_uiSelectContent);
+
+    var _uiSelectLibrary2 = _interopRequireDefault(_uiSelectLibrary);
+
+    var _uiSelectFtp2 = _interopRequireDefault(_uiSelectFtp);
+
+    var _uiSelectGenomespace2 = _interopRequireDefault(_uiSelectGenomespace);
+
+    var _uiColorPicker2 = _interopRequireDefault(_uiColorPicker);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    exports.default = Backbone.Model.extend({
+        /** Available parameter types */
+        types: {
+            text: "_fieldText",
+            password: "_fieldText",
+            select: "_fieldSelect",
+            data_column: "_fieldSelect",
+            genomebuild: "_fieldSelect",
+            data: "_fieldData",
+            data_collection: "_fieldData",
+            integer: "_fieldSlider",
+            float: "_fieldSlider",
+            boolean: "_fieldBoolean",
+            drill_down: "_fieldDrilldown",
+            color: "_fieldColor",
+            hidden: "_fieldHidden",
+            hidden_data: "_fieldHidden",
+            baseurl: "_fieldHidden",
+            library_data: "_fieldLibrary",
+            ftpfile: "_fieldFtp",
+            upload: "_fieldUpload",
+            genomespacefile: "_fieldGenomeSpace"
+        },
+
+        /** Returns an input field for a given field type */
+        create: function create(input_def) {
+            var fieldClass = this.types[input_def.type];
+            var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
+            if (!field) {
+                field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
+                Galaxy.emit.debug("form-parameters::_addRow()", "Auto matched field type (" + input_def.type + ").");
+            }
+            if (input_def.value === undefined) {
+                input_def.value = null;
+            }
+            field.value(input_def.value);
+            return field;
+        },
+
+        /** Data input field */
+        _fieldData: function _fieldData(input_def) {
+            return new _uiSelectContent2.default.View({
+                id: "field-" + input_def.id,
+                extensions: input_def.extensions,
+                optional: input_def.optional,
+                multiple: input_def.multiple,
+                type: input_def.type,
+                flavor: input_def.flavor,
+                data: input_def.options,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Select/Checkbox/Radio options field */
+        _fieldSelect: function _fieldSelect(input_def) {
+            // show text field e.g. in workflow editor
+            if (input_def.is_workflow) {
+                return this._fieldText(input_def);
+            }
+
+            // customize properties
+            if (input_def.type == "data_column") {
+                input_def.error_text = "Missing columns in referenced dataset.";
+            }
+
+            // identify available options
+            var data = input_def.data;
+            if (!data) {
+                data = [];
+                _.each(input_def.options, function(option) {
+                    data.push({
+                        label: option[0],
+                        value: option[1]
+                    });
+                });
+            }
+
+            // identify display type
+            var SelectClass = _uiMisc2.default.Select;
+            switch (input_def.display) {
+                case "checkboxes":
+                    SelectClass = _uiMisc2.default.Checkbox;
+                    break;
+                case "radio":
+                    SelectClass = _uiMisc2.default.Radio;
+                    break;
+                case "radiobutton":
+                    SelectClass = _uiMisc2.default.RadioButton;
+                    break;
+            }
+
+            // create select field
+            return new SelectClass.View({
+                id: "field-" + input_def.id,
+                data: data,
+                error_text: input_def.error_text || "No options available",
+                readonly: input_def.readonly,
+                multiple: input_def.multiple,
+                optional: input_def.optional,
+                onchange: input_def.onchange,
+                individual: input_def.individual,
+                searchable: input_def.flavor !== "workflow"
+            });
+        },
+
+        /** Drill down options field */
+        _fieldDrilldown: function _fieldDrilldown(input_def) {
+            // show text field e.g. in workflow editor
+            if (input_def.is_workflow) {
+                return this._fieldText(input_def);
+            }
+
+            // create drill down field
+            return new _uiMisc2.default.Drilldown.View({
+                id: "field-" + input_def.id,
+                data: input_def.options,
+                display: input_def.display,
+                optional: input_def.optional,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Text input field */
+        _fieldText: function _fieldText(input_def) {
+            // field replaces e.g. a select field
+            if (input_def.options && input_def.data) {
+                input_def.area = input_def.multiple;
+                if (_utils2.default.isEmpty(input_def.value)) {
+                    input_def.value = null;
+                } else {
+                    if ($.isArray(input_def.value)) {
+                        var str_value = "";
+                        for (var i in input_def.value) {
+                            str_value += String(input_def.value[i]);
+                            if (!input_def.multiple) {
+                                break;
+                            }
+                            str_value += "\n";
+                        }
+                        input_def.value = str_value;
+                    }
+                }
+            }
+            // create input element
+            return new _uiMisc2.default.Input({
+                id: "field-" + input_def.id,
+                type: input_def.type,
+                area: input_def.area,
+                readonly: input_def.readonly,
+                placeholder: input_def.placeholder,
+                datalist: input_def.datalist,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Slider field */
+        _fieldSlider: function _fieldSlider(input_def) {
+            return new _uiMisc2.default.Slider.View({
+                id: "field-" + input_def.id,
+                precise: input_def.type == "float",
+                is_workflow: input_def.is_workflow,
+                min: input_def.min,
+                max: input_def.max,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Hidden field */
+        _fieldHidden: function _fieldHidden(input_def) {
+            return new _uiMisc2.default.Hidden({
+                id: "field-" + input_def.id,
+                info: input_def.info
+            });
+        },
+
+        /** Boolean field */
+        _fieldBoolean: function _fieldBoolean(input_def) {
+            return new _uiMisc2.default.RadioButton.View({
+                id: "field-" + input_def.id,
+                data: [{
+                    label: "Yes",
+                    value: "true"
+                }, {
+                    label: "No",
+                    value: "false"
+                }],
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Color picker field */
+        _fieldColor: function _fieldColor(input_def) {
+            return new _uiColorPicker2.default({
+                id: "field-" + input_def.id,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** Library dataset field */
+        _fieldLibrary: function _fieldLibrary(input_def) {
+            return new _uiSelectLibrary2.default.View({
+                id: "field-" + input_def.id,
+                optional: input_def.optional,
+                multiple: input_def.multiple,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** FTP file field */
+        _fieldFtp: function _fieldFtp(input_def) {
+            return new _uiSelectFtp2.default.View({
+                id: "field-" + input_def.id,
+                optional: input_def.optional,
+                multiple: input_def.multiple,
+                onchange: input_def.onchange
+            });
+        },
+
+        /** GenomeSpace file select field
+         */
+        _fieldGenomeSpace: function _fieldGenomeSpace(input_def) {
+            var self = this;
+            return new _uiSelectGenomespace2.default.View({
+                id: "field-" + input_def.id,
+                onchange: function onchange() {
+                    self.app.trigger("change");
+                }
+            });
+        },
+
+        /** Upload file field */
+        _fieldUpload: function _fieldUpload(input_def) {
+            return new _uiMisc2.default.Upload({
+                id: "field-" + input_def.id,
+                onchange: input_def.onchange
+            });
+        }
+    });
+});
 //# sourceMappingURL=../../../maps/mvc/form/form-parameters.js.map

@@ -1,2 +1,65 @@
-define("mvc/toolshed/util",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0});e.default={searchShed:function(e,r){var o=this,t=this.shed_url,s=Galaxy.root+"api/tool_shed/search";$.get(s,{term:e.term,tool_shed_url:t},function(e){var t=o.shedParser(e);r(t)})},shedParser:function(e){var r=[],o=e.hits;return $.each(o,function(e){var t=o[e],s=t.repository.name+" by "+t.repository.repo_owner_username+": "+t.repository.description,i={value:t.repository.id,label:s};r.push(i)}),r},addToQueue:function(e){"/"==e.tool_shed_url.substr(-1)&&(e.tool_shed_url=e.tool_shed_url.substr(0,e.tool_shed_url.length-1));var r=e.tool_shed_url+"|"+e.repository_id+"|"+e.changeset_revision,o=new Object;localStorage.repositories&&(o=JSON.parse(localStorage.repositories)),o[r]=e,localStorage.repositories=JSON.stringify(o)},queueLength:function(){if(localStorage.hasOwnProperty("repositories")){var e=JSON.parse(localStorage.repositories);return Object.keys(e).length}return 0}}});
+define("mvc/toolshed/util", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    var searchShed = function searchShed(request, response) {
+        var that = this;
+        var shed_url = this.shed_url;
+        var base_url = Galaxy.root + "api/tool_shed/search";
+        $.get(base_url, {
+            term: request.term,
+            tool_shed_url: shed_url
+        }, function(data) {
+            var result_list = that.shedParser(data);
+            response(result_list);
+        });
+    };
+
+    var shedParser = function shedParser(jsondata) {
+        var results = [];
+        var hits = jsondata.hits;
+        $.each(hits, function(hit) {
+            var record = hits[hit];
+            var label = record.repository.name + " by " + record.repository.repo_owner_username + ": " + record.repository.description;
+            var result = {
+                value: record.repository.id,
+                label: label
+            };
+            results.push(result);
+        });
+        return results;
+    };
+
+    var addToQueue = function addToQueue(metadata) {
+        if (metadata.tool_shed_url.substr(-1) == "/") {
+            metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1);
+        }
+        var key = metadata.tool_shed_url + "|" + metadata.repository_id + "|" + metadata.changeset_revision;
+        var queued_repos = new Object();
+        if (localStorage.repositories) {
+            queued_repos = JSON.parse(localStorage.repositories);
+        }
+        queued_repos[key] = metadata;
+        localStorage.repositories = JSON.stringify(queued_repos);
+    };
+
+    var queueLength = function queueLength() {
+        if (localStorage.hasOwnProperty("repositories")) {
+            var repo_queue = JSON.parse(localStorage.repositories);
+            var queue_length = Object.keys(repo_queue).length;
+            return queue_length;
+        } else {
+            return 0;
+        }
+    };
+
+    exports.default = {
+        searchShed: searchShed,
+        shedParser: shedParser,
+        addToQueue: addToQueue,
+        queueLength: queueLength
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/toolshed/util.js.map

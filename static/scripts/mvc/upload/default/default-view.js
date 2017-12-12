@@ -1,2 +1,476 @@
-define("mvc/upload/default/default-view",["exports","utils/utils","mvc/upload/upload-model","mvc/upload/default/default-row","mvc/upload/upload-ftp","mvc/upload/upload-extension","mvc/ui/ui-popover","mvc/ui/ui-select","mvc/ui/ui-misc","mvc/lazy/lazy-limited","utils/uploadbox"],function(t,e,n,o,i,s,a,l,u,c){"use strict";function r(t){return t&&t.__esModule?t:{default:t}}Object.defineProperty(t,"__esModule",{value:!0});r(e);var h=r(n),d=r(o),p=r(i),f=r(s),b=r(a),v=r(l),g=r(u),m=r(c);t.default=Backbone.View.extend({upload_size:0,collection:new h.default.Collection,counter:{announce:0,success:0,error:0,running:0,reset:function(){this.announce=this.success=this.error=this.running=0}},initialize:function(t){var e=this;this.app=t,this.options=t.options,this.list_extensions=t.list_extensions,this.list_genomes=t.list_genomes,this.ui_button=t.ui_button,this.ftp_upload_site=t.currentFtp(),this.setElement(this._template()),this.$uploadbox=this.$(".upload-box"),this.$uploadtable=this.$(".upload-table"),this.btnLocal=new g.default.Button({id:"btn-local",title:"Choose local file",onclick:function(){e.uploadbox.select()},icon:"fa fa-laptop"}),this.btnFtp=new g.default.Button({id:"btn-ftp",title:"Choose FTP file",onclick:function(){e._eventFtp()},icon:"fa fa-folder-open-o"}),this.btnCreate=new g.default.Button({id:"btn-new",title:"Paste/Fetch data",onclick:function(){e._eventCreate()},icon:"fa fa-edit"}),this.btnStart=new g.default.Button({id:"btn-start",title:"Start",onclick:function(){e._eventStart()}}),this.btnStop=new g.default.Button({id:"btn-stop",title:"Pause",onclick:function(){e._eventStop()}}),this.btnReset=new g.default.Button({id:"btn-reset",title:"Reset",onclick:function(){e._eventReset()}}),this.btnClose=new g.default.Button({id:"btn-close",title:"Close",onclick:function(){e.app.modal.hide()}}),_.each([this.btnLocal,this.btnFtp,this.btnCreate,this.btnStop,this.btnReset,this.btnStart,this.btnClose],function(t){e.$(".upload-buttons").prepend(t.$el)}),this.uploadbox=this.$uploadbox.uploadbox({url:this.app.options.nginx_upload_path,announce:function(t,n){e._eventAnnounce(t,n)},initialize:function(t){return e.app.toData([e.collection.get(t)],e.history_id)},progress:function(t,n){e._eventProgress(t,n)},success:function(t,n){e._eventSuccess(t,n)},error:function(t,n){e._eventError(t,n)},complete:function(){e._eventComplete()},ondragover:function(){e.$uploadbox.addClass("highlight")},ondragleave:function(){e.$uploadbox.removeClass("highlight")}}),this.ftp=new b.default.View({title:"FTP files",container:this.btnFtp.$el}),this.select_extension=new v.default.View({css:"upload-footer-selection",container:this.$(".upload-footer-extension"),data:_.filter(this.list_extensions,function(t){return!t.composite_files}),value:this.options.default_extension,onchange:function(t){e._changeExtension(t)}}),this.$(".upload-footer-extension-info").on("click",function(t){new f.default({$el:$(t.target),title:e.select_extension.text(),extension:e.select_extension.value(),list:e.list_extensions,placement:"top"})}).on("mousedown",function(t){t.preventDefault()}),this.select_genome=new v.default.View({css:"upload-footer-selection",container:this.$(".upload-footer-genome"),data:this.list_genomes,value:this.options.default_genome,onchange:function(t){e._changeGenome(t)}}),this.loader=new m.default({$container:this.$uploadbox,collection:this.collection,new_content:function(t){var n=new d.default(e,{model:t});return e.$uploadtable.find("> tbody:first").append(n.$el),n.render(),n}}),this.collection.on("remove",function(t){e._eventRemove(t)}),this.render()},render:function(){var t="";t=0==this.counter.announce?this.uploadbox.compatible()?"&nbsp;":"Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.":0==this.counter.running?"You added "+this.counter.announce+" file(s) to the queue. Add more files or click 'Start' to proceed.":"Please wait..."+this.counter.announce+" out of "+this.counter.running+" remaining.",this.$(".upload-top-info").html(t);var e=0==this.counter.running&&this.counter.announce+this.counter.success+this.counter.error>0,n=0==this.counter.running&&this.counter.announce>0,o=0==this.counter.running,i=this.counter.announce+this.counter.success+this.counter.error>0;this.btnReset[e?"enable":"disable"](),this.btnStart[n?"enable":"disable"](),this.btnStart.$el[n?"addClass":"removeClass"]("btn-primary"),this.btnStop[this.counter.running>0?"enable":"disable"](),this.btnLocal[o?"enable":"disable"](),this.btnFtp[o?"enable":"disable"](),this.btnCreate[o?"enable":"disable"](),this.btnFtp.$el[this.ftp_upload_site?"show":"hide"](),this.$(".upload-table")[i?"show":"hide"](),this.$(".upload-helper")[i?"hide":"show"]()},_eventAnnounce:function(t,e){this.counter.announce++;var n=new h.default.Model({id:t,file_name:e.name,file_size:e.size,file_mode:e.mode||"local",file_path:e.path,file_data:e});this.render(),this.collection.add(n)},_eventProgress:function(t,e){var n=this.collection.get(t);n.set("percentage",e),this.ui_button.model.set("percentage",this._uploadPercentage(e,n.get("file_size")))},_eventSuccess:function(t,e){var n=this.collection.get(t);n.set({percentage:100,status:"success"}),this.ui_button.model.set("percentage",this._uploadPercentage(100,n.get("file_size"))),this.upload_completed+=100*n.get("file_size"),this.counter.announce--,this.counter.success++,this.render(),Galaxy.currHistoryPanel.refreshContents()},_eventError:function(t,e){var n=this.collection.get(t);n.set({percentage:100,status:"error",info:e}),this.ui_button.model.set({percentage:this._uploadPercentage(100,n.get("file_size")),status:"danger"}),this.upload_completed+=100*n.get("file_size"),this.counter.announce--,this.counter.error++,this.render()},_eventComplete:function(){this.collection.each(function(t){"queued"==t.get("status")&&t.set("status","init")}),this.counter.running=0,this.render()},_eventRemove:function(t){var e=t.get("status");"success"==e?this.counter.success--:"error"==e?this.counter.error--:this.counter.announce--,this.uploadbox.remove(t.id),this.render()},_eventFtp:function(){if(this.ftp.visible)this.ftp.hide();else{this.ftp.empty();var t=this;this.ftp.append(new p.default({collection:this.collection,ftp_upload_site:this.ftp_upload_site,onadd:function(e){return t.uploadbox.add([{mode:"ftp",name:e.path,size:e.size,path:e.path}])},onremove:function(e){t.collection.remove(e)}}).$el),this.ftp.show()}},_eventCreate:function(){this.uploadbox.add([{name:"New File",size:0,mode:"new"}])},_eventStart:function(){if(0!=this.counter.announce&&0==this.counter.running){var t=this;this.upload_size=0,this.upload_completed=0,this.collection.each(function(e){"init"==e.get("status")&&(e.set("status","queued"),t.upload_size+=e.get("file_size"))}),this.ui_button.model.set({percentage:0,status:"success"}),this.counter.running=this.counter.announce,this.history_id=this.app.currentHistory(),this._uploadFtp(),this.uploadbox.start(),this.render()}},_eventStop:function(){this.counter.running>0&&(this.ui_button.model.set("status","info"),$(".upload-top-info").html("Queue will pause after completing the current file..."),this.uploadbox.stop())},_eventReset:function(){if(0==this.counter.running){this.collection.reset(),this.counter.reset(),this.uploadbox.reset(),this.select_extension.value(this.options.default_extension),this.select_genome.value(this.options.default_genome),this.ui_button.model.set("percentage",0),this.render()}},_changeExtension:function(t,e){var n=this;this.collection.each(function(o){"init"!=o.get("status")||o.get("extension")!=n.options.default_extension&&e||o.set("extension",t)})},_changeGenome:function(t,e){var n=this;this.collection.each(function(o){"init"!=o.get("status")||o.get("genome")!=n.options.default_genome&&e||o.set("genome",t)})},_uploadFtp:function(){var t=this,e=[];this.collection.each(function(n){"queued"==n.get("status")&&"ftp"==n.get("file_mode")&&(t.uploadbox.remove(n.id),e.push(n))}),e.length>0&&$.uploadpost({data:this.app.toData(e),url:this.app.options.nginx_upload_path,success:function(n){_.each(e,function(e){t._eventSuccess(e.id)})},error:function(n){_.each(e,function(e){t._eventError(e.id,n)})}})},_uploadPercentage:function(t,e){return(this.upload_completed+t*e)/this.upload_size},_template:function(){return'<div class="upload-view-default"><div class="upload-top"><h6 class="upload-top-info"/></div><div class="upload-box"><div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div><table class="upload-table ui-table-striped" style="display: none;"><thead><tr><th>Name</th><th>Size</th><th>Type</th><th>Genome</th><th>Settings</th><th>Status</th><th/></tr></thead><tbody/></table></div><div class="upload-footer"><span class="upload-footer-title">Type (set all):</span><span class="upload-footer-extension"/><span class="upload-footer-extension-info upload-icon-button fa fa-search"/> <span class="upload-footer-title">Genome (set all):</span><span class="upload-footer-genome"/></div><div class="upload-buttons"/></div>'}})});
+define("mvc/upload/default/default-view", ["exports", "utils/localization", "utils/utils", "mvc/upload/upload-model", "mvc/upload/default/default-row", "mvc/upload/upload-ftp", "mvc/upload/upload-extension", "mvc/ui/ui-popover", "mvc/ui/ui-select", "mvc/ui/ui-misc", "mvc/lazy/lazy-limited", "utils/uploadbox"], function(exports, _localization, _utils, _uploadModel, _defaultRow, _uploadFtp2, _uploadExtension, _uiPopover, _uiSelect, _uiMisc, _lazyLimited) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    var _uploadModel2 = _interopRequireDefault(_uploadModel);
+
+    var _defaultRow2 = _interopRequireDefault(_defaultRow);
+
+    var _uploadFtp3 = _interopRequireDefault(_uploadFtp2);
+
+    var _uploadExtension2 = _interopRequireDefault(_uploadExtension);
+
+    var _uiPopover2 = _interopRequireDefault(_uiPopover);
+
+    var _uiSelect2 = _interopRequireDefault(_uiSelect);
+
+    var _uiMisc2 = _interopRequireDefault(_uiMisc);
+
+    var _lazyLimited2 = _interopRequireDefault(_lazyLimited);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    exports.default = Backbone.View.extend({
+        // current upload size in bytes
+        upload_size: 0,
+
+        // contains upload row models
+        collection: new _uploadModel2.default.Collection(),
+
+        // keeps track of the current uploader state
+        counter: {
+            announce: 0,
+            success: 0,
+            error: 0,
+            running: 0,
+            reset: function reset() {
+                this.announce = this.success = this.error = this.running = 0;
+            }
+        },
+
+        initialize: function initialize(app) {
+            var self = this;
+            this.app = app;
+            this.options = app.options;
+            this.list_extensions = app.list_extensions;
+            this.list_genomes = app.list_genomes;
+            this.ui_button = app.ui_button;
+            this.ftp_upload_site = app.currentFtp();
+
+            // build template
+            this.setElement(this._template());
+            this.$uploadbox = this.$(".upload-box");
+            this.$uploadtable = this.$(".upload-table");
+
+            // append buttons to dom
+            this.btnLocal = new _uiMisc2.default.Button({
+                id: "btn-local",
+                title: (0, _localization2.default)("Choose local file"),
+                onclick: function onclick() {
+                    self.uploadbox.select();
+                },
+                icon: "fa fa-laptop"
+            });
+            this.btnFtp = new _uiMisc2.default.Button({
+                id: "btn-ftp",
+                title: (0, _localization2.default)("Choose FTP file"),
+                onclick: function onclick() {
+                    self._eventFtp();
+                },
+                icon: "fa fa-folder-open-o"
+            });
+            this.btnCreate = new _uiMisc2.default.Button({
+                id: "btn-new",
+                title: "Paste/Fetch data",
+                onclick: function onclick() {
+                    self._eventCreate();
+                },
+                icon: "fa fa-edit"
+            });
+            this.btnStart = new _uiMisc2.default.Button({
+                id: "btn-start",
+                title: (0, _localization2.default)("Start"),
+                onclick: function onclick() {
+                    self._eventStart();
+                }
+            });
+            this.btnStop = new _uiMisc2.default.Button({
+                id: "btn-stop",
+                title: (0, _localization2.default)("Pause"),
+                onclick: function onclick() {
+                    self._eventStop();
+                }
+            });
+            this.btnReset = new _uiMisc2.default.Button({
+                id: "btn-reset",
+                title: (0, _localization2.default)("Reset"),
+                onclick: function onclick() {
+                    self._eventReset();
+                }
+            });
+            this.btnClose = new _uiMisc2.default.Button({
+                id: "btn-close",
+                title: (0, _localization2.default)("Close"),
+                onclick: function onclick() {
+                    self.app.modal.hide();
+                }
+            });
+            _.each([this.btnLocal, this.btnFtp, this.btnCreate, this.btnStop, this.btnReset, this.btnStart, this.btnClose], function(button) {
+                self.$(".upload-buttons").prepend(button.$el);
+            });
+
+            // file upload
+            this.uploadbox = this.$uploadbox.uploadbox({
+                url: this.app.options.nginx_upload_path,
+                announce: function announce(index, file) {
+                    self._eventAnnounce(index, file);
+                },
+                initialize: function initialize(index) {
+                    return self.app.toData([self.collection.get(index)], self.history_id);
+                },
+                progress: function progress(index, percentage) {
+                    self._eventProgress(index, percentage);
+                },
+                success: function success(index, message) {
+                    self._eventSuccess(index, message);
+                },
+                error: function error(index, message) {
+                    self._eventError(index, message);
+                },
+                complete: function complete() {
+                    self._eventComplete();
+                },
+                ondragover: function ondragover() {
+                    self.$uploadbox.addClass("highlight");
+                },
+                ondragleave: function ondragleave() {
+                    self.$uploadbox.removeClass("highlight");
+                }
+            });
+
+            // add ftp file viewer
+            this.ftp = new _uiPopover2.default.View({
+                title: (0, _localization2.default)("FTP files"),
+                container: this.btnFtp.$el
+            });
+
+            // select extension
+            this.select_extension = new _uiSelect2.default.View({
+                css: "upload-footer-selection",
+                container: this.$(".upload-footer-extension"),
+                data: _.filter(this.list_extensions, function(ext) {
+                    return !ext.composite_files;
+                }),
+                value: this.options.default_extension,
+                onchange: function onchange(extension) {
+                    self._changeExtension(extension);
+                }
+            });
+
+            // handle extension info popover
+            this.$(".upload-footer-extension-info").on("click", function(e) {
+                new _uploadExtension2.default({
+                    $el: $(e.target),
+                    title: self.select_extension.text(),
+                    extension: self.select_extension.value(),
+                    list: self.list_extensions,
+                    placement: "top"
+                });
+            }).on("mousedown", function(e) {
+                e.preventDefault();
+            });
+
+            // genome extension
+            this.select_genome = new _uiSelect2.default.View({
+                css: "upload-footer-selection",
+                container: this.$(".upload-footer-genome"),
+                data: this.list_genomes,
+                value: this.options.default_genome,
+                onchange: function onchange(genome) {
+                    self._changeGenome(genome);
+                }
+            });
+
+            // Lazy load helper
+            this.loader = new _lazyLimited2.default({
+                $container: this.$uploadbox,
+                collection: this.collection,
+                new_content: function new_content(model) {
+                    var upload_row = new _defaultRow2.default(self, {
+                        model: model
+                    });
+                    self.$uploadtable.find("> tbody:first").append(upload_row.$el);
+                    upload_row.render();
+                    return upload_row;
+                }
+            });
+
+            // events
+            this.collection.on("remove", function(model) {
+                self._eventRemove(model);
+            });
+            this.render();
+        },
+
+        render: function render() {
+            var message = "";
+            if (this.counter.announce == 0) {
+                if (this.uploadbox.compatible()) {
+                    message = "&nbsp;";
+                } else {
+                    message = "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
+                }
+            } else {
+                if (this.counter.running == 0) {
+                    message = "You added " + this.counter.announce + " file(s) to the queue. Add more files or click 'Start' to proceed.";
+                } else {
+                    message = "Please wait..." + this.counter.announce + " out of " + this.counter.running + " remaining.";
+                }
+            }
+            this.$(".upload-top-info").html(message);
+            var enable_reset = this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+            var enable_start = this.counter.running == 0 && this.counter.announce > 0;
+            var enable_sources = this.counter.running == 0;
+            var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
+            this.btnReset[enable_reset ? "enable" : "disable"]();
+            this.btnStart[enable_start ? "enable" : "disable"]();
+            this.btnStart.$el[enable_start ? "addClass" : "removeClass"]("btn-primary");
+            this.btnStop[this.counter.running > 0 ? "enable" : "disable"]();
+            this.btnLocal[enable_sources ? "enable" : "disable"]();
+            this.btnFtp[enable_sources ? "enable" : "disable"]();
+            this.btnCreate[enable_sources ? "enable" : "disable"]();
+            this.btnFtp.$el[this.ftp_upload_site ? "show" : "hide"]();
+            this.$(".upload-table")[show_table ? "show" : "hide"]();
+            this.$(".upload-helper")[show_table ? "hide" : "show"]();
+        },
+
+        /** A new file has been dropped/selected through the uploadbox plugin */
+        _eventAnnounce: function _eventAnnounce(index, file) {
+            this.counter.announce++;
+            var new_model = new _uploadModel2.default.Model({
+                id: index,
+                file_name: file.name,
+                file_size: file.size,
+                file_mode: file.mode || "local",
+                file_path: file.path,
+                file_data: file
+            });
+            this.render();
+            this.collection.add(new_model);
+        },
+
+        /** Progress */
+        _eventProgress: function _eventProgress(index, percentage) {
+            var it = this.collection.get(index);
+            it.set("percentage", percentage);
+            this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
+        },
+
+        /** Success */
+        _eventSuccess: function _eventSuccess(index, message) {
+            var it = this.collection.get(index);
+            it.set({
+                percentage: 100,
+                status: "success"
+            });
+            this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
+            this.upload_completed += it.get("file_size") * 100;
+            this.counter.announce--;
+            this.counter.success++;
+            this.render();
+            Galaxy.currHistoryPanel.refreshContents();
+        },
+
+        /** Error */
+        _eventError: function _eventError(index, message) {
+            var it = this.collection.get(index);
+            it.set({
+                percentage: 100,
+                status: "error",
+                info: message
+            });
+            this.ui_button.model.set({
+                percentage: this._uploadPercentage(100, it.get("file_size")),
+                status: "danger"
+            });
+            this.upload_completed += it.get("file_size") * 100;
+            this.counter.announce--;
+            this.counter.error++;
+            this.render();
+        },
+
+        /** Queue is done */
+        _eventComplete: function _eventComplete() {
+            this.collection.each(function(model) {
+                model.get("status") == "queued" && model.set("status", "init");
+            });
+            this.counter.running = 0;
+            this.render();
+        },
+
+        /** Remove model from upload list */
+        _eventRemove: function _eventRemove(model) {
+            var status = model.get("status");
+            if (status == "success") {
+                this.counter.success--;
+            } else if (status == "error") {
+                this.counter.error--;
+            } else {
+                this.counter.announce--;
+            }
+            this.uploadbox.remove(model.id);
+            this.render();
+        },
+
+        //
+        // events triggered by this view
+        //
+
+        /** Show/hide ftp popup */
+        _eventFtp: function _eventFtp() {
+            if (!this.ftp.visible) {
+                this.ftp.empty();
+                var self = this;
+                this.ftp.append(new _uploadFtp3.default({
+                    collection: this.collection,
+                    ftp_upload_site: this.ftp_upload_site,
+                    onadd: function onadd(ftp_file) {
+                        return self.uploadbox.add([{
+                            mode: "ftp",
+                            name: ftp_file.path,
+                            size: ftp_file.size,
+                            path: ftp_file.path
+                        }]);
+                    },
+                    onremove: function onremove(model_index) {
+                        self.collection.remove(model_index);
+                    }
+                }).$el);
+                this.ftp.show();
+            } else {
+                this.ftp.hide();
+            }
+        },
+
+        /** Create a new file */
+        _eventCreate: function _eventCreate() {
+            this.uploadbox.add([{
+                name: "New File",
+                size: 0,
+                mode: "new"
+            }]);
+        },
+
+        /** Start upload process */
+        _eventStart: function _eventStart() {
+            if (this.counter.announce != 0 && this.counter.running == 0) {
+                // prepare upload process
+                var self = this;
+                this.upload_size = 0;
+                this.upload_completed = 0;
+                this.collection.each(function(model) {
+                    if (model.get("status") == "init") {
+                        model.set("status", "queued");
+                        self.upload_size += model.get("file_size");
+                    }
+                });
+                this.ui_button.model.set({
+                    percentage: 0,
+                    status: "success"
+                });
+                this.counter.running = this.counter.announce;
+                this.history_id = this.app.currentHistory();
+
+                // package ftp files separately, and remove them from queue
+                this._uploadFtp();
+
+                // queue remaining files
+                this.uploadbox.start();
+                this.render();
+            }
+        },
+
+        /** Pause upload process */
+        _eventStop: function _eventStop() {
+            if (this.counter.running > 0) {
+                this.ui_button.model.set("status", "info");
+                $(".upload-top-info").html("Queue will pause after completing the current file...");
+                this.uploadbox.stop();
+            }
+        },
+
+        /** Remove all */
+        _eventReset: function _eventReset() {
+            if (this.counter.running == 0) {
+                var self = this;
+                this.collection.reset();
+                this.counter.reset();
+                this.uploadbox.reset();
+                this.select_extension.value(this.options.default_extension);
+                this.select_genome.value(this.options.default_genome);
+                this.ui_button.model.set("percentage", 0);
+                this.render();
+            }
+        },
+
+        /** Update extension for all models */
+        _changeExtension: function _changeExtension(extension, defaults_only) {
+            var self = this;
+            this.collection.each(function(model) {
+                if (model.get("status") == "init" && (model.get("extension") == self.options.default_extension || !defaults_only)) {
+                    model.set("extension", extension);
+                }
+            });
+        },
+
+        /** Update genome for all models */
+        _changeGenome: function _changeGenome(genome, defaults_only) {
+            var self = this;
+            this.collection.each(function(model) {
+                if (model.get("status") == "init" && (model.get("genome") == self.options.default_genome || !defaults_only)) {
+                    model.set("genome", genome);
+                }
+            });
+        },
+
+        /** Package and upload ftp files in a single request */
+        _uploadFtp: function _uploadFtp() {
+            var self = this;
+            var list = [];
+            this.collection.each(function(model) {
+                if (model.get("status") == "queued" && model.get("file_mode") == "ftp") {
+                    self.uploadbox.remove(model.id);
+                    list.push(model);
+                }
+            });
+            if (list.length > 0) {
+                $.uploadpost({
+                    data: this.app.toData(list),
+                    url: this.app.options.nginx_upload_path,
+                    success: function success(message) {
+                        _.each(list, function(model) {
+                            self._eventSuccess(model.id);
+                        });
+                    },
+                    error: function error(message) {
+                        _.each(list, function(model) {
+                            self._eventError(model.id, message);
+                        });
+                    }
+                });
+            }
+        },
+
+        /** Calculate percentage of all queued uploads */
+        _uploadPercentage: function _uploadPercentage(percentage, size) {
+            return (this.upload_completed + percentage * size) / this.upload_size;
+        },
+
+        /** Template */
+        _template: function _template() {
+            return '<div class="upload-view-default">' + '<div class="upload-top">' + '<h6 class="upload-top-info"/>' + "</div>" + '<div class="upload-box">' + '<div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div>' + '<table class="upload-table ui-table-striped" style="display: none;">' + "<thead>" + "<tr>" + "<th>Name</th>" + "<th>Size</th>" + "<th>Type</th>" + "<th>Genome</th>" + "<th>Settings</th>" + "<th>Status</th>" + "<th/>" + "</tr>" + "</thead>" + "<tbody/>" + "</table>" + "</div>" + '<div class="upload-footer">' + '<span class="upload-footer-title">Type (set all):</span>' + '<span class="upload-footer-extension"/>' + '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' + '<span class="upload-footer-title">Genome (set all):</span>' + '<span class="upload-footer-genome"/>' + "</div>" + '<div class="upload-buttons"/>' + "</div>";
+        }
+    });
+});
 //# sourceMappingURL=../../../../maps/mvc/upload/default/default-view.js.map

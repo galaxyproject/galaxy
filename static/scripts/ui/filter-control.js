@@ -1,2 +1,197 @@
-define("ui/filter-control",["jquery"],function(e){"use strict";function t(e,t){t=t||(_.isEmpty(e)?"":e[0]);var n=o(['<div class="dropdown-select btn-group">','<button type="button" class="btn btn-default">','<span class="dropdown-select-selected">'+t+"</span>","</button>","</div>"].join("\n"));return e&&e.length>1&&(n.find("button").addClass("dropdown-toggle").attr("data-toggle","dropdown").append(' <span class="caret"></span>'),n.append(['<ul class="dropdown-menu" role="menu">',_.map(e,function(e){return['<li><a href="javascript:void(0)">',e,"</a></li>"].join("")}).join("\n"),"</ul>"].join("\n"))),n.find("a").click(function(e){var t=o(this),n=t.parents(".dropdown-select"),r=t.text();n.find(".dropdown-select-selected").text(r),n.trigger("change.dropdown-select",r)}),n}function n(e,t){return this.init(e,t)}var r=function(e){return e&&e.__esModule?e:{default:e}}(e),o=r.default;n.prototype.DATA_KEY="filter-control",n.prototype.init=function(e,t){return t=t||{filters:[]},this.$element=o(e).addClass("filter-control btn-group"),this.options=r.default.extend(!0,{},this.defaults,t),this.currFilter=this.options.filters[0],this.render()},n.prototype.render=function(){return this.$element.empty().append([this._renderKeySelect(),this._renderOpSelect(),this._renderValueInput()]),this},n.prototype._renderKeySelect=function(){var e=this,n=this.options.filters.map(function(e){return e.key});return this.$keySelect=t(n,this.currFilter.key).addClass("filter-control-key").on("change.dropdown-select",function(t,n){e.currFilter=_.findWhere(e.options.filters,{key:n}),e.render()._triggerChange()}),this.$keySelect},n.prototype._renderOpSelect=function(){var e=this,n=this.currFilter.ops;return this.$opSelect=t(n,n[0]).addClass("filter-control-op").on("change.dropdown-select",function(t,n){e._triggerChange()}),this.$opSelect},n.prototype._renderValueInput=function(){var e=this;return this.currFilter.values?this.$valueSelect=t(this.currFilter.values,this.currFilter.values[0]).on("change.dropdown-select",function(t,n){e._triggerChange()}):this.$valueSelect=o("<input/>").addClass("form-control").on("change",function(t,n){e._triggerChange()}),this.$valueSelect.addClass("filter-control-value"),this.$valueSelect},n.prototype.val=function(){var e=this.$element.find(".filter-control-key .dropdown-select-selected").text(),t=this.$element.find(".filter-control-op .dropdown-select-selected").text(),n=this.$element.find(".filter-control-value");return{key:e,op:t,value:n.hasClass("dropdown-select")?n.find(".dropdown-select-selected").text():n.val()}},n.prototype._triggerChange=function(){this.$element.trigger("change.filter-control",this.val())},r.default.fn.extend({filterControl:function(e){var t=r.default.makeArray(arguments).slice(1);return this.map(function(){var i=o(this),l=i.data(n.prototype.DATA_KEY);if("object"===r.default.type(e)&&(l=new n(i,e),i.data(n.prototype.DATA_KEY,l)),l&&"string"===r.default.type(e)){var s=l[e];if("function"===r.default.type(s))return s.apply(l,t)}return this})}})});
+define("ui/filter-control", ["jquery"], function(_jquery) {
+    "use strict";
+
+    var _jquery2 = _interopRequireDefault(_jquery);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    "use_strict";
+
+    var $ = _jquery2.default;
+    //==============================================================================
+    /**
+     *  Template function that produces a bootstrap dropdown to replace the
+     *  vanilla HTML select input. Pass in an array of options and an initial selection:
+     *  $( '.my-div' ).append( dropDownSelect( [ 'option1', 'option2' ], 'option2' );
+     *
+     *  When the user changes the selected option a 'change.dropdown-select' event will
+     *  fire with both the jq event and the new selection text as arguments.
+     *
+     *  Get the currently selected choice using:
+     *  var userChoice = $( '.my-div .dropdown-select .dropdown-select-selected' ).text();
+     *
+     */
+    function dropDownSelect(options, selected) {
+        // replacement for vanilla select element using bootstrap dropdowns instead
+        selected = selected || (!_.isEmpty(options) ? options[0] : "");
+        var $select = $(['<div class="dropdown-select btn-group">', '<button type="button" class="btn btn-default">', "<span class=\"dropdown-select-selected\">" + selected + "</span>", "</button>", "</div>"].join("\n"));
+
+        // if there's only one option, do not style/create as buttons, dropdown - use simple span
+        // otherwise, a dropdown displaying the current selection
+        if (options && options.length > 1) {
+            $select.find("button").addClass("dropdown-toggle").attr("data-toggle", "dropdown").append(' <span class="caret"></span>');
+            $select.append(['<ul class="dropdown-menu" role="menu">', _.map(options, function(option) {
+                return ['<li><a href="javascript:void(0)">', option, "</a></li>"].join("");
+            }).join("\n"), "</ul>"].join("\n"));
+        }
+
+        // trigger 'change.dropdown-select' when a new selection is made using the dropdown
+        function selectThis(event) {
+            var $this = $(this);
+            var $select = $this.parents(".dropdown-select");
+            var newSelection = $this.text();
+            $select.find(".dropdown-select-selected").text(newSelection);
+            $select.trigger("change.dropdown-select", newSelection);
+        }
+
+        $select.find("a").click(selectThis);
+        return $select;
+    }
+
+    //==============================================================================
+    /**
+     *  Creates a three part bootstrap button group (key, op, value) meant to
+     *  allow the user control of filters (e.g. { key: 'name', op: 'contains', value: 'my_history' })
+     *
+     *  Each field uses a dropDownSelect (from ui.js) to allow selection
+     *  (with the 'value' field appearing as an input when set to do so).
+     *
+     *  Any change or update in any of the fields will trigger a 'change.filter-control'
+     *  event which will be passed an object containing those fields (as the example above).
+     *
+     *  Pass in an array of possible filter objects to control what the user can select.
+     *  Each filter object should have:
+     *      key : generally the attribute name on which to filter something
+     *      ops : an array of 1 or more filter operations (e.g. [ 'is', '<', 'contains', '!=' ])
+     *      values (optional) : an array of possible values for the filter (e.g. [ 'true', 'false' ])
+     *  @example:
+     *  $( '.my-div' ).filterControl({
+     *      filters : [
+     *          { key: 'name',    ops: [ 'is exactly', 'contains' ] }
+     *          { key: 'deleted', ops: [ 'is' ], values: [ 'true', 'false' ] }
+     *      ]
+     *  });
+     *  // after initialization, you can prog. get the current value using:
+     *  $( '.my-div' ).filterControl( 'val' )
+     *
+     */
+    function FilterControl(element, options) {
+        return this.init(element, options);
+    }
+    /** the data key that this object will be stored under in the DOM element */
+    FilterControl.prototype.DATA_KEY = "filter-control";
+
+    /** parses options, sets up instance vars, and does initial render */
+    FilterControl.prototype.init = function _init(element, options) {
+        options = options || {
+            filters: []
+        };
+        this.$element = $(element).addClass("filter-control btn-group");
+        this.options = _jquery2.default.extend(true, {}, this.defaults, options);
+
+        this.currFilter = this.options.filters[0];
+        return this.render();
+    };
+
+    /** render (or re-render) the controls on the element */
+    FilterControl.prototype.render = function _render() {
+        this.$element.empty().append([this._renderKeySelect(), this._renderOpSelect(), this._renderValueInput()]);
+        return this;
+    };
+
+    /** render the key dropDownSelect, bind a change event to it, and return it */
+    FilterControl.prototype._renderKeySelect = function __renderKeySelect() {
+        var filterControl = this;
+        var keys = this.options.filters.map(function(filter) {
+            return filter.key;
+        });
+        this.$keySelect = dropDownSelect(keys, this.currFilter.key).addClass("filter-control-key").on("change.dropdown-select", function(event, selection) {
+            filterControl.currFilter = _.findWhere(filterControl.options.filters, {
+                key: selection
+            });
+            // when the filter/key changes, re-render the control entirely
+            filterControl.render()._triggerChange();
+        });
+        return this.$keySelect;
+    };
+
+    /** render the op dropDownSelect, bind a change event to it, and return it */
+    FilterControl.prototype._renderOpSelect = function __renderOpSelect() {
+        var filterControl = this;
+        var ops = this.currFilter.ops;
+        //TODO: search for currOp in avail. ops: use that for selected if there; otherwise: first op
+        this.$opSelect = dropDownSelect(ops, ops[0]).addClass("filter-control-op").on("change.dropdown-select", function(event, selection) {
+            filterControl._triggerChange();
+        });
+        return this.$opSelect;
+    };
+
+    /** render the value control, bind a change event to it, and return it */
+    FilterControl.prototype._renderValueInput = function __renderValueInput() {
+        var filterControl = this;
+        // if a values attribute is prov. on the filter - make this a dropdown; otherwise, use an input
+        if (this.currFilter.values) {
+            this.$valueSelect = dropDownSelect(this.currFilter.values, this.currFilter.values[0]).on("change.dropdown-select", function(event, selection) {
+                filterControl._triggerChange();
+            });
+        } else {
+            //TODO: allow setting a value type (mainly for which html5 input to use: range, number, etc.)
+            this.$valueSelect = $("<input/>").addClass("form-control").on("change", function(event, value) {
+                filterControl._triggerChange();
+            });
+        }
+        this.$valueSelect.addClass("filter-control-value");
+        return this.$valueSelect;
+    };
+
+    /** return the current state/setting for the filter as a three key object: key, op, value */
+    FilterControl.prototype.val = function _val() {
+        var key = this.$element.find(".filter-control-key .dropdown-select-selected").text();
+
+        var op = this.$element.find(".filter-control-op .dropdown-select-selected").text();
+
+        var // handle either a dropdown or plain input
+            $value = this.$element.find(".filter-control-value");
+
+        var value = $value.hasClass("dropdown-select") ? $value.find(".dropdown-select-selected").text() : $value.val();
+
+        return {
+            key: key,
+            op: op,
+            value: value
+        };
+    };
+
+    // single point of change for change event
+    FilterControl.prototype._triggerChange = function __triggerChange() {
+        this.$element.trigger("change.filter-control", this.val());
+    };
+
+    // as jq plugin
+    _jquery2.default.fn.extend({
+        filterControl: function $filterControl(options) {
+            var nonOptionsArgs = _jquery2.default.makeArray(arguments).slice(1);
+            return this.map(function() {
+                var $this = $(this);
+                var data = $this.data(FilterControl.prototype.DATA_KEY);
+
+                if (_jquery2.default.type(options) === "object") {
+                    data = new FilterControl($this, options);
+                    $this.data(FilterControl.prototype.DATA_KEY, data);
+                }
+                if (data && _jquery2.default.type(options) === "string") {
+                    var fn = data[options];
+                    if (_jquery2.default.type(fn) === "function") {
+                        return fn.apply(data, nonOptionsArgs);
+                    }
+                }
+                return this;
+            });
+        }
+    });
+});
 //# sourceMappingURL=../../maps/ui/filter-control.js.map

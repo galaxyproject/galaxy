@@ -102,7 +102,7 @@ class Ply(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Faces: %s, Vertices: %s" % (str(dataset.metadata.face), str(dataset.metadata.vertex))
         else:
             dataset.peek = 'File does not exist'
@@ -129,9 +129,6 @@ class PlyBinary(Ply, Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
-
-Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
 
 
 class Vtk(object):
@@ -429,7 +426,7 @@ class Vtk(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = 'File does not exist'
@@ -456,9 +453,6 @@ class VtkBinary(Vtk, Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-
-
-Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
 
 
 class STL(data.Data):

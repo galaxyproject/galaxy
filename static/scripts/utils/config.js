@@ -1,2 +1,413 @@
-define("utils/config",["exports","libs/underscore","viz/trackster/util","utils/config"],function(e,t,l,o){"use strict";function a(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});var i=function(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var l in e)Object.prototype.hasOwnProperty.call(e,l)&&(t[l]=e[l]);return t.default=e,t}(t),n=a(l),r=(a(o),Backbone.Model.extend({initialize:function(e){var t=this.get("key");this.set("id",t);var l=i.find([{key:"name",label:"Name",type:"text",default_value:""},{key:"color",label:"Color",type:"color",default_value:null},{key:"min_value",label:"Min Value",type:"float",default_value:null},{key:"max_value",label:"Max Value",type:"float",default_value:null},{key:"mode",type:"string",default_value:this.mode,hidden:!0},{key:"height",type:"int",default_value:32,hidden:!0},{key:"pos_color",label:"Positive Color",type:"color",default_value:"#FF8C00"},{key:"neg_color",label:"Negative Color",type:"color",default_value:"#4169E1"},{key:"block_color",label:"Block color",type:"color",default_value:null},{key:"label_color",label:"Label color",type:"color",default_value:"black"},{key:"show_insertions",label:"Show insertions",type:"bool",default_value:!1},{key:"show_counts",label:"Show summary counts",type:"bool",default_value:!0},{key:"reverse_strand_color",label:"Antisense strand color",type:"color",default_value:null},{key:"show_differences",label:"Show differences only",type:"bool",default_value:!0}],function(e){return e.key===t});l&&this.set(i.extend({},l,e)),void 0===this.get("value")&&void 0!==this.get("default_value")&&(this.set_value(this.get("default_value")),this.get("value")||"color"!==this.get("type")||this.set("value",n.default.get_random_color()))},set_value:function(e,t){var l=this.get("type");"float"===l?e=parseFloat(e):"int"===l&&(e=parseInt(e,10)),this.set({value:e},t)}})),s=Backbone.Collection.extend({model:r,to_key_value_dict:function(){var e={};return this.each(function(t){e[t.get("key")]=t.get("value")}),e},get_value:function(e){var t=this.get(e);if(t)return t.get("value")},set_value:function(e,t,l){var o=this.get(e);if(o)return o.set_value(t,l)},set_default_value:function(e,t){var l=this.get(e);if(l)return l.set("default_value",t)}},{from_models_and_saved_values:function(e,t){return t&&(e=i.map(e,function(e){return i.extend({},e,{value:t[e.key]})})),new s(e)}}),c=Backbone.View.extend({className:"config-settings-view",render:function(){var e=this.$el;return this.collection.each(function(t,l){if(!t.get("hidden")){var o="param_"+l,a=t.get("type"),r=t.get("value"),s=$("<div class='form-row' />").appendTo(e);if(s.append($("<label />").attr("for",o).text(t.get("label")+":")),"bool"===a)s.append($('<input type="checkbox" />').attr("id",o).attr("name",o).attr("checked",r));else if("text"===a)s.append($('<input type="text"/>').attr("id",o).val(r).click(function(){$(this).select()}));else if("select"===a){var c=$("<select />").attr("id",o);i.each(t.get("options"),function(e){$("<option/>").text(e.label).attr("value",e.value).appendTo(c)}),c.val(r),s.append(c)}else if("color"===a){var u=$("<div/>").appendTo(s),d=$("<input />").attr("id",o).attr("name",o).val(r).css("float","left").appendTo(u).click(function(e){$(".tooltip").removeClass("in");var t=$(this).siblings(".tooltip").addClass("in");t.css({left:$(this).position().left+$(this).width()+5,top:$(this).position().top-$(t).height()/2+$(this).height()/2}).show(),t.click(function(e){e.stopPropagation()}),$(document).bind("click.color-picker",function(){t.hide(),$(document).unbind("click.color-picker")}),e.stopPropagation()}),f=$("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(u).attr("title","Set new random color").tooltip(),p=$("<div class='tooltip right' style='position: absolute;' />").appendTo(u).hide(),h=$("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(p),v=($("<div class='tooltip-arrow'></div>").appendTo(p),$.farbtastic(h,{width:100,height:100,callback:d,color:r}));u.append($("<div/>").css("clear","both")),function(e){f.click(function(){e.setColor(n.default.get_random_color())})}(v)}else s.append($("<input />").attr("id",o).attr("name",o).val(r));t.help&&s.append($("<div class='help'/>").text(t.help))}}),this},render_in_modal:function(e){var t=this,l=function(){Galaxy.modal.hide(),$(window).unbind("keypress.check_enter_esc")},o=function(){Galaxy.modal.hide(),$(window).unbind("keypress.check_enter_esc"),t.update_from_form()};$(window).bind("keypress.check_enter_esc",function(e){27===(e.keyCode||e.which)?l():13===(e.keyCode||e.which)&&o()}),0===this.$el.children().length&&this.render(),Galaxy.modal.show({title:e||"Configure",body:this.$el,buttons:{Cancel:l,OK:o}})},update_from_form:function(){var e=this;this.collection.each(function(t,l){if(!t.get("hidden")){var o="param_"+l,a=e.$el.find("#"+o).val();"bool"===t.get("type")&&(a=e.$el.find("#"+o).is(":checked")),t.set_value(a)}})}});e.default={ConfigSetting:r,ConfigSettingCollection:s,ConfigSettingCollectionView:c}});
+define("utils/config", ["exports", "libs/underscore", "viz/trackster/util", "utils/config"], function(exports, _underscore, _util, _config) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    var _util2 = _interopRequireDefault(_util);
+
+    var _config2 = _interopRequireDefault(_config);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    /**
+     * A configuration setting. Currently key is used as id.
+     */
+    var ConfigSetting = Backbone.Model.extend({
+        initialize: function initialize(options) {
+            // Use key as id for now.
+            var key = this.get("key");
+            this.set("id", key);
+
+            // Set defaults based on key.
+            var defaults = _.find([{
+                key: "name",
+                label: "Name",
+                type: "text",
+                default_value: ""
+            }, {
+                key: "color",
+                label: "Color",
+                type: "color",
+                default_value: null
+            }, {
+                key: "min_value",
+                label: "Min Value",
+                type: "float",
+                default_value: null
+            }, {
+                key: "max_value",
+                label: "Max Value",
+                type: "float",
+                default_value: null
+            }, {
+                key: "mode",
+                type: "string",
+                default_value: this.mode,
+                hidden: true
+            }, {
+                key: "height",
+                type: "int",
+                default_value: 32,
+                hidden: true
+            }, {
+                key: "pos_color",
+                label: "Positive Color",
+                type: "color",
+                default_value: "#FF8C00"
+            }, {
+                key: "neg_color",
+                label: "Negative Color",
+                type: "color",
+                default_value: "#4169E1"
+            }, {
+                key: "block_color",
+                label: "Block color",
+                type: "color",
+                default_value: null
+            }, {
+                key: "label_color",
+                label: "Label color",
+                type: "color",
+                default_value: "black"
+            }, {
+                key: "show_insertions",
+                label: "Show insertions",
+                type: "bool",
+                default_value: false
+            }, {
+                key: "show_counts",
+                label: "Show summary counts",
+                type: "bool",
+                default_value: true
+            }, {
+                key: "reverse_strand_color",
+                label: "Antisense strand color",
+                type: "color",
+                default_value: null
+            }, {
+                key: "show_differences",
+                label: "Show differences only",
+                type: "bool",
+                default_value: true
+            }], function(s) {
+                return s.key === key;
+            });
+            if (defaults) {
+                this.set(_.extend({}, defaults, options));
+            }
+
+            if (this.get("value") === undefined && this.get("default_value") !== undefined) {
+                // Use default to set value (if present).
+                this.set_value(this.get("default_value"));
+
+                // If no default value for color config, set random color.
+                if (!this.get("value") && this.get("type") === "color") {
+                    // For color setting, set random color.
+                    this.set("value", _util2.default.get_random_color());
+                }
+            }
+        },
+
+        /**
+         * Cast and set value. This should be instead of
+         *  setting.set('value', new_value)
+         */
+        set_value: function set_value(value, options) {
+            var type = this.get("type");
+
+            if (type === "float") {
+                value = parseFloat(value);
+            } else if (type === "int") {
+                value = parseInt(value, 10);
+            }
+            // TODO: handle casting from string to bool?
+
+            this.set({
+                value: value
+            }, options);
+        }
+    });
+
+    /**
+     * Collection of config settings.
+     */
+    var ConfigSettingCollection = Backbone.Collection.extend({
+        model: ConfigSetting,
+
+        /**
+         * Save settings as a dictionary of key-value pairs.
+         * This function is needed for backwards compatibility.
+         */
+        to_key_value_dict: function to_key_value_dict() {
+            var rval = {};
+            this.each(function(setting) {
+                rval[setting.get("key")] = setting.get("value");
+            });
+
+            return rval;
+        },
+
+        /**
+         * Returns value for a given key. Returns undefined if there is no setting with the specified key.
+         */
+        get_value: function get_value(key) {
+            var s = this.get(key);
+            if (s) {
+                return s.get("value");
+            }
+
+            return undefined;
+        },
+
+        /**
+         * Set value for a setting.
+         */
+        set_value: function set_value(key, value, options) {
+            var s = this.get(key);
+            if (s) {
+                return s.set_value(value, options);
+            }
+
+            return undefined;
+        },
+
+        /**
+         * Set default value for a setting.
+         */
+        set_default_value: function set_default_value(key, default_value) {
+            var s = this.get(key);
+            if (s) {
+                return s.set("default_value", default_value);
+            }
+
+            return undefined;
+        }
+    }, {
+        /**
+         * Utility function that creates a ConfigSettingsCollection from a set of models
+         * and a saved_values dictionary.
+         */
+        from_models_and_saved_values: function from_models_and_saved_values(models, saved_values) {
+            // If there are saved values, copy models and update with saved values.
+            if (saved_values) {
+                models = _.map(models, function(m) {
+                    return _.extend({}, m, {
+                        value: saved_values[m.key]
+                    });
+                });
+            }
+
+            return new ConfigSettingCollection(models);
+        }
+    });
+
+    /**
+     * Viewer for config settings collection.
+     */
+    var ConfigSettingCollectionView = Backbone.View.extend({
+        className: "config-settings-view",
+
+        /**
+         * Renders form for editing configuration settings.
+         */
+        render: function render() {
+            var container = this.$el;
+
+            this.collection.each(function(param, index) {
+                // Hidden params have no representation in the form
+                if (param.get("hidden")) {
+                    return;
+                }
+
+                // Build row for param.
+                var id = "param_" + index;
+
+                var type = param.get("type");
+                var value = param.get("value");
+                var row = $("<div class='form-row' />").appendTo(container);
+                row.append($("<label />").attr("for", id).text(param.get("label") + ":"));
+                // Draw parameter as checkbox
+                if (type === "bool") {
+                    row.append($('<input type="checkbox" />').attr("id", id).attr("name", id).attr("checked", value));
+                } else if (type === "text") {
+                    // Draw parameter as textbox
+                    row.append($('<input type="text"/>').attr("id", id).val(value).click(function() {
+                        $(this).select();
+                    }));
+                } else if (type === "select") {
+                    // Draw parameter as select area
+                    var select = $("<select />").attr("id", id);
+                    _.each(param.get("options"), function(option) {
+                        $("<option/>").text(option.label).attr("value", option.value).appendTo(select);
+                    });
+                    select.val(value);
+                    row.append(select);
+                } else if (type === "color") {
+                    // Draw parameter as color picker
+                    var container_div = $("<div/>").appendTo(row);
+
+                    var input = $("<input />").attr("id", id).attr("name", id).val(value).css("float", "left").appendTo(container_div).click(function(e) {
+                        // Hide other pickers.
+                        $(".tooltip").removeClass("in");
+
+                        // Show input's color picker.
+                        var tip = $(this).siblings(".tooltip").addClass("in");
+                        tip.css({
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height)
+                            left: $(this).position().left + $(this).width() + 5,
+                            top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
+                        }).show();
+
+                        // Click management:
+
+                        // Keep showing tip if clicking in tip.
+                        tip.click(function(e) {
+                            e.stopPropagation();
+                        });
+
+                        // Hide tip if clicking outside of tip.
+                        $(document).bind("click.color-picker", function() {
+                            tip.hide();
+                            $(document).unbind("click.color-picker");
+                        });
+
+                        // No propagation to avoid triggering document click (and tip hiding) above.
+                        e.stopPropagation();
+                    });
+
+                    var // Icon for setting a new random color; behavior set below.
+                        new_color_icon = $("<a href='javascript:void(0)'/>").addClass("icon-button arrow-circle").appendTo(container_div).attr("title", "Set new random color").tooltip();
+
+                    var // Color picker in tool tip style.
+                        tip = $("<div class='tooltip right' style='position: absolute;' />").appendTo(container_div).hide();
+
+                    var // Inner div for padding purposes
+                        tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip);
+
+                    var tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip);
+
+                    var farb_obj = $.farbtastic(tip_inner, {
+                        width: 100,
+                        height: 100,
+                        callback: input,
+                        color: value
+                    });
+
+                    // Clear floating.
+                    container_div.append($("<div/>").css("clear", "both"));
+
+                    // Use function to fix farb_obj value.
+                    (function(fixed_farb_obj) {
+                        new_color_icon.click(function() {
+                            fixed_farb_obj.setColor(_util2.default.get_random_color());
+                        });
+                    })(farb_obj);
+                } else {
+                    row.append($("<input />").attr("id", id).attr("name", id).val(value));
+                }
+                // Help text
+                if (param.help) {
+                    row.append($("<div class='help'/>").text(param.help));
+                }
+            });
+
+            return this;
+        },
+
+        /**
+         * Render view in modal.
+         */
+        render_in_modal: function render_in_modal(title) {
+            // Set up handlers for cancel, ok button and for handling esc key.
+            var self = this;
+
+            var cancel_fn = function cancel_fn() {
+                Galaxy.modal.hide();
+                $(window).unbind("keypress.check_enter_esc");
+            };
+
+            var ok_fn = function ok_fn() {
+                Galaxy.modal.hide();
+                $(window).unbind("keypress.check_enter_esc");
+                self.update_from_form();
+            };
+
+            var check_enter_esc = function check_enter_esc(e) {
+                if ((e.keyCode || e.which) === 27) {
+                    // Escape key
+                    cancel_fn();
+                } else if ((e.keyCode || e.which) === 13) {
+                    // Enter key
+                    ok_fn();
+                }
+            };
+
+            // Set keypress handler.
+            $(window).bind("keypress.check_enter_esc", check_enter_esc);
+
+            // Show modal.
+            if (this.$el.children().length === 0) {
+                this.render();
+            }
+            Galaxy.modal.show({
+                title: title || "Configure",
+                body: this.$el,
+                buttons: {
+                    Cancel: cancel_fn,
+                    OK: ok_fn
+                }
+            });
+        },
+
+        /**
+         * Update settings with new values entered via form.
+         */
+        update_from_form: function update_from_form() {
+            var self = this;
+            this.collection.each(function(setting, index) {
+                if (!setting.get("hidden")) {
+                    // Set value from view.
+                    var id = "param_" + index;
+                    var value = self.$el.find("#" + id).val();
+                    if (setting.get("type") === "bool") {
+                        value = self.$el.find("#" + id).is(":checked");
+                    }
+                    setting.set_value(value);
+                }
+            });
+        }
+    });
+
+    exports.default = {
+        ConfigSetting: ConfigSetting,
+        ConfigSettingCollection: ConfigSettingCollection,
+        ConfigSettingCollectionView: ConfigSettingCollectionView
+    };
+});
 //# sourceMappingURL=../../maps/utils/config.js.map

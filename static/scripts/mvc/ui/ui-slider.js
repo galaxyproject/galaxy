@@ -1,2 +1,120 @@
-define("mvc/ui/ui-slider",["exports","utils/utils"],function(e,t){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var i=function(e){return e&&e.__esModule?e:{default:e}}(t),s=Backbone.View.extend({initialize:function(e){var t=this;this.model=e&&e.model||new Backbone.Model({id:i.default.uid(),min:null,max:null,step:null,precise:!1,split:1e4,value:null,onchange:function(){}}).set(e),this.setElement(this._template()),this.$el.attr("id",this.model.id),this.$text=this.$(".ui-form-slider-text"),this.$slider=this.$(".ui-form-slider-element");var s=[];this.$text.on("change",function(){t.value($(this).val())}).on("keyup",function(e){s[e.which]=!1}).on("keydown",function(e){var i=e.which;s[i]=!0,t.model.get("is_workflow")&&s[16]&&52==i?(t.value("$"),event.preventDefault()):8==i||9==i||13==i||37==i||39==i||i>=48&&i<=57&&!s[16]||i>=96&&i<=105||(190==i||110==i)&&-1==$(this).val().indexOf(".")&&t.model.get("precise")||(189==i||109==i)&&-1==$(this).val().indexOf("-")||t._isParameter($(this).val())||s[91]||s[17]||event.preventDefault()});var l=this.model.attributes;this.has_slider=null!==l.max&&null!==l.min&&l.max>l.min;var n=l.step;n||(n=l.precise&&this.has_slider?(l.max-l.min)/l.split:1),this.has_slider?(this.$text.addClass("ui-form-slider-left"),this.$slider.slider({min:l.min,max:l.max,step:n}).on("slide",function(e,i){t.value(i.value)})):this.$slider.hide(),this.listenTo(this.model,"change",this.render,this),this.render()},render:function(){var e=this.model.get("value");this.has_slider&&this.$slider.slider("value",e),e!==this.$text.val()&&this.$text.val(e)},value:function(e){var t=this.model.attributes;return void 0!==e&&(null===e||""===e||this._isParameter(e)||(isNaN(e)&&(e=0),!t.precise&&(e=Math.round(e)),null!==t.max&&(e=Math.min(e,t.max)),null!==t.min&&(e=Math.max(e,t.min))),this.model.set("value",e),this.model.trigger("change"),t.onchange(e)),this.model.get("value")},_isParameter:function(e){return this.model.get("is_workflow")&&"$"===String(e).substring(0,1)},_template:function(){return'<div class="ui-form-slider"><input class="ui-form-slider-text" type="text"/><div class="ui-form-slider-element"/></div>'}});e.default={View:s}});
+define("mvc/ui/ui-slider", ["exports", "utils/utils"], function(exports, _utils) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _utils2 = _interopRequireDefault(_utils);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var View = Backbone.View.extend({
+        initialize: function initialize(options) {
+            var self = this;
+            this.model = options && options.model || new Backbone.Model({
+                id: _utils2.default.uid(),
+                min: null,
+                max: null,
+                step: null,
+                precise: false,
+                split: 10000,
+                value: null,
+                onchange: function onchange() {}
+            }).set(options);
+
+            // create new element
+            this.setElement(this._template());
+            this.$el.attr("id", this.model.id);
+            this.$text = this.$(".ui-form-slider-text");
+            this.$slider = this.$(".ui-form-slider-element");
+
+            // add text field event
+            var pressed = [];
+            this.$text.on("change", function() {
+                self.value($(this).val());
+            }).on("keyup", function(e) {
+                pressed[e.which] = false;
+            }).on("keydown", function(e) {
+                var v = e.which;
+                pressed[v] = true;
+                if (self.model.get("is_workflow") && pressed[16] && v == 52) {
+                    self.value("$");
+                    event.preventDefault();
+                } else if (!(v == 8 || v == 9 || v == 13 || v == 37 || v == 39 || v >= 48 && v <= 57 && !pressed[16] || v >= 96 && v <= 105 || (v == 190 || v == 110) && $(this).val().indexOf(".") == -1 && self.model.get("precise") || (v == 189 || v == 109) && $(this).val().indexOf("-") == -1 || self._isParameter($(this).val()) || pressed[91] || pressed[17])) {
+                    event.preventDefault();
+                }
+            });
+
+            // build slider, cannot be rebuild in render
+            var opts = this.model.attributes;
+            this.has_slider = opts.max !== null && opts.min !== null && opts.max > opts.min;
+            var step = opts.step;
+            if (!step) {
+                if (opts.precise && this.has_slider) {
+                    step = (opts.max - opts.min) / opts.split;
+                } else {
+                    step = 1.0;
+                }
+            }
+            if (this.has_slider) {
+                this.$text.addClass("ui-form-slider-left");
+                this.$slider.slider({
+                    min: opts.min,
+                    max: opts.max,
+                    step: step
+                }).on("slide", function(event, ui) {
+                    self.value(ui.value);
+                });
+            } else {
+                this.$slider.hide();
+            }
+
+            // add listeners
+            this.listenTo(this.model, "change", this.render, this);
+            this.render();
+        },
+
+        render: function render() {
+            var value = this.model.get("value");
+            this.has_slider && this.$slider.slider("value", value);
+            value !== this.$text.val() && this.$text.val(value);
+        },
+
+        /** Set and return the current value */
+        value: function value(new_val) {
+            var options = this.model.attributes;
+            if (new_val !== undefined) {
+                if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
+                    isNaN(new_val) && (new_val = 0);
+                    !options.precise && (new_val = Math.round(new_val));
+                    options.max !== null && (new_val = Math.min(new_val, options.max));
+                    options.min !== null && (new_val = Math.max(new_val, options.min));
+                }
+                this.model.set("value", new_val);
+                this.model.trigger("change");
+                options.onchange(new_val);
+            }
+            return this.model.get("value");
+        },
+
+        /** Return true if the field contains a workflow parameter i.e. $('name') */
+        _isParameter: function _isParameter(value) {
+            return this.model.get("is_workflow") && String(value).substring(0, 1) === "$";
+        },
+
+        /** Slider template */
+        _template: function _template() {
+            return '<div class="ui-form-slider">' + '<input class="ui-form-slider-text" type="text"/>' + '<div class="ui-form-slider-element"/>' + "</div>";
+        }
+    });
+
+    exports.default = {
+        View: View
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/ui/ui-slider.js.map

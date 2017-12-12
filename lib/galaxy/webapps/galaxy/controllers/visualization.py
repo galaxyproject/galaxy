@@ -736,7 +736,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
 
         # define app configuration
-        app = {'jscript' : "viz/trackster"}
+        app = {"jscript" : "trackster"}
 
         # get dataset to add
         id = kwargs.get("id", None)
@@ -780,7 +780,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app})
+        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'extended'})
 
     @web.expose
     def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
@@ -836,13 +836,13 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # define app configuration for generic mako template
         app = {
-            'jscript'       : "viz/circster",
+            'jscript'       : "circster",
             'viz_config'    : viz_config,
             'genome'        : genome
         }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'app' : app})
+        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'extended'})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):

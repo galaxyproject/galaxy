@@ -1,2 +1,152 @@
-define("viz/trackster/util",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var t=Backbone.Model.extend({defaults:{ajax_settings:{},interval:1e3,success_fn:function(e){return!0}},go:function(){var e=$.Deferred(),t=this,r=t.get("ajax_settings"),n=t.get("success_fn"),a=t.get("interval");return function t(){$.ajax(r).success(function(r){n(r)?e.resolve(r):setTimeout(t,a)})}(),e}});e.default={commatize:function(e){e+="";for(var t=/(\d+)(\d{3})/;t.test(e);)e=e.replace(t,"$1,$2");return e},is_deferred:function(e){return"promise"in e},ServerStateDeferred:t,get_random_color:function(e){e||(e="#ffffff"),"string"==typeof e&&(e=[e]);for(var t=0;t<e.length;t++)e[t]=parseInt(e[t].slice(1),16);var r,n,a,i,o,s,f,u,c,d,l,h=function(e,t,r){return(299*e+587*t+114*r)/1e3},m=!1,g=0;do{for(c=h(n=(16711680&(r=Math.round(16777215*Math.random())))>>16,a=(65280&r)>>8,i=255&r),m=!0,t=0;t<e.length;t++)if(o=e[t],s=(16711680&o)>>16,f=(65280&o)>>8,u=255&o,d=h(s,f,u),l=function(e,t,r,n,a,i){return Math.max(e,n)-Math.min(e,n)+(Math.max(t,a)-Math.min(t,a))+(Math.max(r,i)-Math.min(r,i))}(n,a,i,s,f,u),Math.abs(c-d)<40||l<200){m=!1;break}g++}while(!m&&g<=10);return"#"+(16777216+r).toString(16).substr(1,6)}}});
+define("viz/trackster/util", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    /**
+     * Stringifies a number adding commas for digit grouping as per North America.
+     */
+    function commatize(number) {
+        number += ""; // Convert to string
+        var rgx = /(\d+)(\d{3})/;
+        while (rgx.test(number)) {
+            number = number.replace(rgx, "$1" + "," + "$2");
+        }
+        return number;
+    }
+
+    /**
+     * Helper to determine if object is jQuery deferred.
+     */
+    var is_deferred = function is_deferred(d) {
+        return "promise" in d;
+    };
+
+    /**
+     * Implementation of a server-state based deferred. Server is repeatedly polled, and when
+     * condition is met, deferred is resolved.
+     */
+    var ServerStateDeferred = Backbone.Model.extend({
+        defaults: {
+            ajax_settings: {},
+            interval: 1000,
+            success_fn: function success_fn(result) {
+                return true;
+            }
+        },
+
+        /**
+         * Returns a deferred that resolves when success function returns true.
+         */
+        go: function go() {
+            var deferred = $.Deferred();
+            var self = this;
+            var ajax_settings = self.get("ajax_settings");
+            var success_fn = self.get("success_fn");
+            var interval = self.get("interval");
+
+            var _go = function _go() {
+                $.ajax(ajax_settings).success(function(result) {
+                    if (success_fn(result)) {
+                        // Result is good, so resolve.
+                        deferred.resolve(result);
+                    } else {
+                        // Result not good, try again.
+                        setTimeout(_go, interval);
+                    }
+                });
+            };
+
+            _go();
+            return deferred;
+        }
+    });
+
+    /**
+     * Returns a random color in hexadecimal format that is sufficiently different from a single color
+     * or set of colors.
+     * @param colors a color or list of colors in the format '#RRGGBB'
+     */
+    var get_random_color = function get_random_color(colors) {
+        // Default for colors is white.
+        if (!colors) {
+            colors = "#ffffff";
+        }
+
+        // If needed, create list of colors.
+        if (typeof colors === "string") {
+            colors = [colors];
+        }
+
+        // Convert colors to numbers.
+        for (var i = 0; i < colors.length; i++) {
+            colors[i] = parseInt(colors[i].slice(1), 16);
+        }
+
+        // -- Perceived brightness and difference formulas are from
+        // -- http://www.w3.org/WAI/ER/WD-AERT/#color-contrast
+
+        // Compute perceived color brightness (based on RGB-YIQ transformation):
+        var brightness = function brightness(r, g, b) {
+            return (r * 299 + g * 587 + b * 114) / 1000;
+        };
+
+        // Compute color difference:
+        var difference = function difference(r1, g1, b1, r2, g2, b2) {
+            return Math.max(r1, r2) - Math.min(r1, r2) + (Math.max(g1, g2) - Math.min(g1, g2)) + (Math.max(b1, b2) - Math.min(b1, b2));
+        };
+
+        // Create new random color.
+        var new_color;
+
+        var nr;
+        var ng;
+        var nb;
+        var other_color;
+        var or;
+        var og;
+        var ob;
+        var n_brightness;
+        var o_brightness;
+        var diff;
+        var ok = false;
+        var num_tries = 0;
+        do {
+            // New color is never white b/c random in [0,1)
+            new_color = Math.round(Math.random() * 0xffffff);
+            nr = (new_color & 0xff0000) >> 16;
+            ng = (new_color & 0x00ff00) >> 8;
+            nb = new_color & 0x0000ff;
+            n_brightness = brightness(nr, ng, nb);
+            ok = true;
+            for (i = 0; i < colors.length; i++) {
+                other_color = colors[i];
+                or = (other_color & 0xff0000) >> 16;
+                og = (other_color & 0x00ff00) >> 8;
+                ob = other_color & 0x0000ff;
+                o_brightness = brightness(or, og, ob);
+                diff = difference(nr, ng, nb, or, og, ob);
+                // These thresholds may need to be adjusted. Brightness difference range is 125;
+                // color difference range is 500.
+                if (Math.abs(n_brightness - o_brightness) < 40 || diff < 200) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            num_tries++;
+        } while (!ok && num_tries <= 10);
+
+        // Add 0x1000000 to left pad number with 0s.
+        return "#" + (0x1000000 + new_color).toString(16).substr(1, 6);
+    };
+
+    exports.default = {
+        commatize: commatize,
+        is_deferred: is_deferred,
+        ServerStateDeferred: ServerStateDeferred,
+        get_random_color: get_random_color
+    };
+});
 //# sourceMappingURL=../../../maps/viz/trackster/util.js.map

@@ -1,9 +1,13 @@
+import _l from "utils/localization";
 /**
  *  This is the primary galaxy tours definition, currently only used for
  *  rendering a tour menu.
  */
 
-import * as BootstrapTour from "libs/bootstrap-tour";
+// bootstrap-tour configures a window.Tour object; keep a local ref.
+import "libs/bootstrap-tour";
+let Tour = window.Tour;
+
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
 
 var tourpage_template = `<h2>Galaxy Tours</h2>
@@ -92,31 +96,8 @@ var Tours = Backbone.Collection.extend({
     model: TourItem
 });
 
-var giveTour = tour_id => {
-    var url = `${gxy_root}api/tours/${tour_id}`;
-    $.getJSON(url, data => {
-        // Set hooks for additional click and data entry actions.
-        var tourdata = hooked_tour_from_data(data);
-        sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
-        // Store tour steps in sessionStorage to easily persist w/o hackery.
-        var tour = new Tour(
-            _.extend(
-                {
-                    steps: tourdata.steps
-                },
-                tour_opts
-            )
-        );
-        // Always clean restart, since this is a new, explicit giveTour execution.
-        tour.init();
-        tour.goTo(0);
-        tour.restart();
-    });
-};
-
-var ToursView = Backbone.View.extend({
-    title: "Tours",
-    // initialize
+export var ToursView = Backbone.View.extend({
+    title: _l("Tours"),
     initialize: function() {
         var self = this;
         this.setElement("<div/>");
@@ -164,7 +145,7 @@ var ToursView = Backbone.View.extend({
             )
             .on("click", ".tourItem", function(e) {
                 e.preventDefault();
-                giveTour($(this).data("tour.id"));
+                giveTourById($(this).data("tour.id"));
             })
             .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
@@ -182,9 +163,53 @@ var ToursView = Backbone.View.extend({
     }
 });
 
+export function giveTourWithData(data) {
+    let hookedTourData = hooked_tour_from_data(data);
+    sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
+    // Store tour steps in sessionStorage to easily persist w/o hackery.
+    let tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
+    // Always clean restart, since this is a new, explicit execution.
+    tour.init();
+    tour.goTo(0);
+    tour.restart();
+    return tour;
+}
+
+export function giveTourById(tour_id) {
+    var url = `${gxy_root}api/tours/${tour_id}`;
+    $.getJSON(url, data => {
+        giveTourWithData(data);
+    });
+}
+
+export function activeGalaxyTourRunner() {
+    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
+    if (et) {
+        et = hooked_tour_from_data(et);
+        if (et && et.steps) {
+            if (window && window.self === window.top) {
+                // Only kick off a new tour if this is the toplevel window (non-iframe).  This
+                // functionality actually *could* be useful, but we'd need to handle it better and
+                // come up with some design guidelines for tours jumping between windows.
+                // Disabling for now.
+                var tour = new Tour(
+                    _.extend(
+                        {
+                            steps: et.steps
+                        },
+                        tour_opts
+                    )
+                );
+                tour.init();
+                tour.restart();
+            }
+        }
+    }
+}
+
 export default {
     ToursView: ToursView,
-    hooked_tour_from_data: hooked_tour_from_data,
-    tour_opts: tour_opts,
-    giveTour: giveTour
+    giveTourWithData: giveTourWithData,
+    giveTourById: giveTourById,
+    activeGalaxyTourRunner: activeGalaxyTourRunner
 };

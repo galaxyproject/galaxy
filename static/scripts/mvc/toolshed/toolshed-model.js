@@ -1,2 +1,106 @@
-define("mvc/toolshed/toolshed-model",["exports"],function(o){"use strict";Object.defineProperty(o,"__esModule",{value:!0});var e=Backbone.Model.extend({defaults:{url:"https://toolshed.g2.bx.psu.edu/",name:"Galaxy Main Tool Shed"},urlRoot:Galaxy.root+"api/tool_shed"}),t=Backbone.Collection.extend({url:Galaxy.root+"api/tool_shed",model:e}),l=Backbone.Model.extend({defaults:[{}],urlRoot:Galaxy.root+"api/tool_shed/contents"}),a=Backbone.Collection.extend({url:Galaxy.root+"api/tool_shed/contents",model:l}),r=Backbone.Model.extend({defaults:[{}],urlRoot:Galaxy.root+"api/tool_shed/category"}),d=Backbone.Collection.extend({url:Galaxy.root+"api/tool_shed/category",model:r}),n=Backbone.Model.extend({defaults:[{}],urlRoot:Galaxy.root+"api/tool_shed/repository"}),s=Backbone.Collection.extend({url:Galaxy.root+"api/tool_shed/repository",model:n}),i=Backbone.Model.extend({url:"#"}),c=Backbone.Collection.extend({url:"#",model:i,fetch:function(){var o=this,e=Array(),t=JSON.parse(localStorage.repositories),l=Object.keys(t);return _.each(l,function(o){var l=t[o];l.queue_key=o,e.push(l)}),o.reset(e),Backbone.Collection.prototype.fetch.call(this)}}),u=Backbone.Model.extend({defaults:[{}],urlRoot:Galaxy.root+"api/tool_shed/status"}),x=Backbone.Collection.extend({url:Galaxy.root+"api/tool_shed/status",model:u}),p=Backbone.Model.extend({defaults:[{}],urlRoot:Galaxy.root+"api/workflows?missing_tools=True"}),y=Backbone.Collection.extend({url:Galaxy.root+"api/workflows?missing_tools=True",model:p});o.default={ShedModel:e,ShedsCollection:t,Category:l,Categories:a,CategoryModel:r,CategoryCollection:d,RepositoryModel:n,RepositoryCollection:s,RepoQueue:c,RepoStatus:x,WorkflowTools:y}});
+define("mvc/toolshed/toolshed-model", ["exports"], function(exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    var ToolShedModel = Backbone.Model.extend({
+        defaults: {
+            url: "https://toolshed.g2.bx.psu.edu/",
+            name: "Galaxy Main Tool Shed"
+        },
+        urlRoot: Galaxy.root + "api/tool_shed"
+    });
+
+    var ToolShedsCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/tool_shed",
+        model: ToolShedModel
+    });
+
+    var ToolShedCategoriesModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + "api/tool_shed/contents"
+    });
+
+    var ToolShedCategoriesCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/tool_shed/contents",
+        model: ToolShedCategoriesModel
+    });
+
+    var ToolShedCategoryModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + "api/tool_shed/category"
+    });
+
+    var ToolShedCategoryCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/tool_shed/category",
+        model: ToolShedCategoryModel
+    });
+
+    var ToolShedRepositoryModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + "api/tool_shed/repository"
+    });
+
+    var ToolShedRepositoryCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/tool_shed/repository",
+        model: ToolShedRepositoryModel
+    });
+
+    var RepoQueueModel = Backbone.Model.extend({
+        url: "#"
+    });
+
+    var RepoQueueCollection = Backbone.Collection.extend({
+        url: "#",
+        model: RepoQueueModel,
+        fetch: function fetch() {
+            var collection = this;
+            var repositories = Array();
+            var repositories_enc = JSON.parse(localStorage.repositories);
+            var queue_keys = Object.keys(repositories_enc);
+            _.each(queue_keys, function(key) {
+                var repo = repositories_enc[key];
+                repo.queue_key = key;
+                repositories.push(repo);
+            });
+            collection.reset(repositories);
+            return Backbone.Collection.prototype.fetch.call(this);
+        }
+    });
+
+    var RepoStatusModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + "api/tool_shed/status"
+    });
+
+    var RepoStatusCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/tool_shed/status",
+        model: RepoStatusModel
+    });
+
+    var WorkflowToolsModel = Backbone.Model.extend({
+        defaults: [{}],
+        urlRoot: Galaxy.root + "api/workflows?missing_tools=True"
+    });
+
+    var WorkflowToolsCollection = Backbone.Collection.extend({
+        url: Galaxy.root + "api/workflows?missing_tools=True",
+        model: WorkflowToolsModel
+    });
+
+    exports.default = {
+        ShedModel: ToolShedModel,
+        ShedsCollection: ToolShedsCollection,
+        Category: ToolShedCategoriesModel,
+        Categories: ToolShedCategoriesCollection,
+        CategoryModel: ToolShedCategoryModel,
+        CategoryCollection: ToolShedCategoryCollection,
+        RepositoryModel: ToolShedRepositoryModel,
+        RepositoryCollection: ToolShedRepositoryCollection,
+        RepoQueue: RepoQueueCollection,
+        RepoStatus: RepoStatusCollection,
+        WorkflowTools: WorkflowToolsCollection
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/toolshed/toolshed-model.js.map

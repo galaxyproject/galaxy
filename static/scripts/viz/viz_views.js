@@ -1,2 +1,126 @@
-define("viz/viz_views",["exports","libs/underscore"],function(e,i){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var t=function(e){if(e&&e.__esModule)return e;var i={};if(null!=e)for(var t in e)Object.prototype.hasOwnProperty.call(e,t)&&(i[t]=e[t]);return i.default=e,i}(i),n=Backbone.View.extend({className:"track-header",initialize:function(){this.model.config.get("name").on("change:value",this.update_name,this),this.render()},render:function(){this.$el.append($("<div/>").addClass(this.model.drag_handle_class)),this.$el.append($("<div/>").addClass("track-name").text(this.model.config.get_value("name"))),this.action_icons={},this.render_action_icons(),this.$el.dblclick(function(e){e.stopPropagation()}),this.$el.append($("<div style='clear: both'/>"))},update_name:function(){this.$el.find(".track-name").text(this.model.config.get_value("name"))},render_action_icons:function(){var e=this;this.icons_div=$("<div/>").addClass("track-icons").hide().appendTo(this.$el),t.each(this.model.action_icons_def,function(i){e.add_action_icon(i.name,i.title,i.css_class,i.on_click_fn,i.prepend,i.hide)}),this.set_display_modes(this.model.display_modes)},add_action_icon:function(e,i,t,n,o,s){var a=this;this.action_icons[e]=$("<a/>").attr("title",i).addClass("icon-button").addClass(t).tooltip().click(function(){n(a.model)}).appendTo(this.icons_div),s&&this.action_icons[e].hide()},set_display_modes:function(e,i){if(e){this.model.display_modes=e,this.model.mode=i||this.model.config.get_value("mode")||this.model.display_modes[0],this.action_icons.mode_icon.attr("title","Set display mode (now: "+this.mode+")");for(var t=this.model,n={},o=0,s=t.display_modes.length;o<s;o++){var a=t.display_modes[o];n[a]=function(e){return function(){t.change_mode(e)}}(a)}make_popupmenu(this.action_icons.mode_icon,n)}}});e.default={TrackHeaderView:n}});
+define("viz/viz_views", ["exports", "libs/underscore"], function(exports, _underscore) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _ = _interopRequireWildcard(_underscore);
+
+    function _interopRequireWildcard(obj) {
+        if (obj && obj.__esModule) {
+            return obj;
+        } else {
+            var newObj = {};
+
+            if (obj != null) {
+                for (var key in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key];
+                }
+            }
+
+            newObj.default = obj;
+            return newObj;
+        }
+    }
+
+    /**
+     * View for track/group header.
+     */
+    var TrackHeaderView = Backbone.View.extend({
+        className: "track-header",
+
+        initialize: function initialize() {
+            // Watch and update name changes.
+            this.model.config.get("name").on("change:value", this.update_name, this);
+            this.render();
+        },
+
+        render: function render() {
+            this.$el.append($("<div/>").addClass(this.model.drag_handle_class));
+            this.$el.append($("<div/>").addClass("track-name").text(this.model.config.get_value("name")));
+
+            // Icons container.
+            this.action_icons = {};
+            this.render_action_icons();
+
+            // Suppress double clicks in header so that they do not impact viz under header.
+            this.$el.dblclick(function(e) {
+                e.stopPropagation();
+            });
+
+            // Needed for floating elts in header.
+            this.$el.append($("<div style='clear: both'/>"));
+        },
+
+        update_name: function update_name() {
+            this.$el.find(".track-name").text(this.model.config.get_value("name"));
+        },
+
+        render_action_icons: function render_action_icons() {
+            var self = this;
+            this.icons_div = $("<div/>").addClass("track-icons").hide().appendTo(this.$el);
+            _.each(this.model.action_icons_def, function(icon_dict) {
+                self.add_action_icon(icon_dict.name, icon_dict.title, icon_dict.css_class, icon_dict.on_click_fn, icon_dict.prepend, icon_dict.hide);
+            });
+
+            // Set up behavior for modes popup.
+            this.set_display_modes(this.model.display_modes);
+        },
+
+        /**
+         * Add an action icon to this object. Appends icon unless prepend flag is specified.
+         */
+        add_action_icon: function add_action_icon(name, title, css_class, on_click_fn, prepend, hide) {
+            var self = this;
+            this.action_icons[name] = $("<a/>").attr("title", title).addClass("icon-button").addClass(css_class).tooltip().click(function() {
+                on_click_fn(self.model);
+            }).appendTo(this.icons_div);
+            if (hide) {
+                this.action_icons[name].hide();
+            }
+        },
+
+        /**
+         * Set track's modes and update mode icon popup.
+         */
+        set_display_modes: function set_display_modes(new_modes, init_mode) {
+            if (!new_modes) {
+                return;
+            }
+
+            // HACK: move this out of view and into track.
+
+            // Set modes, init mode.
+            this.model.display_modes = new_modes;
+            this.model.mode = init_mode || this.model.config.get_value("mode") || this.model.display_modes[0];
+
+            this.action_icons.mode_icon.attr("title", "Set display mode (now: " + this.mode + ")");
+
+            // Setup popup menu for changing modes.
+            var self = this;
+
+            var track = this.model;
+            var mode_mapping = {};
+            for (var i = 0, len = track.display_modes.length; i < len; i++) {
+                var mode = track.display_modes[i];
+                mode_mapping[mode] = function(mode) {
+                    return function() {
+                        track.change_mode(mode);
+                        // HACK: the popup menu messes with the track's hover event, so manually show/hide
+                        // icons div for now.
+                        //self.icons_div.show();
+                        //track.container_div.mouseleave(function() { track.icons_div.hide(); } );
+                    };
+                }(mode);
+            }
+
+            make_popupmenu(this.action_icons.mode_icon, mode_mapping);
+        }
+    });
+
+    exports.default = {
+        TrackHeaderView: TrackHeaderView
+    };
+});
 //# sourceMappingURL=../../maps/viz/viz_views.js.map

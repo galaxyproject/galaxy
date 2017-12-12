@@ -1,2 +1,999 @@
-define("mvc/list/list-view",["exports","mvc/list/list-item","ui/loading-indicator","mvc/base-mvc","utils/localization","ui/search-input"],function(e,t,i,s,n){"use strict";function r(e){return e&&e.__esModule?e:{default:e}}Object.defineProperty(e,"__esModule",{value:!0});var l=r(t),o=r(i),c=r(s),d=r(n),a=Backbone.View.extend(c.default.LoggableMixin).extend({_logNamespace:"list",viewClass:l.default.ListItemView,collectionClass:Backbone.Collection,tagName:"div",className:"list-panel",fxSpeed:"fast",emptyMsg:(0,d.default)("This list is empty"),noneFoundMsg:(0,d.default)("No matching items found"),searchPlaceholder:(0,d.default)("search"),initialize:function(e,t){(e=e||{}).logger&&(this.logger=e.logger),this.log(this+".initialize:",e),this.fxSpeed=_.has(e,"fxSpeed")?e.fxSpeed:this.fxSpeed,this.filters=[],this.searchFor=e.searchFor||"",this.selecting=void 0===e.selecting||e.selecting,this.selected=e.selected||[],this.lastSelected=null,this.dragItems=e.dragItems||!1,this.viewClass=e.viewClass||this.viewClass,this.views=[],this.collection=e.collection||this._createDefaultCollection(),this.filters=e.filters||[],this.$scrollContainer=e.$scrollContainer||this.$scrollContainer,this.title=e.title||"",this.subtitle=e.subtitle||"",this._setUpListeners()},_setUpListeners:function(){return this.off(),this.on({error:function(e,t,i,s,n){console.error(e,t,i,s,n)},loading:function(){this._showLoadingIndicator("loading...",40)},"loading-done":function(){this._hideLoadingIndicator(40)}}),this.once("rendered",function(){this.trigger("rendered:initial",this)}),this._setUpCollectionListeners(),this._setUpViewListeners(),this},_createDefaultCollection:function(){return new this.collectionClass([])},_setUpCollectionListeners:function(){return this.log(this+"._setUpCollectionListeners",this.collection),this.stopListening(this.collection),this.listenTo(this.collection,{error:function(e,t,i,s,n){this.trigger("error",e,t,i,s,n)},update:function(e,t){var i=t.changes;return t.renderAll||i.added.length+i.removed.length>1?this.renderItems():1===i.added.length?this.addItemView(_.first(i.added),e,t):1===i.removed.length?this.removeItemView(_.first(i.removed),e,t):void 0}}),this},_setUpViewListeners:function(){this.log(this+"._setUpViewListeners"),this.on({"view:selected":function(e,t){if(t&&t.shiftKey&&this.lastSelected){var i=this.viewFromModelId(this.lastSelected);i&&this.selectRange(e,i)}else t&&t.altKey&&!this.selecting&&this.showSelectors();this.selected.push(e.model.id),this.lastSelected=e.model.id},"view:de-selected":function(e,t){this.selected=_.without(this.selected,e.model.id)}})},render:function(e){this.log(this+".render",e);var t=this._buildNewRender();return this._setUpBehaviors(t),this._queueNewRender(t,e),this},_buildNewRender:function(){this.debug(this+"(ListPanel)._buildNewRender");var e=$(this.templates.el({},this));return this._renderControls(e),this._renderTitle(e),this._renderSubtitle(e),this._renderSearch(e),this.renderItems(e),e},_renderControls:function(e){this.debug(this+"(ListPanel)._renderControls");var t=$(this.templates.controls({},this));return e.find(".controls").replaceWith(t),t},_renderTitle:function(e){},_renderSubtitle:function(e){},_queueNewRender:function(e,t){t=void 0===t?this.fxSpeed:t;var i=this;i.log("_queueNewRender:",e,t),$(i).queue("fx",[function(e){i.$el.fadeOut(t,e)},function(t){i._swapNewRender(e),t()},function(e){i.$el.fadeIn(t,e)},function(e){i.trigger("rendered",i),e()}])},_swapNewRender:function(e){return this.$el.empty().attr("class",this.className).append(e.children()),this.selecting&&this.showSelectors(0),this},_setUpBehaviors:function(e){return e=e||this.$el,this.$controls(e).find("[title]").tooltip(),this._renderMultiselectActionMenu(e),this},_renderMultiselectActionMenu:function(e){var t=(e=e||this.$el).find(".list-action-menu"),i=this.multiselectActions();if(!i.length)return t.empty();var s=$(['<div class="list-action-menu btn-group">','<button class="list-action-menu-btn btn btn-default dropdown-toggle" data-toggle="dropdown">',(0,d.default)("For all selected"),"...","</button>",'<ul class="dropdown-menu pull-right" role="menu">',"</ul>","</div>"].join("")),n=i.map(function(e){var t=['<li><a href="javascript:void(0);">',e.html,"</a></li>"].join("");return $(t).click(function(t){return t.preventDefault(),e.func(t)})});return s.find("ul").append(n),t.replaceWith(s),s},multiselectActions:function(){return[]},$scrollContainer:function(e){return(e||this.$el).parent().parent()},$controls:function(e){return(e||this.$el).find("> .controls")},$list:function(e){return(e||this.$el).find("> .list-items")},$messages:function(e){return(e||this.$el).find("> .controls .messages")},$emptyMessage:function(e){return(e||this.$el).find("> .empty-message")},renderItems:function(e){e=e||this.$el;var t=this;t.log(this+".renderItems",e);var i=t.$list(e);t.freeViews();var s=t._filterCollection();return t.views=s.map(function(e){return t._createItemView(e)}),i.empty(),t.views.length&&t._attachItems(e),t._renderEmptyMessage(e).toggle(!t.views.length),t.trigger("views:ready",t.views),t.views},_filterCollection:function(){var e=this;return e.collection.filter(_.bind(e._filterItem,e))},_filterItem:function(e){var t=this;return _.every(t.filters.map(function(t){return t.call(e)}))&&(!t.searchFor||e.matchesAll(t.searchFor))},_createItemView:function(e){var t=new(this._getItemViewClass(e))(_.extend(this._getItemViewOptions(e),{model:e}));return this._setUpItemViewListeners(t),t},_destroyItemView:function(e){this.stopListening(e),this.views=_.without(this.views,e)},_destroyItemViews:function(e){var t=this;return t.views.forEach(function(e){t.stopListening(e)}),t.views=[],t},freeViews:function(){return this._destroyItemViews()},_getItemViewClass:function(e){return this.viewClass},_getItemViewOptions:function(e){return{fxSpeed:this.fxSpeed,expanded:!1,selectable:this.selecting,selected:_.contains(this.selected,e.id),draggable:this.dragItems}},_setUpItemViewListeners:function(e){var t=this;return this.listenTo(e,"all",function(){var e=Array.prototype.slice.call(arguments,0);e[0]="view:"+e[0],t.trigger.apply(t,e)}),this.listenTo(e,"draggable:dragstart",function(e,t){var i={},s=this.getSelectedModels();i=s.length?s.toJSON():[t.model.toJSON()],e.dataTransfer.setData("text",JSON.stringify(i))},this),t},_attachItems:function(e){var t=this;return this.$list(e).append(this.views.map(function(e){return t._renderItemView$el(e)})),this},_renderItemView$el:function(e){return e.render(0).$el},_renderEmptyMessage:function(e){this.debug("_renderEmptyMessage",e,this.searchFor);var t=this.searchFor?this.noneFoundMsg:this.emptyMsg;return this.$emptyMessage(e).text(t)},expandAll:function(){_.each(this.views,function(e){e.expand()})},collapseAll:function(){_.each(this.views,function(e){e.collapse()})},addItemView:function(e,t,i){var s=this,n=s._filterCollection().indexOf(e);if(-1!==n){var r=s._createItemView(e);return $(r).queue("fx",[function(e){s.$emptyMessage().is(":visible")?s.$emptyMessage().fadeOut(s.fxSpeed,e):e()},function(e){s._attachView(r,n),e()}]),r}},_attachView:function(e,t,i){i=!!_.isUndefined(i)||i,t=t||0;var s=this;return s.views.splice(t,0,e),s._insertIntoListAt(t,s._renderItemView$el(e).hide()),s.trigger("view:attached",e),i?e.$el.slideDown(s.fxSpeed,function(){s.trigger("view:attached:rendered")}):(e.$el.show(),s.trigger("view:attached:rendered")),e},_insertIntoListAt:function(e,t){var i=this.$list();return 0===e?i.prepend(t):i.children().eq(e-1).after(t),t},removeItemView:function(e,t,i){var s=this,n=_.find(s.views,function(t){return t.model===e});if(n)return s.views=_.without(s.views,n),s.trigger("view:removed",n),$({}).queue("fx",[function(e){n.$el.fadeOut(s.fxSpeed,e)},function(e){n.remove(),s.trigger("view:removed:rendered"),s.views.length?e():s._renderEmptyMessage().fadeIn(s.fxSpeed,e)}]),n},viewFromModelId:function(e){return _.find(this.views,function(t){return t.model.id===e})},viewFromModel:function(e){return e?this.viewFromModelId(e.id):void 0},viewsWhereModel:function(e){return this.views.filter(function(t){return _.isMatch(t.model.attributes,e)})},viewRange:function(e,t){if(e===t)return e?[e]:[];var i=this.views.indexOf(e),s=this.views.indexOf(t);return-1===i||-1===s?i===s?[]:-1===i?[t]:[e]:i<s?this.views.slice(i,s+1):this.views.slice(s,i+1)},_renderSearch:function(e){return e.find(".controls .search-input").searchInput({placeholder:this.searchPlaceholder,initialVal:this.searchFor,onfirstsearch:_.bind(this._firstSearch,this),onsearch:_.bind(this.searchItems,this),onclear:_.bind(this.clearSearch,this)}),e},_firstSearch:function(e){return this.log("onFirstSearch",e),this.searchItems(e)},searchItems:function(e,t){if(this.log("searchItems",e,this.searchFor,t),!t&&this.searchFor===e)return this;this.searchFor=e,this.renderItems(),this.trigger("search:searching",e,this);var i=this.$("> .controls .search-query");return i.val()!==e&&i.val(e),this},clearSearch:function(e){return this.searchFor="",this.trigger("search:clear",this),this.$("> .controls .search-query").val(""),this.renderItems(),this},THROTTLE_SELECTOR_FX_AT:20,showSelectors:function(e){e=void 0!==e?e:this.fxSpeed,this.selecting=!0,this.$(".list-actions").slideDown(e),e=this.views.length>=this.THROTTLE_SELECTOR_FX_AT?0:e,_.each(this.views,function(t){t.showSelector(e)})},hideSelectors:function(e){e=void 0!==e?e:this.fxSpeed,this.selecting=!1,this.$(".list-actions").slideUp(e),e=this.views.length>=this.THROTTLE_SELECTOR_FX_AT?0:e,_.each(this.views,function(t){t.hideSelector(e)}),this.selected=[],this.lastSelected=null},toggleSelectors:function(){this.selecting?this.hideSelectors():this.showSelectors()},selectAll:function(e){_.each(this.views,function(t){t.select(e)})},deselectAll:function(e){this.lastSelected=null,_.each(this.views,function(t){t.deselect(e)})},selectRange:function(e,t){var i=this.viewRange(e,t);return _.each(i,function(e){e.select()}),i},getSelectedViews:function(){return _.filter(this.views,function(e){return e.selected})},getSelectedModels:function(){return new this.collection.constructor(_.map(this.getSelectedViews(),function(e){return e.model}))},_showLoadingIndicator:function(e,t,i){this.debug("_showLoadingIndicator",this.indicator,e,t,i),t=void 0!==t?t:this.fxSpeed,this.indicator||(this.indicator=new o.default(this.$el),this.debug("\t created",this.indicator)),this.$el.is(":visible")?(this.$el.fadeOut(t),this.indicator.show(e,t,i)):this.indicator.show(0,i)},_hideLoadingIndicator:function(e,t){this.debug("_hideLoadingIndicator",this.indicator,e,t),e=void 0!==e?e:this.fxSpeed,this.indicator&&this.indicator.hide(e,t)},scrollPosition:function(){return this.$scrollContainer().scrollTop()},scrollTo:function(e,t){return t=t||0,this.$scrollContainer().animate({scrollTop:e},t),this},scrollToTop:function(e){return this.scrollTo(0,e)},scrollToItem:function(e,t){return this},scrollToId:function(e,t){return this.scrollToItem(this.viewFromModelId(e),t)},events:{"click .select-all":"selectAll","click .deselect-all":"deselectAll"},toString:function(){return"ListPanel("+this.collection+")"}});a.prototype.templates={el:c.default.wrapTemplate(["<div>",'<div class="controls"></div>','<div class="list-items"></div>','<div class="empty-message infomessagesmall"></div>',"</div>"]),controls:c.default.wrapTemplate(['<div class="controls">','<div class="title">','<div class="name"><%- view.title %></div>',"</div>",'<div class="subtitle"><%- view.subtitle %></div>','<div class="actions"></div>','<div class="messages"></div>','<div class="search">','<div class="search-input"></div>',"</div>",'<div class="list-actions">','<div class="btn-group">','<button class="select-all btn btn-default"','data-mode="select">',(0,d.default)("All"),"</button>",'<button class="deselect-all btn btn-default"','data-mode="select">',(0,d.default)("None"),"</button>","</div>",'<div class="list-action-menu btn-group">',"</div>","</div>","</div>"])};var h=a.extend({modelCollectionKey:"contents",initialize:function(e){a.prototype.initialize.call(this,e),this.selecting=void 0!==e.selecting&&e.selecting,this.setModel(this.model,e)},setModel:function(e,t){if(t=t||{},this.debug(this+".setModel:",e,t),this.freeModel(),this.freeViews(),e){var i=this.model?this.model.get("id"):null;this.model=e,this.logger&&(this.model.logger=this.logger),this._setUpModelListeners(),this.stopListening(this.collection),this.collection=this.model[this.modelCollectionKey]||t.collection||this._createDefaultCollection(),this._setUpCollectionListeners(),i&&e.get("id")!==i&&this.trigger("new-model",this)}return this},freeModel:function(){return this.model&&this.stopListening(this.model),this},_setUpModelListeners:function(){return this.log(this+"._setUpModelListeners",this.model),this.listenTo(this.model,"error",function(){var e=Array.prototype.slice.call(arguments,0);e.unshift("error"),this.trigger.apply(this,e)},this),this.logger&&this.listenTo(this.model,"all",function(e){this.info(this+"(model)",e,arguments)}),this},_renderControls:function(e){this.debug(this+"(ModelListPanel)._renderControls");var t=this.model?this.model.toJSON():{},i=$(this.templates.controls(t,this));return e.find(".controls").replaceWith(i),i},toString:function(){return"ModelListPanel("+this.model+")"}});h.prototype.templates=function(){var e=c.default.wrapTemplate(['<div class="controls">','<div class="title">','<div class="name"><%- model.name %></div>',"</div>",'<div class="subtitle"><%- view.subtitle %></div>','<div class="actions"></div>','<div class="messages"></div>','<div class="search">','<div class="search-input"></div>',"</div>",'<div class="list-actions">','<div class="btn-group">','<button class="select-all btn btn-default"','data-mode="select">',(0,d.default)("All"),"</button>",'<button class="deselect-all btn btn-default"','data-mode="select">',(0,d.default)("None"),"</button>","</div>",'<div class="list-action-menu btn-group">',"</div>","</div>","</div>"]);return _.extend(_.clone(a.prototype.templates),{controls:e})}(),e.default={ListPanel:a,ModelListPanel:h}});
+define("mvc/list/list-view", ["exports", "mvc/list/list-item", "ui/loading-indicator", "mvc/base-mvc", "utils/localization", "ui/search-input"], function(exports, _listItem, _loadingIndicator, _baseMvc, _localization) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+
+    var _listItem2 = _interopRequireDefault(_listItem);
+
+    var _loadingIndicator2 = _interopRequireDefault(_loadingIndicator);
+
+    var _baseMvc2 = _interopRequireDefault(_baseMvc);
+
+    var _localization2 = _interopRequireDefault(_localization);
+
+    function _interopRequireDefault(obj) {
+        return obj && obj.__esModule ? obj : {
+            default: obj
+        };
+    }
+
+    var logNamespace = "list";
+    /* ============================================================================
+    TODO:
+    
+    ============================================================================ */
+    /** @class View for a list/collection of models and the sub-views of those models.
+     *      Sub-views must (at least have the interface if not) inherit from ListItemView.
+     *      (For a list panel that also includes some 'container' model (History->HistoryContents)
+     *      use ModelWithListPanel)
+     *
+     *  Allows for:
+     *      searching collection/sub-views
+     *      selecting/multi-selecting sub-views
+     *
+     *  Currently used:
+     *      for dataset/dataset-choice
+     *      as superclass of ModelListPanel
+     */
+    var ListPanel = Backbone.View.extend(_baseMvc2.default.LoggableMixin).extend(
+        /** @lends ListPanel.prototype */
+        {
+            _logNamespace: logNamespace,
+
+            /** class to use for constructing the sub-views */
+            viewClass: _listItem2.default.ListItemView,
+            /** class to used for constructing collection of sub-view models */
+            collectionClass: Backbone.Collection,
+
+            tagName: "div",
+            className: "list-panel",
+
+            /** (in ms) that jquery effects will use */
+            fxSpeed: "fast",
+
+            /** string to display when the collection has no contents */
+            emptyMsg: (0, _localization2.default)("This list is empty"),
+            /** displayed when no items match the search terms */
+            noneFoundMsg: (0, _localization2.default)("No matching items found"),
+            /** string used for search placeholder */
+            searchPlaceholder: (0, _localization2.default)("search"),
+
+            // ......................................................................... SET UP
+            /** Set up the view, set up storage, bind listeners to HistoryContents events
+             *  @param {Object} attributes optional settings for the list
+             */
+            initialize: function initialize(attributes, options) {
+                attributes = attributes || {};
+                // set the logger if requested
+                if (attributes.logger) {
+                    this.logger = attributes.logger;
+                }
+                this.log(this + ".initialize:", attributes);
+
+                // ---- instance vars
+                /** how quickly should jquery fx run? */
+                this.fxSpeed = _.has(attributes, "fxSpeed") ? attributes.fxSpeed : this.fxSpeed;
+
+                /** filters for displaying subviews */
+                this.filters = [];
+                /** current search terms */
+                this.searchFor = attributes.searchFor || "";
+
+                /** loading indicator */
+                // this.indicator = new LoadingIndicator( this.$el );
+
+                /** currently showing selectors on items? */
+                this.selecting = attributes.selecting !== undefined ? attributes.selecting : true;
+                //this.selecting = false;
+
+                /** cached selected item.model.ids to persist btwn renders */
+                this.selected = attributes.selected || [];
+                /** the last selected item.model.id */
+                this.lastSelected = null;
+
+                /** are sub-views draggable */
+                this.dragItems = attributes.dragItems || false;
+
+                /** list item view class (when passed models) */
+                this.viewClass = attributes.viewClass || this.viewClass;
+
+                /** list item views */
+                this.views = [];
+                /** list item models */
+                this.collection = attributes.collection || this._createDefaultCollection();
+
+                /** filter fns run over collection items to see if they should show in the list */
+                this.filters = attributes.filters || [];
+
+                /** override $scrollContainer fn via attributes - fn should return jq for elem to call scrollTo on */
+                this.$scrollContainer = attributes.$scrollContainer || this.$scrollContainer;
+
+                /** @type {String} generic title */
+                this.title = attributes.title || "";
+                /** @type {String} generic subtitle */
+                this.subtitle = attributes.subtitle || "";
+
+                this._setUpListeners();
+            },
+
+            // ------------------------------------------------------------------------ listeners
+            /** create any event listeners for the list */
+            _setUpListeners: function _setUpListeners() {
+                this.off();
+
+                //TODO: move errorHandler down into list-view from history-view or
+                //  pass to global error handler (Galaxy)
+                this.on({
+                    error: function error(model, xhr, options, msg, details) {
+                        //this.errorHandler( model, xhr, options, msg, details );
+                        console.error(model, xhr, options, msg, details);
+                    },
+                    // show hide the loading indicator
+                    loading: function loading() {
+                        this._showLoadingIndicator("loading...", 40);
+                    },
+                    "loading-done": function loadingDone() {
+                        this._hideLoadingIndicator(40);
+                    }
+                });
+
+                // throw the first render up as a diff namespace using once (for outside consumption)
+                this.once("rendered", function() {
+                    this.trigger("rendered:initial", this);
+                });
+
+                this._setUpCollectionListeners();
+                this._setUpViewListeners();
+                return this;
+            },
+
+            /** create and return a collection for when none is initially passed */
+            _createDefaultCollection: function _createDefaultCollection() {
+                // override
+                return new this.collectionClass([]);
+            },
+
+            /** listening for collection events */
+            _setUpCollectionListeners: function _setUpCollectionListeners() {
+                this.log(this + "._setUpCollectionListeners", this.collection);
+                this.stopListening(this.collection);
+
+                // bubble up error events
+                this.listenTo(this.collection, {
+                    error: function error(model, xhr, options, msg, details) {
+                        this.trigger("error", model, xhr, options, msg, details);
+                    },
+                    update: function update(collection, options) {
+                        var changes = options.changes;
+                        // console.info( collection + ', update:', changes, '\noptions:', options );
+                        // more than one: render everything
+                        if (options.renderAll || changes.added.length + changes.removed.length > 1) {
+                            return this.renderItems();
+                        }
+                        // otherwise, let the single add/remove handlers do it
+                        if (changes.added.length === 1) {
+                            return this.addItemView(_.first(changes.added), collection, options);
+                        }
+                        if (changes.removed.length === 1) {
+                            return this.removeItemView(_.first(changes.removed), collection, options);
+                        }
+                    }
+                });
+                return this;
+            },
+
+            /** listening for sub-view events that bubble up with the 'view:' prefix */
+            _setUpViewListeners: function _setUpViewListeners() {
+                this.log(this + "._setUpViewListeners");
+
+                // shift to select a range
+                this.on({
+                    "view:selected": function viewSelected(view, ev) {
+                        if (ev && ev.shiftKey && this.lastSelected) {
+                            var lastSelectedView = this.viewFromModelId(this.lastSelected);
+                            if (lastSelectedView) {
+                                this.selectRange(view, lastSelectedView);
+                            }
+                        } else if (ev && ev.altKey && !this.selecting) {
+                            this.showSelectors();
+                        }
+                        this.selected.push(view.model.id);
+                        this.lastSelected = view.model.id;
+                    },
+
+                    "view:de-selected": function viewDeSelected(view, ev) {
+                        this.selected = _.without(this.selected, view.model.id);
+                    }
+                });
+            },
+
+            // ------------------------------------------------------------------------ rendering
+            /** Render this content, set up ui.
+             *  @param {Number or String} speed   the speed of the render
+             */
+            render: function render(speed) {
+                this.log(this + ".render", speed);
+                var $newRender = this._buildNewRender();
+                this._setUpBehaviors($newRender);
+                this._queueNewRender($newRender, speed);
+                return this;
+            },
+
+            /** Build a temp div containing the new children for the view's $el. */
+            _buildNewRender: function _buildNewRender() {
+                this.debug(this + "(ListPanel)._buildNewRender");
+                var $newRender = $(this.templates.el({}, this));
+                this._renderControls($newRender);
+                this._renderTitle($newRender);
+                this._renderSubtitle($newRender);
+                this._renderSearch($newRender);
+                this.renderItems($newRender);
+                return $newRender;
+            },
+
+            /** Build a temp div containing the new children for the view's $el. */
+            _renderControls: function _renderControls($newRender) {
+                this.debug(this + "(ListPanel)._renderControls");
+                var $controls = $(this.templates.controls({}, this));
+                $newRender.find(".controls").replaceWith($controls);
+                return $controls;
+            },
+
+            /** return a jQuery object containing the title DOM */
+            _renderTitle: function _renderTitle($where) {
+                //$where = $where || this.$el;
+                //$where.find( '.title' ).replaceWith( ... )
+            },
+
+            /** return a jQuery object containing the subtitle DOM (if any) */
+            _renderSubtitle: function _renderSubtitle($where) {
+                //$where = $where || this.$el;
+                //$where.find( '.title' ).replaceWith( ... )
+            },
+
+            /** Fade out the old el, swap in the new contents, then fade in.
+             *  @param {Number or String} speed   jq speed to use for rendering effects
+             *  @fires rendered when rendered
+             */
+            _queueNewRender: function _queueNewRender($newRender, speed) {
+                speed = speed === undefined ? this.fxSpeed : speed;
+                var panel = this;
+                panel.log("_queueNewRender:", $newRender, speed);
+
+                $(panel).queue("fx", [function(next) {
+                    panel.$el.fadeOut(speed, next);
+                }, function(next) {
+                    panel._swapNewRender($newRender);
+                    next();
+                }, function(next) {
+                    panel.$el.fadeIn(speed, next);
+                }, function(next) {
+                    panel.trigger("rendered", panel);
+                    next();
+                }]);
+            },
+
+            /** empty out the current el, move the $newRender's children in */
+            _swapNewRender: function _swapNewRender($newRender) {
+                this.$el.empty().attr("class", this.className).append($newRender.children());
+                if (this.selecting) {
+                    this.showSelectors(0);
+                }
+                return this;
+            },
+
+            /** Set up any behaviors, handlers (ep. plugins) that need to be called when the entire view has been built but
+             *  not attached to the page yet.
+             */
+            _setUpBehaviors: function _setUpBehaviors($where) {
+                $where = $where || this.$el;
+                this.$controls($where).find("[title]").tooltip();
+                // set up the pupup for actions available when multi selecting
+                this._renderMultiselectActionMenu($where);
+                return this;
+            },
+
+            /** render a menu containing the actions available to sets of selected items */
+            _renderMultiselectActionMenu: function _renderMultiselectActionMenu($where) {
+                $where = $where || this.$el;
+                var $menu = $where.find(".list-action-menu");
+                var actions = this.multiselectActions();
+                if (!actions.length) {
+                    return $menu.empty();
+                }
+
+                var $newMenu = $(['<div class="list-action-menu btn-group">', '<button class="list-action-menu-btn btn btn-default dropdown-toggle" data-toggle="dropdown">', (0, _localization2.default)("For all selected"), "...", "</button>", '<ul class="dropdown-menu pull-right" role="menu">', "</ul>", "</div>"].join(""));
+                var $actions = actions.map(function(action) {
+                    var html = ['<li><a href="javascript:void(0);">', action.html, "</a></li>"].join("");
+                    return $(html).click(function(ev) {
+                        ev.preventDefault();
+                        return action.func(ev);
+                    });
+                });
+                $newMenu.find("ul").append($actions);
+                $menu.replaceWith($newMenu);
+                return $newMenu;
+            },
+
+            /** return a list of plain objects used to render multiselect actions menu. Each object should have:
+             *      html: an html string used as the anchor contents
+             *      func: a function called when the anchor is clicked (passed the click event)
+             */
+            multiselectActions: function multiselectActions() {
+                return [];
+            },
+
+            // ------------------------------------------------------------------------ sub-$element shortcuts
+            /** the scroll container for this panel - can be $el, $el.parent(), or grandparent depending on context */
+            $scrollContainer: function $scrollContainer($where) {
+                // override or set via attributes.$scrollContainer
+                return ($where || this.$el).parent().parent();
+            },
+            /** convenience selector for the section that displays the list controls */
+            $controls: function $controls($where) {
+                return ($where || this.$el).find("> .controls");
+            },
+            /** list-items: where the subviews are contained in the view's dom */
+            $list: function $list($where) {
+                return ($where || this.$el).find("> .list-items");
+            },
+            /** container where list messages are attached */
+            $messages: function $messages($where) {
+                //TODO: controls isn't really correct here (only for ModelListPanel)
+                return ($where || this.$el).find("> .controls .messages");
+            },
+            /** the message displayed when no views can be shown (no views, none matching search) */
+            $emptyMessage: function $emptyMessage($where) {
+                return ($where || this.$el).find("> .empty-message");
+            },
+
+            // ------------------------------------------------------------------------ hda sub-views
+            /** render the subviews for the list's collection */
+            renderItems: function renderItems($whereTo) {
+                $whereTo = $whereTo || this.$el;
+                var panel = this;
+                panel.log(this + ".renderItems", $whereTo);
+
+                var $list = panel.$list($whereTo);
+                panel.freeViews();
+                // console.log( 'views freed' );
+                //TODO:? cache and re-use views?
+                var shownModels = panel._filterCollection();
+                // console.log( 'models filtered:', shownModels );
+
+                panel.views = shownModels.map(function(itemModel) {
+                    var view = panel._createItemView(itemModel);
+                    return view;
+                });
+
+                $list.empty();
+                // console.log( 'list emptied' );
+                if (panel.views.length) {
+                    panel._attachItems($whereTo);
+                    // console.log( 'items attached' );
+                }
+                panel._renderEmptyMessage($whereTo).toggle(!panel.views.length);
+                panel.trigger("views:ready", panel.views);
+
+                // console.log( '------------------------------------------- rendering items' );
+                return panel.views;
+            },
+
+            /** Filter the collection to only those models that should be currently viewed */
+            _filterCollection: function _filterCollection() {
+                // override this
+                var panel = this;
+                return panel.collection.filter(_.bind(panel._filterItem, panel));
+            },
+
+            /** Should the model be viewable in the current state?
+             *     Checks against this.filters and this.searchFor
+             */
+            _filterItem: function _filterItem(model) {
+                // override this
+                var panel = this;
+                return _.every(panel.filters.map(function(fn) {
+                    return fn.call(model);
+                })) && (!panel.searchFor || model.matchesAll(panel.searchFor));
+            },
+
+            /** Create a view for a model and set up it's listeners */
+            _createItemView: function _createItemView(model) {
+                var ViewClass = this._getItemViewClass(model);
+                var options = _.extend(this._getItemViewOptions(model), {
+                    model: model
+                });
+                var view = new ViewClass(options);
+                this._setUpItemViewListeners(view);
+                return view;
+            },
+
+            /** Free a view for a model. Note: does not remove it from the DOM */
+            _destroyItemView: function _destroyItemView(view) {
+                this.stopListening(view);
+                this.views = _.without(this.views, view);
+            },
+
+            _destroyItemViews: function _destroyItemViews(view) {
+                var self = this;
+                self.views.forEach(function(v) {
+                    self.stopListening(v);
+                });
+                self.views = [];
+                return self;
+            },
+
+            /** free any sub-views the list has */
+            freeViews: function freeViews() {
+                return this._destroyItemViews();
+            },
+
+            /** Get the bbone view class based on the model */
+            _getItemViewClass: function _getItemViewClass(model) {
+                // override this
+                return this.viewClass;
+            },
+
+            /** Get the options passed to the new view based on the model */
+            _getItemViewOptions: function _getItemViewOptions(model) {
+                // override this
+                return {
+                    //logger      : this.logger,
+                    fxSpeed: this.fxSpeed,
+                    expanded: false,
+                    selectable: this.selecting,
+                    selected: _.contains(this.selected, model.id),
+                    draggable: this.dragItems
+                };
+            },
+
+            /** Set up listeners for new models */
+            _setUpItemViewListeners: function _setUpItemViewListeners(view) {
+                var panel = this;
+                // send all events to the panel, re-namspaceing them with the view prefix
+                this.listenTo(view, "all", function() {
+                    var args = Array.prototype.slice.call(arguments, 0);
+                    args[0] = "view:" + args[0];
+                    panel.trigger.apply(panel, args);
+                });
+
+                // drag multiple - hijack ev.setData to add all selected items
+                this.listenTo(view, "draggable:dragstart", function(ev, v) {
+                    //TODO: set multiple drag data here
+                    var json = {};
+
+                    var selected = this.getSelectedModels();
+                    if (selected.length) {
+                        json = selected.toJSON();
+                    } else {
+                        json = [v.model.toJSON()];
+                    }
+                    ev.dataTransfer.setData("text", JSON.stringify(json));
+                    //ev.dataTransfer.setDragImage( v.el, 60, 60 );
+                }, this);
+
+                return panel;
+            },
+
+            /** Attach views in this.views to the model based on $whereTo */
+            _attachItems: function _attachItems($whereTo) {
+                var self = this;
+                // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
+                //ASSUMES: $list has been emptied
+                this.$list($whereTo).append(this.views.map(function(view) {
+                    return self._renderItemView$el(view);
+                }));
+                return this;
+            },
+
+            /** get a given subview's $el (or whatever may wrap it) and return it */
+            _renderItemView$el: function _renderItemView$el(view) {
+                // useful to wrap and override
+                return view.render(0).$el;
+            },
+
+            /** render the empty/none-found message */
+            _renderEmptyMessage: function _renderEmptyMessage($whereTo) {
+                this.debug("_renderEmptyMessage", $whereTo, this.searchFor);
+                var text = this.searchFor ? this.noneFoundMsg : this.emptyMsg;
+                return this.$emptyMessage($whereTo).text(text);
+            },
+
+            /** expand all item views */
+            expandAll: function expandAll() {
+                _.each(this.views, function(view) {
+                    view.expand();
+                });
+            },
+
+            /** collapse all item views */
+            collapseAll: function collapseAll() {
+                _.each(this.views, function(view) {
+                    view.collapse();
+                });
+            },
+
+            // ------------------------------------------------------------------------ collection/views syncing
+            /** Add a view (if the model should be viewable) to the panel */
+            addItemView: function addItemView(model, collection, options) {
+                // console.log( this + '.addItemView:', model );
+                var panel = this;
+                // get the index of the model in the list of filtered models shown by this list
+                // in order to insert the view in the proper place
+                //TODO:? potentially expensive
+                var modelIndex = panel._filterCollection().indexOf(model);
+                if (modelIndex === -1) {
+                    return undefined;
+                }
+                var view = panel._createItemView(model);
+                // console.log( 'adding and rendering:', modelIndex, view.toString() );
+
+                $(view).queue("fx", [function(next) {
+                    // hide the empty message first if only view
+                    if (panel.$emptyMessage().is(":visible")) {
+                        panel.$emptyMessage().fadeOut(panel.fxSpeed, next);
+                    } else {
+                        next();
+                    }
+                }, function(next) {
+                    panel._attachView(view, modelIndex);
+                    next();
+                }]);
+                return view;
+            },
+
+            /** internal fn to add view (to both panel.views and panel.$list) */
+            _attachView: function _attachView(view, modelIndex, useFx) {
+                // console.log( this + '._attachView:', view, modelIndex, useFx );
+                useFx = _.isUndefined(useFx) ? true : useFx;
+                modelIndex = modelIndex || 0;
+                var panel = this;
+
+                // use the modelIndex to splice into views and insert at the proper index in the DOM
+                panel.views.splice(modelIndex, 0, view);
+                panel._insertIntoListAt(modelIndex, panel._renderItemView$el(view).hide());
+
+                panel.trigger("view:attached", view);
+                if (useFx) {
+                    view.$el.slideDown(panel.fxSpeed, function() {
+                        panel.trigger("view:attached:rendered");
+                    });
+                } else {
+                    view.$el.show();
+                    panel.trigger("view:attached:rendered");
+                }
+                return view;
+            },
+
+            /** insert a jq object as a child of list-items at the specified *DOM index* */
+            _insertIntoListAt: function _insertIntoListAt(index, $what) {
+                // console.log( this + '._insertIntoListAt:', index, $what );
+                var $list = this.$list();
+                if (index === 0) {
+                    $list.prepend($what);
+                } else {
+                    $list.children().eq(index - 1).after($what);
+                }
+                return $what;
+            },
+
+            /** Remove a view from the panel (if found) */
+            removeItemView: function removeItemView(model, collection, options) {
+                var panel = this;
+                var view = _.find(panel.views, function(v) {
+                    return v.model === model;
+                });
+                if (!view) {
+                    return undefined;
+                }
+                panel.views = _.without(panel.views, view);
+                panel.trigger("view:removed", view);
+
+                // potentially show the empty message if no views left
+                // use anonymous queue here - since remove can happen multiple times
+                $({}).queue("fx", [function(next) {
+                    view.$el.fadeOut(panel.fxSpeed, next);
+                }, function(next) {
+                    view.remove();
+                    panel.trigger("view:removed:rendered");
+                    if (!panel.views.length) {
+                        panel._renderEmptyMessage().fadeIn(panel.fxSpeed, next);
+                    } else {
+                        next();
+                    }
+                }]);
+                return view;
+            },
+
+            /** get views based on model.id */
+            viewFromModelId: function viewFromModelId(id) {
+                return _.find(this.views, function(v) {
+                    return v.model.id === id;
+                });
+            },
+
+            /** get views based on model */
+            viewFromModel: function viewFromModel(model) {
+                return model ? this.viewFromModelId(model.id) : undefined;
+            },
+
+            /** get views based on model properties */
+            viewsWhereModel: function viewsWhereModel(properties) {
+                return this.views.filter(function(view) {
+                    return _.isMatch(view.model.attributes, properties);
+                });
+            },
+
+            /** A range of views between (and including) viewA and viewB */
+            viewRange: function viewRange(viewA, viewB) {
+                if (viewA === viewB) {
+                    return viewA ? [viewA] : [];
+                }
+
+                var indexA = this.views.indexOf(viewA);
+                var indexB = this.views.indexOf(viewB);
+
+                // handle not found
+                if (indexA === -1 || indexB === -1) {
+                    if (indexA === indexB) {
+                        return [];
+                    }
+                    return indexA === -1 ? [viewB] : [viewA];
+                }
+                // reverse if indeces are
+                //note: end inclusive
+                return indexA < indexB ? this.views.slice(indexA, indexB + 1) : this.views.slice(indexB, indexA + 1);
+            },
+
+            // ------------------------------------------------------------------------ searching
+            /** render a search input for filtering datasets shown
+             *      (see SearchableMixin in base-mvc for implementation of the actual searching)
+             *      return will start the search
+             *      esc will clear the search
+             *      clicking the clear button will clear the search
+             *      uses searchInput in ui.js
+             */
+            _renderSearch: function _renderSearch($where) {
+                $where.find(".controls .search-input").searchInput({
+                    placeholder: this.searchPlaceholder,
+                    initialVal: this.searchFor,
+                    onfirstsearch: _.bind(this._firstSearch, this),
+                    onsearch: _.bind(this.searchItems, this),
+                    onclear: _.bind(this.clearSearch, this)
+                });
+                return $where;
+            },
+
+            /** What to do on the first search entered */
+            _firstSearch: function _firstSearch(searchFor) {
+                // override to load model details if necc.
+                this.log("onFirstSearch", searchFor);
+                return this.searchItems(searchFor);
+            },
+
+            /** filter view list to those that contain the searchFor terms */
+            searchItems: function searchItems(searchFor, force) {
+                this.log("searchItems", searchFor, this.searchFor, force);
+                if (!force && this.searchFor === searchFor) {
+                    return this;
+                }
+                this.searchFor = searchFor;
+                this.renderItems();
+                this.trigger("search:searching", searchFor, this);
+                var $search = this.$("> .controls .search-query");
+                if ($search.val() !== searchFor) {
+                    $search.val(searchFor);
+                }
+                return this;
+            },
+
+            /** clear the search filters and show all views that are normally shown */
+            clearSearch: function clearSearch(searchFor) {
+                //this.log( 'onSearchClear', this );
+                this.searchFor = "";
+                this.trigger("search:clear", this);
+                this.$("> .controls .search-query").val("");
+                this.renderItems();
+                return this;
+            },
+
+            // ------------------------------------------------------------------------ selection
+            /** @type Integer when the number of list item views is >= to this, don't animate selectors */
+            THROTTLE_SELECTOR_FX_AT: 20,
+
+            /** show selectors on all visible itemViews and associated controls */
+            showSelectors: function showSelectors(speed) {
+                speed = speed !== undefined ? speed : this.fxSpeed;
+                this.selecting = true;
+                this.$(".list-actions").slideDown(speed);
+                speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
+                _.each(this.views, function(view) {
+                    view.showSelector(speed);
+                });
+                //this.selected = [];
+                //this.lastSelected = null;
+            },
+
+            /** hide selectors on all visible itemViews and associated controls */
+            hideSelectors: function hideSelectors(speed) {
+                speed = speed !== undefined ? speed : this.fxSpeed;
+                this.selecting = false;
+                this.$(".list-actions").slideUp(speed);
+                speed = this.views.length >= this.THROTTLE_SELECTOR_FX_AT ? 0 : speed;
+                _.each(this.views, function(view) {
+                    view.hideSelector(speed);
+                });
+                this.selected = [];
+                this.lastSelected = null;
+            },
+
+            /** show or hide selectors on all visible itemViews and associated controls */
+            toggleSelectors: function toggleSelectors() {
+                if (!this.selecting) {
+                    this.showSelectors();
+                } else {
+                    this.hideSelectors();
+                }
+            },
+
+            /** select all visible items */
+            selectAll: function selectAll(event) {
+                _.each(this.views, function(view) {
+                    view.select(event);
+                });
+            },
+
+            /** deselect all visible items */
+            deselectAll: function deselectAll(event) {
+                this.lastSelected = null;
+                _.each(this.views, function(view) {
+                    view.deselect(event);
+                });
+            },
+
+            /** select a range of datasets between A and B */
+            selectRange: function selectRange(viewA, viewB) {
+                var range = this.viewRange(viewA, viewB);
+                _.each(range, function(view) {
+                    view.select();
+                });
+                return range;
+            },
+
+            /** return an array of all currently selected itemViews */
+            getSelectedViews: function getSelectedViews() {
+                return _.filter(this.views, function(v) {
+                    return v.selected;
+                });
+            },
+
+            /** return a collection of the models of all currenly selected items */
+            getSelectedModels: function getSelectedModels() {
+                // console.log( '(getSelectedModels)' );
+                return new this.collection.constructor(_.map(this.getSelectedViews(), function(view) {
+                    return view.model;
+                }));
+            },
+
+            // ------------------------------------------------------------------------ loading indicator
+            /** hide the $el and display a loading indicator (in the $el's parent) when loading new data */
+            _showLoadingIndicator: function _showLoadingIndicator(msg, speed, callback) {
+                this.debug("_showLoadingIndicator", this.indicator, msg, speed, callback);
+                speed = speed !== undefined ? speed : this.fxSpeed;
+                if (!this.indicator) {
+                    this.indicator = new _loadingIndicator2.default(this.$el);
+                    this.debug("\t created", this.indicator);
+                }
+                if (!this.$el.is(":visible")) {
+                    this.indicator.show(0, callback);
+                } else {
+                    this.$el.fadeOut(speed);
+                    this.indicator.show(msg, speed, callback);
+                }
+            },
+
+            /** hide the loading indicator */
+            _hideLoadingIndicator: function _hideLoadingIndicator(speed, callback) {
+                this.debug("_hideLoadingIndicator", this.indicator, speed, callback);
+                speed = speed !== undefined ? speed : this.fxSpeed;
+                if (this.indicator) {
+                    this.indicator.hide(speed, callback);
+                }
+            },
+
+            // ------------------------------------------------------------------------ scrolling
+            /** get the current scroll position of the panel in its parent */
+            scrollPosition: function scrollPosition() {
+                return this.$scrollContainer().scrollTop();
+            },
+
+            /** set the current scroll position of the panel in its parent */
+            scrollTo: function scrollTo(pos, speed) {
+                speed = speed || 0;
+                this.$scrollContainer().animate({
+                    scrollTop: pos
+                }, speed);
+                return this;
+            },
+
+            /** Scrolls the panel to the top. */
+            scrollToTop: function scrollToTop(speed) {
+                return this.scrollTo(0, speed);
+            },
+
+            /** scroll to the given view in list-items */
+            scrollToItem: function scrollToItem(view, speed) {
+                if (!view) {
+                    return this;
+                }
+                return this;
+            },
+
+            /** Scrolls the panel to show the content with the given id. */
+            scrollToId: function scrollToId(id, speed) {
+                return this.scrollToItem(this.viewFromModelId(id), speed);
+            },
+
+            // ------------------------------------------------------------------------ panel events
+            /** event map */
+            events: {
+                "click .select-all": "selectAll",
+                "click .deselect-all": "deselectAll"
+            },
+
+            // ------------------------------------------------------------------------ misc
+            /** Return a string rep of the panel */
+            toString: function toString() {
+                return "ListPanel(" + this.collection + ")";
+            }
+        });
+
+    // ............................................................................ TEMPLATES
+    /** underscore templates */
+    ListPanel.prototype.templates = function() {
+        var elTemplate = _baseMvc2.default.wrapTemplate([
+            // temp container
+            "<div>", '<div class="controls"></div>', '<div class="list-items"></div>', '<div class="empty-message infomessagesmall"></div>', "</div>"
+        ]);
+
+        var controlsTemplate = _baseMvc2.default.wrapTemplate(['<div class="controls">', '<div class="title">', '<div class="name"><%- view.title %></div>', "</div>", '<div class="subtitle"><%- view.subtitle %></div>',
+            // buttons, controls go here
+            '<div class="actions"></div>',
+            // deleted msg, etc.
+            '<div class="messages"></div>', '<div class="search">', '<div class="search-input"></div>', "</div>",
+
+            // show when selectors are shown
+            '<div class="list-actions">', '<div class="btn-group">', '<button class="select-all btn btn-default"', 'data-mode="select">', (0, _localization2.default)("All"), "</button>", '<button class="deselect-all btn btn-default"', 'data-mode="select">', (0, _localization2.default)("None"), "</button>", "</div>", '<div class="list-action-menu btn-group">', "</div>", "</div>", "</div>"
+        ]);
+
+        return {
+            el: elTemplate,
+            controls: controlsTemplate
+        };
+    }();
+
+    //=============================================================================
+    /** View for a model that has a sub-collection (e.g. History, DatasetCollection)
+     *  Allows:
+     *      the model to be reset
+     *      auto assign panel.collection to panel.model[ panel.modelCollectionKey ]
+     *
+     */
+    var ModelListPanel = ListPanel.extend({
+        /** key of attribute in model to assign to this.collection */
+        modelCollectionKey: "contents",
+
+        initialize: function initialize(attributes) {
+            ListPanel.prototype.initialize.call(this, attributes);
+            this.selecting = attributes.selecting !== undefined ? attributes.selecting : false;
+
+            this.setModel(this.model, attributes);
+        },
+
+        /** release/free/shutdown old models and set up panel for new models
+         *  @fires new-model with the panel as parameter
+         */
+        setModel: function setModel(model, attributes) {
+            attributes = attributes || {};
+            this.debug(this + ".setModel:", model, attributes);
+
+            this.freeModel();
+            this.freeViews();
+
+            if (model) {
+                var oldModelId = this.model ? this.model.get("id") : null;
+
+                // set up the new model with user, logger, storage, events
+                this.model = model;
+                if (this.logger) {
+                    this.model.logger = this.logger;
+                }
+                this._setUpModelListeners();
+
+                //TODO: relation btwn model, collection becoming tangled here
+                // free the collection, and assign the new collection to either
+                //  the model[ modelCollectionKey ], attributes.collection, or an empty vanilla collection
+                this.stopListening(this.collection);
+                this.collection = this.model[this.modelCollectionKey] || attributes.collection || this._createDefaultCollection();
+                this._setUpCollectionListeners();
+
+                if (oldModelId && model.get("id") !== oldModelId) {
+                    this.trigger("new-model", this);
+                }
+            }
+            return this;
+        },
+
+        /** free the current model and all listeners for it, free any views for the model */
+        freeModel: function freeModel() {
+            // stop/release the previous model, and clear cache to sub-views
+            if (this.model) {
+                this.stopListening(this.model);
+                //TODO: see base-mvc
+                //this.model.free();
+                //this.model = null;
+            }
+            return this;
+        },
+
+        // ------------------------------------------------------------------------ listening
+        /** listening for model events */
+        _setUpModelListeners: function _setUpModelListeners() {
+            // override
+            this.log(this + "._setUpModelListeners", this.model);
+            // bounce model errors up to the panel
+            this.listenTo(this.model, "error", function() {
+                var args = Array.prototype.slice.call(arguments, 0);
+                //args.unshift( 'model:error' );
+                args.unshift("error");
+                this.trigger.apply(this, args);
+            }, this);
+
+            // debugging
+            if (this.logger) {
+                this.listenTo(this.model, "all", function(event) {
+                    this.info(this + "(model)", event, arguments);
+                });
+            }
+            return this;
+        },
+
+        /** Build a temp div containing the new children for the view's $el.
+         */
+        _renderControls: function _renderControls($newRender) {
+            this.debug(this + "(ModelListPanel)._renderControls");
+            var json = this.model ? this.model.toJSON() : {};
+            var $controls = $(this.templates.controls(json, this));
+            $newRender.find(".controls").replaceWith($controls);
+            return $controls;
+        },
+
+        // ------------------------------------------------------------------------ misc
+        /** Return a string rep of the panel */
+        toString: function toString() {
+            return "ModelListPanel(" + this.model + ")";
+        }
+    });
+
+    // ............................................................................ TEMPLATES
+    /** underscore templates */
+    ModelListPanel.prototype.templates = function() {
+        var controlsTemplate = _baseMvc2.default.wrapTemplate(['<div class="controls">', '<div class="title">',
+            //TODO: this is really the only difference - consider factoring titlebar out
+            '<div class="name"><%- model.name %></div>', "</div>", '<div class="subtitle"><%- view.subtitle %></div>', '<div class="actions"></div>', '<div class="messages"></div>', '<div class="search">', '<div class="search-input"></div>', "</div>", '<div class="list-actions">', '<div class="btn-group">', '<button class="select-all btn btn-default"', 'data-mode="select">', (0, _localization2.default)("All"), "</button>", '<button class="deselect-all btn btn-default"', 'data-mode="select">', (0, _localization2.default)("None"), "</button>", "</div>", '<div class="list-action-menu btn-group">', "</div>", "</div>", "</div>"
+        ]);
+
+        return _.extend(_.clone(ListPanel.prototype.templates), {
+            controls: controlsTemplate
+        });
+    }();
+
+    //=============================================================================
+    exports.default = {
+        ListPanel: ListPanel,
+        ModelListPanel: ModelListPanel
+    };
+});
 //# sourceMappingURL=../../../maps/mvc/list/list-view.js.map
