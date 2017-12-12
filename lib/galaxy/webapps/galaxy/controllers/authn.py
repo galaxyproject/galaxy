@@ -23,5 +23,9 @@ class OAuth2(BaseUIController):
             pass
 
     @web.expose
+    @web.require_login("authenticate against Google identity provider")
     def disconnect(self, trans, **kwargs):
+        if trans.user is None:
+            # Only logged in users are allowed here.
+            return
         return trans.response.send_redirect(trans.app.authnz_manager.disconnect('Google', trans))

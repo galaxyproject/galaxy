@@ -1,0 +1,4 @@
+Collecting pyjwt
+  Using cached PyJWT-1.5.3-py2.py3-none-any.whl
+Installing collected packages: pyjwt
+Successfully installed pyjwt-1.5.3
