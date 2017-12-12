@@ -139,8 +139,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
             return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
         auto_associate = util.string_as_bool(kwd.get('auto_associate', False))
         action = 'login'
+        controller = 'user'
         if trans.user:
-            action = 'openid_manage'
+            action = 'openids'
+            controller = 'list'
         if trans.app.config.support_url is not None:
             contact = '<a href="%s">support</a>' % trans.app.config.support_url
         else:
@@ -154,7 +156,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         openid_provider = kwd.get('openid_provider', None)
         if info.status == trans.app.openid_manager.FAILURE and display_identifier:
             message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % (contact, info.message)
-            return trans.response.send_redirect(url_for(controller='user',
+            return trans.response.send_redirect(url_for(controller=controller,
                                                         action=action,
                                                         use_panels=True,
                                                         redirect=redirect,
@@ -209,8 +211,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                         message = '%s<br>Click <a href="%s"><strong>here</strong></a> to return to the page you were previously viewing.' % (message, escape(self.__get_redirect_url(redirect)))
                 if redirect and status != "error":
                     return trans.response.send_redirect(self.__get_redirect_url(redirect))
-                return trans.response.send_redirect(url_for(controller='user',
-                                                     action='openid_manage',
+                return trans.response.send_redirect(url_for(controller='openids',
+                                                     action='list',
                                                      use_panels=True,
                                                      redirect=redirect,
                                                      message=message,
@@ -301,18 +303,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     for openid in openid_objs:
                         message = '%s<li><a href="%s" target="_blank">%s</a></li>' % (message, url_for(controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True), openid.name)
                     message = "%s</ul>" % (message)
-                    return trans.response.send_redirect(url_for(controller='user',
-                                                                action='openid_manage',
-                                                                use_panels=use_panels,
-                                                                redirect=redirect,
+                    return trans.response.send_redirect(url_for(controller='openids',
+                                                                action='list',
                                                                 message=message,
                                                                 status='info'))
                 if redirect:
                     return trans.response.send_redirect(redirect)
-                return trans.response.send_redirect(url_for(controller='user',
-                                                            action='openid_manage',
-                                                            use_panels=use_panels,
-                                                            redirect=redirect,
+                return trans.response.send_redirect(url_for(controller='openids',
+                                                            action='list',
                                                             message=message,
                                                             status='info'))
         if kwd.get('create_user_button', False):
@@ -353,18 +351,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                             for openid in openid_objs:
                                 message = '%s<li><a href="%s" target="_blank">%s</a></li>' % (message, url_for(controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True), openid.name)
                             message = "%s</ul>" % (message)
-                            return trans.response.send_redirect(url_for(controller='user',
-                                                                        action='openid_manage',
-                                                                        use_panels=True,
-                                                                        redirect=redirect,
+                            return trans.response.send_redirect(url_for(controller='openids',
+                                                                        action='list',
                                                                         message=message,
                                                                         status='info'))
                         if redirect:
                             return trans.response.send_redirect(redirect)
-                        return trans.response.send_redirect(url_for(controller='user',
-                                                                    action='openid_manage',
-                                                                    use_panels=use_panels,
-                                                                    redirect=redirect,
+                        return trans.response.send_redirect(url_for(controller='openids',
+                                                                    action='list',
                                                                     message=message,
                                                                     status='info'))
                 else:
