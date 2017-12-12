@@ -7,7 +7,6 @@ import shutil
 import sys
 
 from galaxy.datatypes.data import Data
-from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.images import Html
 from galaxy.util import FILENAME_VALID_CHARS
 
@@ -174,9 +173,6 @@ class Neo4jDBzip(Neo4j, Data):
         self.add_composite_file('%s.zip', description='neostore zip', substitute_name_with_metadata='reference_name',
                                 is_binary=True)
 
-
-Binary.register_sniffable_binary_format(
-    "neostore.zip", "neostore.zip", Neo4jDBzip)
 
 if __name__ == '__main__':
     import doctest
