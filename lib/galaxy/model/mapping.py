@@ -123,7 +123,7 @@ model.SocialAuthCode = Table(
 
 # TODO: add '.table'
 model.SocialAuthNonce = Table(
-    "social_auth_nonce", metadata,
+    "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('timestamp', Integer),

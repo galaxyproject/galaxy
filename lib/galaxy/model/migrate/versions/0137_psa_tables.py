@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT, VARCHAR, BOOLEAN
+from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, VARCHAR
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -28,8 +28,8 @@ social_auth_code = Table(
     Column('code', VARCHAR(32)))
 
 
-social_auth_nonce = Table(
-    "social_auth_nonce", metadata,
+psa_nonce = Table(
+    "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('timestamp', Integer),
@@ -56,9 +56,6 @@ oidc_rp_user_authnz_tokens = Table(
     Column('assoc_type', VARCHAR(64)))
 
 
-
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
@@ -68,7 +65,7 @@ def upgrade(migrate_engine):
     try:
         social_auth_association.create()
         social_auth_code.create()
-        social_auth_nonce.create()
+        psa_nonce.create()
         social_auth_partial.create()
         oidc_rp_user_authnz_tokens.create()
     except Exception as e:
@@ -83,7 +80,7 @@ def downgrade(migrate_engine):
     try:
         social_auth_association.drop()
         social_auth_code.drop()
-        social_auth_nonce.drop()
+        pas_nonce.drop()
         social_auth_partial.drop()
         oidc_rp_user_authnz_tokens.drop()
     except Exception as e:
