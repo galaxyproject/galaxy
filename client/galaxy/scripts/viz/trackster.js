@@ -534,7 +534,10 @@ var TracksterView = Backbone.View.extend({
 
                 // select default
                 var dbkeys_in_genomes = response.map(r => r[1]);
-                if (window.galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes, window.galaxy_config.app.default_dbkey)) {
+                if (
+                    window.galaxy_config.app.default_dbkey &&
+                    _.contains(dbkeys_in_genomes, window.galaxy_config.app.default_dbkey)
+                ) {
                     $("#new-dbkey").val(window.galaxy_config.app.default_dbkey);
                 }
 
