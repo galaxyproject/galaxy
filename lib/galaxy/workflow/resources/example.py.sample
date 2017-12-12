@@ -12,6 +12,11 @@ def admin_mapping(trans, stored_workflow, **kwds):
     """
     workflow_resource_params = kwds["workflow_resource_params"]
     if trans.user_is_admin():
-        return [workflow_resource_params.get("priorities")]
+        priority_attrib = workflow_resource_params.get("priority").attrib
+        priority_attrib['data'] = []
+        for child in workflow_resource_params.get('priority').getchildren():
+            priority_attrib['data'].append(child.attrib)
+        time_attrib = workflow_resource_params.get("time").attrib
+        return [priority_attrib, time_attrib]
 
     return None

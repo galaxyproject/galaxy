@@ -3,11 +3,11 @@ by_group:
   groups:
     default: [project, priority]    
     prio_basic: [{name: priority, options: ["low", "med"]}]
-    prio_advanced: [{name: priority, options: ["low", "med", "high"]} 
-		prio_super:
+    prio_advanced: [{name: priority, options: ["low", "med", "high"]}]
+    prio_super:
     - time
     - memory
-    - processor
+    - processors
     - name: priority 
       options:
       - ultra

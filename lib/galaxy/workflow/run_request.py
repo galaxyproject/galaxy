@@ -305,17 +305,25 @@ def build_workflow_run_configs(trans, workflow, payload):
             # destination function. In the future this should be extended to allow arbitrary
             # pluggable validation.
             resource_mapper_function = get_resource_mapper_function(trans.app)
-            resource_parameters = resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
+            # TODO: Do we need to do anything with the stored_workflow or can this be removed.
+            resource_parameters = resource_mapper_function(trans=trans, stored_workflow=None, workflow=workflow)
             for resource_parameter in resource_parameters:
-                if resource_parameter.attrib.get("type") == "select":
-                    name = resource_parameter.attrib.get("name")
+                if resource_parameter.get("type") == "select":
+                    name = resource_parameter.get("name")
                     if name in resource_params:
                         value = resource_params[name]
                         valid_option = False
-                        for option_elem in resource_parameter.getchildren():
-                            option_value = option_elem.attrib.get("value")
-                            if value == option_value:
-                                valid_option = True
+                        # TODO: How should be handle the case where no selection is made by the user
+                        # This can happen when there is a select on the page but the user has no options to select
+                        # Here I have the validation pass it through. An alternative may be to remove the parameter if
+                        # it is None.
+                        if value is None:
+                            valid_option = True
+                        else:
+                            for option_elem in resource_parameter.get('data'):
+                                option_value = option_elem.get("value")
+                                if value == option_value:
+                                    valid_option = True
                         if not valid_option:
                             raise exceptions.RequestParameterInvalidException("Invalid value for parameter '%s' found." % name)
 
@@ -364,7 +372,8 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 copy_inputs_to_history=False,
                 inputs={},
                 param_map={},
-                allow_tool_state_corrections=run_config.allow_tool_state_corrections
+                allow_tool_state_corrections=run_config.allow_tool_state_corrections,
+                resource_params=run_config.resource_params
             )
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
@@ -386,7 +395,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
-    resource_parameters = run_config.inputs.get("resource_params", {})
+    resource_parameters = run_config.resource_params
     for key, value in resource_parameters.items():
         add_parameter(key, value, param_types.RESOURCE_PARAMETERS)
     add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false",

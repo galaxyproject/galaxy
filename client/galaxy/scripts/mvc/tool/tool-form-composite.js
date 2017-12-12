@@ -313,14 +313,14 @@ var View = Backbone.View.extend({
     
     /** Render Workflow Options */
     _renderResourceParameters: function() {
-        this.workflow_options_form = null;
-        if(!_.isEmpty(this.model.get('resource_parameters'))){
-            this.workflow_options_form = new Form({
+        this.workflow_resource_parameters_form = null;
+        if(!_.isEmpty(this.model.get('workflow_resource_parameters'))){
+            this.workflow_resource_parameters_form = new Form({
                 cls    : 'ui-portlet-narrow',
                 title  : '<b>Workflow Resource Options</b>',
-                inputs : this.model.get('resource_parameters')
+                inputs : this.model.get('workflow_resource_parameters')
             });
-            this._append( this.$steps, this.workflow_options_form.$el );
+            this._append( this.$steps, this.workflow_resource_parameters_form.$el );
         }
     },
 
@@ -513,7 +513,7 @@ var View = Backbone.View.extend({
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
             history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
-            resource_params: this.workflow_options_form ? this.workflow_options_form.data.create() : {},
+            resource_params: this.workflow_resource_parameters_form ? this.workflow_resource_parameters_form.data.create() : {},
             replacement_params: this.wp_form ? this.wp_form.data.create() : {},
             parameters: {},
             // Tool form will submit flat maps for each parameter

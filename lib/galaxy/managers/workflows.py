@@ -51,7 +51,6 @@ class WorkflowsManager(object):
 
     def __init__(self, app):
         self.app = app
-        self._resource_mapper_function = get_resource_mapper_function(app)
 
     def get_stored_workflow(self, trans, workflow_id):
         """ Use a supplied ID (UUID or encoded stored workflow ID) to find
@@ -207,6 +206,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __init__(self, app):
         self.app = app
+        self._resource_mapper_function = get_resource_mapper_function(app)
 
     def build_workflow_from_dict(
         self,

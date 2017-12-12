@@ -1237,23 +1237,29 @@ def map_tool_to_destination(
     job_params = None
     if job_parameter_list is not None:
         for param in job_parameter_list:
-            if param.name == "__workflow_params__":
+            if param.name == "__workflow_resource_params__":
                 workflow_params = param.value
             if param.name == "__job_resource":
                 job_params = param.value
 
     # Priority coming from workflow invocation takes precedence over job specific priorities
     if workflow_params is not None:
-        if 'priority' in workflow_params:
+        resource_params = json.loads(workflow_params)
+        if 'priority' in resource_params:
             # For by_group mapping, this priority has already been validated when the
             # request was created.
-            priority = workflow_params['priority']
+            if resource_params['priority'] is not None:
+                priority = resource_params['priority']
 
     elif job_params is not None:
         resource_params = json.loads(job_params)
         if 'priority' in resource_params:
             # Should this really override workflow level priority? -John
-            priority = resource_params['priority']
+            # TODO: make a decision on what overwrites what. The reasoning behind having workflow > job is that a job
+            # parameter may exist on jobs in a workflow, and if the user runs the workflow with a parameter, they may
+            # not know that the job is overwriting their choice.
+            if resource_params['priority'] is not None:
+                priority = resource_params['priority']
 
     if fail_message is not None:
         destination = "fail"

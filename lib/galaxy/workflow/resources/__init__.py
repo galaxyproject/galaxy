@@ -3,6 +3,7 @@
 This file defines the baked in resource mapper types, and this package contains an
 example of a more open, pluggable approach with greater control.
 """
+from copy import deepcopy
 import functools
 import logging
 import os
@@ -31,6 +32,7 @@ def get_resource_mapper_function(app):
         with open(mapper, "r") as f:
             mapper_definition = yaml.load(f)
 
+
         if "by_group" in mapper_definition:
             by_group = mapper_definition["by_group"]
             return functools.partial(_resource_options_by_group, by_group=by_group, workflow_resource_params=workflow_resource_params)
@@ -52,23 +54,32 @@ def _read_defined_parameter_definitions(config):
         return {}
 
 
-def _resource_options_by_group(self, trans, **kwds):
+def _resource_options_by_group(trans, **kwds):
     user = trans.user
     by_group = kwds["by_group"]
     workflow_resource_params = kwds["workflow_resource_params"]
 
-    user_permissions = {}
-    user_groups = []
-    for g in user.groups:
-        user_groups.append(g.group.name)
-    default_group = by_group.get('default', None)
-    for group_name, group_def in by_group.get("groups", {}).items():
-        if group_name == default_group or group_name in user_groups:
-            # TODO: Redo get_workflow_options_user_permissions for YAML definition...
-            pass
+    params = []
+    if validate_by_group_workflow_options_mapper(by_group, workflow_resource_params):
+        user_permissions = {}
+        user_groups = []
+        for g in user.groups:
+            user_groups.append(g.group.name)
+        default_group = by_group.get('default', None)
+        for group_name, group_def in by_group.get("groups", {}).items():
+            if group_name == default_group or group_name in user_groups:
+                for tag in group_def:
+                    if type(tag) is dict:
+                        if tag.get('name') not in user_permissions:
+                            user_permissions[tag.get('name')] = {}
+                        for option in tag.get('options'):
+                            user_permissions[tag.get('name')][option] = {}
+                    else:
+                        if tag not in user_permissions:
+                            user_permissions[tag] = {}
 
-    # user_permissions is now set.
-    params = get_workflow_options_param_list(workflow_resource_params, user_permissions)
+        # user_permissions is now set.
+        params = get_workflow_options_param_list(workflow_resource_params, user_permissions)
     return params
 
 
@@ -76,7 +87,7 @@ def _resource_options_by_group(self, trans, **kwds):
 def get_workflow_options_param_list(params, user_permissions):
     param_list = []
     for param_name, param_elem in params.items():
-        attr = param_elem.attrib
+        attr = deepcopy(param_elem.attrib)
         if attr['name'] in user_permissions:
             # Allow 'select' type parameters to be used
             if attr['type'] == 'select':
@@ -91,7 +102,6 @@ def get_workflow_options_param_list(params, user_permissions):
                     else:
                         reject_list.append(option_elem.attrib['label'])
                 attr['data'] = option_data
-
                 attr_help = ""
                 if 'help' in attr:
                     attr_help = attr['help']
@@ -105,58 +115,41 @@ def get_workflow_options_param_list(params, user_permissions):
     return param_list
 
 
-def validate_workflow_options_mapper(resource_param_mapper):
+def validate_by_group_workflow_options_mapper(by_group, workflow_resource_params):
     # TODO: Rework this to consume YAML mapper file, drop all parameter validation I think?
 
+    # TODO: Do we really want to remove all parameter validation? I have changed it to validate the yml against the
+    # workflow_resource_params so that we disallow selection when the yml is not correct since that file would be
+    # changed the most frequently and most prone to configuration errors.
+
+    # TODO: finish validation? Currently validating needed stuff except for 'options' in a 'select'
     valid = True
     try:
-        resource_definitions = parse_xml(resource_param_file)
-
-        # used to validate that groups that specify options from a select parameter are using valid values
-        select_params = {}
-        all_params = []
-
-        # Validate <parameters>
-        param_definitions_root = resource_definitions.getroot().find("parameters")
-        for param_elem in param_definitions_root.findall("param"):
-            attr = param_elem.attrib
-            if 'name' not in attr:
-                raise Exception("'param' Element is malformed! 'name' attribute not found!")
-            if 'type' not in attr:
-                raise Exception("'param' Element is malformed! 'type' attribute not found!")
-            if attr['type'] == 'select':
-                select_params[attr['name']] = []
-                for option_elem in param_elem.findall("option"):
-                    if 'value' not in option_elem.attrib:
-                        raise Exception("'option' Element is malformed! 'value' attribute not found!")
-                    if 'label' not in option_elem.attrib:
-                        raise Exception("'option' Element is malformed! 'label' attribute not found!")
-                    select_params[attr['name']].append(option_elem.attrib['value'])
-            all_params.append(attr['name'])
-
-        # Validate <groups>
-        group_definitions_root = resource_definitions.getroot().find("groups")
-        if 'default' not in group_definitions_root.attrib:
-            raise Exception("'groups' Element is malformed! No 'default' specified!")
-        default_name = group_definitions_root.attrib['default']
-        has_default = False
-        for group in group_definitions_root.findall("group"):
-            if 'name' not in group.attrib:
-                raise Exception("'group' Element is malformed! 'name' attribute not found!")
-            if group.attrib['name'] == default_name:
-                has_default = True
-            for child in group.getchildren():
-                if child.tag not in all_params:
-                    raise Exception("'group' Element is malformed! "
-                                    "Child '" + child.tag + "' not found in <parameters>!")
-                if child.tag in select_params:
-                    for att in child.text.split(","):
-                        if att not in select_params[child.tag]:
-                            raise Exception("Child '" + child.tag + "' of group '" + group.attrib['name'] +
-                                            "' is malformed! '" + att + "' not found as a param option!")
-        # make sure default is set correctly
-        if has_default is False:
-            raise Exception("Defined default '" + default_name + "' not found!")
+        if 'default' not in by_group:
+            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, 'default' attribute not found!")
+        default_group = by_group['default']
+        if 'groups' not in by_group:
+            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, 'groups' attribute not found!")
+        if default_group not in by_group['groups']:
+            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, default group with title '" +
+                            default_group + "' not found in 'groups'!")
+        for group in by_group['groups']:
+            for attrib in by_group['groups'][group]:
+                if type(attrib) is dict:
+                    if 'name' not in attrib:
+                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, "
+                                        "'name' attribute not found in attribute of group '" + group + "'!")
+                    if attrib['name'] not in workflow_resource_params:
+                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, group with name '" +
+                                        attrib['name'] + "' not found in 'workflow_resource_params'!")
+                    if 'options' not in attrib:
+                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, "
+                                        "'options' attribute not found in attribute of group '" + group + "'!")
+                    # TODO: add validation here for options?
+                else:
+                    if attrib not in workflow_resource_params:
+                        raise Exception("'workflow_resource_params_mapper' YAML file is malformed, attribute with name "
+                                        "'" + attrib + "' not found in 'workflow_resource_params'!")
 
     except Exception as e:
         log.exception(e)
@@ -166,7 +159,7 @@ def validate_workflow_options_mapper(resource_param_mapper):
     return valid
 
 
-def _import_resource_mapping_function(self, qualified_function_path):
+def _import_resource_mapping_function(qualified_function_path):
     full_module_name, function_name = qualified_function_path.split(":", 1)
     try:
         __import__(full_module_name)

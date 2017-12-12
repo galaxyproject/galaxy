@@ -810,7 +810,8 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
-        resource_parameters = invocation.resource_parameters
+        # TODO: Remove '()' maybe? I added it while adding the workaround for the caching issue. Not sure if needed.
+        resource_parameters = invocation.resource_parameters()
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()

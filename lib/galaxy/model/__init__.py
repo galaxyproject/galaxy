@@ -3967,7 +3967,8 @@ class WorkflowInvocation(object, Dictifiable):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
-        self.__resource_parameters = None
+        #TODO: Uncomment this when fixing caching
+        '''self._resource_parameters = None'''
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -4113,21 +4114,36 @@ class WorkflowInvocation(object, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
+    # TODO: How is this caching supposed to work? When adding the _resource_parameters variable to the object, it does
+    # not get shown when accessing the object later and fails on 'if self._resource_parameters is None:'.
+    '''
     @property
     def resource_parameters(self):
-        if self.__resource_parameters is None:
+        import pdb
+        pdb.set_trace()
+        if self._resource_parameters is None:
             self.__cache_resource_parameters()
-        return self.__resource_parameters
+        return self._resource_parameters
 
     def __cache_resource_parameters(self):
         # TODO: prefetch and optimize down the road.
         resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
         resource_parameters = {}
-        for input_step_parameter in self.input_step_parameters:
-            if input_step_parameter.type == resource_type:
-                resource_parameters[input_step_parameter.name] = input_step_parameter.value
+        for input_parameter in self.input_parameters:
+            if input_parameter.type == resource_type:
+                resource_parameters[input_parameter.name] = input_parameter.value
 
-        self.__resource_parameters = resource_parameters
+        self._resource_parameters = resource_parameters
+    '''
+    #TODO: Remove this. Temp solution until caching is fixed.
+    def resource_parameters(self):
+        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+        _resource_parameters = {}
+        for input_parameter in self.input_parameters:
+            if input_parameter.type == resource_type:
+                _resource_parameters[input_parameter.name] = input_parameter.value
+
+        return _resource_parameters
 
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
