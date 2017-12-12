@@ -428,10 +428,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
     @web.expose_api
     @web.require_login('manage OpenIDs')
     def openids_list(self, trans, **kwd):
-        '''Manage OpenIDs for user'''
-        #if not trans.app.config.enable_openid:
-        #    return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        #use_panels = kwd.get('use_panels', False)
+        '''List of availabel OpenIDs for user'''
+        message = kwd.get('message', '')
+        status = kwd.get('status', '')
+        if not trans.app.config.enable_openid:
+            message, status = ('OpenID authentication is not enabled in this instance of Galaxy.', 'error')
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            id = kwd.get('id')
         #if 'operation' in kwd:
         #    operation = kwd['operation'].lower()
         #    if operation == "delete":
@@ -441,6 +445,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         #                                                    id=kwd['id']))
         #kwd['redirect'] = kwd.get('redirect', url_for(controller='user', action='openid_manage', use_panels=True)).strip()
         #kwd['openid_providers'] = trans.app.openid_providers
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = status
         kwd['dict_format'] = True
         return self.user_openid_grid(trans, **kwd)
 
