@@ -171,9 +171,7 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans):
         _trans = trans
-
-        # TODO:
-        trans.app.model.UserAuthnzToken._trans = trans
+        trans.app.model.UserAuthnzToken.trans = trans
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
@@ -192,9 +190,7 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
-
-        # TODO:
-        trans.app.model.UserAuthnzToken._trans = trans
+        trans.app.model.UserAuthnzToken.trans = trans
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 

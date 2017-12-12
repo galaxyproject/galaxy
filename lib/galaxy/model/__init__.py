@@ -5047,10 +5047,11 @@ class SocialAuthPartial(object):
 class UserAuthnzToken(UserMixin):
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
-    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None, password=None):
-        # TODO: user and password arguments are temporary. Because since the "model" at "_new_instance" can be
-        # both Galaxy user and this class, and in case it is the Galaxy user, it is required to have
-        # a password.
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
         self.uid = uid
         self.user_id = user.id
@@ -5064,7 +5065,19 @@ class UserAuthnzToken(UserMixin):
     def get_access_token(self):
         return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
-    # TODO: all the following functions should be checked and fixed.
+    def set_extra_data(self, extra_data=None):
+        # Note: the following unicode conversion is a temporary solution for a
+        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
+        if extra_data is not None:
+            extra_data = unicode(extra_data)
+        if super(UserAuthnzToken, self).set_extra_data(extra_data):
+            self.trans.sa_session.add(self)
+            self.trans.sa_session.flush()
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
     @classmethod
     def username_max_length(cls):
         # Note: This is the maximum field length set for the username column of the galaxy_user table.
@@ -5075,26 +5088,14 @@ class UserAuthnzToken(UserMixin):
     def user_model(cls):
         return User
 
-    # @declared_attr
-    # def extra_data(cls):
-    #     print '%' * 200, '\nat extra data\n', '%' * 200
-    #     return Column(MutableDict.as_mutable(JSONType))
-
     @classmethod
     def changed(cls, user):
-        cls._save_instance(user)
-
-    def set_extra_data(self, extra_data=None):
-        # Note: the following unicode conversion is a temporary solution for a
-        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
-        if extra_data is not None:
-            extra_data = unicode(extra_data)
-        if super(UserAuthnzToken, self).set_extra_data(extra_data):
-            self._save_instance(self)
+        cls.trans.sa_session.add(user)
+        cls.trans.sa_session.flush()
 
     @classmethod
     def user_query(cls):
-        return cls._session().query(cls.user_model())
+        return cls.trans.sa_session.query(cls.user_model())
 
     @classmethod
     def user_exists(cls, *args, **kwargs):
@@ -5106,7 +5107,16 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def create_user(cls, *args, **kwargs):
-        return cls._new_instance(cls.user_model(), *args, **kwargs)
+        # TODO: password is a required field for a galaxy user record. However, it should not be required
+        # if the user is authenticated by an external identity provider. Once this logic is incorporated
+        # in the galaxy user, the following argument setting should be removed.
+        kwargs['password'] = ''.join(
+            random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
+        model = cls.user_model()
+        instance = model(*args, **kwargs)
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
+        return instance
 
     @classmethod
     def get_user(cls, pk):
@@ -5120,14 +5130,13 @@ class UserAuthnzToken(UserMixin):
     def get_social_auth(cls, provider, uid):
         uid = str(uid)
         try:
-            return cls._query().filter_by(provider=provider,
-                                          uid=uid)[0]
+            return cls.trans.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
         except IndexError:
             return None
 
     @classmethod
     def get_social_auth_for_user(cls, user, provider=None, id=None):
-        qs = cls._query().filter_by(user_id=user.id)
+        qs = cls.trans.sa_session.query(cls).filter_by(user_id=user.id)
         if provider:
             qs = qs.filter_by(provider=provider)
         if id:
@@ -5137,49 +5146,10 @@ class UserAuthnzToken(UserMixin):
     @classmethod
     def create_social_auth(cls, user, uid, provider):
         uid = str(uid)
-        return cls._new_instance(cls, user=user, uid=uid, provider=provider)
-
-
-
-    # TODO: all the following should be already provided by Galaxy
-    COMMIT_SESSION = True
-
-    @classmethod
-    def _session(cls):
-        return cls._trans.sa_session
-
-    @classmethod
-    def _query(cls):
-        return cls._session().query(cls)
-
-    @classmethod
-    def _new_instance(cls, model, *args, **kwargs):
-        # TODO: password is a required field for a galaxy user record. However, it should not be required
-        # if the user is authenticated by an external identity provider. Once this logic is incorporated
-        # in the galaxy user, the following argument setting should be removed.
-        kwargs['password'] = ''.join(
-            random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
-        return cls._save_instance(model(*args, **kwargs))
-
-    @classmethod
-    def _save_instance(cls, instance):
-        cls._session().add(instance)
-        if cls.COMMIT_SESSION:
-            # cls._session().commit()
-            cls._session().flush()
-        else:
-            cls._flush()
+        instance = cls(user=user, uid=uid, provider=provider)
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
         return instance
-
-    @classmethod
-    def _flush(cls):
-        try:
-            cls._session().flush()
-        except AssertionError:
-            cls._session().commit()
-
-    def save(self):
-        self._save_instance(self)
 
 
 class Page(object, Dictifiable):
