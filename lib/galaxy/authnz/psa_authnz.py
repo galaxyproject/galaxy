@@ -25,12 +25,6 @@ DEFAULTS = {
 # value: is the name of a class associated with that key.
 
 
-# TODO: State token
-# you can use `state_token` function of backends to generate a state token. You don't need to generate this token
-# as it is generated automatically if missing. However, generate the token using `state_token` function and save
-# the token in galaxy database may be a good idea.
-
-
 
 # TODO: This code works only by commenting out "cls._session().commit()" from "social_storage_sqlalchemy"
 # maybe a better solution is to write "social_storage_sqlalchemy" in Galaxy and avoid the aforementioned line.

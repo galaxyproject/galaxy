@@ -49,7 +49,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
-from social_core.storage import UserMixin
+from social_core.storage import UserMixin, NonceMixin
 
 log = logging.getLogger(__name__)
 
@@ -5029,11 +5029,32 @@ class SocialAuthCode(object):
         self.code = code
 
 
-class SocialAuthNonce(object):
+class SocialAuthNonce(NonceMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
     def __init__(self, server_url, timestamp, salt):
         self.server_url = server_url
         self.timestamp = timestamp
         self.salt = salt
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def use(cls, server_url, timestamp, salt):
+        kwargs = {'server_url': server_url, 'timestamp': timestamp,
+                  'salt': salt}
+        try:
+            return cls.trans.session().query(cls).filter_by(**kwargs)[0]
+        except IndexError:
+            instance = cls(**kwargs)
+            cls.trans.session().add(instance)
+            cls.trans.sa_session.flush()
+            return instance
 
 
 class SocialAuthPartial(object):
