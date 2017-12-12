@@ -558,6 +558,9 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     """
     user_authnz = _trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
                                                                user_storage.table.c.provider == name).first()
+    # TODO: log the following message, and properly return it to the endpoint and inform user.
+    if user_authnz is None:
+        return 'Not authenticated by any identity providers.'
     # option A
     _trans.sa_session.delete(user_authnz)
     # option B
