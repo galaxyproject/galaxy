@@ -376,7 +376,6 @@ class JobExportHistoryArchiveWrapper:
         datasets_attrs_out = open(datasets_attrs_filename, 'w')
         datasets_attrs_out.write(dumps(datasets_attrs, cls=HistoryDatasetAssociationEncoder))
         datasets_attrs_out.close()
-        jeha.datasets_attrs_filename = datasets_attrs_filename
 
         provenance_attrs_out = open(datasets_attrs_filename + ".provenance", 'w')
         provenance_attrs_out.write(dumps(provenance_attrs, cls=HistoryDatasetAssociationEncoder))
@@ -454,7 +453,6 @@ class JobExportHistoryArchiveWrapper:
         jobs_attrs_out = open(jobs_attrs_filename, 'w')
         jobs_attrs_out.write(dumps(jobs_attrs, cls=HistoryDatasetAssociationEncoder))
         jobs_attrs_out.close()
-        jeha.jobs_attrs_filename = jobs_attrs_filename
 
         #
         # Create and return command line for running tool.
@@ -471,12 +469,7 @@ class JobExportHistoryArchiveWrapper:
         # Get jeha for job.
         jeha = db_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jeha:
-            for filename in [jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename]:
-                try:
-                    os.remove(filename)
-                except Exception as e:
-                    log.debug('Failed to cleanup attributes file (%s): %s' % (filename, e))
-            temp_dir = os.path.split(jeha.history_attrs_filename)[0]
+            temp_dir = jeha.temp_directory
             try:
                 shutil.rmtree(temp_dir)
             except Exception as e:
