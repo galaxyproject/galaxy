@@ -21,6 +21,8 @@ DEFAULTS = {
     'STRATEGY': 'Strategy',
     'STORAGE': 'Storage'
 }
+# key: a component name which PSA requests.
+# value: is the name of a class associated with that key.
 
 
 # TODO: State token
