@@ -404,7 +404,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
                     status = 'error'
                 else:
-                    ids = util.listify(params.id)
+                    user_openids = []
                     for id in ids:
                         id = trans.security.decode_id(id)
                         user_openid = trans.sa_session.query(trans.app.model.UserOpenID).get(int(id))

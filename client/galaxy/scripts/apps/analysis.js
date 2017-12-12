@@ -47,7 +47,6 @@ window.app = function app(options, bootstrapped) {
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)(:form_id)": "show_user_form",
-            "(/)openids(/)create": "show_openids_create",
             "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
@@ -164,15 +163,6 @@ window.app = function app(options, bootstrapped) {
                 new GridView({
                     url_base: `${Galaxy.root}user/openids_list`,
                     dict_format: true
-                })
-            );
-        },
-
-        show_openids_create: function() {
-            this.page.display(
-                new FormWrapper.View({
-                    url: `user/create_openid`,
-                    redirect: "openids/list"
                 })
             );
         },
