@@ -389,8 +389,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
     @web.expose_api
     @web.require_admin
     def create_openid(self, trans, **kwd):
-    #kwd['openid_providers'] = trans.app.openid_providers
-
+        #kwd['openid_providers'] = trans.app.openid_providers
         if trans.request.method == 'GET':
             return {
                 'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
