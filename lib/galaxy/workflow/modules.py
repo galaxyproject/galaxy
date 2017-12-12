@@ -911,19 +911,6 @@ class ToolModule(WorkflowModule):
             raise Exception(message)
 
         return complete
-        
-    def _fetch_workflow_options(self, trans, workflow_invocation_uuid):
-        workflow_options = None
-
-        query = trans.sa_session.query(trans.app.model.WorkflowRequestInputParameter).filter(
-            trans.app.model.WorkflowRequestInputParameter.type == "options").join(
-            trans.app.model.WorkflowInvocation).filter(
-            trans.app.model.WorkflowInvocation.uuid == workflow_invocation_uuid).one_or_none()
-
-        if query is not None:
-            workflow_options = loads(query.value)
-
-        return workflow_options
 
     def recover_mapping(self, invocation_step, progress):
         outputs = {}
