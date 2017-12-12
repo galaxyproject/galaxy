@@ -26,7 +26,7 @@ messages = Bunch(
 
 def decode_dbkey(dbkey):
     """ Decodes dbkey and returns tuple ( username, dbkey )"""
-    if isinstance(dbkey, str) and ':' in dbkey:
+    if isinstance(dbkey, basestring) and ':' in dbkey:
         return dbkey.split(':')
     else:
         return None, dbkey
