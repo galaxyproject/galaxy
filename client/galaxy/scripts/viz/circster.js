@@ -193,7 +193,6 @@ var CircsterView = Backbone.View.extend({
         tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + track_gap);
 
         // Map from track start to bounds.
-        var self = this;
         return _.map(tracks_start_radii, radius => [radius, radius + dataset_arc_height]);
     },
 
@@ -628,7 +627,6 @@ var CircsterTrackView = Backbone.View.extend({
      * default data bounds.
      */
     _update_data_bounds: function(new_bounds) {
-        var old_bounds = this.data_bounds;
         this.data_bounds =
             new_bounds || this.get_data_bounds(this.track.get("data_manager").get_genome_wide_data(this.genome));
         this._transition_chrom_data();
@@ -962,7 +960,6 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     _data_bounds_ticks_fn: function() {
         // Closure vars.
         var self = this;
-        visibleChroms = 0;
 
         // Return function for locating ticks based on chrom arc data.
         return (
