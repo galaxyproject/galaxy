@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 PostJobActionAssociation_table = Table("post_job_action_association", metadata,

@@ -10,7 +10,6 @@ import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-
 from ..requirements import ToolRequirement
 
 
@@ -31,7 +30,7 @@ class DependencyResolver(Dictifiable, object):
     config_options = {}
 
     @abstractmethod
-    def resolve( self, requirement, **kwds ):
+    def resolve(self, requirement, **kwds):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -97,7 +96,7 @@ class MappableDependencyResolver:
     @staticmethod
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
-            raw_mapping = yaml.load(f) or []
+            raw_mapping = yaml.safe_load(f) or []
         return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):
@@ -239,13 +238,13 @@ class Dependency(Dictifiable, object):
     cacheable = False
 
     @abstractmethod
-    def shell_commands( self, requirement ):
+    def shell_commands(self):
         """
         Return shell commands to enable this dependency.
         """
 
     @abstractproperty
-    def exact( self ):
+    def exact(self):
         """ Return true if version information wasn't discarded to resolve
         the dependency.
         """
@@ -258,7 +257,7 @@ class Dependency(Dictifiable, object):
         return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
 
 
-class NullDependency( Dependency ):
+class NullDependency(Dependency):
     dependency_type = None
     exact = True
 
@@ -273,7 +272,7 @@ class NullDependency( Dependency ):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self):
         return None
 
 

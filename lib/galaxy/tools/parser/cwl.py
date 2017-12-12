@@ -4,11 +4,12 @@ import os
 from galaxy.tools.cwl import tool_proxy
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
-
-from .interface import PageSource
-from .interface import PagesSource
-from .interface import ToolSource
-from .interface import ToolStdioExitCode
+from .interface import (
+    PageSource,
+    PagesSource,
+    ToolSource,
+    ToolStdioExitCode
+)
 from .output_actions import ToolOutputActionGroup
 from .output_objects import ToolOutput
 from .yaml import YamlInputSource
@@ -116,7 +117,7 @@ class CwlToolSource(ToolSource):
     def _parse_output(self, tool, output_instance):
         name = output_instance.name
         # TODO: handle filters, actions, change_format
-        output = ToolOutput( name )
+        output = ToolOutput(name)
         if "File" in output_instance.output_data_type:
             output.format = "_sniff_"
         else:
@@ -131,7 +132,7 @@ class CwlToolSource(ToolSource):
         output.tool = tool
         output.hidden = ""
         output.dataset_collector_descriptions = []
-        output.actions = ToolOutputActionGroup( output, None )
+        output.actions = ToolOutputActionGroup(output, None)
         return output
 
     def parse_requirements_and_containers(self):

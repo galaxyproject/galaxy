@@ -1,14 +1,13 @@
 """
 API Controller providing Galaxy Webhooks
 """
+import imp
+import logging
+import random
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as \
     expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
-
-import logging
-import random
-import imp
 
 log = logging.getLogger(__name__)
 
@@ -57,15 +56,22 @@ class WebhooksController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def get_data(self, trans, webhook_name, **kwd):
         """
-        *GET /api/webhooks/{webhook_name}/get_data
+        *GET /api/webhooks/{webhook_name}/get_data/{params}
         Returns the result of executing helper function
         """
+        params = {}
+
+        for key, value in kwd.items():
+            params[key] = value
+
         webhook = [
             webhook
             for webhook in self.app.webhooks_registry.webhooks
             if webhook.name == webhook_name
         ]
+
         return imp.load_source('helper', webhook[0].helper).main(
             trans,
             webhook[0],
+            params,
         ) if webhook and webhook[0].helper != '' else {}

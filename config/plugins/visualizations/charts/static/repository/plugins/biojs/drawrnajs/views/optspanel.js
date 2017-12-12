@@ -120,8 +120,8 @@ var Optspanel = Backbone.View.extend({
         .lasso()
         .on("lassoBegin", function(e, lassoPoints) {
             polygon = [];
-            canvas = self.vis.el.childNodes[1];
-            c2 = canvas.getContext('2d');
+            var canvas = self.vis.el.childNodes[1];
+            var c2 = canvas.getContext('2d');
             c2.fillStyle = "rgba(100, 100, 100, 0.02)";
             c2.beginPath();
 

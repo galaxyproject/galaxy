@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 
 
-<%def name="title()">Galaxy Administration</%def>
+<%def name="title()">Administration</%def>
 
 %if message:
     ${render_msg( message, status )}

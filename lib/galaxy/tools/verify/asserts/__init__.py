@@ -2,7 +2,7 @@ import inspect
 import logging
 import sys
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 assertion_module_names = ['text', 'tabular', 'xml']
 

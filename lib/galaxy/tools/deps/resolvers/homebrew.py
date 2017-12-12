@@ -51,8 +51,8 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
             return self._find_dep_versioned(name, version)
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
 
 __all__ = ('HomebrewDependencyResolver', )

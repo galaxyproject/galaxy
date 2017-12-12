@@ -1,7 +1,7 @@
 """Beautiful Soup
 Elixir and Tonic
 "The Screen-Scraper's Friend"
-http://www.crummy.com/software/BeautifulSoup/
+https://www.crummy.com/software/BeautifulSoup/
 
 Beautiful Soup parses a (possibly invalid) XML or HTML document into a
 tree representation. It provides methods and Pythonic idioms that make
@@ -41,16 +41,23 @@ For more than you ever wanted to know about Beautiful Soup, see the
 documentation:
 http://www.crummy.com/software/BeautifulSoup/documentation.html
 """
-from __future__ import generators
+from __future__ import (
+    generators,
+    print_function
+)
 
 import codecs
 import re
+import sgmllib
 import string
 import sys
-import types
-import sgmllib
-from htmlentitydefs import name2codepoint
-from sgmllib import SGMLParser, SGMLParseError
+from sgmllib import (
+    SGMLParseError,
+    SGMLParser
+)
+
+import six
+from six.moves.html_entities import name2codepoint
 
 __author__ = "Leonard Richardson (crummy.com)"
 __contributors__ = ["Sam Ruby (intertwingly.net)",
@@ -137,8 +144,7 @@ class PageElement:
         return lastChild
 
     def insert(self, position, newChild):
-        if (isinstance(newChild, basestring) or
-                isinstance(newChild, unicode)) and \
+        if isinstance(newChild, six.string_types) and \
                 not isinstance(newChild, NavigableString):
             newChild = NavigableString(newChild)
 
@@ -288,7 +294,7 @@ class PageElement:
         g = generator()
         while True:
             try:
-                i = g.next()
+                i = next(g)
             except StopIteration:
                 break
             if i:
@@ -339,23 +345,20 @@ class PageElement:
     def toEncoding(self, s, encoding=None):
         """Encodes an object to a string in some encoding, or to Unicode.
         ."""
-        if isinstance(s, unicode):
+        if not isinstance(s, six.string_types) and not isinstance(s, six.binary_type):
+            s = str(s)
+        if isinstance(s, six.text_type):
             if encoding:
                 s = s.encode(encoding)
-        elif isinstance(s, str):
-            if encoding:
-                s = s.encode(encoding)
-            else:
-                s = unicode(s)
         else:
             if encoding:
-                s = self.toEncoding(str(s), encoding)
+                s = s.encode(encoding)
             else:
-                s = unicode(s)
+                s = six.text_type(s)
         return s
 
 
-class NavigableString(unicode, PageElement):
+class NavigableString(six.text_type, PageElement):
 
     def __getattr__(self, attr):
         """text.string gives you text. This is for backwards
@@ -403,12 +406,11 @@ class Declaration(NavigableString):
 class Tag(PageElement):
     """Represents a found HTML tag with its attributes and contents."""
 
-    XML_ENTITIES_TO_CHARS = { 'apos': "'",
-                              "quot": '"',
-                              "amp": "&",
-                              "lt": "<",
-                              "gt": ">"
-                              }
+    XML_ENTITIES_TO_CHARS = {'apos': "'",
+                             "quot": '"',
+                             "amp": "&",
+                             "lt": "<",
+                             "gt": ">"}
     # An RE for finding ampersands that aren't the start of of a
     # numeric entity.
     BARE_AMPERSAND = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
@@ -456,9 +458,10 @@ class Tag(PageElement):
     def __contains__(self, x):
         return x in self.contents
 
-    def __nonzero__(self):
+    def __bool__(self):
         "A tag is non-None even if it has no contents."
         return True
+    __nonzero__ = __bool__
 
     def __setitem__(self, key, value):
         """Setting tag[key] sets the value of the 'key' attribute for the
@@ -489,7 +492,7 @@ class Tag(PageElement):
         """Calling a tag like a function is the same as calling its
         findAll() method. Eg. tag('a') returns a list of all the A tags
         found within this tag."""
-        return apply(self.findAll, args, kwargs)
+        return self.findAll(*args, **kwargs)
 
     def __getattr__(self, tag):
         if len(tag) > 3 and tag.rfind('Tag') == len(tag) - 3:
@@ -525,7 +528,7 @@ class Tag(PageElement):
     def _convertEntities(self, match):
         x = match.group(1)
         if x in name2codepoint:
-            return unichr(name2codepoint[x])
+            return six.unichr(name2codepoint[x])
         elif "&" + x + ";" in self.XML_ENTITIES_TO_CHARS:
             return '&%s;' % x
         else:
@@ -822,7 +825,7 @@ class SoupStrainer:
             if isinstance(markup, Tag):
                 markup = markup.name
             if markup and not isString(markup):
-                markup = unicode(markup)
+                markup = six.text_type(markup)
             # Now we know that chunk is either a string, or None.
             if hasattr(matchAgainst, 'match'):
                 # It's a regexp object.
@@ -832,8 +835,8 @@ class SoupStrainer:
             elif hasattr(matchAgainst, 'items'):
                 result = matchAgainst in markup
             elif matchAgainst and isString(markup):
-                if isinstance(markup, unicode):
-                    matchAgainst = unicode(matchAgainst)
+                if isinstance(markup, six.text_type):
+                    matchAgainst = six.text_type(matchAgainst)
                 else:
                     matchAgainst = str(matchAgainst)
 
@@ -854,19 +857,14 @@ class ResultSet(list):
 
 
 def isList(l):
-    """Convenience method that works with all 2.x versions of Python
-    to determine whether or not something is listlike."""
+    """Convenience method to determine whether or not something is listlike."""
     return hasattr(l, '__iter__') or \
-        type(l) in (types.ListType, types.TupleType)
+        type(l) in (list, tuple)
 
 
 def isString(s):
-    """Convenience method that works with all 2.x versions of Python
-    to determine whether or not something is stringlike."""
-    try:
-        return isinstance(s, unicode) or isintance(s, basestring)
-    except NameError:
-        return isinstance(s, str)
+    """Convenience method to determine whether or not something is stringlike."""
+    return isinstance(s, six.string_types)
 
 
 def buildTagMap(default, *args):
@@ -987,7 +985,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     def _feed(self, inDocumentEncoding=None):
         # Convert the document to Unicode.
         markup = self.markup
-        if isinstance(markup, unicode):
+        if isinstance(markup, six.text_type):
             if not hasattr(self, 'originalEncoding'):
                 self.originalEncoding = None
         else:
@@ -1148,7 +1146,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     def unknown_starttag(self, name, attrs, selfClosing=0):
         if self.quoteStack:
             # This is not a real tag.
-            attrs = ''.join(map(lambda(x, y): ' %s="%s"' % (x, y), attrs))
+            attrs = ''.join(' %s="%s"' % (x, y) for x, y in attrs)
             self.currentData.append('<%s%s>' % (name, attrs))
             return
         self.endData()
@@ -1215,9 +1213,9 @@ class BeautifulStoneSoup(Tag, SGMLParser):
     def handle_charref(self, ref):
         "Handle character references as data."
         if ref[0] == 'x':
-            data = unichr(int(ref[1:], 16))
+            data = six.unichr(int(ref[1:], 16))
         else:
-            data = unichr(int(ref))
+            data = six.unichr(int(ref))
 
         if u'\x80' <= data <= u'\x9F':
             data = UnicodeDammit.subMSChar(chr(ord(data)), self.smartQuotesTo)
@@ -1234,7 +1232,7 @@ class BeautifulStoneSoup(Tag, SGMLParser):
             ref in self.XML_ENTITIES_TO_CHARS
         if self.convertHTMLEntities or replaceWithXMLEntity:
             try:
-                data = unichr(name2codepoint[ref])
+                data = six.unichr(name2codepoint[ref])
             except KeyError:
                 if replaceWithXMLEntity:
                     data = self.XML_ENTITIES_TO_CHARS.get(ref)
@@ -1340,12 +1338,12 @@ class BeautifulSoup(BeautifulStoneSoup):
     NESTABLE_BLOCK_TAGS = ['blockquote', 'div', 'fieldset', 'ins', 'del']
 
     # Lists can contain other lists, but there are restrictions.
-    NESTABLE_LIST_TAGS = { 'ol': [],
-                           'ul': [],
-                           'li': ['ul', 'ol'],
-                           'dl': [],
-                           'dd': ['dl'],
-                           'dt': ['dl'] }
+    NESTABLE_LIST_TAGS = {'ol': [],
+                          'ul': [],
+                          'li': ['ul', 'ol'],
+                          'dl': [],
+                          'dd': ['dl'],
+                          'dt': ['dl']}
 
     # Tables can contain other tables, but there are restrictions.
     NESTABLE_TABLE_TAGS = {'table': [],
@@ -1399,7 +1397,7 @@ class BeautifulSoup(BeautifulStoneSoup):
                     # else an encoding was specified explicitly and it
                     # worked. Rewrite the meta tag.
                     newAttr = self.CHARSET_RE.sub(
-                        lambda(match): match.group(1) + "%SOUP-ENCODING%",
+                        lambda match: match.group(1) + "%SOUP-ENCODING%",
                         value)
                     attrs[contentTypeIndex] = (attrs[contentTypeIndex][0],
                                                newAttr)
@@ -1546,9 +1544,7 @@ class SimplifyingSOAPParser(BeautifulSOAP):
 # Download from http://chardet.feedparser.org/
 try:
     import chardet
-#    import chardet.constants
-#    chardet.constants._debug = 1
-except:
+except ImportError:
     chardet = None
 chardet = None
 
@@ -1563,8 +1559,8 @@ class UnicodeDammit:
     # meta tags to the corresponding Python codec names. It only covers
     # values that aren't in Python's aliases and can't be determined
     # by the heuristics in find_codec.
-    CHARSET_ALIASES = { "macintosh": "mac-roman",
-                        "x-sjis": "shift-jis" }
+    CHARSET_ALIASES = {"macintosh": "mac-roman",
+                       "x-sjis": "shift-jis"}
 
     def __init__(self, markup, overrideEncodings=[],
                  smartQuotesTo='xml'):
@@ -1572,7 +1568,7 @@ class UnicodeDammit:
             self._detectEncoding(markup)
         self.smartQuotesTo = smartQuotesTo
         self.triedEncodings = []
-        if isinstance(markup, unicode):
+        if isinstance(markup, six.text_type):
             return markup
 
         u = None
@@ -1587,7 +1583,7 @@ class UnicodeDammit:
                     break
 
         # If no luck and we have auto-detection library, try that:
-        if not u and chardet and not isinstance(self.markup, unicode):
+        if not u and chardet and not isinstance(self.markup, six.text_type):
             u = self._convertFrom(chardet.detect(self.markup)['encoding'])
 
         # As a last resort, try utf-8 and windows-1252:
@@ -1604,13 +1600,13 @@ class UnicodeDammit:
         """Changes a MS smart quote character to an XML or HTML
         entity."""
         sub = UnicodeDammit.MS_CHARS.get(orig)
-        if isinstance(sub, types.TupleType):
+        if isinstance(sub, tuple):
             if smartQuotesTo == 'xml':
                 sub = '&#x%s;' % sub[1]
             elif smartQuotesTo == 'html':
                 sub = '&%s;' % sub[0]
             else:
-                sub = unichr(int(sub[1], 16))
+                sub = six.unichr(int(sub[1], 16))
         return sub
     subMSChar = staticmethod(subMSChar)
 
@@ -1626,7 +1622,7 @@ class UnicodeDammit:
         if self.smartQuotesTo and proposed in ("windows-1252", "ISO-8859-1",
                                                "ISO-8859-2"):
             markup = re.compile("([\x80-\x9f])").sub(
-                lambda(x): self.subMSChar(x.group(1), self.smartQuotesTo),
+                lambda x: self.subMSChar(x.group(1), self.smartQuotesTo),
                 markup)
 
         try:
@@ -1659,7 +1655,7 @@ class UnicodeDammit:
         elif data[:4] == '\xff\xfe\x00\x00':
             encoding = 'utf-32le'
             data = data[4:]
-        newdata = unicode(data, encoding)
+        newdata = six.text_type(data, encoding)
         return newdata
 
     def _detectEncoding(self, xml_data):
@@ -1672,47 +1668,47 @@ class UnicodeDammit:
             elif xml_data[:4] == '\x00\x3c\x00\x3f':
                 # UTF-16BE
                 sniffed_xml_encoding = 'utf-16be'
-                xml_data = unicode(xml_data, 'utf-16be').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-16be').encode('utf-8')
             elif len(xml_data) >= 4 and xml_data[:2] == '\xfe\xff' and \
                     xml_data[2:4] != '\x00\x00':
                 # UTF-16BE with BOM
                 sniffed_xml_encoding = 'utf-16be'
-                xml_data = unicode(xml_data[2:], 'utf-16be').encode('utf-8')
+                xml_data = six.text_type(xml_data[2:], 'utf-16be').encode('utf-8')
             elif xml_data[:4] == '\x3c\x00\x3f\x00':
                 # UTF-16LE
                 sniffed_xml_encoding = 'utf-16le'
-                xml_data = unicode(xml_data, 'utf-16le').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-16le').encode('utf-8')
             elif len(xml_data) >= 4 and xml_data[:2] == '\xff\xfe' and \
                     xml_data[2:4] != '\x00\x00':
                 # UTF-16LE with BOM
                 sniffed_xml_encoding = 'utf-16le'
-                xml_data = unicode(xml_data[2:], 'utf-16le').encode('utf-8')
+                xml_data = six.text_type(xml_data[2:], 'utf-16le').encode('utf-8')
             elif xml_data[:4] == '\x00\x00\x00\x3c':
                 # UTF-32BE
                 sniffed_xml_encoding = 'utf-32be'
-                xml_data = unicode(xml_data, 'utf-32be').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-32be').encode('utf-8')
             elif xml_data[:4] == '\x3c\x00\x00\x00':
                 # UTF-32LE
                 sniffed_xml_encoding = 'utf-32le'
-                xml_data = unicode(xml_data, 'utf-32le').encode('utf-8')
+                xml_data = six.text_type(xml_data, 'utf-32le').encode('utf-8')
             elif xml_data[:4] == '\x00\x00\xfe\xff':
                 # UTF-32BE with BOM
                 sniffed_xml_encoding = 'utf-32be'
-                xml_data = unicode(xml_data[4:], 'utf-32be').encode('utf-8')
+                xml_data = six.text_type(xml_data[4:], 'utf-32be').encode('utf-8')
             elif xml_data[:4] == '\xff\xfe\x00\x00':
                 # UTF-32LE with BOM
                 sniffed_xml_encoding = 'utf-32le'
-                xml_data = unicode(xml_data[4:], 'utf-32le').encode('utf-8')
+                xml_data = six.text_type(xml_data[4:], 'utf-32le').encode('utf-8')
             elif xml_data[:3] == '\xef\xbb\xbf':
                 # UTF-8 with BOM
                 sniffed_xml_encoding = 'utf-8'
-                xml_data = unicode(xml_data[3:], 'utf-8').encode('utf-8')
+                xml_data = six.text_type(xml_data[3:], 'utf-8').encode('utf-8')
             else:
                 sniffed_xml_encoding = 'ascii'
                 pass
             xml_encoding_match = re.compile('^<\?.*encoding=[\'"](.*?)[\'"].*\?>')\
                                    .match(xml_data)
-        except:
+        except Exception:
             xml_encoding_match = None
         if xml_encoding_match:
             xml_encoding = xml_encoding_match.groups()[0].lower()
@@ -1766,38 +1762,38 @@ class UnicodeDammit:
                 ''.join(map(chr, range(256))), ''.join(map(chr, emap)))
         return s.translate(c.EBCDIC_TO_ASCII_MAP)
 
-    MS_CHARS = { '\x80': ('euro', '20AC'),
-                 '\x81': ' ',
-                 '\x82': ('sbquo', '201A'),
-                 '\x83': ('fnof', '192'),
-                 '\x84': ('bdquo', '201E'),
-                 '\x85': ('hellip', '2026'),
-                 '\x86': ('dagger', '2020'),
-                 '\x87': ('Dagger', '2021'),
-                 '\x88': ('circ', '2C6'),
-                 '\x89': ('permil', '2030'),
-                 '\x8A': ('Scaron', '160'),
-                 '\x8B': ('lsaquo', '2039'),
-                 '\x8C': ('OElig', '152'),
-                 '\x8D': '?',
-                 '\x8E': ('#x17D', '17D'),
-                 '\x8F': '?',
-                 '\x90': '?',
-                 '\x91': ('lsquo', '2018'),
-                 '\x92': ('rsquo', '2019'),
-                 '\x93': ('ldquo', '201C'),
-                 '\x94': ('rdquo', '201D'),
-                 '\x95': ('bull', '2022'),
-                 '\x96': ('ndash', '2013'),
-                 '\x97': ('mdash', '2014'),
-                 '\x98': ('tilde', '2DC'),
-                 '\x99': ('trade', '2122'),
-                 '\x9a': ('scaron', '161'),
-                 '\x9b': ('rsaquo', '203A'),
-                 '\x9c': ('oelig', '153'),
-                 '\x9d': '?',
-                 '\x9e': ('#x17E', '17E'),
-                 '\x9f': ('Yuml', '178') }
+    MS_CHARS = {'\x80': ('euro', '20AC'),
+                '\x81': ' ',
+                '\x82': ('sbquo', '201A'),
+                '\x83': ('fnof', '192'),
+                '\x84': ('bdquo', '201E'),
+                '\x85': ('hellip', '2026'),
+                '\x86': ('dagger', '2020'),
+                '\x87': ('Dagger', '2021'),
+                '\x88': ('circ', '2C6'),
+                '\x89': ('permil', '2030'),
+                '\x8A': ('Scaron', '160'),
+                '\x8B': ('lsaquo', '2039'),
+                '\x8C': ('OElig', '152'),
+                '\x8D': '?',
+                '\x8E': ('#x17D', '17D'),
+                '\x8F': '?',
+                '\x90': '?',
+                '\x91': ('lsquo', '2018'),
+                '\x92': ('rsquo', '2019'),
+                '\x93': ('ldquo', '201C'),
+                '\x94': ('rdquo', '201D'),
+                '\x95': ('bull', '2022'),
+                '\x96': ('ndash', '2013'),
+                '\x97': ('mdash', '2014'),
+                '\x98': ('tilde', '2DC'),
+                '\x99': ('trade', '2122'),
+                '\x9a': ('scaron', '161'),
+                '\x9b': ('rsaquo', '203A'),
+                '\x9c': ('oelig', '153'),
+                '\x9d': '?',
+                '\x9e': ('#x17E', '17E'),
+                '\x9f': ('Yuml', '178')}
 
 #######################################################################
 
@@ -1805,4 +1801,4 @@ class UnicodeDammit:
 # By default, act as an HTML pretty-printer.
 if __name__ == '__main__':
     soup = BeautifulSoup(sys.stdin.read())
-    print soup.prettify()
+    print(soup.prettify())

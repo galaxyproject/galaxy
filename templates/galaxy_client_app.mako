@@ -26,10 +26,11 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     <script type="text/javascript">
         require([ 'require', 'galaxy' ], function( require, galaxy ){
             //TODO: global...
-            window.Galaxy = new galaxy.GalaxyApp({
-                root    : '${h.url_for( "/" )}',
-                config  : ${ render_json( get_config_dict() )},
-                user    : ${ render_json( get_user_dict() )},
+            window.Galaxy = new galaxy.default.GalaxyApp({
+                root               : '${h.url_for( "/" )}',
+                config             : ${ render_json( get_config_dict() )},
+                user               : ${ render_json( get_user_dict() )},
+                session_csrf_token : '${ trans.session_csrf_token }'
             }, window.bootstrapped );
 
             %if app:

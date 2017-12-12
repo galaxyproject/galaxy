@@ -4,7 +4,7 @@ define( [ 'utilities/utils', 'visualizations/utilities/tabular-datasets' ], func
         var settings_string = '';
         var columns_string = '';
         var group_index = 0;
-        for ( key in chart.settings.attributes ) {
+        for (var key in chart.settings.attributes ) {
             var settings_value = chart.settings.get( key );
             _.each( [ [ ' ', '&#32;' ], [ ',', '&#44;' ], [ ':', '&#58;' ] ], function( pair ) {
                 settings_value = settings_value.replace( new RegExp( pair[ 0 ], 'g' ), pair[ 1 ] );

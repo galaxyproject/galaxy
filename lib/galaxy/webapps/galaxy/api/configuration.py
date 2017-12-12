@@ -2,32 +2,32 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
-
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api as expose_api_anonymous
-from galaxy.web import require_admin
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.managers import configuration, users
-from galaxy.queue_worker import send_control_task
-
 import json
+import logging
 import os
 
-import logging
-log = logging.getLogger( __name__ )
+from galaxy.managers import configuration, users
+from galaxy.queue_worker import send_control_task
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    require_admin
+)
+from galaxy.web.base.controller import BaseAPIController
+
+log = logging.getLogger(__name__)
 
 
-class ConfigurationController( BaseAPIController ):
+class ConfigurationController(BaseAPIController):
 
-    def __init__( self, app ):
-        super( ConfigurationController, self ).__init__( app )
-        self.config_serializer = configuration.ConfigSerializer( app )
-        self.admin_config_serializer = configuration.AdminConfigSerializer( app )
-        self.user_manager = users.UserManager( app )
+    def __init__(self, app):
+        super(ConfigurationController, self).__init__(app)
+        self.config_serializer = configuration.ConfigSerializer(app)
+        self.admin_config_serializer = configuration.AdminConfigSerializer(app)
+        self.user_manager = users.UserManager(app)
 
-    @expose_api_anonymous
-    def whoami( self, trans, **kwd ):
+    @expose_api
+    def whoami(self, trans, **kwd):
         """
         GET /api/whoami
         Return information about the current authenticated user.
@@ -35,11 +35,11 @@ class ConfigurationController( BaseAPIController ):
         :returns: dictionary with user information
         :rtype:   dict
         """
-        current_user = self.user_manager.current_user( trans )
+        current_user = self.user_manager.current_user(trans)
         return current_user.to_dict()
 
     @expose_api_anonymous_and_sessionless
-    def index( self, trans, **kwd ):
+    def index(self, trans, **kwd):
         """
         GET /api/configuration
         Return an object containing exposable configuration settings.
@@ -47,11 +47,11 @@ class ConfigurationController( BaseAPIController ):
         Note: a more complete list is returned if the user is an admin.
         """
         is_admin = trans.user_is_admin()
-        serialization_params = self._parse_serialization_params( kwd, 'all' )
-        return self.get_config_dict( trans, is_admin, **serialization_params )
+        serialization_params = self._parse_serialization_params(kwd, 'all')
+        return self.get_config_dict(trans, is_admin, **serialization_params)
 
     @expose_api_anonymous_and_sessionless
-    def version( self, trans, **kwds ):
+    def version(self, trans, **kwds):
         """
         GET /api/version
         Return a description of the major version of Galaxy (e.g. 15.03).
@@ -68,7 +68,7 @@ class ConfigurationController( BaseAPIController ):
             pass
         return {"version_major": self.app.config.version_major, "extra": extra}
 
-    def get_config_dict( self, trans, return_admin=False, view=None, keys=None, default_view='all' ):
+    def get_config_dict(self, trans, return_admin=False, view=None, keys=None, default_view='all'):
         """
         Return a dictionary with (a subset of) current Galaxy settings.
 
@@ -81,7 +81,7 @@ class ConfigurationController( BaseAPIController ):
             # TODO: this should probably just be under a different route: 'admin/configuration'
             serializer = self.admin_config_serializer
 
-        serialized = serializer.serialize_to_view( self.app.config, view=view, keys=keys, default_view=default_view )
+        serialized = serializer.serialize_to_view(self.app.config, view=view, keys=keys, default_view=default_view)
         return serialized
 
     @expose_api
@@ -92,10 +92,22 @@ class ConfigurationController( BaseAPIController ):
 
     @expose_api
     @require_admin
+    def decode_id(self, trans, encoded_id, **kwds):
+        """Decode a given id."""
+        decoded_id = None
+        # Handle the special case for library folders
+        if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
+            decoded_id = trans.security.decode_id(encoded_id[1:])
+        else:
+            decoded_id = trans.security.decode_id(encoded_id)
+        return {"decoded_id": decoded_id}
+
+    @expose_api
+    @require_admin
     def tool_lineages(self, trans):
         rval = []
         for id, tool in self.app.toolbox.tools():
-            if hasattr( tool, 'lineage' ):
+            if hasattr(tool, 'lineage'):
                 lineage_dict = tool.lineage.to_dict()
             else:
                 lineage_dict = None

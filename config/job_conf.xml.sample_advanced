@@ -443,7 +443,14 @@
         <destination id="singularity_local" runner="local">
           <param id="singularity_enabled">true</param>
           <!-- See the above documentation for docker_volumes, singularity_volumes works
-               the same way.
+               almost the same way. The only difference is that $default will expand with
+               rw directories that in Docker would expand as ro if any of subdirectories are rw.
+
+               As an example consider that Docker mounts the parent of the working directory
+               (this is known as the job directory) as ro and the working directory itself as rw.
+               This doesn't work in Singularity because if any parent directory is mounted as ro
+               none of its children will be rw. So the job directory will be mounted rw for
+               Singularity.
           -->
           <!--
           <param id="singularity_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>

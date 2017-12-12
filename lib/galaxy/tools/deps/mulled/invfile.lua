@@ -45,6 +45,19 @@ if conda_image == '' then
     conda_image = 'continuumio/miniconda:latest'
 end
 
+
+local singularity_image = VAR.SINGULARITY_IMAGE
+if singularity_image == '' then
+    singularity_image = 'quay.io/biocontainers/singularity:2.3--0'
+end
+
+local singularity_image_dir = VAR.SINGULARITY_IMAGE_DIR
+if singularity_image_dir == '' then
+    singularity_image_dir = 'singularity_import'
+end
+
+
+
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
     destination_base_image = 'bgruening/busybox-bash:0.1'
@@ -85,6 +98,24 @@ inv.task('build')
         .inImage(destination_base_image)
         .as(repo)
 
+if VAR.SINGULARITY ~= '' then
+    inv.task('singularity')
+        .using(singularity_image)
+        .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
+        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        -- for small containers (less than 7MB), double the size otherwise, add a little bit more as half the conda size
+        .run("size=$(du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '7' ]; then echo $(($size*2)); else  echo $(($size+$size*7/10)); fi")
+        .run("singularity create --size `size=$(du -sc /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '7' ]; then echo $(($size*2)); else  echo $(($size+$size*7/10)); fi` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
+        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
+end
+
+inv.task('cleanup')
+    .using(conda_image)
+    .withHostConfig({binds = {"build:/data"}})
+    .run('rm', '-rf', '/data/dist')
+
+
 if VAR.TEST_BINDS == '' then
     inv.task('test')
         .using(repo)
@@ -103,9 +134,14 @@ inv.task('push')
 
 inv.task('build-and-test')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
+
 
 inv.task('all')
     .runTask('build')
+    .runTask('singularity')
+    .runTask('cleanup')
     .runTask('test')
     .runTask('push')

@@ -1,16 +1,13 @@
 import logging
-
 from datetime import datetime
+
+from galaxy import model
+from galaxy.jobs.runners import JobState
+from ._safe_eval import safe_eval
 
 __all__ = ('failure', )
 
 log = logging.getLogger(__name__)
-
-from galaxy import model
-from galaxy.jobs.runners import JobState
-
-from ._safe_eval import safe_eval
-
 
 MESSAGES = dict(
     walltime_reached='it reached the walltime',
@@ -68,6 +65,7 @@ def failure(app, job_runner, job_state):
     runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
     if (runner_state not in (JobState.runner_states.WALLTIME_REACHED,
                              JobState.runner_states.MEMORY_LIMIT_REACHED,
+                             JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
                              JobState.runner_states.UNKNOWN_ERROR)):
         # not set or not a handleable runner state
         return
@@ -102,7 +100,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                  job_log_prefix,
                  destination,
                  MESSAGES[runner_state],
-                 job_state.job_wrapper.job_destination.id )
+                 job_state.job_wrapper.job_destination.id)
         # fetch JobDestination for the id or tag
         if destination:
             new_destination = app.job_config.get_destination(destination)
@@ -121,7 +119,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                       job_log_prefix,
                       resubmit['handler'])
             job.set_handler(resubmit['handler'])
-            job_runner.sa_session.add( job )
+            job_runner.sa_session.add(job)
             # Is this safe to do here?
             job_runner.sa_session.flush()
         # Cache the destination to prevent rerunning dynamic after

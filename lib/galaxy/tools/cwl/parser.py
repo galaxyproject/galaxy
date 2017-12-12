@@ -15,12 +15,10 @@ import six
 from galaxy.util import safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-
 from .cwltool_deps import (
     ensure_cwltool_available,
     process,
 )
-
 from .schema import non_strict_schema_loader, schema_loader
 
 log = logging.getLogger(__name__)
@@ -125,7 +123,7 @@ def check_requirements(rec, tool=True):
 
 
 @six.add_metaclass(ABCMeta)
-class ToolProxy( object ):
+class ToolProxy(object):
 
     def __init__(self, tool, tool_path):
         self._tool = tool

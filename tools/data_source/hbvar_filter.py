@@ -7,10 +7,10 @@ from six.moves.urllib.request import urlopen
 from galaxy import datatypes
 
 
-def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
+def exec_before_job(app, inp_data, out_data, param_dict, tool=None):
     """Sets the name of the data"""
-    data_name = param_dict.get( 'name', 'HbVar query' )
-    data_type = param_dict.get( 'type', 'txt' )
+    data_name = param_dict.get('name', 'HbVar query')
+    data_type = param_dict.get('type', 'txt')
     if data_type == 'txt':
         data_type = 'interval'  # All data is TSV, assume interval
     name, data = next(iter(out_data.items()))
@@ -22,7 +22,7 @@ def exec_before_job( app, inp_data, out_data, param_dict, tool=None):
 def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=None, stderr=None):
     """Verifies the data after the run"""
 
-    URL = param_dict.get( 'URL', None )
+    URL = param_dict.get('URL', None)
     URL = URL + '&_export=1&GALAXY_URL=0'
     if not URL:
         raise Exception('Datasource has not sent back a URL parameter')
@@ -33,7 +33,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     try:
         page = urlopen(URL)
     except Exception as exc:
-        raise Exception('Problems connecting to %s (%s)' % (URL, exc) )
+        raise Exception('Problems connecting to %s (%s)' % (URL, exc))
 
     data = next(iter(out_data.values()))
 
@@ -77,5 +77,5 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
             data = app.datatypes_registry.change_datatype(data, 'tabular')
     data.set_size()
     data.set_peek()
-    app.model.context.add( data )
+    app.model.context.add(data)
     app.model.context.flush()

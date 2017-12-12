@@ -1,3 +1,4 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -195,7 +196,7 @@
                 </div>
             %endif
         %else:
-            ${repository_type_select_field.get_html()}
+            ${render_select(repository_type_select_field)}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.
@@ -280,7 +281,7 @@
                 elif folder.label == 'Invalid tool dependencies':
                     folder_label = "%s<i> - click the tool dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Valid tools':
-                    col_span_str = 'colspan="3"'
+                    col_span_str = 'colspan="4"'
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
@@ -870,6 +871,7 @@
         %endif
         <${cell_type}>${tool.description | h}</${cell_type}>
         <${cell_type}>${tool.version | h}</${cell_type}>
+        <${cell_type}>${tool.profile | h}</${cell_type}>
         ##<${cell_type}>${tool.requirements | h}</${cell_type}>
     </tr>
     <%

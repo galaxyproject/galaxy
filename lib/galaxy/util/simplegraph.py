@@ -6,11 +6,12 @@ Fencepost-simple graph structure implementation.
 from galaxy.util.odict import odict
 
 
-class SimpleGraphNode( object ):
+class SimpleGraphNode(object):
     """
     Node representation.
     """
-    def __init__( self, index, **data ):
+
+    def __init__(self, index, **data):
         """
         :param index: index of this node in some parent list
         :type index: int
@@ -22,11 +23,12 @@ class SimpleGraphNode( object ):
         self.data = data
 
 
-class SimpleGraphEdge( object ):
+class SimpleGraphEdge(object):
     """
     Edge representation.
     """
-    def __init__( self, source_index, target_index, **data ):
+
+    def __init__(self, source_index, target_index, **data):
         """
         :param source_index: index of the edge's source node in some parent list
         :type source_index: int
@@ -40,7 +42,7 @@ class SimpleGraphEdge( object ):
         self.data = data
 
 
-class SimpleGraph( object ):
+class SimpleGraph(object):
     """
     Each node is unique (by id) and stores its own index in the node list/odict.
     Each edge is represented as two indeces into the node list/odict.
@@ -53,12 +55,13 @@ class SimpleGraph( object ):
     These graphs are not specifically directed but since source and targets on the
     edges are listed - it could easily be used that way.
     """
-    def __init__( self, nodes=None, edges=None ):
+
+    def __init__(self, nodes=None, edges=None):
         # use an odict so that edge indeces actually match the final node list indeces
         self.nodes = nodes or odict()
         self.edges = edges or []
 
-    def add_node( self, node_id, **data ):
+    def add_node(self, node_id, **data):
         """
         Adds a new node only if it doesn't already exist.
         :param node_id: some unique identifier
@@ -68,13 +71,13 @@ class SimpleGraph( object ):
         :returns: the new node
         """
         if node_id in self.nodes:
-            return self.nodes[ node_id ]
-        node_index = len( self.nodes )
-        new_node = SimpleGraphNode( node_index, **data )
-        self.nodes[ node_id ] = new_node
+            return self.nodes[node_id]
+        node_index = len(self.nodes)
+        new_node = SimpleGraphNode(node_index, **data)
+        self.nodes[node_id] = new_node
         return new_node
 
-    def add_edge( self, source_id, target_id, **data ):
+    def add_edge(self, source_id, target_id, **data):
         """
         Adds a new node only if it doesn't already exist.
         :param source_id: the id of the source node
@@ -92,22 +95,22 @@ class SimpleGraph( object ):
         # adds target_id to source_id's edge list
         #   adding source_id and/or target_id to nodes if not there already
         if source_id not in self.nodes:
-            self.add_node( source_id )
+            self.add_node(source_id)
         if target_id not in self.nodes:
-            self.add_node( target_id )
-        new_edge = SimpleGraphEdge( self.nodes[ source_id ].index, self.nodes[ target_id ].index, **data )
-        self.edges.append( new_edge )
+            self.add_node(target_id)
+        new_edge = SimpleGraphEdge(self.nodes[source_id].index, self.nodes[target_id].index, **data)
+        self.edges.append(new_edge)
         return new_edge
 
-    def gen_node_dicts( self ):
+    def gen_node_dicts(self):
         """
         Returns a generator that yields node dictionaries in the form:
             { 'id': <the nodes unique id>, 'data': <any additional node data> }
         """
         for node_id, node in self.nodes.items():
-            yield { 'id': node_id, 'data': node.data }
+            yield {'id': node_id, 'data': node.data}
 
-    def gen_edge_dicts( self ):
+    def gen_edge_dicts(self):
         """
         Returns a generator that yields node dictionaries in the form::
 
@@ -118,12 +121,12 @@ class SimpleGraph( object ):
             }
         """
         for edge in self.edges:
-            yield { 'source': edge.source_index, 'target': edge.target_index, 'data': edge.data }
+            yield {'source': edge.source_index, 'target': edge.target_index, 'data': edge.data}
 
-    def as_dict( self ):
+    def as_dict(self):
         """
         Returns a dictionary of the form::
 
             { 'nodes': <a list of node dictionaries>, 'edges': <a list of node dictionaries> }
         """
-        return { 'nodes': list( self.gen_node_dicts() ), 'edges': list( self.gen_edge_dicts() ) }
+        return {'nodes': list(self.gen_node_dicts()), 'edges': list(self.gen_edge_dicts())}

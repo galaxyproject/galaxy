@@ -34,6 +34,12 @@
 @ui-margin-horizontal-small: 4px;
 @ui-margin-horizontal-large: 10px;
 
+// helpers
+.ui-clear-float {
+    clear: both !important;
+    float: none !important;
+}
+
 // margins
 .ui-margin-top {
     padding-top: @ui-margin-vertical !important;
@@ -94,6 +100,7 @@
     margin-bottom: 0px;
     width: 100%;
     display: none;
+    word-wrap: break-word;
 }
 
 .ui-modal {
@@ -135,6 +142,7 @@
 
 // buttons
 .ui-button-default {
+    float: right;
     .icon {
         font-size: 1.1em;
     }
@@ -154,6 +162,7 @@
     &:extend(.no-highlight);
     height: auto !important;
     width: auto !important;
+    float: right;
     ul {
         i {
             width: 1.2em;
@@ -195,6 +204,7 @@
     height: inherit !important;
     width: inherit !important;
     padding-right: 3px !important;
+    float: right;
 }
 
 // side panel
@@ -202,6 +212,7 @@
     color: @base-text-color;
     background: @side-panel-bg;
     padding: 10px;
+    min-height:100%;
     .ui-side-section-title {
         font-weight: bold;
     }
@@ -424,6 +435,7 @@
 
 .ui-form-help {
     overflow: auto;
+    word-wrap: break-word;
 }
 
 .ui-form-info {
@@ -495,7 +507,7 @@
     position: relative;
     clear: both;
     width: auto;
-    height: 100%;
+    height: auto;
     .portlet-header {
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
@@ -538,8 +550,11 @@
             width       : 100%;
         }
         .portlet-buttons {
-            margin-top: @ui-margin-vertical;
-            margin-bottom: @ui-margin-vertical;
+            margin-top: @ui-margin-vertical-large;
+            margin-bottom: @ui-margin-vertical-large;
+            > .btn {
+                margin-right: 5px;
+            }
         }
     }
     .portlet-content.nopadding, .portlet-body.nopadding {
@@ -796,7 +811,6 @@
         margin-right: 5px;
     }
     .ui-color-picker-label {
-        float: left;
         line-height: 1.2em;
         margin-bottom: 5px;
     }
@@ -852,10 +866,12 @@
         .ui-button-icon {
             margin-top: 3px;
             margin-right: 5px;
+            float: left;
         }
     }
     .ui-list-message, .ui-list-portlet {
         clear: both;
+        padding-top: 1px;
     }
     .ui-list-id {
         cursor: pointer;
@@ -864,6 +880,34 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+    }
+}
+
+.ui-gs-select-file {
+    .ui-gs-filename-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-token-textbox {
+        float: right;
+        width: ~'calc(100% - 76px)';
+    }
+    .ui-gs-browse-button {
+        float: left;
+        .ui-button-icon {
+            margin-top: 3px;
+            margin-right: 5px;
+        }
+    }
+    .ui-gs-token-label {
+        margin-top: 5px;            
+        margin-left: 32px;
+        margin-right: 5px;
+        float: left;
+    }
+    .ui-gs-token-field {
+        clear: both;
+        padding-top: 5px;
     }
 }
 
@@ -952,6 +996,13 @@
     &:extend(.ui-dragover);
     border: 2px solid @state-success-bg;
     background: lighten(@state-success-bg, 10%) !important;
+}
+
+.ui-limitloader {
+    padding: 10px;
+    float: left;
+    font-weight: bold;
+    display: none;
 }
 
 // global select2 adjustments

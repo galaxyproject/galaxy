@@ -67,20 +67,20 @@ class TransLogger(object):
                 if name.lower() == 'content-length':
                     bytes = value
             self.write_log(environ, method, req_uri, start, status, bytes)
-            return start_response( status, headers, exc_info )
+            return start_response(status, headers, exc_info)
         return self.application(environ, replacement_start_response)
 
     def write_log(self, environ, method, req_uri, start, status, bytes):
         if bytes is None:
             bytes = '-'
         if time.daylight:
-                offset = time.altzone / 60 / 60 * -100
+            offset = time.altzone / 60 / 60 * -100
         else:
-                offset = time.timezone / 60 / 60 * -100
+            offset = time.timezone / 60 / 60 * -100
         if offset >= 0:
-                offset = "+%0.4d" % (offset)
+            offset = "+%0.4d" % (offset)
         elif offset < 0:
-                offset = "%0.4d" % (offset)
+            offset = "%0.4d" % (offset)
         d = {
             'REMOTE_ADDR': environ.get('REMOTE_ADDR') or '-',
             'REMOTE_USER': environ.get('REMOTE_USER') or '-',

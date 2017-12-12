@@ -21,6 +21,7 @@ class Godocker(object):
     """
     API parameters
     """
+
     def __init__(self, server, login, apikey, noCert):
         self.token = None
         self.server = server
@@ -335,16 +336,16 @@ class GodockerJobRunner(AsynchronousJobRunner):
             job_destination = job_wrapper.job_destination
             try:
                 docker_cpu = int(job_destination.params["docker_cpu"])
-            except:
+            except Exception:
                 docker_cpu = 1
             try:
                 docker_ram = int(job_destination.params["docker_memory"])
-            except:
+            except Exception:
                 docker_ram = 1
             try:
                 docker_image = self._find_container(job_wrapper).container_id
                 log.debug("GoDocker runner using container %s.", docker_image)
-            except:
+            except Exception:
                 log.error("Unable to find docker_image for job %s, failing." % job_wrapper.job_id)
                 return False
 
@@ -366,7 +367,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 for i in volume:
                     temp = dict({"name": i})
                     volumes.append(temp)
-            except:
+            except Exception:
                 log.debug("godocker_volume not set, using default.")
 
             dt = datetime.now()
@@ -378,7 +379,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
                 else:
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
-            except:
+            except Exception:
                 command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
 
             # GoDocker Job model schema

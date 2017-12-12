@@ -6,14 +6,14 @@ Return titles with lengths of corresponding seq
 """
 import sys
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 4)
 
 
-def compute_fasta_length( fasta_file, out_file, keep_first_char, keep_first_word=False ):
+def compute_fasta_length(fasta_file, out_file, keep_first_char, keep_first_word=False):
 
     infile = fasta_file
-    out = open( out_file, 'w')
-    keep_first_char = int( keep_first_char )
+    out = open(out_file, 'w')
+    keep_first_char = int(keep_first_char)
 
     fasta_title = ''
     seq_len = 0
@@ -26,15 +26,15 @@ def compute_fasta_length( fasta_file, out_file, keep_first_char, keep_first_word
 
     first_entry = True
 
-    for line in open( infile ):
+    for line in open(infile):
         line = line.strip()
-        if not line or line.startswith( '#' ):
+        if not line or line.startswith('#'):
             continue
         if line[0] == '>':
             if first_entry is False:
                 if keep_first_word:
                     fasta_title = fasta_title.split()[0]
-                out.write( "%s\t%d\n" % ( fasta_title[ 1:keep_first_char ], seq_len ) )
+                out.write("%s\t%d\n" % (fasta_title[1:keep_first_char], seq_len))
             else:
                 first_entry = False
             fasta_title = line
@@ -45,9 +45,9 @@ def compute_fasta_length( fasta_file, out_file, keep_first_char, keep_first_word
     # last fasta-entry
     if keep_first_word:
         fasta_title = fasta_title.split()[0]
-    out.write( "%s\t%d\n" % ( fasta_title[ 1:keep_first_char ], seq_len ) )
+    out.write("%s\t%d\n" % (fasta_title[1:keep_first_char], seq_len))
     out.close()
 
 
 if __name__ == "__main__" :
-    compute_fasta_length( sys.argv[1], sys.argv[2], sys.argv[3], True )
+    compute_fasta_length(sys.argv[1], sys.argv[2], sys.argv[3], True)

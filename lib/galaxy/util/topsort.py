@@ -78,10 +78,10 @@ class CycleError(Exception):
         for x in self.get_elements():
             if x in succs:
                 for y in succs[x]:
-                    answer.append( (x, y) )
+                    answer.append((x, y))
             else:
                 # make sure x appears in topsort's output!
-                answer.append( (x, x) )
+                answer.append((x, x))
         return answer
 
     # return remaining elt -> list of predecessors map
@@ -194,7 +194,7 @@ def topsort_levels(pairlist):
         levparents = [x for x in numpreds.keys() if numpreds[x] == 0]
         if not levparents:
             break
-        answer.append( levparents )
+        answer.append(levparents)
         for levparent in levparents:
             del numpreds[levparent]
             if levparent in successors:
@@ -205,6 +205,6 @@ def topsort_levels(pairlist):
     if numpreds:
         # Everything in num_parents has at least one child ->
         # there's a cycle.
-        raise CycleError( answer, numpreds, successors )
+        raise CycleError(answer, numpreds, successors)
 
     return answer

@@ -3,6 +3,8 @@
 Walk downloaded Genome Projects and Convert, in place, IDs to match the UCSC Archaea browser, where applicable.
 Uses UCSC Archaea DSN.
 """
+from __future__ import print_function
+
 import os
 import sys
 import urllib
@@ -11,11 +13,11 @@ from xml.etree import ElementTree
 
 
 def __main__():
-    base_dir = os.path.join( os.getcwd(), "bacteria" )
+    base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
-        print "using default base_dir:", base_dir
+    except IndexError:
+        print("using default base_dir:", base_dir)
 
     organisms = {}
     for result in os.walk(base_dir):
@@ -45,29 +47,27 @@ def __main__():
 
     try:
         page = urllib.urlopen(URL)
-    except:
-        print "#Unable to open " + URL
-        print "?\tunspecified (?)"
+    except Exception:
+        print("#Unable to open " + URL)
+        print("?\tunspecified (?)")
         sys.exit(1)
 
     text = page.read()
     try:
         tree = ElementTree.fromstring(text)
-    except:
-        print "#Invalid xml passed back from " + URL
-        print "?\tunspecified (?)"
+    except Exception:
+        print("#Invalid xml passed back from " + URL)
+        print("?\tunspecified (?)")
         sys.exit(1)
 
     builds = {}
 
-    # print "#Harvested from http://archaea.ucsc.edu/cgi-bin/das/dsn"
-    # print "?\tunspecified (?)"
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
         try:
             org_page = urllib.urlopen("http://archaea.ucsc.edu/cgi-bin/hgGateway?db=" + build).read().replace("\n", "").split("<table border=2 cellspacing=2 cellpadding=2>")[1].split("</table>")[0].split("</tr>")
-        except:
-            print "NO CHROMS FOR", build
+        except Exception:
+            print("NO CHROMS FOR", build)
             continue
         org_page.pop(0)
         if org_page[-1] == "":
@@ -82,12 +82,11 @@ def __main__():
                         if org not in builds:
                             builds[org] = {'chrs': {}, 'build': build}
                         builds[org]['chrs'][refseq] = chr
-                        # print build,org,chr,refseq
 
-    print
+    print()
     ext_to_edit = ['bed', 'info', ]
     for org in builds:
-        print org, "changed to", builds[org]['build']
+        print(org, "changed to", builds[org]['build'])
 
         # org info file
         info_file_old = os.path.join(base_dir + org, org + ".info")

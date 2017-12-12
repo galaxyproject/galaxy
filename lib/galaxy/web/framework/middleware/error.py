@@ -153,7 +153,7 @@ class ErrorMiddleware(object):
             sr_checker = ResponseStartChecker(start_response)
             app_iter = self.application(environ, sr_checker)
             return self.make_catching_iter(app_iter, environ, sr_checker)
-        except:
+        except Exception:
             exc_info = sys.exc_info()
             try:
                 for expect in environ.get('paste.expected_exceptions', []):
@@ -244,7 +244,7 @@ class CatchingIter(six.Iterator):
                 return close_response
             else:
                 raise StopIteration
-        except:
+        except Exception:
             self.closed = True
             close_response = self._close()
             exc_info = sys.exc_info()
@@ -275,7 +275,7 @@ class CatchingIter(six.Iterator):
         try:
             self.app_iterable.close()
             return None
-        except:
+        except Exception:
             close_response = self.error_middleware.exception_handler(
                 sys.exc_info(), self.environ)
             return close_response
@@ -356,7 +356,7 @@ def handle_exception(exc_info, error_stream, html=True,
         from paste.exceptions.errormiddleware import handle_exception
         try:
             do stuff
-        except:
+        except Exception:
             handle_exception(
                 sys.exc_info(), sys.stderr, html=False, ...other config...)
 
@@ -440,7 +440,7 @@ def handle_exception(exc_info, error_stream, html=True,
 def send_report(rep, exc_data, html=True):
     try:
         rep.report(exc_data)
-    except:
+    except Exception:
         output = StringIO()
         traceback.print_exc(file=output)
         if html:

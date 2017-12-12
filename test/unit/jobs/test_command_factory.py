@@ -32,21 +32,21 @@ class TestCommandFactory(TestCase):
 
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
-        self.__assert_command_is( _surrond_command(MOCK_COMMAND_LINE + "; return_code=$?" ))
+        self.__assert_command_is(_surrond_command(MOCK_COMMAND_LINE + "; return_code=$?"))
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is( _surrond_command("%s; %s; return_code=$?" % (dep_commands[0], MOCK_COMMAND_LINE) ))
+        self.__assert_command_is(_surrond_command("%s; %s; return_code=$?" % (dep_commands[0], MOCK_COMMAND_LINE)))
 
     def test_shell_commands_external(self):
         self.job_wrapper.commands_in_new_shell = True
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is( _surrond_command( "%s/tool_script.sh; return_code=$?" % self.job_wrapper.working_directory)  )
-        self.__assert_tool_script_is( "#!/bin/sh\n%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE) )
+        self.__assert_command_is(_surrond_command("%s/tool_script.sh; return_code=$?" % self.job_wrapper.working_directory))
+        self.__assert_tool_script_is("#!/bin/sh\n%s; %s" % (dep_commands[0], MOCK_COMMAND_LINE))
 
     def test_remote_dependency_resolution(self):
         self.include_work_dir_outputs = False
@@ -58,23 +58,23 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is( _surrond_command("%s; %s; return_code=$?" % (dep_commands[0], MOCK_COMMAND_LINE)),
+        self.__assert_command_is(_surrond_command("%s; %s; return_code=$?" % (dep_commands[0], MOCK_COMMAND_LINE)),
                                  remote_command_params=dict(dependency_resolution="local"))
 
     def test_task_prepare_inputs(self):
         self.include_work_dir_outputs = False
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
-        self.__assert_command_is( _surrond_command("/opt/split1; /opt/split2; %s; return_code=$?") % MOCK_COMMAND_LINE )
+        self.__assert_command_is(_surrond_command("/opt/split1; /opt/split2; %s; return_code=$?") % MOCK_COMMAND_LINE)
 
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self.__assert_command_is( _surrond_command('%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi' % MOCK_COMMAND_LINE ))
+        self.__assert_command_is(_surrond_command('%s; return_code=$?; if [ -f foo ] ; then cp foo bar ; fi' % MOCK_COMMAND_LINE))
 
     def test_set_metadata_skipped_if_unneeded(self):
         self.include_metadata = True
         self.include_work_dir_outputs = False
-        self.__assert_command_is( _surrond_command( MOCK_COMMAND_LINE + "; return_code=$?" ) )
+        self.__assert_command_is(_surrond_command(MOCK_COMMAND_LINE + "; return_code=$?"))
 
     def test_set_metadata(self):
         self._test_set_metadata()
@@ -88,7 +88,7 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.job_wrapper.metadata_line = TEST_METADATA_LINE
         expected_command = _surrond_command("%s; return_code=$?; cd '%s'; %s%s" % (MOCK_COMMAND_LINE, self.job_dir, SETUP_GALAXY_FOR_METADATA, TEST_METADATA_LINE))
-        self.__assert_command_is( expected_command )
+        self.__assert_command_is(expected_command)
 
     def test_empty_metadata(self):
         """
@@ -99,7 +99,7 @@ class TestCommandFactory(TestCase):
         self.job_wrapper.metadata_line = ' '
         # Empty metadata command do not touch command line.
         expected_command = _surrond_command("%s; return_code=$?; cd '%s'" % (MOCK_COMMAND_LINE, self.job_dir))
-        self.__assert_command_is( expected_command )
+        self.__assert_command_is(expected_command)
 
     def test_metadata_kwd_defaults(self):
         configured_kwds = self.__set_metadata_with_kwds()

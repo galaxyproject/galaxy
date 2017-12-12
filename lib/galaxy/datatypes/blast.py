@@ -30,14 +30,16 @@
 
 Covers the ``blastxml`` format and the BLAST databases.
 """
-
 import logging
 import os
 from time import sleep
 
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.data import Data, Text
-from galaxy.datatypes.xml import GenericXml
+from .data import (
+    Data,
+    get_file_peek,
+    Text
+)
+from .xml import GenericXml
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class BlastXml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = 'NCBI Blast XML data'
         else:
             dataset.peek = 'file does not exist'

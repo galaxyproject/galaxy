@@ -3,7 +3,6 @@ import os.path
 import shutil
 import tempfile
 import unittest
-
 from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source
@@ -123,6 +122,10 @@ class BaseLoaderTestCase(unittest.TestCase):
 class XmlLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "bwa.xml"
     source_contents = TOOL_XML_1
+
+    def test_tool_source_to_string(self):
+        # Previously this threw an Exception - test for regression.
+        str(self._tool_source)
 
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"

@@ -17,23 +17,23 @@ from galaxy.tools.util import maf_utilities
 
 def __main__():
     # Parse Command Line
-    input_file = sys.argv.pop( 1 )
-    output_file = sys.argv.pop( 1 )
-    species = maf_utilities.parse_species_option( sys.argv.pop( 1 ) )
+    input_file = sys.argv.pop(1)
+    output_file = sys.argv.pop(1)
+    species = maf_utilities.parse_species_option(sys.argv.pop(1))
 
     try:
-        maf_writer = bx.align.maf.Writer( open( output_file, 'w' ) )
-    except:
+        maf_writer = bx.align.maf.Writer(open(output_file, 'w'))
+    except Exception:
         print(sys.stderr, "Unable to open output file")
         sys.exit()
     try:
         count = 0
-        for count, maf in enumerate( bx.align.maf.Reader( open( input_file ) ) ):
+        for count, maf in enumerate(bx.align.maf.Reader(open(input_file))):
             maf = maf.reverse_complement()
             if species:
-                maf = maf.limit_to_species( species )
-            maf_writer.write( maf )
-    except:
+                maf = maf.limit_to_species(species)
+            maf_writer.write(maf)
+    except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()
     print("%i regions were reverse complemented." % count)

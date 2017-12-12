@@ -2,7 +2,6 @@
 
 import os
 import re
-
 from json import dumps
 
 from base import integration_util
@@ -35,10 +34,10 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 
     framework_tool_and_types = True
 
-    def setUp( self ):
-        super( BaseWorkflowHandlerConfigurationTestCase, self ).setUp()
-        self.dataset_populator = DatasetPopulator( self.galaxy_interactor )
-        self.workflow_populator = WorkflowPopulator( self.galaxy_interactor )
+    def setUp(self):
+        super(BaseWorkflowHandlerConfigurationTestCase, self).setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     @classmethod
@@ -66,7 +65,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         app = self._app
         history_id = app.security.decode_id(self.history_id)
         sa_session = app.model.context.current
-        history = sa_session.query( app.model.History ).get( history_id )
+        history = sa_session.query(app.model.History).get(history_id)
         workflow_invocations = history.workflow_invocations
         return workflow_invocations
 
@@ -75,12 +74,12 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         return self._app.workflow_scheduling_manager.request_monitor is not None
 
 
-class HistoryRestrictionConfigurationTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     def test_history_to_handler_restriction(self):
         self._invoke_n_workflows(10)
         workflow_invocations = self._get_workflow_invocations()
-        assert len( workflow_invocations ) == 10
+        assert len(workflow_invocations) == 10
         # Verify all 10 assigned to same handler - there would be a
         # 1 in 10^10 chance for this to occur randomly.
         for workflow_invocation in workflow_invocations:
@@ -89,7 +88,7 @@ class HistoryRestrictionConfigurationTestCase( BaseWorkflowHandlerConfigurationT
         assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 
-class HistoryParallelConfigurationTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -99,7 +98,7 @@ class HistoryParallelConfigurationTestCase( BaseWorkflowHandlerConfigurationTest
     def test_workflows_spread_across_multiple_handlers(self):
         self._invoke_n_workflows(20)
         workflow_invocations = self._get_workflow_invocations()
-        assert len( workflow_invocations ) == 20
+        assert len(workflow_invocations) == 20
         handlers = set()
         for workflow_invocation in workflow_invocations:
             handlers.add(workflow_invocation.handler)
@@ -110,7 +109,7 @@ class HistoryParallelConfigurationTestCase( BaseWorkflowHandlerConfigurationTest
 
 
 # Setup an explicit workflow handler and make sure this is assigned to that.
-class WorkflowSchedulerHandlerAssignment( BaseWorkflowHandlerConfigurationTestCase ):
+class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -129,7 +128,7 @@ class WorkflowSchedulerHandlerAssignment( BaseWorkflowHandlerConfigurationTestCa
 #  - If no workflow schedulers conf is configured and the process is not a job handler, it is not a workflow scheduler as well.
 #  - If a workflow scheduler conf is defined and the process is listed as a handler, it is workflow scheduler.
 #  - If a workflow scheduler conf is defined and the process is not listed as a handler, it is not workflow scheduler.
-class DefaultWorkflowHandlerOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -140,7 +139,7 @@ class DefaultWorkflowHandlerOnTestCase( BaseWorkflowHandlerConfigurationTestCase
         assert self.is_app_workflow_scheduler
 
 
-class DefaultWorkflowHandlerIfJobHandlerOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -151,7 +150,7 @@ class DefaultWorkflowHandlerIfJobHandlerOnTestCase( BaseWorkflowHandlerConfigura
         assert self.is_app_workflow_scheduler
 
 
-class DefaultWorkflowHandlerIfJobHandlerOffTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -162,7 +161,7 @@ class DefaultWorkflowHandlerIfJobHandlerOffTestCase( BaseWorkflowHandlerConfigur
         assert not self.is_app_workflow_scheduler
 
 
-class ExplicitWorkflowHandlersOnTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -174,7 +173,7 @@ class ExplicitWorkflowHandlersOnTestCase( BaseWorkflowHandlerConfigurationTestCa
         assert self.is_app_workflow_scheduler
 
 
-class ExplicitWorkflowHandlersOffTestCase( BaseWorkflowHandlerConfigurationTestCase ):
+class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

@@ -16,22 +16,24 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
+from __future__ import absolute_import
 from __future__ import print_function
 
 import atexit
-import ConfigParser
 import errno
 import logging
 import optparse
 import os
 import re
+import signal
 import subprocess
 import sys
 import textwrap
 import threading
 import time
-
 from logging.config import fileConfig
+
+from six.moves import configparser
 
 from .loadwsgi import loadapp, loadserver
 
@@ -193,7 +195,7 @@ class Command(object):
         self.simulate = getattr(self.options, 'simulate', False)
 
         # For #! situations:
-        if (os.environ.get('PASTE_CONFIG_FILE') and self.takes_config_file is not None):
+        if os.environ.get('PASTE_CONFIG_FILE') and self.takes_config_file is not None:
             take = self.takes_config_file
             filename = os.environ.get('PASTE_CONFIG_FILE')
             if take == 1:
@@ -205,7 +207,7 @@ class Command(object):
                     "Value takes_config_file must be None, 1, or -1 (not %r)"
                     % take)
 
-        if (os.environ.get('PASTE_DEFAULT_QUIET')):
+        if os.environ.get('PASTE_DEFAULT_QUIET'):
             self.verbose = 0
 
         # Validate:
@@ -315,7 +317,7 @@ class Command(object):
         that case, or on non-Windows systems or an executable with no
         spaces, it just leaves well enough alone.
         """
-        if (sys.platform != 'win32' or ' ' not in arg):
+        if sys.platform != 'win32' or ' ' not in arg:
             # Problem does not apply:
             return arg
         try:
@@ -351,7 +353,7 @@ class Command(object):
         ConfigParser defaults are specified for the special ``__file__``
         and ``here`` variables, similar to PasteDeploy config loading.
         """
-        parser = ConfigParser.ConfigParser()
+        parser = configparser.ConfigParser()
         parser.read([config_file])
         if parser.has_section('loggers'):
             config_file = os.path.abspath(config_file)
@@ -386,7 +388,7 @@ MAXFD = 1024
 jython = sys.platform.startswith('java')
 
 
-class DaemonizeException( Exception ):
+class DaemonizeException(Exception):
     pass
 
 
@@ -499,7 +501,7 @@ class ServeCommand(Command):
             if not self.args:
                 raise BadCommand('You must give a config file')
             app_spec = self.args[0]
-            if (len(self.args) > 1 and self.args[1] in self.possible_subcommands):
+            if len(self.args) > 1 and self.args[1] in self.possible_subcommands:
                 cmd = self.args[1]
                 restvars = self.args[2:]
             else:
@@ -507,7 +509,7 @@ class ServeCommand(Command):
                 restvars = self.args[1:]
         else:
             app_spec = ""
-            if (self.args and self.args[0] in self.possible_subcommands):
+            if self.args and self.args[0] in self.possible_subcommands:
                 cmd = self.args[0]
                 restvars = self.args[1:]
             else:
@@ -637,7 +639,7 @@ class ServeCommand(Command):
 
         server = loadserver(server_spec, name=server_name, relative_to=base, global_conf=vars)
 
-        app = loadapp( app_spec, name=app_name, relative_to=base, global_conf=vars)
+        app = loadapp(app_spec, name=app_name, relative_to=base, global_conf=vars)
 
         if self.verbose > 0:
             if hasattr(os, 'getpid'):
@@ -699,7 +701,7 @@ class ServeCommand(Command):
 
         import resource  # Resource usage information.
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
-        if (maxfd == resource.RLIM_INFINITY):
+        if maxfd == resource.RLIM_INFINITY:
             maxfd = MAXFD
         # Iterate through and close all file descriptors.
         for fd in range(0, maxfd):
@@ -708,7 +710,7 @@ class ServeCommand(Command):
             except OSError:  # ERROR, fd wasn't open to begin with (ignored)
                 pass
 
-        if (hasattr(os, "devnull")):
+        if hasattr(os, "devnull"):
             REDIRECT_TO = os.devnull
         else:
             REDIRECT_TO = "/dev/null"
@@ -747,7 +749,6 @@ class ServeCommand(Command):
         for j in range(10):
             if not live_pidfile(pid_file):
                 break
-            import signal
             os.kill(pid, signal.SIGTERM)
             time.sleep(1)
         else:
@@ -802,9 +803,7 @@ class ServeCommand(Command):
                         raise
                     return 1
             finally:
-                if (proc is not None and
-                        hasattr(os, 'kill')):
-                    import signal
+                if proc is not None and hasattr(os, 'kill'):
                     try:
                         os.kill(proc.pid, signal.SIGTERM)
                     except (OSError, IOError):
@@ -1006,10 +1005,6 @@ def _turn_sigterm_into_systemexit():
     """
     Attempts to turn a SIGTERM exception into a SystemExit exception.
     """
-    try:
-        import signal
-    except ImportError:
-        return
 
     def handle_term(signo, frame):
         raise SystemExit
@@ -1039,10 +1034,8 @@ commands = {
 
 
 def run(args=None):
-    if (not args and
-        len(sys.argv) >= 2 and
-            os.environ.get('_') and sys.argv[0] != os.environ['_'] and
-            os.environ['_'] == sys.argv[1]):
+    if (not args and len(sys.argv) >= 2 and os.environ.get('_') and
+            sys.argv[0] != os.environ['_'] and os.environ['_'] == sys.argv[1]):
         # probably it's an exe execution
         args = ['exe', os.environ['_']] + sys.argv[2:]
     if args is None:

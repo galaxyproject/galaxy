@@ -11,22 +11,22 @@ def test_topsort_level_stability():
         (3, 5),
         (6, 2),
     ]
-    assert topsort.topsort_levels( data )[ 0 ] == [ 0, 1, 6 ]
-    assert topsort.topsort( data ) == [ 0, 1, 6, 2, 3, 4, 5 ]
+    assert topsort.topsort_levels(data)[0] == [0, 1, 6]
+    assert topsort.topsort(data) == [0, 1, 6, 2, 3, 4, 5]
     # Swap first two edges - so 1 appears first
-    swap( data, 0, 1 )
-    assert topsort.topsort_levels( data )[ 0 ] == [ 1, 0, 6 ]
-    assert topsort.topsort( data ) == [ 1, 0, 6, 2, 3, 4, 5 ]
+    swap(data, 0, 1)
+    assert topsort.topsort_levels(data)[0] == [1, 0, 6]
+    assert topsort.topsort(data) == [1, 0, 6, 2, 3, 4, 5]
 
     # Shouldn't really affect sorting of 1 0 6
-    swap( data, 3, 4 )
-    assert topsort.topsort_levels( data )[ 0 ] == [ 1, 0, 6 ]
-    assert topsort.topsort( data ) == [ 1, 0, 6, 2, 3, 4, 5 ]
+    swap(data, 3, 4)
+    assert topsort.topsort_levels(data)[0] == [1, 0, 6]
+    assert topsort.topsort(data) == [1, 0, 6, 2, 3, 4, 5]
 
     # Place 0 before 6 in original list
-    swap( data, 1, 6 )
-    assert topsort.topsort_levels( data )[ 0 ] == [ 1, 6, 0 ]
-    assert topsort.topsort( data ) == [ 1, 6, 0, 2, 3, 4, 5 ]
+    swap(data, 1, 6)
+    assert topsort.topsort_levels(data)[0] == [1, 6, 0]
+    assert topsort.topsort(data) == [1, 6, 0, 2, 3, 4, 5]
 
 
 def test_topsort_doc():

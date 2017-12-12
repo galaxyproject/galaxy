@@ -1,9 +1,10 @@
 import os
 
-from .framework import SeleniumTestCase
-from .framework import selenium_test
-
 from galaxy.util import galaxy_root_path
+from .framework import (
+    selenium_test,
+    SeleniumTestCase
+)
 
 STOCK_TOURS_DIRECTORY = os.path.join(galaxy_root_path, "config", "plugins", "tours")
 

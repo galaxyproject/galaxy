@@ -1,7 +1,7 @@
 define( [], function() {
     var axisLabel = function( name, options ) {
         options = options || {};
-        prefix  = name.substr( 0, 1 );
+        var prefix  = name.substr( 0, 1 );
         return {
             name        : name,
             label       : prefix.toUpperCase() + '-Axis label',
@@ -13,7 +13,7 @@ define( [], function() {
     }
     var axisType = function( name, options ) {
         options = options || {};
-        prefix  = name.substr( 0, 1 );
+        var prefix  = name.substr( 0, 1 );
         var axisPrecision = function() {
             return { name    : 'precision',
                      label   : 'Axis tick format',

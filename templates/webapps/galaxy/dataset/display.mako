@@ -17,7 +17,7 @@
             //
             $('.page-body').children().remove();
 
-            data.createTabularDatasetChunkedView({
+            data.default.createTabularDatasetChunkedView({
                 // TODO: encode id.
                 dataset_config:
                     _.extend( ${h.dumps( item.to_dict() )}, {
@@ -44,7 +44,7 @@
 </%def>
 
 <%def name="title()">
-    Galaxy | ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
+    ${get_class_display_name( item.__class__ )} | ${get_item_name( item ) | h}
 </%def>
 
 <%def name="render_item_links( data )">

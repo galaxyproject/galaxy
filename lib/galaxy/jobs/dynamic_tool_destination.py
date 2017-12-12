@@ -1,18 +1,17 @@
 from __future__ import print_function
 
-__version__ = '1.0.0'
+import argparse
+import collections
+import copy
+import logging
+import os
+import re
+import sys
+from functools import reduce
 
 from yaml import load
 
-import argparse
-import logging
-import os
-import sys
-import copy
-import collections
-import re
-from functools import reduce
-
+__version__ = '1.0.0'
 
 # log to galaxy's logger
 log = logging.getLogger(__name__)
@@ -1243,7 +1242,7 @@ def map_tool_to_destination(
                 if priority in config['default_destination']['priority']:
                     destination = config['default_destination']['priority'][priority]
                 else:
-                    destination = ( config['default_destination']['priority'][default_priority])
+                    destination = (config['default_destination']['priority'][default_priority])
             config = config['tools']
             if str(tool.old_id) in config:
                 if 'rules' in config[str(tool.old_id)]:

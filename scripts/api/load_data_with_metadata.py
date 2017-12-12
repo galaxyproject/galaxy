@@ -29,7 +29,7 @@ def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_fi
     data['create_type'] = 'file'
     data['link_data_only'] = 'link_to_files'
 
-    handle = open( fullpath + ".json" )
+    handle = open(fullpath + ".json")
     smeta = handle.read()
     handle.close()
     ext_meta = json.loads(smeta)

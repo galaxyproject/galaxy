@@ -7,6 +7,7 @@ def inherit(context):
         return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="init()">
 <%
@@ -128,6 +129,7 @@ def inherit(context):
 
     <div id="registrationForm" class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
+            <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
@@ -168,11 +170,8 @@ def inherit(context):
             %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
                 <div class="form-row">
                     <label>Subscribe to mailing list:</label>
-                    %if subscribe_checked:
-                        <% subscribe_check_box.checked = True %>
-                    %endif
-                    ${subscribe_check_box.get_html()}
-                    <p>See <a href="http://galaxyproject.org/wiki/Mailing%20Lists" target="_blank">
+                    ${render_checkbox(subscribe_check_box)}
+                    <p>See <a href="https://galaxyproject.org/mailing-lists/" target="_blank">
                     all Galaxy project mailing lists</a>.</p>
                 </div>
             %endif

@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -11,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
@@ -18,6 +20,13 @@
   <tool file="tool_provided_metadata_1.xml" />
   <tool file="tool_provided_metadata_2.xml" />
   <tool file="tool_provided_metadata_3.xml" />
+  <tool file="tool_provided_metadata_4.xml" />
+  <tool file="tool_provided_metadata_5.xml" />
+  <tool file="tool_provided_metadata_6.xml" />
+  <tool file="tool_provided_metadata_7.xml" />
+  <tool file="tool_provided_metadata_8.xml" />
+  <tool file="tool_provided_metadata_9.xml" />
+  <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
@@ -25,6 +34,7 @@
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
   <tool file="unicode_stream.xml" />
+  <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
@@ -51,6 +61,7 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_exception_1.xml" />
   <tool file="output_collection_filter.xml" />
   <tool file="output_auto_format.xml" />
@@ -78,11 +89,13 @@
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
   <tool file="explicit_conversion.xml" />
+  <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
+  <tool file="identifier_in_actions.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
   <tool file="collection_paired_test.xml" />
@@ -98,6 +111,8 @@
   <tool file="collection_optional_param.xml" />
   <tool file="collection_split_on_column.xml" />
   <tool file="collection_creates_dynamic_nested.xml" />
+  <tool file="collection_creates_dynamic_nested_from_json.xml" />
+  <tool file="collection_creates_dynamic_nested_from_json_elements.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
   <tool file="collection_creates_list_fail.xml" />
@@ -108,6 +123,7 @@
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
   <tool file="python_environment_problem.xml" />
+  <tool file="config_vars.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
@@ -126,6 +142,9 @@
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
   <tool file="for_workflows/split.xml" />
+  <tool file="for_workflows/empty_list.xml" />
+  <tool file="for_workflows/count_list.xml" />
+  <tool file="for_workflows/count_multi_file.xml" />
   <tool file="for_workflows/create_input_collection.xml" />
 
   <section id="filter" name="For Tours">
@@ -135,10 +154,14 @@
   <!-- Tools for dependency and container testing. -->
   <tool file="legacy_r.xml" />
   <tool file="mulled_example_multi_1.xml" />
+  <tool file="mulled_example_multi_versionless.xml" />
   <tool file="mulled_example_multi_incomplete.xml" />
   <tool file="mulled_example_conflict.xml" />
 
   <tool file="simple_constructs.yml" />
+
+  <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
+  <tool file="cat_data_and_sleep.xml" />
 
   <!-- Load collection operation tools - I consider these part of the
        "framework" and they are used to in API tests to test the underlying
@@ -147,6 +170,7 @@
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
+  <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

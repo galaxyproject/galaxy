@@ -9,23 +9,23 @@ import tempfile
 import six
 
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
+def stop_err(msg):
+    sys.stderr.write(msg)
     sys.exit()
 
 
-def solid2sanger( quality_string, min_qual=0 ):
+def solid2sanger(quality_string, min_qual=0):
     sanger = ""
-    quality_string = quality_string.rstrip( " " )
+    quality_string = quality_string.rstrip(" ")
     for qv in quality_string.split(" "):
         try:
-            if int( qv ) < 0:
+            if int(qv) < 0:
                 qv = '0'
-            if int( qv ) < min_qual:
+            if int(qv) < min_qual:
                 return False
                 break
-            sanger += chr( int( qv ) + 33 )
-        except:
+            sanger += chr(int(qv) + 33)
+        except Exception:
             pass
     return sanger
 
@@ -44,7 +44,7 @@ def Translator(frm='', to='', delete=''):
     return callable
 
 
-def merge_reads_qual( f_reads, f_qual, f_out, trim_name=False, out='fastq', double_encode=False, trim_first_base=False, pair_end_flag='', min_qual=0, table_name=None ):
+def merge_reads_qual(f_reads, f_qual, f_out, trim_name=False, out='fastq', double_encode=False, trim_first_base=False, pair_end_flag='', min_qual=0, table_name=None):
     # Reads from two files f_csfasta (reads) and f_qual (quality values) and produces output in three formats depending on out parameter,
     # which can have three values: fastq, txt, and db
     # fastq = fastq format
@@ -61,34 +61,34 @@ def merge_reads_qual( f_reads, f_qual, f_out, trim_name=False, out='fastq', doub
     lines = []
     line = " "
     while line:
-        for f in [ f_reads, f_qual ]:
-            line = f.readline().rstrip( '\n\r' )
-            while line.startswith( '#' ):
-                line = f.readline().rstrip( '\n\r' )
-            lines.append( line )
+        for f in [f_reads, f_qual]:
+            line = f.readline().rstrip('\n\r')
+            while line.startswith('#'):
+                line = f.readline().rstrip('\n\r')
+            lines.append(line)
 
-        if lines[0].startswith( '>' ) and lines[1].startswith( '>' ):
+        if lines[0].startswith('>') and lines[1].startswith('>'):
             if lines[0] != lines[1]:
                 stop_err('Files reads and quality score files are out of sync and likely corrupted. Please, check your input data')
 
             defline = lines[0][1:]
-            if trim_name and ( defline[ len(defline) - 3: ] == "_F3" or defline[ len(defline) - 3: ] == "_R3" ):
-                defline = defline[ :len(defline) - 3 ]
+            if trim_name and (defline[len(defline) - 3:] == "_F3" or defline[len(defline) - 3:] == "_R3"):
+                defline = defline[:len(defline) - 3]
 
-        elif ( not lines[0].startswith( '>' ) and not lines[1].startswith( '>' ) and len( lines[0] ) > 0 and len( lines[1] ) > 0 ):
+        elif (not lines[0].startswith('>') and not lines[1].startswith('>') and len(lines[0]) > 0 and len(lines[1]) > 0):
             if trim_first_base:
                 lines[0] = lines[0][1:]
             if double_encode:
                 de = Translator(frm="0123.", to="ACGTN")
                 lines[0] = de(lines[0])
-            qual = solid2sanger( lines[1], int( min_qual ) )
+            qual = solid2sanger(lines[1], int(min_qual))
             if qual:
                 if out == 'fastq':
-                    f_out.write( "@%s%s\n%s\n+\n%s\n" % ( defline, pair_end_flag, lines[0], qual ) )
+                    f_out.write("@%s%s\n%s\n+\n%s\n" % (defline, pair_end_flag, lines[0], qual))
                 if out == 'txt':
-                    f_out.write( '%s %s %s\n' % (defline, lines[0], qual ) )
+                    f_out.write('%s %s %s\n' % (defline, lines[0], qual))
                 if out == 'db':
-                    cursor.execute('insert into %s values("%s","%s","%s")' % (table_name, defline, lines[0], qual ) )
+                    cursor.execute('insert into %s values("%s","%s","%s")' % (table_name, defline, lines[0], qual))
         lines = []
 
 
@@ -153,7 +153,7 @@ def main():
 
     options, args = parser.parse_args()
 
-    if not ( options.fout and options.fr and options.fq ):
+    if not (options.fout and options.fr and options.fq):
         parser.error("""
         One or more of the three required paremetrs is missing:
         (1) --fr F3.csfasta file
@@ -162,37 +162,37 @@ def main():
         Use --help for more info
         """)
 
-    fr = open( options.fr, 'r' )
-    fq = open( options.fq, 'r' )
-    f_out = open( options.fout, 'w' )
+    fr = open(options.fr, 'r')
+    fq = open(options.fq, 'r')
+    f_out = open(options.fout, 'w')
 
     if options.rr and options.rq:
-        rr = open( options.rr, 'r' )
-        rq = open( options.rq, 'r' )
+        rr = open(options.rr, 'r')
+        rq = open(options.rq, 'r')
         if not options.rout:
             parser.error("Provide the name for f3 output using --rout option. Use --help for more info")
-        r_out = open( options.rout, 'w' )
+        r_out = open(options.rout, 'w')
 
         db = tempfile.NamedTemporaryFile()
 
         try:
             con = sqlite3.connect(db.name)
             cur = con.cursor()
-        except:
+        except Exception:
             stop_err('Cannot connect to %s\n') % db.name
 
-        merge_reads_qual( fr, fq, con, trim_name=options.trim_name, out='db', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual, table_name="f3" )
-        merge_reads_qual( rr, rq, con, trim_name=options.trim_name, out='db', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual, table_name="r3" )
+        merge_reads_qual(fr, fq, con, trim_name=options.trim_name, out='db', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual, table_name="f3")
+        merge_reads_qual(rr, rq, con, trim_name=options.trim_name, out='db', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual, table_name="r3")
         cur.execute('create index f3_name on f3( name )')
         cur.execute('create index r3_name on r3( name )')
 
         cur.execute('select * from f3,r3 where f3.name = r3.name')
         for item in cur:
-            f_out.write( "@%s%s\n%s\n+\n%s\n" % (item[0], "/1", item[1], item[2]) )
-            r_out.write( "@%s%s\n%s\n+\n%s\n" % (item[3], "/2", item[4], item[5]) )
+            f_out.write("@%s%s\n%s\n+\n%s\n" % (item[0], "/1", item[1], item[2]))
+            r_out.write("@%s%s\n%s\n+\n%s\n" % (item[3], "/2", item[4], item[5]))
 
     else:
-        merge_reads_qual( fr, fq, f_out, trim_name=options.trim_name, out='fastq', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual )
+        merge_reads_qual(fr, fq, f_out, trim_name=options.trim_name, out='fastq', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual)
 
     f_out.close()
 
