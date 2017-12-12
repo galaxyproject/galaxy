@@ -1450,37 +1450,6 @@ class GalaxyRBACAgent(RBACAgent):
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
 
-    def can_access_request_type(self, roles, request_type):
-        action = self.permitted_actions.REQUEST_TYPE_ACCESS
-        request_type_actions = []
-        for permission in request_type.actions:
-            if permission.action == action.action:
-                request_type_actions.append(permission)
-        if not request_type_actions:
-            return True
-        ret_val = False
-        for request_type_action in request_type_actions:
-            if request_type_action.role in roles:
-                ret_val = True
-                break
-        return ret_val
-
-    def set_request_type_permissions(self, request_type, permissions={}):
-        # Set new permissions on request_type, eliminating all current permissions
-        for role_assoc in request_type.actions:
-            self.sa_session.delete(role_assoc)
-        # Add the new permissions on request_type
-        permission_class = self.model.RequestTypePermissions
-        flush_needed = False
-        for action, roles in permissions.items():
-            if isinstance(action, Action):
-                action = action.action
-            for role_assoc in [permission_class(action, request_type, role) for role in roles]:
-                self.sa_session.add(role_assoc)
-                flush_needed = True
-        if flush_needed:
-            self.sa_session.flush()
-
 
 class HostAgent(RBACAgent):
     """
