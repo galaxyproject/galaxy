@@ -9,7 +9,6 @@ import shutil
 import subprocess
 import threading
 import time
-
 from datetime import datetime
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
