@@ -432,18 +432,36 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         message = kwd.get('message', '')
         status = kwd.get('status', '')
         if not trans.app.config.enable_openid:
-            message, status = ('OpenID authentication is not enabled in this instance of Galaxy.', 'error')
+            message = 'OpenID authentication is not enabled in this instance of Galaxy.'
+            status = 'error'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            id = kwd.get('id')
-        #if 'operation' in kwd:
-        #    operation = kwd['operation'].lower()
-        #    if operation == "delete":
-        #        return trans.response.send_redirect(url_for(controller='user',
-        #                                                    action='openid_disassociate',
-        #                                                    use_panels=use_panels,
-        #                                                    id=kwd['id']))
-        #kwd['redirect'] = kwd.get('redirect', url_for(controller='user', action='openid_manage', use_panels=True)).strip()
+            ids = util.listify(kwd.get('id'))
+            if operation == 'delete':
+                if not ids:
+                    message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
+                    status = 'error'
+                else:
+                    ids = util.listify(params.id)
+                    for id in ids:
+                        id = trans.security.decode_id(id)
+                        user_openid = trans.sa_session.query(trans.app.model.UserOpenID).get(int(id))
+                        if not user_openid or (trans.user.id != user_openid.user_id):
+                            message = 'The selected OpenID(s) are not associated with your Galaxy account.'
+                            status = 'error'
+                            user_openids = []
+                            break
+                        user_openids.append(user_openid)
+                    if user_openids:
+                        deleted_urls = []
+                        for user_openid in user_openids:
+                            trans.sa_session.delete(user_openid)
+                            deleted_urls.append(user_openid.openid)
+                        trans.sa_session.flush()
+                        for deleted_url in deleted_urls:
+                            trans.log_event('User disassociated OpenID: %s' % deleted_url)
+                        message = '%s OpenIDs were disassociated from your Galaxy account.' % len(ids)
+                        status = 'done'
         #kwd['openid_providers'] = trans.app.openid_providers
         if message and status:
             kwd['message'] = util.sanitize_text(message)
