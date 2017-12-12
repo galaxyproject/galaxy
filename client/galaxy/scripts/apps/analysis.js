@@ -47,6 +47,7 @@ window.app = function app(options, bootstrapped) {
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)(:form_id)": "show_user_form",
+            "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
@@ -152,6 +153,14 @@ window.app = function app(options, bootstrapped) {
                 new FormWrapper.View({
                     url: `history/permissions?id=${QueryStringParsing.get("id")}`,
                     redirect: "histories/list"
+                })
+            );
+        },
+
+        show_openids: function() {
+            this.page.display(
+                new GridView({
+                    url_base: `${Galaxy.root}user/openids_list`
                 })
             );
         },
