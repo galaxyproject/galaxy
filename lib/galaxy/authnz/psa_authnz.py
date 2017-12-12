@@ -411,9 +411,9 @@ class GalaxySocialBase(object):
 #         return _user  # User
 
 
-class Nonce(GalaxySocialBase, SQLAlchemyNonceMixin, SocialBase):
-    """One use numbers"""
-    pass
+# class Nonce(GalaxySocialBase, SQLAlchemyNonceMixin, SocialBase):
+#     """One use numbers"""
+#     pass
 
 
 class Association(GalaxySocialBase, SQLAlchemyAssociationMixin, SocialBase):
@@ -430,12 +430,12 @@ class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
     """Partial pipeline storage"""
     pass
 
-from ..model import UserAuthnzToken
+from ..model import UserAuthnzToken, SocialAuthNonce
 from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
     user = UserAuthnzToken  # UserSocialAuth
-    nonce = Nonce
+    nonce = SocialAuthNonce
     association = Association
     code = Code
     partial = Partial

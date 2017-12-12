@@ -5046,12 +5046,10 @@ class SocialAuthNonce(NonceMixin):
 
     @classmethod
     def use(cls, server_url, timestamp, salt):
-        kwargs = {'server_url': server_url, 'timestamp': timestamp,
-                  'salt': salt}
         try:
-            return cls.trans.session().query(cls).filter_by(**kwargs)[0]
+            return cls.trans.session().query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
         except IndexError:
-            instance = cls(**kwargs)
+            instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
             cls.trans.session().add(instance)
             cls.trans.sa_session.flush()
             return instance
