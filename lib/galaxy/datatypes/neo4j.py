@@ -8,9 +8,8 @@ import sys
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
-from galaxy.util import FILENAME_VALID_CHARS
-
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.util import FILENAME_VALID_CHARS
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
