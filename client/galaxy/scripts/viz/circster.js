@@ -1,6 +1,7 @@
 import _l from "utils/localization";
 import * as _ from "libs/underscore";
 import * as d3 from "d3";
+import {event as currentEvent} from "d3";
 import visualization from "viz/visualization";
 import mod_utils from "utils/utils";
 import config from "utils/config";
@@ -220,8 +221,8 @@ var CircsterView = Backbone.View.extend({
             .call(
                 d3.behavior.zoom().on("zoom", () => {
                     // Do zoom, drag.
-                    var scale = d3.event.scale;
-                    svg.attr("transform", `translate(${d3.event.translate}) scale(${scale})`);
+                    var scale = currentEvent.scale;
+                    svg.attr("transform", `translate(${currentEvent.translate}) scale(${scale})`);
 
                     // Propagate scale changes to views.
                     if (self.scale !== scale) {
