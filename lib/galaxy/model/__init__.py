@@ -3869,7 +3869,7 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         self.subworkflow_invocations = []
         self.step_states = []
         self.steps = []
-        #TODO: Uncomment this when fixing caching
+        # TODO: Uncomment this when fixing caching
         # self._resource_parameters = None
 
     def create_subworkflow_invocation_for_step(self, step):
@@ -4080,7 +4080,7 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
     #
     #     self._resource_parameters = resource_parameters
 
-    #TODO: Remove this. Temp solution until caching is fixed.
+    # TODO: Remove this. Temp solution until caching is fixed.
     def resource_parameters(self):
         resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
         _resource_parameters = {}

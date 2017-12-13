@@ -10,9 +10,9 @@ import sys
 
 import yaml
 
-import galaxy.util
-
 from copy import deepcopy
+
+import galaxy.util
 
 log = logging.getLogger(__name__)
 

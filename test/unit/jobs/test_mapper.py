@@ -13,7 +13,6 @@ from galaxy.util import bunch
 from . import test_rules
 
 WORKFLOW_UUID = uuid.uuid1().hex
-WORKFLOW_RESOURCE_PARAMS = []
 TOOL_JOB_DESTINATION = JobDestination()
 DYNAMICALLY_GENERATED_DESTINATION = JobDestination()
 
@@ -144,7 +143,6 @@ class MockJobWrapper(object, HasResourceParameters):
         raw_params = {
             "threshold": 8,
             "__workflow_invocation_uuid__": WORKFLOW_UUID,
-            "__workflow_resource_params__": WORKFLOW_RESOURCE_PARAMS,
         }
 
         def get_param_values(app, ignore_errors):
