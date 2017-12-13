@@ -1636,6 +1636,14 @@ mapper(model.UserOAuth2, model.UserOAuth2.table, properties=dict(
         primaryjoin=(model.UserOAuth2.table.c.user_id == model.User.table.c.id))
 ))
 
+mapper(model.SocialAuthAssociation, model.SocialAuthAssociation.table, properties=None)
+
+mapper(model.SocialAuthCode, model.SocialAuthCode.table, properties=None)
+
+mapper(model.SocialAuthNonce, model.SocialAuthNonce.table, properties=None)
+
+mapper(model.SocialAuthPartial, model.SocialAuthPartial.table, properties=None)
+
 mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
