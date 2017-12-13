@@ -302,7 +302,7 @@ def add_file(dataset, registry, json_file, output_path):
     if ext == 'auto':
         ext = 'data'
     datatype = registry.get_datatype_by_extension(ext)
-    if dataset.type in ('server_dir', 'path_paste') and link_data_only:
+    if link_data_only:
         # Never alter a file that will not be copied to Galaxy's local file store.
         if datatype.dataset_content_needs_grooming(dataset.path):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
