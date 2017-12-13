@@ -3,7 +3,6 @@
 This file defines the baked in resource mapper types, and this package contains an
 example of a more open, pluggable approach with greater control.
 """
-from copy import deepcopy
 import functools
 import logging
 import os
@@ -12,6 +11,8 @@ import sys
 import yaml
 
 import galaxy.util
+
+from copy import deepcopy
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +32,6 @@ def get_resource_mapper_function(app):
         workflow_resource_params = _read_defined_parameter_definitions(config)
         with open(mapper, "r") as f:
             mapper_definition = yaml.load(f)
-
 
         if "by_group" in mapper_definition:
             by_group = mapper_definition["by_group"]
@@ -164,7 +164,7 @@ def _import_resource_mapping_function(qualified_function_path):
     try:
         __import__(full_module_name)
     except ImportError:
-        raise Exception("Failed to find workflow resource mapper module %s" % (full_module_name))
+        raise Exception("Failed to find workflow resource mapper module %s" % full_module_name)
 
     module = sys.modules[full_module_name]
     if hasattr(module, function_name):

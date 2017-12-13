@@ -36,8 +36,8 @@ from galaxy.workflow.modules import (
     ToolModule,
     WorkflowModuleInjector
 )
-from galaxy.workflow.steps import attach_ordered_steps
 from galaxy.workflow.resources import get_resource_mapper_function
+from galaxy.workflow.steps import attach_ordered_steps
 from .base import decode_id
 
 log = logging.getLogger(__name__)

@@ -3870,7 +3870,7 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         self.step_states = []
         self.steps = []
         #TODO: Uncomment this when fixing caching
-        '''self._resource_parameters = None'''
+        # self._resource_parameters = None
 
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
@@ -4061,25 +4061,25 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
 
     # TODO: How is this caching supposed to work? When adding the _resource_parameters variable to the object, it does
     # not get shown when accessing the object later and fails on 'if self._resource_parameters is None:'.
-    '''
-    @property
-    def resource_parameters(self):
-        import pdb
-        pdb.set_trace()
-        if self._resource_parameters is None:
-            self.__cache_resource_parameters()
-        return self._resource_parameters
 
-    def __cache_resource_parameters(self):
-        # TODO: prefetch and optimize down the road.
-        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
-        resource_parameters = {}
-        for input_parameter in self.input_parameters:
-            if input_parameter.type == resource_type:
-                resource_parameters[input_parameter.name] = input_parameter.value
+    # @property
+    # def resource_parameters(self):
+    #     import pdb
+    #     pdb.set_trace()
+    #     if self._resource_parameters is None:
+    #         self.__cache_resource_parameters()
+    #     return self._resource_parameters
+    #
+    # def __cache_resource_parameters(self):
+    #     # TODO: prefetch and optimize down the road.
+    #     resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+    #     resource_parameters = {}
+    #     for input_parameter in self.input_parameters:
+    #         if input_parameter.type == resource_type:
+    #             resource_parameters[input_parameter.name] = input_parameter.value
+    #
+    #     self._resource_parameters = resource_parameters
 
-        self._resource_parameters = resource_parameters
-    '''
     #TODO: Remove this. Temp solution until caching is fixed.
     def resource_parameters(self):
         resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
