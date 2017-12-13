@@ -246,10 +246,10 @@ define({
     Trackster: false,
     Visualize: false,
     // ---------------------------------------------------------------------------- dataset-error
-    "Any additional comments you can provide regarding what you were doing at the time of the bug.": "N'importe quels commentaires que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
+    "Any additional comments you can provide regarding what you were doing at the time of the bug.": "N'importe quel commentaire que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
     "Your email address": "Votre adresse e-mail",
     Report: false,
-    "Error Report": "Rapoprt d'erreur",
+    "Error Report": "Rapport d'erreur",
     // ---------------------------------------------------------------------------- dataset-li
     "Dataset details": "Détails du jeu de données",
     // ---------------------------------------------------------------------------- dataset-edit-attributes
@@ -281,7 +281,7 @@ define({
     "Adding datasets from your history": "Ajouts de jeux de données à partir de votre historique",
     "Create New Folder": "Créer un nouveau dossier",
     // ---------------------------------------------------------------------------- library-librarytoolbar-view
-    "Create New Library": "Créer une nouvelle librairie",
+    "Create New Library": "Créer une nouvelle bibliothèque",
     // ---------------------------------------------------------------------------- tours
     Tours: false,
     // ---------------------------------------------------------------------------- user-preferences
