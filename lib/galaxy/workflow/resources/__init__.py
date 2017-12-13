@@ -34,7 +34,7 @@ def get_resource_mapper_function(app):
 
         if "by_group" in mapper_definition:
             by_group = mapper_definition["by_group"]
-            return functools.partial(_resource_options_by_group, by_group=by_group, workflow_resource_params=workflow_resource_params)
+            return functools.partial(_resource_parameters_by_group, by_group=by_group, workflow_resource_params=workflow_resource_params)
         else:
             raise Exception("Currently workflow parameter mapper definitions require a by_group definition.")
 
@@ -53,13 +53,13 @@ def _read_defined_parameter_definitions(config):
         return {}
 
 
-def _resource_options_by_group(trans, **kwds):
+def _resource_parameters_by_group(trans, **kwds):
     user = trans.user
     by_group = kwds["by_group"]
     workflow_resource_params = kwds["workflow_resource_params"]
 
     params = []
-    if validate_by_group_workflow_options_mapper(by_group, workflow_resource_params):
+    if validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_params):
         user_permissions = {}
         user_groups = []
         for g in user.groups:
@@ -78,12 +78,12 @@ def _resource_options_by_group(trans, **kwds):
                             user_permissions[tag] = {}
 
         # user_permissions is now set.
-        params = get_workflow_options_param_list(workflow_resource_params, user_permissions)
+        params = get_workflow_parameter_list(workflow_resource_params, user_permissions)
     return params
 
 
 # returns an array of parameters that a users set of permissions can access.
-def get_workflow_options_param_list(params, user_permissions):
+def get_workflow_parameter_list(params, user_permissions):
     param_list = []
     for param_name, param_elem in params.items():
         attr = deepcopy(param_elem.attrib)
@@ -114,7 +114,7 @@ def get_workflow_options_param_list(params, user_permissions):
     return param_list
 
 
-def validate_by_group_workflow_options_mapper(by_group, workflow_resource_params):
+def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_params):
     # TODO: Rework this to consume YAML mapper file, drop all parameter validation I think?
 
     # TODO: Do we really want to remove all parameter validation? I have changed it to validate the yml against the
