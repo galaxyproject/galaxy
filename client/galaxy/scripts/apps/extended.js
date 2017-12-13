@@ -3,6 +3,7 @@ import WorkflowView from "mvc/workflow/workflow-view";
 import Trackster from "viz/trackster";
 import Circster from "viz/circster";
 import Phyloviz from "viz/phyloviz";
+import Sweepster from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
 import AdminToolshed from "admin.toolshed";
 import Masthead from "layout/masthead";
@@ -173,10 +174,11 @@ export const bundleEntries = {
     history: historyEntry,
     History: History.History,
     HistoryContents: HistoryContents.HistoryContents,
+    SweepsterVisualization: Sweepster.SweepsterVisualization,
+    SweepsterVisualizationView: Sweepster.SweepsterVisualizationView,
     HistoryCopyDialog,
     HistoryViewAnnotated,
     Trackster
 };
 
-console.debug(bundleEntries);
 window.bundleEntries = bundleEntries;
