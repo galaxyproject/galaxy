@@ -26,10 +26,21 @@
                  False. -->
 <!--        <allow-password-change>False</allow-password-change>
 -->
-            <!-- Whether roles (and groups) should be automatically created if
+            <!-- Whether roles should be automatically created if
                  the attribute specified under auto-register-roles can be found.
                  Default is False. -->
 <!--        <auto-create-roles>False</auto-create-roles>
+-->
+            <!-- Whether groups should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Can be used in combination with auto-create-roles
+                 Default is False. -->
+<!--        <auto-create-groups>False</auto-create-groups>
+-->
+            <!-- If set, roles will be assigned to the auto generated groups,
+            not to the individual users. Can only be used if auto-create-roles and
+            auto-create-groups are True. Default is False. -->
+<!--        <auto-assign-roles-to-groups-only>False</auto-assign-roles-to-groups-only>
 -->
 
             <!-- LDAP-specific options -->

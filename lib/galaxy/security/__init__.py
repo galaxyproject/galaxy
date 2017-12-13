@@ -788,19 +788,16 @@ class GalaxyRBACAgent(RBACAgent):
         self.sa_session.add(role)
         # Create the UserRoleAssociations
         for user in [self.sa_session.query(self.model.User).get(x) for x in in_users]:
-            ura = self.model.UserRoleAssociation(user, role)
-            self.sa_session.add(ura)
+            self.associate_user_role(user, role)
         # Create the GroupRoleAssociations
         for group in [self.sa_session.query(self.model.Group).get(x) for x in in_groups]:
-            gra = self.model.GroupRoleAssociation(group, role)
-            self.sa_session.add(gra)
+            self.associate_group_role(group, role)
         if create_group_for_role:
             # Create the group
             group = self.model.Group(name=name)
             self.sa_session.add(group)
             # Associate the group with the role
-            gra = self.model.GroupRoleAssociation(group, role)
-            self.sa_session.add(gra)
+            self.associate_group_role(group, role)
             num_in_groups = len(in_groups) + 1
         else:
             num_in_groups = len(in_groups)

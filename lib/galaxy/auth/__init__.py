@@ -111,6 +111,11 @@ class AuthManager(object):
                     auth_return["auto_reg"] = string_as_bool(options.get('auto-register', False))
                     auth_return["email"] = auto_email
                     auth_return["username"] = auto_username
+                    auth_return["auto_create_roles"] = string_as_bool(options.get('auto-create-roles', False))
+                    auth_return["auto_create_groups"] = string_as_bool(options.get('auto-create-groups', False))
+                    auth_return["auto_assign_roles_to_groups_only"] = string_as_bool(
+                        options.get('auto-assign-roles-to-groups-only', False))
+
                     if len(auth_results) == 4:
                         auth_return["attributes"] = auth_results[3]
                     return auth_return
