@@ -123,7 +123,8 @@ def add_file(dataset, registry, json_file, output_path):
         file_err('The uploaded file is empty', dataset, json_file)
         return
     # Is dataset content supported sniffable binary?
-    if check_binary(dataset.path):
+    is_binary = check_binary(dataset.path)
+    if is_binary:
         # Sniff the data type
         guessed_ext = sniff.guess_ext(dataset.path, registry.sniff_order)
         # Set data_type only if guessed_ext is a binary datatype
@@ -259,7 +260,7 @@ def add_file(dataset, registry, json_file, output_path):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
-                if check_binary(dataset.path) or registry.is_extension_unsniffable_binary(dataset.file_type):
+                if is_binary or registry.is_extension_unsniffable_binary(dataset.file_type):
                     # We have a binary dataset, but it is not Bam, Sff or Pdf
                     data_type = 'binary'
                     parts = dataset.name.split(".")
