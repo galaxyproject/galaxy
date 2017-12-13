@@ -12,6 +12,7 @@ import Modal from "mvc/ui/ui-modal";
 import pagesEditorOnload from "galaxy.pages";
 import Data from "mvc/dataset/data";
 import History from "mvc/history/history-model";
+import StructureView from "mvc/history/history-structure-view";
 import HistoryContents from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
 import HistoryView from "mvc/history/history-view";
@@ -178,7 +179,8 @@ export const bundleEntries = {
     SweepsterVisualizationView: Sweepster.SweepsterVisualizationView,
     HistoryCopyDialog,
     HistoryViewAnnotated,
-    Trackster
+    Trackster,
+    StructureView
 };
 
 window.bundleEntries = bundleEntries;
