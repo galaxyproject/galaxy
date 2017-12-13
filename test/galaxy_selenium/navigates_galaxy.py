@@ -471,6 +471,9 @@ class NavigatesGalaxy(HasDriver):
 
         self.upload_queue_local_file(test_path)
 
+        # Having some problems with extension not being set properly.
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+
         if ext is not None:
             self.wait_for_selector_visible('.upload-extension')
             self.select2_set_value(".upload-extension", ext)
