@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import base64
 import codecs
 import errno
 import json
@@ -49,7 +50,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
-from social_core.storage import UserMixin, NonceMixin
+from social_core.storage import UserMixin, NonceMixin, AssociationMixin
 
 log = logging.getLogger(__name__)
 
@@ -5013,14 +5014,44 @@ class UserOAuth2(object):
         self.access_token = access_token
 
 
-class SocialAuthAssociation(object):
-    def __init__(self, server_url, handle, secret, issued, lifetime, assoc_type):
+class SocialAuthAssociation(AssociationMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
         self.server_url = server_url
         self.handle = handle
         self.secret = secret
         self.issued = issued
         self.lifetime = lifetime
         self.assoc_type = assoc_type
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def store(cls, server_url, association):
+        try:
+            assoc = cls.trans.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+        except IndexError:
+            assoc = cls(server_url=server_url, handle=association.handle)
+        assoc.secret = base64.encodestring(association.secret).decode()
+        assoc.issued = association.issued
+        assoc.lifetime = association.lifetime
+        assoc.assoc_type = association.assoc_type
+        cls.trans.sa_session.add(assoc)
+        cls.trans.sa_session.flush()
+
+    @classmethod
+    def get(cls, *args, **kwargs):
+        return cls.trans.sa_session.query(cls).filter_by(*args, **kwargs)
+
+    @classmethod
+    def remove(cls, ids_to_delete):
+        cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
 class SocialAuthCode(object):
@@ -5047,10 +5078,10 @@ class SocialAuthNonce(NonceMixin):
     @classmethod
     def use(cls, server_url, timestamp, salt):
         try:
-            return cls.trans.session().query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+            return cls.trans.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
         except IndexError:
             instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
-            cls.trans.session().add(instance)
+            cls.trans.sa_session.add(instance)
             cls.trans.sa_session.flush()
             return instance
 

@@ -151,8 +151,11 @@ class PSAAuthnz(IdentityProvider):
         # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
         global _user
         _user = trans.user
-        print '\n\n...................... _user: {}\n\n'.format(_user)
+
         _trans = trans
+        trans.app.model.UserAuthnzToken.trans = trans
+        trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthAssociation.trans = trans
 
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
@@ -168,6 +171,8 @@ class PSAAuthnz(IdentityProvider):
     def callback(self, state_token, authz_code, trans):
         _trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
+        trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthAssociation.trans = trans
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
@@ -187,6 +192,8 @@ class PSAAuthnz(IdentityProvider):
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
+        trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthAssociation.trans = trans
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
@@ -430,13 +437,13 @@ class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
     """Partial pipeline storage"""
     pass
 
-from ..model import UserAuthnzToken, SocialAuthNonce
+from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation
 from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
     user = UserAuthnzToken  # UserSocialAuth
     nonce = SocialAuthNonce
-    association = Association
+    association = SocialAuthAssociation
     code = Code
     partial = Partial
 
