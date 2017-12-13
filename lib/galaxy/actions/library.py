@@ -119,6 +119,43 @@ class LibraryActions(object):
                 uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
             return uploaded_datasets, 200, None
 
+    def _get_server_dir_files(self, params, full_dir, import_dir_desc):
+        files = []
+        try:
+            for entry in os.listdir(full_dir):
+                # Only import regular files
+                path = os.path.join(full_dir, entry)
+                link_data_only = params.get('link_data_only', 'copy_files')
+                if os.path.islink(full_dir) and link_data_only == 'link_to_files':
+                    # If we're linking instead of copying and the
+                    # sub-"directory" in the import dir is actually a symlink,
+                    # dereference the symlink, but not any of its contents.
+                    link_path = os.readlink(full_dir)
+                    if os.path.isabs(link_path):
+                        path = os.path.join(link_path, entry)
+                    else:
+                        path = os.path.abspath(os.path.join(link_path, entry))
+                elif os.path.islink(path) and os.path.isfile(path) and link_data_only == 'link_to_files':
+                    # If we're linking instead of copying and the "file" in the
+                    # sub-directory of the import dir is actually a symlink,
+                    # dereference the symlink (one dereference only, Vasili).
+                    link_path = os.readlink(path)
+                    if os.path.isabs(link_path):
+                        path = link_path
+                    else:
+                        path = os.path.abspath(os.path.join(os.path.dirname(path), link_path))
+                if os.path.isfile(path):
+                    files.append(path)
+        except Exception as e:
+            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, str(e))
+            response_code = 500
+            return None, response_code, message
+        if not files:
+            message = "The directory '%s' contains no valid files" % full_dir
+            response_code = 400
+            return None, response_code, message
+        return files, None, None
+
     def _get_path_paste_uploaded_datasets(self, trans, params, library_bunch, response_code, message):
         preserve_dirs = util.string_as_bool(params.get('preserve_dirs', False))
         uploaded_datasets = []
