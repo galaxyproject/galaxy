@@ -60,7 +60,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             del params['__workflow_invocation_uuid__']
         if workflow_resource_parameters:
             params['__workflow_resource_params__'] = workflow_resource_parameters
-        else:
+        elif '__workflow_resource_params__' in params:
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
