@@ -8,9 +8,9 @@ import logging
 import os
 import sys
 
-import yaml
-
 from copy import deepcopy
+
+import yaml
 
 import galaxy.util
 
