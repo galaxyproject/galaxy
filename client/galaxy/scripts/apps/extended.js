@@ -19,6 +19,8 @@ import HistoryView from "mvc/history/history-view";
 import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryViewAnnotated from "mvc/history/history-view-annotated";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
+import HDAListItemEdit from "mvc/history/hda-li-edit";
+import HDAModel from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
@@ -180,7 +182,9 @@ export const bundleEntries = {
     HistoryCopyDialog,
     HistoryViewAnnotated,
     Trackster,
-    StructureView
+    StructureView,
+    HDAListItemEdit,
+    HDAModel
 };
 
 window.bundleEntries = bundleEntries;
