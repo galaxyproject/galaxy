@@ -381,7 +381,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    openids=openids)
 
     @web.expose
-    @web.require_admin
+    @web.require_login('create OpenIDs')
     def create_openid(self, trans, **kwd):
         return trans.fill_template('/user/openid_manage.mako',
            openid_providers=trans.app.openid_providers,
