@@ -1,4 +1,3 @@
-
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
@@ -24,12 +23,16 @@
 
 <%def name="javascript_app()">
 <script type="text/javascript">
-define( 'app', function(){
-    $(function(){bundleEntries.multiHistory(bootstrapped)});
-});
+    define( 'app', function(){
+        bundleEntries.multiHistory(bootstrapped);
+    });
 </script>
-${ galaxy_client.load( app='app', current_history_id=current_history_id,
-    includingDeleted=include_deleted_histories, order=order, limit=limit ) }
-##${ galaxy_client.load( app='app', histories=histories,
-##    includingDeleted=include_deleted_histories, order=order, limit=limit ) }
+
+${galaxy_client.load(
+    app='app',
+    current_history_id=current_history_id,
+    includingDeleted=include_deleted_histories,
+    order=order,
+    limit=limit
+)}
 </%def>

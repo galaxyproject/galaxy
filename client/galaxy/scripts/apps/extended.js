@@ -1,4 +1,5 @@
 import _l from "utils/localization";
+import GalaxyApp from "galaxy";
 import WorkflowView from "mvc/workflow/workflow-view";
 import Trackster from "viz/trackster";
 import Circster from "viz/circster";
@@ -184,7 +185,8 @@ export const bundleEntries = {
     Trackster,
     StructureView,
     HDAListItemEdit,
-    HDAModel
+    HDAModel,
+    GalaxyApp
 };
 
 window.bundleEntries = bundleEntries;
