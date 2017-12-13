@@ -15,6 +15,7 @@ export default Backbone.View.extend({
     // Initialize
     initialize: function(grid_config) {
         this.grid = new GridModel();
+        this.dict_format = grid_config.dict_format;
         this.title = grid_config.title;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
@@ -29,21 +30,26 @@ export default Backbone.View.extend({
         };
 
         // set element
-        this.setElement("<div/>");
-        if (grid_config.url_base && !grid_config.items) {
-            var url_data = grid_config.url_data || {};
-            _.each(grid_config.filters, (v, k) => {
-                url_data[`f-${k}`] = v;
-            });
-            $.ajax({
-                url: `${grid_config.url_base}?${$.param(url_data)}`,
-                success: function(response) {
-                    response.embedded = grid_config.embedded;
-                    response.filters = grid_config.filters || {};
-                    self.init_grid(response);
-                }
-            });
+        if (this.dict_format) {
+            this.setElement("<div/>");
+            if (grid_config.url_base && !grid_config.items) {
+                var url_data = grid_config.url_data || {};
+                _.each(grid_config.filters, (v, k) => {
+                    url_data[`f-${k}`] = v;
+                });
+                $.ajax({
+                    url: `${grid_config.url_base}?${$.param(url_data)}`,
+                    success: function(response) {
+                        response.embedded = grid_config.embedded;
+                        response.filters = grid_config.filters || {};
+                        self.init_grid(response);
+                    }
+                });
+            } else {
+                this.init_grid(grid_config);
+            }
         } else {
+            this.setElement("#grid-container");
             this.init_grid(grid_config);
         }
 
@@ -564,8 +570,10 @@ export default Backbone.View.extend({
                 window.top.location = `${href}?${$.param(this.grid.get_url_data())}`;
             } else if (target == "center") {
                 $("#galaxy_main").attr("src", `${href}?${$.param(this.grid.get_url_data())}`);
-            } else {
+            } else if (this.grid.can_async_op(operation) || this.dict_format) {
                 this.update_grid();
+            } else {
+                this.go_to(target, href);
             }
 
             // done
@@ -579,7 +587,11 @@ export default Backbone.View.extend({
         }
 
         // refresh grid
-        this.update_grid();
+        if (this.grid.get("async") || this.dict_format) {
+            this.update_grid();
+        } else {
+            this.go_to(target, href);
+        }
 
         // done
         return false;
@@ -587,6 +599,10 @@ export default Backbone.View.extend({
 
     // go to url
     go_to: function(target, href) {
+        // get aysnc status
+        var async = this.grid.get("async");
+        this.grid.set("async", false);
+
         // get slide status
         var advanced_search = this.$el.find("#advanced-search").is(":visible");
         this.grid.set("advanced_search", advanced_search);
@@ -599,7 +615,8 @@ export default Backbone.View.extend({
         // clear grid of transient request attributes.
         this.grid.set({
             operation: undefined,
-            item_ids: undefined
+            item_ids: undefined,
+            async: async
         });
         switch (target) {
             case "center":
@@ -635,7 +652,7 @@ export default Backbone.View.extend({
                 var advanced_search = self.$el.find("#advanced-search").is(":visible");
 
                 // request new configuration
-                var json = response_text;
+                var json = self.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;
