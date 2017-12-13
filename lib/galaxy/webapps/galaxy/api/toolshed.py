@@ -243,8 +243,8 @@ class ToolShedController(BaseAPIController):
                 # this is ever not the case, this code will need to be updated.
                 tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_ids[0].split('/')[0])
             found_repository = json.loads(util.url_get(tool_shed_url, params=dict(tool_ids=','.join(tool_ids)), pathspec=['api', 'repositories']))
-            fr_keys = found_repository.keys()
-            repository_id = found_repository[fr_keys[0]]['repository_id']
+            fr_first_key = next(iter(found_repository.keys()))
+            repository_id = found_repository[fr_first_key]['repository_id']
             repository_data['current_changeset'] = found_repository['current_changeset']
             repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id]))
             del found_repository['current_changeset']

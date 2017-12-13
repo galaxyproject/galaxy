@@ -1,6 +1,7 @@
 import logging
-import urllib
 from json import dumps
+
+from six.moves.urllib.parse import unquote_plus
 
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
@@ -201,7 +202,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             lineage_dict = None
         tool_shed_dependencies = tool.installed_tool_dependencies
         if tool_shed_dependencies:
-            tool_shed_dependencies_dict = map(to_dict, tool_shed_dependencies)
+            tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
         else:
             tool_shed_dependencies_dict = None
         return {
@@ -209,7 +210,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             "tool_version": tool.version,
             "dependency_shell_commands": tool.build_dependency_shell_commands(),
             "lineage": lineage_dict,
-            "requirements": map(to_dict, tool.requirements),
+            "requirements": list(map(to_dict, tool.requirements)),
             "installed_tool_shed_dependencies": tool_shed_dependencies_dict,
             "tool_dir": tool.tool_dir,
             "tool_shed": tool.tool_shed,
@@ -326,19 +327,19 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set up inputs.
         inputs = payload.get('inputs', {})
         # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.iteritems():
+        for k, v in payload.items():
             if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
 
         # for inputs that are coming from the Library, copy them into the history
         input_patch = {}
-        for k, v in inputs.iteritems():
+        for k, v in inputs.items():
             if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
                 ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
                 if trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
 
-        for k, v in input_patch.iteritems():
+        for k, v in input_patch.items():
             inputs[k] = v
 
         # TODO: encode data ids and decode ids.
@@ -375,7 +376,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             rval['output_collections'].append(output_dict)
 
-        for output_name, collection_instance in vars.get('implicit_collections', {}).iteritems():
+        for output_name, collection_instance in vars.get('implicit_collections', {}).items():
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
             output_dict['output_name'] = output_name
@@ -387,7 +388,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     # -- Helper methods --
     #
     def _get_tool(self, id, tool_version=None, user=None):
-        id = urllib.unquote_plus(id)
+        id = unquote_plus(id)
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)
@@ -466,7 +467,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: need to handle updates to conditional parameters; conditional
         # params are stored in dicts (and dicts within dicts).
         new_inputs = payload['inputs']
-        tool_params.update(dict([(key, dumps(value)) for key, value in new_inputs.items() if key in tool.inputs and new_inputs[key] is not None]))
+        tool_params.update(dict([(key, dumps(value)) for key, value in new_inputs.items() if key in tool.inputs and value is not None]))
         tool_params = tool.params_from_strings(tool_params, self.app)
 
         #
