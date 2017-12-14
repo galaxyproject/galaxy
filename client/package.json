@@ -13,7 +13,7 @@
   "dependencies": {
     "amdi18n-loader": "^0.6.1",
     "axios": "^0.17.0",
-    "backbone": "1.3",
+    "backbone": "github:dannon/backbone#galaxy-backbone-tweaks",
     "bibtex-parse-js": "^0.0.24",
     "bootstrap": "^3.3.7",
     "d3": "3",
