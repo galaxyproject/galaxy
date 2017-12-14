@@ -65,7 +65,7 @@ class DataManager(BaseUIController):
                 data_manager_json = {}
                 error_messages.append(escape("Unable to obtain data_table info for hda (%s): %s" % (hda.id, e)))
             values = []
-            for key, value in data_manager_json.get('data_tables', {}).iteritems():
+            for key, value in data_manager_json.get('data_tables', {}).items():
                 values.append((key, value))
             data_manager_output.append(values)
         return trans.fill_template("data_manager/view_job.mako", data_manager=data_manager, job=job, view_only=not_is_admin, hdas=hdas, data_manager_output=data_manager_output, message=message, status=status, error_messages=error_messages)

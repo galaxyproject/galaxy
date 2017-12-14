@@ -339,7 +339,7 @@ class DefaultToolState(object):
         """
         self.inputs = {}
         context = ExpressionContext(self.inputs)
-        for input in tool.inputs.itervalues():
+        for input in tool.inputs.values():
             self.inputs[input.name] = input.get_initial_value(trans, context)
 
     def encode(self, tool, app, nested=False):
