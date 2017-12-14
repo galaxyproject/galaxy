@@ -5014,7 +5014,7 @@ class UserOAuth2(object):
         self.access_token = access_token
 
 
-class SocialAuthAssociation(AssociationMixin):
+class PSAAssociation(AssociationMixin):
 
     # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
     # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
@@ -5054,7 +5054,7 @@ class SocialAuthAssociation(AssociationMixin):
         cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
-class SocialAuthCode(CodeMixin):
+class PSACode(CodeMixin):
     __table_args__ = (UniqueConstraint('code', 'email'),)
 
     # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
@@ -5074,7 +5074,7 @@ class SocialAuthCode(CodeMixin):
         return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
 
 
-class SocialAuthNonce(NonceMixin):
+class PSANonce(NonceMixin):
 
     # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
     # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
@@ -5100,7 +5100,7 @@ class SocialAuthNonce(NonceMixin):
             return instance
 
 
-class SocialAuthPartial(PartialMixin):
+class PSAPartial(PartialMixin):
 
     # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
     # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz

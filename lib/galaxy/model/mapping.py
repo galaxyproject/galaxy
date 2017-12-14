@@ -103,8 +103,8 @@ model.UserOAuth2.table = Table(
     Column("expiration_date", DateTime),
     Column("access_token", String))
 
-model.SocialAuthAssociation.table = Table(
-    "social_auth_association", metadata,
+model.PSAAssociation.table = Table(
+    "psa_association", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('handle', VARCHAR(255)),
@@ -113,21 +113,21 @@ model.SocialAuthAssociation.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-model.SocialAuthCode.table = Table(
-    "social_auth_code", metadata,
+model.PSACode.table = Table(
+    "psa_code", metadata,
     Column('id', Integer, primary_key=True),
     Column('email', VARCHAR(200)),
     Column('code', VARCHAR(32)))
 
-model.SocialAuthNonce.table = Table(
+model.PSANonce.table = Table(
     "psa_nonce", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('timestamp', Integer),
     Column('salt', VARCHAR(40)))
 
-model.SocialAuthPartial.table = Table(
-    "social_auth_partial", metadata,
+model.PSAPartial.table = Table(
+    "psa_partial", metadata,
     Column('id', Integer, primary_key=True),
     Column('token', VARCHAR(32)),
     Column('data', TEXT),
@@ -1636,13 +1636,13 @@ mapper(model.UserOAuth2, model.UserOAuth2.table, properties=dict(
         primaryjoin=(model.UserOAuth2.table.c.user_id == model.User.table.c.id))
 ))
 
-mapper(model.SocialAuthAssociation, model.SocialAuthAssociation.table, properties=None)
+mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
 
-mapper(model.SocialAuthCode, model.SocialAuthCode.table, properties=None)
+mapper(model.PSACode, model.PSACode.table, properties=None)
 
-mapper(model.SocialAuthNonce, model.SocialAuthNonce.table, properties=None)
+mapper(model.PSANonce, model.PSANonce.table, properties=None)
 
-mapper(model.SocialAuthPartial, model.SocialAuthPartial.table, properties=None)
+mapper(model.PSAPartial, model.PSAPartial.table, properties=None)
 
 mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,

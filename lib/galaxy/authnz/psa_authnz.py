@@ -1,5 +1,5 @@
 from ..authnz import IdentityProvider
-from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial, SocialAuthCode
+from ..model import UserAuthnzToken, PSANonce, PSAAssociation, PSAPartial, PSACode
 
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
@@ -144,11 +144,11 @@ class PSAAuthnz(IdentityProvider):
         _user = trans.user
 
         _trans = trans
-        trans.app.model.SocialAuthCode.trans = trans
+        trans.app.model.PSACode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.SocialAuthNonce.trans = trans
-        trans.app.model.SocialAuthPartial.trans = trans
-        trans.app.model.SocialAuthAssociation.trans = trans
+        trans.app.model.PSANonce.trans = trans
+        trans.app.model.PSAPartial.trans = trans
+        trans.app.model.PSAAssociation.trans = trans
 
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
@@ -163,11 +163,11 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans):
         _trans = trans
-        trans.app.model.SocialAuthCode.trans = trans
+        trans.app.model.PSACode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.SocialAuthNonce.trans = trans
-        trans.app.model.SocialAuthPartial.trans = trans
-        trans.app.model.SocialAuthAssociation.trans = trans
+        trans.app.model.PSANonce.trans = trans
+        trans.app.model.PSAPartial.trans = trans
+        trans.app.model.PSAAssociation.trans = trans
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
@@ -186,11 +186,11 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
-        trans.app.model.SocialAuthCode.trans = trans
+        trans.app.model.PSACode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.SocialAuthNonce.trans = trans
-        trans.app.model.SocialAuthPartial.trans = trans
-        trans.app.model.SocialAuthAssociation.trans = trans
+        trans.app.model.PSANonce.trans = trans
+        trans.app.model.PSAPartial.trans = trans
+        trans.app.model.PSAAssociation.trans = trans
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
@@ -369,10 +369,10 @@ class Strategy(BaseStrategy):
 
 class Storage:
     user = UserAuthnzToken
-    nonce = SocialAuthNonce
-    association = SocialAuthAssociation
-    code = SocialAuthCode
-    partial = SocialAuthPartial
+    nonce = PSANonce
+    association = PSAAssociation
+    code = PSACode
+    partial = PSAPartial
 
     @classmethod
     def is_integrity_error(cls, exception):

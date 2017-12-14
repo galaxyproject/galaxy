@@ -10,8 +10,8 @@ from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, VARCH
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-social_auth_association = Table(
-    "social_auth_association", metadata,
+psa_association = Table(
+    "psa_association", metadata,
     Column('id', Integer, primary_key=True),
     Column('server_url', VARCHAR(255)),
     Column('handle', VARCHAR(255)),
@@ -21,8 +21,8 @@ social_auth_association = Table(
     Column('assoc_type', VARCHAR(64)))
 
 
-social_auth_code = Table(
-    "social_auth_code", metadata,
+psa_code = Table(
+    "psa_code", metadata,
     Column('id', Integer, primary_key=True),
     Column('email', VARCHAR(200)),
     Column('code', VARCHAR(32)))
@@ -36,8 +36,8 @@ psa_nonce = Table(
     Column('salt', VARCHAR(40)))
 
 
-social_auth_partial = Table(
-    "social_auth_partial", metadata,
+psa_partial = Table(
+    "psa_partial", metadata,
     Column('id', Integer, primary_key=True),
     Column('token', VARCHAR(32)),
     Column('data', TEXT),
@@ -63,10 +63,10 @@ def upgrade(migrate_engine):
 
     # Create UserOAuth2Table
     try:
-        social_auth_association.create()
-        social_auth_code.create()
+        psa_association.create()
+        psa_code.create()
         psa_nonce.create()
-        social_auth_partial.create()
+        psa_partial.create()
         oidc_rp_user_authnz_tokens.create()
     except Exception as e:
         log.exception("Creating UserOAuth2 table failed: %s" % str(e))
@@ -78,10 +78,10 @@ def downgrade(migrate_engine):
 
     # Drop UserOAuth2Table
     try:
-        social_auth_association.drop()
-        social_auth_code.drop()
-        pas_nonce.drop()
-        social_auth_partial.drop()
+        psa_association.drop()
+        psa_code.drop()
+        psa_nonce.drop()
+        psa_partial.drop()
         oidc_rp_user_authnz_tokens.drop()
     except Exception as e:
         log.exception("Dropping UserOAuth2 table failed: %s" % str(e))
