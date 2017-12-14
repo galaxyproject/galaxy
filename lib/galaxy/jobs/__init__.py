@@ -27,6 +27,7 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.tools.parameters.output_collect import NullToolProvidedMetadata
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -1179,13 +1180,14 @@ class JobWrapper(object, HasResourceParameters):
             return self.fail(job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code)
 
         # We collect the stderr from tools that write their stderr to galaxy.json
-        legacy_tool_provided_metadata = self.get_tool_provided_job_metadata()
-        extra_stderr = "\n".join([item.get('stderr') for item in legacy_tool_provided_metadata.tool_provided_job_metadata if item.get('stderr')])
-        if extra_stderr:
-            if stderr:
-                stderr = "%s\n%s" % (stderr, extra_stderr)
-            else:
-                stderr = extra_stderr
+        tool_provided_metadata = self.get_tool_provided_job_metadata()
+        if not isinstance(tool_provided_metadata, NullToolProvidedMetadata):
+            extra_stderr = "\n".join([item.get('stderr') for item in tool_provided_metadata.tool_provided_job_metadata if item.get('stderr')])
+            if extra_stderr:
+                if stderr:
+                    stderr = "%s\n%s" % (stderr, extra_stderr)
+                else:
+                    stderr = extra_stderr
 
         # Check the tool's stdout, stderr, and exit code for errors, but only
         # if the job has not already been marked as having an error.
