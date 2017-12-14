@@ -1358,7 +1358,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if users:
             if trans.request.method == 'GET':
                 return {
-                    'message': 'Changes password(s) for: %s.' % ', '.join([user.email for user in users.itervalues()]),
+                    'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
                     'status' : 'info',
                     'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
                                 {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
@@ -1370,7 +1370,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     return self.message_exception(trans, 'Use a password of at least 6 characters.')
                 elif password != confirm:
                     return self.message_exception(trans, 'Passwords do not match.')
-                for user in users.itervalues():
+                for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
                     trans.sa_session.flush()

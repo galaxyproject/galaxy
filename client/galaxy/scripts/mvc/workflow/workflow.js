@@ -103,9 +103,7 @@ var WorkflowItemView = Backbone.View.extend({
         } value="${wfId}">`;
         var trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
             this.model.get("name")
-        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${
-            wfId
-        } tags-display"></div></td><td>${
+        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${wfId} tags-display"></div></td><td>${
             this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")
         }</span></td><td>${this.model.get("number_of_steps")}</td><td>${
             this.model.get("published") ? "Yes" : "No"
@@ -323,9 +321,7 @@ var WorkflowListView = Backbone.View.extend({
             "<th>Published</th>" +
             "<th>Show in tools panel</th>" +
             "</tr></thead>";
-        return `${
-            tableHtml
-        }<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
+        return `${tableHtml}<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
     },
 
     /** Main template */

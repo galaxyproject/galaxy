@@ -35,9 +35,7 @@ $.extend(Workflow.prototype, {
         }
         if (!this.canLabelOutputWith(toLabel)) {
             Toastr.warning(
-                `Workflow contains duplicate workflow output labels ${
-                    toLabel
-                }. This must be fixed before it can be saved.`
+                `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
         if (toLabel) {

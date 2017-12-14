@@ -1,5 +1,4 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import argparse
 import copy
@@ -268,7 +267,7 @@ def main(argv=None):
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=ACTIONS.keys(),
+                        choices=list(ACTIONS.keys()),
                         help='action to perform')
     parser.add_argument('app', metavar='APP', type=str, nargs="?",
                         help=APP_DESCRIPTION)
@@ -691,7 +690,7 @@ def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     def _dict_representer(dumper, data):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            data.items())
+            list(data.items()))
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 

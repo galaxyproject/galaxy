@@ -10,7 +10,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import Vue from "libs/vue";
+import Vue from "vue";
 import UserAPIKeys from "components/UserAPIKeys.vue";
 
 window.app = function app(options, bootstrapped) {
