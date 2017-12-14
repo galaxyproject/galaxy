@@ -155,6 +155,7 @@ class PSAAuthnz(IdentityProvider):
         _trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthPartial.trans = trans
         trans.app.model.SocialAuthAssociation.trans = trans
 
         backend_label = 'google-openidconnect'
@@ -172,6 +173,7 @@ class PSAAuthnz(IdentityProvider):
         _trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthPartial.trans = trans
         trans.app.model.SocialAuthAssociation.trans = trans
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
@@ -193,6 +195,7 @@ class PSAAuthnz(IdentityProvider):
         _trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
+        trans.app.model.SocialAuthPartial.trans = trans
         trans.app.model.SocialAuthAssociation.trans = trans
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
@@ -433,11 +436,11 @@ class Code(GalaxySocialBase, SQLAlchemyCodeMixin, SocialBase):
     pass
 
 
-class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
-    """Partial pipeline storage"""
-    pass
+# class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
+#     """Partial pipeline storage"""
+#     pass
 
-from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation
+from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial
 from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
@@ -445,7 +448,7 @@ class Storage:  # (BaseSQLAlchemyStorage):
     nonce = SocialAuthNonce
     association = SocialAuthAssociation
     code = Code
-    partial = Partial
+    partial = SocialAuthPartial
 
     @classmethod
     def is_integrity_error(cls, exception):
