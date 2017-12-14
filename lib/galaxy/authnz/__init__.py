@@ -21,11 +21,14 @@ class IdentityProvider(object):
     OpenID Connect Identity Provider abstract interface.
     """
 
-    def __init__(self, config):
+    def __init__(self, provider, config):
         """
         Initialize the identity provider using the provided configuration,
         and raise a ParseError (or any more related specific exception) in
         case the configuration is malformed.
+
+        :type provider: string
+        :param provider: is the name of the identity provider (e.g., Google).
 
         :type config: xml.etree.ElementTree.Element
         :param config: Is the configuration element of the provider

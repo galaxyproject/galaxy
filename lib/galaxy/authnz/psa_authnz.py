@@ -15,6 +15,9 @@ DEFAULTS = {
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
 
+BACKENDS = {
+    'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect'
+}
 
 # NOTE: a PSA backend is not initialized at the time of initializing PSAAuthnz because PSA backends have the
 # following line in the initialization which obviously requires session data, and given that PSAAuthnz is initialized
@@ -53,23 +56,15 @@ config = {}
 config[setting_name('USER_MODEL')] = 'models.User'
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, config_xml):
-        self._parse_config(config_xml)
+    def __init__(self, provider, config_xml):
+        self._parse_config(provider.lower(), config_xml)
 
-    def _parse_config(self, config_xml):
-        auth_uri = config_xml.find('auth_uri')
-        token_uri = config_xml.find('token_uri')
-
-        config[setting_name('AUTHENTICATION_BACKENDS')] = (
-            'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-            'social_core.backends.instagram.InstagramOAuth2'
-        )
+    def _parse_config(self, provider, config_xml):
+        config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider], )
+        if provider == 'google':
+            self._parse_google_config(config_xml)
 
         config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
-
-        # TODO: set the following parameter
-        # config[setting_name('SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SCOPE')] =
-        # config[setting_name('SCOPE')] =
 
         # TODO: set the following parameter
         # config[setting_name('VERIFY_SSL')] =
@@ -77,13 +72,13 @@ class PSAAuthnz(IdentityProvider):
         # TODO: set the following parameter
         # config[setting_name('REQUESTS_TIMEOUT')] =
 
-        config[setting_name('SOCIAL_AUTH_DISCONNECT_PIPELINE')] = (
-            'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-            'social_core.backends.instagram.InstagramOAuth2'
-        )
+        # TODO:
+        # config[setting_name('SOCIAL_AUTH_LOGIN_REDIRECT_URL')] =
 
+    def _parse_google_config(self, config_xml):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
+        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'prompt': 'consent', 'access_type': 'offline'}
 
     # def load_strategy(self):
     #    print '#' * 50, "strategy helper: {}, storage helper: {}". format(type(self.get_helper('STRATEGY')), type(self.get_helper('STORAGE')))
