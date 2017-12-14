@@ -50,7 +50,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
-from social_core.storage import UserMixin, NonceMixin, AssociationMixin, PartialMixin
+from social_core.storage import UserMixin, NonceMixin, AssociationMixin, PartialMixin, CodeMixin
 
 log = logging.getLogger(__name__)
 
@@ -5054,10 +5054,24 @@ class SocialAuthAssociation(AssociationMixin):
         cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
-class SocialAuthCode(object):
+class SocialAuthCode(CodeMixin):
+    __table_args__ = (UniqueConstraint('code', 'email'),)
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
     def __init__(self, email, code):
         self.email = email
         self.code = code
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def get_code(cls, code):
+        return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
 
 
 class SocialAuthNonce(NonceMixin):

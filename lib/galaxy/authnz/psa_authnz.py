@@ -153,6 +153,7 @@ class PSAAuthnz(IdentityProvider):
         _user = trans.user
 
         _trans = trans
+        trans.app.model.SocialAuthCode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
         trans.app.model.SocialAuthPartial.trans = trans
@@ -171,6 +172,7 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans):
         _trans = trans
+        trans.app.model.SocialAuthCode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
         trans.app.model.SocialAuthPartial.trans = trans
@@ -193,6 +195,7 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
+        trans.app.model.SocialAuthCode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
         trans.app.model.SocialAuthNonce.trans = trans
         trans.app.model.SocialAuthPartial.trans = trans
@@ -440,14 +443,14 @@ class Code(GalaxySocialBase, SQLAlchemyCodeMixin, SocialBase):
 #     """Partial pipeline storage"""
 #     pass
 
-from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial
+from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial, SocialAuthCode
 from sqlalchemy.exc import IntegrityError
 
 class Storage:  # (BaseSQLAlchemyStorage):
     user = UserAuthnzToken  # UserSocialAuth
     nonce = SocialAuthNonce
     association = SocialAuthAssociation
-    code = Code
+    code = SocialAuthCode
     partial = SocialAuthPartial
 
     @classmethod
