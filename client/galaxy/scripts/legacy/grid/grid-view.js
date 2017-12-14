@@ -4,8 +4,8 @@ jQuery.ajaxSettings.traditional = true;
 
 // dependencies
 import Utils from "utils/utils";
-import GridModel from "mvc/grid/grid-model";
-import Templates from "mvc/grid/grid-template";
+import GridModel from "legacy/grid/grid-model";
+import Templates from "legacy/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
 // grid view
 export default Backbone.View.extend({
