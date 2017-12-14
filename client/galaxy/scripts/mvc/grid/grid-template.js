@@ -112,14 +112,12 @@ export default {
     body: function(options) {
         // initialize
         var tmpl = "";
-        var num_rows_rendered = 0;
         var items_length = options.items.length;
 
         // empty grid?
         if (items_length === 0) {
             // No results.
             tmpl += '<tr><td colspan="100"><em>No Items</em></td></tr>';
-            num_rows_rendered = 1;
         }
 
         // create rows
@@ -193,7 +191,6 @@ export default {
                 }
             }
             tmpl += "</tr>";
-            num_rows_rendered++;
         }
         return tmpl;
     },
