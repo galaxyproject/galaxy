@@ -16,17 +16,6 @@ DEFAULTS = {
 # value: is the name of a class associated with that key.
 
 
-
-# TODO: This code works only by commenting out "cls._session().commit()" from "social_storage_sqlalchemy"
-# maybe a better solution is to write "social_storage_sqlalchemy" in Galaxy and avoid the aforementioned line.
-# Otherwise, Galaxy SQLAlchemy session maker should have "autocommit=false"; this would be a rather radical
-# approach as it would break a lot of Galaxy functionality which assume a transaction is auto-committed.
-
-
-
-
-
-
 # NOTE: a PSA backend is not initialized at the time of initializing PSAAuthnz because PSA backends have the
 # following line in the initialization which obviously requires session data, and given that PSAAuthnz is initialized
 # when loading Galaxy application, and at this point session does not exist, hence we can not pass session data
