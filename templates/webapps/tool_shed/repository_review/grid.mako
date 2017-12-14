@@ -1,1 +1,1 @@
-<%inherit file="/webapps/reports/grid_base.mako"/>
+<%inherit file="/legacy/grid_base.mako"/>
