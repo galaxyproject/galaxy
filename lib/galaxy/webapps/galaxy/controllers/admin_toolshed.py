@@ -88,7 +88,6 @@ class AdminToolshed(AdminGalaxy):
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = 'success' if status in ['ok', 'done', 'success'] else 'error'
-        kwd['dict_format'] = True
         return self.installed_repository_grid(trans, **kwd)
 
     @web.expose
