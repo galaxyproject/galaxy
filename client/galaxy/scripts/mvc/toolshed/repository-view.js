@@ -478,7 +478,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             "<% _.each(shed_tool_confs.options, function(conf) { %>",
             '<option value="<%= conf.value %>"><%= conf.label %></option>',
             "<% }); %>",
-            '</select>',
+            "</select>",
             '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
             "</div>",
             "</div>"

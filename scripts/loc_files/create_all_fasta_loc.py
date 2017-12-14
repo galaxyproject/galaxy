@@ -149,18 +149,6 @@ VARIANT_MAP = {'canon': 'Canonical',
                'male': 'Male'}
 
 
-# alphabetize ignoring case
-def caseless_compare(a, b):
-    au = a.upper()
-    bu = b.upper()
-    if au > bu:
-        return 1
-    elif au == bu:
-        return 0
-    elif au < bu:
-        return -1
-
-
 def __main__():
     # command line variables
     parser = optparse.OptionParser()
@@ -257,14 +245,13 @@ def __main__():
                         else:
                             unmatching_fasta_paths.append(os.path.join(dirpath, fn))
         # remove redundant fasta files
-        if variant_exclusions.keys():
-            for k in variant_exclusions.keys():
-                leave_in = '%s%s' % (genome_subdir, k)
-                if leave_in in fasta_locs:
-                    to_remove = ['%s%s' % (genome_subdir, k) for k in variant_exclusions[k]]
-                    for tr in to_remove:
-                        if tr in fasta_locs:
-                            del fasta_locs[tr]
+        for k, v in variant_exclusions.items():
+            leave_in = '%s%s' % (genome_subdir, k)
+            if leave_in in fasta_locs:
+                to_remove = ['%s%s' % (genome_subdir, _) for _ in v]
+                for tr in to_remove:
+                    if tr in fasta_locs:
+                        del fasta_locs[tr]
 
     # output results
     print('\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths))
@@ -286,8 +273,8 @@ def __main__():
         else:
             all_fasta_loc.write('%s\n' % open('%s.sample' % loc_path, 'rb').read().strip())
     # output list of fasta files in alphabetical order
-    fasta_bases = fasta_locs.keys()
-    fasta_bases.sort(caseless_compare)
+    fasta_bases = list(fasta_locs.keys())
+    fasta_bases.sort(key=str.upper)
     for fb in fasta_bases:
         out_line = []
         for col in col_values:

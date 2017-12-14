@@ -7,7 +7,7 @@ MarkupSafe==1.0
 PyYAML==3.12
 SQLAlchemy==1.0.15
 sqlalchemy-utils==0.32.19
-mercurial==3.7.3
+mercurial==3.7.3; python_version < '3.0'
 pycrypto==2.6.1
 uWSGI==2.0.15
 # Flexible BAM index naming is new to core pysam

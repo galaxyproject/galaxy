@@ -3,8 +3,9 @@ from __future__ import print_function
 
 import os
 import sys
-from ConfigParser import ConfigParser
 from optparse import OptionParser
+
+from six.moves.configparser import ConfigParser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 

@@ -5,10 +5,10 @@ Contains the user interface in the Universe class
 import logging
 import random
 import socket
-import urllib
 from datetime import datetime, timedelta
 
 from markupsafe import escape
+from six.moves.urllib.parse import unquote
 from sqlalchemy import (
     and_,
     func,
@@ -853,7 +853,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         Check whether token fits the user and then activate the user's account.
         """
         params = util.Params(kwd, sanitize=False)
-        email = urllib.unquote(params.get('email', None))
+        email = unquote(params.get('email', None))
         activation_token = params.get('activation_token', None)
 
         if email is None or activation_token is None:
