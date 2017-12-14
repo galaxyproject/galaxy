@@ -1,20 +1,11 @@
 from ..authnz import IdentityProvider
-
-from social_core import *
-from social_core.backends.google_openidconnect import *
-
-import time
-import random
-import hashlib
-
-import six
+from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial, SocialAuthCode
 
 from social_core.actions import do_auth, do_complete, do_disconnect
-from social_core.utils import setting_name, module_member, get_strategy
-from social_core.store import OpenIdStore, OpenIdSessionWrapper
-from social_core.pipeline import DEFAULT_AUTH_PIPELINE, DEFAULT_DISCONNECT_PIPELINE
+from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
-from social_core.backends.utils import get_backend, user_backends_data
+from social_core.utils import setting_name, module_member
+from sqlalchemy.exc import IntegrityError
 
 
 DEFAULTS = {
@@ -376,78 +367,8 @@ class Strategy(BaseStrategy):
 
 
 
-
-
-
-from sqlalchemy import Column, String, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-
-from social_core.utils import setting_name, module_member
-from social_sqlalchemy.storage import SQLAlchemyUserMixin, \
-                                      SQLAlchemyAssociationMixin, \
-                                      SQLAlchemyNonceMixin, \
-                                      SQLAlchemyCodeMixin, \
-                                      SQLAlchemyPartialMixin, \
-                                      BaseSQLAlchemyStorage
-
-
-SocialBase = declarative_base()
-
-UID_LENGTH = config.get(setting_name('UID_LENGTH'), 255)
-
-# from ..authnz.models import User
-# User = User # module_member(config[setting_name('USER_MODEL')])
-
-class GalaxySocialBase(object):
-    @classmethod
-    def _session(cls):
-        return _trans.sa_session
-
-
-# class UserSocialAuth(GalaxySocialBase, SQLAlchemyUserMixin, SocialBase):
-#     """Social Auth association model"""
-#     uid = Column(String(UID_LENGTH))
-#     user_id = Column(User.id.type, ForeignKey(User.id),
-#                      nullable=False, index=True)
-#     user = relationship(User, backref='social_auth')
-#
-#     def __init__(self):
-#         self.user_id = _user.id
-#
-#     @classmethod
-#     def username_max_length(cls):
-#         return 255  # TODO: This is a temporary solution, this number should be retrieved from user table.
-#
-#     @classmethod
-#     def user_model(cls):
-#         return _user  # User
-
-
-# class Nonce(GalaxySocialBase, SQLAlchemyNonceMixin, SocialBase):
-#     """One use numbers"""
-#     pass
-
-
-class Association(GalaxySocialBase, SQLAlchemyAssociationMixin, SocialBase):
-    """OpenId account association"""
-    pass
-
-
-class Code(GalaxySocialBase, SQLAlchemyCodeMixin, SocialBase):
-    """Mail validation single one time use code"""
-    pass
-
-
-# class Partial(GalaxySocialBase, SQLAlchemyPartialMixin, SocialBase):
-#     """Partial pipeline storage"""
-#     pass
-
-from ..model import UserAuthnzToken, SocialAuthNonce, SocialAuthAssociation, SocialAuthPartial, SocialAuthCode
-from sqlalchemy.exc import IntegrityError
-
-class Storage:  # (BaseSQLAlchemyStorage):
-    user = UserAuthnzToken  # UserSocialAuth
+class Storage:
+    user = UserAuthnzToken
     nonce = SocialAuthNonce
     association = SocialAuthAssociation
     code = SocialAuthCode
