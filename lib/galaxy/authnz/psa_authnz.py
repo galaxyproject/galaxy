@@ -79,9 +79,13 @@ class PSAAuthnz(IdentityProvider):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
         config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'prompt': 'consent', 'access_type': 'offline'}
 
-    # def load_strategy(self):
-    #    print '#' * 50, "strategy helper: {}, storage helper: {}". format(type(self.get_helper('STRATEGY')), type(self.get_helper('STORAGE')))
-    #    return get_strategy(self.get_helper('STRATEGY'), self.get_helper('STORAGE'))
+    def _on_the_fly_config(self, trans):
+        trans.app.model.PSACode.trans = trans
+        trans.app.model.UserAuthnzToken.trans = trans
+        trans.app.model.PSANonce.trans = trans
+        trans.app.model.PSAPartial.trans = trans
+        trans.app.model.PSAAssociation.trans = trans
+        config[setting_name('LOGIN_REDIRECT_URL')] = url_for('/')
 
     def get_helper(self, name, do_import=False):
         this_config = config.get(setting_name(name),
@@ -127,11 +131,7 @@ class PSAAuthnz(IdentityProvider):
         _user = trans.user
 
         _trans = trans
-        trans.app.model.PSACode.trans = trans
-        trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.PSANonce.trans = trans
-        trans.app.model.PSAPartial.trans = trans
-        trans.app.model.PSAAssociation.trans = trans
+        self._on_the_fly_config(trans)
 
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
@@ -145,13 +145,8 @@ class PSAAuthnz(IdentityProvider):
         return do_auth(self.backend)
 
     def callback(self, state_token, authz_code, trans):
-        config[setting_name('LOGIN_REDIRECT_URL')] = url_for('/')
         _trans = trans
-        trans.app.model.PSACode.trans = trans
-        trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.PSANonce.trans = trans
-        trans.app.model.PSAPartial.trans = trans
-        trans.app.model.PSAAssociation.trans = trans
+        self._on_the_fly_config(trans)
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         backend_label = 'google-openidconnect'
@@ -170,11 +165,7 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
-        trans.app.model.PSACode.trans = trans
-        trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.PSANonce.trans = trans
-        trans.app.model.PSAPartial.trans = trans
-        trans.app.model.PSAAssociation.trans = trans
+        self._on_the_fly_config(trans)
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
