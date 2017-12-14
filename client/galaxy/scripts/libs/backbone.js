@@ -1807,9 +1807,11 @@
 
       // Don't include a trailing slash on the root.
       var rootPath = this.root;
+      /*
       if (fragment === '' || fragment.charAt(0) === '?') {
         rootPath = rootPath.slice(0, -1) || '/';
       }
+      */
       var url = rootPath + fragment;
 
       // Strip the hash and decode for matching.
