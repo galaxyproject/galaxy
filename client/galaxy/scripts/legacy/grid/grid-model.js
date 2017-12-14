@@ -1,6 +1,4 @@
-// dependencies
-
-// grid model
+// legacy grid model, used by reports and toolshed
 export default Backbone.Model.extend({
     defaults: {
         url_base: "",
