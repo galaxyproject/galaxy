@@ -1,6 +1,8 @@
 from ..authnz import IdentityProvider
 from ..model import UserAuthnzToken, PSANonce, PSAAssociation, PSAPartial, PSACode
 
+from galaxy.web import url_for
+
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
@@ -71,9 +73,6 @@ class PSAAuthnz(IdentityProvider):
 
         # TODO: set the following parameter
         # config[setting_name('REQUESTS_TIMEOUT')] =
-
-        # TODO:
-        # config[setting_name('SOCIAL_AUTH_LOGIN_REDIRECT_URL')] =
 
     def _parse_google_config(self, config_xml):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
@@ -146,6 +145,7 @@ class PSAAuthnz(IdentityProvider):
         return do_auth(self.backend)
 
     def callback(self, state_token, authz_code, trans):
+        config[setting_name('LOGIN_REDIRECT_URL')] = url_for('/')
         _trans = trans
         trans.app.model.PSACode.trans = trans
         trans.app.model.UserAuthnzToken.trans = trans
