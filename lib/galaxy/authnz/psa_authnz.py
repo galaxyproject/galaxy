@@ -53,7 +53,7 @@ config = {}
 config[setting_name('USER_MODEL')] = 'models.User'
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, config_xml):
+    def __init__(self, config_xml):
         self._parse_config(config_xml)
 
     def _parse_config(self, config_xml):
