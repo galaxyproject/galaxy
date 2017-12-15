@@ -103,15 +103,9 @@ class PSAAuthnz(IdentityProvider):
     def get_current_user(self, trans):
         if trans.user is not None:
             return trans.user
-        # TODO: the above code is recently added, the following is what I had before. Check which of the methods is more appropriate.
-        if not hasattr(self, '_user'):
-            # if trans.session.get('logged_in'):
-            if self.strategy.session_get('logged_in'):
-                # self._user = self.strategy.get_user(trans.session.get('user_id'))
-                self._user = self.strategy.session_get('user_id')
-            else:
-                self._user = None
-        return self._user
+        if self.strategy.session_get('logged_in'):
+            return self.strategy.get_user(self.strategy.session_get('user_id'))
+        return None
 
     def load_backend(self, strategy, redirect_uri):
         backends = self.get_helper('AUTHENTICATION_BACKENDS')
@@ -124,11 +118,7 @@ class PSAAuthnz(IdentityProvider):
         self.strategy.session_set('user', user)
 
     def authenticate(self, trans):
-        # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
-        global _user
-        _user = trans.user
         self._on_the_fly_config(trans)
-
         strategy = Strategy(trans, Storage)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
