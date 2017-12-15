@@ -116,3 +116,57 @@ class DataManager(BaseUIController):
                                        message=message,
                                        status=status)
         return trans.response.send_redirect(redirect_url)
+
+    @web.expose
+    @web.json
+    @web.require_admin
+    def tool_data_table_items(self, trans, **kwd):
+        data = {'columns': [], 'items': []}
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
+        table_name = kwd.get('table_name', None)
+
+        if not table_name:
+            return {
+                'data': data,
+                'message': 'No Data table name provided.',
+                'status': 'warning',
+            }
+
+        data_table = trans.app.tool_data_tables.get(table_name, None)
+
+        if data_table is None:
+            return {
+                'data': data,
+                'message': 'Invalid Data table (%s) was requested' % table_name,
+                'status': 'error'
+            }
+
+        columns = data_table.get_column_name_list()
+        rows = [dict(zip(columns, table_row)) for table_row in data_table.data]
+        data['columns'] = columns
+        data['items'] = rows
+
+        return {'data': data, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
+    def reload_tool_data_table(self, trans, **kwd):
+        table_name = kwd.get('table_name', None)
+
+        if not table_name:
+            return {
+                'message': 'No data table has been reloaded.',
+                'status': 'error',
+            }
+
+        redirect_url = web.url_for(
+            controller='data_manager',
+            action='tool_data_table_items',
+            table_name=table_name,
+            message='The data table "%s" has been reloaded.' % table_name,
+            status='done',
+        )
+
+        return trans.response.send_redirect(redirect_url)
