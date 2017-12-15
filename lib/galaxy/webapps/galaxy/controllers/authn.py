@@ -9,7 +9,7 @@ from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
 
-class OAuth2(BaseUIController):
+class OIDC(BaseUIController):
 
     @web.expose
     def login(self, trans, **kwargs):
@@ -32,3 +32,6 @@ class OAuth2(BaseUIController):
             # Only logged in users are allowed here.
             return
         return trans.response.send_redirect(trans.app.authnz_manager.disconnect('Google', trans, redirect_url=None))
+
+# TODO: check for the error: AuthAlreadyAssociated: This google-openidconnect account is already in use.
+# it happens when authenticating a user whose previous authentication was disconnected.

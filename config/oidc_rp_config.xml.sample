@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<OIDC_RP>
-    <Setter Property="VERIFY_SSL" Value="False" Type="bool"/>
-    <Setter Property="REQUESTS_TIMEOUT" Value="3600" Type="float"/>
-</OIDC_RP>

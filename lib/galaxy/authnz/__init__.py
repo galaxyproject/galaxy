@@ -1,6 +1,6 @@
 """
-Contains implementations for authentication and authorization against third-party
-OAuth2.0 authorization servers and OpenID Connect Identity providers.
+Contains implementations for authentication and authorization against an
+OpenID Connect (OIDC) Identity Provider (IdP).
 
 This package follows "authorization code flow" authentication protocol to authenticate
 Galaxy users against third-party identity providers.
@@ -33,7 +33,7 @@ class IdentityProvider(object):
 
         :type config: xml.etree.ElementTree.Element
         :param config: Is the configuration element of the provider
-            from the configuration file (e.g., OAuth2_config.xml).
+            from the configuration file (e.g., oidc_config.xml).
             This element contains the all the provider-specific
             configuration elements.
         """
@@ -77,25 +77,25 @@ class IdentityProvider(object):
 
 class AuthnzManager(object):
 
-    def __init__(self, app, oidc_rp_config_file, config):
+    def __init__(self, app, oidc_config_file, oidc_backends_config_file):
         """
         :type app: galaxy.app.UniverseApplication
         :param app:
 
         :type config: string
-        :param config: sets the path for OAuth2.0 configuration
-            file (e.g., OAuth2_config.xml).
+        :param config: sets the path for OIDC configuration
+            file (e.g., oidc_backends_config.xml).
         """
-        self._parse_oidc_rp_config(oidc_rp_config_file)
-        self._parse_config(config)
+        self._parse_oidc_config(oidc_config_file)
+        self._parse_oidc_backends_config(oidc_backends_config_file)
 
-    def _parse_oidc_rp_config(self, config_file):
-        self.oidc_rp_config = {}
+    def _parse_oidc_config(self, config_file):
+        self.oidc_config = {}
         try:
             tree = ET.parse(config_file)
             root = tree.getroot()
-            if root.tag != 'OIDC_RP':
-                raise ParseError("The root element in OIDC_RP_Config xml file is expected to be `OIDC_RP`, "
+            if root.tag != 'OIDC':
+                raise ParseError("The root element in OIDC_Config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'Setter':
@@ -112,19 +112,19 @@ class AuthnzManager(object):
                     log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
                               " skipping this node").format(child.get('Type'))
                     continue
-                self.oidc_rp_config[child.get('Property')] = func(child.get('Value'))
+                self.oidc_config[child.get('Property')] = func(child.get('Value'))
         except ImportError:
             raise
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
 
-    def _parse_config(self, config):
+    def _parse_oidc_backends_config(self, config_file):
         self.providers = {}
         try:
-            tree = ET.parse(config)
+            tree = ET.parse(config_file)
             root = tree.getroot()
-            if root.tag != 'OAuth2.0':
-                raise ParseError("The root element in OAuth2.0 config xml file is expected to be `OAuth2.0`, "
+            if root.tag != 'OIDC':
+                raise ParseError("The root element in OIDC config xml file is expected to be `OIDC`, "
                                  "found `{}` instead -- unable to continue.".format(root.tag))
             for child in root:
                 if child.tag != 'provider':
@@ -137,7 +137,7 @@ class AuthnzManager(object):
                 provider = child.get('name')
                 try:
                     from .psa_authnz import PSAAuthnz
-                    self.providers[provider] = PSAAuthnz(provider, self.oidc_rp_config, child)
+                    self.providers[provider] = PSAAuthnz(provider, self.oidc_config, child)
                 # TODO: capture exception of type `Exception` here, these are the type of errors which can raise if anything goes wrong initializing the provider.
                 except ParseError:
                     log.error("Could not initialize `{}` identity provider; skipping this node.".format(provider))
@@ -149,9 +149,9 @@ class AuthnzManager(object):
         except ImportError:
             raise
         except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config, e.message))
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
         # except Exception as e:
-        #     raise Exception("Malformed OAuth2.0 Configuration XML -- unable to continue. {}".format(e.message))
+        #     raise Exception("Malformed OIDC Configuration XML -- unable to continue. {}".format(e.message))
 
     def authenticate(self, provider, trans):
         """

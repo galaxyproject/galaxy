@@ -172,9 +172,9 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 )
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
-        if self.config.enable_oauth2:
+        if self.config.enable_oidc:
             from galaxy import authnz
-            self.authnz_manager = authnz.AuthnzManager(self, self.config.oidc_rp_config, self.config.oauth2_config)
+            self.authnz_manager = authnz.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
         self.sentry_client = None
         if self.config.sentry_dsn:
 

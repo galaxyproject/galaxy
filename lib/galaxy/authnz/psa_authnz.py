@@ -58,11 +58,11 @@ config = {}
 config[setting_name('USER_MODEL')] = 'models.User'
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, oidc_rp_config, config_xml):
-        self._parse_config(provider.lower(), oidc_rp_config, config_xml)
+    def __init__(self, provider, oidc_config, config_xml):
+        self._parse_config(provider.lower(), oidc_config, config_xml)
 
-    def _parse_config(self, provider, oidc_rp_config, config_xml):
-        for key, value in oidc_rp_config.iteritems():
+    def _parse_config(self, provider, oidc_config, config_xml):
+        for key, value in oidc_config.iteritems():
             config[setting_name(key)] = value
 
         config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider], )

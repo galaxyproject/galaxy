@@ -93,7 +93,7 @@ model.UserOpenID.table = Table(
     Column("provider", TrimmedString(255)))
 
 model.UserOAuth2.table = Table(
-    "oidc_rp", metadata,
+    "oidc", metadata,
     Column("id", Integer, primary_key=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
     Column("provider", String, nullable=False),
@@ -135,7 +135,7 @@ model.PSAPartial.table = Table(
     Column('backend', VARCHAR(32)))
 
 model.UserAuthnzToken.table = Table(
-    "oidc_rp_user_authnz_tokens", metadata,
+    "oidc_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),

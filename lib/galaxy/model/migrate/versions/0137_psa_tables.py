@@ -1,5 +1,5 @@
 """
-Migration script to add a new table named `oidc_rp` for authentication and authorization.
+Migration script to add a new table named `oidc` for authentication and authorization.
 """
 from __future__ import print_function
 
@@ -45,8 +45,8 @@ psa_partial = Table(
     Column('backend', VARCHAR(32)))
 
 
-oidc_rp_user_authnz_tokens = Table(
-    "oidc_rp_user_authnz_tokens", metadata,
+oidc_user_authnz_tokens = Table(
+    "oidc_user_authnz_tokens", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
@@ -61,27 +61,25 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Create UserOAuth2Table
     try:
         psa_association.create()
         psa_code.create()
         psa_nonce.create()
         psa_partial.create()
-        oidc_rp_user_authnz_tokens.create()
+        oidc_user_authnz_tokens.create()
     except Exception as e:
-        log.exception("Creating UserOAuth2 table failed: %s" % str(e))
+        log.exception("Creating OIDC table failed: %s" % str(e))
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop UserOAuth2Table
     try:
         psa_association.drop()
         psa_code.drop()
         psa_nonce.drop()
         psa_partial.drop()
-        oidc_rp_user_authnz_tokens.drop()
+        oidc_user_authnz_tokens.drop()
     except Exception as e:
-        log.exception("Dropping UserOAuth2 table failed: %s" % str(e))
+        log.exception("Dropping OIDC table failed: %s" % str(e))
