@@ -36,6 +36,12 @@ else:
 assert sys.version_info[:2] >= (2, 7)
 
 
+class UploadProblemException(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+
 def file_err(msg, dataset, json_file):
     json_file.write(dumps(dict(type='dataset',
                                ext='data',
@@ -104,24 +110,20 @@ def add_file(dataset, registry, json_file, output_path):
     try:
         ext = dataset.file_type
     except AttributeError:
-        file_err('Unable to process uploaded file, missing file_type parameter.', dataset, json_file)
-        return
+        raise UploadProblemException('Unable to process uploaded file, missing file_type parameter.')
 
     if dataset.type == 'url':
         try:
             page = urlopen(dataset.path)  # page will be .close()ed by sniff methods
             temp_name = sniff.stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
         except Exception as e:
-            file_err('Unable to fetch %s\n%s' % (dataset.path, str(e)), dataset, json_file)
-            return
+            raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, str(e)))
         dataset.path = temp_name
     # See if we have an empty file
     if not os.path.exists(dataset.path):
-        file_err('Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file)
-        return
+        raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
     if not os.path.getsize(dataset.path) > 0:
-        file_err('The uploaded file is empty', dataset, json_file)
-        return
+        raise UploadProblemException('The uploaded file is empty')
     # Is dataset content supported sniffable binary?
     is_binary = check_binary(dataset.path)
     if is_binary:
@@ -141,8 +143,7 @@ def add_file(dataset, registry, json_file, output_path):
             # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
             is_gzipped, is_valid = check_gzip(dataset.path, check_content=check_content)
             if is_gzipped and not is_valid:
-                file_err('The gzipped uploaded file contains inappropriate content', dataset, json_file)
-                return
+                raise UploadProblemException('The gzipped uploaded file contains inappropriate content')
             elif is_gzipped and is_valid and auto_decompress:
                 if not link_data_only:
                     # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
@@ -155,8 +156,7 @@ def add_file(dataset, registry, json_file, output_path):
                         except IOError:
                             os.close(fd)
                             os.remove(uncompressed)
-                            file_err('Problem decompressing gzipped data', dataset, json_file)
-                            return
+                            raise UploadProblemException('Problem decompressing gzipped data')
                         if not chunk:
                             break
                         os.write(fd, chunk)
@@ -174,8 +174,7 @@ def add_file(dataset, registry, json_file, output_path):
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2(dataset.path, check_content)
                 if is_bzipped and not is_valid:
-                    file_err('The gzipped uploaded file contains inappropriate content', dataset, json_file)
-                    return
+                    raise UploadProblemException('The gzipped uploaded file contains inappropriate content')
                 elif is_bzipped and is_valid and auto_decompress:
                     if not link_data_only:
                         # We need to uncompress the temp_name file
@@ -188,8 +187,7 @@ def add_file(dataset, registry, json_file, output_path):
                             except IOError:
                                 os.close(fd)
                                 os.remove(uncompressed)
-                                file_err('Problem decompressing bz2 compressed data', dataset, json_file)
-                                return
+                                raise UploadProblemException('Problem decompressing bz2 compressed data')
                             if not chunk:
                                 break
                             os.write(fd, chunk)
@@ -228,8 +226,7 @@ def add_file(dataset, registry, json_file, output_path):
                                     except IOError:
                                         os.close(fd)
                                         os.remove(uncompressed)
-                                        file_err('Problem decompressing zipped data', dataset, json_file)
-                                        return
+                                        raise UploadProblemException('Problem decompressing zipped data')
                                     if not chunk:
                                         break
                                     os.write(fd, chunk)
@@ -247,8 +244,7 @@ def add_file(dataset, registry, json_file, output_path):
                                 except IOError:
                                     os.close(fd)
                                     os.remove(uncompressed)
-                                    file_err('Problem decompressing zipped data', dataset, json_file)
-                                    return
+                                    raise UploadProblemException('Problem decompressing zipped data')
                         z.close()
                         # Replace the zipped file with the decompressed file if it's safe to do so
                         if uncompressed is not None:
@@ -268,17 +264,14 @@ def add_file(dataset, registry, json_file, output_path):
                         ext = parts[-1].strip().lower()
                         is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
                         if check_content and not is_ext_unsniffable_binary:
-                            file_err('The uploaded binary file contains inappropriate content', dataset, json_file)
-                            return
+                            raise UploadProblemException('The uploaded binary file contains inappropriate content')
                         elif is_ext_unsniffable_binary and dataset.file_type != ext:
                             err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
-                            file_err(err_msg, dataset, json_file)
-                            return
+                            raise UploadProblemException(err_msg)
             if not data_type:
                 # We must have a text file
                 if check_content and check_html(dataset.path):
-                    file_err('The uploaded file contains inappropriate HTML content', dataset, json_file)
-                    return
+                    raise UploadProblemException('The uploaded file contains inappropriate HTML content')
             if data_type != 'binary':
                 if not link_data_only and data_type not in ('gzip', 'bz2', 'zip'):
                     # Convert universal line endings to Posix line endings if to_posix_lines is True
@@ -308,8 +301,7 @@ def add_file(dataset, registry, json_file, output_path):
         if datatype.dataset_content_needs_grooming(dataset.path):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
-            file_err(err_msg, dataset, json_file)
-            return
+            raise UploadProblemException(err_msg)
     if not link_data_only and converted_path:
         # Move the dataset to its "real" path
         try:
@@ -345,8 +337,7 @@ def add_composite_file(dataset, json_file, output_path, files_path):
         for name, value in dataset.composite_files.items():
             value = util.bunch.Bunch(**value)
             if dataset.composite_file_paths[value.name] is None and not value.optional:
-                file_err('A required composite data file was not provided (%s)' % name, dataset, json_file)
-                break
+                raise UploadProblemException('A required composite data file was not provided (%s)' % name)
             elif dataset.composite_file_paths[value.name] is not None:
                 dp = dataset.composite_file_paths[value.name]['path']
                 isurl = dp.find('://') != -1  # todo fixme
@@ -354,8 +345,7 @@ def add_composite_file(dataset, json_file, output_path, files_path):
                     try:
                         temp_name = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
                     except Exception as e:
-                        file_err('Unable to fetch %s\n%s' % (dp, str(e)), dataset, json_file)
-                        return
+                        raise UploadProblemException('Unable to fetch %s\n%s' % (dp, str(e)))
                     dataset.path = temp_name
                     dp = temp_name
                 if not value.is_binary:
@@ -403,12 +393,14 @@ def __main__():
         except Exception:
             print('Output path for dataset %s not found on command line' % dataset.dataset_id, file=sys.stderr)
             sys.exit(1)
-        if dataset.type == 'composite':
-            files_path = output_paths[int(dataset.dataset_id)][1]
-            add_composite_file(dataset, json_file, output_path, files_path)
-        else:
-            add_file(dataset, registry, json_file, output_path)
-
+        try:
+            if dataset.type == 'composite':
+                files_path = output_paths[int(dataset.dataset_id)][1]
+                add_composite_file(dataset, json_file, output_path, files_path)
+            else:
+                add_file(dataset, registry, json_file, output_path)
+        except UploadProblemException as e:
+            file_err(e.message, dataset, json_file)
     # clean up paramfile
     # TODO: this will not work when running as the actual user unless the
     # parent directory is writable by the user.
