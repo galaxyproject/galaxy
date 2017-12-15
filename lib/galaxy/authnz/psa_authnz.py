@@ -21,6 +21,10 @@ BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect'
 }
 
+BACKENDS_NAME = {
+    'google': 'google-openidconnect'
+}
+
 # NOTE: a PSA backend is not initialized at the time of initializing PSAAuthnz because PSA backends have the
 # following line in the initialization which obviously requires session data, and given that PSAAuthnz is initialized
 # when loading Galaxy application, and at this point session does not exist, hence we can not pass session data
@@ -59,7 +63,8 @@ config[setting_name('USER_MODEL')] = 'models.User'
 
 class PSAAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, config_xml):
-        self._parse_config(provider.lower(), oidc_config, config_xml)
+        config['provider'] = provider.lower()
+        self._parse_config(config['provider'], oidc_config, config_xml)
 
     def _parse_config(self, provider, oidc_config, config_xml):
         for key, value in oidc_config.iteritems():
@@ -108,9 +113,9 @@ class PSAAuthnz(IdentityProvider):
                 self._user = None
         return self._user
 
-    def load_backend(self, strategy, name, redirect_uri):
+    def load_backend(self, strategy, redirect_uri):
         backends = self.get_helper('AUTHENTICATION_BACKENDS')
-        backend = get_backend(backends, name)
+        backend = get_backend(backends, BACKENDS_NAME[config['provider']])
         return backend(strategy, redirect_uri)
 
     def login_user(self, user):
@@ -126,9 +131,8 @@ class PSAAuthnz(IdentityProvider):
         _trans = trans
         self._on_the_fly_config(trans)
 
-        backend_label = 'google-openidconnect'
         strategy = Strategy(trans, Storage)
-        backend = self.load_backend(strategy, backend_label, config['redirect_uri'])
+        backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
         return do_auth(backend)
 
@@ -137,11 +141,10 @@ class PSAAuthnz(IdentityProvider):
         self._on_the_fly_config(trans)
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
-        backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
         self.strategy.session_set('google-openidconnect_state', state_token)
-        self.backend = self.load_backend(self.strategy, backend_label, uri)
+        self.backend = self.load_backend(self.strategy, uri)
         # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
         # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
         # google. The following is a temporary patch. This problem should be solved properly.
@@ -155,13 +158,12 @@ class PSAAuthnz(IdentityProvider):
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
         _trans = trans
         self._on_the_fly_config(trans)
-        backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
         config[setting_name('DISCONNECT_REDIRECT_URL')] = redirect_url if redirect_url is not None else ()
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
-        self.backend = self.load_backend(self.strategy, backend_label, uri)
+        self.backend = self.load_backend(self.strategy, uri)
         # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
         # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
         # google. The following is a temporary patch. This problem should be solved properly.
