@@ -64,10 +64,8 @@
 
     ## load javascript
     <script type="text/javascript">
-        require(['legacy/grid/grid-view'], function(GridView) {
-            $(function() {
-                var gridView = new GridView.default( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
-            });
+        $(function() {
+            var gridView = new window.bundleEntries.LegacyGridView( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
         });
     </script>
 </%def>
