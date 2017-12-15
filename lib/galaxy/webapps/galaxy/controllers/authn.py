@@ -17,6 +17,10 @@ class OAuth2(BaseUIController):
 
     @web.expose
     def callback(self, trans, **kwargs):
+        if 'error' in kwargs:
+            # TODO: handle error
+            raise
+        #TODO: make the following more generic, the attributes state and code are Google specific.
         redirect_url, user = trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans)
         trans.handle_user_login(user)
         return trans.response.send_redirect(redirect_url)
