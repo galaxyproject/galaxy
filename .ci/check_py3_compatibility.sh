@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if command -v ack-grep >/dev/null; then
+    ACK=ack-grep
+else
+    ACK=ack
+fi
+
 export ACK_OPTIONS=" --type python \
 --ignore-dir=.git/ \
 --ignore-dir=.tox/ \
@@ -21,7 +27,7 @@ xmlrpclib"
 
 ret=0
 for mod in $PYTHON2_ONLY_MODULES; do
-    ack "^import $mod(\n|\.)|^from $mod import "
+    $ACK "^import $mod(\n|\.)|^from $mod import "
     if [ $? -eq 0 ]; then ret=1; fi
 done
 
