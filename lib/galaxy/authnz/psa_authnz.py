@@ -127,10 +127,10 @@ class PSAAuthnz(IdentityProvider):
         self._on_the_fly_config(trans)
 
         backend_label = 'google-openidconnect'
-        self.strategy = Strategy(trans, Storage)  # self.load_strategy()
-        self.backend = self.load_backend(self.strategy, backend_label, config['redirect_uri'])
-        self.backend.redirect_uri = config['redirect_uri']
-        return do_auth(self.backend)
+        strategy = Strategy(trans, Storage)
+        backend = self.load_backend(strategy, backend_label, config['redirect_uri'])
+        backend.redirect_uri = config['redirect_uri']
+        return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans):
         _trans = trans
