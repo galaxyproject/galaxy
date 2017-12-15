@@ -17,11 +17,9 @@ class OAuth2(BaseUIController):
 
     @web.expose
     def callback(self, trans, **kwargs):
-        return trans.response.send_redirect(trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans))
-        #if trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans) is False:
-            # TODO: inform the user why he/she is being re-authenticated.
-            # self.google_authn(trans) # maybe not needed.
-        #    pass
+        redirect_url, user = trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans)
+        trans.handle_user_login(user)
+        return trans.response.send_redirect(redirect_url)
 
     @web.expose
     @web.require_login("authenticate against Google identity provider")

@@ -68,6 +68,8 @@ class PSAAuthnz(IdentityProvider):
 
         config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
 
+        config[setting_name('INACTIVE_USER_LOGIN')] = True
+
         # TODO: set the following parameter
         # config[setting_name('VERIFY_SSL')] =
 
@@ -113,6 +115,7 @@ class PSAAuthnz(IdentityProvider):
     def login_user(self, user):
         self.strategy.session_set("logged_in", True)
         self.strategy.session_set("user_id", self.trans.user)
+        self.strategy.session_set('user', user)
 
 
     def authenticate(self, trans):
@@ -161,7 +164,8 @@ class PSAAuthnz(IdentityProvider):
         self.backend.redirect_uri = "http://" + self.backend.redirect_uri
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
-        return do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
+        redirect_url = do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
+        return redirect_url, self.strategy.session_get('user', None)
 
     def disconnect(self, provider, trans, association_id=None):
         _trans = trans
