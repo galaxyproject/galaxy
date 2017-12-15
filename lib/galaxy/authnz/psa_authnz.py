@@ -83,7 +83,11 @@ class PSAAuthnz(IdentityProvider):
     def _parse_google_config(self, config_xml):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
-        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'prompt': 'consent', 'access_type': 'offline'}
+        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {
+            'access_type': 'offline'
+            # Setting prompt to consent will set Google to show consent screen every time the user logs into Galaxy.
+            # , 'prompt': 'consent'
+        }
 
     def _on_the_fly_config(self, trans):
         trans.app.model.PSACode.trans = trans
