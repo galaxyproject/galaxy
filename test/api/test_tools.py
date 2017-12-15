@@ -1366,6 +1366,15 @@ class ToolsTestCase(api.ApiTestCase):
         }
         self._check_combined_mapping_and_subcollection_mapping(history_id, inputs)
 
+    def test_upload_from_invalid_url(self):
+        history_id, dataset_id = self._upload_from_url('https://usegalaxy.org/bla123')
+        dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
+        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
+
+    def test_upload_from_valid_url(self):
+        history_id, dataset_id = self._upload_from_url('https://usegalaxy.org/api/version')
+        self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=True)
+
     def _check_combined_mapping_and_subcollection_mapping(self, history_id, inputs):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         outputs = self._run_and_get_outputs("collection_mixed_param", history_id, inputs)
@@ -1406,6 +1415,19 @@ class ToolsTestCase(api.ApiTestCase):
             return create
         else:
             return create_response
+
+    def _upload_from_url(self, url):
+        inputs = {"dbkey": "?",
+                  "file_type": "auto",
+                  "files_0|type":
+                  "upload_dataset",
+                  "files_0|space_to_tab": '',
+                  "files_0|to_posix_lines": "Yes",
+                  "files_0|url_paste": url}
+        history_id = self.dataset_populator.new_history()
+        new_dataset_id = self._run('upload1', history_id=history_id, inputs=inputs).json()['outputs'][0]['id']
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+        return history_id, new_dataset_id
 
     def _upload(self, content, **upload_kwds):
         history_id = self.dataset_populator.new_history()

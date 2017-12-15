@@ -114,15 +114,15 @@ class BaseDatasetPopulator(object):
         payload = self.upload_payload(history_id, content, **kwds)
         run_response = self.tools_post(payload)
         if wait:
-            self.wait_for_tool_run(history_id, run_response)
+            self.wait_for_tool_run(history_id, run_response, kwds.get('assert_ok', True))
         return run_response
 
-    def wait_for_tool_run(self, history_id, run_response):
+    def wait_for_tool_run(self, history_id, run_response, assert_ok=True):
         run = run_response.json()
         assert run_response.status_code == 200, run
         job = run["jobs"][0]
         self.wait_for_job(job["id"])
-        self.wait_for_history(history_id, assert_ok=True)
+        self.wait_for_history(history_id, assert_ok=assert_ok)
         return run_response
 
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
