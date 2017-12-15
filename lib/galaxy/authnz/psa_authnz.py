@@ -126,17 +126,11 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans):
         self._on_the_fly_config(trans)
-
-        uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
         self.strategy.session_set('google-openidconnect_state', state_token)
-        self.backend = self.load_backend(self.strategy, uri)
-        # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
-        # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
-        # google. The following is a temporary patch. This problem should be solved properly.
-        # might be able to the following using absolute_uri function in the strategy
-        self.backend.redirect_uri = "http://" + self.backend.redirect_uri
+        self.backend = self.load_backend(self.strategy, config['redirect_uri'])
+        self.backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
         redirect_url = do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
