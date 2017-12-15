@@ -84,7 +84,9 @@ var View = Backbone.View.extend({
 
         // add change event. fires on trigger
         this.on("change", () => {
-            options.onchange && options.onchange(self.value());
+            if (options.onchange) {
+                options.onchange(self.value());
+            }
         });
 
         // create elements
