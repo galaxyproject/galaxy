@@ -127,8 +127,6 @@ class PSAAuthnz(IdentityProvider):
         # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
         global _user
         _user = trans.user
-
-        _trans = trans
         self._on_the_fly_config(trans)
 
         strategy = Strategy(trans, Storage)
@@ -137,7 +135,6 @@ class PSAAuthnz(IdentityProvider):
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans):
-        _trans = trans
         self._on_the_fly_config(trans)
 
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
@@ -156,7 +153,6 @@ class PSAAuthnz(IdentityProvider):
         return redirect_url, self.strategy.session_get('user', None)
 
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
-        _trans = trans
         self._on_the_fly_config(trans)
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
@@ -173,15 +169,10 @@ class PSAAuthnz(IdentityProvider):
         self.trans = trans
         return do_disconnect(self.backend, self.get_current_user(trans), association_id)
 
-# TODO: find a better way to do this
-_trans = None
-
 
 class Strategy(BaseStrategy):
 
     def __init__(self, trans, storage, tpl=None):
-        global _trans
-        _trans = trans
         self.trans = trans
         self.request = trans.request
         self.session = trans.session if trans.session else {}
@@ -449,13 +440,13 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     :type request: webob.multidict.MultiDict
     :type details: dict
     """
-    user_authnz = _trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
-                                                               user_storage.table.c.provider == name).first()
+    user_authnz = strategy.trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
+                                                                       user_storage.table.c.provider == name).first()
     # TODO: log the following message, and properly return it to the endpoint and inform user.
     if user_authnz is None:
         return 'Not authenticated by any identity providers.'
     # option A
-    _trans.sa_session.delete(user_authnz)
+    strategy.trans.sa_session.delete(user_authnz)
     # option B
     # user_authnz.extra_data = None
-    _trans.sa_session.flush()
+    strategy.trans.sa_session.flush()
