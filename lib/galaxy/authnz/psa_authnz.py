@@ -78,6 +78,7 @@ class PSAAuthnz(IdentityProvider):
     def _parse_google_config(self, config_xml):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
+        config['redirect_uri'] = config_xml.find('redirect_uri').text
         config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
         if config_xml.find('prompt') is not None:
             config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = config_xml.find('prompt').text
@@ -91,8 +92,7 @@ class PSAAuthnz(IdentityProvider):
         config[setting_name('LOGIN_REDIRECT_URL')] = url_for('/')
 
     def get_helper(self, name, do_import=False):
-        this_config = config.get(setting_name(name),
-                                DEFAULTS.get(name, None))
+        this_config = config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
     def get_current_user(self, trans):
@@ -118,18 +118,7 @@ class PSAAuthnz(IdentityProvider):
         self.strategy.session_set("user_id", self.trans.user)
         self.strategy.session_set('user', user)
 
-
     def authenticate(self, trans):
-        # uri = redirect_uri
-        # strategy = Strategy()
-        # print '\n', GoogleOpenIdConnect(strategy=strategy, redirect_uri=None)
-        uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
-        # TODO: do something like the following for all the providers.
-        # if client_secret_file is None:
-        #    log.error("Did not find `client_secret_file` key in the configuration; skipping the node '{}'."
-        # .format(config.get('name')))
-        #    raise ParseError
-
         # TODO: this is temporary; user should not be defined at such global level. Find a better workaround.
         global _user
         _user = trans.user
@@ -139,13 +128,8 @@ class PSAAuthnz(IdentityProvider):
 
         backend_label = 'google-openidconnect'
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
-        self.backend = self.load_backend(self.strategy, backend_label, uri)
-        # print '\n\nbackend: {}\ndir: {}\n\n\nbackend redirect_uri: {}\n\n'.format(self.backend, dir(self.backend), self.backend.redirect_uri)
-        # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
-        # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
-        # google. The following is a temporary patch. This problem should be solved properly.
-        # might be able to the following using absolute_uri function in the strategy
-        self.backend.redirect_uri = "http://" + self.backend.redirect_uri
+        self.backend = self.load_backend(self.strategy, backend_label, config['redirect_uri'])
+        self.backend.redirect_uri = config['redirect_uri']
         return do_auth(self.backend)
 
     def callback(self, state_token, authz_code, trans):

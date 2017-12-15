@@ -19,6 +19,7 @@ class OIDC(BaseUIController):
     def callback(self, trans, **kwargs):
         if 'error' in kwargs:
             # TODO: handle error
+            print 'kwargs: ', kwargs
             raise
         #TODO: make the following more generic, the attributes state and code are Google specific.
         redirect_url, user = trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans)

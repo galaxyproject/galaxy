@@ -39,7 +39,7 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
-    def authenticate(self, trans):
+    def authenticate(self, provider, trans):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user
         is authenticated, if not, it generates a provider-specific
