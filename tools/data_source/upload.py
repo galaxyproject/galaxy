@@ -43,7 +43,8 @@ def file_err(msg, dataset, json_file):
     json_file.write(dumps(dict(type='dataset',
                                ext='data',
                                dataset_id=dataset.dataset_id,
-                               stderr=msg)) + "\n")
+                               stderr=msg,
+                               failed=True)) + "\n")
     # never remove a server-side upload
     if dataset.type in ('server_dir', 'path_paste'):
         return
