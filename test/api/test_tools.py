@@ -1368,8 +1368,8 @@ class ToolsTestCase(api.ApiTestCase):
 
     def test_upload_from_invalid_url(self):
         history_id, dataset_id = self._upload_from_url('https://usegalaxy.org/bla123')
-        datset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
-        assert datset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % datset_details['state']
+        dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=dataset_id, assert_ok=False)
+        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
 
     def test_upload_from_valid_url(self):
         history_id, dataset_id = self._upload_from_url('https://usegalaxy.org/api/version')
