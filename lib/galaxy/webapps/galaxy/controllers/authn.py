@@ -31,4 +31,4 @@ class OAuth2(BaseUIController):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
-        return trans.response.send_redirect(trans.app.authnz_manager.disconnect('Google', trans))
+        return trans.response.send_redirect(trans.app.authnz_manager.disconnect('Google', trans, redirect_url=None))

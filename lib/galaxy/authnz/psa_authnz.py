@@ -69,8 +69,6 @@ class PSAAuthnz(IdentityProvider):
         if provider == 'google':
             self._parse_google_config(config_xml)
 
-        config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
-
         # The following config sets PSA to call the `login_user` function for
         # logging in a user. If this setting is set to false, the `login_user`
         # would not be called, and as a result Galaxy would not know who is
@@ -170,12 +168,13 @@ class PSAAuthnz(IdentityProvider):
         redirect_url = do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
         return redirect_url, self.strategy.session_get('user', None)
 
-    def disconnect(self, provider, trans, association_id=None):
+    def disconnect(self, provider, trans, redirect_url=None, association_id=None):
         _trans = trans
         self._on_the_fly_config(trans)
         backend_label = 'google-openidconnect'
         uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
 
+        config[setting_name('DISCONNECT_REDIRECT_URL')] = redirect_url if redirect_url is not None else ()
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
         self.backend = self.load_backend(self.strategy, backend_label, uri)
