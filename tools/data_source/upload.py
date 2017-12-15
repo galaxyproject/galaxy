@@ -77,14 +77,29 @@ def add_file(dataset, registry, json_file, output_path):
     converted_path = None
     stdout = None
     link_data_only = dataset.get('link_data_only', 'copy_files')
-    run_as_real_user = in_place = dataset.get('in_place', True)
-    purge_source = dataset.get('purge_source', True)
-    # in_place is True if there is no external chmod in place,
-    # however there are other instances where modifications should not occur in_place:
-    # when a file is added from a directory on the local file system (ftp import folder or any other path).
-    if dataset.type in ('server_dir', 'path_paste', 'ftp_import'):
-        in_place = False
+
+    # run_as_real_user is estimated from galaxy config (external chmod indicated of inputs executed)
+    # If this is True we always purge supplied upload inputs so they are cleaned up and we reuse their
+    # paths during data conversions since this user already owns that path.
+    # Older in_place check for upload jobs created before 18.01, TODO remove in 19.XX. xref #5206
+    run_as_real_user = dataset.get('run_as_real_user', False) or dataset.get("in_place", False)
+
+    # purge_source is False if this is an FTP import and ftp_upload_purge has been overridden to False in Galaxy's config.
+    # This prevents us from deleting the user supplied paths in this case. We disable this behavior
+    # if running as the real user so the file can be cleaned up by Galaxy.
+    purge_source = dataset.get('purge_source', True) and not run_as_real_user
+
+    # in_place is True only if we are running as a real user and not importing external paths (i.e.
+    # this is a real upload and not a path paste or ftp import).
+    # In this case we try to reuse the uploaded file that has been chowned to this user already.
+    in_place = run_as_real_user and dataset.type not in ('server_dir', 'path_paste', 'ftp_import')
+
+    # Base on the check_upload_content Galaxy config option and on by default, this enables some
+    # security related checks on the uploaded content, but can prevent uploads from working in some cases.
     check_content = dataset.get('check_content' , True)
+
+    # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
+    # decompressing archive files before sniffing.
     auto_decompress = dataset.get('auto_decompress', True)
     try:
         ext = dataset.file_type
@@ -303,9 +318,7 @@ def add_file(dataset, registry, json_file, output_path):
             if e.errno != errno.EACCES:
                 raise
     elif link_data_only == 'copy_files':
-        if purge_source and not run_as_real_user:
-            # if the upload tool runs as a real user the real user
-            # can't move dataset.path as this path is owned by galaxy.
+        if purge_source:
             shutil.move(dataset.path, output_path)
         else:
             shutil.copy(dataset.path, output_path)

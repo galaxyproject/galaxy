@@ -25,7 +25,7 @@ var commonLibs = [
     "libs/farbtastic",
     "libs/bootstrap",
     "libs/bootstrap-tour",
-    "libs/vue",
+    "vue",
     // mvc
     "libs/underscore",
     "libs/backbone",

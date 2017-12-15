@@ -42,7 +42,7 @@ def _app_properties(args):
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=ACTIONS.keys(),
+                        choices=list(ACTIONS.keys()),
                         default=DEFAULT_ACTION,
                         nargs='?' if DEFAULT_ACTION is not None else None,
                         help='action to perform')

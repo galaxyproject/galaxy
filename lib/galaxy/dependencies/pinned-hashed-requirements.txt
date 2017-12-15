@@ -35,7 +35,7 @@ SQLAlchemy==1.0.15 --hash:sha256=7cbac295f87d2af82aac08346b52f72d0b0c00712290495
                    --hash:sha256=f819742f33ae543ca2c48bc43e35bd75372f7c3e379e4881f9040549d3df94b6 \
                    --hash:sha256=fce29753f720f8a6920185bd5a4d1670fa6b6936819475197b2bce7644243766 \
                    --hash:sha256=aa8843df6869f6c999400ae32de5480fba1b7711fe535c168a14225ffd1d3de4
-mercurial==3.7.3 --hash:sha256=49f596820f005ac6f94266b89a0dbd815c0ee0aacd3aa86545dc39fb349ea4bf \
+mercurial==3.7.3; python_version < '3.0' --hash:sha256=49f596820f005ac6f94266b89a0dbd815c0ee0aacd3aa86545dc39fb349ea4bf \
                  --hash:sha256=75f5b6b708bec2d6e0e68ec8912725a5dcac42df00b122fa73a8c4bd21495039 \
                  --hash:sha256=8c07cb3404d26641d8829099bd1047582b76def49eca067ba6bea9a73d261775 \
                  --hash:sha256=6a05bf22101b79b5f56421f7a1c6d301000f759f0114827f37cc9f847c1ab352 \

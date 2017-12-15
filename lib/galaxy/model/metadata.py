@@ -227,29 +227,6 @@ class MetadataParameter(object):
         other_values = other_values or {}
         return form_builder.TextField(self.spec.name, value=value)
 
-    def get_html(self, value, context=None, other_values=None, **kwd):
-        """
-        The "context" is simply the metadata collection/bunch holding
-        this piece of metadata. This is passed in to allow for
-        metadata to validate against each other (note: this could turn
-        into a huge, recursive mess if not done with care). For
-        example, a column assignment should validate against the
-        number of columns in the dataset.
-        """
-        context = context or {}
-        other_values = other_values or {}
-
-        if self.spec.get("readonly"):
-            return value
-        if self.spec.get("optional"):
-            checked = False
-            if value:
-                checked = "true"
-            checkbox = form_builder.CheckboxField("is_" + self.spec.name, checked=checked)
-            return checkbox.get_html() + self.get_field(value=value, context=context, other_values=other_values, **kwd).get_html()
-        else:
-            return self.get_field(value=value, context=context, other_values=other_values, **kwd).get_html()
-
     def to_string(self, value):
         return str(value)
 
@@ -390,16 +367,6 @@ class SelectParameter(MetadataParameter):
                 field.add_option(val, label, selected=False)
         return field
 
-    def get_html(self, value, context=None, other_values=None, values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-
-        if self.spec.get("readonly"):
-            if value in [None, []]:
-                return str(self.spec.no_value)
-            return ", ".join(map(str, value))
-        return MetadataParameter.get_html(self, value, context=context, other_values=other_values, values=values, **kwd)
-
     def wrap(self, value, session):
         # do we really need this (wasteful)? - yes because we are not sure that
         # all existing selects have been stored previously as lists. Also this
@@ -433,15 +400,6 @@ class DBKeyParameter(SelectParameter):
             pass
         return super(DBKeyParameter, self).get_field(value, context, other_values, values, **kwd)
 
-    def get_html(self, value=None, context=None, other_values=None, values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-        try:
-            values = kwd['trans'].app.genome_builds.get_genome_build_names(kwd['trans'])
-        except KeyError:
-            pass
-        return super(DBKeyParameter, self).get_html(value, context, other_values, values, **kwd)
-
 
 class RangeParameter(SelectParameter):
 
@@ -460,14 +418,6 @@ class RangeParameter(SelectParameter):
             values = list(zip(range(self.min, self.max, self.step), range(self.min, self.max, self.step)))
         return SelectParameter.get_field(self, value=value, context=context, other_values=other_values, values=values, **kwd)
 
-    def get_html(self, value, context=None, other_values=None, values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-
-        if values is None:
-            values = list(zip(range(self.min, self.max, self.step), range(self.min, self.max, self.step)))
-        return SelectParameter.get_html(self, value, context=context, other_values=other_values, values=values, **kwd)
-
     @classmethod
     def marshal(cls, value):
         value = SelectParameter.marshal(value)
@@ -485,15 +435,6 @@ class ColumnParameter(RangeParameter):
             column_range = range(1, (context.columns or 0) + 1, 1)
             values = list(zip(column_range, column_range))
         return RangeParameter.get_field(self, value=value, context=context, other_values=other_values, values=values, **kwd)
-
-    def get_html(self, value, context=None, other_values=None, values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-
-        if values is None and context:
-            column_range = range(1, (context.columns or 0) + 1, 1)
-            values = list(zip(column_range, column_range))
-        return RangeParameter.get_html(self, value, context=context, other_values=other_values, values=values, **kwd)
 
 
 class ColumnTypesParameter(MetadataParameter):
@@ -530,11 +471,6 @@ class PythonObjectParameter(MetadataParameter):
         other_values = other_values or {}
         return form_builder.TextField(self.spec.name, value=self._to_string(value))
 
-    def get_html(self, value=None, context=None, other_values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-        return str(self)
-
     @classmethod
     def marshal(cls, value):
         return value
@@ -555,11 +491,6 @@ class FileParameter(MetadataParameter):
         context = context or {}
         other_values = other_values or {}
         return form_builder.TextField(self.spec.name, value=str(value.id))
-
-    def get_html(self, value=None, context=None, other_values=None, **kwd):
-        context = context or {}
-        other_values = other_values or {}
-        return "<div>No display available for Metadata Files</div>"
 
     def wrap(self, value, session):
         if value is None:

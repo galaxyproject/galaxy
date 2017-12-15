@@ -130,8 +130,6 @@ class HistoryListGrid(grids.Grid):
     ]
     default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
     num_rows_per_page = 15
-    preserve_state = False
-    use_async = True
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
@@ -194,7 +192,6 @@ class HistoryAllPublishedGrid(grids.Grid):
     default_filter = dict(public_url="All", username="All", tags="All")
     use_paging = True
     num_rows_per_page = 50
-    use_async = True
     columns = [
         NameURLColumn("Name", key="name", filterable="advanced"),
         grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced"),
@@ -246,7 +243,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -316,7 +312,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
                 trans.sa_session.flush()
         # Render the list view
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = sanitize_text(message)
             kwargs['status'] = status
@@ -454,7 +449,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 message = "Unshared %d shared histories" % len(ids)
                 status = 'done'
         # Render the list view
-        kwargs['dict_format'] = True
         return self.shared_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose

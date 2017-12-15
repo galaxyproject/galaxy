@@ -22,7 +22,7 @@ import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
-import Vue from "libs/vue";
+import Vue from "vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -47,6 +47,7 @@ window.app = function app(options, bootstrapped) {
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)(:form_id)": "show_user_form",
+            "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
@@ -115,8 +116,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}workflow/list_published`
                 })
             );
         },
@@ -157,11 +157,18 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_openids: function() {
+            this.page.display(
+                new GridView({
+                    url_base: `${Galaxy.root}user/openids_list`
+                })
+            );
+        },
+
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}dataset/list`
                 })
             );
         },

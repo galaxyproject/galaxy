@@ -48,7 +48,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.options.tps_select_options = this.templatePanelSelectOptions;
         this.options.tool_dependencies = models.get("tool_dependencies");
         this.options.shed_tool_conf = this.templateShedToolConf({
-            stc_html: models.get("shed_conf")
+            shed_tool_confs: models.get("shed_conf")
         });
         this.options.panel_section_dict = models.get("panel_section_dict");
         this.options.api_url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
@@ -474,7 +474,11 @@ var ToolShedRepositoryView = Backbone.View.extend({
             '<div class="toolFormTitle">Shed tool configuration file:</div>',
             '<div class="toolFormBody">',
             '<div class="form-row">',
-            "<%= stc_html %>",
+            '<select name="shed_tool_conf">',
+            "<% _.each(shed_tool_confs.options, function(conf) { %>",
+            '<option value="<%= conf.value %>"><%= conf.label %></option>',
+            "<% }); %>",
+            "</select>",
             '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
             "</div>",
             "</div>"

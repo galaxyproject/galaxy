@@ -6,8 +6,10 @@ from sqlalchemy import and_
 
 from galaxy import util
 from galaxy.web.form_builder import SelectField
-from tool_shed.util import hg_util
-from tool_shed.util import xml_util
+from tool_shed.util import (
+    hg_util,
+    xml_util
+)
 
 log = logging.getLogger(__name__)
 

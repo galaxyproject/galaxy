@@ -5,13 +5,13 @@ import GalaxyApp from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
-import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import Vue from "libs/vue";
-import UserAPIKeys from "components/UserAPIKeys.vue";
+import UserAPIKeys from "components/admin/UserAPIKeys.vue";
+import DataTables from "components/admin/DataTables.vue";
+import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -28,10 +28,11 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/api_keys": "show_user_api_keys"
+            "(/)admin/api_keys": "show_user_api_keys",
+            "(/)admin/data_tables": "show_data_tables"
         },
 
-        authenticate: function(args, name) {
+        authenticate: function() {
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
@@ -39,8 +40,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/users_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -49,8 +49,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/roles_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -59,8 +58,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/groups_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -69,8 +67,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin_toolshed/browse_repositories`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -79,8 +76,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/tool_versions_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -89,24 +85,28 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/quotas_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
 
         show_user_api_keys: function() {
-            var vuemount = document.createElement("div");
-            this.page.display(vuemount);
-            new Vue(UserAPIKeys).$mount(vuemount);
+            var vueMount = document.createElement("div");
+            this.page.display(vueMount);
+            new Vue(UserAPIKeys).$mount(vueMount);
+        },
+
+        show_data_tables: function() {
+            var vueMount = document.createElement("div");
+            this.page.display(vueMount);
+            new Vue(DataTables).$mount(vueMount);
         },
 
         show_forms: function() {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}forms/forms_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
