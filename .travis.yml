@@ -9,18 +9,24 @@ env:
   - TOX_ENV=py27-unit
   - TOX_ENV=qunit
   - TOX_ENV=first_startup
-  - TOX_ENV=validate-test-tools
   - TOX_ENV=py27-lint-docstring-include-list
   - TOX_ENV=check-python-dependencies
 
 matrix:
+  include:
+    - env: TOX_ENV=validate-test-tools
+      addons:
+        apt:
+          packages:
+            - libxml2-utils
+    - env: TOX_ENV=check_py3_compatibility
+      addons:
+        apt:
+          packages:
+            - ack-grep
   allow_failures:
   - env: TOX_ENV=check-python-dependencies
 
-addons:
-  apt:
-    packages:
-      - libxml2-utils
 
 install:
   - pip install tox
