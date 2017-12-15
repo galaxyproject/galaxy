@@ -1,7 +1,6 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import fcntl
-import httplib
 import json
 import logging
 import os
@@ -22,7 +21,10 @@ import nose.core
 import nose.loader
 import nose.plugins.manager
 from paste import httpserver
-from six.moves import shlex_quote
+from six.moves import (
+    http_client,
+    shlex_quote
+)
 from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
@@ -400,7 +402,7 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
     # Test if the server is up
     for i in range(sleep_tries):
         # directly test the app, not the proxy
-        conn = httplib.HTTPConnection(host, port)
+        conn = http_client.HTTPConnection(host, port)
         try:
             conn.request("GET", "/")
             if conn.getresponse().status == 200:
