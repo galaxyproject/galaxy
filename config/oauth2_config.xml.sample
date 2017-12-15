@@ -1,8 +1,19 @@
 <?xml version="1.0"?>
 <OAuth2.0>
     <provider name="Google">
-        <!-- Keep the client_secret file on a path inaccessible to public.  -->
-        <client_secret_file>./oauth2/client_secret.json</client_secret_file>
-        <redirect_uri>https://usegalaxy.org/oauth2callback/google</redirect_uri>
+        <client_id>893677542423-lc1i0s8gjakjiqgevelmc1ncjdbske41.apps.googleusercontent.com</client_id>
+        <client_secret>5Zm59oMyL0aXFwtKBS0gaSga</client_secret>
+        <redirect_uri>http://localhost:8080/authn/google/callback</redirect_uri>
+
+        <!--The value of this parameter specifies whether the Google authorization server should prompt a galaxy
+          user for (re)authorization and consent. The possible values are: `none`, `consent`, and `select_account`.
+          HOWEVER, DO NOT USE `none`, because it will cause authentication failure for new users.
+          see the following page for more information:
+          https://developers.google.com/identity/protocols/OpenIDConnect#prompt
+
+          If you want the consent screen to be shown to the new users only, and re-authorization happen without
+          asking for user's consent, then remove this attribute.
+          -->
+        <!-- <prompt>select_account</prompt> -->
     </provider>
 </OAuth2.0>
