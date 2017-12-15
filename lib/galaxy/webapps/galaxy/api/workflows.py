@@ -339,10 +339,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval = {}
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
-        for step in workflow.steps:
-            if step.type == 'tool' or step.type is None:
-                for v in outputs[step.id].values():
-                    rval['outputs'].append(trans.security.encode_id(v.id))
+        if outputs:
+            # Newer outputs don't necessarily fill outputs (?)
+            for step in workflow.steps:
+                if step.type == 'tool' or step.type is None:
+                    for v in outputs[step.id].values():
+                        rval['outputs'].append(trans.security.encode_id(v.id))
 
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in

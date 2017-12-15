@@ -339,7 +339,7 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        subworkflow_invoker = progress.subworkflow_invoker(trans, step)
+        subworkflow_invoker = progress.subworkflow_invoker(trans, step, use_cached_job=use_cached_job)
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress

@@ -441,7 +441,7 @@ class WorkflowProgress(object):
             raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
         return subworkflow_invocation
 
-    def subworkflow_invoker(self, trans, step):
+    def subworkflow_invoker(self, trans, step, use_cached_job=False):
         subworkflow_progress = self.subworkflow_progress(step)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         workflow_run_config = WorkflowRunConfig(
@@ -450,6 +450,7 @@ class WorkflowProgress(object):
             inputs={},
             param_map={},
             copy_inputs_to_history=False,
+            use_cached_job=use_cached_job
         )
         return WorkflowInvoker(
             trans,

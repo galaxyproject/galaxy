@@ -255,6 +255,8 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
                 invocation_id=invocation_id,
                 inputs=inputs,
                 jobs=jobs,
+                invocation=invocation,
+                workflow_request=workflow_request
             )
 
     def _history_jobs(self, history_id):
@@ -986,7 +988,7 @@ test_data:
     value: 1.bed
     type: File
 """ % SIMPLE_NESTED_WORKFLOW_YAML
-        self._run_jobs(workflow_run_description, history_id=history_id)
+        run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id)
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
@@ -1820,10 +1822,46 @@ test_data:
 
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
-        # We launch a workflow
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
+        self._workflow_rerun_with_use_cached_job(workflow=workflow)
+
+    @skip_without_tool('cat1')
+    def test_nested_workflow_rerun_with_use_cached_job(self):
+        history_id = self.dataset_populator.new_history()
+        workflow_run_description = """%s
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""" % SIMPLE_NESTED_WORKFLOW_YAML
+        run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        workflow_request = run_jobs_summary.workflow_request
+        # We copy the inputs to a new history and re-reun the workflow
+        new_history_id = self.dataset_populator.new_history()
+        inputs = json.loads(workflow_request['inputs'])
+        dataset_type = inputs['outer_input']['src']
+        dataset_id = inputs['outer_input']['id']
+        copy_payload = {"content": dataset_id, "source": dataset_type, "type": "dataset"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
+        new_dataset_id = copy_response.json()['id']
+        inputs['outer_input']['id'] = new_dataset_id
+        workflow_request['use_cached_job'] = True
+        workflow_request['history'] = "hist_id={new_history_id}".format(new_history_id=new_history_id)
+        workflow_request['inputs'] = json.dumps(inputs)
+        run_workflow_response = self._post("workflows", data=run_jobs_summary.workflow_request).json()
+        self.wait_for_invocation_and_jobs(new_history_id, run_jobs_summary.workflow_id, run_workflow_response['id'])
+        pass
+
+    def _workflow_rerun_with_use_cached_job(self, workflow=None, workflow_id=None):
+        # We launch a workflow
         with self.dataset_populator.test_history() as history_id:
-            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
+            if workflow:
+                workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
+            else:
+                workflow_request, _ = self._setup_workflow_run(workflow_id=workflow_id, history_id=history_id)
             run_workflow_response = self._post("workflows", data=workflow_request).json()
             # We copy the workflow inputs to a new history
             new_workflow_request = workflow_request.copy()
@@ -2727,4 +2765,4 @@ steps:
             )
 
 
-RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs'])
+RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
