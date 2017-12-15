@@ -9,6 +9,7 @@ Additionally, this package implements functionalist's to request temporary acces
 credentials for cloud-based resource providers (e.g., Amazon AWS, Microsoft Azure).
 """
 
+import importlib
 import logging
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
@@ -76,7 +77,7 @@ class IdentityProvider(object):
 
 class AuthnzManager(object):
 
-    def __init__(self, app, config):
+    def __init__(self, app, oidc_rp_config_file, config):
         """
         :type app: galaxy.app.UniverseApplication
         :param app:
@@ -85,7 +86,37 @@ class AuthnzManager(object):
         :param config: sets the path for OAuth2.0 configuration
             file (e.g., OAuth2_config.xml).
         """
+        self._parse_oidc_rp_config(oidc_rp_config_file)
         self._parse_config(config)
+
+    def _parse_oidc_rp_config(self, config_file):
+        self.oidc_rp_config = {}
+        try:
+            tree = ET.parse(config_file)
+            root = tree.getroot()
+            if root.tag != 'OIDC_RP':
+                raise ParseError("The root element in OIDC_RP_Config xml file is expected to be `OIDC_RP`, "
+                                 "found `{}` instead -- unable to continue.".format(root.tag))
+            for child in root:
+                if child.tag != 'Setter':
+                    log.error("Expect a node with `Setter` tag, found a node with `{}` tag instead; "
+                              "skipping this node.".format(child.tag))
+                    continue
+                if 'Property' not in child.attrib or 'Value' not in child.attrib or 'Type' not in child.attrib:
+                    log.error("Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
+                              " found these attributes: `{}`; skipping this node.".format(child.attrib))
+                    continue
+                try:
+                    func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
+                except AttributeError:
+                    log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
+                              " skipping this node").format(child.get('Type'))
+                    continue
+                self.oidc_rp_config[child.get('Property')] = func(child.get('Value'))
+        except ImportError:
+            raise
+        except ParseError as e:
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
 
     def _parse_config(self, config):
         self.providers = {}
@@ -106,7 +137,7 @@ class AuthnzManager(object):
                 provider = child.get('name')
                 try:
                     from .psa_authnz import PSAAuthnz
-                    self.providers[provider] = PSAAuthnz(provider, child)
+                    self.providers[provider] = PSAAuthnz(provider, self.oidc_rp_config, child)
                 # TODO: capture exception of type `Exception` here, these are the type of errors which can raise if anything goes wrong initializing the provider.
                 except ParseError:
                     log.error("Could not initialize `{}` identity provider; skipping this node.".format(provider))

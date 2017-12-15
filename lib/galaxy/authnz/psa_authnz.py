@@ -58,10 +58,13 @@ config = {}
 config[setting_name('USER_MODEL')] = 'models.User'
 
 class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, config_xml):
-        self._parse_config(provider.lower(), config_xml)
+    def __init__(self, provider, oidc_rp_config, config_xml):
+        self._parse_config(provider.lower(), oidc_rp_config, config_xml)
 
-    def _parse_config(self, provider, config_xml):
+    def _parse_config(self, provider, oidc_rp_config, config_xml):
+        for key, value in oidc_rp_config.iteritems():
+            config[setting_name(key)] = value
+
         config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider], )
         if provider == 'google':
             self._parse_google_config(config_xml)
@@ -74,18 +77,12 @@ class PSAAuthnz(IdentityProvider):
         # the just logged-in user.
         config[setting_name('INACTIVE_USER_LOGIN')] = True
 
-        # TODO: set the following parameter
-        # config[setting_name('VERIFY_SSL')] =
-
-        # TODO: set the following parameter
-        # config[setting_name('REQUESTS_TIMEOUT')] =
-
     def _parse_google_config(self, config_xml):
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
         config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
-        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {
-            'access_type': 'offline',
-            'prompt': config_xml.find('prompt').text}
+        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
+        if config_xml.find('prompt') is not None:
+            config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = config_xml.find('prompt').text
 
     def _on_the_fly_config(self, trans):
         trans.app.model.PSACode.trans = trans
