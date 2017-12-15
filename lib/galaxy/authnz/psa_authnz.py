@@ -68,6 +68,10 @@ class PSAAuthnz(IdentityProvider):
 
         config[setting_name('DISCONNECT_REDIRECT_URL')] = ()
 
+        # The following config sets PSA to call the `login_user` function for
+        # logging in a user. If this setting is set to false, the `login_user`
+        # would not be called, and as a result Galaxy would not know who is
+        # the just logged-in user.
         config[setting_name('INACTIVE_USER_LOGIN')] = True
 
         # TODO: set the following parameter
