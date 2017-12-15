@@ -23,6 +23,7 @@ import HistoryCopyDialog from "mvc/history/copy-dialog";
 import HDAListItemEdit from "mvc/history/hda-li-edit";
 import HDAModel from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
+import LegacyGridView from "legacy/grid/grid-view";
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
@@ -186,7 +187,8 @@ export const bundleEntries = {
     StructureView,
     HDAListItemEdit,
     HDAModel,
-    GalaxyApp
+    GalaxyApp,
+    LegacyGridView
 };
 
 window.bundleEntries = bundleEntries;
