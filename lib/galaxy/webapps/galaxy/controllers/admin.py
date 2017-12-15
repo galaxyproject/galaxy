@@ -154,7 +154,6 @@ class UserListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def get_current_item(self, trans, **kwargs):
@@ -255,7 +254,6 @@ class RoleListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -335,7 +333,6 @@ class GroupListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -447,7 +444,6 @@ class QuotaListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -499,7 +495,6 @@ class ToolVersionListGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):
@@ -585,7 +580,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd['dict_format'] = True
         return self.user_list_grid(trans, **kwd)
 
     @web.expose_api
@@ -618,7 +612,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status or 'done'
-        kwargs['dict_format'] = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -921,7 +914,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
-        kwd['dict_format'] = True
         return self.tool_version_list_grid(trans, **kwd)
 
     @web.expose
@@ -942,7 +934,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_role(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_role(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1187,7 +1178,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_group(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_group(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1387,7 +1377,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if users:
             if trans.request.method == 'GET':
                 return {
-                    'message': 'Changes password(s) for: %s.' % ', '.join([user.email for user in users.itervalues()]),
+                    'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
                     'status' : 'info',
                     'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
                                 {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
@@ -1399,7 +1389,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     return self.message_exception(trans, 'Use a password of at least 6 characters.')
                 elif password != confirm:
                     return self.message_exception(trans, 'Passwords do not match.')
-                for user in users.itervalues():
+                for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
                     trans.sa_session.flush()

@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -90,7 +91,7 @@ $().ready(function() {
                 %if create_role_for_group_checked:
                     <% create_role_for_group_checkbox.checked = True %>
                 %endif
-                ${create_role_for_group_checkbox.get_html()} Create a new role of the same name for this group
+                ${render_checkbox(create_role_for_group_checkbox)} Create a new role of the same name for this group
             </div>
             <div class="form-row">
                 <input type="submit" name="create_group_button" value="Save"/>

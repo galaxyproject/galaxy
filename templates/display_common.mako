@@ -81,12 +81,8 @@
         class_plural = "Libraries"
     elif a_class == model.HistoryDatasetAssociation:
         class_plural = "Datasets"
-    elif a_class == model.SampleDataset:
-        class_plural = "Sample Datasets"
     elif a_class == model.FormDefinitionCurrent:
         class_plural = "Forms"
-    elif a_class == model.RequestType:
-        class_plural = "request types"
     elif a_class == model.UserOpenID:
         class_plural = "OpenIDs"
     else:

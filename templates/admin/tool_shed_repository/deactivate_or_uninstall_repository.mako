@@ -2,6 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="*" />
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%
 repository = context.get( 'repository', None )
@@ -190,7 +191,7 @@ else:
                 %>
                 %if can_deactivate_repository and can_uninstall_repository:
                     <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
-                    ${remove_from_disk_check_box.get_html()}
+                    ${render_checkbox(remove_from_disk_check_box)}
                     <label for="remove_from_disk" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
                     <br/><br/>
                 %elif can_deactivate_repository:

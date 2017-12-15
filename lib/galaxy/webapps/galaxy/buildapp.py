@@ -107,6 +107,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
+    webapp.add_client_route('/openids/list')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
     webapp.add_client_route('/visualizations/edit')

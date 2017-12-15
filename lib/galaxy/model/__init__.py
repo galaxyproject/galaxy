@@ -5,7 +5,6 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import errno
-import json
 import logging
 import numbers
 import operator
@@ -30,8 +29,8 @@ from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
-from galaxy.util import (directory_hash_id, Params, ready_name_for_url,
-                         restore_text, unicodify, unique_id)
+from galaxy.util import (directory_hash_id, ready_name_for_url,
+                         unicodify, unique_id)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
@@ -2667,32 +2666,6 @@ class Library(object, Dictifiable, HasName):
             active_folders.extend(self.get_active_folders(active_folder, folders))
         return sort_by_attr(active_folders, 'id')
 
-    def get_info_association(self, restrict=False, inherited=False):
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates - the returned value for
-        # inherited is not applicable at the library level.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            template = info_association.template
-            if get_contents:
-                # See if we have any field contents
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, contents=info.content)
-            return template.get_widgets(trans.user)
-        return []
-
     def get_access_roles(self, trans):
         roles = []
         for lp in self.actions:
@@ -2723,51 +2696,6 @@ class LibraryFolder(object, Dictifiable, HasName):
         folder.order_id = self.item_count
         self.item_count += 1
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this folder's info_association, not inheriting.
-        # If restrict is False, we'll return the next available info_association in the
-        # inheritable hierarchy if it is "inheritable".  True is also returned if the
-        # info_association was inherited and False if not.  This enables us to eliminate
-        # displaying any contents of the inherited template.
-        if self.info_association:
-            if not inherited or self.info_association[0].inheritable:
-                return self.info_association[0], inherited
-            else:
-                return None, inherited
-        if restrict:
-            return None, inherited
-        if self.parent:
-            return self.parent.get_info_association(inherited=True)
-        if self.library_root:
-            return self.library_root[0].get_info_association(inherited=True)
-        return None, inherited
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templates.  The get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
-
     @property
     def activatable_library_datasets(self):
         # This needs to be a list
@@ -2775,13 +2703,6 @@ class LibraryFolder(object, Dictifiable, HasName):
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(LibraryFolder, self).to_dict(view=view, value_mapper=value_mapper)
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            rval['data_template'] = template.name
         rval['library_path'] = self.library_path
         rval['parent_library_id'] = self.parent_library.id
         return rval
@@ -2855,15 +2776,6 @@ class LibraryDataset(object):
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         ldda = self.library_dataset_dataset_association
-        template_data = {}
-        for temp_info in ldda.info_association:
-            template = temp_info.template
-            content = temp_info.info.content
-            tmp_dict = {}
-            for field in template.fields:
-                tmp_dict[field['label']] = content[field['name']]
-            template_data[template.name] = tmp_dict
-
         rval = dict(id=self.id,
                     ldda_id=ldda.id,
                     parent_library_id=self.folder.parent_library.id,
@@ -2881,8 +2793,7 @@ class LibraryDataset(object):
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
                     misc_blurb=ldda.blurb,
-                    peek=(lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None)(ldda),
-                    template_data=template_data)
+                    peek=(lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None)(ldda))
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
         else:
@@ -2987,19 +2898,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
     def has_manage_permissions_roles(self, trans):
         return self.dataset.has_manage_permissions_roles(trans)
 
-    def get_info_association(self, restrict=False, inherited=False):
-        # If restrict is True, we will return this ldda's info_association whether it
-        # exists or not ( in which case None will be returned ).  If restrict is False,
-        # we'll return the next available info_association in the inheritable hierarchy.
-        # True is also returned if the info_association was inherited, and False if not.
-        # This enables us to eliminate displaying any contents of the inherited template.
-        # SM: Accessing self.info_association can cause a query to be emitted
-        if self.info_association:
-            return self.info_association[0], inherited
-        if restrict:
-            return None, inherited
-        return self.library_dataset.folder.get_info_association(inherited=True)
-
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
@@ -3043,55 +2941,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName):
                 val = getattr(ldda.datatype, name)
             rval['metadata_' + name] = val
         return rval
-
-    def get_template_widgets(self, trans, get_contents=True):
-        # See if we have any associated templatesThe get_contents
-        # param is passed by callers that are inheriting a template - these
-        # are usually new library datsets for which we want to include template
-        # fields on the upload form, but not necessarily the contents of the
-        # inherited template saved for the parent.
-        info_association, inherited = self.get_info_association()
-        if info_association:
-            if inherited:
-                template = info_association.template.current.latest_form
-            else:
-                template = info_association.template
-            # See if we have any field contents, but only if the info_association was
-            # not inherited ( we do not want to display the inherited contents ).
-            # (gvk: 8/30/10) Based on conversations with Dan, we agreed to ALWAYS inherit
-            # contents.  We'll use this behavior until we hear from the community that
-            # contents should not be inherited.  If we don't hear anything for a while,
-            # eliminate the old commented out behavior.
-            # if not inherited and get_contents:
-            if get_contents:
-                info = info_association.info
-                if info:
-                    return template.get_widgets(trans.user, info.content)
-            else:
-                return template.get_widgets(trans.user)
-        return []
-
-    def templates_dict(self, use_name=False):
-        """
-        Returns a dict of template info
-        """
-        # TODO: Should have a method that allows names and labels to be returned together in a structured way
-        template_data = {}
-        for temp_info in self.info_association:
-            template = temp_info.template
-            content = temp_info.info.content
-            tmp_dict = {}
-            for field in template.fields:
-                if use_name:
-                    name = field['name']
-                else:
-                    name = field['label']
-                tmp_dict[name] = content.get(field['name'])
-            template_data[template.name] = tmp_dict
-        return template_data
-
-    def templates_json(self, use_name=False):
-        return json.dumps(self.templates_dict(use_name=use_name))
 
 
 class ExtendedMetadata(object):
@@ -4450,98 +4299,6 @@ class FormDefinition(object, Dictifiable):
                 gridfields[i] = f
         return gridfields
 
-    def get_widgets(self, user, contents={}, **kwd):
-        '''
-        Return the list of widgets that comprise a form definition,
-        including field contents if any.
-        '''
-        params = Params(kwd)
-        widgets = []
-        for index, field in enumerate(self.fields):
-            field_type = field['type']
-            if 'name' in field:
-                field_name = field['name']
-            else:
-                # Default to names like field_0, field_1, etc for backward compatibility
-                # (not sure this is necessary)...
-                field_name = 'field_%i' % index
-            # Determine the value of the field
-            if field_name in kwd:
-                # The form was submitted via refresh_on_change
-                if field_type == 'CheckboxField':
-                    value = CheckboxField.is_checked(params.get(field_name, False))
-                else:
-                    value = restore_text(params.get(field_name, ''))
-            elif contents:
-                try:
-                    # This field has a saved value.
-                    value = str(contents[field['name']])
-                except Exception:
-                    # If there was an error getting the saved value, we'll still
-                    # display the widget, but it will be empty.
-                    if field_type == 'AddressField':
-                        value = 'none'
-                    elif field_type == 'CheckboxField':
-                        # Since we do not have contents, set checkbox value to False
-                        value = False
-                    else:
-                        # Set other field types to empty string
-                        value = ''
-            else:
-                # If none of the above, then leave the field empty
-                if field_type == 'AddressField':
-                    value = 'none'
-                elif field_type == 'CheckboxField':
-                    # Since we do not have contents, set checkbox value to False
-                    value = False
-                else:
-                    # Set other field types to the default value of the field
-                    value = field.get('default', '')
-            # Create the field widget
-            field_widget = eval(field_type)(field_name)
-            if field_type in ['TextField', 'PasswordField']:
-                field_widget.set_size(40)
-                field_widget.value = value
-            elif field_type == 'TextArea':
-                field_widget.set_size(3, 40)
-                field_widget.value = value
-            elif field_type in ['AddressField', 'WorkflowField', 'WorkflowMappingField', 'HistoryField']:
-                field_widget.user = user
-                field_widget.value = value
-                field_widget.params = params
-            elif field_type == 'SelectField':
-                for option in field['selectlist']:
-                    if option == value:
-                        field_widget.add_option(option, option, selected=True)
-                    else:
-                        field_widget.add_option(option, option)
-            elif field_type == 'CheckboxField':
-                field_widget.set_checked(value)
-            if field['required'] == 'required':
-                req = 'Required'
-            else:
-                req = 'Optional'
-            if field['helptext']:
-                helptext = '%s (%s)' % (field['helptext'], req)
-            else:
-                helptext = '(%s)' % req
-            widgets.append(dict(label=field['label'], widget=field_widget, helptext=helptext))
-        return widgets
-
-    def field_as_html(self, field):
-        """Generates disabled html for a field"""
-        type = field['type']
-        form_field = None
-        for field_type in self.supported_field_types:
-            if type == field_type.__name__:
-                # Name it AddressField, CheckboxField, etc.
-                form_field = field_type(type)
-                break
-        if form_field:
-            return form_field.get_html(disabled=True)
-        # Return None if unsupported field type
-        return None
-
 
 class FormDefinitionCurrent(object):
     def __init__(self, form_definition=None):
@@ -4580,30 +4337,6 @@ class UserAddress(object):
                 'postal_code'  : sanitize_html(self.postal_code),
                 'country'      : sanitize_html(self.country),
                 'phone'        : sanitize_html(self.phone)}
-
-    def get_html(self):
-        # This should probably be deprecated eventually.  It should currently
-        # sanitize.
-        # TODO Find out where else uses this and replace with
-        # templates
-        html = ''
-        if self.name:
-            html = html + sanitize_html(self.name)
-        if self.institution:
-            html = html + '<br/>' + sanitize_html(self.institution)
-        if self.address:
-            html = html + '<br/>' + sanitize_html(self.address)
-        if self.city:
-            html = html + '<br/>' + sanitize_html(self.city)
-        if self.state:
-            html = html + ' ' + sanitize_html(self.state)
-        if self.postal_code:
-            html = html + ' ' + sanitize_html(self.postal_code)
-        if self.country:
-            html = html + '<br/>' + sanitize_html(self.country)
-        if self.phone:
-            html = html + '<br/>' + 'phone: ' + sanitize_html(self.phone)
-        return html
 
 
 class UserOpenID(object):

@@ -9,9 +9,9 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import Vue from "libs/vue";
 import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
+import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -40,8 +40,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/users_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -50,8 +49,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/roles_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -60,8 +58,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/groups_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -70,8 +67,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin_toolshed/browse_repositories`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -80,8 +76,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/tool_versions_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -90,8 +85,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}admin/quotas_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
@@ -112,8 +106,7 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}forms/forms_list`,
-                    url_data: Galaxy.params,
-                    dict_format: true
+                    url_data: Galaxy.params
                 })
             );
         },
