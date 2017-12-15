@@ -46,14 +46,12 @@ var select_datasets = (filters, success_fn) => {
     var history_grid = new GridView({
         url_base: `${Galaxy.root}visualization/list_history_datasets`,
         filters: filters,
-        dict_format: true,
         embedded: true
     });
 
     // library dataset selection tab
     var library_grid = new GridView({
         url_base: `${Galaxy.root}visualization/list_library_datasets`,
-        dict_format: true,
         embedded: true
     });
 

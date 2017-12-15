@@ -7,9 +7,10 @@ from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
-from galaxy.util import restore_text, sanitize_text, unicodify
+from galaxy.util import sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
+from galaxy.web.framework.helpers import iff
 
 
 log = logging.getLogger(__name__)
@@ -22,6 +23,9 @@ class Grid(object):
     title = ""
     model_class = None
     show_item_checkboxes = False
+    template = "legacy/grid_base.mako"
+    async_template = "legacy/grid_base_async.mako"
+    use_async = False
     use_hide_message = True
     global_actions = []
     columns = []
@@ -217,6 +221,14 @@ class Grid(object):
         context = text_type(self.__class__.__name__)
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
+        params['async'] = ('async' in kwargs)
+
+        # TODO:??
+        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
+        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
+        # in mapping.py. If you change that to False, the log_action doesn't affect the query
+        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
+        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
 
         # Render grid.
         def url(*args, **kwargs):
@@ -249,126 +261,37 @@ class Grid(object):
 
         self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
         self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
+        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        grid_config = {
-            'title'                         : self.title,
-            'url_base'                      : trans.request.path_url,
-            'async_ops'                     : [],
-            'categorical_filters'           : {},
-            'filters'                       : cur_filter_dict,
-            'sort_key'                      : sort_key,
-            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
-            'cur_page_num'                  : page_num,
-            'num_pages'                     : num_pages,
-            'num_page_links'                : self.num_page_links,
-            'status'                        : status,
-            'message'                       : restore_text(message),
-            'global_actions'                : [],
-            'operations'                    : [],
-            'items'                         : [],
-            'columns'                       : [],
-            'model_class'                   : str(self.model_class),
-            'use_paging'                    : self.use_paging,
-            'legend'                        : self.legend,
-            'current_item_id'               : False,
-            'use_hide_message'              : self.use_hide_message,
-            'default_filter_dict'           : self.default_filter,
-            'advanced_search'               : self.advanced_search,
-            'info_text'                     : self.info_text,
-            'url'                           : url(dict()),
-            'refresh_frames'                : kwargs.get('refresh_frames', [])
-        }
-        if current_item:
-            grid_config['current_item_id'] = current_item.id
-        for column in self.columns:
-            href = None
-            extra = ''
-            if column.sortable:
-                if sort_key.endswith(column.key):
-                    if not sort_key.startswith("-"):
-                        href = url(sort=("-" + column.key))
-                        extra = "&darr;"
-                    else:
-                        href = url(sort=(column.key))
-                        extra = "&uarr;"
-                else:
-                    href = url(sort=column.key)
-            grid_config['columns'].append({
-                'key'               : column.key,
-                'visible'           : column.visible,
-                'nowrap'            : column.nowrap,
-                'attach_popup'      : column.attach_popup,
-                'label_id_prefix'   : column.label_id_prefix,
-                'sortable'          : column.sortable,
-                'label'             : column.label,
-                'filterable'        : column.filterable,
-                'is_text'           : isinstance(column, TextColumn),
-                'href'              : href,
-                'extra'             : extra
-            })
-        for operation in self.operations:
-            grid_config['operations'].append({
-                'allow_multiple'        : operation.allow_multiple,
-                'allow_popup'           : operation.allow_popup,
-                'target'                : operation.target,
-                'label'                 : operation.label,
-                'confirm'               : operation.confirm,
-                'href'                  : url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
-                'global_operation'      : False
-            })
-            if operation.allow_multiple:
-                grid_config['show_item_checkboxes'] = True
-            if operation.global_operation:
-                grid_config['global_operation'] = url(** (operation.global_operation()))
-        for action in self.global_actions:
-            grid_config['global_actions'].append({
-                'url_args'  : url(**action.url_args),
-                'label'     : action.label,
-                'target'    : action.target
-            })
-        for operation in [op for op in self.operations if op.async_compatible]:
-            grid_config['async_ops'].append(operation.label.lower())
-        for column in self.columns:
-            if column.filterable is not None and not isinstance(column, TextColumn):
-                grid_config['categorical_filters'][column.key] = dict([(filter.label, filter.args) for filter in column.get_accepted_filters()])
-        for i, item in enumerate(query):
-            item_dict = {
-                'id'                    : item.id,
-                'encode_id'             : trans.security.encode_id(item.id),
-                'link'                  : [],
-                'operation_config'      : {},
-                'column_config'         : {}
-            }
-            for column in self.columns:
-                if column.visible:
-                    link = column.get_link(trans, self, item)
-                    if link:
-                        link = url(**link)
-                    else:
-                        link = None
-                    target = column.target
-                    value = column.get_value(trans, self, item)
-                    if isinstance(value, str):
-                        value = text_type(value, 'utf-8')
-                        value = value.replace('/', '//')
-                    item_dict['column_config'][column.label] = {
-                        'link'      : link,
-                        'value'     : value,
-                        'target'    : target
-                    }
-            for operation in self.operations:
-                item_dict['operation_config'][operation.label] = {
-                    'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item)),
-                    'target'    : operation.target
-                }
-            grid_config['items'].append(item_dict)
+        page = trans.fill_template(iff(async_request, self.async_template, self.template),
+                                   grid=self,
+                                   query=query,
+                                   cur_page_num=page_num,
+                                   num_pages=num_pages,
+                                   num_page_links=self.num_page_links,
+                                   default_filter_dict=self.default_filter,
+                                   cur_filter_dict=cur_filter_dict,
+                                   sort_key=sort_key,
+                                   current_item=current_item,
+                                   ids=kwargs.get('id', []),
+                                   url=url,
+                                   status=status,
+                                   message=message,
+                                   info_text=self.info_text,
+                                   use_panels=self.use_panels,
+                                   use_hide_message=self.use_hide_message,
+                                   advanced_search=self.advanced_search,
+                                   show_item_checkboxes=(self.show_item_checkboxes or
+                                                         kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
+                                   # Pass back kwargs so that grid template can set and use args without
+                                   # grid explicitly having to pass them.
+                                   kwargs=kwargs)
         trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
-        return grid_config
+        return page
 
     def get_ids(self, **kwargs):
         id = []

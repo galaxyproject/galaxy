@@ -62,7 +62,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Associate OpenIDs with your account."),
                 icon: "fa-openid",
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}user/openid_manage?cntrller=user&use_panels=True`;
+                    window.location.href = `${Galaxy.root}openids/list`;
                 }
             },
             custom_builds: {

@@ -1,6 +1,4 @@
-// dependencies
-
-// grid model
+// legacy grid model, used by reports and toolshed
 export default Backbone.Model.extend({
     defaults: {
         url_base: "",
@@ -15,6 +13,13 @@ export default Backbone.Model.extend({
         num_pages: 1,
         operation: undefined,
         item_ids: undefined
+    },
+
+    /**
+     * Return true if operation can be done asynchronously.
+     */
+    can_async_op: function(op) {
+        return _.indexOf(this.attributes.async_ops, op) !== -1;
     },
 
     /**

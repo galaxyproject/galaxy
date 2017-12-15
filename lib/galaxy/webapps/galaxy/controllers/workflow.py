@@ -102,7 +102,6 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
     model_class = model.StoredWorkflow
     default_sort_key = "update_time"
     default_filter = dict(public_url="All", username="All", tags="All")
-    use_async = True
     columns = [
         grids.PublicURLColumn("Name", key="name", filterable="advanced", attach_popup=True),
         grids.OwnerAnnotationColumn("Annotation",
@@ -202,7 +201,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose

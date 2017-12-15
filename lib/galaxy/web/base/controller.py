@@ -1289,21 +1289,6 @@ class UsesFormDefinitionsMixin:
         else:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
 
-    def field_param_values_ok(self, widget_name, widget_type, **kwd):
-        # Make sure required fields have contents, etc
-        params = util.Params(kwd)
-        if widget_type == 'AddressField':
-            if not util.restore_text(params.get('%s_short_desc' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_name' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_institution' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_address' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_city' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_state' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_postal_code' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_country' % widget_name, '')):
-                return False
-        return True
-
     def save_widget_field(self, trans, field_obj, widget_name, **kwd):
         # Save a form_builder field object
         params = util.Params(kwd)
