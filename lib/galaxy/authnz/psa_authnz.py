@@ -112,7 +112,7 @@ class PSAAuthnz(IdentityProvider):
         backend = get_backend(backends, BACKENDS_NAME[config['provider']])
         return backend(strategy, redirect_uri)
 
-    def login_user(self, user):
+    def login_user(self, backend, user, social_user):
         config['user'] = user
 
     def authenticate(self, trans):
@@ -131,7 +131,7 @@ class PSAAuthnz(IdentityProvider):
         backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
-        redirect_url = do_complete(backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
+        redirect_url = do_complete(backend, login=lambda backend, user, social_user: self.login_user(backend, user, social_user), user=self.get_current_user(trans), state=state_token)
         return redirect_url, config.get('user', None)
 
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
