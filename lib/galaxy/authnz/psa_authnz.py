@@ -101,11 +101,7 @@ class PSAAuthnz(IdentityProvider):
         return do_import and module_member(this_config) or this_config
 
     def get_current_user(self, trans):
-        if trans.user is not None:
-            return trans.user
-        if self.strategy.session_get('logged_in'):
-            return self.strategy.get_user(self.strategy.session_get('user_id'))
-        return None
+        return trans.user if trans.user is not None else None
 
     def load_backend(self, strategy, redirect_uri):
         backends = self.get_helper('AUTHENTICATION_BACKENDS')
