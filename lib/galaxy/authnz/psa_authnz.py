@@ -61,18 +61,15 @@ BACKENDS_NAME = {
 config = {}
 config[setting_name('USER_MODEL')] = 'models.User'
 
-class PSAAuthnz(IdentityProvider):
-    def __init__(self, provider, oidc_config, config_xml):
-        config['provider'] = provider.lower()
-        self._parse_config(config['provider'], oidc_config, config_xml)
 
-    def _parse_config(self, provider, oidc_config, config_xml):
+class PSAAuthnz(IdentityProvider):
+    def __init__(self, provider, oidc_config, oidc_backend_config):
+        config['provider'] = provider.lower()
+
         for key, value in oidc_config.iteritems():
             config[setting_name(key)] = value
 
-        config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider], )
-        if provider == 'google':
-            self._parse_google_config(config_xml)
+        config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
 
         # The following config sets PSA to call the `login_user` function for
         # logging in a user. If this setting is set to false, the `login_user`
@@ -80,13 +77,16 @@ class PSAAuthnz(IdentityProvider):
         # the just logged-in user.
         config[setting_name('INACTIVE_USER_LOGIN')] = True
 
-    def _parse_google_config(self, config_xml):
-        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = config_xml.find('client_id').text
-        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = config_xml.find('client_secret').text
-        config['redirect_uri'] = config_xml.find('redirect_uri').text
+        if provider == 'google':
+            self._setup_google_backend(oidc_backend_config)
+
+    def _setup_google_backend(self, oidc_backend_config):
         config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        if config_xml.find('prompt') is not None:
-            config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = config_xml.find('prompt').text
+        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
+        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
+        config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
+        if oidc_backend_config.get('prompt') is not None:
+            config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
 
     def _on_the_fly_config(self, trans):
         trans.app.model.PSACode.trans = trans

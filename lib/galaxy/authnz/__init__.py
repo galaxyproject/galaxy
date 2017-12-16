@@ -119,7 +119,7 @@ class AuthnzManager(object):
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
 
     def _parse_oidc_backends_config(self, config_file):
-        self.providers = {}
+        self.oidc_backends_config = {}
         try:
             tree = ET.parse(config_file)
             root = tree.getroot()
@@ -134,17 +134,10 @@ class AuthnzManager(object):
                 if 'name' not in child.attrib:
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
-                provider = child.get('name')
-                try:
-                    from .psa_authnz import PSAAuthnz
-                    self.providers[provider] = PSAAuthnz(provider, self.oidc_config, child)
-                # TODO: capture exception of type `Exception` here, these are the type of errors which can raise if anything goes wrong initializing the provider.
-                except ParseError:
-                    log.error("Could not initialize `{}` identity provider; skipping this node.".format(provider))
-                    continue
-                # except Exception as e:
-                #     raise Exception(e.message)
-            if len(self.providers) == 0:
+                idp = child.get('name').lower()
+                if idp == 'google':
+                    self.oidc_backends_config[idp] = self._parse_google_config(child)
+            if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
             raise
@@ -152,6 +145,26 @@ class AuthnzManager(object):
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
         # except Exception as e:
         #     raise Exception("Malformed OIDC Configuration XML -- unable to continue. {}".format(e.message))
+
+    def _parse_google_config(self, config_xml):
+        rtv = {}
+        rtv['client_id'] = config_xml.find('client_id').text
+        rtv['client_secret'] = config_xml.find('client_secret').text
+        rtv['redirect_uri'] = config_xml.find('redirect_uri').text
+        if config_xml.find('prompt') is not None:
+            rtv['prompt'] = config_xml.find('prompt').text
+        return rtv
+
+    def _get_authnz_backend(self, provider):
+        provider = provider.lower()
+        if provider in self.oidc_backends_config:
+            try:
+                from .psa_authnz import PSAAuthnz
+                return PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
+            except:
+                raise # TODO: error initializing the backend
+        else:
+            raise NameError("The provider '{}' is not a recognized and expected provider.".format(provider))
 
     def authenticate(self, provider, trans):
         """
@@ -162,22 +175,19 @@ class AuthnzManager(object):
         :param trans: Galaxy web transaction.
         :return: an identity provider specific authentication redirect URI.
         """
-        if provider in self.providers:
-            try:
-                return self.providers[provider].authenticate(trans)
-            except:
-                raise
-        else:
-            log.error("The provider '{}' is not a recognized and expected provider.".format(provider))
+        try:
+            return self._get_authnz_backend(provider).authenticate(trans)
+        except:
+            raise
 
     def callback(self, provider, state_token, authz_code, trans):
-        if provider in self.providers:
-            try:
-                return self.providers[provider].callback(state_token, authz_code, trans)
-            except:
-                raise
-        else:
-            raise NameError("The provider '{}' is not a recognized and expected provider.".format(provider))
+        try:
+            return self._get_authnz_backend(provider).callback(state_token, authz_code, trans)
+        except:
+            raise
 
     def disconnect(self, provider, trans, redirect_url=None):
-        return self.providers[provider].disconnect(provider, trans, redirect_url)
+        try:
+            return self._get_authnz_backend(provider).disconnect(provider, trans, redirect_url)
+        except:
+            raise
