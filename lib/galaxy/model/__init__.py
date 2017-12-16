@@ -402,7 +402,7 @@ class User(object, Dictifiable):
 
     def is_authenticated(self):
         # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
-        # For instance, a user how is authenticated with Google, is not necessarily authenticated
+        # For instance, a user who is authenticated with Google, is not necessarily authenticated
         # with Amazon. Therefore, this function should also receive the backend and check if this
         # user is already authenticated on that backend or not. For now, returning always True
         # seems reasonable. Besides, this is also how a PSA example is implemented:
