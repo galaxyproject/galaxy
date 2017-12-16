@@ -124,14 +124,14 @@ class PSAAuthnz(IdentityProvider):
 
     def callback(self, state_token, authz_code, trans):
         self._on_the_fly_config(trans)
-        self.strategy = Strategy(trans, Storage)  # self.load_strategy()
+        strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
-        self.strategy.session_set('google-openidconnect_state', state_token)
-        self.backend = self.load_backend(self.strategy, config['redirect_uri'])
-        self.backend.redirect_uri = config['redirect_uri']
+        strategy.session_set('google-openidconnect_state', state_token)
+        backend = self.load_backend(strategy, config['redirect_uri'])
+        backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
-        redirect_url = do_complete(self.backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
+        redirect_url = do_complete(backend, login=lambda backend, user, social_user: self.login_user(user), user=self.get_current_user(trans), state=state_token)
         return redirect_url, config.get('user', None)
 
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
