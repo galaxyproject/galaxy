@@ -1823,53 +1823,9 @@ test_data:
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
-        self._workflow_rerun_with_use_cached_job(workflow=workflow)
-
-    @skip_without_tool('cat1')
-    def test_nested_workflow_rerun_with_use_cached_job(self):
-        history_id = self.dataset_populator.new_history()
-        workflow_run_description = """%s
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""" % SIMPLE_NESTED_WORKFLOW_YAML
-        run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        workflow_request = run_jobs_summary.workflow_request
-        # We copy the inputs to a new history and re-reun the workflow
-        new_history_id = self.dataset_populator.new_history()
-        inputs = json.loads(workflow_request['inputs'])
-        dataset_type = inputs['outer_input']['src']
-        dataset_id = inputs['outer_input']['id']
-        copy_payload = {"content": dataset_id, "source": dataset_type, "type": "dataset"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
-        self._assert_status_code_is(copy_response, 200)
-        new_dataset_id = copy_response.json()['id']
-        inputs['outer_input']['id'] = new_dataset_id
-        workflow_request['use_cached_job'] = True
-        workflow_request['history'] = "hist_id={new_history_id}".format(new_history_id=new_history_id)
-        workflow_request['inputs'] = json.dumps(inputs)
-        run_workflow_response = self._post("workflows", data=run_jobs_summary.workflow_request).json()
-        self.workflow_populator.wait_for_workflow(workflow_request['workflow_id'], run_workflow_response['id'], history_id, assert_ok=True)
-        # Now make sure that the HDAs in each history point to the same dataset instances
-        history_one_contents = self.__history_contents(history_id)
-        history_two_contents = self.__history_contents(new_history_id)
-        assert len(history_one_contents) == len(history_two_contents)
-        for i, (item_one, item_two) in enumerate(zip(history_one_contents, history_two_contents)):
-            assert item_one['dataset_id'] == item_two['dataset_id'], \
-                'Dataset ids should match, but "%s" and "%s" are not the same for History item %i' % (item_one['dataset_id'],
-                                                                                                      item_two['dataset_id'],
-                                                                                                      i + 1)
-
-    def _workflow_rerun_with_use_cached_job(self, workflow=None, workflow_id=None):
         # We launch a workflow
         with self.dataset_populator.test_history() as history_id:
-            if workflow:
-                workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
-            else:
-                workflow_request, _ = self._setup_workflow_run(workflow_id=workflow_id, history_id=history_id)
+            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
             run_workflow_response = self._post("workflows", data=workflow_request).json()
             # We copy the workflow inputs to a new history
             new_workflow_request = workflow_request.copy()
@@ -1887,6 +1843,46 @@ test_data:
                 first_wf_output_filename = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()['file_name']
                 second_wf_output_filename = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()['file_name']
                 self.assertEquals(first_wf_output_filename, second_wf_output_filename)
+
+    @skip_without_tool('cat1')
+    def test_nested_workflow_rerun_with_use_cached_job(self):
+        with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
+            workflow_run_description = """%s
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""" % SIMPLE_NESTED_WORKFLOW_YAML
+            run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id_one)
+            self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
+            workflow_request = run_jobs_summary.workflow_request
+            # We copy the inputs to a new history and re-reun the workflow
+            inputs = json.loads(workflow_request['inputs'])
+            dataset_type = inputs['outer_input']['src']
+            dataset_id = inputs['outer_input']['id']
+            copy_payload = {"content": dataset_id, "source": dataset_type, "type": "dataset"}
+            copy_response = self._post("histories/%s/contents" % history_id_two, data=copy_payload)
+            self._assert_status_code_is(copy_response, 200)
+            new_dataset_id = copy_response.json()['id']
+            inputs['outer_input']['id'] = new_dataset_id
+            workflow_request['use_cached_job'] = True
+            workflow_request['history'] = "hist_id={history_id_two}".format(history_id_two=history_id_two)
+            workflow_request['inputs'] = json.dumps(inputs)
+            run_workflow_response = self._post("workflows", data=run_jobs_summary.workflow_request).json()
+            self.workflow_populator.wait_for_workflow(workflow_request['workflow_id'],
+                                                      run_workflow_response['id'],
+                                                      history_id_two,
+                                                      assert_ok=True)
+            # Now make sure that the HDAs in each history point to the same dataset instances
+            history_one_contents = self.__history_contents(history_id_one)
+            history_two_contents = self.__history_contents(history_id_two)
+            assert len(history_one_contents) == len(history_two_contents)
+            for i, (item_one, item_two) in enumerate(zip(history_one_contents, history_two_contents)):
+                assert item_one['dataset_id'] == item_two['dataset_id'], \
+                    'Dataset ids should match, but "%s" and "%s" are not the same for History item %i.' % (item_one['dataset_id'],
+                                                                                                           item_two['dataset_id'],
+                                                                                                           i + 1)
 
     def test_cannot_run_inaccessible_workflow(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run_cannot_access")
