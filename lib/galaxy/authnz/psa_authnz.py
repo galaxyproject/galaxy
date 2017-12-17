@@ -121,8 +121,7 @@ class PSAAuthnz(IdentityProvider):
     def callback(self, state_token, authz_code, trans):
         self._on_the_fly_config(trans)
         strategy = Strategy(trans, Storage)  # self.load_strategy()
-        # the following line is temporary, find a better solution.
-        strategy.session_set('google-openidconnect_state', state_token)
+        strategy.session_set(BACKENDS_NAME[config['provider']]+'_state', state_token)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
