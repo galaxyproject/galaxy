@@ -137,8 +137,6 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans, Storage)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
-        # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
-        self.trans = trans
         return do_disconnect(backend, self.get_current_user(trans), association_id)
 
 
