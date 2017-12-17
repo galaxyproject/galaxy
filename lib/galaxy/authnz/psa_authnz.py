@@ -134,13 +134,12 @@ class PSAAuthnz(IdentityProvider):
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
         self._on_the_fly_config(trans)
         config[setting_name('DISCONNECT_REDIRECT_URL')] = redirect_url if redirect_url is not None else ()
-        self.strategy = Strategy(trans, Storage)  # self.load_strategy()
-        # the following line is temporary, find a better solution.
-        self.backend = self.load_backend(self.strategy, config['redirect_uri'])
-        self.backend.redirect_uri = config['redirect_uri']
+        strategy = Strategy(trans, Storage)
+        backend = self.load_backend(strategy, config['redirect_uri'])
+        backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
-        return do_disconnect(self.backend, self.get_current_user(trans), association_id)
+        return do_disconnect(backend, self.get_current_user(trans), association_id)
 
 
 class Strategy(BaseStrategy):
