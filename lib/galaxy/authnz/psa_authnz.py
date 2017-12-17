@@ -124,8 +124,6 @@ class PSAAuthnz(IdentityProvider):
         strategy.session_set(BACKENDS_NAME[config['provider']]+'_state', state_token)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
-        # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
-        self.trans = trans
         redirect_url = do_complete(backend, login=lambda backend, user, social_user: self.login_user(backend, user, social_user), user=self.get_current_user(trans), state=state_token)
         return redirect_url, config.get('user', None)
 
