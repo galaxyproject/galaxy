@@ -133,17 +133,11 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, redirect_url=None, association_id=None):
         self._on_the_fly_config(trans)
-        uri = '/authn/{provider}/callback'  # TODO find a better of doing this -- this info should be passed from buildapp.py
-
         config[setting_name('DISCONNECT_REDIRECT_URL')] = redirect_url if redirect_url is not None else ()
         self.strategy = Strategy(trans, Storage)  # self.load_strategy()
         # the following line is temporary, find a better solution.
-        self.backend = self.load_backend(self.strategy, uri)
-        # TODO: Google requires all the redirect URIs to start with http[s]; however, eventhough the redirect uri
-        # in the config starts with http, PSA removes the http prefix, and this causes authentication failing on
-        # google. The following is a temporary patch. This problem should be solved properly.
-        # might be able to the following using absolute_uri function in the strategy
-        self.backend.redirect_uri = "http://" + self.backend.redirect_uri
+        self.backend = self.load_backend(self.strategy, config['redirect_uri'])
+        self.backend.redirect_uri = config['redirect_uri']
         # this is also temp; it is required in login_user. Find a method around using login_user -- I should not need it -- then remove the following line.
         self.trans = trans
         return do_disconnect(self.backend, self.get_current_user(trans), association_id)
