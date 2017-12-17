@@ -4,9 +4,11 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 
 from __future__ import absolute_import
 import logging
-log = logging.getLogger(__name__)
 from galaxy import web
+from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
+
+log = logging.getLogger(__name__)
 
 
 class OIDC(BaseUIController):
@@ -22,7 +24,7 @@ class OIDC(BaseUIController):
             print 'kwargs: ', kwargs
             raise
         #TODO: make the following more generic, the attributes state and code are Google specific.
-        redirect_url, user = trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans)
+        redirect_url, user = trans.app.authnz_manager.callback("Google", kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
         trans.handle_user_login(user)
         return trans.response.send_redirect(redirect_url)
 

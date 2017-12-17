@@ -53,7 +53,7 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
-    def callback(self, state_token, authz_code, trans):
+    def callback(self, state_token, authz_code, trans, login_redirect_url):
         """
         Handles authentication call-backs from identity providers.
         This process maps `state-token` to a user
@@ -180,9 +180,9 @@ class AuthnzManager(object):
         except:
             raise
 
-    def callback(self, provider, state_token, authz_code, trans):
+    def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
         try:
-            return self._get_authnz_backend(provider).callback(state_token, authz_code, trans)
+            return self._get_authnz_backend(provider).callback(state_token, authz_code, trans, login_redirect_url)
         except:
             raise
 

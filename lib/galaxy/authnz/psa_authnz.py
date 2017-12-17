@@ -94,7 +94,6 @@ class PSAAuthnz(IdentityProvider):
         trans.app.model.PSANonce.trans = trans
         trans.app.model.PSAPartial.trans = trans
         trans.app.model.PSAAssociation.trans = trans
-        config[setting_name('LOGIN_REDIRECT_URL')] = url_for('/')
 
     def get_helper(self, name, do_import=False):
         this_config = config.get(setting_name(name), DEFAULTS.get(name, None))
@@ -118,8 +117,9 @@ class PSAAuthnz(IdentityProvider):
         backend.redirect_uri = config['redirect_uri']
         return do_auth(backend)
 
-    def callback(self, state_token, authz_code, trans):
+    def callback(self, state_token, authz_code, trans, login_redirect_url):
         self._on_the_fly_config(trans)
+        config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans, Storage)  # self.load_strategy()
         strategy.session_set(BACKENDS_NAME[config['provider']]+'_state', state_token)
         backend = self.load_backend(strategy, config['redirect_uri'])
