@@ -58,37 +58,34 @@ BACKENDS_NAME = {
 # STORAGE
 # AUTHENTICATION_BACKENDS
 
-config = {}
-config[setting_name('USER_MODEL')] = 'models.User'
-
 
 class PSAAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
-        config['provider'] = provider.lower()
-
+        self.config = {'provider': provider.lower()}
         for key, value in oidc_config.iteritems():
-            config[setting_name(key)] = value
+            self.config[setting_name(key)] = value
 
-        config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
-        config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
-        config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
+        self.config[setting_name('USER_MODEL')] = 'models.User'
+        self.config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
+        self.config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
+        self.config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
 
         # The following config sets PSA to call the `login_user` function for
         # logging in a user. If this setting is set to false, the `login_user`
         # would not be called, and as a result Galaxy would not know who is
         # the just logged-in user.
-        config[setting_name('INACTIVE_USER_LOGIN')] = True
+        self.config[setting_name('INACTIVE_USER_LOGIN')] = True
 
         if provider == 'google':
             self._setup_google_backend(oidc_backend_config)
 
     def _setup_google_backend(self, oidc_backend_config):
-        config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
-        config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
-        config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
+        self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
+        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
+        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
+        self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
         if oidc_backend_config.get('prompt') is not None:
-            config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
+            self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
 
     def _on_the_fly_config(self, trans):
         trans.app.model.PSACode.trans = trans
@@ -98,7 +95,7 @@ class PSAAuthnz(IdentityProvider):
         trans.app.model.PSAAssociation.trans = trans
 
     def get_helper(self, name, do_import=False):
-        this_config = config.get(setting_name(name), DEFAULTS.get(name, None))
+        this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
     def get_current_user(self, trans):
@@ -106,50 +103,51 @@ class PSAAuthnz(IdentityProvider):
 
     def load_backend(self, strategy, redirect_uri):
         backends = self.get_helper('AUTHENTICATION_BACKENDS')
-        backend = get_backend(backends, BACKENDS_NAME[config['provider']])
+        backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
         return backend(strategy, redirect_uri)
 
     def login_user(self, backend, user, social_user):
-        config['user'] = user
+        self.config['user'] = user
 
     def authenticate(self, trans):
         self._on_the_fly_config(trans)
-        strategy = Strategy(trans, Storage)
-        backend = self.load_backend(strategy, config['redirect_uri'])
-        backend.redirect_uri = config['redirect_uri']
+        strategy = Strategy(trans, Storage, self.config)
+        backend = self.load_backend(strategy, self.config['redirect_uri'])
+        backend.redirect_uri = self.config['redirect_uri']
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         self._on_the_fly_config(trans)
-        config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
-        strategy = Strategy(trans, Storage)
-        strategy.session_set(BACKENDS_NAME[config['provider']]+'_state', state_token)
-        backend = self.load_backend(strategy, config['redirect_uri'])
-        backend.redirect_uri = config['redirect_uri']
+        self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
+        strategy = Strategy(trans, Storage, self.config)
+        strategy.session_set(BACKENDS_NAME[self.config['provider']]+'_state', state_token)
+        backend = self.load_backend(strategy, self.config['redirect_uri'])
+        backend.redirect_uri = self.config['redirect_uri']
         redirect_url = do_complete(
             backend,
             login=lambda backend, user, social_user: self.login_user(backend, user, social_user),
             user=self.get_current_user(trans),
             state=state_token)
-        return redirect_url, config.get('user', None)
+        return redirect_url, self.config.get('user', None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         self._on_the_fly_config(trans)
-        config[setting_name('DISCONNECT_REDIRECT_URL')] =\
+        self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
-        strategy = Strategy(trans, Storage)
-        backend = self.load_backend(strategy, config['redirect_uri'])
-        backend.redirect_uri = config['redirect_uri']
+        strategy = Strategy(trans, Storage, self.config)
+        backend = self.load_backend(strategy, self.config['redirect_uri'])
+        backend.redirect_uri = self.config['redirect_uri']
         return do_disconnect(backend, self.get_current_user(trans), association_id)
 
 
 class Strategy(BaseStrategy):
 
-    def __init__(self, trans, storage, tpl=None):
+    def __init__(self, trans, storage, config, tpl=None):
         self.trans = trans
         self.request = trans.request
         self.session = trans.session if trans.session else {}
-        config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
+        self.config = config
+        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
         super(Strategy, self).__init__(storage, tpl)
 
     # Settings
@@ -157,8 +155,8 @@ class Strategy(BaseStrategy):
         """Return value for given setting name"""
         print '\n', ('>' * 50)
         print '\tasking for: ', name
-        print '\treturning : ', config[name]
-        return config[name]
+        print '\treturning : ', self.config[name]
+        return self.config[name]
 
     # Session
     def session_get(self, name, default=None):
