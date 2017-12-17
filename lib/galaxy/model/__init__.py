@@ -2059,10 +2059,8 @@ class DatasetInstance(object):
 
     def set_dbkey(self, value):
         if "dbkey" in self.datatype.metadata_spec:
-            if isinstance(value, list):
-                self.metadata.dbkey = value[0]
-            else:
-                self.metadata.dbkey = value
+            if not isinstance(value, list):
+                self.metadata.dbkey = [value]
     dbkey = property(get_dbkey, set_dbkey)
 
     def change_datatype(self, new_ext):
@@ -2675,12 +2673,6 @@ class HistoryDatasetAssociationHistory(object):
         self.version = version
         self.extension = extension
         self.extended_metadata_id = extended_metadata_id
-        dbkey = metadata.get('dbkey')
-        if dbkey and isinstance(dbkey, list):
-            # The dbkey may or may not be stored in a list.
-            # To facilitate comparison we use the raw value
-            metadata = metadata.copy()
-            metadata['dbkey'] = metadata['dbkey'][0]
         self._metadata = metadata
 
 

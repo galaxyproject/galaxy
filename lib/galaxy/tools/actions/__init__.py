@@ -356,6 +356,7 @@ class DefaultToolAction(object):
             if completed_job:
                 data.blurb = completed_data.blurb
                 data.peek = completed_data.peek
+                data._metadata = completed_data._metadata
             else:
                 data.blurb = "queued"
             # Set output label
