@@ -1840,9 +1840,10 @@ test_data:
                 new_workflow_request['use_cached_job'] = True
                 # We run the workflow again, it should not produce any new outputs
                 new_workflow_response = self._post("workflows", data=new_workflow_request).json()
-                first_wf_output_filename = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()['file_name']
-                second_wf_output_filename = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()['file_name']
-                self.assertEquals(first_wf_output_filename, second_wf_output_filename)
+                first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
+                second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
+                assert first_wf_output['file_name'] == second_wf_output['file_name'], \
+                    "first output :\n%s\nsecond output: %s" % (first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
