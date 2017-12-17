@@ -69,6 +69,8 @@ class PSAAuthnz(IdentityProvider):
         for key, value in oidc_config.iteritems():
             config[setting_name(key)] = value
 
+        config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
+        config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
         config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
 
         # The following config sets PSA to call the `login_user` function for
@@ -147,13 +149,6 @@ class Strategy(BaseStrategy):
         self.trans = trans
         self.request = trans.request
         self.session = trans.session if trans.session else {}
-        config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
-        config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
-
-        # Both the following are fine
-        # config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_ID_TOKEN_MAX_AGE'] = 3600
-        config['ID_TOKEN_MAX_AGE'] = 3600
-
         config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
         super(Strategy, self).__init__(storage, tpl)
 
