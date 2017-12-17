@@ -1,5 +1,5 @@
 """
-Migration script to add the history_dataset_association_history table and data_manager_job_association.
+Migration script to add the history_dataset_association_history table.
 """
 from __future__ import print_function
 
@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
         HistoryDatasetAssociationHistory_table.create()
         log.debug("Created history_dataset_association_history table")
     except Exception:
-        log.exception("Creating data_manager_history_association table failed.")
+        log.exception("Creating history_dataset_association_history table failed.")
 
 
 def downgrade(migrate_engine):
@@ -46,4 +46,4 @@ def downgrade(migrate_engine):
         HistoryDatasetAssociationHistory_table.drop()
         log.debug("Dropped history_dataset_association_history table")
     except Exception:
-        log.exception("Dropping data_manager_history_association table failed.")
+        log.exception("Dropping history_dataset_association_history table failed.")

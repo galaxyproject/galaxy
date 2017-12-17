@@ -17,7 +17,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Add the dependencies column to the job table
+    # Add the copied_from_job_id column to the job table
     try:
         jobs_table = Table("job", metadata, autoload=True)
         copied_from_job_id_column.create(jobs_table)
@@ -31,7 +31,7 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop the job table's dependencies column.
+    # Drop the job table's copied_from_job_id column.
     try:
         jobs_table = Table("job", metadata, autoload=True)
         copied_from_job_id = jobs_table.c.copied_from_job_id_column

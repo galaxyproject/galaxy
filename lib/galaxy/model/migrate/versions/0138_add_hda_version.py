@@ -1,5 +1,5 @@
 """
-Add copied_from_job_id column to jobs table
+Add version column to  history_dataset_association table
 """
 from __future__ import print_function
 
