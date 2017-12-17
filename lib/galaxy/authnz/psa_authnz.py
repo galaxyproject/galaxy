@@ -113,7 +113,6 @@ class PSAAuthnz(IdentityProvider):
         self._on_the_fly_config(trans)
         strategy = Strategy(trans, Storage, self.config)
         backend = self.load_backend(strategy, self.config['redirect_uri'])
-        backend.redirect_uri = self.config['redirect_uri']
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
@@ -122,7 +121,6 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans, Storage, self.config)
         strategy.session_set(BACKENDS_NAME[self.config['provider']]+'_state', state_token)
         backend = self.load_backend(strategy, self.config['redirect_uri'])
-        backend.redirect_uri = self.config['redirect_uri']
         redirect_url = do_complete(
             backend,
             login=lambda backend, user, social_user: self.login_user(backend, user, social_user),
@@ -136,7 +134,6 @@ class PSAAuthnz(IdentityProvider):
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage, self.config)
         backend = self.load_backend(strategy, self.config['redirect_uri'])
-        backend.redirect_uri = self.config['redirect_uri']
         return do_disconnect(backend, self.get_current_user(trans), association_id)
 
 
@@ -192,9 +189,11 @@ class Strategy(BaseStrategy):
 
     def build_absolute_uri(self, path=None):
         """Build absolute URI with given (optional) path"""
-        # TODO: find a better way to do this: (A) get 'google' from some config, (B) is using trans.request.host a correct method of getting galaxy address ?
         path = path or ''
-        return self.trans.request.host + path.replace('{provider}', 'google')
+        if path.startswith('http://') or path.startswith('https://'):
+            return path
+        return self.trans.request.host + '/authn' +\
+               ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
 
     # Response
     def html(self, content):
