@@ -988,7 +988,7 @@ test_data:
     value: 1.bed
     type: File
 """ % SIMPLE_NESTED_WORKFLOW_YAML
-        run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id)
+        self._run_jobs(workflow_run_description, history_id=history_id)
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
@@ -1852,8 +1852,16 @@ test_data:
         workflow_request['history'] = "hist_id={new_history_id}".format(new_history_id=new_history_id)
         workflow_request['inputs'] = json.dumps(inputs)
         run_workflow_response = self._post("workflows", data=run_jobs_summary.workflow_request).json()
-        self.wait_for_invocation_and_jobs(new_history_id, run_jobs_summary.workflow_id, run_workflow_response['id'])
-        pass
+        self.workflow_populator.wait_for_workflow(workflow_request['workflow_id'], run_workflow_response['id'], history_id, assert_ok=True)
+        # Now make sure that the HDAs in each history point to the same dataset instances
+        history_one_contents = self.__history_contents(history_id)
+        history_two_contents = self.__history_contents(new_history_id)
+        assert len(history_one_contents) == len(history_two_contents)
+        for i, (item_one, item_two) in enumerate(zip(history_one_contents, history_two_contents)):
+            assert item_one['dataset_id'] == item_two['dataset_id'], \
+                'Dataset ids should match, but "%s" and "%s" are not the same for History item %i' % (item_one['dataset_id'],
+                                                                                                      item_two['dataset_id'],
+                                                                                                      i + 1)
 
     def _workflow_rerun_with_use_cached_job(self, workflow=None, workflow_id=None):
         # We launch a workflow
