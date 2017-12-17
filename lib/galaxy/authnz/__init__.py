@@ -71,7 +71,7 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
-    def disconnect(self, provider, trans, redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
         raise NotImplementedError()
 
 
@@ -186,8 +186,8 @@ class AuthnzManager(object):
         except:
             raise
 
-    def disconnect(self, provider, trans, redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
-            return self._get_authnz_backend(provider).disconnect(provider, trans, redirect_url)
+            return self._get_authnz_backend(provider).disconnect(provider, trans, disconnect_redirect_url)
         except:
             raise

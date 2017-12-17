@@ -120,7 +120,7 @@ class PSAAuthnz(IdentityProvider):
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         self._on_the_fly_config(trans)
         config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
-        strategy = Strategy(trans, Storage)  # self.load_strategy()
+        strategy = Strategy(trans, Storage)
         strategy.session_set(BACKENDS_NAME[config['provider']]+'_state', state_token)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
@@ -131,9 +131,10 @@ class PSAAuthnz(IdentityProvider):
             state=state_token)
         return redirect_url, config.get('user', None)
 
-    def disconnect(self, provider, trans, redirect_url=None, association_id=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         self._on_the_fly_config(trans)
-        config[setting_name('DISCONNECT_REDIRECT_URL')] = redirect_url if redirect_url is not None else ()
+        config[setting_name('DISCONNECT_REDIRECT_URL')] =\
+            disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage)
         backend = self.load_backend(strategy, config['redirect_uri'])
         backend.redirect_uri = config['redirect_uri']
