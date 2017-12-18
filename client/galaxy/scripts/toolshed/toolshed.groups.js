@@ -4,7 +4,6 @@
 
 import mod_group_list from "groups/group-list-view";
 import mod_group_detail from "groups/group-detail-view";
-import mod_group_model from "groups/group-model";
 
 // ============================================================================
 // ROUTER
