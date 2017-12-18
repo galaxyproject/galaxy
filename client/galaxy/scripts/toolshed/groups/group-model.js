@@ -1,13 +1,13 @@
-define([], function() {
+define([], () => {
     // ============================================================================
     // TS GROUP RELATED MODELS
 
-    var Group = Backbone.Model.extend({
-        urlRoot: Galaxy.root + "api/groups"
+    const Group = Backbone.Model.extend({
+        urlRoot: `${Galaxy.root}api/groups`
     });
 
-    var Groups = Backbone.Collection.extend({
-        url: Galaxy.root + "api/groups",
+    const Groups = Backbone.Collection.extend({
+        url: `${Galaxy.root}api/groups`,
 
         model: Group
     });

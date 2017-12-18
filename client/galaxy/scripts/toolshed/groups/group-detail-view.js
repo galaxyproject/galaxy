@@ -1,6 +1,6 @@
-define(["libs/toastr", "toolshed/scripts/mvc/groups/group-model"], function(mod_toastr, mod_group_model) {
+define(["libs/toastr", "toolshed/scripts/mvc/groups/group-model"], (mod_toastr, mod_group_model) => {
     // toolshed group detail view
-    var GroupDetailView = Backbone.View.extend({
+    const GroupDetailView = Backbone.View.extend({
         el: "#groups_element",
         options: {},
         app: null,
@@ -18,7 +18,7 @@ define(["libs/toastr", "toolshed/scripts/mvc/groups/group-model"], function(mod_
         },
 
         fetchGroup: function(options) {
-            var that = this;
+            const that = this;
             this.options = _.extend(this.options, options);
             this.model = new mod_group_model.Group({ id: this.options.group_id });
             this.model.fetch({
@@ -38,7 +38,7 @@ define(["libs/toastr", "toolshed/scripts/mvc/groups/group-model"], function(mod_
         },
 
         render: function() {
-            var template = this.templateRow();
+            const template = this.templateRow();
             this.$el.html(template({ group: this.model }));
             $("#center [data-toggle]").tooltip();
             $("#center").css("overflow", "auto");

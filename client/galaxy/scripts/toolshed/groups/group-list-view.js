@@ -1,7 +1,7 @@
 define(
     ["libs/toastr", "toolshed/scripts/mvc/groups/group-model", "toolshed/scripts/mvc/groups/group-listrow-view"],
-    function(mod_toastr, mod_group_model, mod_group_row) {
-        var GroupListView = Backbone.View.extend({
+    (mod_toastr, mod_group_model, mod_group_row) => {
+        const GroupListView = Backbone.View.extend({
             el: "#groups_element",
             defaults: {},
 
@@ -12,7 +12,7 @@ define(
              */
             initialize: function(options) {
                 this.options = _.defaults(this.options || {}, this.defaults, options);
-                var that = this;
+                const that = this;
                 window.globalTS.groups.collection = new mod_group_model.Groups();
                 window.globalTS.groups.collection.fetch({
                     success: function(model) {
@@ -38,7 +38,7 @@ define(
             render: function(options) {
                 this.options = _.extend(this.options, options);
                 $(".tooltip").hide();
-                var template = this.templateGroupsList();
+                const template = this.templateGroupsList();
                 this.$el.html(template({ length: window.globalTS.groups.collection.models.length }));
                 this.renderRows(window.globalTS.groups.collection.models);
                 $("#center [data-toggle]").tooltip();
@@ -50,8 +50,8 @@ define(
              * @param  {array} groups_to_render array of group models to render
              */
             renderRows: function(groups_to_render) {
-                for (var i = 0; i < groups_to_render.length; i++) {
-                    var group = groups_to_render[i];
+                for (let i = 0; i < groups_to_render.length; i++) {
+                    const group = groups_to_render[i];
                     this.renderOne({ group: group });
                 }
             },
@@ -61,7 +61,7 @@ define(
              * @param {Group} model of the view that will be rendered
              */
             renderOne: function(options) {
-                var rowView = new mod_group_row.GroupListRowView(options);
+                const rowView = new mod_group_row.GroupListRowView(options);
                 this.$el.find("#group_list_body").append(rowView.el);
             },
 
@@ -97,7 +97,7 @@ define(
             // MMMMMMMMMMMMMMMMMM
 
             templateGroupsList: function() {
-                var tmpl_array = [];
+                const tmpl_array = [];
 
                 tmpl_array.push('<div id="groups">');
                 tmpl_array.push("</div>");

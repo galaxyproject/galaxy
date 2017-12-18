@@ -1,6 +1,6 @@
-define([], function() {
+define([], () => {
     // toolshed group row view
-    var GroupListRowView = Backbone.View.extend({
+    const GroupListRowView = Backbone.View.extend({
         events: {},
 
         initialize: function(options) {
@@ -8,7 +8,7 @@ define([], function() {
         },
 
         render: function(group) {
-            var tmpl = this.templateRow();
+            const tmpl = this.templateRow();
             this.setElement(tmpl({ group: group }));
             this.$el.show();
             return this;
