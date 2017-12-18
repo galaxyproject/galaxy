@@ -24,6 +24,7 @@ import HDAListItemEdit from "mvc/history/hda-li-edit";
 import HDAModel from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
 import LegacyGridView from "legacy/grid/grid-view";
+import * as run_stats from "reports/run_stats";
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
@@ -165,6 +166,7 @@ export function multiHistoryEntry(options) {
     });
 }
 
+console.debug(run_stats);
 export const bundleEntries = {
     library: libraryEntry,
     masthead: mastheadEntry,
@@ -188,7 +190,8 @@ export const bundleEntries = {
     HDAListItemEdit,
     HDAModel,
     GalaxyApp,
-    LegacyGridView
+    LegacyGridView,
+    run_stats
 };
 
 window.bundleEntries = bundleEntries;
