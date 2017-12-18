@@ -166,7 +166,6 @@ export function multiHistoryEntry(options) {
     });
 }
 
-console.debug(run_stats);
 export const bundleEntries = {
     library: libraryEntry,
     masthead: mastheadEntry,
