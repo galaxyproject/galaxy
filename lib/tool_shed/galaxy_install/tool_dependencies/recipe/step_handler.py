@@ -22,7 +22,7 @@ from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
 
-VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
+VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz'
 
 
 class CompressedFile(object):
@@ -1766,7 +1766,7 @@ class SetupVirtualEnv(Download, RecipeStep):
                 downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
                 try:
                     dir = self.url_download(work_dir, downloaded_filename, VIRTUALENV_URL)
-                except:
+                except Exception:
                     log.error("Failed to download virtualenv: url_download( '%s', '%s', '%s' ) threw an exception",
                               work_dir, downloaded_filename, VIRTUALENV_URL)
                     return False
@@ -1807,7 +1807,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         # to subprocess.Popen.
         for site_packages_command in [r"""%s -c 'import site; site.getsitepackages()[0]'""" %
                                       os.path.join(venv_directory, "bin", "python"),
-                                      r"""%s -c 'import os, sys; print os.path.join( sys.prefix, "lib", "python" + sys.version[:3], "site-packages" )'""" %
+                                      r"""%s -c 'from __future__ import print_function; import os, sys; print(os.path.join(sys.prefix, "lib", "python" + sys.version[:3], "site-packages"))'""" %
                                       os.path.join(venv_directory, "bin", "python")]:
             output = install_environment.handle_command(tool_dependency=tool_dependency,
                                                         cmd=site_packages_command,

@@ -1,0 +1,14 @@
+<tool id="CONVERTER_biom2_to_biom1" name="Convert Biom2 to Biom1" version="2.1.5">
+    <requirements>
+        <requirement type="package" version="2.1.5">biom-format</requirement>
+    </requirements>
+    <command>biom convert -i '$input' -o '$output' --to-json </command>
+    <inputs>
+        <param name="input" type="data" format="biom2" label="Biom2 file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="biom1"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

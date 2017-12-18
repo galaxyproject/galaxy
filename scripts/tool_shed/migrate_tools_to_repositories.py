@@ -18,7 +18,8 @@ enable_next_gen_tool_shed = True
 
 To run this script, use "sh migrate_tools_to_repositories.sh" from this directory
 '''
-import ConfigParser
+from __future__ import print_function
+
 import os
 import shutil
 import sys
@@ -27,12 +28,13 @@ import tempfile
 from time import strftime
 
 from mercurial import hg, ui
+from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.webapps.tool_shed.app
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def directory_hash_id(id):
@@ -83,7 +85,7 @@ def create_repository_from_tool(app, sa_session, tool):
     # Make the repository name a form of the tool's tool_id by
     # lower-casing everything and replacing any blank spaces with underscores.
     repo_name = tool.tool_id.lower().replace(' ', '_')
-    print "Creating repository '%s' in database" % (repo_name)
+    print("Creating repository '%s' in database" % (repo_name))
     repository = app.model.Repository(name=repo_name,
                                       description=tool.description,
                                       user_id=tool.user_id)
@@ -101,19 +103,19 @@ def create_repository_from_tool(app, sa_session, tool):
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local hg repository
-    print "Creating repository '%s' on disk" % (os.path.abspath(repository_path))
+    print("Creating repository '%s' on disk" % (os.path.abspath(repository_path)))
     hg.repository(ui.ui(), os.path.abspath(repository_path), create=True)
     # Add an entry in the hgweb.config file for the new repository - this enables calls to repository.repo_path
     add_hgweb_config_entry(repository, repository_path)
     # Migrate tool categories
     for tca in tool.categories:
         category = tca.category
-        print "Associating category '%s' with repository '%s' in database" % (category.name, repository.name)
+        print("Associating category '%s' with repository '%s' in database" % (category.name, repository.name))
         rca = app.model.RepositoryCategoryAssociation(repository, category)
         sa_session.add(rca)
     sa_session.flush()
     # Migrate tool ratings
-    print "Associating ratings for tool '%s' with repository '%s'" % (tool.name, repository.name)
+    print("Associating ratings for tool '%s' with repository '%s'" % (tool.name, repository.name))
     for tra in tool.ratings:
         rra = app.model.RepositoryRatingAssociation(user=tra.user,
                                                     rating=tra.rating,
@@ -167,8 +169,8 @@ def add_tool_files_to_repository(app, sa_session, tool):
     # Get all valid versions of the tool
     tool_versions = get_versions(app, tool)
     for tool_version in tool_versions:
-        print "------------------------------"
-        print "Migrating tool '%s' version '%s' from archive to repository '%s'" % (tool_version.tool_id, tool_version.version, repo_path)
+        print("------------------------------")
+        print("Migrating tool '%s' version '%s' from archive to repository '%s'" % (tool_version.tool_id, tool_version.version, repo_path))
         # Make a temporary working directory
         tmp_dir = tempfile.mkdtemp()
         tmp_archive_dir = os.path.join(tmp_dir, 'tmp_archive_dir')
@@ -208,13 +210,13 @@ def add_tool_files_to_repository(app, sa_session, tool):
             for dir in dirs:
                 os.system("hg add %s" % dir)
             for name in files:
-                print "Adding file '%s' to cloned repository at %s" % (name, str(os.getcwd()))
+                print("Adding file '%s' to cloned repository at %s" % (name, os.getcwd()))
                 os.system("hg add %s" % name)
-        print "Committing change set to cloned repository at %s" % str(os.getcwd())
+        print("Committing change set to cloned repository at %s" % os.getcwd())
         os.system("hg commit -m 'Migrated tool version %s from old tool shed archive to new tool shed repository'" % tool_version.version)
-        print "Pushing changeset from cloned repository '%s' to repository '%s'" % (cloned_repo_dir, repo_path)
+        print("Pushing changeset from cloned repository '%s' to repository '%s'" % (cloned_repo_dir, repo_path))
         cmd = "hg push %s" % repo_path
-        print "cmd is: ", cmd
+        print("cmd is: ", cmd)
         os.system(cmd)
         # The tool shed includes a repository source file browser, which currently depends upon
         # copies of the hg repository file store in the repo_path for browsing.  We'll do the
@@ -253,7 +255,7 @@ def tool_archive_extension(file_name):
         try:
             assert head[:2] == '\037\213'
             extension = 'tar.gz'
-        except:
+        except Exception:
             pass
     if extension is None:
         extension = 'tar'
@@ -266,21 +268,21 @@ def tool_archive_file_name(tool, file_name):
 
 def main():
     if len(sys.argv) < 2:
-        print "Usage: python %s <Tool shed config file>" % sys.argv[0]
+        print("Usage: python %s <Tool shed config file>" % sys.argv[0])
         sys.exit(0)
     now = strftime("%Y-%m-%d %H:%M:%S")
-    print " "
-    print "##########################################"
-    print "%s - Migrating current tool archives to new tool repositories" % now
+    print()
+    print("##########################################")
+    print("%s - Migrating current tool archives to new tool repositories" % now)
     # tool_shed_wsgi.ini file
     ini_file = sys.argv[1]
-    conf_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    conf_parser = configparser.ConfigParser({'here': os.getcwd()})
     conf_parser.read(ini_file)
     try:
         db_conn_str = conf_parser.get("app:main", "database_connection")
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         db_conn_str = conf_parser.get("app:main", "database_file")
-    print 'DB Connection: ', db_conn_str
+    print('DB Connection: ', db_conn_str)
     # Instantiate app
     configuration = {}
     for key, value in conf_parser.items("app:main"):
@@ -290,7 +292,7 @@ def main():
     # Remove the hgweb.config file if it exists
     hgweb_config = "%s/hgweb.config" % os.getcwd()
     if os.path.exists(hgweb_config):
-        print "Removing old file: ", hgweb_config
+        print("Removing old file: ", hgweb_config)
         os.remove(hgweb_config)
     repo_records = 0
     rca_records = 0
@@ -300,11 +302,11 @@ def main():
         # tool files exist in app.config.file_path/tools and we don't want to delete them
         dir = os.path.join(app.config.file_path, *directory_hash_id(repo.id))
         if os.path.exists(dir):
-            print "Removing old repository file directory: ", dir
+            print("Removing old repository file directory: ", dir)
             shutil.rmtree(dir)
         # Delete all records from db tables:
         # repository_category_association, repository_rating_association, repository
-        print "Deleting db records for repository: ", repo.name
+        print("Deleting db records for repository: ", repo.name)
         for rca in repo.categories:
             sa_session.delete(rca)
             rca_records += 1
@@ -314,9 +316,9 @@ def main():
         sa_session.delete(repo)
         repo_records += 1
     sa_session.flush()
-    print "Deleted %d rows from the repository table" % repo_records
-    print "Deleted %d rows from the repository_category_association table" % rca_records
-    print "Deleted %d rows from the repository_rating_association table" % rra_records
+    print("Deleted %d rows from the repository table" % repo_records)
+    print("Deleted %d rows from the repository_category_association table" % rca_records)
+    print("Deleted %d rows from the repository_rating_association table" % rra_records)
     # Migrate database tool, tool category and tool rating records to new
     # database repository, repository category and repository rating records
     # and create the hg repository on disk for each.
@@ -327,9 +329,9 @@ def main():
     for tool in get_approved_tools(app, sa_session):
         add_tool_files_to_repository(app, sa_session, tool)
     app.shutdown()
-    print ' '
-    print 'Migration to next gen tool shed complete...'
-    print "##########################################"
+    print()
+    print('Migration to next gen tool shed complete...')
+    print("##########################################")
     sys.exit(0)
 
 

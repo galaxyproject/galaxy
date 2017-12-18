@@ -1,6 +1,6 @@
+import re
 
 from .baseparser import Base_Parser, PhyloTree
-import re
 
 
 class Newick_Parser(Base_Parser):

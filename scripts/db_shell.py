@@ -23,6 +23,7 @@ from six import string_types
 from sqlalchemy import *  # noqa
 from sqlalchemy.orm import *  # noqa
 from sqlalchemy.exc import *  # noqa
+from sqlalchemy.sql import label  # noqa
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
@@ -41,7 +42,7 @@ sa_session = init('/tmp/', db_url).context
 # http://stackoverflow.com/questions/5631078/sqlalchemy-print-the-actual-query
 def printquery(statement, bind=None):
     """
-    print a query, with values filled in
+    Print a query, with values filled in
     for debugging purposes *only*
     for security, you should always separate queries from their values
     please also note that this function is quite slow

@@ -16,6 +16,8 @@ class ToolCache(object):
         self._hash_by_tool_paths = {}
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
+        self._macro_paths_by_id = {}
+        self._tool_ids_by_macro_paths = {}
         self._mod_time_by_path = {}
         self._new_tool_ids = set()
         self._removed_tool_ids = set()
@@ -54,6 +56,11 @@ class ToolCache(object):
         if self._mod_time_by_path.get(config_filename) < new_mtime:
             if md5_hash_file(config_filename) != self._hash_by_tool_paths.get(config_filename):
                 return True
+        tool = self._tools_by_path[config_filename]
+        for macro_path in tool._macro_paths:
+            new_mtime = os.path.getmtime(macro_path)
+            if self._mod_time_by_path.get(macro_path) < new_mtime:
+                return True
         return False
 
     def get_tool(self, config_filename):
@@ -76,12 +83,24 @@ class ToolCache(object):
 
     def cache_tool(self, config_filename, tool):
         tool_hash = md5_hash_file(config_filename)
+        if tool_hash is None:
+            return
         tool_id = str(tool.id)
         self._hash_by_tool_paths[config_filename] = tool_hash
         self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
         self._tool_paths_by_id[tool_id] = config_filename
         self._tools_by_path[config_filename] = tool
         self._new_tool_ids.add(tool_id)
+        for macro_path in tool._macro_paths:
+            self._mod_time_by_path[macro_path] = os.path.getmtime(macro_path)
+            if tool_id not in self._macro_paths_by_id:
+                self._macro_paths_by_id[tool_id] = {macro_path}
+            else:
+                self._macro_paths_by_id[tool_id].add(macro_path)
+            if macro_path not in self._macro_paths_by_id:
+                self._tool_ids_by_macro_paths[macro_path] = {tool_id}
+            else:
+                self._tool_ids_by_macro_paths[macro_path].add(tool_id)
 
     def reset_status(self):
         """Reset self._new_tool_ids and self._removed_tool_ids once

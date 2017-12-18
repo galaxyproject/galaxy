@@ -1,4 +1,3 @@
-
 <!DOCTYPE HTML>
 <html>
     <!--js-app.mako-->
@@ -52,6 +51,8 @@
             'bundled/' + js_app_name + '.bundled'
         )}
         <script type="text/javascript">
+            window.jQuery = window.jquery = window.$;
+            define( 'jquery', [], function(){ return window.$; })
             require.config({
                 baseUrl: "${h.url_for('/static/scripts') }",
                 shim: {

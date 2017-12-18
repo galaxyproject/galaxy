@@ -179,7 +179,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
-        except:
+        except Exception:
             raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
@@ -282,8 +282,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         path = trans.app.config.user_preferences_extra_config_file
         try:
             with open(path, 'r') as stream:
-                config = yaml.load(stream)
-        except:
+                config = yaml.safe_load(stream)
+        except Exception:
             log.warning('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
@@ -675,10 +675,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if name in filter_types:
                 saved_values[name] = listify(value, do_strip=True)
         inputs = []
+        errors = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
-            self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
-        return {'inputs': inputs}
+            self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
+        return {'inputs': inputs, 'errors': errors}
 
     @expose_api
     def set_toolbox_filters(self, trans, id, payload={}, **kwd):
@@ -690,36 +691,37 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
-                prefix = filter_type + '|'
-                if prefixed_name.startswith(filter_type):
+                if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
+                    prefix = filter_type + '|'
                     new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
         trans.sa_session.flush()
         return {'message': 'Toolbox filters have been saved.'}
 
-    def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
+    def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
         filter_inputs = list()
         filter_values = saved_values.get(filter_type, [])
         filter_config = filter_types[filter_type]['config']
         filter_title = filter_types[filter_type]['title']
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
+            if function is None:
+                errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
                 'label': filter_name,
                 'help': docstring_trim(function.__doc__) or 'No description available.',
-                'value': 'true' if filter_name in filter_values else 'false',
-                'ignore': 'false'
+                'value': 'true' if filter_name in filter_values else 'false'
             })
         if filter_inputs:
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
         return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_tool_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_tool_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
+                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):
@@ -889,7 +891,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                     new_linecount = new_len.get_converted_dataset(trans, 'linecount')
                     build_dict['len'] = new_len.id
                     build_dict['linecount'] = new_linecount.id
-                except:
+                except Exception:
                     raise MessageException('Failed to convert dataset.')
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)

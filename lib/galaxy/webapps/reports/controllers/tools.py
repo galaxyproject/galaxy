@@ -1,15 +1,18 @@
-
 import collections
 import logging
-import galaxy.model
-import sqlalchemy as sa
+from datetime import timedelta
 
-from galaxy import util
+import sqlalchemy as sa
+from markupsafe import escape
+from sqlalchemy import and_
+
+import galaxy.model
+from galaxy.util import (
+    restore_text,
+    unicodify
+)
 from galaxy.web.base.controller import BaseUIController, web
 
-from sqlalchemy import and_
-from datetime import timedelta
-from markupsafe import escape
 
 log = logging.getLogger(__name__)
 
@@ -69,16 +72,18 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in error
         """
 
-        message = escape(util.restore_text(kwd.get('message', '')))
+        message = escape(restore_text(kwd.get('message', '')))
         user_cutoff = int(kwd.get('user_cutoff', 60))
 
         # sort by history space, or by user mail or by number of history/dataset
         sort_by = kwd.get('sorting', 'Tool')
         sorting = 0 if sort_by == 'Tool' else 1 if sort_by == 'ok' else 2
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
-        sort_functions = (lambda first, second: descending if first.lower() > second.lower() else -descending,
-                          lambda first, second: -descending if tools_and_jobs_ok.get(first, 0) > tools_and_jobs_ok.get(second) else descending,
-                          lambda first, second: -descending if tools_and_jobs_error.get(first, 0) > tools_and_jobs_error.get(second, 0) else descending)
+        reverse = descending == 1
+        sort_keys = (
+            lambda v: v.lower(),
+            lambda v: tools_and_jobs_ok.get(v, 0),
+            lambda v: tools_and_jobs_error.get(v, 0))
 
         data = collections.OrderedDict()
 
@@ -101,7 +106,7 @@ class Tools(BaseUIController):
 
         # select each job name one time
         tools = list(set(tools_and_jobs_ok.keys()) | set(tools_and_jobs_error.keys()))
-        tools.sort(sort_functions[sorting])
+        tools.sort(key=sort_keys[sorting], reverse=reverse)
 
         for tool in tools:
             data[tool] = (str(tools_and_jobs_ok.get(tool, '-')), str(tools_and_jobs_error.get(tool, '-')))
@@ -122,7 +127,7 @@ class Tools(BaseUIController):
             - the number of jobs using this tool in error
         """
 
-        message = escape(util.restore_text(kwd.get('message', '')))
+        message = escape(restore_text(kwd.get('message', '')))
         user_cutoff = int(kwd.get('user_cutoff', 60))
 
         # sort by history space, or by user mail or by number of history/dataset
@@ -149,12 +154,6 @@ class Tools(BaseUIController):
                                         from_obj=[galaxy.model.Job.table],
                                         whereclause=and_(galaxy.model.Job.table.c.state == 'error', galaxy.model.Job.table.c.tool_id == tool),
                                         group_by=['date'])
-
-        # sort_functions = (lambda first, second: descending if first.lower() > second.lower() else -descending,
-        #  lambda first, second: -descending if tools_and_jobs_ok.get( first, 0 ) >
-        #  tools_and_jobs_ok.get( second ) else descending,
-        #   lambda first, second: -descending if tools_and_jobs_error.get( first, 0 ) >
-        #       tools_and_jobs_error.get( second, 0 ) else descending)
 
         date_and_jobs_ok = dict(list(date_and_jobs_ok.execute()))
         date_and_jobs_error = dict(list(date_and_jobs_error.execute()))
@@ -190,20 +189,18 @@ class Tools(BaseUIController):
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "tool")
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        reverse = descending == 1
         sort_by = 0 if sort_by == "tool" else 1 if sort_by == "avg" else 2 if sort_by == "min" else 3
         color = True if kwd.get("color", '') == "True" else False
 
         data = {}
         ordered_data = collections.OrderedDict()
 
-        def field_sort(first, second, field):
-            descending if data[first][field] < data[second][field] else -descending
-
-        sort_functions = [
-            lambda first, second: -descending if first.lower() < second.lower() else descending,
-            lambda first, second: field_sort(first, second, "avg"),
-            lambda first, second: field_sort(first, second, "min"),
-            lambda first, second: field_sort(first, second, "max")]
+        sort_keys = (
+            lambda v: v.lower(),
+            lambda v: data[v]['avg'],
+            lambda v: data[v]['min'],
+            lambda v: data[v]['max'])
 
         jobs_times = sa.select((galaxy.model.Job.table.c.tool_id.label("name"),
                                 galaxy.model.Job.table.c.create_time.label("create_time"),
@@ -226,10 +223,10 @@ class Tools(BaseUIController):
             data[tool]["last"] = last[0] - last[1]
             data[tool]["avg"] = sum(data[tool]["avg"], timedelta()) / len(data[tool]["avg"])
 
-        tools = data.keys()
+        tools = list(data.keys())
         if user_cutoff:
             tools = tools[:user_cutoff]
-        tools.sort(sort_functions[sort_by])
+        tools.sort(key=sort_keys[sort_by], reverse=reverse)
         for tool in tools:
             ordered_data[tool] = {"min": self.formatted(data[tool]["min"], color),
                                   "max": self.formatted(data[tool]["max"], color),
@@ -255,6 +252,7 @@ class Tools(BaseUIController):
         user_cutoff = int(kwd.get("user_cutoff", 60))
         sort_by = kwd.get("sort_by", "month")
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        reverse = descending == 1
         sort_by = 0 if sort_by == "month" else 1 if sort_by == "min" else 2 if sort_by == "max" else 3
         tool = kwd.get("tool", None)
         color = True if kwd.get("color", '') == "True" else False
@@ -263,7 +261,7 @@ class Tools(BaseUIController):
             raise ValueError("Tool can't be None")
 
         ordered_data = collections.OrderedDict()
-        sort_functions = [(lambda first, second, i=i: descending if first[i] < second[i] else -descending) for i in range(4)]
+        sort_keys = [(lambda v, i=i: v[i]) for i in range(4)]
 
         jobs_times = sa.select((sa.func.date_trunc('month', galaxy.model.Job.table.c.create_time).label('date'),
                                 sa.func.max(galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
@@ -274,7 +272,7 @@ class Tools(BaseUIController):
                                group_by=['date'])
 
         months = list(jobs_times.execute())
-        months.sort(sort_functions[sort_by])
+        months.sort(key=sort_keys[sort_by], reverse=reverse)
         if user_cutoff:
             months = months[:user_cutoff]
 
@@ -294,14 +292,16 @@ class Tools(BaseUIController):
     def tool_error_messages(self, trans, **kwd):
         tool_name = kwd.get("tool", None)
         descending = 1 if kwd.get("descending", 'desc') == "desc" else -1
+        reverse = descending == 1
         sort_by = 0 if kwd.get("sort_by", "time") == "time" else 1
         cutoff = int(kwd.get("user_cutoff", 60))
-        sort_functions = (lambda _a, _b: -descending if counter[_a][1] > counter[_b][1] else descending,
-                          lambda _a, _b: -descending if counter[_a][0] > counter[_b][0] else descending)
+        sort_keys = (
+            lambda v: counter[v][1],
+            lambda v: counter[v][0])
 
         if tool_name is None:
             raise ValueError("Tool can't be none")
-        tool_errors = [[unicode(a), b] for a, b in
+        tool_errors = [[unicodify(a), b] for a, b in
                        sa.select((galaxy.model.Job.table.c.stderr, galaxy.model.Job.table.c.create_time),
                         from_obj=[galaxy.model.Job.table],
                         whereclause=and_(galaxy.model.Job.table.c.tool_id == tool_name,
@@ -309,30 +309,16 @@ class Tools(BaseUIController):
 
         counter = {}
         for error in tool_errors:
-            try:
-                error[0] = unicode(error[0].decode("utf-8"))
-                # encoding tested:
-                # latin-1 ; iso-8859-1 ; alien ; cenc ; cp037 ; cp437 ; base64 ; utf-8 ; utf-16 ; ascii ; hex
-            except UnicodeEncodeError:
-                for no, lettre in enumerate(error[0]):
-                    try:
-                        str(lettre.decode("utf-8"))
-                    except UnicodeEncodeError:
-                        try:
-                            error[0] = error[0].replace(error[0][no], '?')
-                        except UnicodeEncodeError:
-                            error[0] = "This error contains special character and can't be displayed."
-                            break
             if error[0] in counter:
                 counter[error[0]][0] += 1
             else:
                 counter[error[0]] = [1, error[1]]
 
         data = collections.OrderedDict()
-        keys = counter.keys()
+        keys = list(counter.keys())
         if cutoff:
             keys = keys[:cutoff]
-        keys.sort(sort_functions[sort_by])
+        keys.sort(key=sort_keys[sort_by], reverse=reverse)
 
         spaces = [' ', '\t', '    ']
         for key in keys:
@@ -344,7 +330,6 @@ class Tools(BaseUIController):
                     if word in to_replace:
                         continue
                     if words.count(word) > 1:
-                        print word
                         to_replace.append(word)
                 for word in to_replace:
                     sentence = ("</br>" + word) * 2
@@ -352,7 +337,6 @@ class Tools(BaseUIController):
                     while sentence + "</br>" + word in new_key:
                         sentence += "</br>" + word
                         count += 1
-                    print sentence, count
                     if sentence in new_key:
                         new_key = new_key.replace(sentence, '</br>' + word + " [this line in %d times]" % (count))
             data[new_key] = counter[key]

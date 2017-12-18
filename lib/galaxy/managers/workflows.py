@@ -1,36 +1,49 @@
 from __future__ import absolute_import
 
-from six import string_types
-
-from collections import namedtuple
-import logging
 import json
+import logging
 import uuid
+from collections import namedtuple
 
+from six import string_types
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload, subqueryload
 
-from galaxy import model
-from galaxy import util
-from galaxy import exceptions
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import safe_loads
-from galaxy.workflow import modules
-from .base import decode_id
-
-# For WorkflowContentManager
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
-from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, RuntimeValue, workflow_building_modes
-from galaxy.tools.parameters import visit_input_values, params_to_incoming
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import (
+    params_to_incoming,
+    visit_input_values
+)
+from galaxy.tools.parameters.basic import (
+    DataCollectionToolParameter,
+    DataToolParameter,
+    RuntimeValue,
+    workflow_building_modes
+)
+from galaxy.util.json import safe_loads
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
+from galaxy.workflow import modules
+from galaxy.workflow.modules import (
+    is_tool_module_type,
+    module_factory,
+    ToolModule,
+    WorkflowModuleInjector
+)
+from galaxy.workflow.steps import attach_ordered_steps
+from .base import decode_id
 
 log = logging.getLogger(__name__)
 
 
 class WorkflowsManager(object):
-    """ Handle CRUD type operaitons related to workflows. More interesting
+    """ Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
     """
@@ -45,16 +58,17 @@ class WorkflowsManager(object):
         if util.is_uuid(workflow_id):
             # see if they have passed in the UUID for a workflow that is attached to a stored workflow
             workflow_uuid = uuid.UUID(workflow_id)
-            stored_workflow = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
+            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
                 trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
                 trans.app.model.Workflow.uuid == workflow_uuid
-            )).first()
-            if stored_workflow is None:
-                raise exceptions.ObjectNotFound("Workflow not found: %s" % workflow_id)
+            ))
         else:
             workflow_id = decode_id(self.app, workflow_id)
-            query = trans.sa_session.query(trans.app.model.StoredWorkflow)
-            stored_workflow = query.get(workflow_id)
+            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).\
+                filter(trans.app.model.StoredWorkflow.id == workflow_id)
+        stored_workflow = workflow_query.options(joinedload('annotations'),
+                                                 joinedload('tags'),
+                                                 subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
         if stored_workflow is None:
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
@@ -203,7 +217,7 @@ class WorkflowContentsManager(UsesAnnotations):
         exact_tools=False,
     ):
         # Put parameters in workflow mode
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
         if source and source != 'API':
             name = "%s (imported from %s)" % (data['name'], source)
@@ -229,6 +243,8 @@ class WorkflowContentsManager(UsesAnnotations):
             if data['annotation']:
                 annotation = sanitize_html(data['annotation'], 'utf-8', 'text/html')
                 self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
+            workflow_tags = data.get('tags', [])
+            trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
 
             # Persist
             trans.sa_session.add(stored)
@@ -255,7 +271,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
         # Put parameters in workflow mode
-        trans.workflow_building_mode = True
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
 
         workflow, missing_tool_tups = self._workflow_from_dict(
             trans,
@@ -397,7 +413,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {
-                    'inputs' : [input.to_dict(trans) for input in inputs.itervalues()]
+                    'inputs' : [input.to_dict(trans) for input in inputs.values()]
                 }
             step_model['step_type'] = step.type
             step_model['step_label'] = step.label
@@ -449,10 +465,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 else:
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step)
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             config_form = None
             if trans.history:
                 # If in a web session, attach form html. No reason to do
@@ -547,16 +560,17 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow = stored.latest_workflow
 
         annotation_str = ""
+        tag_str = ""
         if stored is not None:
-            workflow_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, stored)
-            if workflow_annotation:
-                annotation_str = workflow_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ''
+            tag_str = stored.make_tag_string_list()
         # Pack workflow data into a dictionary and return
         data = {}
         data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
         data['format-version'] = "0.1"
         data['name'] = workflow.name
         data['annotation'] = annotation_str
+        data['tags'] = tag_str
         if workflow.uuid is not None:
             data['uuid'] = str(workflow.uuid)
         data['steps'] = {}
@@ -567,10 +581,7 @@ class WorkflowContentsManager(UsesAnnotations):
             if not module:
                 return None
             # Get user annotation.
-            step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step)
-            annotation_str = ""
-            if step_annotation:
-                annotation_str = step_annotation.annotation
+            annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
             if module.type == 'tool':
@@ -594,13 +605,12 @@ class WorkflowContentsManager(UsesAnnotations):
             }
             # Add tool shed repository information and post-job actions to step dict.
             if module.type == 'tool':
-                if module.tool.tool_shed_repository:
-                    tsr = module.tool.tool_shed_repository
+                if module.tool and module.tool.tool_shed:
                     step_dict["tool_shed_repository"] = {
-                        'name': tsr.name,
-                        'owner': tsr.owner,
-                        'changeset_revision': tsr.changeset_revision,
-                        'tool_shed': tsr.tool_shed
+                        'name': module.tool.repository_name,
+                        'owner': module.tool.repository_owner,
+                        'changeset_revision': module.tool.changeset_revision,
+                        'tool_shed': module.tool.tool_shed
                     }
                 pja_dict = {}
                 for pja in step.post_job_actions:
@@ -668,10 +678,12 @@ class WorkflowContentsManager(UsesAnnotations):
                         data_input_names[prefixed_name] = True
                 # FIXME: this updates modules silently right now; messages from updates should be provided.
                 module.check_and_update_state()
-                visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
+                if module.tool:
+                    # If the tool is installed we attempt to verify input values
+                    # and connections, otherwise the last known state will be dumped without modifications.
+                    visit_input_values(module.tool.inputs, module.state.inputs, callback)
+                    # FIXME: this removes connection without displaying a message currently!
+                    input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
 
             # Encode input connections as dictionary
             input_conn_dict = {}
@@ -701,7 +713,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # tools. This should be removed at some point. Mirrored
             # hack in _workflow_from_dict should never be removed so
             # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems():
+            for input_name, input_conn in dict(input_conn_dict).items():
                 if len(input_conn) == 1:
                     input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
@@ -743,7 +755,6 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             steps_to_order_index[step.id] = step.order_index
         for step in workflow.steps:
-            step_uuid = str(step.uuid) if step.uuid else None
             step_id = step.id if legacy else step.order_index
             step_type = step.type
             step_dict = {'id': step_id,
@@ -779,7 +790,7 @@ class WorkflowContentsManager(UsesAnnotations):
         supplied_steps = data['steps']
         # Try to iterate through imported workflow in such a way as to
         # preserve step order.
-        step_indices = supplied_steps.keys()
+        step_indices = list(supplied_steps.keys())
         try:
             step_indices = sorted(step_indices, key=int)
         except ValueError:
@@ -916,7 +927,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for step in steps:
             # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
+            for input_name, conn_list in step.temp_input_connections.items():
                 if not conn_list:
                     continue
                 if not isinstance(conn_list, list):  # Older style singleton connection

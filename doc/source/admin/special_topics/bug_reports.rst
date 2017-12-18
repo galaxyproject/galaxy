@@ -70,3 +70,22 @@ When ``verbose="true" user_submission="true"``, the plugin will inform the user
 that ``Submitted bug report to Sentry. Your guru meditation number is
 dc907d44ce294f78b267a56f68e5cd1a``, using the same phrasing that is common to
 users from Galaxy internal server errors.
+
+InfluxDB
+--------
+
+This sends data directly to an InfluxDB server that you have available. If you wish to
+use this plugin you will first need to ``pip install influxdb`` in Galaxy's virtual environment.
+
+This plugin will send a value of ``1`` every time an error occurs, tagged with important information such as:
+
+- handler
+- tool_id
+- tool_version
+- exit_code
+
+This allows you to visualize the rate of bug reports (``group by time(30m)``,
+adjust as needed for how many error reports you see) in conjunction with any
+other data you're already tracking in InfluxDB/Grafana. This setup allows
+answering questions such as "did the change I make decrease the number of tool
+failures on average"

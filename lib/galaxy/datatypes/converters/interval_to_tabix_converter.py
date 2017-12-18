@@ -10,7 +10,7 @@ import optparse
 import os
 import sys
 
-from pysam import ctabix
+import pysam
 
 
 def main():
@@ -21,20 +21,29 @@ def main():
     parser.add_option('-e', '--end-col', type='int', dest='end_col')
     parser.add_option('-P', '--preset', dest='preset')
     (options, args) = parser.parse_args()
-    input_fname, index_fname, out_fname = args
+    _, bgzip_fname, out_fname = args
+    to_tabix(bgzip_fname=bgzip_fname,
+             out_fname=out_fname,
+             preset=options.preset,
+             chrom_col=options.chrom_col,
+             start_col=options.start_col,
+             end_col=options.end_col)
 
+
+def to_tabix(bgzip_fname, out_fname, preset=None, chrom_col=None, start_col=None, end_col=None):
     # Create index.
-    if options.preset:
+    if preset:
         # Preset type.
-        ctabix.tabix_index(filename=index_fname, preset=options.preset, keep_original=True,
-                           index_filename=out_fname)
+        bgzip_fname = pysam.tabix_index(filename=bgzip_fname, preset=preset, keep_original=True,
+                                        index=out_fname, force=True)
     else:
         # For interval files; column indices are 0-based.
-        ctabix.tabix_index(filename=index_fname, seq_col=(options.chrom_col - 1),
-                           start_col=(options.start_col - 1), end_col=(options.end_col - 1),
-                           keep_original=True, index_filename=out_fname)
-    if os.path.getsize(index_fname) == 0:
+        bgzip_fname = pysam.tabix_index(filename=bgzip_fname, seq_col=(chrom_col - 1),
+                                        start_col=(start_col - 1), end_col=(end_col - 1),
+                                        keep_original=True, index=out_fname, force=True)
+    if os.path.getsize(out_fname) == 0:
         sys.stderr.write("The converted tabix index file is empty, meaning the input data is invalid.")
+    return bgzip_fname
 
 
 if __name__ == "__main__":

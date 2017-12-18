@@ -10,28 +10,15 @@ module.exports = function( grunt ){
 
         // where to move fetched bower components into the build structure (libName: [ bower-location, libs-location ])
         libraryLocations = {
-            'jquery':         [ 'dist/jquery.js', 'jquery/jquery.js' ],
-            'jquery-migrate': [ 'jquery-migrate.js', 'jquery/jquery.migrate.js' ],
-            'ravenjs':        [ 'dist/raven.js', 'raven.js' ],
-            'underscore':     [ 'underscore.js', 'underscore.js' ],
-            'backbone':       [ 'backbone.js', 'backbone.js' ],
-            'requirejs':      [ 'require.js', 'require.js' ],
-            'd3':             [ 'd3.js', 'd3.js' ],
-            'bib2json':       [ 'Parser.js', 'bibtex.js' ],
-
             'farbtastic':     [ 'src/farbtastic.js', 'farbtastic.js' ],
-            'jQTouch':        [ 'src/reference/jqtouch.js', 'jquery/jqtouch.js' ],
             'bootstrap-tour': [ 'build/js/bootstrap-tour.js', 'bootstrap-tour.js' ],
-            'jquery.complexify':     [ 'jquery.complexify.js', 'jquery.complexify.js' ],
 
             // these need to be updated and tested
             //'jquery-form': [ 'jquery.form.js', 'jquery/jquery.form.js' ],
             //'jquery-autocomplete': [ 'src/jquery.autocomplete.js', 'jquery/jquery.autocomplete.js' ],
             //'select2': [ 'select2.js', 'jquery/select2.js' ],
             //'jStorage': [ 'jstorage.js', 'jquery/jstorage.js' ],
-            //'jquery.cookie': [ '', 'jquery/jquery.cookie.js' ],
             //'dynatree': [ 'dist/jquery.dynatree.js', 'jquery/jquery.dynatree.js' ],
-            //'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
             //'jquery.event.drag-drop': [
             //  [ 'event.drag/jquery.event.drag.js', 'jquery/jquery.event.drag.js' ],
             //  [ 'event.drag/jquery.event.drop.js', 'jquery/jquery.event.drop.js' ]

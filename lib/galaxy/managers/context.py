@@ -27,11 +27,11 @@ class ProvidesAppContext(object):
                     action.user = user
                 else:
                     action.user = self.user
-            except:
+            except Exception:
                 action.user = None
             try:
                 action.session_id = self.galaxy_session.id
-            except:
+            except Exception:
                 action.session_id = None
             self.sa_session.add(action)
             self.sa_session.flush()
@@ -46,23 +46,23 @@ class ProvidesAppContext(object):
             event.tool_id = tool_id
             try:
                 event.message = message % kwargs
-            except:
+            except Exception:
                 event.message = message
             try:
                 event.history = self.get_history()
-            except:
+            except Exception:
                 event.history = None
             try:
                 event.history_id = self.history.id
-            except:
+            except Exception:
                 event.history_id = None
             try:
                 event.user = self.user
-            except:
+            except Exception:
                 event.user = None
             try:
                 event.session_id = self.galaxy_session.id
-            except:
+            except Exception:
                 event.session_id = None
             self.sa_session.add(event)
             self.sa_session.flush()
@@ -97,11 +97,6 @@ class ProvidesAppContext(object):
     @property
     def install_model(self):
         return self.app.install_model
-
-    def request_types(self):
-        if self.sa_session.query(self.app.model.RequestType).filter_by(deleted=False).count() > 0:
-            return True
-        return False
 
 
 class ProvidesUserContext(object):

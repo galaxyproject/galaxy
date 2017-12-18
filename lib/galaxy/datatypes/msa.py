@@ -17,7 +17,7 @@ class Hmmer(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
         else:
             dataset.peek = 'file does not exist'
@@ -26,7 +26,7 @@ class Hmmer(Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "HMMER database (%s)" % (nice_size(dataset.get_size()))
 
     @abc.abstractmethod
@@ -77,7 +77,7 @@ class HmmerPress(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "HMMER3 database (multiple files)"
 
     def __init__(self, **kwd):
@@ -92,9 +92,6 @@ class HmmerPress(Binary):
         self.add_composite_file('model.hmm.h3p', is_binary=True)
 
 
-Binary.register_unsniffable_binary_ext("hmmpress")
-
-
 class Stockholm_1_0(Text):
     edam_data = "data_0863"
     edam_format = "format_1961"
@@ -104,12 +101,11 @@ class Stockholm_1_0(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -187,12 +183,11 @@ class MauveXmfa(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'

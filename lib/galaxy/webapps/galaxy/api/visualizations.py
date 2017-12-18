@@ -4,19 +4,24 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
-from six import string_types
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.web.base.controller import SharableMixin
-from galaxy.model.item_attrs import UsesAnnotations
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy import web
-from galaxy import util
-from galaxy import exceptions
 import json
 import logging
+
+from six import string_types
+
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableMixin,
+    UsesVisualizationMixin
+)
+
 log = logging.getLogger(__name__)
 
 

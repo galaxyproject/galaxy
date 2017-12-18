@@ -1,12 +1,16 @@
 import logging
 
-from galaxy import util
-from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.security.validate_user_input import validate_email
-from galaxy.security.validate_user_input import validate_publicname
-from galaxy.security.validate_user_input import validate_password
 import tool_shed.util.shed_util_common as suc
+from galaxy import (
+    util,
+    web
+)
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

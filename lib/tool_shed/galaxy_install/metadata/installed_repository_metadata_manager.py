@@ -12,7 +12,6 @@ from tool_shed.util import common_util
 from tool_shed.util import repository_util
 from tool_shed.util import tool_util
 from tool_shed.util import xml_util
-
 log = logging.getLogger(__name__)
 
 
@@ -125,7 +124,7 @@ class InstalledRepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         log.debug("Successfully reset metadata on repository %s owned by %s" %
                             (str(repository.name), str(repository.owner)))
                         successful_count += 1
-                except:
+                except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
             message = "Successfully reset metadata on %d %s.  " % \

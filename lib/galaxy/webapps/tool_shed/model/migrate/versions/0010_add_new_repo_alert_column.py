@@ -1,6 +1,8 @@
 """
 Migration script to add the new_repo_alert column to the galaxy_user table.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -18,7 +20,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
@@ -36,9 +38,8 @@ def upgrade(migrate_engine):
         else:
             log.debug("unknown migrate_engine dialect")
         migrate_engine.execute("UPDATE galaxy_user SET new_repo_alert=%s" % default_false)
-    except Exception as e:
-        print "Adding new_repo_alert column to the galaxy_user table failed: %s" % str(e)
-        log.debug("Adding new_repo_alert column to the galaxy_user table failed: %s" % str(e))
+    except Exception:
+        log.exception("Adding new_repo_alert column to the galaxy_user table failed.")
 
 
 def downgrade(migrate_engine):
@@ -48,6 +49,5 @@ def downgrade(migrate_engine):
     User_table = Table("galaxy_user", metadata, autoload=True)
     try:
         User_table.c.new_repo_alert.drop()
-    except Exception as e:
-        print "Dropping column new_repo_alert from the galaxy_user table failed: %s" % str(e)
-        log.debug("Dropping column new_repo_alert from the galaxy_user table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping column new_repo_alert from the galaxy_user table failed.")

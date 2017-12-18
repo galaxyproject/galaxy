@@ -22,13 +22,12 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         self.app = app
         self.security = app.security
         self.__user = user
+        self.__user_current_roles = None
         self.__history = history
         self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
 
     def get_history(self, create=False):
-        if create:
-            raise NotImplementedError("Cannot create histories from a work request context.")
         return self.__history
 
     def set_history(self):
@@ -39,6 +38,11 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
     def get_user(self):
         """Return the current user if logged in or None."""
         return self.__user
+
+    def get_current_user_roles(self):
+        if self.__user_current_roles is None:
+            self.__user_current_roles = super(WorkRequestContext, self).get_current_user_roles()
+        return self.__user_current_roles
 
     def set_user(self, user):
         """Set the current user."""

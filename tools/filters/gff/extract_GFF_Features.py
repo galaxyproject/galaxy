@@ -23,11 +23,11 @@ def main():
 
     try:
         inp_file, out_file, column, features = args
-    except:
+    except ValueError:
         stop_err("One or more arguments is missing or invalid.\nUsage: prog input output column features")
     try:
         column = int(column)
-    except:
+    except ValueError:
         stop_err("Column %s is an invalid column." % column)
 
     if features is None:
@@ -43,7 +43,7 @@ def main():
             try:
                 if line.split('\t')[column] in features.split(','):
                     fo.write("%s\n" % line)
-            except:
+            except Exception:
                 pass
     fo.close()
 

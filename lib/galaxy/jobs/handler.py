@@ -1,20 +1,33 @@
 """
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
-
 import datetime
+import logging
 import os
 import time
-import logging
-import threading
-from Queue import Queue, Empty
 
-from sqlalchemy.sql.expression import and_, or_, select, func, true, null
+from six.moves.queue import (
+    Empty,
+    Queue
+)
+from sqlalchemy.sql.expression import (
+    and_,
+    func,
+    null,
+    or_,
+    select,
+    true
+)
 
 from galaxy import model
-from galaxy.util.sleeper import Sleeper
-from galaxy.jobs import JobWrapper, TaskWrapper, JobDestination
+from galaxy.jobs import (
+    JobDestination,
+    JobWrapper,
+    TaskWrapper
+)
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.monitors import Monitors
+from galaxy.web.stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 
@@ -38,13 +51,14 @@ class JobHandler(object):
 
     def start(self):
         self.job_queue.start()
+        self.job_stop_queue.start()
 
     def shutdown(self):
         self.job_queue.shutdown()
         self.job_stop_queue.shutdown()
 
 
-class JobHandlerQueue(object):
+class JobHandlerQueue(Monitors, object):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
     jobs to be runnable and dispatching to a JobRunner.
@@ -71,20 +85,21 @@ class JobHandlerQueue(object):
         self.waiting_jobs = []
         # Contains wrappers of jobs that are limited or ready (so they aren't created unnecessarily/multiple times)
         self.job_wrappers = {}
-        # Helper for interruptable sleep
-        self.sleeper = Sleeper()
-        self.running = True
-        self.monitor_thread = threading.Thread(name="JobHandlerQueue.monitor_thread", target=self.__monitor)
-        self.monitor_thread.setDaemon(True)
+        name = "JobHandlerQueue.monitor_thread"
+        self._init_monitor_thread(name, target=self.__monitor, config=app.config)
 
     def start(self):
         """
         Starts the JobHandler's thread after checking for any unhandled jobs.
         """
+        log.debug('Handler queue starting for jobs assigned to handler: %s', self.app.config.server_name)
         # Recover jobs at startup
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
+        # The stack code is initialized in the application
+        JobHandlerMessage().bind_default_handler(self, '_handle_message')
+        self.app.application_stack.register_message_handler(self._handle_message, name=JobHandlerMessage.target)
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
@@ -93,6 +108,19 @@ class JobHandlerQueue(object):
     def job_pair_for_id(self, id):
         job = self.sa_session.query(model.Job).get(id)
         return job, self.job_wrapper(job, use_persisted_destination=True)
+
+    def __write_registry_file_if_absent(self, job):
+        # TODO: remove this and the one place it is called in late 2018, this
+        # hack attempts to minimize the job failures due to upgrades from 17.05
+        # Galaxies.
+        job_wrapper = self.job_wrapper(job)
+        cwd = job_wrapper.working_directory
+        datatypes_config = os.path.join(cwd, "registry.xml")
+        if not os.path.exists(datatypes_config):
+            try:
+                self.app.datatypes_registry.to_xml_file(path=datatypes_config)
+            except OSError:
+                pass
 
     def __check_jobs_at_startup(self):
         """
@@ -121,6 +149,7 @@ class JobHandlerQueue(object):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
+            self.__write_registry_file_if_absent(job)
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -176,16 +205,15 @@ class JobHandlerQueue(object):
         Continually iterate the waiting jobs, checking is each is ready to
         run and dispatching if so.
         """
-        while self.running:
+        while self.monitor_running:
             try:
                 # If jobs are locked, there's nothing to monitor and we skip
                 # to the sleep.
                 if not self.app.job_manager.job_lock:
                     self.__monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
-            # Sleep
-            self.sleeper.sleep(1)
+            self._monitor_sleep(1)
 
     def __monitor_step(self):
         """
@@ -315,7 +343,7 @@ class JobHandlerQueue(object):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in self.job_wrappers.keys():
+        for id in list(self.job_wrappers.keys()):
             if id not in new_waiting_jobs:
                 del self.job_wrappers[id]
         # Flush, if we updated the state
@@ -630,11 +658,30 @@ class JobHandlerQueue(object):
                             return JOB_WAIT
         return JOB_READY
 
+    def _handle_setup_msg(self, job_id=None):
+        job = self.sa_session.query(model.Job).get(job_id)
+        if job.handler is None:
+            job.handler = self.app.config.server_name
+            self.sa_session.add(job)
+            self.sa_session.flush()
+            # If not tracking jobs in the database
+            self.put(job.id, job.tool_id)
+        else:
+            log.warning("(%s) Handler '%s' received setup message but handler '%s' is already assigned, ignoring", job.id, self.app.config.server_name, job.handler)
+
     def put(self, job_id, tool_id):
         """Add a job to the queue (by job identifier)"""
         if not self.track_jobs_in_database:
             self.queue.put((job_id, tool_id))
             self.sleeper.wake()
+        else:
+            # Workflow invocations farmed out to workers will submit jobs through here. If a handler is unassigned, we
+            # will submit for one, or else claim it ourself. TODO: This should be moved to a higher level as it's now
+            # implemented here and in MessageJobQueue
+            job = self.sa_session.query(model.Job).get(job_id)
+            if job.handler is None and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
+                msg = JobHandlerMessage(task='setup', job_id=job_id)
+                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker thread"""
@@ -643,15 +690,18 @@ class JobHandlerQueue(object):
             return
         else:
             log.info("sending stop signal to worker thread")
-            self.running = False
+            self.stop_monitoring()
             if not self.app.config.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
+            # A message could still be received while shutting down, should be ok since they will be picked up on next startup.
+            self.app.application_stack.deregister_message_handler(name=JobHandlerMessage.target)
             self.sleeper.wake()
+            self.shutdown_monitor()
             log.info("job handler queue stopped")
             self.dispatcher.shutdown()
 
 
-class JobHandlerStopQueue(object):
+class JobHandlerStopQueue(Monitors):
     """
     A queue for jobs which need to be terminated prematurely.
     """
@@ -672,11 +722,12 @@ class JobHandlerStopQueue(object):
         # Contains jobs that are waiting (only use from monitor thread)
         self.waiting = []
 
-        # Helper for interruptable sleep
-        self.sleeper = Sleeper()
-        self.running = True
-        self.monitor_thread = threading.Thread(name="JobHandlerStopQueue.monitor_thread", target=self.monitor)
-        self.monitor_thread.setDaemon(True)
+        name = "JobHandlerStopQueue.monitor_thread"
+        self._init_monitor_thread(name, config=app.config)
+        log.info("job handler stop queue started")
+
+    def start(self):
+        # Start the queue
         self.monitor_thread.start()
         log.info("job handler stop queue started")
 
@@ -686,13 +737,13 @@ class JobHandlerStopQueue(object):
         """
         # HACK: Delay until after forking, we need a way to do post fork notification!!!
         time.sleep(10)
-        while self.running:
+        while self.monitor_running:
             try:
                 self.monitor_step()
-            except:
+            except Exception:
                 log.exception("Exception in monitor_step")
             # Sleep
-            self.sleeper.sleep(1)
+            self._monitor_sleep(1)
 
     def monitor_step(self):
         """
@@ -751,10 +802,10 @@ class JobHandlerStopQueue(object):
             return
         else:
             log.info("sending stop signal to worker thread")
-            self.running = False
+            self.stop_monitoring()
             if not self.app.config.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
-            self.sleeper.wake()
+            self.shutdown_monitor()
             log.info("job handler stop queue stopped")
 
 
@@ -845,5 +896,8 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.itervalues():
-            runner.shutdown()
+        for runner in self.job_runners.values():
+            try:
+                runner.shutdown()
+            except Exception:
+                raise Exception("Failed to shutdown runner %s" % runner)

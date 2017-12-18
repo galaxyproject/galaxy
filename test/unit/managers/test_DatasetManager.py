@@ -18,7 +18,6 @@ from galaxy.managers.datasets import (
     DatasetSerializer
 )
 from galaxy.managers.roles import RoleManager
-
 from .base import BaseTestCase
 
 # =============================================================================

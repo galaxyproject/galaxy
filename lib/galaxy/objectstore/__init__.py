@@ -10,7 +10,6 @@ import os
 import random
 import shutil
 import threading
-
 from xml.etree import ElementTree
 
 try:
@@ -22,11 +21,13 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
-    safe_makedirs,
-    safe_relpath,
     umask_fix_perms,
 )
 from galaxy.util.odict import odict
+from galaxy.util.path import (
+    safe_makedirs,
+    safe_relpath,
+)
 from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
@@ -671,7 +672,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     ObjectStore that defers to a list of backends.
 
     When getting objects the first store where the object exists is used.
-    When creating obects only the first store is used.
+    When creating objects only the first store is used.
     """
 
     def __init__(self, config, config_xml=None, fsmon=False):
@@ -700,7 +701,7 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Will use the `object_store_config_file` attribute of the `config` object to
     configure a new object store from the specified XML file.
 
-    Or you can specify the obect store type in the `object_store` attribute of
+    Or you can specify the object store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
 
@@ -722,6 +723,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 's3':
         from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'cloud':
+        from .cloud import Cloud
+        return Cloud(config=config, config_xml=config_xml)
     elif store == 'swift':
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)

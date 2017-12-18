@@ -7,13 +7,7 @@ import os
 import shutil
 import threading
 import time
-
 from datetime import datetime
-
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms
-from galaxy.util.sleeper import Sleeper
-from ..objectstore import convert_bytes, ObjectStore
 
 try:
     from azure.common import AzureHttpError
@@ -22,6 +16,21 @@ try:
     from azure.storage.blob.models import Blob
 except ImportError:
     BlockBlobService = None
+
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
+from galaxy.util import (
+    directory_hash_id,
+    umask_fix_perms
+)
+from galaxy.util.path import safe_relpath
+from galaxy.util.sleeper import Sleeper
+from ..objectstore import (
+    convert_bytes,
+    ObjectStore
+)
 
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
                                 "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
@@ -426,8 +435,6 @@ class AzureBlobObjectStore(ObjectStore):
         # if dir_only:
         #     return cache_path
         raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s' % (str(obj), str(kwargs)))
-
-        return cache_path  # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:

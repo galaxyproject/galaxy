@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.util import listify, nice_size, unicodify %>
+<% from galaxy.util import nice_size, unicodify %>
 
 <style>
     .inherit {
@@ -22,6 +22,7 @@
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
     <%
+        from galaxy.util import listify
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
@@ -173,11 +174,26 @@
         %if job:
             <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
         %endif
-        <tr><td>History Content API ID:</td><td>${encoded_hda_id}</td></tr>
+        <tr><td>History Content API ID:</td>
+        <td>${encoded_hda_id}
+            %if trans.user_is_admin():
+                (${hda.id})
+            %endif
+        </td></tr>
         %if job:
-            <tr><td>Job API ID:</td><td>${trans.security.encode_id( job.id )}</td></tr>
+            <tr><td>Job API ID:</td>
+            <td>${trans.security.encode_id( job.id )}
+                %if trans.user_is_admin():
+                    (${job.id})
+                %endif
+            </td></tr>
         %endif
-        <tr><td>History API ID:</td><td>${encoded_history_id}</td></tr>
+        <tr><td>History API ID:</td>
+        <td>${encoded_history_id}
+            %if trans.user_is_admin():
+                (${hda.history_id})
+            %endif
+        </td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
@@ -278,6 +294,11 @@ ${ job.command_line | h }</pre>
     </table>
 %endif
 
+%if hda.peek:
+    <h3>Dataset peek</h3>
+    <pre class="dataset-peek">${hda.peek}
+    </pre>
+%endif
 
 
 <script type="text/javascript">

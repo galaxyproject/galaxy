@@ -1,6 +1,6 @@
 from .framework import (
-    SeleniumTestCase,
     selenium_test,
+    SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
 
@@ -17,8 +17,8 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
 
         hda = history_contents[0]
-        assert hda["name"] == '1.sam'
-        assert hda["extension"] == "sam"
+        assert hda["name"] == '1.sam', hda
+        assert hda["extension"] == "sam", hda
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_dbkey_displayed_as(1, "?")

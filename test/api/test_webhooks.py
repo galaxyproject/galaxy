@@ -1,7 +1,6 @@
-
 from base import api
 from base.driver_util import TEST_WEBHOOKS_DIR
-from galaxy.webhooks import WebhooksRegistry
+from galaxy.webhooks import WebhooksRegistry  # noqa: I201
 
 
 class WebhooksApiTestCase(api.ApiTestCase):

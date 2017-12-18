@@ -188,10 +188,7 @@ class GalaxyInteractorApi(object):
                 file_name = self.functional_test_case.get_filename(composite_file.get('value'), shed_tool_id=shed_tool_id)
                 files["files_%s|file_data" % i] = open(file_name, 'rb')
                 tool_input.update({
-                    # "files_%d|NAME" % i: name,
                     "files_%d|type" % i: "upload_dataset",
-                    # TODO:
-                    # "files_%d|space_to_tab" % i: composite_file.get( 'space_to_tab', False )
                 })
             name = test_data['name']
         else:

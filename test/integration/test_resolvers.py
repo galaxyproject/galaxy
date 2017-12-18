@@ -1,6 +1,5 @@
 """Integration tests for conda dependency resolution."""
 import os
-import shutil
 from tempfile import mkdtemp
 
 from base import integration_util
@@ -20,16 +19,10 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.conda_tmp_prefix = mkdtemp()
+        cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
         config["use_cached_dependency_manager"] = True
         config["conda_auto_init"] = True
         config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
-
-    @classmethod
-    def tearDownClass(cls):
-        """Shutdown Galaxy server and cleanup temp directory."""
-        shutil.rmtree(cls.conda_tmp_prefix)
-        cls._test_driver.tear_down()
-        cls._app_available = False
 
     def test_dependency_before_install(self):
         """

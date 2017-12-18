@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):

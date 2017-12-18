@@ -26,6 +26,24 @@ class Otu(Text):
         super(Otu, self).__init__(**kwd)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
+        """
+        Set metadata for Otu files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.util.bunch import Bunch
+        >>> dataset = Bunch()
+        >>> dataset.metadata = Bunch
+        >>> otu = Otu()
+        >>> dataset.file_name = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
+        >>> dataset.has_data = lambda: True
+        >>> otu.set_meta(dataset)
+        >>> dataset.metadata.columns
+        100
+        >>> len(dataset.metadata.labels) == 37
+        True
+        >>> len(dataset.metadata.otulabels) == 98
+        True
+        """
         super(Otu, self).set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
@@ -37,6 +55,8 @@ class Otu(Text):
 
             headers = iter_headers(dataset.file_name, sep='\t', count=-1)
             first_line = get_headers(dataset.file_name, sep='\t', count=1)
+            if first_line:
+                first_line = first_line[0]
             # set otulabels
             if len(first_line) > 2:
                 otulabel_names = first_line[2:]
@@ -605,15 +625,21 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
         >>> Frequency().sniff( fname )
         False
+
+        # Expression count matrix (EdgeR wrapper)
+        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
+        >>> Frequency().sniff( fname )
+        False
         """
         headers = iter_headers(filename, sep='\t')
         count = 0
         for line in headers:
             if not line[0].startswith('@'):
+                # first line should be #<version string>
                 if count == 0:
-                    # first line should be #<version string>
-                    if not line[0].startswith('#') and len(line) == 1:
+                    if not line[0].startswith('#') or len(line) != 1:
                         return False
+
                 else:
                     # all other lines should be <int> <float>
                     if len(line) != 2:
@@ -621,9 +647,13 @@ class Frequency(Tabular):
                     try:
                         int(line[0])
                         float(line[1])
+
+                        if line[1].find('.') == -1:
+                            return False
                     except Exception:
                         return False
                 count += 1
+
         if count > 1:
             return True
 

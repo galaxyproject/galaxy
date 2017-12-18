@@ -16,11 +16,12 @@ import time
 from glob import glob
 from tempfile import NamedTemporaryFile
 
-from six.moves.urllib.request import urlopen
+import requests
 
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
 
@@ -186,7 +187,7 @@ class ToolDataTableManager(object):
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
-        with open(full_path, 'wb') as out:
+        with RenamedTemporaryFile(full_path) as out:
             out.write('<?xml version="1.0"?>\n<tables>\n')
             for elem in out_elems:
                 out.write(util.xml_to_string(elem, pretty=True))
@@ -340,7 +341,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 if filename:
                     tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name)
                     try:
-                        tmp_file.write(urlopen(filename, timeout=url_timeout).read())
+                        tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:
                         log.error('Error loading Data Table URL "%s": %s', filename, e)
                         continue

@@ -5,37 +5,45 @@ import string
 import tempfile
 from datetime import date
 
-from mercurial import mdiff
-from mercurial import patch
+from mercurial import (
+    mdiff,
+    patch
+)
 from sqlalchemy import and_, false, null
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
-
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
+from galaxy.tools.repositories import ValidationContext
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import CheckboxField
-from galaxy.web.framework.helpers import grids
+from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
-from tool_shed.tools import tool_validator
-from tool_shed.tools import tool_version_manager
-from tool_shed.util import basic_util
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import readme_util
-from tool_shed.util import repository_util
-from tool_shed.util import search_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
-from tool_shed.util import workflow_util
+from tool_shed.tools import (
+    tool_validator,
+    tool_version_manager
+)
+from tool_shed.util import (
+    basic_util,
+    common_util,
+    encoding_util,
+    hg_util,
+    metadata_util,
+    readme_util,
+    repository_util,
+    search_util,
+    shed_util_common as suc,
+    tool_util,
+    workflow_util
+)
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
 
@@ -103,7 +111,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     repository_name = kwd['id']
                     repository = repository_util.get_repository_by_name(trans.app, repository_name)
                     kwd['id'] = trans.security.encode_id(repository.id)
-                except:
+                except Exception:
                     pass
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='browse_repositories',
@@ -112,7 +120,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["repositories_by_category", "repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -266,7 +274,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def browse_repositories_by_user(self, trans, **kwd):
         """Display the list of repositories owned by a specified user."""
         # Eliminate the current search filters if any exist.
-        for k, v in kwd.items():
+        for k, v in list(kwd.items()):
             if k.startswith('f-'):
                 del kwd[k]
         if 'operation' in kwd:
@@ -507,14 +515,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     name = kwd['id']
                     repository = repository_util.get_repository_by_name(trans.app, name)
                     kwd['id'] = trans.security.encode_id(repository.id)
-                except:
+                except Exception:
                     pass
             return self.browse_valid_repositories(trans, **kwd)
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation in ["valid_repositories_by_category", "valid_repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -552,7 +560,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 changeset_revision=latest_installable_changeset_revision))
             elif operation == "valid_repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)
@@ -857,10 +865,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
-        tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                         changeset_revision,
-                                                                         tool_config)
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
+            repository, tool, message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                             changeset_revision,
+                                                                             tool_config)
         if message:
             status = 'error'
         tool_state = tool_util.new_state(trans, tool, invalid=False)
@@ -965,7 +974,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 repository_dependencies,
                                                                 repository_metadata,
                                                                 exclude=exclude)
-            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', checked=True)
+            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', value=True)
         else:
             containers_dict = None
             export_repository_dependencies_check_box = None
@@ -1075,7 +1084,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
                 status = "error"
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
+        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_tools.mako',
                                    tool_id=basic_util.stringify(tool_ids),
                                    tool_name=basic_util.stringify(tool_names),
@@ -1167,7 +1176,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             exact_matches_checked = False
             workflow_names = []
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
+        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_workflows.mako',
                                    workflow_name=basic_util.stringify(workflow_names),
                                    exact_matches_check_box=exact_matches_check_box,
@@ -1750,17 +1759,19 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def load_invalid_tool(self, trans, repository_id, tool_config, changeset_revision, **kwd):
         message = escape(kwd.get('message', ''))
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
-        tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, error_message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                               changeset_revision,
-                                                                               tool_config)
-        tool_state = tool_util.new_state(trans, tool, invalid=True)
-        invalid_file_tups = []
-        if tool:
-            invalid_file_tups = tv.check_tool_input_params(repository.repo_path(trans.app),
-                                                           tool_config,
-                                                           tool,
-                                                           [])
+
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
+            repository, tool, error_message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                   changeset_revision,
+                                                                                   tool_config)
+            tool_state = tool_util.new_state(trans, tool, invalid=True)
+            invalid_file_tups = []
+            if tool:
+                invalid_file_tups = tv.check_tool_input_params(repository.repo_path(trans.app),
+                                                               tool_config,
+                                                               tool,
+                                                               [])
         if invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools(trans.app,
                                                                    invalid_file_tups,
@@ -1813,7 +1824,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 message = 'You will not receive any email alerts for new valid tool shed repositories.'
         checked = new_repo_alert_checked or (user and user.new_repo_alert)
-        new_repo_alert_check_box = CheckboxField('new_repo_alert', checked=checked)
+        new_repo_alert_check_box = CheckboxField('new_repo_alert', value=checked)
         email_alert_repositories = []
         for repository in trans.sa_session.query(trans.model.Repository) \
                                           .filter(and_(trans.model.Repository.table.c.deleted == false(),
@@ -1920,14 +1931,22 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             message = "The repository information has been updated."
         if error:
             status = 'error'
+        allow_push_select_field = SelectField(name='allow_push',
+                                              multiple=True)
         current_allow_push = repository.allow_push(trans.app)
         if current_allow_push:
             current_allow_push_list = current_allow_push.split(',')
         else:
             current_allow_push_list = []
-        allow_push_select_field = repository_util.build_allow_push_select_field(trans, current_allow_push_list)
+        options = []
+        for user in trans.sa_session.query(trans.model.User):
+            if user.username not in current_allow_push_list:
+                options.append(user)
+        for obj in options:
+            label = getattr(obj, 'username')
+            allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts
-        alerts_check_box = CheckboxField('alerts', checked=checked)
+        alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
                                                                                            selected_value=changeset_revision,
@@ -1990,7 +2009,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message += malicious_error
             status = 'error'
         repository_type_select_field = rt_util.build_repository_type_select_field(trans, repository=repository)
-        malicious_check_box = CheckboxField('malicious', checked=is_malicious)
+        malicious_check_box = CheckboxField('malicious', value=is_malicious)
         categories = suc.get_categories(trans.app)
         selected_categories = [_rca.category_id for _rca in repository.categories]
         tsucm = ToolShedUtilityContainerManager(trans.app)
@@ -2519,7 +2538,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
             user = common_util.get_user_by_username(trans, owner)
-        except:
+        except Exception:
             user = None
         if user:
             user_id = trans.security.encode_id(user.id)
@@ -2535,7 +2554,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for a specified repository, e.g. http://example.org/view/owner/name."""
         try:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        except:
+        except Exception:
             repository = None
         if repository:
             repository_id = trans.security.encode_id(repository.id)
@@ -2546,7 +2565,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             # If the owner is valid, then show all of their repositories.
             try:
                 user = common_util.get_user_by_username(trans, owner)
-            except:
+            except Exception:
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
@@ -2565,7 +2584,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Support for sharable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
         try:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        except:
+        except Exception:
             repository = None
         if repository:
             repository_id = trans.security.encode_id(repository.id)
@@ -2810,7 +2829,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 trans.sa_session.add(repository)
                 trans.sa_session.flush()
         checked = alerts_checked or (user and user.email in email_alerts)
-        alerts_check_box = CheckboxField('alerts', checked=checked)
+        alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
                                                                                            selected_value=changeset_revision,
@@ -2877,7 +2896,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         tool_lineage = []
         tool = None
         guid = None
-        original_tool_data_path = trans.app.config.tool_data_path
         revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=False)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
@@ -2885,43 +2903,43 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
-                    tv = tool_validator.ToolValidator(trans.app)
-                    for tool_metadata_dict in metadata['tools']:
-                        if tool_metadata_dict['id'] == tool_id:
-                            work_dir = tempfile.mkdtemp()
-                            relative_path_to_tool_config = tool_metadata_dict['tool_config']
-                            guid = tool_metadata_dict['guid']
-                            full_path_to_tool_config = os.path.abspath(relative_path_to_tool_config)
-                            full_path_to_dir, tool_config_filename = os.path.split(full_path_to_tool_config)
-                            can_use_disk_file = tv.can_use_tool_config_disk_file(repository,
-                                                                                 repo,
-                                                                                 full_path_to_tool_config,
-                                                                                 changeset_revision)
-                            if can_use_disk_file:
-                                trans.app.config.tool_data_path = work_dir
-                                tool, valid, message, sample_files = \
-                                    tv.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
-                                                                                   repository_id,
-                                                                                   full_path_to_tool_config,
-                                                                                   work_dir)
-                                if message:
-                                    status = 'error'
-                            else:
-                                tool, message, sample_files = \
-                                    tv.handle_sample_files_and_load_tool_from_tmp_config(repo,
-                                                                                         repository_id,
-                                                                                         changeset_revision,
-                                                                                         tool_config_filename,
-                                                                                         work_dir)
-                                if message:
-                                    status = 'error'
-                            basic_util.remove_dir(work_dir)
-                            break
-                    if guid:
-                        tvm = tool_version_manager.ToolVersionManager(trans.app)
-                        tool_lineage = tvm.get_version_lineage_for_tool(repository_id,
-                                                                        repository_metadata,
-                                                                        guid)
+                    with ValidationContext.from_app(trans.app) as validation_context:
+                        tv = tool_validator.ToolValidator(validation_context)
+                        for tool_metadata_dict in metadata['tools']:
+                            if tool_metadata_dict['id'] == tool_id:
+                                work_dir = tempfile.mkdtemp()
+                                relative_path_to_tool_config = tool_metadata_dict['tool_config']
+                                guid = tool_metadata_dict['guid']
+                                full_path_to_tool_config = os.path.abspath(relative_path_to_tool_config)
+                                full_path_to_dir, tool_config_filename = os.path.split(full_path_to_tool_config)
+                                can_use_disk_file = tv.can_use_tool_config_disk_file(repository,
+                                                                                     repo,
+                                                                                     full_path_to_tool_config,
+                                                                                     changeset_revision)
+                                if can_use_disk_file:
+                                    tool, valid, message, sample_files = \
+                                        tv.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
+                                                                                       repository_id,
+                                                                                       full_path_to_tool_config,
+                                                                                       work_dir)
+                                    if message:
+                                        status = 'error'
+                                else:
+                                    tool, message, sample_files = \
+                                        tv.handle_sample_files_and_load_tool_from_tmp_config(repo,
+                                                                                             repository_id,
+                                                                                             changeset_revision,
+                                                                                             tool_config_filename,
+                                                                                             work_dir)
+                                    if message:
+                                        status = 'error'
+                                basic_util.remove_dir(work_dir)
+                                break
+                        if guid:
+                            tvm = tool_version_manager.ToolVersionManager(trans.app)
+                            tool_lineage = tvm.get_version_lineage_for_tool(repository_id,
+                                                                            repository_metadata,
+                                                                            guid)
         else:
             repository_metadata_id = None
             metadata = None
@@ -2930,7 +2948,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                            selected_value=changeset_revision,
                                                                                            add_id_to_name=False,
                                                                                            downloadable=False)
-        trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template("/webapps/tool_shed/repository/view_tool_metadata.mako",
                                    render_repository_actions_for=render_repository_actions_for,
                                    repository=repository,
