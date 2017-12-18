@@ -1325,7 +1325,7 @@ var FolderToolbarView = Backbone.View.extend({
             };
             LIST_CREATOR.collectionCreatorModal(
             collection_elements,
-            {creationFn: creationFn, title: modal_title},
+            {creationFn: creationFn, title: modal_title, defaultHideSourceItems: true},
             creator_class
             );
         } else if (this.collectionType === "paired"){
@@ -1339,7 +1339,7 @@ var FolderToolbarView = Backbone.View.extend({
             };
             LIST_CREATOR.collectionCreatorModal(
             collection_elements,
-            {creationFn: creationFn, title: modal_title},
+            {creationFn: creationFn, title: modal_title, defaultHideSourceItems: true},
             creator_class
             );
         } else if (this.collectionType === "list:paired"){
@@ -1348,7 +1348,7 @@ var FolderToolbarView = Backbone.View.extend({
                     name: element.name,
                     src: "ldda"
                 }));
-            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, title: modal_title});
+            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, title: modal_title, defaultHideSourceItems: true});
         }
     },
 
