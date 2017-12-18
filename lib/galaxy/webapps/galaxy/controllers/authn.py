@@ -15,7 +15,8 @@ class OIDC(BaseUIController):
 
     @web.expose
     def login(self, trans, provider):
-        return trans.response.send_redirect(web.url_for(trans.app.authnz_manager.authenticate(provider, trans)))
+        success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
+        return trans.response.send_redirect(web.url_for(redirect_uri))
 
     @web.expose
     def callback(self, trans, provider, **kwargs):
@@ -23,8 +24,7 @@ class OIDC(BaseUIController):
             # TODO: handle error
             print 'kwargs: ', kwargs
             raise
-        #TODO: make the following more generic, the attributes state and code are Google specific.
-        redirect_url, user = trans.app.authnz_manager.callback(provider, kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
+        success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider, kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
         trans.handle_user_login(user)
         return trans.response.send_redirect(redirect_url)
 
@@ -34,8 +34,8 @@ class OIDC(BaseUIController):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
-        return trans.response.send_redirect(
-            trans.app.authnz_manager.disconnect(provider, trans, disconnect_redirect_url=url_for('/')))
+        success, message, redirect_url = trans.app.authnz_manager.disconnect(provider, trans, disconnect_redirect_url=url_for('/'))
+        return trans.response.send_redirect(redirect_url)
 
 # TODO: check for the error: AuthAlreadyAssociated: This google-openidconnect account is already in use.
 # it happens when authenticating a user whose previous authentication was disconnected.

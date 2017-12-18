@@ -160,11 +160,14 @@ class AuthnzManager(object):
         if provider in self.oidc_backends_config:
             try:
                 from .psa_authnz import PSAAuthnz
-                return PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
-            except:
-                raise # TODO: error initializing the backend
+                return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
+            except Exception as e:
+                log.exception('An error occurred when loading PSAAuthnz: ', str(e))
+                return False, str(e), None
         else:
-            raise NameError("The provider '{}' is not a recognized and expected provider.".format(provider))
+            msg = 'The requested identity provider `{}` is not a recognized/expected provider'.format(provider)
+            log.debug(msg)
+            return False, msg, None
 
     def authenticate(self, provider, trans):
         """
@@ -176,18 +179,33 @@ class AuthnzManager(object):
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            return self._get_authnz_backend(provider).authenticate(trans)
-        except:
-            raise
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                return False, message, None
+            return True, "Redirecting to the identity provider `{}` for authentication".format(provider), backend.authenticate(trans)
+        except Exception as e:
+            msg = 'An error occurred when authenticating a user on `{}` identity provider: {}'.format(provider, str(e))
+            log.exception(msg)
+            return False, msg, None
 
     def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
         try:
-            return self._get_authnz_backend(provider).callback(state_token, authz_code, trans, login_redirect_url)
-        except:
-            raise
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                return False, message, None
+            return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
+        except Exception as e:
+            msg = 'An error occurred when handling callback from provider `{}`; {}'.format(provider, str(e))
+            log.exception(msg)
+            return False, msg, None
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
-            return self._get_authnz_backend(provider).disconnect(provider, trans, disconnect_redirect_url)
-        except:
-            raise
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                return False, message, None
+            return True, message, backend.disconnect(provider, trans, disconnect_redirect_url)
+        except Exception as e:
+            msg = 'An error occurred when disconnecting authentication with `{}` for user `{}`; {}'.format(provider, trans.user.username, str(e))
+            log.exception(msg)
+            return False, msg, None
