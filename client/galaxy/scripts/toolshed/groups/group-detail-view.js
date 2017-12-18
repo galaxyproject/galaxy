@@ -1,5 +1,5 @@
 import * as mod_toastr from "libs/toastr";
-import mod_group_model from "group-model";
+import mod_group_model from "toolshed/groups/group-model";
 
 // toolshed group detail view
 const GroupDetailView = Backbone.View.extend({

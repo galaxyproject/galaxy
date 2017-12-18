@@ -1,6 +1,6 @@
 import * as mod_toastr from "libs/toastr";
-import mod_group_model from "group-model";
-import mod_group_row from "group-listrow-view";
+import mod_group_model from "toolshed/groups/group-model";
+import mod_group_row from "toolshed/groups/group-listrow-view";
 const GroupListView = Backbone.View.extend({
     el: "#groups_element",
     defaults: {},
