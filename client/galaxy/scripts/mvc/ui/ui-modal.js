@@ -40,17 +40,16 @@ export var View = Backbone.View.extend({
             this.visible = true;
             this.$el.fadeIn("fast");
             if (this.options.closing_events) {
-                var self = this;
                 $(document).on("keyup.ui-modal", e => {
                     if (e.keyCode == 27) {
-                        self.hide(true);
+                        this.hide(true);
                     }
-                });
-                this.$backdrop.on("click", () => {
-                    self.hide(true);
                 });
             }
         }
+        this.$backdrop.on("click", () => {
+            this.hide(true);
+        });
     },
 
     /**
