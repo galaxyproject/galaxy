@@ -1216,7 +1216,6 @@ var FolderToolbarView = Backbone.View.extend({
         var checked_items = this.findCheckedItems();
         var template = this.templateCollectionSelectModal();
         this.modal = Galaxy.modal;
-        console.log('checked: ', checked_items.dataset_ids.length);
         this.modal.show({
             closing_events: true,
             title: "Create History Collection from Datasets",
@@ -1322,9 +1321,13 @@ var FolderToolbarView = Backbone.View.extend({
                     name: element.name,
                     src: "ldda"
                 }));
-                console.log('list elements: ', elements);
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
+            LIST_CREATOR.collectionCreatorModal(
+            collection_elements,
+            {creationFn: creationFn, title: modal_title},
+            creator_class
+            );
         } else if (this.collectionType === "paired"){
             creator_class = PAIR_CREATOR.PairCollectionCreator;
             creationFn = (elements, name, hideSourceItems) => {
@@ -1332,27 +1335,21 @@ var FolderToolbarView = Backbone.View.extend({
                 { name: "forward", src: "ldda", id: elements[0].id },
                 { name: "reverse", src: "ldda", id: elements[1].id }
                 ];
-                console.log('pair elements: ', elements);
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
+            LIST_CREATOR.collectionCreatorModal(
+            collection_elements,
+            {creationFn: creationFn, title: modal_title},
+            creator_class
+            );
         } else if (this.collectionType === "list:paired"){
-            creator_class = PAIRED_CREATOR.PairedCollectionCreator;
-            creationFn = (elements, hideSourceItems) => {
-                console.log('PRE list:pair elements: ', elements);
-                elements = elements.map(element => ({
+            let elements = collection_elements.map(element => ({
                     id: element.id,
                     name: element.name,
                     src: "ldda"
                 }));
-                console.log('POST list:pair elements: ', elements);
-                return PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, defaultHideSourceItems: hideSourceItems});
-            };
+            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, title: modal_title});
         }
-        LIST_CREATOR.collectionCreatorModal(
-            collection_elements,
-            {creationFn: creationFn, title: modal_title},
-            creator_class
-        );
     },
 
     createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, history_id, options) {
@@ -1828,7 +1825,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "<div>",
                 // elements selection
                 '<div class="library-modal-item">',
-                "<h4>From which datasets?</h4>",
+                "<h4>Which datasets?</h4>",
                 '<form class="form-inline">',
                 '<label class="radio-inline">',
                 '<input type="radio" name="radio_elements" id="selection_radio" value="selection" <% if (!selected_datasets) { %> disabled <% } %> > current selection',
