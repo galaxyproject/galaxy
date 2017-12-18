@@ -25,6 +25,7 @@ import HDAModel from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
 import LegacyGridView from "legacy/grid/grid-view";
 import * as run_stats from "reports/run_stats";
+import ToolshedGroups from "toolshed/toolshed.groups";
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
@@ -190,7 +191,8 @@ export const bundleEntries = {
     HDAModel,
     GalaxyApp,
     LegacyGridView,
-    run_stats
+    run_stats,
+    ToolshedGroups
 };
 
 window.bundleEntries = bundleEntries;
