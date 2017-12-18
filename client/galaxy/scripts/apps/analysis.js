@@ -39,6 +39,7 @@ window.app = function app( options, bootstrapped ){
     var AnalysisRouter = Router.extend({
         routes : {
             '(/)' : 'home',
+            '(/)authnz(/)' : 'show_authnz',
             '(/)root*' : 'home',
             '(/)tours(/)(:tour_id)' : 'show_tours',
             '(/)user(/)' : 'show_user',
@@ -65,6 +66,9 @@ window.app = function app( options, bootstrapped ){
         authenticate: function( args, name ) {
             return ( Galaxy.user && Galaxy.user.id ) || this.require_login.indexOf( name ) == -1;
         },
+
+        show_authnz: function(){
+        }
 
         show_tours : function( tour_id ){
             if ( tour_id ){
