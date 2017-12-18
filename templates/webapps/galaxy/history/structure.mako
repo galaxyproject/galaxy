@@ -74,7 +74,6 @@ ${ parent.stylesheets() }
 <script type="text/javascript">
 define( 'app', function(){
     var historyModel = new window.bundleEntries.History( bootstrapped.history, bootstrapped.contents );
-    console.debug("Got here?");
     window.historymodel = historyModel;
     window.jobs = bootstrapped.jobs;
     window.tools = bootstrapped.tools;
