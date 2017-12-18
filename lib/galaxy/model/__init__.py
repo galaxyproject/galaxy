@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import base64
 import codecs
 import errno
 import logging
@@ -14,6 +15,8 @@ import pwd
 import socket
 import time
 from datetime import datetime, timedelta
+import random
+import string
 from string import Template
 from uuid import UUID, uuid4
 
