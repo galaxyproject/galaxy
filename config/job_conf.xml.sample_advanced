@@ -248,14 +248,14 @@
                  a requirement of the other.
 
                  -->
-            <!-- <param id="k8s_default_requests_cpu">"500m"</param> -->
-            <!-- <param id="k8s_default_requests_memory">"500Mi"</param> -->
-            <!-- <param id="k8s_default_limits_cpu">"2"</param> -->
-            <!-- <param id="k8s_default_limits_memory">"2Gi"</param> -->
+            <!-- <param id="requests_cpu">500m</param> -->
+            <!-- <param id="requests_memory">500Mi</param> -->
+            <!-- <param id="limits_cpu">2</param> -->
+            <!-- <param id="limits_memory">2Gi</param> -->
             <!-- Kubernetes resource Requests and Limits
-                 Parameters above (k8s_default_requests_* and k8s_default_limits_*) set default minimal (requests) and
-                 maximal (limits) CPU and memory resources to be allocated to all containers in Kubernetes jobs by
-                 default.
+                 Parameters above (requests_* and limits_*) set default minimal (requests) and
+                 maximal (limits) CPU and memory resources to be allocated to all containers in
+                 Kubernetes jobs by default.
 
                  Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
                  Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
@@ -271,14 +271,6 @@
 
                  For more details on the Kubernetes resources management, see:
                  https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
-
-                 It is the responsability of the tool developer or administrator to override these limits, either at the
-                 destination or the tool itself. If not set, current defaults set on the code are:
-
-                 requests_cpu     = "500m"
-                 limits_cpu       = "1"
-                 requests_memory  = "500Mi"
-                 limits_memory    = "1Gi"
                  -->
 
         </plugin>

@@ -275,7 +275,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'requests_memory' in job_destinantion.params:
             return self.__transform_memory_value(job_destinantion.params['requests_memory'])
-        return self.runner_params['k8s_default_requests_memory']
+        return None
 
     def __get_memory_limit(self, job_wrapper):
         """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
@@ -283,7 +283,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'limits_memory' in job_destinantion.params:
             return self.__transform_memory_value(job_destinantion.params['limits_memory'])
-        return self.runner_params['k8s_default_limits_memory']
+        return None
 
     def __get_cpu_request(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
@@ -291,7 +291,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'requests_cpu' in job_destinantion.params:
             return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
-        return self.runner_params['k8s_default_requests_cpu']
+        return None
 
     def __get_cpu_limit(self, job_wrapper):
         """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
@@ -299,7 +299,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if 'limits_cpu' in job_destinantion.params:
             return self.__transform_cpu_value(job_destinantion.params['limits_cpu'])
-        return self.runner_params['k8s_default_limits_cpu']
+        return None
 
     def __transform_cpu_value(self, cpu_value):
         """Transforms cpu value
