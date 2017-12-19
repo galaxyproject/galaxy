@@ -36,7 +36,8 @@ class ToolAction(object):
     been converted and validated).
     """
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=True):
+    def execute(self, tool, trans, incoming=None, set_output_hid=True):
+        incoming = incoming or {}
         raise TypeError("Abstract method")
 
 
@@ -213,12 +214,13 @@ class DefaultToolAction(object):
 
         return history, inp_data, inp_dataset_collections, preserved_tags
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
+    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        incoming = incoming or {}
         self._check_access(tool, trans)
         app = trans.app
         if execution_cache is None:
@@ -598,7 +600,7 @@ class DefaultToolAction(object):
 
     def _get_on_text(self, inp_data):
         input_names = []
-        for name, data in reversed(inp_data.items()):
+        for _name, data in reversed(inp_data.items()):
             if getattr(data, "hid", None):
                 input_names.append('data %s' % data.hid)
 
@@ -782,7 +784,7 @@ class OutputCollections(object):
         if "elements" in element_kwds:
             elements = element_kwds["elements"]
             if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
-                for key, value in elements.items():
+                for _key, value in elements.items():
                     # Either a HDA (if) or a DatasetCollection (the else)
                     if getattr(value, "history_content_type", None) == "dataset":
                         assert value.history is not None
