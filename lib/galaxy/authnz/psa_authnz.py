@@ -84,8 +84,8 @@ class PSAAuthnz(IdentityProvider):
         self.config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
         self.config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
 
-        # The following config sets PSA to call the `login_user` function for
-        # logging in a user. If this setting is set to false, the `login_user`
+        # The following config sets PSA to call the `_login_user` function for
+        # logging in a user. If this setting is set to false, the `_login_user`
         # would not be called, and as a result Galaxy would not know who is
         # the just logged-in user.
         self.config[setting_name('INACTIVE_USER_LOGIN')] = True
@@ -108,25 +108,25 @@ class PSAAuthnz(IdentityProvider):
         trans.app.model.PSAPartial.trans = trans
         trans.app.model.PSAAssociation.trans = trans
 
-    def get_helper(self, name, do_import=False):
+    def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
 
-    def get_current_user(self, trans):
+    def _get_current_user(self, trans):
         return trans.user if trans.user is not None else None
 
-    def load_backend(self, strategy, redirect_uri):
-        backends = self.get_helper('AUTHENTICATION_BACKENDS')
+    def _load_backend(self, strategy, redirect_uri):
+        backends = self._get_helper('AUTHENTICATION_BACKENDS')
         backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
         return backend(strategy, redirect_uri)
 
-    def login_user(self, backend, user, social_user):
+    def _login_user(self, backend, user, social_user):
         self.config['user'] = user
 
     def authenticate(self, trans):
         self._on_the_fly_config(trans)
         strategy = Strategy(trans, Storage, self.config)
-        backend = self.load_backend(strategy, self.config['redirect_uri'])
+        backend = self._load_backend(strategy, self.config['redirect_uri'])
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
@@ -134,11 +134,11 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans, Storage, self.config)
         strategy.session_set(BACKENDS_NAME[self.config['provider']]+'_state', state_token)
-        backend = self.load_backend(strategy, self.config['redirect_uri'])
+        backend = self._load_backend(strategy, self.config['redirect_uri'])
         redirect_url = do_complete(
             backend,
-            login=lambda backend, user, social_user: self.login_user(backend, user, social_user),
-            user=self.get_current_user(trans),
+            login=lambda backend, user, social_user: self._login_user(backend, user, social_user),
+            user=self._get_current_user(trans),
             state=state_token)
         return redirect_url, self.config.get('user', None)
 
@@ -147,8 +147,8 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage, self.config)
-        backend = self.load_backend(strategy, self.config['redirect_uri'])
-        return do_disconnect(backend, self.get_current_user(trans), association_id)
+        backend = self._load_backend(strategy, self.config['redirect_uri'])
+        return do_disconnect(backend, self._get_current_user(trans), association_id)
 
 
 class Strategy(BaseStrategy):
