@@ -1,5 +1,5 @@
 /** zh localization */
-/* by steven at Fri Dec  1 11:14:14 CST 2017 */
+/* by steven shen */
 define({
 // ----------------------------------------------------------------------------- masthead
 "Analyze Data":
@@ -203,11 +203,9 @@ define({
 "You must be logged in to create histories" :
     "你必须登录后才能创建历史",
 //TODO:
-"You can <% loadYourOwn %> or <% externalSource %>" :
-    "您可以 或者 " ,
-"You can" :
+"You can " :
     "您可以 ",
-"or" :
+" or " :
     " 或者 ",
 "load your own data" :
     "上传您的个人数据",
