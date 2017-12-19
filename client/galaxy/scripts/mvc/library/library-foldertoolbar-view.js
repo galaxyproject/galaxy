@@ -1409,7 +1409,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 "<% } else { %>",
-                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-default add-library-items" href="#folders/<%= id %>/import/history" role="button">',
+                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-default add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
                 '<span class="fa fa-plus"></span><span class="fa fa-file"></span>',
                 "</a>",
                 "<% } %>",
