@@ -6,6 +6,11 @@
 </%def>
 
 ## -----------------------------------------------------------------------------
+<%def name="javascripts()">
+${ parent.javascripts() }
+${h.js("bundled/extended.bundled")}
+</%def>
+
 <%def name="stylesheets()">
 ${ parent.stylesheets() }
 
@@ -68,26 +73,18 @@ ${ parent.stylesheets() }
 <%def name="javascript_app()">
 <script type="text/javascript">
 define( 'app', function(){
-    require([
-        'mvc/history/history-model',
-        'mvc/history/history-structure-view'
-    ], function( HISTORY, StructureView ){
-        console.debug(HISTORY);
-        console.debug(StructureView);
-        var historyModel = new HISTORY.default.History( bootstrapped.history, bootstrapped.contents );
-        console.debug("Got here?");
-        window.historymodel = historyModel;
-        window.jobs = bootstrapped.jobs;
-        window.tools = bootstrapped.tools;
+    var historyModel = new window.bundleEntries.History( bootstrapped.history, bootstrapped.contents );
+    window.historymodel = historyModel;
+    window.jobs = bootstrapped.jobs;
+    window.tools = bootstrapped.tools;
 
-        var structure = new StructureView.default({
-            model   : historyModel,
-            jobs    : bootstrapped.jobs,
-            tools   : bootstrapped.tools
-        });
-        window.structure = structure;
-        structure.render().$el.appendTo( 'body' );
+    var structure = new window.bundleEntries.StructureView({
+        model   : historyModel,
+        jobs    : bootstrapped.jobs,
+        tools   : bootstrapped.tools
     });
+    window.structure = structure;
+    structure.render().$el.appendTo( 'body' );
 });
 </script>
 ${ galaxy_client.load( app='app', historyId=historyId, history=history, contents=contents, jobs=jobs, tools=tools ) }

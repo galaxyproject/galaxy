@@ -66,13 +66,3 @@ As mentioned above, 'make client' will also rebuild styles.  If you *only* want
 to run the style task, use the following command from the `client` directory:
 
     yarn run style
-
-
-The Toolshed Client Build
-=========================
-
-The toolshed client is not tightly integrated with the rest of the build
-system.  To build the toolshed client, execute the following command from the
-`client` directory.
-
-	yarn run build-toolshed
