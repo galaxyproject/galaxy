@@ -4,16 +4,20 @@ from __future__ import absolute_import
 
 import errno
 import imp
+import logging
 from functools import partial
+from grp import getgrgid
 from itertools import starmap
 from operator import getitem
 from os import (
     extsep,
     makedirs,
-    walk,
+    stat,
+    walk
 )
 from os.path import (
     abspath,
+    dirname,
     exists,
     isabs,
     join,
@@ -21,10 +25,13 @@ from os.path import (
     pardir,
     realpath,
     relpath,
+    sep as separator,
 )
+from pwd import getpwuid
 
 from six import iteritems, string_types
-from six.moves import filterfalse, map, zip
+from six.moves import map, zip
+log = logging.getLogger(__name__)
 
 
 def safe_contains(prefix, path, whitelist=None):
@@ -82,7 +89,7 @@ def safe_relpath(path):
     return not (isabs(path) or normpath(path).startswith(pardir))
 
 
-def unsafe_walk(path, whitelist=None):
+def unsafe_walk(path, whitelist=None, username=None):
     """Walk a path and ensure that none of its contents are symlinks outside the path.
 
     It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
@@ -92,10 +99,72 @@ def unsafe_walk(path, whitelist=None):
     :param path:        a directory to check for unsafe contents
     :type whitelist:    list of strings
     :param whitelist:   list of additional paths under which contents may be located
-    :rtype:             iterator
-    :returns:           Iterator of "bad" files found under ``path``
+    :rtype:             list of strings
+    :returns:           A list of "bad" files found under ``path``
     """
-    return filterfalse(partial(safe_contains, path, whitelist=whitelist), __walk(abspath(path)))
+    unsafe_paths = []
+    for walked_path in __walk(abspath(path)):
+        is_safe = safe_contains(path, walked_path, whitelist=whitelist)
+        if username and is_safe:
+            is_safe = full_path_permission_for_user(path, walked_path, username=username, skip_prefix=True)
+        if not is_safe:
+            unsafe_paths.append(walked_path)
+    return unsafe_paths
+
+
+def __path_permission_for_user(path, username):
+    """
+    :type path:         string
+    :param path:        a directory or file to check
+    :type username:     string
+    :param username:    a username matching the systems username
+    """
+    group_id_of_file = stat(path).st_gid
+    file_owner = getpwuid(stat(path).st_uid)
+    group_members = getgrgid(group_id_of_file).gr_mem
+
+    oct_mode = oct(stat(path).st_mode)
+    owner_permissions = int(oct_mode[-3])
+    group_permissions = int(oct_mode[-2])
+    other_permissions = int(oct_mode[-1])
+    if other_permissions >= 4 or \
+            (file_owner == username and owner_permissions >= 4) or \
+            (username in group_members and group_permissions >= 4):
+        return True
+    return False
+
+
+def full_path_permission_for_user(prefix, path, username, skip_prefix=False):
+    """
+    Assuming username is identical to the os username, this checks that the
+    given user can read the specified path by checking the file permission
+    and each parent directory permission.
+
+    :type prefix:       string
+    :param prefix:      a directory under which ``path`` is to be checked
+    :type path:         string
+    :param path:        a filename to check
+    :type username:     string
+    :param username:    a username matching the systems username
+    :type skip_prefix:  bool
+    :param skip_prefix: skip the given prefix from being checked for permissions
+
+    """
+    full_path = realpath(join(prefix, path))
+    top_path = realpath(prefix) if skip_prefix else None
+    can_read = __path_permission_for_user(full_path, username)
+    if can_read:
+        depth = 0
+        max_depth = full_path.count(separator)
+        parent_path = dirname(full_path)
+        while can_read and depth != max_depth:
+            if parent_path in [separator, top_path]:
+                break
+            if not __path_permission_for_user(parent_path, username):
+                can_read = False
+            depth += 1
+            parent_path = dirname(parent_path)
+    return can_read
 
 
 def joinext(root, ext):
