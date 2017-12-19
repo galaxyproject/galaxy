@@ -8,6 +8,11 @@ import os.path
 from markupsafe import escape
 
 from galaxy import util
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
+)
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -17,6 +22,47 @@ from galaxy.util.path import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def validate_server_directory_upload(trans, server_dir):
+    if server_dir in [None, 'None', '']:
+        raise RequestParameterInvalidException("Invalid or unspecified server_dir parameter")
+
+    if trans.user_is_admin():
+        import_dir = trans.app.config.library_import_dir
+        import_dir_desc = 'library_import_dir'
+        if not import_dir:
+            raise ConfigDoesNotAllowException('"library_import_dir" is not set in the Galaxy configuration')
+    else:
+        import_dir = trans.app.config.user_library_import_dir
+        if not import_dir:
+            raise ConfigDoesNotAllowException('"user_library_import_dir" is not set in the Galaxy configuration')
+        if server_dir != trans.user.email:
+            import_dir = os.path.join(import_dir, trans.user.email)
+        import_dir_desc = 'user_library_import_dir'
+
+    full_dir = os.path.join(import_dir, server_dir)
+    unsafe = None
+    if safe_relpath(server_dir):
+        username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
+        if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist, username=username):
+            for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist):
+                log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
+    else:
+        log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
+        unsafe = True
+    if unsafe:
+        raise RequestParameterInvalidException("Invalid server_dir specified")
+
+    return full_dir, import_dir_desc
+
+
+def validate_path_upload(trans):
+    if not trans.app.config.allow_library_path_paste:
+        raise ConfigDoesNotAllowException('"allow_path_paste" is not set to True in the Galaxy configuration file')
+
+    if not trans.user_is_admin():
+        raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
 class LibraryActions(object):
@@ -42,38 +88,11 @@ class LibraryActions(object):
         upload_option = kwd.get('upload_option', 'upload_file')
         response_code = 200
         if upload_option == 'upload_directory':
-            if server_dir in [None, 'None', '']:
-                response_code = 400
-            if trans.user_is_admin():
-                import_dir = trans.app.config.library_import_dir
-                import_dir_desc = 'library_import_dir'
-            else:
-                import_dir = trans.app.config.user_library_import_dir
-                if server_dir != trans.user.email:
-                    import_dir = os.path.join(import_dir, trans.user.email)
-                import_dir_desc = 'user_library_import_dir'
-            full_dir = os.path.join(import_dir, server_dir)
-            unsafe = None
-            if safe_relpath(server_dir):
-                username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
-                if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist):
-                    for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist, username=username):
-                        log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
-            else:
-                log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
-                unsafe = True
-            if unsafe:
-                response_code = 403
-                message = 'Invalid server_dir'
-            if import_dir:
-                message = 'Select a directory'
-            else:
-                response_code = 403
-                message = '"%s" is not defined in the Galaxy configuration file' % import_dir_desc
+            full_dir, import_dir_desc = validate_server_directory_upload(trans, server_dir)
+            message = 'Select a directory'
         elif upload_option == 'upload_paths':
-            if not trans.app.config.allow_library_path_paste:
-                response_code = 403
-                message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+            # Library API already checked this - following check isn't actually needed.
+            validate_path_upload(trans)
         # Some error handling should be added to this method.
         try:
             # FIXME: instead of passing params here ( which have been processed by util.Params(), the original kwd
