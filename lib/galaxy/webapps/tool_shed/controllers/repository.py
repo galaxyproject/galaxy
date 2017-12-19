@@ -21,7 +21,7 @@ from galaxy import (
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField, SelectField
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
@@ -120,7 +120,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["repositories_by_category", "repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -274,7 +274,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def browse_repositories_by_user(self, trans, **kwd):
         """Display the list of repositories owned by a specified user."""
         # Eliminate the current search filters if any exist.
-        for k, v in kwd.items():
+        for k, v in list(kwd.items()):
             if k.startswith('f-'):
                 del kwd[k]
         if 'operation' in kwd:
@@ -522,7 +522,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["valid_repositories_by_category", "valid_repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -560,7 +560,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 changeset_revision=latest_installable_changeset_revision))
             elif operation == "valid_repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)

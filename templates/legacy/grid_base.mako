@@ -1,5 +1,5 @@
 <%!
-    from galaxy.web.framework.helpers.grids import TextColumn
+    from galaxy.webapps.reports.framework.grids import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )
@@ -64,7 +64,7 @@
 
     ## load javascript
     <script type="text/javascript">
-        require(['mvc/grid/grid-view'], function(GridView) {
+        require(['legacy/grid/grid-view'], function(GridView) {
             $(function() {
                 var gridView = new GridView.default( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
             });

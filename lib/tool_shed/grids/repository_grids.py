@@ -7,7 +7,7 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.util import hg_util, metadata_util, repository_util
 
@@ -62,7 +62,6 @@ class CategoryGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -236,7 +235,6 @@ class RepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -358,7 +356,6 @@ class MatchedRepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -457,7 +454,6 @@ class RepositoriesByUserGrid(RepositoryGrid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -978,7 +974,6 @@ class RepositoryMetadataGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(malicious="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -1298,7 +1293,6 @@ class ValidCategoryGrid(CategoryGrid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 

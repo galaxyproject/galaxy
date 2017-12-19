@@ -9,13 +9,13 @@ details.
 Run from the ~/scripts/data_libraries directory:
 %sh build_lucene_index.sh
 """
-import ConfigParser
 import csv
 import os
 import sys
-import urllib
 
 import requests
+from six.moves.configparser import ConfigParser
+from six.moves.urllib.parse import urlencode
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -39,7 +39,7 @@ def main(ini_file):
 
 
 def build_index(search_url, dataset_file):
-    url = "%s/index?%s" % (search_url, urllib.urlencode({"docfile": dataset_file}))
+    url = "%s/index?%s" % (search_url, urlencode({"docfile": dataset_file}))
     requests.put(url)
 
 
@@ -89,7 +89,7 @@ def _get_folder_info(folder):
 
 
 def get_sa_session(ini_file):
-    conf_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    conf_parser = ConfigParser({'here': os.getcwd()})
     conf_parser.read(ini_file)
     kwds = dict()
     for key, value in conf_parser.items("app:main"):

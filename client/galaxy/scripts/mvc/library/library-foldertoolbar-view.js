@@ -910,9 +910,9 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${
-                    popped_item
-                }&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${
+                    options.source
+                }&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
                     options.space_to_tab
                 }&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${
                     options.tag_using_filenames
@@ -959,13 +959,13 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${options.source}&path=${
-                    popped_item
-                }&preserve_dirs=${options.preserve_dirs}&link_data=${options.link_data}&to_posix_lines=${
-                    options.to_posix_lines
-                }&space_to_tab=${options.space_to_tab}&file_type=${options.file_type}&dbkey=${
-                    options.dbkey
-                }&tag_using_filenames=${options.tag_using_filenames}`
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${that.id}&source=${
+                    options.source
+                }&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${
+                    options.link_data
+                }&to_posix_lines=${options.to_posix_lines}&space_to_tab=${options.space_to_tab}&file_type=${
+                    options.file_type
+                }&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
             )
         );
         promise

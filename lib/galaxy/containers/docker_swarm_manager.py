@@ -46,7 +46,7 @@ SWARM_MANAGER_CONF_DEFAULTS = {
     'service_wait_count_limit': 0,
     'service_wait_time_limit': 5,
     'slots_min_limit': 0,
-    'slots_max_limit': sys.maxint,
+    'slots_max_limit': sys.maxsize,
     'slots_min_spare': 0,
     'node_idle_limit': 120,
     'limits': [],
@@ -137,7 +137,7 @@ class SwarmManager(object):
             state = node_state['state']
             if not nodes:
                 nodes = self._docker_interface.nodes()
-            node = (filter(lambda x: x.name == name, nodes) + [None])[0]
+            node = ([x for x in nodes if x.name == name] + [None])[0]
             if not node:
                 if elapsed > self._conf.spawn_wait_time:
                     log.warning("spawning node '%s' not found in `docker node ls` and spawn_wait_time exceeded! %d seconds have elapsed", name, elapsed)

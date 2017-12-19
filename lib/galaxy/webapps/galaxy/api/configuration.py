@@ -88,7 +88,7 @@ class ConfigurationController(BaseAPIController):
     @require_admin
     def dynamic_tool_confs(self, trans):
         confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
-        return map(_tool_conf_to_dict, confs)
+        return list(map(_tool_conf_to_dict, confs))
 
     @expose_api
     @require_admin

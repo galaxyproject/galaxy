@@ -31,10 +31,7 @@ import threading
 from argparse import ArgumentParser
 from logging.config import fileConfig
 
-try:
-    import ConfigParser as configparser
-except ImportError:
-    import configparser
+from six.moves.configparser import ConfigParser
 
 try:
     from daemonize import Daemonize
@@ -219,7 +216,7 @@ class GalaxyConfigBuilder(object):
         if not self.config_file:
             return
         if self.config_is_ini:
-            raw_config = configparser.ConfigParser()
+            raw_config = ConfigParser()
             raw_config.read([self.config_file])
             if raw_config.has_section('loggers'):
                 config_file = os.path.abspath(self.config_file)
