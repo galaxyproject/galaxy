@@ -121,9 +121,9 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     def test_gzipped_html_content_blocked_by_default(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, 'file://%s/bad.html.gz' % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, 'file://%s/bad.html.gz' % TEST_DATA_DIRECTORY, file_type="auto", wait=True, assert_ok=False
         )
-        dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
+        dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset, assert_ok=False)
         assert dataset["file_size"] == 0
 
 

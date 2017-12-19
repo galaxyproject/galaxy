@@ -106,7 +106,7 @@ $.extend(CanvasManager.prototype, {
             // If it appears that the user is trying to copy/paste text, we
             // pass that through.
             if (window.getSelection().toString() === "") {
-                if (this.app.workflow.active_node) {
+                if (this.app.workflow.active_node && this.app.workflow.active_node.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
                         JSON.stringify({

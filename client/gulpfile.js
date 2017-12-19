@@ -34,8 +34,7 @@ var paths = {
         'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
-        'underscore': [ 'underscore.js', 'underscore.js' ],
-        'vue': [ 'dist/vue.js', 'vue.js' ]
+        'underscore': [ 'underscore.js', 'underscore.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };

@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
 import WorkflowCanvas from "mvc/workflow/workflow-canvas";
@@ -276,9 +277,7 @@ export default Backbone.View.extend({
                 if (upgrade_message) {
                     window.show_modal(
                         "Issues loading this workflow",
-                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${
-                            upgrade_message
-                        }</ul></p>`,
+                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -502,14 +501,14 @@ export default Backbone.View.extend({
                 var copy = new Ui.ButtonIcon({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
-                    tooltip: "Copy and insert individual steps",
+                    tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
-                                title: "Warning",
+                                title: _l("Warning"),
                                 body: `This will copy ${workflow.step_count} new steps into your workflow.`,
                                 buttons: {
                                     Cancel: function() {
@@ -559,9 +558,7 @@ export default Backbone.View.extend({
                 if (upgrade_message) {
                     window.show_modal(
                         "Subworkflow embedded with changes",
-                        `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${
-                            upgrade_message
-                        }</ul>`,
+                        `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
                         { Continue: hide_modal }
                     );
                 } else {
@@ -763,13 +760,15 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
-        buttons.append(
-            $("<div/>")
-                .addClass("fa-icon-button fa fa-files-o")
-                .click(e => {
-                    node.clone();
-                })
-        );
+        if (type !== "subworkflow") {
+            buttons.append(
+                $("<div/>")
+                    .addClass("fa-icon-button fa fa-files-o")
+                    .click(e => {
+                        node.clone();
+                    })
+            );
+        }
         buttons.append(
             $("<div/>")
                 .addClass("fa-icon-button fa fa-times")

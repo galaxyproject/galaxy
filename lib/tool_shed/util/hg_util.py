@@ -54,6 +54,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
+    stdouterr = None
     try:
         stdouterr = subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
         return True, None

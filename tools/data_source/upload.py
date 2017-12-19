@@ -36,11 +36,18 @@ else:
 assert sys.version_info[:2] >= (2, 7)
 
 
+class UploadProblemException(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+
 def file_err(msg, dataset, json_file):
     json_file.write(dumps(dict(type='dataset',
                                ext='data',
                                dataset_id=dataset.dataset_id,
-                               stderr=msg)) + "\n")
+                               stderr=msg,
+                               failed=True)) + "\n")
     # never remove a server-side upload
     if dataset.type in ('server_dir', 'path_paste'):
         return
@@ -76,39 +83,51 @@ def add_file(dataset, registry, json_file, output_path):
     line_count = None
     converted_path = None
     stdout = None
-    link_data_only = dataset.get('link_data_only', 'copy_files')
-    run_as_real_user = in_place = dataset.get('in_place', True)
-    purge_source = dataset.get('purge_source', True)
-    # in_place is True if there is no external chmod in place,
-    # however there are other instances where modifications should not occur in_place:
-    # when a file is added from a directory on the local file system (ftp import folder or any other path).
-    if dataset.type in ('server_dir', 'path_paste', 'ftp_import'):
-        in_place = False
+    link_data_only = dataset.get('link_data_only', 'copy_files') != 'copy_files'
+
+    # run_as_real_user is estimated from galaxy config (external chmod indicated of inputs executed)
+    # If this is True we always purge supplied upload inputs so they are cleaned up and we reuse their
+    # paths during data conversions since this user already owns that path.
+    # Older in_place check for upload jobs created before 18.01, TODO remove in 19.XX. xref #5206
+    run_as_real_user = dataset.get('run_as_real_user', False) or dataset.get("in_place", False)
+
+    # purge_source is False if this is an FTP import and ftp_upload_purge has been overridden to False in Galaxy's config.
+    # This prevents us from deleting the user supplied paths in this case. We disable this behavior
+    # if running as the real user so the file can be cleaned up by Galaxy.
+    purge_source = dataset.get('purge_source', True) and not run_as_real_user
+
+    # in_place is True only if we are running as a real user and not importing external paths (i.e.
+    # this is a real upload and not a path paste or ftp import).
+    # In this case we try to reuse the uploaded file that has been chowned to this user already.
+    in_place = run_as_real_user and dataset.type not in ('server_dir', 'path_paste', 'ftp_import')
+
+    # Base on the check_upload_content Galaxy config option and on by default, this enables some
+    # security related checks on the uploaded content, but can prevent uploads from working in some cases.
     check_content = dataset.get('check_content' , True)
+
+    # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
+    # decompressing archive files before sniffing.
     auto_decompress = dataset.get('auto_decompress', True)
     try:
         ext = dataset.file_type
     except AttributeError:
-        file_err('Unable to process uploaded file, missing file_type parameter.', dataset, json_file)
-        return
+        raise UploadProblemException('Unable to process uploaded file, missing file_type parameter.')
 
     if dataset.type == 'url':
         try:
             page = urlopen(dataset.path)  # page will be .close()ed by sniff methods
             temp_name = sniff.stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
         except Exception as e:
-            file_err('Unable to fetch %s\n%s' % (dataset.path, str(e)), dataset, json_file)
-            return
+            raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, str(e)))
         dataset.path = temp_name
     # See if we have an empty file
     if not os.path.exists(dataset.path):
-        file_err('Uploaded temporary file (%s) does not exist.' % dataset.path, dataset, json_file)
-        return
+        raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
     if not os.path.getsize(dataset.path) > 0:
-        file_err('The uploaded file is empty', dataset, json_file)
-        return
+        raise UploadProblemException('The uploaded file is empty')
     # Is dataset content supported sniffable binary?
-    if check_binary(dataset.path):
+    is_binary = check_binary(dataset.path)
+    if is_binary:
         # Sniff the data type
         guessed_ext = sniff.guess_ext(dataset.path, registry.sniff_order)
         # Set data_type only if guessed_ext is a binary datatype
@@ -125,10 +144,9 @@ def add_file(dataset, registry, json_file, output_path):
             # See if we have a gzipped file, which, if it passes our restrictions, we'll uncompress
             is_gzipped, is_valid = check_gzip(dataset.path, check_content=check_content)
             if is_gzipped and not is_valid:
-                file_err('The gzipped uploaded file contains inappropriate content', dataset, json_file)
-                return
+                raise UploadProblemException('The gzipped uploaded file contains inappropriate content')
             elif is_gzipped and is_valid and auto_decompress:
-                if link_data_only == 'copy_files':
+                if not link_data_only:
                     # We need to uncompress the temp_name file, but BAM files must remain compressed in the BGZF format
                     CHUNK_SIZE = 2 ** 20  # 1Mb
                     fd, uncompressed = tempfile.mkstemp(prefix='data_id_%s_upload_gunzip_' % dataset.dataset_id, dir=os.path.dirname(output_path), text=False)
@@ -139,8 +157,7 @@ def add_file(dataset, registry, json_file, output_path):
                         except IOError:
                             os.close(fd)
                             os.remove(uncompressed)
-                            file_err('Problem decompressing gzipped data', dataset, json_file)
-                            return
+                            raise UploadProblemException('Problem decompressing gzipped data')
                         if not chunk:
                             break
                         os.write(fd, chunk)
@@ -158,10 +175,9 @@ def add_file(dataset, registry, json_file, output_path):
                 # See if we have a bz2 file, much like gzip
                 is_bzipped, is_valid = check_bz2(dataset.path, check_content)
                 if is_bzipped and not is_valid:
-                    file_err('The gzipped uploaded file contains inappropriate content', dataset, json_file)
-                    return
+                    raise UploadProblemException('The gzipped uploaded file contains inappropriate content')
                 elif is_bzipped and is_valid and auto_decompress:
-                    if link_data_only == 'copy_files':
+                    if not link_data_only:
                         # We need to uncompress the temp_name file
                         CHUNK_SIZE = 2 ** 20  # 1Mb
                         fd, uncompressed = tempfile.mkstemp(prefix='data_id_%s_upload_bunzip2_' % dataset.dataset_id, dir=os.path.dirname(output_path), text=False)
@@ -172,8 +188,7 @@ def add_file(dataset, registry, json_file, output_path):
                             except IOError:
                                 os.close(fd)
                                 os.remove(uncompressed)
-                                file_err('Problem decompressing bz2 compressed data', dataset, json_file)
-                                return
+                                raise UploadProblemException('Problem decompressing bz2 compressed data')
                             if not chunk:
                                 break
                             os.write(fd, chunk)
@@ -191,7 +206,7 @@ def add_file(dataset, registry, json_file, output_path):
                 # See if we have a zip archive
                 is_zipped = check_zip(dataset.path)
                 if is_zipped and auto_decompress:
-                    if link_data_only == 'copy_files':
+                    if not link_data_only:
                         CHUNK_SIZE = 2 ** 20  # 1Mb
                         uncompressed = None
                         uncompressed_name = None
@@ -212,8 +227,7 @@ def add_file(dataset, registry, json_file, output_path):
                                     except IOError:
                                         os.close(fd)
                                         os.remove(uncompressed)
-                                        file_err('Problem decompressing zipped data', dataset, json_file)
-                                        return
+                                        raise UploadProblemException('Problem decompressing zipped data')
                                     if not chunk:
                                         break
                                     os.write(fd, chunk)
@@ -231,8 +245,7 @@ def add_file(dataset, registry, json_file, output_path):
                                 except IOError:
                                     os.close(fd)
                                     os.remove(uncompressed)
-                                    file_err('Problem decompressing zipped data', dataset, json_file)
-                                    return
+                                    raise UploadProblemException('Problem decompressing zipped data')
                         z.close()
                         # Replace the zipped file with the decompressed file if it's safe to do so
                         if uncompressed is not None:
@@ -244,7 +257,7 @@ def add_file(dataset, registry, json_file, output_path):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
-                if check_binary(dataset.path) or registry.is_extension_unsniffable_binary(dataset.file_type):
+                if is_binary or registry.is_extension_unsniffable_binary(dataset.file_type):
                     # We have a binary dataset, but it is not Bam, Sff or Pdf
                     data_type = 'binary'
                     parts = dataset.name.split(".")
@@ -252,19 +265,16 @@ def add_file(dataset, registry, json_file, output_path):
                         ext = parts[-1].strip().lower()
                         is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
                         if check_content and not is_ext_unsniffable_binary:
-                            file_err('The uploaded binary file contains inappropriate content', dataset, json_file)
-                            return
+                            raise UploadProblemException('The uploaded binary file contains inappropriate content')
                         elif is_ext_unsniffable_binary and dataset.file_type != ext:
                             err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
-                            file_err(err_msg, dataset, json_file)
-                            return
+                            raise UploadProblemException(err_msg)
             if not data_type:
                 # We must have a text file
                 if check_content and check_html(dataset.path):
-                    file_err('The uploaded file contains inappropriate HTML content', dataset, json_file)
-                    return
+                    raise UploadProblemException('The uploaded file contains inappropriate HTML content')
             if data_type != 'binary':
-                if link_data_only == 'copy_files' and data_type not in ('gzip', 'bz2', 'zip'):
+                if not link_data_only and data_type not in ('gzip', 'bz2', 'zip'):
                     # Convert universal line endings to Posix line endings if to_posix_lines is True
                     # and the data is not binary or gzip-, bz2- or zip-compressed.
                     if dataset.to_posix_lines:
@@ -287,14 +297,13 @@ def add_file(dataset, registry, json_file, output_path):
     if ext == 'auto':
         ext = 'data'
     datatype = registry.get_datatype_by_extension(ext)
-    if dataset.type in ('server_dir', 'path_paste') and link_data_only == 'link_to_files':
+    if dataset.type in ('server_dir', 'path_paste') and link_data_only:
         # Never alter a file that will not be copied to Galaxy's local file store.
         if datatype.dataset_content_needs_grooming(dataset.path):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
-            file_err(err_msg, dataset, json_file)
-            return
-    if link_data_only == 'copy_files' and converted_path:
+            raise UploadProblemException(err_msg)
+    if not link_data_only and converted_path:
         # Move the dataset to its "real" path
         try:
             shutil.move(converted_path, output_path)
@@ -302,10 +311,8 @@ def add_file(dataset, registry, json_file, output_path):
             # We may not have permission to remove converted_path
             if e.errno != errno.EACCES:
                 raise
-    elif link_data_only == 'copy_files':
-        if purge_source and not run_as_real_user:
-            # if the upload tool runs as a real user the real user
-            # can't move dataset.path as this path is owned by galaxy.
+    elif not link_data_only:
+        if purge_source:
             shutil.move(dataset.path, output_path)
         else:
             shutil.copy(dataset.path, output_path)
@@ -320,7 +327,7 @@ def add_file(dataset, registry, json_file, output_path):
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
     json_file.write(dumps(info) + "\n")
-    if link_data_only == 'copy_files' and datatype and datatype.dataset_content_needs_grooming(output_path):
+    if not link_data_only and datatype and datatype.dataset_content_needs_grooming(output_path):
         # Groom the dataset content if necessary
         datatype.groom_dataset_content(output_path)
 
@@ -331,8 +338,7 @@ def add_composite_file(dataset, json_file, output_path, files_path):
         for name, value in dataset.composite_files.items():
             value = util.bunch.Bunch(**value)
             if dataset.composite_file_paths[value.name] is None and not value.optional:
-                file_err('A required composite data file was not provided (%s)' % name, dataset, json_file)
-                break
+                raise UploadProblemException('A required composite data file was not provided (%s)' % name)
             elif dataset.composite_file_paths[value.name] is not None:
                 dp = dataset.composite_file_paths[value.name]['path']
                 isurl = dp.find('://') != -1  # todo fixme
@@ -340,8 +346,7 @@ def add_composite_file(dataset, json_file, output_path, files_path):
                     try:
                         temp_name = sniff.stream_to_file(urlopen(dp), prefix='url_paste')
                     except Exception as e:
-                        file_err('Unable to fetch %s\n%s' % (dp, str(e)), dataset, json_file)
-                        return
+                        raise UploadProblemException('Unable to fetch %s\n%s' % (dp, str(e)))
                     dataset.path = temp_name
                     dp = temp_name
                 if not value.is_binary:
@@ -389,12 +394,14 @@ def __main__():
         except Exception:
             print('Output path for dataset %s not found on command line' % dataset.dataset_id, file=sys.stderr)
             sys.exit(1)
-        if dataset.type == 'composite':
-            files_path = output_paths[int(dataset.dataset_id)][1]
-            add_composite_file(dataset, json_file, output_path, files_path)
-        else:
-            add_file(dataset, registry, json_file, output_path)
-
+        try:
+            if dataset.type == 'composite':
+                files_path = output_paths[int(dataset.dataset_id)][1]
+                add_composite_file(dataset, json_file, output_path, files_path)
+            else:
+                add_file(dataset, registry, json_file, output_path)
+        except UploadProblemException as e:
+            file_err(e.message, dataset, json_file)
     # clean up paramfile
     # TODO: this will not work when running as the actual user unless the
     # parent directory is writable by the user.

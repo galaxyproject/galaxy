@@ -3,6 +3,7 @@ import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
+import _l from "utils/localization";
 /** View of the individual workflows */
 var WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
@@ -102,9 +103,7 @@ var WorkflowItemView = Backbone.View.extend({
         } value="${wfId}">`;
         var trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
             this.model.get("name")
-        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${
-            wfId
-        } tags-display"></div></td><td>${
+        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${wfId} tags-display"></div></td><td>${
             this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")
         }</span></td><td>${this.model.get("number_of_steps")}</td><td>${
             this.model.get("published") ? "Yes" : "No"
@@ -152,7 +151,7 @@ var WorkflowItemView = Backbone.View.extend({
 
 /** View of the main workflow list page */
 var WorkflowListView = Backbone.View.extend({
-    title: "Workflows",
+    title: _l("Workflows"),
     initialize: function() {
         this.setElement("<div/>");
         _.bindAll(this, "adjustActiondropdown");
@@ -322,9 +321,7 @@ var WorkflowListView = Backbone.View.extend({
             "<th>Published</th>" +
             "<th>Show in tools panel</th>" +
             "</tr></thead>";
-        return `${
-            tableHtml
-        }<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
+        return `${tableHtml}<tbody class="workflow-search "><div class="hidden_description_layer"><p>Drop workflow files here to import</p></tbody></table></div>`;
     },
 
     /** Main template */
@@ -333,7 +330,9 @@ var WorkflowListView = Backbone.View.extend({
             '<div class="page-container">' +
             '<div class="user-workflows wf">' +
             '<div class="response-message"></div>' +
-            "<h2>Your workflows</h2>" +
+            "<h2>" +
+            _l("Your workflows") +
+            "</h2>" +
             "</div>" +
             "</div>"
         );
