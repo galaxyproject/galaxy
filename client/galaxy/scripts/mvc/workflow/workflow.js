@@ -33,11 +33,16 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     showInToolPanel: function() {
-        this.model.set("show_in_tool_panel", !this.model.get("show_in_tool_panel"));
-        this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
-        window.location = `${Galaxy.root}workflows/list`;
+        this.model.save(
+            { show_in_tool_panel: !this.model.get("show_in_tool_panel") },
+            {
+                success: function() {
+                    window.location = `${Galaxy.root}workflows/list`;
+                }
+            }
+        );
     },
 
     removeWorkflow: function() {
@@ -95,8 +100,8 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     _rowTemplate: function() {
-        var show = this.model.get("show_in_tool_panel");
-        var wfId = this.model.id;
+        let show = this.model.get("show_in_tool_panel");
+        let wfId = this.model.id;
         var checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
             show ? `checked="${show}"` : ""
         } value="${wfId}">`;
