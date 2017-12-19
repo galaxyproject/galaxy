@@ -147,10 +147,10 @@ class AuthnzManager(object):
         #     raise Exception("Malformed OIDC Configuration XML -- unable to continue. {}".format(e.message))
 
     def _parse_google_config(self, config_xml):
-        rtv = {}
-        rtv['client_id'] = config_xml.find('client_id').text
-        rtv['client_secret'] = config_xml.find('client_secret').text
-        rtv['redirect_uri'] = config_xml.find('redirect_uri').text
+        rtv = {
+            'client_id': config_xml.find('client_id').text,
+            'client_secret': config_xml.find('client_secret').text,
+            'redirect_uri': config_xml.find('redirect_uri').text}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
