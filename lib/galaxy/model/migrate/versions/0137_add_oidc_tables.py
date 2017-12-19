@@ -1,5 +1,5 @@
 """
-Migration script to add a new table named `oidc` for authentication and authorization.
+Migration script to add a new tables for an OpenID Connect authentication and authorization.
 """
 from __future__ import print_function
 
