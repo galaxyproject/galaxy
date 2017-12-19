@@ -69,16 +69,15 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
-        var self = this;
         var oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
             var newName = `Copy of ${oldName}`;
-            var currentOwner = self.model.get("owner");
+            var currentOwner = this.model.get("owner");
             if (currentOwner != Galaxy.user.attributes.username) {
                 newName += ` shared by user ${currentOwner}`;
             }
             wfJson.name = newName;
-            self.collection.create(wfJson, {
+            this.collection.create(wfJson, {
                 at: 0,
                 wait: true,
                 success: function() {
@@ -181,14 +180,12 @@ var WorkflowListView = Backbone.View.extend({
         this.unhighlightDropZone();
         e.preventDefault();
         var files = e.dataTransfer.files;
-        var self = this;
         for (var i = 0, f; (f = files[i]); i++) {
-            self.readWorkflowFiles(f);
+            this.readWorkflowFiles(f);
         }
     },
 
     readWorkflowFiles: function(f) {
-        var self = this;
         var reader = new FileReader();
         reader.onload = theFile => {
             var wf_json;
@@ -199,7 +196,7 @@ var WorkflowListView = Backbone.View.extend({
                 wf_json = null;
             }
             if (wf_json) {
-                self.collection.create(wf_json, {
+                this.collection.create(wf_json, {
                     at: 0,
                     wait: true,
                     success: function() {
@@ -232,11 +229,10 @@ var WorkflowListView = Backbone.View.extend({
         var templateActions = this._templateActionButtons();
         var tableTemplate = this._templateWorkflowTable();
         this.$el.html(header + templateActions + tableTemplate);
-        var self = this;
         _(this.collection.models).each(item => {
             // in case collection is not empty
-            self.appendItem(item);
-            self.confirmDelete(item);
+            this.appendItem(item);
+            this.confirmDelete(item);
         }, this);
         var minQueryLength = 3;
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
@@ -347,9 +343,8 @@ var ImportWorkflowView = Backbone.View.extend({
 
     /** Open page to import workflow */
     render: function() {
-        var self = this;
         $.getJSON(`${Galaxy.root}workflow/upload_import_workflow`, options => {
-            self.$el.empty().append(self._mainTemplate(options));
+            this.$el.empty().append(this._mainTemplate(options));
         });
     },
 
