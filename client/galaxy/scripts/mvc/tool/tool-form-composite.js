@@ -314,24 +314,28 @@ var View = Backbone.View.extend({
 
     /** Render job caching option */
     _renderUseCachedJob: function() {
-        this.job_options_form = new Form({
-            cls: "ui-portlet-narrow",
-            title: "<b>Job re-use Options</b>",
-            inputs: [
-                        {
-                            type: "conditional",
-                            name: "use_cached_job",
-                            test_param: {
-                                name: "check",
-                                label: "BETA: Attempt to reuse jobs with identical parameters?",
-                                type: "boolean",
-                                value: "false",
-                                help: "This may skip executing jobs that you have already run."
-                            },
-                        }
-                    ]
-       });
-       this._append(this.$steps, this.job_options_form.$el);
+       var extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+       var use_cached_job = 'use_cached_job|use_cached_job_checkbox' in extra_user_preferences ? extra_user_preferences['use_cached_job|use_cached_job_checkbox'] : false ;
+       if (use_cached_job === 'true'){
+            this.job_options_form = new Form({
+                cls: "ui-portlet-narrow",
+                title: "<b>Job re-use Options</b>",
+                inputs: [
+                            {
+                                type: "conditional",
+                                name: "use_cached_job",
+                                test_param: {
+                                    name: "check",
+                                    label: "BETA: Attempt to reuse jobs with identical parameters?",
+                                    type: "boolean",
+                                    value: "false",
+                                    help: "This may skip executing jobs that you have already run."
+                                },
+                            }
+                        ]
+           });
+           this._append(this.$steps, this.job_options_form.$el);
+        }
     },
 
     /** Render step */
