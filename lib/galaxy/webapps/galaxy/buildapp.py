@@ -67,9 +67,9 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/activate', controller='user', action='activate')
 
     # Authentication endpoints.
-    webapp.add_route('/authn/{provider}/login', controller='authn', action='login', provider=None)
-    webapp.add_route('/authn/{provider}/callback', controller='authn', action='callback', provider=None)
-    webapp.add_route('/authn/{provider}/disconnect', controller='authn', action='disconnect', provider=None)
+    webapp.add_route('/authnz/{provider}/login', controller='authnz', action='login', provider=None)
+    webapp.add_route('/authnz/{provider}/callback', controller='authnz', action='callback', provider=None)
+    webapp.add_route('/authnz/{provider}/disconnect', controller='authnz', action='disconnect', provider=None)
 
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
