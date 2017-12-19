@@ -5,6 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import errno
+import json
 import logging
 import numbers
 import operator
@@ -210,6 +211,17 @@ class User(object, Dictifiable):
         self.histories = []
         self.credentials = []
         # ? self.roles = []
+
+    @property
+    def extra_preferences(self):
+        data = {}
+        extra_user_preferences = self.preferences.get('extra_user_preferences')
+        if extra_user_preferences:
+            try:
+                data = json.loads(extra_user_preferences)
+            except Exception:
+                pass
+        return data
 
     def set_password_cleartext(self, cleartext):
         """
