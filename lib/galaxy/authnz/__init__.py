@@ -204,7 +204,7 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
-            return True, message, backend.disconnect(provider, trans, disconnect_redirect_url)
+            return backend.disconnect(provider, trans, disconnect_redirect_url)
         except Exception as e:
             msg = 'An error occurred when disconnecting authentication with `{}` for user `{}`; {}'.format(provider, trans.user.username, str(e))
             log.exception(msg)

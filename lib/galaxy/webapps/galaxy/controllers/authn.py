@@ -34,7 +34,9 @@ class OIDC(BaseUIController):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
-        success, message, redirect_url = trans.app.authnz_manager.disconnect(provider, trans, disconnect_redirect_url=url_for('/'))
+        success, message, redirect_url = trans.app.authnz_manager.disconnect(provider,
+                                                                             trans,
+                                                                             disconnect_redirect_url=url_for('/'))
         return trans.response.send_redirect(redirect_url)
 
 # TODO: check for the error: AuthAlreadyAssociated: This google-openidconnect account is already in use.

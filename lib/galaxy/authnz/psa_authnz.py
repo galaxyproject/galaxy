@@ -148,7 +148,10 @@ class PSAAuthnz(IdentityProvider):
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
-        return do_disconnect(backend, self._get_current_user(trans), association_id)
+        response = do_disconnect(backend, self._get_current_user(trans), association_id)
+        if isinstance(response, basestring):
+            return True, "", response
+        return response.get('success', False), response.get('message', ""), ""
 
 
 class Strategy(BaseStrategy):
@@ -266,12 +269,16 @@ def disconnect(name=None, user=None, user_storage=None, strategy=None,
     :type backend: PSA backend object (e.g., social_core.backends.google_openidconnect.GoogleOpenIdConnect)
     :type request: webob.multidict.MultiDict
     :type details: dict
+    :return: void or empty dict. Any key-value pair inside the dictionary will be available
+    inside PSA only, and will be passed to the next step in the disconnect pipeline. However,
+    the key-value pair will not be returned as a result of calling the `do_disconnect` function.
+    Additionally, returning any value except for a(n) (empty) dictionary, will break the
+    disconnect pipeline, and that value will be returned as a result of calling the `do_disconnect` function.
     """
     user_authnz = strategy.trans.sa_session.query(user_storage).filter(user_storage.table.c.user_id == user.id,
                                                                        user_storage.table.c.provider == name).first()
-    # TODO: log the following message, and properly return it to the endpoint and inform user.
     if user_authnz is None:
-        return 'Not authenticated by any identity providers.'
+        return {'success': False, 'message': 'Not authenticated by any identity providers.'}
     # option A
     strategy.trans.sa_session.delete(user_authnz)
     # option B
