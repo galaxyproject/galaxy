@@ -8,7 +8,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_baseMVC from "mvc/base-mvc";
 // import mod_library_model from "mvc/library/library-model";
 import mod_folderlist_view from "mvc/library/library-folderlist-view";

@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 

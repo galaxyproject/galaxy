@@ -4,7 +4,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
 import mod_select from "mvc/ui/ui-select";

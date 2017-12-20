@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import { getGalaxyInstance } from "app";
 
 // galaxy library row view
