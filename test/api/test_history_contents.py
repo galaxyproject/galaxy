@@ -22,7 +22,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         self.history_id = self._new_history()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-        self.library_populator = LibraryPopulator(self)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_index_hda_summary(self):
         hda1 = self._new_dataset(self.history_id)

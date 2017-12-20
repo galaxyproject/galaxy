@@ -13,7 +13,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         super(LibrariesApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-        self.library_populator = LibraryPopulator(self)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_create(self):
         data = dict(name="CreateTestLibrary")
