@@ -318,8 +318,9 @@ var View = Backbone.View.extend({
        if (Galaxy.user.attributes.preferences && 'extra_user_preferences' in Galaxy.user.attributes.preferences){
            extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
        }
-       var use_cached_job = 'use_cached_job|use_cached_job_checkbox' in extra_user_preferences ? extra_user_preferences['use_cached_job|use_cached_job_checkbox'] : false ;
-       if (use_cached_job === 'true'){
+       var display_use_cached_job_checkbox = 'use_cached_job|use_cached_job_checkbox' in extra_user_preferences ? extra_user_preferences['use_cached_job|use_cached_job_checkbox'] : false ;
+       this.display_use_cached_job_checkbox = display_use_cached_job_checkbox === 'true';
+       if (this.display_use_cached_job_checkbox){
             this.job_options_form = new Form({
                 cls: "ui-portlet-narrow",
                 title: "<b>Job re-use Options</b>",
@@ -527,10 +528,8 @@ var View = Backbone.View.extend({
     _submit: function() {
         var self = this;
         var history_form_data = this.history_form.data.create();
-        var job_options_form_data = this.job_options_form.data.create();
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
-            use_cached_job: true ? job_options_form_data["use_cached_job|check"] === 'true' : false,
             history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
             replacement_params: this.wp_form ? this.wp_form.data.create() : {},
             parameters: {},
@@ -542,6 +541,9 @@ var View = Backbone.View.extend({
             // so that inputs can be batched.
             batch: true
         };
+        if (this.display_use_cached_job_checkbox) {
+            job_def['use_cached_job'] = this.job_options_form.data.create()["use_cached_job|check"] === 'true';
+	}
         var validated = true;
         for (var i in this.forms) {
             var form = this.forms[i];
