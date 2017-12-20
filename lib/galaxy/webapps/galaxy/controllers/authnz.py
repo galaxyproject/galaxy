@@ -26,7 +26,18 @@ class OIDC(BaseUIController):
             raise
         success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider, kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
         trans.handle_user_login(user)
-        return trans.response.send_redirect(redirect_url)
+        return trans.fill_template('/user/login.mako',
+                                   login=user.username,
+                                   header="",
+                                   use_panels=False,
+                                   redirect_url="http://localhost:8080/",
+                                   redirect='http://localhost:8080/',
+                                   refresh_frames='refresh_frames',
+                                   message="You are now logged in as user0@eee.com",
+                                   status='done',
+                                   openid_providers=trans.app.openid_providers,
+                                   form_input_auto_focus=True,
+                                   active_view="user")
 
     @web.expose
     @web.require_login("authenticate against Google identity provider")
