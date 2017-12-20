@@ -124,12 +124,12 @@ class AuthnzManager(object):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
-                return False, message, None
+                return False, message, None, None
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except Exception as e:
             msg = 'An error occurred when handling callback from provider `{}`; {}'.format(provider, str(e))
             log.exception(msg)
-            return False, msg, None
+            return False, msg, None, None
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:

@@ -34,7 +34,13 @@ class OIDC(BaseUIController):
             return trans.show_error_message('Failed to handle authentication callback from {}. '
                                             'Please try again, and if the problem persists, contact '
                                             'the Galaxy instance admin'.format(provider))
-        success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider, kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
+        success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
+                                                                                   kwargs['state'],
+                                                                                   kwargs['code'],
+                                                                                   trans,
+                                                                                   login_redirect_url=url_for('/'))
+        if success is False:
+            return trans.show_error_message(message)
         trans.handle_user_login(user)
         return trans.fill_template('/user/login.mako',
                                    login=user.username,
