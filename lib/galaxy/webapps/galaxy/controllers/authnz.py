@@ -24,12 +24,12 @@ class OIDC(BaseUIController):
         if not bool(kwargs):
             log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
             return trans.show_error_message(
-                'Did not receive any information from identity provider `{}` to complete user `{}` authentication flow.'
-                ' Please try again, and if the problem persists, contact the Galaxy instance admin. Also note that '
-                'this endpoint is to receive authentication callbacks only, and should not be called/reached by a '
-                'user.'.format(provider, user))
+                'Did not receive any information from the `{}` identity provider to complete user `{}` authentication '
+                'flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note '
+                'that this endpoint is to receive authentication callbacks only, and should not be called/reached by '
+                'a user.'.format(provider, user))
         if 'error' in kwargs:
-            log.error("Error handling authentication callback from `{}` provider for user `{}` login request."
+            log.error("Error handling authentication callback from `{}` identity provider for user `{}` login request."
                       " Error message: {}".format(provider, user, kwargs.get('error', 'None')))
             return trans.show_error_message('Failed to handle authentication callback from {}. '
                                             'Please try again, and if the problem persists, contact '
@@ -41,6 +41,11 @@ class OIDC(BaseUIController):
                                                                                    login_redirect_url=url_for('/'))
         if success is False:
             return trans.show_error_message(message)
+        user = user if user is not None else trans.user
+        if user is None:
+            return trans.show_error_message("An unknown error occurred when handling the callback from `{}` "
+                                            "identity provider. Please try again, and if the problem persists, "
+                                            "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
         return trans.fill_template('/user/login.mako',
                                    login=user.username,
@@ -56,7 +61,7 @@ class OIDC(BaseUIController):
                                    active_view="user")
 
     @web.expose
-    @web.require_login("authenticate against Google identity provider")
+    @web.require_login("authenticate against the selected identity provider")
     def disconnect(self, trans, provider, **kwargs):
         if trans.user is None:
             # Only logged in users are allowed here.
@@ -65,6 +70,3 @@ class OIDC(BaseUIController):
                                                                              trans,
                                                                              disconnect_redirect_url=url_for('/'))
         return trans.response.send_redirect(redirect_url)
-
-# TODO: check for the error: AuthAlreadyAssociated: This google-openidconnect account is already in use.
-# it happens when authenticating a user whose previous authentication was disconnected.
