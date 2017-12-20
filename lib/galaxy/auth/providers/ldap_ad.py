@@ -84,11 +84,11 @@ class LDAP(AuthProvider):
             failure_mode = None  # reject and do not continue
 
         if string_as_bool(options.get('login-use-username', False)):
-            if username is None:
+            if not username:
                 log.debug('LDAP authenticate: username must be used to login, cannot be None')
                 return (failure_mode, '', '')
         else:
-            if email is None:
+            if not email:
                 log.debug('LDAP authenticate: email must be used to login, cannot be None')
                 return (failure_mode, '', '')
 
