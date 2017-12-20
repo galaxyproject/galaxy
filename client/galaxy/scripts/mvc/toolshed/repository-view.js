@@ -1,5 +1,6 @@
 import toolshed_model from "mvc/toolshed/toolshed-model";
-import jstree from "libs/jquery/jstree";
+import $ from "jquery";
+import "jstree";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import FormView from "mvc/form/form-view";

@@ -1,4 +1,6 @@
 import _l from "utils/localization";
+import $ from "jquery";
+import "jstree";
 import mod_utils from "utils/utils";
 import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
@@ -7,7 +9,6 @@ import LIST_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_CREATOR from "mvc/collection/pair-collection-creator";
 import PAIRED_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import HDCA_MODEL from "mvc/history/hdca-model";
-import "libs/jquery/jstree";
 
 var FolderToolbarView = Backbone.View.extend({
     el: "#center",
