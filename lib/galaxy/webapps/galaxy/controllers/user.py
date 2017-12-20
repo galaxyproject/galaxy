@@ -536,6 +536,43 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
+    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
+        """
+        Does the autoregistration if enabled. Returns a message
+        """
+        no_login_handling = cntrller == 'admin' and trans.user_is_admin()
+        log.warning(no_login_handling)
+        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
+        user = None
+        success = False
+        if autoreg["auto_reg"]:
+            kwd['email'] = autoreg["email"]
+            kwd['username'] = autoreg["username"]
+            message = " ".join([validate_email(trans, kwd['email']),
+                                validate_publicname(trans, kwd['username'])]).rstrip()
+            if not message:
+                message, status, user, success = self.__register(trans, cntrller, False, **kwd)
+                if success:
+                    # The handle_user_login() method has a call to the history_set_default_permissions() method
+                    # (needed when logging in with a history), user needs to have default permissions set before logging in
+                    if not no_login_handling:
+                        trans.handle_user_login(user)
+                    trans.log_event("User (auto) created a new account")
+                    trans.log_event("User logged in")
+                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                        self.__handle_role_and_group_auto_creation(
+                            trans, user, autoreg["attributes"]["roles"],
+                            auto_create_groups=autoreg["auto_create_groups"],
+                            auto_create_roles=autoreg["auto_create_roles"],
+                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
+                else:
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+            else:
+                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+        else:
+            message = "No such user or invalid password"
+        return message, status, user, success
+
     def __validate_login(self, trans, **kwd):
         """Validates numerous cases that might happen during the login time."""
         status = kwd.get('status', 'error')
@@ -550,32 +587,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
-            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
-            if autoreg["auto_reg"]:
-                kwd['email'] = autoreg["email"]
-                kwd['username'] = autoreg["username"]
-                message = " ".join([validate_email(trans, kwd['email']),
-                                    validate_publicname(trans, kwd['username'])]).rstrip()
-                if not message:
-                    message, status, user, success = self.__register(trans, 'user', False, **kwd)
-                    if success:
-                        # The handle_user_login() method has a call to the history_set_default_permissions() method
-                        # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login(user)
-                        trans.log_event("User (auto) created a new account")
-                        trans.log_event("User logged in")
-                        if "attributes" in autoreg and "roles" in autoreg["attributes"]:
-                            self.__handle_role_and_group_auto_creation(
-                                trans, user, autoreg["attributes"]["roles"],
-                                auto_create_groups=autoreg["auto_create_groups"],
-                                auto_create_roles=autoreg["auto_create_roles"],
-                                auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
-                    else:
-                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-                else:
-                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-            else:
-                message = "No such user or invalid password"
+            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
+
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -727,12 +740,28 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        is_admin = cntrller == 'admin' and trans.user_is_admin
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        show_prepopulate_form = is_admin and trans.app.config.show_prepopulate_form
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
+        elif show_prepopulate_form and params.get('prepopulate_user_button', False):
+            # pre-populate the user through a provider like ldap
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
+            login = username if username else email
+            message, status, user, success = self.__autoregistration(trans, login, '', status, kwd,
+                                                                     no_password_check=True, cntrller=cntrller)
+            if success:
+                message = 'Prepopulated new user account (%s)' % escape(user.email)
+                trans.response.send_redirect(web.url_for(controller='admin',
+                                                         action='users',
+                                                         cntrller=cntrller,
+                                                         message=message,
+                                                         status=status))
         else:
             # check user is allowed to register
             message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
@@ -786,6 +815,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    email=email,
                                    username=transform_publicname(trans, username),
                                    subscribe_checked=subscribe_checked,
+                                   show_prepopulate_form=show_prepopulate_form,
                                    use_panels=use_panels,
                                    redirect=redirect,
                                    redirect_url=redirect_url,
