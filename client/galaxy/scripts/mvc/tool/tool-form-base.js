@@ -268,6 +268,9 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _templateHelp: function( options ) {
             var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
             $tmpl.find( 'a' ).attr( 'target', '_blank' );
+            _.each($tmpl.find("img"), function(img) {
+                $(img).attr("src", Galaxy.root + $(img).attr("src"));
+            });
             return $tmpl;
         },
 
