@@ -83,7 +83,10 @@ def add_file(dataset, registry, json_file, output_path):
     line_count = None
     converted_path = None
     stdout = None
-    link_data_only = dataset.get('link_data_only', 'copy_files') != 'copy_files'
+    link_data_only_str = dataset.get('link_data_only', 'copy_files')
+    if link_data_only_str not in ['link_data_only', 'copy_files']:
+        raise UploadProblemException("Invalid setting for option link_data_only - upload request misconfigured.")
+    link_data_only = link_data_only_str == 'link_data_only'
 
     # run_as_real_user is estimated from galaxy config (external chmod indicated of inputs executed)
     # If this is True we always purge supplied upload inputs so they are cleaned up and we reuse their
