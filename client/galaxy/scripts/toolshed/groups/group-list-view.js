@@ -1,4 +1,4 @@
-import * as mod_toastr from "libs/toastr";
+import * as mod_toastr from "toastr";
 import mod_group_model from "toolshed/groups/group-model";
 import mod_group_row from "toolshed/groups/group-listrow-view";
 const GroupListView = Backbone.View.extend({

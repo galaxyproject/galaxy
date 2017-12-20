@@ -1,5 +1,5 @@
 import _l from "utils/localization";
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 /**
  * This view represents the top part of the library page.

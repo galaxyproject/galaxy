@@ -1,4 +1,4 @@
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
 import _ from "libs/underscore";

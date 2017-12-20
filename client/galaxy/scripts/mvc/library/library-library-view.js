@@ -1,4 +1,4 @@
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 var LibraryView = Backbone.View.extend({

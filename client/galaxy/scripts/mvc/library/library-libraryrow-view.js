@@ -1,5 +1,5 @@
 // dependencies
-import mod_toastr from "libs/toastr";
+import mod_toastr from "toastr";
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
     events: {
