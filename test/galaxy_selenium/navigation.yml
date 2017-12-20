@@ -240,6 +240,8 @@ libraries:
       add_items_menu: '.add-library-items-datasets .dropdown-menu'
       add_items_options: '.add-library-items-datasets .dropdown-menu li a'
 
+      add_folder: '.add-library-items-folder'
+
       add_to_history: '.add-to-history'
       add_to_history_datasets: '.add-to-history-datasets'
       add_to_history_collection: '.add-to-history-collection'

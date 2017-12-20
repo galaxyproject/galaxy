@@ -662,8 +662,7 @@ class NavigatesGalaxy(HasDriver):
         self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
-        create_folder_button = self.wait_for_selector_clickable("#toolbtn_create_folder")
-        create_folder_button.click()
+        self.components.libraries.folder.add_folder.wait_for_and_click()
 
         name_text_box = self.wait_for_selector_clickable("input[name='Name']")
         name_text_box.send_keys(name)

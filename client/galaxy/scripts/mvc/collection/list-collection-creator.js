@@ -278,8 +278,8 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function(element) {
-            if (element.history_content_type !== "dataset" && element.type !== "file") {
-                return _l("is not a dataset or a library file");
+            if (element.history_content_type === "dataset_collection") {
+                return _l("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || _.contains(STATES.NOT_READY_STATES, element.state);
             if (!validState) {
