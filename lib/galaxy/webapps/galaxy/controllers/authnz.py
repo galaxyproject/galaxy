@@ -21,9 +21,13 @@ class OIDC(BaseUIController):
     @web.expose
     def callback(self, trans, provider, **kwargs):
         if 'error' in kwargs:
-            # TODO: handle error
-            print 'kwargs: ', kwargs
-            raise
+            log.error("Error handling Authencation callback from `{}` provider for user `{}` login request."
+                      " Error message: {}".format(provider,
+                                                  trans.user.username if trans.user is not None else 'anonymous',
+                                                  kwargs.get('error', 'None')))
+            return trans.show_error_message('Failed to handle authentication callback from {}. '
+                                            'Please try again, and if the problem persists, contact '
+                                            'the Galaxy instance admin'.format(provider))
         success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider, kwargs['state'], kwargs['code'], trans, login_redirect_url=url_for('/'))
         trans.handle_user_login(user)
         return trans.fill_template('/user/login.mako',
