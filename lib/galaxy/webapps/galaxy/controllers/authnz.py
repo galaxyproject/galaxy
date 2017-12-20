@@ -20,11 +20,17 @@ class OIDC(BaseUIController):
 
     @web.expose
     def callback(self, trans, provider, **kwargs):
+        user = trans.user.username if trans.user is not None else 'anonymous'
+        if not bool(kwargs):
+            log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
+            return trans.show_error_message(
+                'Did not receive any information from identity provider `{}` to complete user `{}` authentication flow.'
+                ' Please try again, and if the problem persists, contact the Galaxy instance admin. Also note that '
+                'this endpoint is to receive authentication callbacks only, and should not be called/reached by a '
+                'user.'.format(provider, user))
         if 'error' in kwargs:
-            log.error("Error handling Authencation callback from `{}` provider for user `{}` login request."
-                      " Error message: {}".format(provider,
-                                                  trans.user.username if trans.user is not None else 'anonymous',
-                                                  kwargs.get('error', 'None')))
+            log.error("Error handling authentication callback from `{}` provider for user `{}` login request."
+                      " Error message: {}".format(provider, user, kwargs.get('error', 'None')))
             return trans.show_error_message('Failed to handle authentication callback from {}. '
                                             'Please try again, and if the problem persists, contact '
                                             'the Galaxy instance admin'.format(provider))
