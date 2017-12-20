@@ -1796,7 +1796,8 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         oncreate: function(creator, response) {
             Galaxy.modal.hide();
             deferred.resolve(response);
-        }
+        },
+        title: _l("Create a collection of paired datasets")
     });
 
     if (!window.Galaxy || !Galaxy.modal) {
@@ -1805,7 +1806,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
 
     creator = new PairedCollectionCreator(options);
     Galaxy.modal.show({
-        title: _l("Create a collection of paired datasets"),
+        title: options.title,
         body: creator.$el,
         width: "80%",
         height: "800px",
