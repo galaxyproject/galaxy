@@ -47,7 +47,8 @@ def get_authenticators(auth_config_file):
     return authenticators
 
 
-def update_auth_return(trans, auth_return, auth_results, options):
+def parse_auth_results(trans, auth_results, options):
+    auth_return = {}
     auth_result, auto_email, auto_username = auth_results[:3]
     auto_email = str(auto_email).lower()
     auto_username = str(auto_username).lower()
@@ -72,3 +73,4 @@ def update_auth_return(trans, auth_return, auth_results, options):
 
     if len(auth_results) == 4:
         auth_return["attributes"] = auth_results[3]
+    return auth_return

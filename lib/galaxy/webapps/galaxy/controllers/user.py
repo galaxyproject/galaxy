@@ -540,8 +540,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         """
         Does the autoregistration if enabled. Returns a message
         """
-        no_login_handling = cntrller == 'admin' and trans.user_is_admin()
-        log.warning(no_login_handling)
+        skip_login_handling = cntrller == 'admin' and trans.user_is_admin()
         autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
         user = None
         success = False
@@ -551,14 +550,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
             message = " ".join([validate_email(trans, kwd['email']),
                                 validate_publicname(trans, kwd['username'])]).rstrip()
             if not message:
-                message, status, user, success = self.__register(trans, cntrller, False, **kwd)
+                message, status, user, success = self.__register(trans, cntrller, False, no_redirect=skip_login_handling, **kwd)
                 if success:
                     # The handle_user_login() method has a call to the history_set_default_permissions() method
                     # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not no_login_handling:
+                    if not skip_login_handling:
                         trans.handle_user_login(user)
-                    trans.log_event("User (auto) created a new account")
-                    trans.log_event("User logged in")
+                        trans.log_event("User (auto) created a new account")
+                        trans.log_event("User logged in")
                     if "attributes" in autoreg and "roles" in autoreg["attributes"]:
                         self.__handle_role_and_group_auto_creation(
                             trans, user, autoreg["attributes"]["roles"],
@@ -824,7 +823,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    message=message,
                                    status=status)
 
-    def __register(self, trans, cntrller, subscribe_checked, **kwd):
+    def __register(self, trans, cntrller, subscribe_checked, no_redirect=False, **kwd):
         email = util.restore_text(kwd.get('email', ''))
         password = kwd.get('password', '')
         username = util.restore_text(kwd.get('username', ''))
@@ -856,7 +855,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                 trans.handle_user_login(user)
                 trans.log_event("User created a new account")
                 trans.log_event("User logged in")
-            elif not error:
+            elif not error and not no_redirect:
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='users',
                                                          message='Created new user account (%s)' % user.email,

@@ -4,7 +4,7 @@ Contains implementations of the authentication logic.
 
 import logging
 
-from galaxy.auth.util import get_authenticators, update_auth_return
+from galaxy.auth.util import get_authenticators, parse_auth_results
 from galaxy.exceptions import Conflict
 from galaxy.util import string_as_bool
 
@@ -63,7 +63,7 @@ class AuthManager(object):
                 auth_results = provider.authenticate(email, username, password, options)
                 if auth_results[0] is True:
                     try:
-                        update_auth_return(trans, auth_return, auth_results, options)
+                        auth_return = parse_auth_results(trans, auth_results, options)
                     except Conflict:
                         break
                     return auth_return
