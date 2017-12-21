@@ -48,11 +48,9 @@ var moveable = (element, handle_class, container_selector, element_js_obj) => {
     element
         .bind("drag", { handle: `.${handle_class}`, relative: true }, function(e, d) {
             var element = $(this);
-            var parent = $(this).parent();
-
-            var // Only sorting amongst tracks and groups.
-            children = parent.children(".track,.group");
-
+            var parent = element.parent();
+            // Only sorting amongst tracks and groups.
+            var children = parent.children(".track,.group");
             var this_obj = html_elt_js_obj_dict[$(this).attr("id")];
             var child;
             var container;
@@ -723,7 +721,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             for (i = 0; i < num_drawables; i++) {
                 drawable = this.drawables[i];
                 if (drawable.get_type() !== a_type) {
-                    can_composite = false;
                     break;
                 }
                 if (drawable instanceof FeatureTrack) {
@@ -1315,12 +1312,11 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         if (delay) {
             // To aggregate calls, use timer and only navigate once
             // location has stabilized.
-            var self = this;
             this.timer = setTimeout(() => {
-                self.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
+                this.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
             }, 500);
         } else {
-            view.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
+            this.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
         }
     },
 
@@ -1343,13 +1339,12 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     load_chroms: function(url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
 
-        var view = this;
         var chrom_data = $.Deferred();
         $.ajax({
             url: `${Galaxy.root}api/genomes/${this.dbkey}`,
             data: url_parms,
             dataType: "json",
-            success: function(result) {
+            success: result => {
                 // Do nothing if could not load chroms.
                 if (result.chrom_info.length === 0) {
                     return;
@@ -1357,34 +1352,34 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
                 // Load chroms.
                 if (result.reference) {
-                    var ref_track = new ReferenceTrack(view);
-                    view.add_label_track(ref_track);
-                    view.reference_track = ref_track;
+                    var ref_track = new ReferenceTrack(this);
+                    this.add_label_track(ref_track);
+                    this.reference_track = ref_track;
                 }
-                view.chrom_data = result.chrom_info;
+                this.chrom_data = result.chrom_info;
 
-                view.chrom_select.html("");
-                view.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
+                this.chrom_select.html("");
+                this.chrom_select.append($('<option value="">Select Chrom/Contig</option>'));
 
-                for (var i = 0, len = view.chrom_data.length; i < len; i++) {
-                    var chrom = view.chrom_data[i].chrom;
+                for (var i = 0, len = this.chrom_data.length; i < len; i++) {
+                    var chrom = this.chrom_data[i].chrom;
                     var chrom_option = $("<option>");
                     chrom_option.text(chrom);
                     chrom_option.val(chrom);
-                    view.chrom_select.append(chrom_option);
+                    this.chrom_select.append(chrom_option);
                 }
                 if (result.prev_chroms) {
-                    view.chrom_select.append($(`<option value="previous">Previous ${MAX_CHROMS_SELECTABLE}</option>`));
+                    this.chrom_select.append($(`<option value="previous">Previous ${MAX_CHROMS_SELECTABLE}</option>`));
                 }
                 if (result.next_chroms) {
-                    view.chrom_select.append($(`<option value="next">Next ${MAX_CHROMS_SELECTABLE}</option>`));
+                    this.chrom_select.append($(`<option value="next">Next ${MAX_CHROMS_SELECTABLE}</option>`));
                 }
-                view.chrom_start_index = result.start_index;
+                this.chrom_start_index = result.start_index;
 
                 chrom_data.resolve(result.chrom_info);
             },
             error: function() {
-                alert(`Could not load chroms for this dbkey: ${view.dbkey}`);
+                alert(`Could not load chroms for this dbkey: ${this.dbkey}`);
             }
         });
         return chrom_data;
@@ -1779,8 +1774,8 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.overview_box.height(this.default_overview_height);
         this.overview_close.hide();
         this.overview_highlight.hide();
-        view.resize_window();
-        view.overview_drawable = null;
+        this.resize_window();
+        this.overview_drawable = null;
     }
 });
 
