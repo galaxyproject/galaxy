@@ -279,14 +279,14 @@ var TracksterUI = Base.extend({
 
                 var drawable_type;
                 var drawable;
-                for (var i = 0; i < drawables_config.length; i++) {
+                for (let i = 0; i < drawables_config.length; i++) {
                     view.add_drawable(tracks.object_from_template(drawables_config[i], view, view));
                 }
             }
 
             // Set overview.
             var overview_drawable;
-            for (var i = 0; i < view.drawables.length; i++) {
+            for (let i = 0; i < view.drawables.length; i++) {
                 if (view.drawables[i].config.get_value("name") === overview_drawable_name) {
                     view.set_overview(view.drawables[i]);
                     break;
@@ -296,7 +296,7 @@ var TracksterUI = Base.extend({
             // Load bookmarks.
             if (bookmarks_config) {
                 var bookmark;
-                for (var i = 0; i < bookmarks_config.length; i++) {
+                for (let i = 0; i < bookmarks_config.length; i++) {
                     bookmark = bookmarks_config[i];
                     self.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
                 }
@@ -337,14 +337,14 @@ var TracksterUI = Base.extend({
                     view.move_fraction(0.25);
                     break;
                 case 38:
-                    var change = Math.round(view.viewport_container.height() / 15.0);
+                    // var change = Math.round(view.viewport_container.height() / 15.0);
                     view.viewport_container.scrollTop(view.viewport_container.scrollTop() - 20);
                     break;
                 case 39:
                     view.move_fraction(-0.25);
                     break;
                 case 40:
-                    var change = Math.round(view.viewport_container.height() / 15.0);
+                    // var change = Math.round(view.viewport_container.height() / 15.0);
                     view.viewport_container.scrollTop(view.viewport_container.scrollTop() + 20);
                     break;
             }
@@ -568,7 +568,7 @@ var TracksterView = Backbone.View.extend({
             '<select name="dbkey" id="new-dbkey">';
 
         // add dbkeys
-        for (var i = 0; i < response.length; i++) {
+        for (let i = 0; i < response.length; i++) {
             html += `<option value="${response[i][1]}">${response[i][0]}</option>`;
         }
 
