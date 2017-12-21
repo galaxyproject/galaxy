@@ -11,7 +11,7 @@ define(
         "galaxy",
         "libs/jquery/select2",
         "libs/jquery/jstorage",
-        "libs/jquery/jquery-ui"
+        "jquery-ui-bundle"
     ],
     function($, sinon, bootstrap, bootstrapped, serverdata, appBase) {
         var Galaxy = {

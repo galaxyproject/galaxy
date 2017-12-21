@@ -1,6 +1,6 @@
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
-import "libs/jquery/jquery-ui";
+import "jquery-ui-bundle";
 var ToolShedCategories = Backbone.View.extend({
     el: "#center",
 

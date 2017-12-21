@@ -13,7 +13,7 @@ import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
 import "libs/jquery/jquery.event.hover";
 import "libs/jquery/jquery.mousewheel";
-import "libs/jquery/jquery-ui";
+import "jquery-ui-bundle";
 import "libs/jquery/select2";
 import "libs/farbtastic";
 import "libs/jquery/jquery.form";

@@ -19,7 +19,7 @@ var commonLibs = [
     "libs/jquery/jquery.rating",
     "libs/jquery/select2",
     "libs/jquery.sparklines",
-    "libs/jquery/jquery-ui",
+    "jquery-ui-bundle",
     "libs/jquery/jstorage",
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
