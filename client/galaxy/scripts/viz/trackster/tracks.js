@@ -3044,7 +3044,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (this.is_overview) {
             low = this.view.max_low;
             high = this.view.max_high;
-            w_scale = width / (view.max_high - view.max_low);
+            w_scale = width / (this.view.max_high - this.view.max_low);
             resolution = 1 / w_scale;
         }
 
@@ -3275,13 +3275,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             ) => d.data_manager.get_data(region, data_mode, resolution, track.data_url_extra_params));
 
             // Get reference data/promise.
-            if (view.reference_track) {
+            if (this.view.reference_track) {
                 tile_data.push(
-                    view.reference_track.data_manager.get_data(
+                    this.view.reference_track.data_manager.get_data(
                         region,
                         mode,
                         resolution,
-                        view.reference_track.data_url_extra_params
+                        this.view.reference_track.data_url_extra_params
                     )
                 );
             }
@@ -3312,8 +3312,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             }
 
             // If sequence data is available, subset to get only data in region.
-            if (view.reference_track) {
-                seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
+            if (this.view.reference_track) {
+                seq_data = this.view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
             }
 
             // Get drawing modes, heights for all tracks.
@@ -4552,6 +4552,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         );
 
         var feature_mapper = null;
+        var incomplete_features = null;
 
         ctx.fillStyle = this.config.get_value("block_color");
         ctx.font = ctx.canvas.manager.default_font;
