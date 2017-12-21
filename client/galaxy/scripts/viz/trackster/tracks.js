@@ -1484,7 +1484,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         str = str.replace(/,/g, "");
 
         // Replace colons and hyphens with space for easy parsing.
-        str = str.replace(/:|\-/g, " ");
+        str = str.replace(/:|-/g, " ");
 
         // Parse new location.
         var chrom_pos = str.split(/\s+/);

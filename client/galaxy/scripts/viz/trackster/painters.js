@@ -522,7 +522,6 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      * Draw a feature. Returns an array with feature's start and end X coordinates.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        console.debug("draw_element", feature);
         // var feature_uid = feature[0];
         var feature_start = feature[1];
         var feature_end = feature[2];
