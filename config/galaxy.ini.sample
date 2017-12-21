@@ -920,6 +920,11 @@ use_interactive = True
 # create symlinks to them).
 #user_library_import_symlink_whitelist = None
 
+# In conjunction or alternatively, Galaxy can restrict user library imports to
+# those files that the user can read (by checking basic unix permissions).
+# For this to work, the username has to match the username on the filesystem.
+#user_library_import_check_permissions = False
+
 # Allow admins to paste filesystem paths during upload. For libraries this
 # adds an option to the admin library upload tool allowing admins to paste
 # filesystem paths to files and directories in a box, and these paths will be

@@ -30,8 +30,8 @@ masthead:
     user:
       type: xpath
       selector: '//ul[@id="user"]'
-    
-    workflow: 
+
+    workflow:
       type: xpath
       selector: '//ul[@id="workflow"]'
 
@@ -123,7 +123,7 @@ history_panel:
     name: '.title .name'
     name_edit_input: '.name input'
     contents: '#current-history-panel .list-items div.history-content'
-    
+
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
@@ -236,22 +236,25 @@ libraries:
 
   folder:
     selectors:
-      # There needs to a different class or ID on the dataset button, this isn't
-      # a good selector for that button since .add-library-items also applies to
-      # folder (but it is a button.add-library-items instead).
-      add_items_button: 'div.add-library-items'
-      add_items_menu: 'div.add-library-items .dropdown-menu'
-      add_items_options: 'div.add-library-items .dropdown-menu li a'
+      add_items_button: '.add-library-items-datasets'
+      add_items_menu: '.add-library-items-datasets .dropdown-menu'
+      add_items_options: '.add-library-items-datasets .dropdown-menu li a'
 
-      # TODO: Most of these are very good selectors but the same DOM elements
+      add_folder: '.add-library-items-folder'
+
+      add_to_history: '.add-to-history'
+      add_to_history_datasets: '.add-to-history-datasets'
+      add_to_history_collection: '.add-to-history-collection'
+      # TODO: Most of these aren't very good selectors but the same DOM elements
       # are reused without adding specific classes, IDs, or roles to anything.
       import_modal: '.modal'
       import_datasets_ok_button: '.modal-footer .buttons #button-0'
       import_datasets_cancel_button: '.modal-footer .buttons #button-1'
       import_progress_bar: '.progress-bar-import'
-      import_history_content: '#selected_history_content'
-      import_history_contents_items: '#selected_history_content ul li'
+      import_history_content: '.library_selected_history_content'
+      import_history_contents_items: '.library_selected_history_content ul li'
       import_from_path_textarea: '#import_paths'
+      select_all: '#select-all-checkboxes'
 
     labels:
       from_history: 'from History'

@@ -12,9 +12,8 @@ from galaxy import (
     exceptions,
     managers,
     util,
-    web
 )
-from galaxy.actions.library import LibraryActions
+from galaxy.actions.library import LibraryActions, validate_path_upload
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance
@@ -158,7 +157,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
         return rval
 
-    @web.expose_api
+    @expose_api
     def create(self, trans, library_id, payload, **kwd):
         """
         create( self, trans, library_id, payload, **kwd )
@@ -314,12 +313,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if folder and last_used_build in ['None', None, '?']:
             last_used_build = folder.genome_build
         error = False
-        if upload_option == 'upload_paths' and not trans.app.config.allow_library_path_paste:
-            error = True
-            message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
-        elif upload_option == 'upload_paths' and not is_admin:
-            error = True
-            message = 'Uploading files via filesystem paths can only be performed by administrators'
+        if upload_option == 'upload_paths':
+            validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
         elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
             error = True
             message = 'Invalid upload_option'
@@ -373,7 +368,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
-    @web.expose_api
+    @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
         """
         update( self, trans, id, library_id, payload, **kwd )
@@ -411,7 +406,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             raise HTTPBadRequest('Malformed library content id ( %s ) specified, unable to decode.' % str(content_id))
 
-    @web.expose_api
+    @expose_api
     def delete(self, trans, library_id, id, **kwd):
         """
         delete( self, trans, library_id, id, **kwd )

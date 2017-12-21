@@ -1,8 +1,6 @@
 import _l from "utils/localization";
-// Additional dependencies: jQuery, underscore.
-import Modal from "mvc/ui/ui-modal";
-import Frames from "mvc/ui/ui-frames";
 import mod_icon_btn from "mvc/ui/icon-button";
+// Additional dependencies: jQuery, underscore.
 /**
  * Dataset metedata.
  */
