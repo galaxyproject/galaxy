@@ -1,20 +1,13 @@
 import * as _ from "libs/underscore";
-/**
- * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
- * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
- * region overlaps the start (but not the end) of the second region.
- * NOTE: Coordinates are assumed to be in BED format: half open (start is closed, end is open).
- */
+// Constants specific to feature tracks moved here (HACKING, these should
+// basically all be configuration options)
 const BEFORE = 1001;
-
 const CONTAINS = 1002;
 const OVERLAP_START = 1003;
 const OVERLAP_END = 1004;
 const CONTAINED_BY = 1005;
 const AFTER = 1006;
 
-// Constants specific to feature tracks moved here (HACKING, these should
-// basically all be configuration options)
 const DENSE_TRACK_HEIGHT = 10;
 const NO_DETAIL_TRACK_HEIGHT = 3;
 const SQUISH_TRACK_HEIGHT = 5;
@@ -26,6 +19,12 @@ const PACK_FEATURE_HEIGHT = 9;
 const LABEL_SPACING = 2;
 const CONNECTOR_COLOR = "#ccc";
 
+/**
+ * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
+ * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
+ * region overlaps the start (but not the end) of the second region.
+ * NOTE: Coordinates are assumed to be in BED format: half open (start is closed, end is open).
+ */
 function compute_overlap(first_region, second_region) {
     var first_start = first_region[0];
     var first_end = first_region[1];
