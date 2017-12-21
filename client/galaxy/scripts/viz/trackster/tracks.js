@@ -24,9 +24,9 @@ var html_elt_js_obj_dict = {};
 /**
  * Designates an HTML as a container.
  */
-var is_container = (element, obj) => {
+function is_container(element, obj) {
     html_elt_js_obj_dict[element.attr("id")] = obj;
-};
+}
 
 /**
  * Make `element` moveable within parent and sibling elements by dragging `handle` (a selector).
@@ -37,7 +37,7 @@ var is_container = (element, obj) => {
  * @param container_selector selector used to identify possible containers for this element
  * @param element_js_obj JavaScript object associated with element; used
  */
-var moveable = (element, handle_class, container_selector, element_js_obj) => {
+function moveable(element, handle_class, container_selector, element_js_obj) {
     // HACK: set default value for container selector.
     container_selector = ".group";
 
@@ -142,47 +142,47 @@ var moveable = (element, handle_class, container_selector, element_js_obj) => {
         .bind("dragend", function() {
             $(this).removeClass("dragging");
         });
-};
+}
 
 /**
  * Init constants & functions used throughout trackster.
  */
 
 // Padding at the top of tracks for error messages
-var ERROR_PADDING = 20;
+const ERROR_PADDING = 20;
 
 // Maximum number of rows un a slotted track
-var MAX_FEATURE_DEPTH = 100;
+const MAX_FEATURE_DEPTH = 100;
 
 // Minimum width for window for squish to be used.
-var MIN_SQUISH_VIEW_WIDTH = 12000;
+const MIN_SQUISH_VIEW_WIDTH = 12000;
 
 // Number of pixels per tile, not including left offset.
-var TILE_SIZE = 400;
+const TILE_SIZE = 400;
 
-var DEFAULT_DATA_QUERY_WAIT = 5000;
+const DEFAULT_DATA_QUERY_WAIT = 5000;
 
 // Maximum number of chromosomes that are selectable at any one time.
-var MAX_CHROMS_SELECTABLE = 100;
+const MAX_CHROMS_SELECTABLE = 100;
 
-var DATA_ERROR = "Cannot display dataset due to an error. ";
+const DATA_ERROR = "Cannot display dataset due to an error. ";
 
-var DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.";
+const DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.";
 
-var DATA_NONE = "No data for this chrom/contig.";
+const DATA_NONE = "No data for this chrom/contig.";
 
-var DATA_PENDING =
+const DATA_PENDING =
     "Preparing data. This can take a while for a large dataset. " +
     "If the visualization is saved and closed, preparation will continue in the background.";
 
-var DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ";
+const DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ";
 //var DATA_LOADING = "Loading data...";
-var DATA_OK = "Ready for display";
-var TILE_CACHE_SIZE = 10;
+const DATA_OK = "Ready for display";
+const TILE_CACHE_SIZE = 10;
 //var DATA_CACHE_SIZE = 20;
 //
 // Numerical/continuous data display modes.
-var CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
+const CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
 
 /**
  * Round a number to a given number of decimal places.
@@ -975,7 +975,8 @@ var TracksterView = Backbone.View.extend({
         this.intro_div = $("<div/>")
             .addClass("intro")
             .appendTo(this.viewport_container);
-        var add_tracks_button = $("<div/>")
+        // Add tracks button
+        $("<div/>")
             .text("Add Datasets to Visualization")
             .addClass("action-button")
             .appendTo(this.intro_div)
@@ -1820,7 +1821,7 @@ var ToolParameterView = Backbone.View.extend({
         var param = this.model;
 
         // Param label.
-        var label_div = $("<div>")
+        $("<div>")
             .addClass("param-label")
             .text(param.get("label"))
             .appendTo(param_div);
@@ -1873,7 +1874,7 @@ var TracksterToolView = Backbone.View.extend({
             });
 
         // Add name, inputs.
-        var name_div = $("<div class='tool-name'>")
+        $("<div class='tool-name'>")
             .appendTo(parent_div)
             .text(tool.get("name"));
         tool.get("inputs").each(param => {
@@ -2431,12 +2432,17 @@ extend(Track.prototype, Drawable.prototype, {
             name: "param_space_viz_icon",
             title: _l("Tool parameter space visualization"),
             css_class: "arrow-split",
-            on_click_fn: function(track) {
-                var html = `<strong>Tool</strong>:${track.tool.get(
-                    "name"
-                )}<br/><strong>Dataset</strong>:${track.config.get_value(
-                    "name"
-                )}<br/><strong>Region(s)</strong>: <select name="regions"><option value="cur">current viewing area</option><option value="bookmarks">bookmarks</option><option value="both">current viewing area and bookmarks</option></select>`;
+            on_click_fn: track => {
+                var html = `
+                    <strong>Tool</strong>:${track.tool.get("name")}<br/>
+                    <strong>Dataset</strong>:${track.config.get_value("name")}<br/>
+                    <strong>Region(s)</strong>:
+                        <select name="regions">
+                            <option value="cur">current viewing area</option>
+                            <option value="bookmarks">bookmarks</option>
+                            <option value="both">current viewing area and bookmarks</option>
+                        </select>
+                    `;
 
                 var cancel_fn = () => {
                     Galaxy.modal.hide();
@@ -2444,22 +2450,22 @@ extend(Track.prototype, Drawable.prototype, {
                 };
 
                 var ok_fn = () => {
-                    var regions_to_use = $('select[name="regions"] option:selected').val(),
-                        regions,
-                        view_region = new visualization.GenomeRegion({
-                            chrom: view.chrom,
-                            start: view.low,
-                            end: view.high
-                        }),
-                        bookmarked_regions = _.map(
-                            $(".bookmark"),
-                            elt =>
-                                new visualization.GenomeRegion({
-                                    from_str: $(elt)
-                                        .children(".position")
-                                        .text()
-                                })
-                        );
+                    var regions_to_use = $('select[name="regions"] option:selected').val();
+                    var regions;
+                    var view_region = new visualization.GenomeRegion({
+                        chrom: this.view.chrom,
+                        start: this.view.low,
+                        end: this.view.high
+                    });
+                    var bookmarked_regions = _.map(
+                        $(".bookmark"),
+                        elt =>
+                            new visualization.GenomeRegion({
+                                from_str: $(elt)
+                                    .children(".position")
+                                    .text()
+                            })
+                    );
 
                     // Get regions for visualization.
                     if (regions_to_use === "cur") {
@@ -2483,6 +2489,8 @@ extend(Track.prototype, Drawable.prototype, {
                     })}`;
                 };
 
+                /*
+                 * TODO: Re-enable this when functional.
                 var check_enter_esc = e => {
                     if ((e.keyCode || e.which) === 27) {
                         // Escape key
@@ -2492,6 +2500,7 @@ extend(Track.prototype, Drawable.prototype, {
                         ok_fn();
                     }
                 };
+                */
 
                 // show dialog
                 Galaxy.modal.show({
@@ -3330,10 +3339,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             var canvas = track.view.canvas_manager.new_canvas();
             var tile_low = region.get("start");
             var tile_high = region.get("end");
-            var all_data_index = 0;
-
             var width = Math.ceil((tile_high - tile_low) * w_scale) + track.left_offset;
-
             var height = _.max(drawing_heights);
             var tile;
 
@@ -3774,7 +3780,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         }
 
         // Replace track with group.
-        var index = this.container.replace_drawable(this, group, true);
+        this.container.replace_drawable(this, group, true);
         group.request_draw({ clear_tile_cache: true });
     },
 
@@ -3808,7 +3814,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
      * Update minimum, maximum for component tracks.
      */
     update_all_min_max: function() {
-        var track = this;
         var min_value = this.config.get_value("min_value");
         var max_value = this.config.get_value("max_value");
         _.each(this.drawables, d => {
@@ -4116,6 +4121,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
                 hda_ldda: track.dataset.get("hda_ldda")
             },
             result => {
+                // What does this do?  Is it meant to be attached to some higher scope state object?
                 var data = result.data;
             }
         );
@@ -4125,7 +4131,6 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
      * Draw tile.
      */
     draw_tile: function(result, ctx, mode, region, w_scale) {
-        console.debug("DRaw tile!", result, ctx, mode, region, w_scale);
         // Paint onto canvas.
         var canvas = ctx.canvas;
 
