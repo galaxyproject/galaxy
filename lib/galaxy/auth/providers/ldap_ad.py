@@ -83,13 +83,6 @@ class LDAP(AuthProvider):
         if options.get('continue-on-failure', 'False') == 'False':
             failure_mode = None  # reject and do not continue
 
-        try:
-            import ldap
-        except ImportError:
-            log.debug('LDAP authenticate: could not load ldap module')
-            ok = False
-            return ok, failure_mode
-
         if string_as_bool(options.get('login-use-username', False)):
             if not username:
                 log.debug('LDAP authenticate: username must be used to login, cannot be None')
@@ -112,10 +105,14 @@ class LDAP(AuthProvider):
 
     def ldap_search(self, email, username, options):
         config_ok, failure_mode = self.check_config(username, email, options)
-        if not config_ok:
+        try:
+            import ldap
+        except ImportError:
+            log.debug('LDAP authenticate: could not load ldap module')
             return failure_mode, None
 
-        import ldap
+        if not config_ok:
+            return failure_mode, None
 
         if self.auto_create_roles_or_groups and self.role_search_attribute is None:
             raise ConfigurationError("If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
@@ -187,7 +184,6 @@ class LDAP(AuthProvider):
             except Exception:
                 log.exception('LDAP authenticate: search exception')
                 return (failure_mode, None)
-        # end search
 
         return failure_mode, params
 
@@ -217,8 +213,10 @@ class LDAP(AuthProvider):
                 _get_subs(options, 'auto-register-username', params),
                 attributes)
 
-        # do the actual authentication by binding as the user to check their credentials
     def _authenticate(self, params, options):
+        """
+        Do the actual authentication by binding as the user to check their credentials
+        """
         import ldap
         try:
             l = ldap.initialize(_get_subs(options, 'server', params))
@@ -240,7 +238,6 @@ class LDAP(AuthProvider):
             return False
         log.debug('LDAP authentication successful')
         return True
-
 
     def authenticate_user(self, user, password, options):
         """
