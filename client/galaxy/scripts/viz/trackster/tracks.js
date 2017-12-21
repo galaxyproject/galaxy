@@ -1610,7 +1610,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         // Set up redraw if it has not been requested since last redraw.
         if (!this.requested_redraw) {
-            requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
                 view._redraw();
             });
             this.requested_redraw = true;
@@ -3104,17 +3104,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
 
         // When all tiles are drawn, call post-draw actions.
-        var track = this;
         $.when.apply($, tile_promises).then(() => {
             // Step (c) for (re)moving tiles when clear_after is true:
-            track.tiles_div.children(".remove").remove();
+            this.tiles_div.children(".remove").remove();
 
             // Only do postdraw actions for tiles; instances where tiles may not be drawn include:
             // (a) ReferenceTrack without sufficient resolution;
             // (b) data_fetch = false.
             tiles = _.filter(tiles, t => t !== null);
             if (tiles.length !== 0) {
-                track.postdraw_actions(tiles, width, w_scale, clear_after);
+                this.postdraw_actions(tiles, width, w_scale, clear_after);
             }
         });
     },
@@ -3123,18 +3122,17 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Add a maximum/minimum label to track.
      */
     _add_yaxis_label: function(type, on_change) {
-        var track = this;
         var css_class = type === "max" ? "top" : "bottom";
         var text = type === "max" ? "max" : "min";
         var pref_name = type === "max" ? "max_value" : "min_value";
         var label = this.container_div.find(`.yaxislabel.${css_class}`);
-        var value = round(track.config.get_value(pref_name), 1);
+        var value = round(this.config.get_value(pref_name), 1);
 
         // Default action for on_change is to redraw track.
         on_change =
             on_change ||
             (() => {
-                track.request_draw({ clear_tile_cache: true });
+                this.request_draw({ clear_tile_cache: true });
             });
 
         if (label.length !== 0) {
@@ -3148,7 +3146,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                     num_cols: 12,
                     on_finish: function(new_val) {
                         $(".tooltip").remove();
-                        track.config.set_value(pref_name, round(new_val, 1));
+                        this.config.set_value(pref_name, round(new_val, 1));
                         on_change();
                     },
                     help_text: `Set ${text} value`
@@ -3175,18 +3173,17 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
             // Clear because this is set when drawing.
             this.max_height_px = 0;
-            var track = this;
             _.each(tiles, tile => {
                 if (!(tile instanceof LineTrackTile)) {
                     tile.html_elt.remove();
-                    track.draw_helper(tile.region, w_scale, {
+                    this.draw_helper(tile.region, w_scale, {
                         force: true,
                         mode: "Coverage"
                     });
                 }
             });
 
-            track._add_yaxis_label("max");
+            this._add_yaxis_label("max");
         } else {
             // -- Drawing in non-Coverage mode. --
 
@@ -3246,19 +3243,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var mode = options.mode || this.mode;
         var resolution = 1 / w_scale;
 
-        var // Useful vars.
-        track = this;
-
         var drawables = this._get_drawables();
         var key = this._gen_tile_cache_key(w_scale, region);
 
         var is_tile = o => o && "track" in o;
 
         // Check tile cache, if found show existing tile in correct position
-        var tile = force ? undefined : track.tile_cache.get_elt(key);
+        var tile = force ? undefined : this.tile_cache.get_elt(key);
         if (tile) {
             if (is_tile(tile)) {
-                track.show_tile(tile, w_scale);
+                this.show_tile(tile, w_scale);
             }
             return tile;
         }
@@ -3276,7 +3270,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Map drawable object to data needed for drawing.
             var tile_data = _.map(drawables, (
                 d // Get the track data/promise.
-            ) => d.data_manager.get_data(region, data_mode, resolution, track.data_url_extra_params));
+            ) => d.data_manager.get_data(region, data_mode, resolution, this.data_url_extra_params));
 
             // Get reference data/promise.
             if (this.view.reference_track) {
@@ -3297,7 +3291,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // When data is available, draw tile.
         //
         var tile_drawn = $.Deferred();
-        track.tile_cache.set_elt(key, tile_drawn);
+        this.tile_cache.set_elt(key, tile_drawn);
         $.when.apply($, get_tile_data()).then(() => {
             var tile_data = get_tile_data();
             var tracks_data = tile_data;
@@ -3308,8 +3302,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Deferred, try again from the top. NOTE: this condition could (should?) be handled by the
             // GenomeDataManager in visualization module.
             if (_.find(tile_data, d => util.is_deferred(d))) {
-                track.tile_cache.set_elt(key, undefined);
-                $.when(track.draw_helper(region, w_scale, options)).then(tile => {
+                this.tile_cache.set_elt(key, undefined);
+                $.when(this.draw_helper(region, w_scale, options)).then(tile => {
                     tile_drawn.resolve(tile);
                 });
                 return;
@@ -3322,24 +3316,22 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
             // Get drawing modes, heights for all tracks.
             var drawing_modes = [];
-
             var drawing_heights = [];
 
             _.each(drawables, (d, i) => {
-                var mode = d.mode;
                 var data = tracks_data[i];
-                if (mode === "Auto") {
-                    mode = d.get_mode(data);
-                    d.update_auto_mode(mode);
+                if (d.mode === "Auto") {
+                    d.mode = d.get_mode(data);
+                    d.update_auto_mode(d.mode);
                 }
-                drawing_modes.push(mode);
-                drawing_heights.push(d.get_canvas_height(data, mode, w_scale, width));
+                drawing_modes.push(d.mode);
+                drawing_heights.push(d.get_canvas_height(data, d.mode, w_scale, width));
             });
 
-            var canvas = track.view.canvas_manager.new_canvas();
+            var canvas = this.view.canvas_manager.new_canvas();
             var tile_low = region.get("start");
             var tile_high = region.get("end");
-            var width = Math.ceil((tile_high - tile_low) * w_scale) + track.left_offset;
+            var width = Math.ceil((tile_high - tile_low) * w_scale) + this.left_offset;
             var height = _.max(drawing_heights);
             var tile;
 
@@ -3350,7 +3342,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Height is specified in options or is the height found above.
             canvas.height = options.height || height;
             var ctx = canvas.getContext("2d");
-            ctx.translate(track.left_offset, 0);
+            ctx.translate(this.left_offset, 0);
             if (drawables.length > 1) {
                 ctx.globalAlpha = 0.5;
                 ctx.globalCompositeOperation = "source-over";
@@ -3361,8 +3353,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
             // Don't cache, show if no tile.
             if (tile !== undefined) {
-                track.tile_cache.set_elt(key, tile);
-                track.show_tile(tile, w_scale);
+                this.tile_cache.set_elt(key, tile);
+                this.show_tile(tile, w_scale);
             }
 
             tile_drawn.resolve(tile);
