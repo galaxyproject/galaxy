@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Push" id="genomespace_push"  tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.1">
+<tool name="GenomeSpace Push" id="genomespace_push"  tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.7">
     <description> - Push data from GenomeSpace to Galaxy</description>
     <environment_variables>
         <environment_variable name="GS_TOKEN">
@@ -13,15 +13,15 @@
 
         #assert $input_file, Exception( 'You must select a valid input file.' )
         --json_parameter_file '${output_file1}'
-        --galaxy_root $__root_dir__
-        --data_conf $__datatypes_config__
     </command>
     <!-- If using this tool through bioblend, the URL parameter should contain a comma separated list of GenomeSpace URLs -->
     <inputs check_values="False">
         <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" select_type="FILE" />
     </inputs>
     <outputs>
-        <data format="auto" name="output_file1" />
+        <data auto_format="true" name="output_file1">
+            <discover_datasets pattern="__name__" directory="." visible="true" assign_primary_output="true" format="auto" recurse="true" />
+        </data>
     </outputs>
     <help>
 This tool is a variant of the genomespace_importer which behaves like a data_source and allows you to pull data from GenomeSpace.
