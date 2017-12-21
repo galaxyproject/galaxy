@@ -147,22 +147,23 @@ var moveable = (element, handle_class, container_selector, element_js_obj) => {
 /**
  * Init constants & functions used throughout trackster.
  */
-var // Padding at the top of tracks for error messages
-ERROR_PADDING = 20;
 
-var // Maximum number of rows un a slotted track
-MAX_FEATURE_DEPTH = 100;
+// Padding at the top of tracks for error messages
+var ERROR_PADDING = 20;
 
-var // Minimum width for window for squish to be used.
-MIN_SQUISH_VIEW_WIDTH = 12000;
+// Maximum number of rows un a slotted track
+var MAX_FEATURE_DEPTH = 100;
 
-var // Number of pixels per tile, not including left offset.
-TILE_SIZE = 400;
+// Minimum width for window for squish to be used.
+var MIN_SQUISH_VIEW_WIDTH = 12000;
+
+// Number of pixels per tile, not including left offset.
+var TILE_SIZE = 400;
 
 var DEFAULT_DATA_QUERY_WAIT = 5000;
 
-var // Maximum number of chromosomes that are selectable at any one time.
-MAX_CHROMS_SELECTABLE = 100;
+// Maximum number of chromosomes that are selectable at any one time.
+var MAX_CHROMS_SELECTABLE = 100;
 
 var DATA_ERROR = "Cannot display dataset due to an error. ";
 
@@ -175,13 +176,13 @@ var DATA_PENDING =
     "If the visualization is saved and closed, preparation will continue in the background.";
 
 var DATA_CANNOT_RUN_TOOL = "Tool cannot be rerun: ";
-var DATA_LOADING = "Loading data...";
+//var DATA_LOADING = "Loading data...";
 var DATA_OK = "Ready for display";
 var TILE_CACHE_SIZE = 10;
-var DATA_CACHE_SIZE = 20;
-
-var // Numerical/continuous data display modes.
-CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
+//var DATA_CACHE_SIZE = 20;
+//
+// Numerical/continuous data display modes.
+var CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
 
 /**
  * Round a number to a given number of decimal places.
@@ -769,16 +770,12 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 // manager.
                 //
                 this.filters_manager.remove_all();
-                var filters;
-                var new_filter;
-                var min;
-                var max;
                 for (var filter_name in shared_filters) {
-                    filters = shared_filters[filter_name];
+                    let filters = shared_filters[filter_name];
                     if (filters.length === num_feature_tracks) {
                         // Add new filter.
                         // FIXME: can filter.copy() be used?
-                        new_filter = new filters_mod.NumberFilter({
+                        let new_filter = new filters_mod.NumberFilter({
                             name: filters[0].name,
                             index: filters[0].index
                         });
@@ -831,7 +828,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
             name: this.config.get_value("name"),
             drawables: this.drawables
         });
-        var index = this.container.replace_drawable(this, composite_track, true);
+        this.container.replace_drawable(this, composite_track, true);
         composite_track.request_draw();
     },
 
@@ -1984,44 +1981,42 @@ var TracksterToolView = Backbone.View.extend({
             regions: [region.toJSON()]
         };
 
-        var current_track = track;
-
-        var // Set name of track to include tool name, parameters, and region used.
-        track_name = tool.get("name") + current_track.tool_region_and_parameters_str(region);
+        // Set name of track to include tool name, parameters, and region used.
+        var track_name = tool.get("name") + track.tool_region_and_parameters_str(region);
 
         var container;
 
         // If track not in a group, create a group for it and add new track to group. If track
         // already in group, add track to group.
-        if (current_track.container === view) {
+        if (track.container === track.view) {
             // Create new group.
-            var group = new DrawableGroup(view, view, {
+            var group = new DrawableGroup(track.view, track.view, {
                 name: track.config.get_value("name")
             });
 
             // Replace track with group.
-            var index = current_track.container.replace_drawable(current_track, group, false);
+            var index = track.container.replace_drawable(track, group, false);
 
             // Update HTML.
             // FIXME: this is ugly way to replace a track with a group -- make this easier via
             // a Drawable or DrawableCollection function.
-            group.container_div.insertBefore(current_track.view.content_div.children()[index]);
-            group.add_drawable(current_track);
-            current_track.container_div.appendTo(group.content_div);
+            group.container_div.insertBefore(track.view.content_div.children()[index]);
+            group.add_drawable(track);
+            track.container_div.appendTo(group.content_div);
             container = group;
         } else {
             // Use current group.
-            container = current_track.container;
+            container = track.container;
         }
 
         // Create and init new track.
-        var new_track = new current_track.constructor(view, container, {
+        var new_track = new track.constructor(track.view, container, {
             name: track_name,
             hda_ldda: "hda"
         });
         new_track.init_for_tool_data();
-        new_track.change_mode(current_track.mode);
-        new_track.set_filters_manager(current_track.filters_manager.copy(new_track));
+        new_track.change_mode(track.mode);
+        new_track.set_filters_manager(track.filters_manager.copy(new_track));
         new_track.update_icons();
         container.add_drawable(new_track);
         new_track.tiles_div.text("Starting job.");
@@ -3035,7 +3030,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var clear_after = options && options.clear_after;
         var low = this.view.low;
         var high = this.view.high;
-        var range = high - low;
+        //var range = high - low;
         var width = this.view.container.width();
         var w_scale = this.view.resolution_px_b;
         var resolution = 1 / w_scale;
@@ -3423,7 +3418,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * an existing tile rather than reshowing it.
      */
     show_tile: function(tile, w_scale) {
-        var track = this;
         var tile_element = tile.html_elt;
 
         // -- Show/move tile element. --
@@ -4131,6 +4125,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
      * Draw tile.
      */
     draw_tile: function(result, ctx, mode, region, w_scale) {
+        console.debug("DRaw tile!", result, ctx, mode, region, w_scale);
         // Paint onto canvas.
         var canvas = ctx.canvas;
 
@@ -4253,9 +4248,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-        var track = this;
-        var i;
-
         var line_track_tiles = _.filter(tiles, t => t instanceof LineTrackTile);
 
         //
@@ -4272,7 +4264,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             });
 
             // Draw incomplete features on each tile.
-            var self = this;
             _.each(tiles, tile => {
                 // Remove features already drawn on tile originally.
                 var tile_incomplete_features = _.omit(
@@ -4291,16 +4282,16 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         data: _.values(tile_incomplete_features)
                     };
 
-                    var new_canvas = self.view.canvas_manager.new_canvas();
+                    var new_canvas = this.view.canvas_manager.new_canvas();
                     var new_canvas_ctx = new_canvas.getContext("2d");
                     new_canvas.height = Math.max(
                         tile.canvas.height,
-                        self.get_canvas_height(features, tile.mode, tile.w_scale, 100)
+                        this.get_canvas_height(features, tile.mode, tile.w_scale, 100)
                     );
                     new_canvas.width = tile.canvas.width;
                     new_canvas_ctx.drawImage(tile.canvas, 0, 0);
-                    new_canvas_ctx.translate(track.left_offset, 0);
-                    var new_tile = self.draw_tile(
+                    new_canvas_ctx.translate(this.left_offset, 0);
+                    var new_tile = this.draw_tile(
                         features,
                         new_canvas_ctx,
                         tile.mode,
@@ -4343,8 +4334,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         //
 
         // Update filtering UI.
-        if (track.filters_manager) {
-            var filters = track.filters_manager.filters;
+        if (this.filters_manager) {
+            var filters = this.filters_manager.filters;
             var f;
             for (f = 0; f < filters.length; f++) {
                 filters[f].update_ui_elt();
@@ -4356,7 +4347,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
             var example_feature;
             var filter;
-            for (i = 0; i < tiles.length; i++) {
+            for (let i = 0; i < tiles.length; i++) {
                 if (tiles[i].data.length) {
                     example_feature = tiles[i].data[0];
                     for (f = 0; f < filters.length; f++) {
@@ -4370,12 +4361,12 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             }
 
             // If filter availability changed, hide filter div if necessary and update menu.
-            if (track.filters_available !== filters_available) {
-                track.filters_available = filters_available;
-                if (!track.filters_available) {
-                    track.filters_manager.hide();
+            if (this.filters_available !== filters_available) {
+                this.filters_available = filters_available;
+                if (!this.filters_available) {
+                    this.filters_manager.hide();
                 }
-                track.update_icons();
+                this.update_icons();
             }
         }
 
@@ -4384,7 +4375,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         //
         if (tiles[0] instanceof FeatureTrackTile) {
             var all_slotted = true;
-            for (i = 0; i < tiles.length; i++) {
+            for (let i = 0; i < tiles.length; i++) {
                 if (!tiles[i].all_slotted) {
                     all_slotted = false;
                     break;
