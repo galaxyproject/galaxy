@@ -872,9 +872,9 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${options.source}&path=${
-                    popped_item
-                }&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
+                    options.source
+                }&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
                     options.space_to_tab
                 }&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${
                     options.tag_using_filenames
@@ -920,13 +920,13 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${options.source}&path=${
-                    popped_item
-                }&preserve_dirs=${options.preserve_dirs}&link_data=${options.link_data}&to_posix_lines=${
-                    options.to_posix_lines
-                }&space_to_tab=${options.space_to_tab}&file_type=${options.file_type}&dbkey=${
-                    options.dbkey
-                }&tag_using_filenames=${options.tag_using_filenames}`
+                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
+                    options.source
+                }&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${
+                    options.link_data
+                }&to_posix_lines=${options.to_posix_lines}&space_to_tab=${options.space_to_tab}&file_type=${
+                    options.file_type
+                }&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
             )
         );
         promise
@@ -1219,7 +1219,7 @@ var FolderToolbarView = Backbone.View.extend({
         this.modal.show({
             closing_events: true,
             title: "Create History Collection from Datasets",
-            body: template({selected_datasets: checked_items.dataset_ids.length}),
+            body: template({ selected_datasets: checked_items.dataset_ids.length }),
             buttons: {
                 Continue: () => {
                     this.showColectionBuilder(checked_items.dataset_ids);
@@ -1289,7 +1289,7 @@ var FolderToolbarView = Backbone.View.extend({
             }
         } else if (elements_source === "folder") {
             collection_elements = new Backbone.Collection(
-                Galaxy.libraries.folderListView.folder_container.get("folder").where({type: "file"})
+                Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" })
             ).toJSON();
         }
         let new_history_name = this.modal.$("input[name=history_name]").val();
@@ -1313,7 +1313,7 @@ var FolderToolbarView = Backbone.View.extend({
         let modal_title = `Creating Collection in ${history_name}`;
         let creator_class;
         let creationFn;
-        if (this.collectionType === "list"){
+        if (this.collectionType === "list") {
             creator_class = LIST_CREATOR.ListCollectionCreator;
             creationFn = (elements, name, hideSourceItems) => {
                 elements = elements.map(element => ({
@@ -1324,31 +1324,35 @@ var FolderToolbarView = Backbone.View.extend({
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
             LIST_CREATOR.collectionCreatorModal(
-            collection_elements,
-            {creationFn: creationFn, title: modal_title, defaultHideSourceItems: true},
-            creator_class
+                collection_elements,
+                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
+                creator_class
             );
-        } else if (this.collectionType === "paired"){
+        } else if (this.collectionType === "paired") {
             creator_class = PAIR_CREATOR.PairCollectionCreator;
             creationFn = (elements, name, hideSourceItems) => {
                 elements = [
-                { name: "forward", src: "ldda", id: elements[0].id },
-                { name: "reverse", src: "ldda", id: elements[1].id }
+                    { name: "forward", src: "ldda", id: elements[0].id },
+                    { name: "reverse", src: "ldda", id: elements[1].id }
                 ];
                 return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
             };
             LIST_CREATOR.collectionCreatorModal(
-            collection_elements,
-            {creationFn: creationFn, title: modal_title, defaultHideSourceItems: true},
-            creator_class
+                collection_elements,
+                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
+                creator_class
             );
-        } else if (this.collectionType === "list:paired"){
+        } else if (this.collectionType === "list:paired") {
             let elements = collection_elements.map(element => ({
-                    id: element.id,
-                    name: element.name,
-                    src: "ldda"
-                }));
-            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {historyId: history_id, title: modal_title, defaultHideSourceItems: true});
+                id: element.id,
+                name: element.name,
+                src: "ldda"
+            }));
+            PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {
+                historyId: history_id,
+                title: modal_title,
+                defaultHideSourceItems: true
+            });
         }
     },
 
