@@ -5,14 +5,15 @@ import * as _ from "libs/underscore";
  * region overlaps the start (but not the end) of the second region.
  * NOTE: Coordinates are assumed to be in BED format: half open (start is closed, end is open).
  */
-var BEFORE = 1001;
+const BEFORE = 1001;
 
-var CONTAINS = 1002;
-var OVERLAP_START = 1003;
-var OVERLAP_END = 1004;
-var CONTAINED_BY = 1005;
-var AFTER = 1006;
-var compute_overlap = (first_region, second_region) => {
+const CONTAINS = 1002;
+const OVERLAP_START = 1003;
+const OVERLAP_END = 1004;
+const CONTAINED_BY = 1005;
+const AFTER = 1006;
+
+function compute_overlap(first_region, second_region) {
     var first_start = first_region[0];
     var first_end = first_region[1];
     var second_start = second_region[0];
@@ -37,17 +38,16 @@ var compute_overlap = (first_region, second_region) => {
             overlap = OVERLAP_END;
         }
     }
-
     return overlap;
-};
+}
 
 /**
  * Returns true if regions overlap.
  */
-var is_overlap = (first_region, second_region) => {
+function is_overlap(first_region, second_region) {
     var overlap = compute_overlap(first_region, second_region);
     return overlap !== BEFORE && overlap !== AFTER;
-};
+}
 
 /**
  * Draw a dashed line on a canvas using filled rectangles. This function is based on:
@@ -55,7 +55,7 @@ var is_overlap = (first_region, second_region) => {
  * However, that approach uses lines, which don't seem to render as well, so use
  * rectangles instead.
  */
-var dashedLine = (ctx, x1, y1, x2, y2, dashLen) => {
+function dashedLine(ctx, x1, y1, x2, y2, dashLen) {
     if (dashLen === undefined) {
         dashLen = 4;
     }
@@ -72,12 +72,12 @@ var dashedLine = (ctx, x1, y1, x2, y2, dashLen) => {
         }
         ctx.fillRect(x1, y1, dashLen, 1);
     }
-};
+}
 
 /**
  * Draw an isosceles triangle that points down.
  */
-var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y, side_len) {
+function drawDownwardEquilateralTriangle(ctx, down_vertex_x, down_vertex_y, side_len) {
     // Compute other two points of triangle.
     var x1 = down_vertex_x - side_len / 2;
 
@@ -95,7 +95,7 @@ var drawDownwardEquilateralTriangle = function(ctx, down_vertex_x, down_vertex_y
     ctx.fill();
     ctx.stroke();
     ctx.closePath();
-};
+}
 
 /**
  * Base class for all scalers. Scalers produce values that are used to change (scale) drawing attributes.
@@ -527,17 +527,12 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         var feature_end = feature[2];
         var feature_name = feature[3];
         var feature_strand = feature[4];
-
-        var // -0.5 to offset region between bases.
-        f_start = Math.floor(Math.max(0, (feature_start - tile_low - 0.5) * w_scale));
-
+        // -0.5 to offset region between bases.
+        var f_start = Math.floor(Math.max(0, (feature_start - tile_low - 0.5) * w_scale));
         var f_end = Math.ceil(Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)));
-
         var draw_start = f_start;
         var draw_end = f_end;
-
         var y_start = (mode === "Dense" ? 0 : 0 + slot) * y_scale + this.get_top_padding(width);
-
         var thick_start = null;
         var thick_end = null;
 
@@ -547,7 +542,6 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
             !feature_strand || feature_strand === "+" || feature_strand === "."
                 ? this.prefs.block_color
                 : this.prefs.reverse_strand_color;
-
         var label_color = this.prefs.label_color;
 
         // Set global alpha.
