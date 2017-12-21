@@ -1,5 +1,4 @@
 import * as _ from "libs/underscore";
-
 /**
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
@@ -219,7 +218,6 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
 
     var // Extract RGB from preference color.
     pref_color = parseInt(painter_color.slice(1), 16);
-
     var pref_r = (pref_color & 0xff0000) >> 16;
     var pref_g = (pref_color & 0x00ff00) >> 8;
     var pref_b = pref_color & 0x0000ff;
@@ -524,7 +522,8 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      * Draw a feature. Returns an array with feature's start and end X coordinates.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        var feature_uid = feature[0];
+        console.debug("draw_element", feature);
+        // var feature_uid = feature[0];
         var feature_start = feature[1];
         var feature_end = feature[2];
         var feature_name = feature[3];
@@ -540,14 +539,12 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
 
         var y_start = (mode === "Dense" ? 0 : 0 + slot) * y_scale + this.get_top_padding(width);
 
-        var thickness;
-        var y_start;
         var thick_start = null;
         var thick_end = null;
 
-        var // TODO: is there any reason why block, label color cannot be set at the Painter level?
+        // TODO: is there any reason why block, label color cannot be set at the Painter level?
         // For now, assume '.' === '+'
-        block_color =
+        var block_color =
             !feature_strand || feature_strand === "+" || feature_strand === "."
                 ? this.prefs.block_color
                 : this.prefs.reverse_strand_color;
@@ -660,7 +657,6 @@ _.extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 }
 
                 // Draw blocks.
-                var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k];
 
@@ -988,11 +984,11 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
 
                     // Draw sequence. Because cur_seq starts and read/tile start, go to there to start writing.
                     var start_pos = Math.max(seq_start, tile_low);
-                    for (var c = 0; c < cur_seq.length; c++) {
+                    for (let c = 0; c < cur_seq.length; c++) {
                         // Draw base if showing all (i.e. not showing differences) or there is a mismatch.
                         if ((cur_seq && !this.prefs.show_differences) || cig_op === "X") {
                             // Draw base.
-                            var c_start = Math.floor(Math.max(0, (start_pos + c - tile_low) * w_scale));
+                            let c_start = Math.floor(Math.max(0, (start_pos + c - tile_low) * w_scale));
                             ctx.fillStyle = this.base_color_fn(cur_seq[c]);
                             if (pack_mode && w_scale > char_width_px) {
                                 ctx.fillText(cur_seq[c], c_start, y_start + 9);
@@ -1066,8 +1062,8 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                         break;
                                 }
                                 // Draw sequence.
-                                for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                                    var c_start = Math.floor(Math.max(0, (seq_start + c - tile_low) * w_scale));
+                                for (let c = 0, str_len = seq.length; c < str_len; c++) {
+                                    let c_start = Math.floor(Math.max(0, (seq_start + c - tile_low) * w_scale));
                                     ctx.fillText(seq[c], c_start - (s_end - s_start) / 2, y_start);
                                 }
                             } else {
@@ -1110,7 +1106,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
         var item;
         var type;
         var data;
-        for (var i = 0; i < draw_last.length; i++) {
+        for (let i = 0; i < draw_last.length; i++) {
             item = draw_last[i];
             type = item.type;
             data = item.data;
@@ -1130,8 +1126,7 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
         // All features need a start, end, and vertical center.
-        var feature_uid = feature[0];
-
+        // var feature_uid = feature[0];
         var feature_start = feature[1];
         var feature_end = feature[2];
         var feature_name = feature[3];
@@ -1144,8 +1139,6 @@ _.extend(ReadPainter.prototype, FeaturePainter.prototype, {
         var y_start = (mode === "Dense" ? 0 : 0 + slot) * y_scale;
 
         var draw_height = mode === "Pack" ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT;
-
-        var label_color = this.prefs.label_color;
 
         // Draw read.
         if (feature[5] instanceof Array) {
@@ -1247,7 +1240,7 @@ var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, 
 _.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeaturePainter.prototype, {
     calculate_longest_feature_length: function() {
         var longest_feature_length = 0;
-        for (var i = 0, len = this.data.length; i < len; i++) {
+        for (let i = 0, len = this.data.length; i < len; i++) {
             var feature = this.data[i];
             var feature_start = feature[1];
             var feature_end = feature[2];
@@ -1265,13 +1258,7 @@ _.extend(ArcLinkedFeaturePainter.prototype, FeaturePainter.prototype, LinkedFeat
     draw_connector: function(ctx, block1_start, block1_end, block2_start, block2_end, y_start) {
         // Arc drawing -- from closest endpoints
         var x_center = (block1_end + block2_start) / 2;
-
         var radius = block2_start - x_center;
-
-        // For full half circles
-        var angle1 = Math.PI;
-
-        var angle2 = 0;
         if (radius > 0) {
             ctx.beginPath();
             ctx.arc(x_center, y_start, block2_start - x_center, Math.PI, 0);
@@ -1471,11 +1458,7 @@ DiagonalHeatmapPainter.prototype.default_prefs = {
 DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
     var min_value = this.prefs.min_value;
     var max_value = this.prefs.max_value;
-    var value_range = max_value - min_value;
-    var height_px = height;
     var view_start = this.view_start;
-    var mode = this.mode;
-    var data = this.data;
     var invsqrt2 = 1 / Math.sqrt(2);
 
     var ramp = new SplitRamp(this.prefs.neg_color, "#FFFFFF", this.prefs.pos_color, min_value, max_value);
@@ -1496,8 +1479,8 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
     ctx.scale(invsqrt2, invsqrt2);
 
     // Paint track.
-    for (var i = 0, len = data.length; i < len; i++) {
-        d = data[i];
+    for (var i = 0, len = this.data.length; i < len; i++) {
+        d = this.data[i];
 
         s1 = scale(d[1]);
         e1 = scale(d[2]);
@@ -1618,11 +1601,8 @@ _.extend(VariantPainter.prototype, Painter.prototype, {
         var locus_data;
 
         var pos;
-        var id;
         var ref;
         var alt;
-        var qual;
-        var filter;
         var sample_gts;
         var allele_counts;
         var variant;
