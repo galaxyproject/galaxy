@@ -4150,10 +4150,9 @@ var FeatureTrack = function(view, container, obj_dict) {
     this.slotters = {};
     this.start_end_dct = {};
     this.left_offset = 200;
-
-    // this.painter = painters.LinkedFeaturePainter;
     this.set_painter_from_config();
 };
+
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     display_modes: ["Auto", "Coverage", "Dense", "Squish", "Pack"],
 
