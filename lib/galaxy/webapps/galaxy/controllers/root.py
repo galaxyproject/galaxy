@@ -52,11 +52,12 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         config = {
             'active_view'                   : 'analysis',
             'enable_cloud_launch'           : app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks'               : True if app.webhooks_registry.webhooks else False,
             # TODO: next two should be redundant - why can't we build one from the other?
             'toolbox'                       : app.toolbox.to_dict(trans, in_panel=False),
             'toolbox_in_panel'              : app.toolbox.to_dict(trans),
             'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
+            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active
         }
 
         # TODO: move to user
@@ -151,7 +152,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if len(query) > 2:
             search_results = trans.app.toolbox_search.search(query)
             if 'tags[]' in kwd:
-                results = filter(lambda x: x in results, search_results)
+                results = [x for x in search_results if x in results]
             else:
                 results = search_results
         return results

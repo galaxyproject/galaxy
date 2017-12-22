@@ -1154,13 +1154,16 @@ class JobWrapper(object, HasResourceParameters):
             # the tasks failed. So include the stderr, stdout, and exit code:
             return self.fail(job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code)
 
+        # We collect the stderr from tools that write their stderr to galaxy.json
+        tool_provided_metadata = self.get_tool_provided_job_metadata()
+
         # Check the tool's stdout, stderr, and exit code for errors, but only
         # if the job has not already been marked as having an error.
         # The job's stdout and stderr will be set accordingly.
 
         # We set final_job_state to use for dataset management, but *don't* set
         # job.state until after dataset collection to prevent history issues
-        if (self.check_tool_output(stdout, stderr, tool_exit_code, job)):
+        if self.check_tool_output(stdout, stderr, tool_exit_code, job) and not tool_provided_metadata.has_failed_outputs():
             final_job_state = job.states.OK
         else:
             final_job_state = job.states.ERROR

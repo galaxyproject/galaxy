@@ -5,11 +5,11 @@ import datetime
 import logging
 import os
 import time
-from Queue import (
+
+from six.moves.queue import (
     Empty,
     Queue
 )
-
 from sqlalchemy.sql.expression import (
     and_,
     func,
@@ -343,7 +343,7 @@ class JobHandlerQueue(Monitors, object):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in self.job_wrappers.keys():
+        for id in list(self.job_wrappers.keys()):
             if id not in new_waiting_jobs:
                 del self.job_wrappers[id]
         # Flush, if we updated the state
@@ -896,7 +896,7 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.itervalues():
+        for runner in self.job_runners.values():
             try:
                 runner.shutdown()
             except Exception:

@@ -102,109 +102,22 @@ a.btn {
 
 <script type="text/javascript">
 
-    // use_panels effects where the the center_panel() is rendered:
-    //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
-    var hasMasthead  = ${ 'true' if use_panels else 'false' },
-        userIsOwner  = ${ 'true' if user_is_owner else 'false' },
-        isCurrent    = ${ 'true' if history_is_current else 'false' },
-        historyJSON  = ${ h.dumps( history ) },
-        viewToUse   = ( userIsOwner )?
-//TODO: change class names
-            ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
-            ({ location: 'mvc/history/history-view',       className: 'HistoryView' });
-
-    require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}",
-        paths   : {
-            'jquery' : 'libs/jquery/jquery'
-        },
-        urlArgs: 'v=${app.server_starttime}'
-    })([
-        'mvc/user/user-model',
-        viewToUse.location,
-        'mvc/history/copy-dialog',
-        'utils/localization',
-        'ui/mode-button'
-    ], function( user, viewMod, historyCopyDialog, _l ){
-        +(function setUpBehaviors(){
-            $( '#toggle-deleted' ).modeButton({
-                initialMode : "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
-                modes: [
-                    { mode: 'showing_deleted',      html: _l( 'Exclude deleted' ) },
-                    { mode: 'not_showing_deleted',  html: _l( 'Include deleted' ) }
-                ]
-            });
-
-            $( '#toggle-hidden' ).modeButton({
-                initialMode : "${ 'showing_hidden' if show_hidden else 'not_showing_hidden' }",
-                modes: [
-                    { mode: 'showing_hidden',     html: _l( 'Exclude hidden' ) },
-                    { mode: 'not_showing_hidden', html: _l( 'Include hidden' ) }
-                ]
-            });
-
-            $( '#switch' ).click( function( ev ){
-                //##HACK:ity hack hack
-                //##TODO: remove when out of iframe
-                var hview = Galaxy.currHistoryPanel
-                         || ( top.Galaxy && top.Galaxy.currHistoryPanel )? top.Galaxy.currHistoryPanel : null;
-                if( hview ){
-                    hview.switchToHistory( "${ history[ 'id' ] }" );
-                } else {
-                    window.location = "${ switch_to_url }";
-                }
-            });
-
-        })();
-
-        $(function(){
-            if( hasMasthead ){
-                $( '#center' ).addClass( 'flex-vertical-container' );
-            }
-            var viewClass = viewMod.default[ viewToUse.className ],
-                // history module is already in the dpn chain from the view. We can re-scope it here.
-                HISTORY = require( 'mvc/history/history-model' ),
-                historyModel = new HISTORY.default.History( historyJSON );
-
-            // attach the copy dialog to the import button now that we have a history
-            $( '#import' ).click( function( ev ){
-                historyCopyDialog.default( historyModel, {
-                    useImport   : true,
-                    // use default datasets option to match the toggle-deleted button
-                    allDatasets : $( '#toggle-deleted' ).modeButton( 'getMode' ).mode === 'showing_deleted',
-                }).done( function(){
-                    if( window === window.parent ){
-                        window.location = Galaxy.root;
-                    } else if( Galaxy.currHistoryPanel ){
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
-                });
-            });
-
-            window.historyView = new viewClass({
-                el              : $( "#history-" + historyJSON.id ),
-                className       : viewClass.prototype.className + ' wide',
-                $scrollContainer: hasMasthead? function(){ return this.$el.parent(); } : undefined,
-                model           : historyModel,
-                show_deleted    : ${show_deleted_json},
-                show_hidden     : ${show_hidden_json},
-                purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-            });
-            historyView.trigger( 'loading' );
-            historyModel.fetchContents({ silent: true })
-                .fail( function(){ alert( 'Galaxy history failed to load' ); })
-                .done( function(){
-                    historyView.trigger( 'loading-done' );
-                    historyView.render();
-                });
-
-            $( '#toggle-deleted' ).on( 'click', function(){
-                historyView.toggleShowDeleted();
-            });
-            $( '#toggle-hidden' ).on( 'click', function(){
-                historyView.toggleShowHidden();
-            });
-        });
+    $(function(){
+        options = {
+            hasMasthead: ${ 'true' if use_panels else 'false' },
+            userIsOwner: ${ 'true' if user_is_owner else 'false' },
+            isCurrent: ${ 'true' if history_is_current else 'false' },
+            historyJSON: ${ h.dumps( history ) },
+            showDeletedJson: ${ show_deleted_json },
+            showHiddenJson: ${ show_hidden_json },
+            initialModeDeleted: "${ 'showing_deleted' if show_deleted else 'not_showing_deleted' }",
+            initialModeHidden: "${ 'showing_hidden' if show_hidden else 'not_showing_hidden' }",
+            allowUserDatasetPurge: ${ 'true' if trans.app.config.allow_user_dataset_purge else 'false' }
+        };
+        options.viewToUse = options.userIsOwner ?
+                ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
+                ({ location: 'mvc/history/history-view',       className: 'HistoryView' });
+        window.bundleEntries.history(options);
     });
 </script>
 

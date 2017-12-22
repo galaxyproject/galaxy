@@ -20,7 +20,6 @@ To run this script, use "sh migrate_tools_to_repositories.sh" from this director
 '''
 from __future__ import print_function
 
-import ConfigParser
 import os
 import shutil
 import sys
@@ -29,6 +28,7 @@ import tempfile
 from time import strftime
 
 from mercurial import hg, ui
+from six.moves import configparser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
@@ -276,11 +276,11 @@ def main():
     print("%s - Migrating current tool archives to new tool repositories" % now)
     # tool_shed_wsgi.ini file
     ini_file = sys.argv[1]
-    conf_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    conf_parser = configparser.ConfigParser({'here': os.getcwd()})
     conf_parser.read(ini_file)
     try:
         db_conn_str = conf_parser.get("app:main", "database_connection")
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         db_conn_str = conf_parser.get("app:main", "database_file")
     print('DB Connection: ', db_conn_str)
     # Instantiate app

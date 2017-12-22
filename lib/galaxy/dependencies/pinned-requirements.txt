@@ -7,7 +7,7 @@ MarkupSafe==1.0
 PyYAML==3.12
 SQLAlchemy==1.0.15
 sqlalchemy-utils==0.32.19
-mercurial==3.7.3
+mercurial==3.7.3; python_version < '3.0'
 pycrypto==2.6.1
 uWSGI==2.0.15
 # Flexible BAM index naming is new to core pysam
@@ -72,7 +72,7 @@ psutil==4.1.0
 pulsar-galaxy-lib==0.8.0
 
 # sqlalchemy-migrate and dependencies
-sqlalchemy-migrate==0.10.0
+sqlalchemy-migrate==0.11.0
 decorator==4.0.2
 Tempita==0.5.3dev
 sqlparse==0.1.16

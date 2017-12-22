@@ -269,9 +269,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
-                            n
-                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

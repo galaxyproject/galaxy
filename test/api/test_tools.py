@@ -259,7 +259,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("library_data")
     def test_library_data_param(self):
         with self.dataset_populator.test_history() as history_id:
-            ld = LibraryPopulator(self).new_library_dataset("lda_test_library")
+            ld = LibraryPopulator(self.galaxy_interactor).new_library_dataset("lda_test_library")
             inputs = {
                 "library_dataset": ld["ldda_id"],
                 "library_dataset_multiple": [ld["ldda_id"], ld["ldda_id"]]

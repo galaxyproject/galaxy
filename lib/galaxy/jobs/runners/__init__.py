@@ -8,7 +8,8 @@ import string
 import subprocess
 import threading
 import time
-from Queue import (
+
+from six.moves.queue import (
     Empty,
     Queue
 )
@@ -439,7 +440,7 @@ class JobState(object):
                 job_name += '_%s' % self.job_wrapper.tool.old_id
             if self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join(map(lambda x: x if x in (string.ascii_letters + string.digits + '_') else '_', job_name))
+            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):

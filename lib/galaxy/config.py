@@ -371,9 +371,6 @@ class Configuration(object):
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
 
-        # Deprecated API for sample tracking
-        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
-
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
         # be someday - the following two properties can also be used to force this
@@ -429,6 +426,7 @@ class Configuration(object):
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
+        self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
         # Searching data libraries
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...

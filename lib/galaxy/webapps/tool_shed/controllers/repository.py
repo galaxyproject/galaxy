@@ -20,8 +20,8 @@ from galaxy import (
 )
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import CheckboxField
-from galaxy.web.framework.helpers import grids
+from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies.repository import relation_builder
@@ -120,7 +120,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["repositories_by_category", "repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -274,7 +274,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def browse_repositories_by_user(self, trans, **kwd):
         """Display the list of repositories owned by a specified user."""
         # Eliminate the current search filters if any exist.
-        for k, v in kwd.items():
+        for k, v in list(kwd.items()):
             if k.startswith('f-'):
                 del kwd[k]
         if 'operation' in kwd:
@@ -522,7 +522,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             operation = kwd['operation'].lower()
             if operation in ["valid_repositories_by_category", "valid_repositories_by_user"]:
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 return trans.response.send_redirect(web.url_for(controller='repository',
@@ -560,7 +560,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 changeset_revision=latest_installable_changeset_revision))
             elif operation == "valid_repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)
@@ -974,7 +974,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                 repository_dependencies,
                                                                 repository_metadata,
                                                                 exclude=exclude)
-            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', checked=True)
+            export_repository_dependencies_check_box = CheckboxField('export_repository_dependencies', value=True)
         else:
             containers_dict = None
             export_repository_dependencies_check_box = None
@@ -1084,7 +1084,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 message = "No search performed - each field must contain the same number of comma-separated items."
                 status = "error"
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
+        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_tools.mako',
                                    tool_id=basic_util.stringify(tool_ids),
                                    tool_name=basic_util.stringify(tool_names),
@@ -1176,7 +1176,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             exact_matches_checked = False
             workflow_names = []
-        exact_matches_check_box = CheckboxField('exact_matches', checked=exact_matches_checked)
+        exact_matches_check_box = CheckboxField('exact_matches', value=exact_matches_checked)
         return trans.fill_template('/webapps/tool_shed/repository/find_workflows.mako',
                                    workflow_name=basic_util.stringify(workflow_names),
                                    exact_matches_check_box=exact_matches_check_box,
@@ -1824,7 +1824,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 message = 'You will not receive any email alerts for new valid tool shed repositories.'
         checked = new_repo_alert_checked or (user and user.new_repo_alert)
-        new_repo_alert_check_box = CheckboxField('new_repo_alert', checked=checked)
+        new_repo_alert_check_box = CheckboxField('new_repo_alert', value=checked)
         email_alert_repositories = []
         for repository in trans.sa_session.query(trans.model.Repository) \
                                           .filter(and_(trans.model.Repository.table.c.deleted == false(),
@@ -1931,14 +1931,22 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             message = "The repository information has been updated."
         if error:
             status = 'error'
+        allow_push_select_field = SelectField(name='allow_push',
+                                              multiple=True)
         current_allow_push = repository.allow_push(trans.app)
         if current_allow_push:
             current_allow_push_list = current_allow_push.split(',')
         else:
             current_allow_push_list = []
-        allow_push_select_field = repository_util.build_allow_push_select_field(trans, current_allow_push_list)
+        options = []
+        for user in trans.sa_session.query(trans.model.User):
+            if user.username not in current_allow_push_list:
+                options.append(user)
+        for obj in options:
+            label = getattr(obj, 'username')
+            allow_push_select_field.add_option(label, trans.security.encode_id(obj.id))
         checked = alerts_checked or user.email in email_alerts
-        alerts_check_box = CheckboxField('alerts', checked=checked)
+        alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
                                                                                            selected_value=changeset_revision,
@@ -2001,7 +2009,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message += malicious_error
             status = 'error'
         repository_type_select_field = rt_util.build_repository_type_select_field(trans, repository=repository)
-        malicious_check_box = CheckboxField('malicious', checked=is_malicious)
+        malicious_check_box = CheckboxField('malicious', value=is_malicious)
         categories = suc.get_categories(trans.app)
         selected_categories = [_rca.category_id for _rca in repository.categories]
         tsucm = ToolShedUtilityContainerManager(trans.app)
@@ -2821,7 +2829,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 trans.sa_session.add(repository)
                 trans.sa_session.flush()
         checked = alerts_checked or (user and user.email in email_alerts)
-        alerts_check_box = CheckboxField('alerts', checked=checked)
+        alerts_check_box = CheckboxField('alerts', value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(trans,
                                                                                            repository,
                                                                                            selected_value=changeset_revision,

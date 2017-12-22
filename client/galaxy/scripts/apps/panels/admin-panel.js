@@ -22,7 +22,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Data tables"),
-                        url: "admin/view_tool_data_tables"
+                        url: "admin/data_tables",
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Display applications"),

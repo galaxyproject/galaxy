@@ -125,14 +125,13 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
 %if deprecated_repository_dependency_tups:
     ${render_deprecated_repository_dependencies_message( deprecated_repository_dependency_tups )}
 %endif
-
 %if len( changeset_revision_select_field.options ) > 1:
     <div class="toolForm">
         <div class="toolFormTitle">Repository revision</div>
         <div class="toolFormBody">
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    ${render_select(changeset_revision_select_field)} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         %if can_review_repository:
                             Select a revision to inspect for adding or managing a review or for download or installation.
@@ -279,7 +278,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <label>Receive email alerts:</label>
-                    ${alerts_check_box.get_html()}
+                    ${render_checkbox(alerts_check_box)}
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to receive email alerts when updates to this repository occur.
                     </div>
@@ -315,7 +314,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
         <form name="user_access" id="user_access" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Username:</label>
-                ${allow_push_select_field.get_html()}
+                ${render_select(allow_push_select_field)}
                 <div class="toolParamHelp" style="clear: both;">
                     Multi-select usernames to grant permission to make changes to this repository
                 </div>
@@ -396,7 +395,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
             <form name="malicious" id="malicious" action="${h.url_for( controller='repository', action='set_malicious', id=trans.security.encode_id( repository.id ), ctx_str=changeset_revision )}" method="post">
                 <div class="form-row">
                     <label>Define repository tip as malicious:</label>
-                    ${malicious_check_box.get_html()}
+                    ${render_checkbox(malicious_check_box)}
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to define this repository's tip as malicious, restricting it from being download-able.
                     </div>
