@@ -246,7 +246,8 @@ define({
     Trackster: false,
     Visualize: false,
     // ---------------------------------------------------------------------------- dataset-error
-    "Any additional comments you can provide regarding what you were doing at the time of the bug.": "N'importe quel commentaire que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
+    "Any additional comments you can provide regarding what you were doing at the time of the bug.":
+        "N'importe quel commentaire que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
     "Your email address": "Votre adresse e-mail",
     Report: false,
     "Error Report": "Rapport d'erreur",
