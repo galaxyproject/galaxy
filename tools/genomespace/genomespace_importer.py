@@ -14,7 +14,7 @@ def create_output_path(input_url, metadata):
     Returns the intended path.
     """
     path = os.path.join(os.getcwd(), metadata.name)
-    if metadata.isDirectory:
+    if metadata.is_directory:
         os.mkdir(path)
     return path
 
@@ -26,7 +26,7 @@ def download_single_item(gs_client, input_url):
     """
     # 1. Get file metadata
     metadata = gs_client.get_metadata(input_url)
-    if metadata.isDirectory and not input_url.endswith("/"):
+    if metadata.is_directory and not input_url.endswith("/"):
         input_url += "/"
 
     # 2. Determine output file path
