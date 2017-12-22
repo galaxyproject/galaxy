@@ -1,4 +1,5 @@
 import argparse
+import binascii
 import json
 import os
 import sys
@@ -6,58 +7,6 @@ import uuid
 
 from genomespaceclient import GenomeSpaceClient
 
-import galaxy
-
-
-def _prepare_json_list(param_list):
-    """
-    JSON serialization Support functions for exec_before_job hook
-    """
-    rval = []
-    for value in param_list:
-        if isinstance(value, dict):
-            rval.append(_prepare_json_param_dict(value))
-        elif isinstance(value, list):
-            rval.append(_prepare_json_list(value))
-        else:
-            rval.append(str(value))
-    return rval
-
-
-def _prepare_json_param_dict(param_dict):
-    """
-    JSON serialization Support functions for exec_before_job hook
-    """
-    rval = {}
-    for key, value in param_dict.items():
-        if isinstance(value, dict):
-            rval[key] = _prepare_json_param_dict(value)
-        elif isinstance(value, list):
-            rval[key] = _prepare_json_list(value)
-        else:
-            rval[key] = str(value)
-    return rval
-
-
-def exec_before_job(app, inp_data, out_data, param_dict=None, tool=None):
-    """
-    Galaxy override hook
-    See: https://wiki.galaxyproject.org/Admin/Tools/ToolConfigSyntax#A.3Ccode.3E_tag_set
-    Since only tools with tool_type="data_source" provides functionality for having a JSON param file such as this:
-    https://wiki.galaxyproject.org/Admin/Tools/DataManagers/DataManagerJSONSyntax#Example_JSON_input_to_tool,
-    this hook is used to manually create a similar JSON file.
-    """
-    if param_dict is None:
-        param_dict = {}
-    json_params = {}
-    json_params['param_dict'] = _prepare_json_param_dict(param_dict)
-    json_filename = None
-    for i, (out_name, data) in enumerate(out_data.items()):
-        file_name = data.get_file_name()
-        if json_filename is None:
-            json_filename = file_name
-    with open(json_filename, 'w') as out:
-        out.write(json.dumps(json_params))
 
 def create_output_path(input_url, metadata):
     """
@@ -87,13 +36,10 @@ def download_single_item(gs_client, input_url):
     gs_client.copy(input_url, output_filename, recurse=True)
 
 
-def download_from_genomespace_importer(json_parameter_file, custom_token):
-    with open(json_parameter_file, 'r') as param_file:
-        json_params = json.load(param_file)
+def download_from_genomespace_importer(url_with_token, custom_token):
 
     # Extract input_urls and token  (format is input_urls^token). If a custom_token is
     # provided, use that instead.
-    url_with_token = json_params.get('param_dict', {}).get("URL", "")
     if custom_token:
         input_urls = url_with_token.split('^')[0]
         token = custom_token
@@ -114,10 +60,11 @@ def download_from_genomespace_importer(json_parameter_file, custom_token):
 
 def process_args(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--json_parameter_file', type=str,
-                        help="JSON parameter file", required=True)
+    parser.add_argument('-i', '--input_urls', type=str,
+                        help="Comma separated list of input urls with an optional token at the end, separated by a ^.",
+                        required=True)
     parser.add_argument('-t', '--token', type=str,
-                        help="Optional OpenID/GenomeSpace token if not passed in as part of the URL as URLs^Token."
+                        help="Optional OpenID/GenomeSpace token if not passed in as part of the input_urls as URLs^Token."
                         " If none, the environment variable GS_TOKEN will be respected.", required=False)
 
     args = parser.parse_args(args[1:])
@@ -126,7 +73,8 @@ def process_args(args):
 
 def main():
     args = process_args(sys.argv)
-    download_from_genomespace_importer(args.json_parameter_file, args.token or os.environ.get("GS_TOKEN"))
+    download_from_genomespace_importer(binascii.unhexlify(args.input_urls).decode('utf-8'),
+                                       args.token or os.environ.get("GS_TOKEN"))
 
 
 if __name__ == "__main__":

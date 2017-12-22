@@ -13,7 +13,9 @@
         #set $input_file = $URL.split('^')[0] if '^' in $URL else $URL
 
         #assert $input_file, Exception('You must select a valid input file.')
-        --json_parameter_file '${output_file1}'
+
+        #import binascii
+        --input_urls '${ binascii.hexlify(str($input_file).encode("utf8")) }'
     ]]></command>
     <!-- If using this tool through bioblend, the URL parameter should contain the path to a comma separated list of GenomeSpace URLs + the security token
          separated by a ^ as follows: GenomeSpaceFilePath1,GenomeSpaceFilePath2^Token -->
@@ -22,7 +24,7 @@
     </inputs>
     <outputs>
         <data auto_format="true" name="output_file1">
-            <discover_datasets pattern="__name_and_ext__" directory="." visible="true" assign_primary_output="true" recurse="true" />
+            <discover_datasets pattern="__name_and_ext__" directory="." visible="true" assign_primary_output="true" format="auto" recurse="true" />
         </data>
     </outputs>
     <help>

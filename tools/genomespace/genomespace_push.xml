@@ -12,15 +12,17 @@
         #set $input_file = $URL.split("^")[0] if "^" in $URL else $URL
 
         #assert $input_file, Exception( 'You must select a valid input file.' )
-        --json_parameter_file '${output_file1}'
+
+        #import binascii
+        --input_urls '${ binascii.hexlify(str($input_file).encode("utf8")) }'
     </command>
     <!-- If using this tool through bioblend, the URL parameter should contain a comma separated list of GenomeSpace URLs -->
     <inputs check_values="False">
-        <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" select_type="FILE" />
+        <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" action="IMPORT" select_type="FILE_OR_FOLDER" multiple="True" />
     </inputs>
     <outputs>
         <data auto_format="true" name="output_file1">
-            <discover_datasets pattern="__name__" directory="." visible="true" assign_primary_output="true" format="auto" recurse="true" />
+            <discover_datasets pattern="__name_and_ext__" directory="." visible="true" assign_primary_output="true" format="auto" recurse="true" />
         </data>
     </outputs>
     <help>
