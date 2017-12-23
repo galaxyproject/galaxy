@@ -26,7 +26,7 @@ var view = null;
 var browser_router = null;
 
 /**
- * Base Object/Model for inhertiance.
+ * Base Object/Model for inheritance.
  */
 var Base = function() {
     if (this.initialize) {
