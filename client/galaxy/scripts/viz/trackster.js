@@ -26,32 +26,26 @@ var view = null;
 var browser_router = null;
 
 /**
- * Base Object/Model for inheritance.
- */
-var Base = function() {
-    if (this.initialize) {
-        this.initialize.apply(this, arguments);
-    }
-};
-Base.extend = Backbone.Model.extend;
-
-/**
  * User interface controls for trackster
  */
-var TracksterUI = Base.extend({
-    initialize: function(baseURL) {
+class TracksterUI extends Backbone.Model {
+    constructor(options) {
+        super(options);
+    }
+
+    initialize(baseURL) {
+        this.baseURL = baseURL;
         mod_utils.cssLoadFile("static/style/jquery.rating.css");
         mod_utils.cssLoadFile("static/style/autocomplete_tagging.css");
         mod_utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
         mod_utils.cssLoadFile("static/style/library.css");
         mod_utils.cssLoadFile("static/style/trackster.css");
-        this.baseURL = baseURL;
-    },
+    }
 
     /**
      * Save visualization, returning a Deferred object for the remote call to save.
      */
-    save_viz: function() {
+    save_viz() {
         // show dialog
         Galaxy.modal.show({ title: "Saving...", body: "progress" });
 
@@ -115,12 +109,12 @@ var TracksterUI = Base.extend({
                     }
                 });
             });
-    },
+    }
 
     /**
      * Create button menu
      */
-    createButtonMenu: function() {
+    createButtonMenu() {
         var self = this;
 
         var menu = mod_icon_btn.create_icon_buttons_menu(
@@ -184,12 +178,12 @@ var TracksterUI = Base.extend({
 
         this.buttonMenu = menu;
         return menu;
-    },
+    }
 
     /**
      * Add bookmark.
      */
-    add_bookmark: function(position, annotation, editable) {
+    add_bookmark(position, annotation, editable) {
         // Create HTML.
         var bookmarks_container = $("#right .unified-panel-body");
 
@@ -241,12 +235,12 @@ var TracksterUI = Base.extend({
 
         view.has_changes = true;
         return new_bookmark;
-    },
+    }
 
     /**
      * Create a complete Trackster visualization. Returns view.
      */
-    create_visualization: function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
+    create_visualization(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
         // Create view.
         var self = this;
 
@@ -310,20 +304,20 @@ var TracksterUI = Base.extend({
         this.set_up_router({ view: view });
 
         return view;
-    },
+    }
 
     /**
      * Set up location router to use hashes as track browser locations.
      */
-    set_up_router: function(options) {
+    set_up_router(options) {
         new visualization.TrackBrowserRouter(options);
         Backbone.history.start();
-    },
+    }
 
     /**
      * Set up keyboard navigation for a visualization.
      */
-    init_keyboard_nav: function(view) {
+    init_keyboard_nav(view) {
         // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
         $(document).keyup(e => {
             // Do not navigate if arrow keys used in input element.
@@ -349,12 +343,12 @@ var TracksterUI = Base.extend({
                     break;
             }
         });
-    },
+    }
 
     /**
      * Handle unsaved changes in visualization.
      */
-    handle_unsaved_changes: function(view) {
+    handle_unsaved_changes(view) {
         if (view.has_changes) {
             var self = this;
             Galaxy.modal.show({
@@ -379,11 +373,14 @@ var TracksterUI = Base.extend({
             window.location = `${Galaxy.root}visualization`;
         }
     }
-});
+}
 
-var TracksterView = Backbone.View.extend({
+class TracksterView extends Backbone.View {
+    constructor(options) {
+        super(options);
+    }
     // initalize trackster
-    initialize: function() {
+    initialize() {
         // load ui
         ui = new TracksterUI(Galaxy.root);
 
@@ -418,10 +415,9 @@ var TracksterView = Backbone.View.extend({
         } else {
             this.view_new();
         }
-    },
+    }
 
-    choose_existing_or_new: function() {
-        var self = this;
+    choose_existing_or_new() {
         var dbkey = query_string.get("dbkey");
         var listTracksParams = {};
 
@@ -442,21 +438,21 @@ var TracksterView = Backbone.View.extend({
             body: `<p><ul style='list-style: disc inside none'>You can add this dataset as:<li>a new track to one of your existing, saved Trackster sessions if they share the genome build: <b>${dbkey ||
                 "Not available."}</b></li><li>or create a new session with this dataset as the only track</li></ul></p>`,
             buttons: {
-                Cancel: function() {
+                Cancel: () => {
                     window.location = `${Galaxy.root}visualizations/list`;
                 },
-                "View in saved visualization": function() {
-                    self.view_in_saved(dataset_params);
+                "View in saved visualization": () => {
+                    this.view_in_saved(dataset_params);
                 },
-                "View in new visualization": function() {
-                    self.view_new();
+                "View in new visualization": () => {
+                    this.view_new();
                 }
             }
         });
-    },
+    }
 
     // view
-    view_in_saved: function(dataset_params) {
+    view_in_saved(dataset_params) {
         var tracks_grid = new GridView({
             url_base: `${Galaxy.root}visualization/list_tracks`,
             embedded: true
@@ -478,10 +474,10 @@ var TracksterView = Backbone.View.extend({
                 }
             }
         });
-    },
+    }
 
     // view
-    view_existing: function() {
+    view_existing() {
         // get config
         var viz_config = window.galaxy_config.app.viz_config;
 
@@ -501,31 +497,28 @@ var TracksterView = Backbone.View.extend({
 
         // initialize editor
         this.init_editor();
-    },
+    }
 
     // view
-    view_new: function() {
-        // reference this
-        var self = this;
-
+    view_new() {
         // ajax
         $.ajax({
             url: `${Galaxy.root}api/genomes?chrom_info=True`,
             data: {},
-            error: function() {
+            error: () => {
                 alert("Couldn't create new browser.");
             },
-            success: function(response) {
+            success: response => {
                 // show dialog
                 Galaxy.modal.show({
                     title: _l("New Visualization"),
-                    body: self.template_view_new(response),
+                    body: this.template_view_new(response),
                     buttons: {
-                        Cancel: function() {
+                        Cancel: () => {
                             window.location = `${Galaxy.root}visualizations/list`;
                         },
-                        Create: function() {
-                            self.create_browser($("#new-title").val(), $("#new-dbkey").val());
+                        Create: () => {
+                            this.create_browser($("#new-title").val(), $("#new-dbkey").val());
                             Galaxy.modal.hide();
                         }
                     }
@@ -548,10 +541,10 @@ var TracksterView = Backbone.View.extend({
                 $("#overlay").css("overflow", "auto");
             }
         });
-    },
+    }
 
     // new browser form
-    template_view_new: function(response) {
+    template_view_new(response) {
         // start template
         var html =
             '<form id="new-browser-form" action="javascript:void(0);" method="post" onsubmit="return false;">' +
@@ -579,10 +572,10 @@ var TracksterView = Backbone.View.extend({
 
         // return
         return html;
-    },
+    }
 
     // create
-    create_browser: function(name, dbkey) {
+    create_browser(name, dbkey) {
         $(document).trigger("convert_to_values");
 
         view = ui.create_visualization(
@@ -599,10 +592,10 @@ var TracksterView = Backbone.View.extend({
 
         // modify view setting
         view.editor = true;
-    },
+    }
 
     // initialization for editor-specific functions.
-    init_editor: function() {
+    init_editor() {
         // set title
         $("#center .unified-panel-title").text(`${view.config.get_value("name")} (${view.dbkey})`);
 
@@ -635,7 +628,7 @@ var TracksterView = Backbone.View.extend({
             }
         });
     }
-});
+}
 
 export default {
     TracksterUI: TracksterUI,
