@@ -20,10 +20,7 @@ import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
-// trackster global variables
-var ui = null;
 var view = null;
-var browser_router = null;
 
 /**
  * User interface controls for trackster
@@ -51,7 +48,7 @@ class TracksterUI extends Backbone.Model {
 
         // Save bookmarks.
         var bookmarks = [];
-        $(".bookmark").each(function() {
+        $(".bookmark").each(() => {
             bookmarks.push({
                 position: $(this)
                     .children(".position")
@@ -103,7 +100,7 @@ class TracksterUI extends Backbone.Model {
                     title: _l("Could Not Save"),
                     body: "Could not save visualization. Please try again later.",
                     buttons: {
-                        Cancel: function() {
+                        Cancel: () => {
                             Galaxy.modal.hide();
                         }
                     }
@@ -115,14 +112,12 @@ class TracksterUI extends Backbone.Model {
      * Create button menu
      */
     createButtonMenu() {
-        var self = this;
-
         var menu = mod_icon_btn.create_icon_buttons_menu(
             [
                 {
                     icon_class: "plus-button",
                     title: _l("Add tracks"),
-                    on_click: function() {
+                    on_click: () => {
                         visualization.select_datasets({ dbkey: view.dbkey }, new_tracks => {
                             _.each(new_tracks, track => {
                                 view.add_drawable(tracks.object_from_template(track, view, view));
@@ -133,7 +128,7 @@ class TracksterUI extends Backbone.Model {
                 {
                     icon_class: "block--plus",
                     title: _l("Add group"),
-                    on_click: function() {
+                    on_click: () => {
                         view.add_drawable(
                             new tracks.DrawableGroup(view, view, {
                                 name: "New Group"
@@ -144,7 +139,7 @@ class TracksterUI extends Backbone.Model {
                 {
                     icon_class: "bookmarks",
                     title: _l("Bookmarks"),
-                    on_click: function() {
+                    on_click: () => {
                         // HACK -- use style to determine if panel is hidden and hide/show accordingly.
                         window.force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
                     }
@@ -152,22 +147,22 @@ class TracksterUI extends Backbone.Model {
                 {
                     icon_class: "globe",
                     title: _l("Circster"),
-                    on_click: function() {
-                        window.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
+                    on_click: () => {
+                        window.location = `${this.baseURL}visualization/circster?id=${view.vis_id}`;
                     }
                 },
                 {
                     icon_class: "disk--arrow",
                     title: _l("Save"),
-                    on_click: function() {
-                        self.save_viz();
+                    on_click: () => {
+                        this.save_viz();
                     }
                 },
                 {
                     icon_class: "cross-circle",
                     title: _l("Close"),
-                    on_click: function() {
-                        self.handle_unsaved_changes(view);
+                    on_click: () => {
+                        this.handle_unsaved_changes(view);
                     }
                 }
             ],
@@ -242,8 +237,6 @@ class TracksterUI extends Backbone.Model {
      */
     create_visualization(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
         // Create view.
-        var self = this;
-
         view = new tracks.TracksterView(_.extend(view_config, { header: false }));
 
         view.editor = true;
@@ -292,7 +285,7 @@ class TracksterUI extends Backbone.Model {
                 var bookmark;
                 for (let i = 0; i < bookmarks_config.length; i++) {
                     bookmark = bookmarks_config[i];
-                    self.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
+                    this.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
                 }
             }
 
@@ -350,20 +343,19 @@ class TracksterUI extends Backbone.Model {
      */
     handle_unsaved_changes(view) {
         if (view.has_changes) {
-            var self = this;
             Galaxy.modal.show({
                 title: _l("Close visualization"),
                 body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
                 buttons: {
-                    Cancel: function() {
+                    Cancel: () => {
                         Galaxy.modal.hide();
                     },
-                    "Leave without Saving": function() {
+                    "Leave without Saving": () => {
                         $(window).off("beforeunload");
                         window.location = `${Galaxy.root}visualization`;
                     },
-                    Save: function() {
-                        $.when(self.save_viz()).then(() => {
+                    Save: () => {
+                        $.when(this.save_viz()).then(() => {
                             window.location = `${Galaxy.root}visualization`;
                         });
                     }
@@ -382,16 +374,16 @@ class TracksterView extends Backbone.View {
     // initalize trackster
     initialize() {
         // load ui
-        ui = new TracksterUI(Galaxy.root);
+        this.ui = new TracksterUI(Galaxy.root);
 
         // create button menu
-        ui.createButtonMenu();
+        this.ui.createButtonMenu();
 
         // attach the button menu to the panel header and float it left
-        ui.buttonMenu.$el.attr("style", "float: right");
+        this.ui.buttonMenu.$el.attr("style", "float: right");
 
         // add to center panel
-        $("#center .unified-panel-header-inner").append(ui.buttonMenu.$el);
+        $("#center .unified-panel-header-inner").append(this.ui.buttonMenu.$el);
 
         // configure right panel
         $("#right .unified-panel-title").append("Bookmarks");
@@ -461,13 +453,13 @@ class TracksterView extends Backbone.View {
             title: _l("Add Data to Saved Visualization"),
             body: tracks_grid.$el,
             buttons: {
-                Cancel: function() {
+                Cancel: () => {
                     window.location = `${Galaxy.root}visualizations/list`;
                 },
-                "Add to visualization": function() {
+                "Add to visualization": () => {
                     $(parent.document)
                         .find("input[name=id]:checked")
-                        .each(function() {
+                        .each(() => {
                             dataset_params.id = $(this).val();
                             window.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
                         });
@@ -482,7 +474,7 @@ class TracksterView extends Backbone.View {
         var viz_config = window.galaxy_config.app.viz_config;
 
         // view
-        view = ui.create_visualization(
+        view = this.ui.create_visualization(
             {
                 container: $("#center .unified-panel-body"),
                 name: viz_config.title,
@@ -578,7 +570,7 @@ class TracksterView extends Backbone.View {
     create_browser(name, dbkey) {
         $(document).trigger("convert_to_values");
 
-        view = ui.create_visualization(
+        view = this.ui.create_visualization(
             {
                 container: $("#center .unified-panel-body"),
                 name: name,
@@ -605,7 +597,7 @@ class TracksterView extends Backbone.View {
                 url: `${Galaxy.root}api/datasets/${window.galaxy_config.app.add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
                 dataType: "json",
-                success: function(track_data) {
+                success: track_data => {
                     view.add_drawable(tracks.object_from_template(track_data, view, view));
                 }
             });
@@ -616,11 +608,11 @@ class TracksterView extends Backbone.View {
             var position = `${view.chrom}:${view.low}-${view.high}`;
 
             var annotation = "Bookmark description";
-            return ui.add_bookmark(position, annotation, true);
+            return this.ui.add_bookmark(position, annotation, true);
         });
 
         // initialize keyboard
-        ui.init_keyboard_nav(view);
+        this.ui.init_keyboard_nav(view);
 
         $(window).on("beforeunload", () => {
             if (view.has_changes) {
