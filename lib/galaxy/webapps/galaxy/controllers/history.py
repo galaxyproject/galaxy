@@ -19,6 +19,7 @@ from galaxy.model.item_attrs import (
 from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.create_history_template import render_item
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -473,6 +474,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             show_hidden=galaxy.util.string_as_bool(show_hidden))
 
     @web.expose
+    @web.json
     def display_structured(self, trans, id=None):
         """
         Display a history as a nested structure showing the jobs and workflow
@@ -542,8 +544,26 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items.extend(wf_invocations.items())
         # Sort items by age
         items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        #
-        return trans.fill_template("history/display_structured.mako", items=items, history=history)
+        
+        # logic taken from mako files
+        from galaxy.managers import hdas
+        hda_serializer = hdas.HDASerializer( trans.app )
+        controller = trans.webapp.controllers[ 'history' ]
+        hda_dicts = []
+        id_hda_dict_map = {}
+        for hda in history.active_datasets:
+            hda_dict = hda_serializer.serialize_to_view( hda, user=trans.user, trans=trans, view='detailed' )
+            id_hda_dict_map[ hda_dict[ 'id' ] ] = hda_dict
+            hda_dicts.append( hda_dict )
+
+        html_template = ''
+        for entity, children in items:
+            html_template += render_item(trans, entity, children)
+        return {
+            'name': history.name,
+            'history_json': hda_dicts,
+            'template': html_template
+        }
 
     @web.expose
     def structure(self, trans, id=None, **kwargs):
