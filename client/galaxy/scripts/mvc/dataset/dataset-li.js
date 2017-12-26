@@ -4,7 +4,7 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import Vue from "vue";
-import ShowParams from "components/show_params.vue";
+import ShowParams from "components/ShowParams.vue";
 
 var logNamespace = "dataset";
 /*==============================================================================
