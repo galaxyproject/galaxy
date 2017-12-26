@@ -143,7 +143,7 @@ class ToolShedRepository(object):
                             if tool_id in tool_ids:
                                 self.shed_config_filename = name
                                 return shed_tool_conf_dict
-        if self.includes_datatypes:
+        if self.includes_datatypes or self.includes_data_managers:
             # We need to search by file paths here, which is less desirable.
             tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
             for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):

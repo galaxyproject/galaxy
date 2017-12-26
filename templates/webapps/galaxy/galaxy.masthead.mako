@@ -30,7 +30,6 @@
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
             'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
-            'user_requests'             : bool( trans.user and ( trans.user.requests or app.security_agent.get_accessible_request_types( trans, trans.user ) ) ),
             'user_json'                 : get_user_dict()
         }
     %>
@@ -58,7 +57,7 @@
         }
         // TODO: ?? move above to base_panels.mako?
         $( function() {
-            window.masthead(${h.dumps(masthead_config)});
+            window.bundleEntries.masthead(${h.dumps(masthead_config)});
         });
     </script>
 </%def>

@@ -195,7 +195,7 @@ class DefaultToolAction(object):
 
         return history, inp_data, inp_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, mapping_over_collection=False, execution_cache=None):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -257,7 +257,7 @@ class DefaultToolAction(object):
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
-        wrapped_params = self._wrapped_params(trans, tool, incoming)
+        wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
         out_data = odict()
         input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
@@ -267,7 +267,7 @@ class DefaultToolAction(object):
             tool=tool,
             tool_action=self,
             input_collections=input_collections,
-            mapping_over_collection=mapping_over_collection,
+            dataset_collection_elements=dataset_collection_elements,
             on_text=on_text,
             incoming=incoming,
             params=wrapped_params.params,
@@ -304,8 +304,12 @@ class DefaultToolAction(object):
                 data = app.model.HistoryDatasetAssociation(extension=ext, create_dataset=True, flush=False)
                 if hidden is None:
                     hidden = output.hidden
+                if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
+                    hidden = True
                 if hidden:
                     data.visible = False
+                if dataset_collection_elements is not None and name in dataset_collection_elements:
+                    dataset_collection_elements[name].hda = data
                 trans.sa_session.add(data)
                 trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
             for _, tag in preserved_tags.items():
@@ -351,6 +355,7 @@ class DefaultToolAction(object):
 
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
+                handle_output_timer = ExecutionTimer()
                 if output.collection:
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
@@ -402,15 +407,14 @@ class DefaultToolAction(object):
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
                     else:
                         element_kwds = dict(element_identifiers=element_identifiers)
-
                     output_collections.create_collection(
                         output=output,
                         name=name,
                         tags=preserved_tags,
                         **element_kwds
                     )
+                    log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
                 else:
-                    handle_output_timer = ExecutionTimer()
                     handle_output(name, output)
                     log.info("Handled output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
 
@@ -510,12 +514,12 @@ class DefaultToolAction(object):
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
             # Put the job in the queue if tracking in memory
-            app.job_queue.put(job.id, job.tool_id)
+            app.job_manager.job_queue.put(job.id, job.tool_id)
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 
-    def _wrapped_params(self, trans, tool, incoming):
-        wrapped_params = WrappedParameters(trans, tool, incoming)
+    def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
+        wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
         return wrapped_params
 
     def _get_on_text(self, inp_data):
@@ -594,6 +598,7 @@ class DefaultToolAction(object):
             job.add_implicit_output_dataset_collection(name, dataset_collection)
         for name, dataset_collection_instance in out_collection_instances.items():
             job.add_output_dataset_collection(name, dataset_collection_instance)
+            dataset_collection_instance.job = job
 
     def _check_input_data_access(self, trans, job, inp_data, current_user_roles):
         access_timer = ExecutionTimer()
@@ -670,13 +675,13 @@ class OutputCollections(object):
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, mapping_over_collection, on_text, incoming, params, job_params):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params):
         self.trans = trans
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
         self.input_collections = input_collections
-        self.mapping_over_collection = mapping_over_collection
+        self.dataset_collection_elements = dataset_collection_elements
         self.on_text = on_text
         self.incoming = incoming
         self.params = params
@@ -710,12 +715,15 @@ class OutputCollections(object):
                         for dataset in value.dataset_instances:
                             assert dataset.history is not None
 
-        if self.mapping_over_collection:
+        if self.dataset_collection_elements is not None:
             dc = collections_manager.create_dataset_collection(
                 self.trans,
                 collection_type=collection_type,
                 **element_kwds
             )
+            if name in self.dataset_collection_elements:
+                self.dataset_collection_elements[name].child_collection = dc
+                # self.trans.sa_session.add(self.dataset_collection_elements[name])
             self.out_collections[name] = dc
         else:
             hdca_name = self.tool_action.get_output_name(

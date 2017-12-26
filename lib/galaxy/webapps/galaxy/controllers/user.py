@@ -5,10 +5,10 @@ Contains the user interface in the Universe class
 import logging
 import random
 import socket
-import urllib
 from datetime import datetime, timedelta
 
 from markupsafe import escape
+from six.moves.urllib.parse import unquote
 from sqlalchemy import (
     and_,
     func,
@@ -62,15 +62,16 @@ can also copy and paste it into your browser.
 
 
 class UserOpenIDGrid(grids.Grid):
-    use_panels = False
     title = "OpenIDs linked to your account"
     model_class = model.UserOpenID
-    template = '/user/openid_manage.mako'
     default_filter = {"openid": "All"}
     default_sort_key = "-create_time"
     columns = [
         grids.TextColumn("OpenID URL", key="openid", link=(lambda x: dict(action='openid_auth', login_button="Login", openid_url=x.openid if not x.provider else '', openid_provider=x.provider, auto_associate=True))),
         grids.GridColumn("Created", key="create_time", format=time_ago),
+    ]
+    global_actions = [
+        grids.GridAction("Add new account", url_args=dict(action="create_openid"), target="center")
     ]
     operations = [
         grids.GridOperation("Delete", async_compatible=True),
@@ -138,8 +139,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
             return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
         auto_associate = util.string_as_bool(kwd.get('auto_associate', False))
         action = 'login'
+        controller = 'user'
         if trans.user:
-            action = 'openid_manage'
+            action = 'openids'
+            controller = 'list'
         if trans.app.config.support_url is not None:
             contact = '<a href="%s">support</a>' % trans.app.config.support_url
         else:
@@ -153,7 +156,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         openid_provider = kwd.get('openid_provider', None)
         if info.status == trans.app.openid_manager.FAILURE and display_identifier:
             message = "Login via OpenID failed.  The technical reason for this follows, please include this message in your email if you need to %s to resolve this problem: %s" % (contact, info.message)
-            return trans.response.send_redirect(url_for(controller='user',
+            return trans.response.send_redirect(url_for(controller=controller,
                                                         action=action,
                                                         use_panels=True,
                                                         redirect=redirect,
@@ -208,8 +211,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                         message = '%s<br>Click <a href="%s"><strong>here</strong></a> to return to the page you were previously viewing.' % (message, escape(self.__get_redirect_url(redirect)))
                 if redirect and status != "error":
                     return trans.response.send_redirect(self.__get_redirect_url(redirect))
-                return trans.response.send_redirect(url_for(controller='user',
-                                                     action='openid_manage',
+                return trans.response.send_redirect(url_for(controller='openids',
+                                                     action='list',
                                                      use_panels=True,
                                                      redirect=redirect,
                                                      message=message,
@@ -300,18 +303,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     for openid in openid_objs:
                         message = '%s<li><a href="%s" target="_blank">%s</a></li>' % (message, url_for(controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True), openid.name)
                     message = "%s</ul>" % (message)
-                    return trans.response.send_redirect(url_for(controller='user',
-                                                                action='openid_manage',
-                                                                use_panels=use_panels,
-                                                                redirect=redirect,
+                    return trans.response.send_redirect(url_for(controller='openids',
+                                                                action='list',
                                                                 message=message,
                                                                 status='info'))
                 if redirect:
                     return trans.response.send_redirect(redirect)
-                return trans.response.send_redirect(url_for(controller='user',
-                                                            action='openid_manage',
-                                                            use_panels=use_panels,
-                                                            redirect=redirect,
+                return trans.response.send_redirect(url_for(controller='openids',
+                                                            action='list',
                                                             message=message,
                                                             status='info'))
         if kwd.get('create_user_button', False):
@@ -352,18 +351,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                             for openid in openid_objs:
                                 message = '%s<li><a href="%s" target="_blank">%s</a></li>' % (message, url_for(controller='user', action='openid_auth', openid_provider=openid.id, redirect=redirect, auto_associate=True), openid.name)
                             message = "%s</ul>" % (message)
-                            return trans.response.send_redirect(url_for(controller='user',
-                                                                        action='openid_manage',
-                                                                        use_panels=True,
-                                                                        redirect=redirect,
+                            return trans.response.send_redirect(url_for(controller='openids',
+                                                                        action='list',
                                                                         message=message,
                                                                         status='info'))
                         if redirect:
                             return trans.response.send_redirect(redirect)
-                        return trans.response.send_redirect(url_for(controller='user',
-                                                                    action='openid_manage',
-                                                                    use_panels=use_panels,
-                                                                    redirect=redirect,
+                        return trans.response.send_redirect(url_for(controller='openids',
+                                                                    action='list',
                                                                     message=message,
                                                                     status='info'))
                 else:
@@ -386,63 +381,53 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    openids=openids)
 
     @web.expose
-    @web.require_login('manage OpenIDs')
-    def openid_disassociate(self, trans, **kwd):
-        '''Disassociates a user with an OpenID'''
-        if not trans.app.config.enable_openid:
-            return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        params = util.Params(kwd)
-        ids = params.get('id', None)
-        message = params.get('message', None)
-        status = params.get('status', None)
-        use_panels = params.get('use_panels', False)
-        user_openids = []
-        if not ids:
-            message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
-            status = 'error'
-        else:
-            ids = util.listify(params.id)
-            for id in ids:
-                id = trans.security.decode_id(id)
-                user_openid = trans.sa_session.query(trans.app.model.UserOpenID).get(int(id))
-                if not user_openid or (trans.user.id != user_openid.user_id):
-                    message = 'The selected OpenID(s) are not associated with your Galaxy account.'
-                    status = 'error'
-                    user_openids = []
-                    break
-                user_openids.append(user_openid)
-            if user_openids:
-                deleted_urls = []
-                for user_openid in user_openids:
-                    trans.sa_session.delete(user_openid)
-                    deleted_urls.append(user_openid.openid)
-                trans.sa_session.flush()
-                for deleted_url in deleted_urls:
-                    trans.log_event("User disassociated OpenID: %s" % deleted_url)
-                message = '%s OpenIDs were disassociated from your Galaxy account.' % len(ids)
-                status = 'done'
-        return trans.response.send_redirect(url_for(controller='user',
-                                                    action='openid_manage',
-                                                    use_panels=use_panels,
-                                                    message=message,
-                                                    status=status))
+    @web.require_login('create OpenIDs')
+    def create_openid(self, trans, **kwd):
+        return trans.fill_template('/user/openid_manage.mako',
+           openid_providers=trans.app.openid_providers,
+           redirect=kwd.get('redirect', url_for(controller='openids', action='list')).strip())
 
-    @web.expose
+    @web.expose_api
     @web.require_login('manage OpenIDs')
-    def openid_manage(self, trans, **kwd):
-        '''Manage OpenIDs for user'''
+    def openids_list(self, trans, **kwd):
+        '''List of availabel OpenIDs for user'''
+        message = kwd.get('message', '')
+        status = kwd.get('status', '')
         if not trans.app.config.enable_openid:
-            return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        use_panels = kwd.get('use_panels', False)
+            message = 'OpenID authentication is not enabled in this instance of Galaxy.'
+            status = 'error'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
-            if operation == "delete":
-                return trans.response.send_redirect(url_for(controller='user',
-                                                            action='openid_disassociate',
-                                                            use_panels=use_panels,
-                                                            id=kwd['id']))
-        kwd['redirect'] = kwd.get('redirect', url_for(controller='user', action='openid_manage', use_panels=True)).strip()
-        kwd['openid_providers'] = trans.app.openid_providers
+            ids = util.listify(kwd.get('id'))
+            if operation == 'delete':
+                if not ids:
+                    message = 'You must select at least one OpenID to disassociate from your Galaxy account.'
+                    status = 'error'
+                else:
+                    user_openids = []
+                    for id in ids:
+                        id = trans.security.decode_id(id)
+                        user_openid = trans.sa_session.query(trans.app.model.UserOpenID).get(int(id))
+                        if not user_openid or (trans.user.id != user_openid.user_id):
+                            message = 'The selected OpenID(s) are not associated with your Galaxy account.'
+                            status = 'error'
+                            user_openids = []
+                            break
+                        user_openids.append(user_openid)
+                    if user_openids:
+                        deleted_urls = []
+                        for user_openid in user_openids:
+                            trans.sa_session.delete(user_openid)
+                            deleted_urls.append(user_openid.openid)
+                        trans.sa_session.flush()
+                        for deleted_url in deleted_urls:
+                            trans.log_event('User disassociated OpenID: %s' % deleted_url)
+                        message = '%s OpenIDs were disassociated from your Galaxy account.' % len(ids)
+                        status = 'done'
+        if message and status:
+            kwd['message'] = util.sanitize_text(message)
+            kwd['status'] = status
+        kwd['dict_format'] = True
         return self.user_openid_grid(trans, **kwd)
 
     @web.expose
@@ -868,7 +853,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         Check whether token fits the user and then activate the user's account.
         """
         params = util.Params(kwd, sanitize=False)
-        email = urllib.unquote(params.get('email', None))
+        email = unquote(params.get('email', None))
         activation_token = params.get('activation_token', None)
 
         if email is None or activation_token is None:

@@ -26,6 +26,12 @@ var CollectionViewEdit = _super.extend(
         /** sub view class used for nested collections */
         NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit,
 
+        getNestedDCDCEViewClass: function() {
+            return DC_EDIT.NestedDCDCEListItemEdit.extend({
+                foldoutPanelClass: CollectionViewEdit
+            });
+        },
+
         // ......................................................................... SET UP
         /** Set up the view, set up storage, bind listeners to HistoryContents events
          *  @param {Object} attributes optional settings for the panel
@@ -90,94 +96,7 @@ var CollectionViewEdit = _super.extend(
     }
 );
 
-// =============================================================================
-/** @class non-editable, read-only View/Controller for a dataset collection. */
-var ListCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends ListCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for datasets */
-        DatasetDCEViewClass: DC_EDIT.DatasetDCEListItemEdit,
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class Editable, read-only View/Controller for a dataset collection. */
-var PairCollectionViewEdit = ListCollectionViewEdit.extend(
-    /** @lends PairCollectionViewEdit.prototype */ {
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `PairCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class Editable (roughly since these collections are immutable),
- *  View/Controller for a dataset collection.
- */
-var NestedPairCollectionViewEdit = PairCollectionViewEdit.extend(
-    /** @lends NestedPairCollectionViewEdit.prototype */ {
-        /** Override to remove the editable text from the name/identifier - these collections are considered immutable */
-        _setUpBehaviors: function($where) {
-            _super.prototype._setUpBehaviors.call(this, $where);
-        },
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `NestedPairCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class editable, View/Controller for a list of pairs dataset collection. */
-var ListOfPairsCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends ListOfPairsCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit.extend({
-            foldoutPanelClass: NestedPairCollectionViewEdit
-        }),
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListOfPairsCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
-// =============================================================================
-/** @class View/Controller for a list of lists dataset collection. */
-var ListOfListsCollectionViewEdit = CollectionViewEdit.extend(
-    /** @lends ListOfListsCollectionView.prototype */ {
-        //TODO: not strictly needed - due to switch in CollectionView._getContentClass
-        /** sub view class used for nested collections */
-        NestedDCDCEViewClass: DC_EDIT.NestedDCDCEListItemEdit.extend({
-            foldoutPanelClass: NestedPairCollectionViewEdit
-        }),
-
-        // ........................................................................ misc
-        /** string rep */
-        toString: function() {
-            return `ListOfListsCollectionViewEdit(${this.model ? this.model.get("name") : ""})`;
-        }
-    }
-);
-
 //==============================================================================
 export default {
-    CollectionViewEdit: CollectionViewEdit,
-    ListCollectionViewEdit: ListCollectionViewEdit,
-    PairCollectionViewEdit: PairCollectionViewEdit,
-    ListOfPairsCollectionViewEdit: ListOfPairsCollectionViewEdit,
-    ListOfListsCollectionViewEdit: ListOfListsCollectionViewEdit
+    CollectionViewEdit: CollectionViewEdit
 };

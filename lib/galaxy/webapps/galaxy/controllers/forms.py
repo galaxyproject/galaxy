@@ -39,7 +39,6 @@ class FormsGrid(grids.Grid):
     model_class = model.FormDefinitionCurrent
     default_sort_key = "-update_time"
     num_rows_per_page = 50
-    preserve_state = True
     use_paging = True
     default_filter = dict(deleted="False")
     columns = [
@@ -99,7 +98,6 @@ class Forms(BaseUIController):
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd['dict_format'] = True
         return self.forms_grid(trans, **kwd)
 
     @web.expose_api

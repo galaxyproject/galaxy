@@ -118,7 +118,6 @@ class TracksterSelectionGrid(grids.Grid):
     title = "Insert into visualization"
     model_class = model.Visualization
     default_sort_key = "-update_time"
-    use_async = True
     use_paging = False
     show_item_checkboxes = True
     columns = [
@@ -193,7 +192,6 @@ class VisualizationListGrid(grids.Grid):
 class VisualizationAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
-    use_async = True
     title = "Published Visualizations"
     model_class = model.Visualization
     default_sort_key = "update_time"
@@ -242,7 +240,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     @web.require_login("see all available libraries")
     def list_libraries(self, trans, **kwargs):
         """List all libraries that can be used for selecting datasets."""
-        kwargs['dict_format'] = True
         return self._libraries_grid(trans, **kwargs)
 
     @web.expose
@@ -251,7 +248,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     def list_history_datasets(self, trans, **kwargs):
         """List a history's datasets that can be added to a visualization."""
         kwargs['show_item_checkboxes'] = 'True'
-        kwargs['dict_format'] = True
         return self._history_datasets_grid(trans, **kwargs)
 
     @web.expose
@@ -260,19 +256,16 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
     def list_library_datasets(self, trans, **kwargs):
         """List a library's datasets that can be added to a visualization."""
         kwargs['show_item_checkboxes'] = 'True'
-        kwargs['dict_format'] = True
         return self._library_datasets_grid(trans, **kwargs)
 
     @web.expose
     @web.json
     def list_tracks(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self._tracks_grid(trans, **kwargs)
 
     @web.expose
     @web.json
     def list_published(self, trans, *args, **kwargs):
-        kwargs['dict_format'] = True
         grid = self._published_list_grid(trans, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -294,7 +287,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                     self.copy(trans, **kwargs)
             session.flush()
         kwargs['embedded'] = True
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = sanitize_text(message)
             kwargs['status'] = status
@@ -736,7 +728,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
 
         # define app configuration
-        app = {"jscript" : "tracksterApp"}
+        app = {"jscript" : "trackster"}
 
         # get dataset to add
         id = kwargs.get("id", None)
@@ -780,7 +772,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'viz'})
+        return trans.fill_template('galaxy.panels.mako', config={'right_panel': True, 'app': app, 'bundle': 'extended'})
 
     @web.expose
     def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
@@ -836,13 +828,13 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
 
         # define app configuration for generic mako template
         app = {
-            'jscript'       : "circsterApp",
+            'jscript'       : "circster",
             'viz_config'    : viz_config,
             'genome'        : genome
         }
 
         # fill template
-        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'viz'})
+        return trans.fill_template('galaxy.panels.mako', config={'app' : app, 'bundle': 'extended'})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):

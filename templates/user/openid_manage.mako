@@ -1,11 +1,6 @@
-## Template generates a grid that enables user to select items.
-<%inherit file="../grid_base.mako" />
-
+<%inherit file="/base.mako"/>
 <%namespace file="login.mako" import="render_openid_form" />
-
-<%def name="load()">
+<%def name="body()">
     <h2>Associate more OpenIDs</h2>
-    ${render_openid_form( kwargs['redirect'], True, kwargs['openid_providers'] )}
-    <br/><br/>
-    ${parent.load()}
+    ${render_openid_form( redirect, True, openid_providers )}
 </%def>

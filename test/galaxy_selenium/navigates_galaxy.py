@@ -155,6 +155,14 @@ class NavigatesGalaxy(HasDriver):
         self.driver.switch_to.frame("galaxy_main")
 
     @contextlib.contextmanager
+    def local_storage(self, key, value):
+        self.driver.execute_script('''window.localStorage.setItem("%s", %s);''' % (key, value))
+        try:
+            yield
+        finally:
+            self.driver.execute_script('''window.localStorage.removeItem("%s");''' % key)
+
+    @contextlib.contextmanager
     def main_panel(self):
         try:
             self.switch_to_main_panel()
@@ -604,6 +612,11 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
+    def libraries_open_with_name(self, name):
+        self.libraries_open()
+        self.libraries_index_search_for(name)
+        self.libraries_index_table_elements()[0].find_element_by_css_selector("td a").click()
+
     @retry_during_transitions
     def libraries_index_table_elements(self):
         container = self.wait_for_selector_visible(".library_container")
@@ -649,8 +662,7 @@ class NavigatesGalaxy(HasDriver):
         self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
-        create_folder_button = self.wait_for_selector_clickable("#toolbtn_create_folder")
-        create_folder_button.click()
+        self.components.libraries.folder.add_folder.wait_for_and_click()
 
         name_text_box = self.wait_for_selector_clickable("input[name='Name']")
         name_text_box.send_keys(name)
@@ -672,6 +684,26 @@ class NavigatesGalaxy(HasDriver):
 
         self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
+
+    def libraries_dataset_import_from_history_select(self, to_select_items):
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
+        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
+        for to_select_item in to_select_items:
+            found = False
+            for history_element in history_elements:
+                if to_select_item in history_element.text:
+                    history_element.find_element_by_css_selector("input").click()
+                    found = True
+                    break
+
+            if not found:
+                raise Exception("Failed to find history item [%s] to select" % to_select_item)
+
+    def libraries_dataset_import_from_history_click_ok(self, wait=True):
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        if wait:
+            # Let the progress bar disappear...
+            self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
 
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body")
@@ -843,6 +875,9 @@ class NavigatesGalaxy(HasDriver):
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 
+    def history_panel_click_copy_elements(self):
+        self.click_history_option("Copy Datasets")
+
     @retry_during_transitions
     def histories_click_advanced_search(self):
         search_selector = '#standard-search .advanced-search-toggle'
@@ -904,6 +939,11 @@ class NavigatesGalaxy(HasDriver):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu
         viz_menu_selectors = "%s %s" % (self.history_panel_item_selector(hid), "a.visualization-link")
         return self.driver.find_elements_by_css_selector(viz_menu_selectors)
+
+    def history_panel_item_get_nametags(self, hid):
+        item_component = self.history_panel_item_component(hid=hid)
+        item_component.wait_for_visible()
+        return [e.text for e in item_component.nametags.all()]
 
     def history_panel_item_available_visualizations(self, hid):
         # Precondition: viz menu has been opened with history_panel_item_click_visualization_menu

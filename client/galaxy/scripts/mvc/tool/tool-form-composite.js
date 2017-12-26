@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** This is the run workflow tool form view. */
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
@@ -209,7 +210,7 @@ var View = Backbone.View.extend({
         var self = this;
         this.execute_btn = new Ui.Button({
             icon: "fa-check",
-            title: "Run workflow",
+            title: _l("Run workflow"),
             cls: "btn btn-primary",
             onclick: function() {
                 self._execute();
@@ -587,7 +588,7 @@ var View = Backbone.View.extend({
                     }
                     if (!input_found) {
                         self.modal.show({
-                            title: "Workflow submission failed",
+                            title: _l("Workflow submission failed"),
                             body: self._templateError(job_def, response && response.err_msg),
                             buttons: {
                                 Close: function() {

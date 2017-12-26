@@ -25,7 +25,7 @@ var commonLibs = [
     "libs/farbtastic",
     "libs/bootstrap",
     "libs/bootstrap-tour",
-    "libs/vue",
+    "vue",
     // mvc
     "libs/underscore",
     "libs/backbone",
@@ -37,18 +37,13 @@ var commonLibs = [
     "onload"
 ];
 
-module.exports = {
-    //devtool: "source-map",
+let buildconfig = {
     entry: {
         libs: commonLibs,
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
         admin: "./galaxy/scripts/apps/admin.js",
-        workflow: "./galaxy/scripts/apps/workflow.js",
-        masthead: "./galaxy/scripts/apps/masthead.js",
-        viz: "./galaxy/scripts/apps/viz.js",
-        library: "./galaxy/scripts/apps/library.js",
-        adminToolshed: "./galaxy/scripts/apps/admin-toolshed.js"
+        extended: "./galaxy/scripts/apps/extended.js"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -104,6 +99,9 @@ module.exports = {
             name: "libs",
             filename: "libs.bundled.js"
         }),
+        new webpack.SourceMapDevToolPlugin({
+            filename: '[name].js.map',
+        }),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({
@@ -116,3 +114,9 @@ module.exports = {
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ]
 };
+
+if (process.env.GXY_BUILD_SOURCEMAPS){
+    buildconfig.devtool = 'source-map';
+}
+
+module.exports = buildconfig;

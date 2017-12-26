@@ -31,6 +31,9 @@ class NullToolProvidedMetadata(object):
     def get_new_dataset_meta_by_basename(self, output_name, basename):
         return {}
 
+    def has_failed_outputs(self):
+        return False
+
 
 class LegacyToolProvidedMetadata(object):
 
@@ -73,6 +76,14 @@ class LegacyToolProvidedMetadata(object):
         log.warning("Called get_new_datasets with legacy tool metadata provider - that is unimplemented.")
         return []
 
+    def has_failed_outputs(self):
+        found_failed = False
+        for meta in self.tool_provided_job_metadata:
+            if meta.get("failed", False):
+                found_failed = True
+
+        return found_failed
+
 
 class ToolProvidedMetadata(object):
 
@@ -110,6 +121,14 @@ class ToolProvidedMetadata(object):
                 dataset = extra_kwds
                 extra_kwds.update(element)
                 yield extra_kwds
+
+    def has_failed_outputs(self):
+        found_failed = False
+        for meta in self.tool_provided_job_metadata.values():
+            if meta.get("failed", False):
+                found_failed = True
+
+        return found_failed
 
 
 def collect_dynamic_collections(

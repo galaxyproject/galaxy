@@ -10,7 +10,6 @@ var View = Backbone.View.extend({
         $.ajax({
             url: `${Galaxy.root + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
             success: function(response) {
-                response["dict_format"] = true;
                 self.model.set(response);
                 self.render();
             }

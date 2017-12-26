@@ -13,6 +13,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import HistoryImport from "components/HistoryImport.vue";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -20,8 +21,8 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
-import Citations from "components/citations.vue";
-import Vue from "libs/vue";
+import Citations from "components/Citations.vue";
+import Vue from "vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -46,20 +47,23 @@ window.app = function app(options, bootstrapped) {
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)(:form_id)": "show_user_form",
-            "(/)workflow(/)": "show_workflows",
-            "(/)workflow/run(/)": "show_run",
+            "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/(:action_id)": "show_visualizations",
+            "(/)workflows/import_workflow": "show_import_workflow",
+            "(/)workflows/run(/)": "show_run",
+            "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
+            "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
+            "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
-            "(/)workflow/import_workflow": "show_import_workflow",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error"
@@ -73,7 +77,7 @@ window.app = function app(options, bootstrapped) {
 
         show_tours: function(tour_id) {
             if (tour_id) {
-                Tours.giveTour(tour_id);
+                Tours.giveTourById(tour_id);
             } else {
                 this.page.display(new Tours.ToursView());
             }
@@ -112,8 +116,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}workflow/list_published`
                 })
             );
         },
@@ -138,6 +141,13 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_histories_import: function() {
+            var historyImportInstance = Vue.extend(HistoryImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyImportInstance().$mount(vm);
+        },
+
         show_histories_permissions: function() {
             this.page.display(
                 new FormWrapper.View({
@@ -147,11 +157,18 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_openids: function() {
+            this.page.display(
+                new GridView({
+                    url_base: `${Galaxy.root}user/openids_list`
+                })
+            );
+        },
+
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`,
-                    dict_format: true
+                    url_base: `${Galaxy.root}dataset/list`
                 })
             );
         },
@@ -186,6 +203,15 @@ window.app = function app(options, bootstrapped) {
 
         show_workflows: function() {
             this.page.display(new Workflows.View());
+        },
+
+        show_workflows_create: function() {
+            this.page.display(
+                new FormWrapper.View({
+                    url: `workflow/create`,
+                    redirect: "workflow/editor"
+                })
+            );
         },
 
         show_run: function() {

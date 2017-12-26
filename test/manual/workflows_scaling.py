@@ -19,7 +19,7 @@ from bioblend import galaxy
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
-from base.populators import (  # noqa: I100
+from base.populators import (  # noqa: I100,I202
     GiDatasetCollectionPopulator,
     GiDatasetPopulator,
     GiWorkflowPopulator,

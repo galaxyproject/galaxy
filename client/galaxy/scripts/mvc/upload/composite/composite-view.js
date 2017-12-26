@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Renders contents of the composite uploader */
 import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
@@ -19,13 +20,13 @@ export default Backbone.View.extend({
 
         // create button section
         this.btnStart = new Ui.Button({
-            title: "Start",
+            title: _l("Start"),
             onclick: function() {
                 self._eventStart();
             }
         });
         this.btnClose = new Ui.Button({
-            title: "Close",
+            title: _l("Close"),
             onclick: function() {
                 self.app.modal.hide();
             }

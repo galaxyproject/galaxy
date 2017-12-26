@@ -383,5 +383,5 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             return converted
 
         except model.NoConverterException:
-            exc_data = dict(source=original.ext, target=target_ext, available=original.get_converter_types().keys())
+            exc_data = dict(source=original.ext, target=target_ext, available=list(original.get_converter_types().keys()))
             raise galaxy_exceptions.RequestParameterInvalidException('Conversion not possible', **exc_data)

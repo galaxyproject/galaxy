@@ -20,7 +20,7 @@ import sys
 import requests
 from six.moves.urllib.parse import urlencode
 
-import parse_builds  # noqa: I100
+import parse_builds  # noqa: I100,I202
 
 
 def getchrominfo(url, db):

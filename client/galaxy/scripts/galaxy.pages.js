@@ -1,8 +1,11 @@
+import _l from "utils/localization";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jstorage";
 import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
+
+var WYMeditor = window.WYMeditor;
 
 var CONTROLS = {
     // Item types.
@@ -153,11 +156,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
         show_modal(
             "Create Link",
-            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${
-                curURL
-            }' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${
-                curTitle
-            }' size='40' /></div><div>`,
+            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
             {
                 "Make link": function() {
                     // Get URL, name/title.
@@ -331,7 +330,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
         var grid = new GridView({
             url_base: item_info.list_ajax_url,
-            dict_format: true,
             embedded: true
         });
         Galaxy.modal.show({
@@ -425,7 +423,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
         var grid = new GridView({
             url_base: item_info.list_ajax_url,
-            dict_format: true,
             embedded: true
         });
         Galaxy.modal.show({
@@ -492,7 +489,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
     }
 };
 
-export default function editor_onload() {
+export default function pagesEditorOnload() {
     // Generic error handling
     $(document).ajaxError((e, x) => {
         // console.log( e, x );
@@ -517,12 +514,12 @@ export default function editor_onload() {
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
             {
                 name: "Superscript",
-                title: "Superscript",
+                title: _l("Superscript"),
                 css: "wym_tools_superscript"
             },
             {
                 name: "Subscript",
-                title: "Subscript",
+                title: _l("Subscript"),
                 css: "wym_tools_subscript"
             },
             {

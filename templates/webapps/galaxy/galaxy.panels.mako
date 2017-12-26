@@ -72,14 +72,10 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-        'bundled/masthead.bundled',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
-
-    %if self.galaxy_config.get('bundle', None):
-        ${h.js('bundled/%s.bundled' % self.galaxy_config.get('bundle'))}
-    %endif
 
     <script type="text/javascript">
         // configure require
@@ -114,6 +110,7 @@
 
         // extra configuration global
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
+        window.galaxy_config = galaxy_config;
     </script>
 
     ${h.js(
@@ -127,10 +124,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( galaxy_config.app.jscript && window[galaxy_config.app.jscript]){
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
                 $( function(){
                     // load galaxy module application
-                    window[galaxy_config.app.jscript]();
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
@@ -150,14 +147,14 @@
         ## configure left panel
         %if self.galaxy_config['left_panel']:
             var lp = new panels.LeftPanel({ el: '#left' });
-            force_left_panel = function( x ) { lp.force_panel( x ) };
+            window.force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
             var rp = new panels.RightPanel({ el: '#right' });
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-            force_right_panel = function( x ) { rp.force_panel( x ) };
+            window.force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     </script>
 </%def>

@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import ConfigParser
 import logging
 import optparse
 import os
 import re
 import sys
+
+from six.moves.configparser import ConfigParser
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
@@ -14,8 +15,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
 import galaxy.webapps.tool_shed.config as tool_shed_config
 from galaxy.web import security
 from galaxy.webapps.tool_shed.model import mapping
-
-from bootstrap_util import admin_user_info  # noqa: I100
+from bootstrap_util import admin_user_info  # noqa: I100,I201
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_option('-c', dest='config', action='store', help='.ini file to retried toolshed configuration from')
     (args, options) = parser.parse_args()
     ini_file = args.config
-    config_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    config_parser = ConfigParser({'here': os.getcwd()})
     print("Reading ini file: ", ini_file)
     config_parser.read(ini_file)
     config_dict = {}

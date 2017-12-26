@@ -26,6 +26,7 @@ from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    ElementIdentifierMapper,
     InputValueWrapper,
     RawObjectWrapper,
     SelectToolParameterWrapper,
@@ -233,11 +234,9 @@ class ToolEvaluator(object):
                     real_path = dataset.file_name
                     if real_path in input_dataset_paths:
                         wrapper_kwds["dataset_path"] = input_dataset_paths[real_path]
-                identifier_key = identifier_key_dict.get(dataset, None)
-                if identifier_key:
-                    element_identifier = param_dict.get(identifier_key, None)
-                    if element_identifier:
-                        wrapper_kwds["identifier"] = element_identifier
+                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                if element_identifier:
+                    wrapper_kwds["identifier"] = element_identifier
                 input_values[input.name] = \
                     DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
@@ -265,7 +264,7 @@ class ToolEvaluator(object):
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())  # allows lookup of identifier through HDA.
+            element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):

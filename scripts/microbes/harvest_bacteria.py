@@ -12,9 +12,9 @@ import time
 from ftplib import FTP
 
 import requests
-from BeautifulSoup import BeautifulSoup
 from six.moves.urllib.request import urlretrieve
 
+from BeautifulSoup import BeautifulSoup  # noqa: I100, I202
 from util import (
     get_bed_from_genbank,
     get_bed_from_GeneMark,

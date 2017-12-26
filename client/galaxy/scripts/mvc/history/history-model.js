@@ -237,6 +237,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 }
             },
 
+            stopPolling: function() {
+                this.clearUpdateTimeout();
+                if (this.contents) {
+                    this.contents.stopPolling();
+                }
+            },
+
             // ........................................................................ ajax
             /** override to use actual Dates objects for create/update times */
             parse: function(response, options) {

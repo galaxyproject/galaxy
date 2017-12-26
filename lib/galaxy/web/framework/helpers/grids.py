@@ -10,7 +10,6 @@ from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemR
 from galaxy.util import restore_text, sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
-from galaxy.web.framework.helpers import iff
 
 
 log = logging.getLogger(__name__)
@@ -21,12 +20,8 @@ class Grid(object):
     Specifies the content and format of a grid (data table).
     """
     title = ""
-    exposed = True
     model_class = None
     show_item_checkboxes = False
-    template = "grid_base.mako"
-    async_template = "grid_base_async.mako"
-    use_async = False
     use_hide_message = True
     global_actions = []
     columns = []
@@ -35,14 +30,12 @@ class Grid(object):
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter = {}
     default_sort_key = None
-    preserve_state = False
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
-    pass_through_operations = {}
     legend = None
     info_text = None
 
@@ -65,7 +58,6 @@ class Grid(object):
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
         status = kwargs.get('status', None)
         message = kwargs.get('message', None)
-        dict_format = kwargs.get('dict_format', False)
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -73,14 +65,6 @@ class Grid(object):
             # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            if pref_name in trans.get_user().preferences:
-                saved_filter = loads(trans.get_user().preferences[pref_name])
-                base_filter.update(saved_filter)
-            pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-            if pref_name in trans.get_user().preferences:
-                base_sort_key = loads(trans.get_user().preferences[pref_name])
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
@@ -228,26 +212,11 @@ class Grid(object):
         # There are some places in grid templates where it's useful for a grid
         # to have its current filter.
         self.cur_filter_dict = cur_filter_dict
-        # Preserve grid state: save current filter and sort key.
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            trans.get_user().preferences[pref_name] = text_type(dumps(cur_filter_dict))
-            if sort_key:
-                pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-                trans.get_user().preferences[pref_name] = text_type(dumps(sort_key))
-            trans.sa_session.flush()
+
         # Log grid view.
         context = text_type(self.__class__.__name__)
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
-        params['async'] = ('async' in kwargs)
-
-        # TODO:??
-        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
-        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
-        # in mapping.py. If you change that to False, the log_action doesn't affect the query
-        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
-        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
 
         # Render grid.
         def url(*args, **kwargs):
@@ -280,43 +249,14 @@ class Grid(object):
 
         self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
         self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
-        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        if not dict_format:
-            page = trans.fill_template(iff(async_request, self.async_template, self.template),
-                                       grid=self,
-                                       query=query,
-                                       cur_page_num=page_num,
-                                       num_pages=num_pages,
-                                       num_page_links=self.num_page_links,
-                                       default_filter_dict=self.default_filter,
-                                       cur_filter_dict=cur_filter_dict,
-                                       sort_key=sort_key,
-                                       current_item=current_item,
-                                       ids=kwargs.get('id', []),
-                                       url=url,
-                                       status=status,
-                                       message=message,
-                                       info_text=self.info_text,
-                                       use_panels=self.use_panels,
-                                       use_hide_message=self.use_hide_message,
-                                       advanced_search=self.advanced_search,
-                                       show_item_checkboxes=(self.show_item_checkboxes or
-                                                             kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
-                                       # Pass back kwargs so that grid template can set and use args without
-                                       # grid explicitly having to pass them.
-                                       kwargs=kwargs)
-            trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
-            return page
-
         grid_config = {
             'title'                         : self.title,
             'url_base'                      : trans.request.path_url,
-            'async'                         : self.use_async,
             'async_ops'                     : [],
             'categorical_filters'           : {},
             'filters'                       : cur_filter_dict,

@@ -1,6 +1,7 @@
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
-var View = Backbone.View.extend({
+
+export var View = Backbone.View.extend({
     visible: false,
     initialize: function(options) {
         var self = this;

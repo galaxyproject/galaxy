@@ -19,7 +19,7 @@
             'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
             'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
             'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
-            'workflow_index'      : h.url_for( controller='workflow', action='index' ),
+            'workflow_index'      : h.url_for( '/workflows/list' ),
             'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
             'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as') 
         },
@@ -44,12 +44,12 @@
         "libs/jquery/jquery.form",
         "libs/jquery/jstorage",
         "libs/jquery/jquery.autocomplete",
-        "bundled/workflow.bundled"
+        "bundled/extended.bundled"
     )}
 
     <script type='text/javascript'>
         $( function() {
-            workflowApp(${h.dumps(self.editor_config)});
+            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
 </%def>
