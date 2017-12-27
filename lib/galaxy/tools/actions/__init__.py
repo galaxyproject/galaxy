@@ -8,7 +8,7 @@ from six import string_types
 from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.tools.parameters import update_param
+from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util import ExecutionTimer
@@ -474,7 +474,9 @@ class DefaultToolAction(object):
                                     hda.state = hda.states.NEW
                                     hda.info = None
                             input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
-                            update_param(jtid.name, input_values, str(out_data[jtod.name].id))
+                            old_dataset_id = jtod.dataset_id
+                            new_dataset_id = out_data[jtod.name].id
+                            input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
                             for p in job_to_remap.parameters:
                                 p.value = json.dumps(input_values[p.name])
                             jtid.dataset = out_data[jtod.name]

@@ -3,8 +3,9 @@ Classes encapsulating Galaxy tool parameters.
 """
 from __future__ import print_function
 
-import re
 from json import dumps
+
+from boltons.iterutils import remap
 
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
@@ -252,23 +253,20 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
             incoming[name_prefix + input.name] = value
 
 
-def update_param(prefixed_name, input_values, new_value):
-    """
-    Given a prefixed parameter name, e.g. 'parameter_0|parameter_1', update
-    the corresponding input value in a nested input values dictionary.
-    """
-    for key in input_values:
-        match = re.match('^' + key + '_(\d+)\|(.+)', prefixed_name)
-        if match and not key.endswith("|__identifier__"):
-            index = int(match.group(1))
-            if isinstance(input_values[key], list) and len(input_values[key]) > index:
-                update_param(match.group(2), input_values[key][index], new_value)
-        else:
-            match = re.match('^' + key + '\|(.+)', prefixed_name)
-            if isinstance(input_values[key], dict) and match:
-                update_param(match.group(1), input_values[key], new_value)
-            elif prefixed_name == key:
-                input_values[key] = new_value
+def update_dataset_ids(input_values, translate_values, src):
+
+    def replace_dataset_ids(path, key, value):
+        """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in input_values with dataset ids used in job."""
+        current_case = input_values
+        if key == 'id':
+            for i, p in enumerate(path):
+                if isinstance(current_case, (list, dict)):
+                    current_case = current_case[p]
+            if src == current_case.get('src'):
+                return key, translate_values.get(current_case['id'], value)
+        return key, value
+
+    return remap(input_values, visit=replace_dataset_ids)
 
 
 def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True):
