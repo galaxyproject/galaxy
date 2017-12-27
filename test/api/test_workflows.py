@@ -654,6 +654,42 @@ steps:
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         self.assertEqual("a\nc\nb\nd\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
+    @skip_without_tool("job_properties")
+    @skip_without_tool("identifier_multiple_in_conditional")
+    def test_workflow_resume_from_failed_step(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  - tool_id: identifier_multiple_in_conditional
+    state:
+      outer_cond:
+        cond_param_outer: true
+        inner_cond:
+          cond_param_inner: true
+          input1:
+            $link: 0#out_file1
+""")
+        history_id = self.dataset_populator.new_history()
+        invocation_id = self.__invoke_workflow(history_id, workflow_id)
+        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
+        failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
+        assert failed_dataset['state'] == 'error', failed_dataset
+        paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
+        assert paused_dataset['state'] == 'paused', paused_dataset
+        inputs = {"thebool": "false",
+                  "failbool": "false",
+                  "rerun_remap_job_id": failed_dataset['creating_job']}
+        self.dataset_populator.run_tool(tool_id='job_properties',
+                                        inputs=inputs,
+                                        history_id=history_id,
+                                        assert_ok=True)
+        unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
+        assert unpaused_dataset['state'] == 'ok'
+
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
         workflow_id = self._upload_yaml_workflow("""
