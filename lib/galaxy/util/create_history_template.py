@@ -93,7 +93,7 @@ def render_item_job(trans, job, children):
     except Exception, exc:
         pass
     template += '<div class="header"><div class="toolFormTitle"><span class="bold">' + tool_name + '</span>'
-    template += '<span class="light">-' + tool_desc + '</span></div>'
+    template += '<span class="light"> - ' + tool_desc + '</span></div>'
     if tool and params_object:
         template += '<table class="job-inputs">'
         template += inputs_recursive(trans, tool.inputs, params_object, depth=1)
@@ -102,8 +102,10 @@ def render_item_job(trans, job, children):
         template += '<em>No parameter data available</em>'
     template += '</div>'
     template += '<div class="body toolFormBody">'
+    child_template = ''
     for e, c in reversed(children):
-        template += render_item(trans, e, c)
+        child_template += render_item(trans, e, c)
+    template += child_template
     template += '</div></div>'
     return template
             

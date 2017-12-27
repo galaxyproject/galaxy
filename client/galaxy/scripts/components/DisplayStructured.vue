@@ -1,6 +1,5 @@
 <template>
     <div v-cloak>
-        <div> {{ historyName }} </div>
         <div v-html="historyTemplate">
         </div>
     </div>
@@ -37,31 +36,35 @@ export default {
         _updateHistoryData: function(response) {
             let historyItems = response.data;
             this.historyName = historyItems.name ? historyItems.name : 'Structure';
-            this.historyTemplate = historyItems.template;         
-            this.makeHistoryView( historyItems );
+            this.historyTemplate = historyItems.template;    
+            this.historyJSON = historyItems.history_json;    
         },
         showError: function(errorMsg) {
             mod_toastr.error(errorMsg);
         },
-        makeHistoryView: function(historyItems) {
-            let historyDict = historyItems.history_json;
+        makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
                 return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
                     model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation( hda ),
-                    el              : $( '#hda-' + hda.id ),
+                    el              : $('#hda-' + hda.id),
                     linkTarget      : '_self',
                     purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     logger          : Galaxy.logger
                 }).render( 0 );
             });
-            
-            $( ".workflow, .tool" ).each(item => {
-                var body = $( this ).children( ".body" );
-                $( this ).children( ".header" ).click(e => {
-                    body.toggle();
-                }).addClass( "clickable" );
+            // toggle the body section of each item in the structure
+            $(function(){
+                $(".workflow, .tool").each((index, element) => {
+                    let body = $(element).children(".body");
+                    $(element).children(".header").click(e => {
+                        body.toggle();
+                    }).addClass("clickable");
+                });
             });
         }
+    },
+    updated: function() {
+        this.makeHistoryView(this.historyJSON);
     }
 }    
 
@@ -103,9 +106,9 @@ export default {
 }
 
 div.toolForm {
-    border-width        : 1px;
-    border-radius       : 0px;
-    padding: 5px;
+    border-width: 1px;
+    border-radius: 0px;
+    margin-bottom: 1%;
 }
 .toolForm > .header {
     background-color: #EBD9B2;
@@ -139,7 +142,7 @@ div.toolFormTitle {
     color: #90743A;
 }
 .job-inputs td:nth-child(1):after {
-    content : ':'
+    content: ':'
 }
 .job-inputs td:nth-child(2) {
     padding-left: 4px;
@@ -164,7 +167,7 @@ div.toolFormTitle {
 }
 
 .dataset.hda {
-    min-height  : 37px;
+    min-height: 37px;
     border-width: 0px 0px 1px 0px;
 }
 .toolFormBody > .dataset.hda:last-child {
