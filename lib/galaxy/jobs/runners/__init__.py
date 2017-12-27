@@ -17,6 +17,7 @@ from six.moves.queue import (
 import galaxy.jobs
 from galaxy import model
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.output_checker import DETECTED_JOB_STATE
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -406,6 +407,23 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
+    def _finish_or_resubmit_job(self, job_state, stdout, stderr, exit_code):
+        job = job_state.job_wrapper.get_job()
+        check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
+        # Flush with streams...
+        self.sa_session.add(job)
+        self.sa_session.flush()
+        if check_output_detected_state != DETECTED_JOB_STATE.OK:
+            job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
+            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
+                job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+            job_state.runner_state = job_runner_state
+            self._handle_runner_state('failure', job_state)
+            # Was resubmitted or something - I think we are done with it.
+            if job_state.runner_state_handled:
+                return
+        job_state.job_wrapper.finish(stdout, stderr, exit_code, check_output_detected_state=check_output_detected_state)
+
 
 class JobState(object):
     """
@@ -417,7 +435,8 @@ class JobState(object):
         JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
         UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit'
+        OUTPUT_SIZE_LIMIT='output_size_limit',
+        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
     )
 
     def __init__(self, job_wrapper, job_destination):
@@ -656,7 +675,7 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
             job_state.cleanup()
 
         try:
-            job_state.job_wrapper.finish(stdout, stderr, exit_code)
+            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
         except Exception:
             log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
             job_state.job_wrapper.fail("Unable to finish job", exception=True)
