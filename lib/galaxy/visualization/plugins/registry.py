@@ -267,6 +267,7 @@ class VisualizationsRegistry(object):
                 'html'          : visualization.config.get('name'),
                 'description'   : visualization.config.get('description'),
                 'regular'       : visualization.config.get('regular'),
+                'logo'          : visualization.config.get('logo'),
                 'title'         : visualization.config.get('title'),
                 'target'        : visualization.config.get('render_target', 'galaxy_main'),
                 'embeddable'    : visualization.config.get('embeddable', False)

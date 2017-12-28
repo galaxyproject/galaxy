@@ -157,7 +157,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     def _set_up_static_images(self):
         default_path = 'static/logo.png'
         if self._check_path(default_path):
-            self.config['image'] = 'plugins/%s/%s' % (self.base_url, default_path)
+            self.config['logo'] = 'plugins/%s/%s' % (self.base_url, default_path)
 
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
