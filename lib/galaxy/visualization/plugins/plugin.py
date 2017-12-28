@@ -150,7 +150,8 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'logo'          : self.config.get('logo'),
             'title'         : self.config.get('title'),
             'target'        : self.config.get('render_target', 'galaxy_main'),
-            'embeddable'    : self.config.get('embeddable', False)
+            'embeddable'    : self.config.get('embeddable', False),
+            'static_url'    : self.static_url if self.serves_static else None
         }
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
