@@ -1,8 +1,7 @@
 /** This class renders the selection grid. */
 import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
-
-export var View = Backbone.View.extend({
+var View = Backbone.View.extend({
     events: {
         "click .ui-thumbnails-item": "_onclick",
         "dblclick .ui-thumbnails-item": "_ondblclick"
@@ -21,15 +20,17 @@ export var View = Backbone.View.extend({
     render: function() {
         this.first = null;
         this.tabs.delAll();
-        this._renderDefault();
+        this._renderRegular();
         this._renderList();
     },
 
-    _renderDefault: function() {
+    _renderRegular: function() {
+        var self = this;
+        var index = [];
         var title_length = 20;
         var $el = $("<div/>").addClass("ui-thumbnails-grid");
         this.collection.each(model => {
-            if (model.get("keywords").indexOf("default") !== -1) {
+            if (model.get("regular")) {
                 var title = model.get("title");
                 $el.append(
                     $(
@@ -103,27 +104,22 @@ export var View = Backbone.View.extend({
         }
     },
 
+    /** Image/Icon template */
+    _templateImage: function(options) {
+        if (options.image_src) {
+            return `<img class="ui-thumbnails-image" src="${options.image_src}"/>`;
+        }
+        return `<div class="ui-thumbnails-icon fa fa-eye"/>`;
+    },
+
     /* Thumbnail template with image */
     _templateThumbnailItem: function(options) {
-        return `<div class="ui-thumbnails-item ui-thumbnails-item-float" value="${
-            options.id
-        }"><img class="ui-thumbnails-image" src="${
-            options.image_src
-        }"><div class="ui-thumbnails-title ui-form-info"><span class="fa ${options.title_icon}"/>${
-            options.title
-        }</div><div>`;
+        return `<div class="ui-thumbnails-item ui-thumbnails-item-float" value="${options.id}">${this._templateImage(options)}<div class="ui-thumbnails-title ui-form-info"><span class="fa ${options.title_icon}"/>${options.title}</div><div>`;
     },
 
     /* Thumbnail template with image and description */
     _templateRegularItem: function(options) {
-        return `<div class="ui-thumbnails-item" value="${
-            options.id
-        }"><table><tr><td><img class="ui-thumbnails-image" src="${
-            options.image_src
-        }"></td><td><div class="ui-thumbnails-description-title ui-form-info">${
-            options.title
-        }</div><div class="ui-thumbnails-description-text ui-form-info">${options.description}</div></td></tr><div>`;
+        return `<div class="ui-thumbnails-item" value="${options.id}"><table><tr><td>${this._templateImage(options)}</td><td><div class="ui-thumbnails-description-title ui-form-info">${options.title}</div><div class="ui-thumbnails-description-text ui-form-info">${options.description}</div></td></tr><div>`;
     }
 });
-
 export default { View: View };
