@@ -676,19 +676,52 @@ steps:
         history_id = self.dataset_populator.new_history()
         invocation_id = self.__invoke_workflow(history_id, workflow_id)
         self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
-        failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
-        assert failed_dataset['state'] == 'error', failed_dataset
-        paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
+        failed_dataset_one = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
+        assert failed_dataset_one['state'] == 'error', failed_dataset_one
+        paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
         assert paused_dataset['state'] == 'paused', paused_dataset
         inputs = {"thebool": "false",
                   "failbool": "false",
-                  "rerun_remap_job_id": failed_dataset['creating_job']}
+                  "rerun_remap_job_id": failed_dataset_one['creating_job']}
         self.dataset_populator.run_tool(tool_id='job_properties',
                                         inputs=inputs,
                                         history_id=history_id,
                                         assert_ok=True)
-        unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
+        unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
         assert unpaused_dataset['state'] == 'ok'
+
+    @skip_without_tool("job_properties")
+    @skip_without_tool("identifier_multiple_in_conditional")
+    def test_workflow_resume_from_failed_step_with_hdca_input(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  - tool_id: identifier_collection
+    state:
+      input1:
+        $link: 0#list_output
+""")
+        with self.dataset_populator.test_history() as history_id:
+            invocation_id = self.__invoke_workflow(history_id, workflow_id)
+            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
+            failed_dataset_one = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
+            assert failed_dataset_one['state'] == 'error', failed_dataset_one
+            paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
+            assert paused_dataset['state'] == 'paused', paused_dataset
+            inputs = {"thebool": "false",
+                      "failbool": "false",
+                      "rerun_remap_job_id": failed_dataset_one['creating_job']}
+            self.dataset_populator.run_tool(tool_id='job_properties',
+                                            inputs=inputs,
+                                            history_id=history_id,
+                                            assert_ok=True)
+            unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True,
+                                                                                  assert_ok=False)
+            assert unpaused_dataset['state'] == 'ok'
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
