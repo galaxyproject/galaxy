@@ -151,7 +151,8 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'title'         : self.config.get('title'),
             'target'        : self.config.get('render_target', 'galaxy_main'),
             'embeddable'    : self.config.get('embeddable', False),
-            'static_url'    : self.static_url if self.serves_static else None
+            'entry_point'   : self.config.get('entry_point'),
+            'static_url'    : '/'.join(['plugins', self.static_url])
         }
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
@@ -170,7 +171,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     def _set_up_static_images(self):
         default_path = 'static/logo.png'
         if self._check_path(default_path):
-            self.config['logo'] = 'plugins/%s/%s' % (self.base_url, default_path)
+            self.config['logo'] = '/'.join(['plugins', self.base_url, default_path])
 
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
