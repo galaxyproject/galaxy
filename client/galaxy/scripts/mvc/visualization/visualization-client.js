@@ -14,15 +14,17 @@ var View = Backbone.View.extend({
         $.ajax({
             url: `${Galaxy.root}api/visualizations/${options.id}`
         })
-        .done(response => {
-            window.console.log(response);
-            this.chart = new Chart({}, response.latest_revision.config.chart_dict);
+        .done(visualization => {
+            window.console.log(visualization);
+            this.visualization = visualization;
+            this.chart = new Chart({}, visualization.latest_revision.config.chart_dict);
             this.deferred = new Deferred();
             this.viewer = new Viewer(this);
             this.editor = new Editor(this);
             this.$el.append(this.viewer.$el);
             this.$el.append(this.editor.$el);
             this.render();
+
         })
         .fail(response => {
             let message = response.responseJSON && response.responseJSON.err_msg;
@@ -32,6 +34,8 @@ var View = Backbone.View.extend({
 
     /** Build client ui */
     render: function() {
+        let plugin_path = this.visualization.plugin.static_url + '/' + this.visualization.type;
+        //import Plugin from plugin_path;
         /*this.go(this.chart.load() ? "viewer" : "editor");
         require(["repository/build/" + chart.get("type")], function(ChartView) {
             new ChartView({ process: process, chart: chart, dataset: self.app.dataset, targets: self.targets });
