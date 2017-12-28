@@ -62,7 +62,10 @@ class VisualizationsConfigParser(object):
         # a text display name for end user links
         returned['name'] = xml_tree.attrib.get('name', None)
         if not returned['name']:
-            raise ParsingException('visualization needs a name attribute')
+            raise ParsingException('Visualization needs a name attribute.')
+
+        # a regular visualization for a certain datatype is highlighted in the ui
+        returned['regular'] = xml_tree.get('regular', False)
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
