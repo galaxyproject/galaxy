@@ -106,15 +106,13 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         self.path = path
         self.name = name
         self.config = config
-
         base_url = context.get('base_url', '')
         self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
         self._set_up_static_plugin()
-
+        self._set_up_static_images()
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
-
         self.resource_parser = resource_parser.ResourceParser(app)
 
     def render(self, trans=None, embedded=None, **kwargs):
@@ -153,6 +151,14 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         return copy.copy(visualization.latest_revision.config)
 
     # ---- non-public
+    def _check_path(self, path):
+        return os.path.exists(os.path.join(self.path, path))
+
+    def _set_up_static_images(self):
+        default_path = 'static/logo.png'
+        if self._check_path(default_path):
+            self.config['image'] = 'plugins/%s/%s' % (self.base_url, default_path)
+
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
         Build all the variables that will be passed into the renderer.
