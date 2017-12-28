@@ -261,17 +261,9 @@ class VisualizationsRegistry(object):
 
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             param_data = data_source['to_params']
-            return {
-                'name'          : visualization.name,
-                'href'          : self.get_visualization_url(trans, target_object, visualization, param_data),
-                'html'          : visualization.config.get('name'),
-                'description'   : visualization.config.get('description'),
-                'regular'       : visualization.config.get('regular'),
-                'logo'          : visualization.config.get('logo'),
-                'title'         : visualization.config.get('title'),
-                'target'        : visualization.config.get('render_target', 'galaxy_main'),
-                'embeddable'    : visualization.config.get('embeddable', False)
-            }
+            response = visualization.to_dict()
+            response['href'] =  self.get_visualization_url(trans, target_object, visualization, param_data),
+
         return None
 
     def is_object_applicable(self, trans, target_object, data_source_tests):

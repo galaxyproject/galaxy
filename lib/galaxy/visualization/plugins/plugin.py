@@ -141,6 +141,18 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         ))
         return self._render(render_vars, trans=trans, embedded=embedded)
 
+    def to_dict(self):
+        return {
+            'name'          : self.name,
+            'html'          : self.config.get('name'),
+            'description'   : self.config.get('description'),
+            'regular'       : self.config.get('regular'),
+            'logo'          : self.config.get('logo'),
+            'title'         : self.config.get('title'),
+            'target'        : self.config.get('render_target', 'galaxy_main'),
+            'embeddable'    : self.config.get('embeddable', False)
+        }
+
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
         Return the config of a saved visualization and revision.
