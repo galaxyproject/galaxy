@@ -261,12 +261,16 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
 
-            var $visualizations = $(this.templates.visualizations(visualizations, this));
-            //HACK: need to re-write those directed at galaxy_main with linkTarget
-            $visualizations.find('[target="galaxy_main"]').attr("target", this.linkTarget);
-            // use addBack here to include the root $visualizations elem (for the case of 1 visualization)
-            this._addScratchBookFn($visualizations.find(".visualization-link").addBack(".visualization-link"));
-            return $visualizations;
+            if( visualizations.length >= 1 ) {
+                var url = Galaxy.root + "visualizations/dataset_id=" + this.model.get( "id" );
+                return $( '<a/>' ).addClass( 'visualization-link icon-btn' )
+                              .attr( 'href', url )
+                              .append( $( '<span/>' ).addClass( 'fa fa-bar-chart-o' ) )
+                              .on( 'click', function( e ) {
+                                  Galaxy.frame.add( { url: url } );
+                                  e.preventDefault();
+                              });
+            }
         },
 
         /** add scratchbook functionality to visualization links */
