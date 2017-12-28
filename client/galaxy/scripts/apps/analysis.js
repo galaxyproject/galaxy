@@ -21,6 +21,8 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Visualization from "mvc/visualization/visualization-view";
+import VisualizationClient from "mvc/visualization/visualization-client";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
 
@@ -52,6 +54,8 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations/show/(:visualization_id)" : "show_visualizations_client",
+            "(/)visualizations/dataset_id=(:dataset_id)" : "show_visualizations_selector",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import_workflow": "show_import_workflow",
             "(/)workflows/run(/)": "show_run",
@@ -104,11 +108,27 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_visualizations_client : function(visualization_id) {
+            this.page.display(
+                new VisualizationClient.View({
+                    id: visualization_id
+                })
+            );
+        },
+
         show_visualizations_edit: function() {
             this.page.display(
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "visualizations/list"
+                })
+            );
+        },
+
+        show_visualizations_selector: function(dataset_id) {
+            this.page.display(
+                new Visualization.View({
+                    dataset_id: dataset_id
                 })
             );
         },
