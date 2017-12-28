@@ -190,10 +190,9 @@ class VisualizationsRegistry(object):
         config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
         config = self.config_parser.parse_file(config_file)
         # config file is required, otherwise skip this visualization
-        if not config:
-            return None
-        plugin = self._build_plugin(plugin_name, plugin_path, config)
-        return plugin
+        if config is not None:
+            plugin = self._build_plugin(plugin_name, plugin_path, config)
+            return plugin
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory
@@ -209,13 +208,11 @@ class VisualizationsRegistry(object):
         # from a static file (html, etc)
         elif config['entry_point']['type'] == 'html':
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
-
-        plugin = plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
+        return plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
             base_url=self.base_url,
             template_cache_dir=self.template_cache_dir,
             additional_template_paths=self.additional_template_paths
         ))
-        return plugin
 
     def get_plugin(self, key):
         """
@@ -252,33 +249,28 @@ class VisualizationsRegistry(object):
 
         data_sources = visualization.config['data_sources']
         for data_source in data_sources:
-            # log.debug( 'data_source: %s', data_source )
             # currently a model class is required
             model_class = data_source['model_class']
-            # log.debug( '\t model_class: %s', model_class )
             if not isinstance(target_object, model_class):
                 continue
-            # log.debug( '\t passed model_class' )
 
             # TODO: not true: must have test currently
             tests = data_source['tests']
             if tests and not self.is_object_applicable(trans, target_object, tests):
                 continue
-            # log.debug( '\t passed tests' )
 
-            param_data = data_source['to_params']
-            url = self.get_visualization_url(trans, target_object, visualization, param_data)
-            display_name = visualization.config.get('name', None)
-            render_target = visualization.config.get('render_target', 'galaxy_main')
-            embeddable = visualization.config.get('embeddable', False)
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
+            param_data = data_source['to_params']
             return {
-                'href'      : url,
-                'html'      : display_name,
-                'target'    : render_target,
-                'embeddable': embeddable
+                'name'          : visualization.name,
+                'href'          : self.get_visualization_url(trans, target_object, visualization, param_data),
+                'html'          : visualization.config.get('name'),
+                'description'   : visualization.config.get('description'),
+                'regular'       : visualization.config.get('regular'),
+                'title'         : visualization.config.get('title'),
+                'target'        : visualization.config.get('render_target', 'galaxy_main'),
+                'embeddable'    : visualization.config.get('embeddable', False)
             }
-
         return None
 
     def is_object_applicable(self, trans, target_object, data_source_tests):
