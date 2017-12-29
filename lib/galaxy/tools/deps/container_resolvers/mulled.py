@@ -54,8 +54,8 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False)
-    images_and_versions = subprocess.check_output(command).strip().split('\n')
-    images_and_versions = [line.split()[0:2] for line in images_and_versions[1:]]
+    images_and_versions = subprocess.check_output(command,shell=True).strip().split('\n')
+    images_and_versions = [str(line.split()[0:2]) for line in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
     def output_line_to_image(line):
@@ -65,7 +65,7 @@ def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
         return image
 
     # TODO: Sort on build ...
-    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
+    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
     return [i for i in raw_images if i is not None]
 
 
