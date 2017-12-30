@@ -3139,6 +3139,13 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
         object_session(self).flush()
         return new_collection
 
+    def replace_failed_elements(self, replacements):
+        for element in self.elements:
+            if element.element_object in replacements:
+                if element.element_type == 'hda':
+                    element.hda = replacements[element.element_object]
+                # TODO: handle the case where elements are collections
+
     def set_from_dict(self, new_data):
         # Nothing currently editable in this class.
         return {}

@@ -509,6 +509,8 @@ class DefaultToolAction(object):
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
+            remapped_hdas = {}
+            input_hdcas = set()
             for jtod in old_job.output_datasets:
                 for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                     if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
@@ -520,6 +522,9 @@ class DefaultToolAction(object):
                                 hda.state = hda.states.NEW
                                 hda.info = None
                         input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+                        remapped_hdas[jtod.dataset] = out_data[jtod.name]
+                        for jtidca in job_to_remap.input_dataset_collections:
+                            input_hdcas.add(jtidca.dataset_collection)
                         old_dataset_id = jtod.dataset_id
                         new_dataset_id = out_data[jtod.name].id
                         input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
@@ -530,6 +535,12 @@ class DefaultToolAction(object):
                         log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
                         trans.sa_session.add(job_to_remap)
                         trans.sa_session.add(jtid)
+                for hdca in input_hdcas:
+                    hdca.collection.replace_failed_elements(remapped_hdas)
+                    if hdca.implicit_collection_jobs:
+                        for job in hdca.implicit_collection_jobs.jobs:
+                            if job.job_id == old_job.id:
+                                job.job_id = current_job.id
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
         except Exception:

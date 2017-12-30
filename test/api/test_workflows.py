@@ -723,6 +723,54 @@ steps:
                                                                                   assert_ok=False)
             assert unpaused_dataset['state'] == 'ok'
 
+    @skip_without_tool("fail_identifier")
+    @skip_without_tool("identifier_multiple_in_conditional")
+    def test_workflow_resume_with_mapped_over_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            job_summary = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - label: input_datasets
+    type: input_collection
+  - label: fail_identifier_1
+    tool_id: fail_identifier
+    state:
+      input1:
+        $link: input_datasets
+      failbool: true
+  - tool_id: identifier_collection
+    state:
+      input1:
+        $link: fail_identifier_1#out_file1
+test_data:
+  input_datasets:
+    type: list
+    elements:
+      - identifier: fail
+        value: 1.fastq
+        type: File
+      - identifier: success
+        value: 1.fastq
+        type: File
+""", history_id=history_id, assert_ok=False, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, job_summary.workflow_id, job_summary.invocation_id, assert_ok=False)
+            history_contents = self.dataset_populator._get_contents_request(history_id=history_id).json()
+            paused_dataset = history_contents[-1]
+            failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, assert_ok=False)
+            assert paused_dataset['state'] == 'paused', paused_dataset
+            assert failed_dataset['state'] == 'error', failed_dataset
+            inputs = {"input1": {'values': [{'src': 'hda',
+                                             'id': history_contents[0]['id']}]
+                                 },
+                      "failbool": "false",
+                      "rerun_remap_job_id": failed_dataset['creating_job']}
+            self.dataset_populator.run_tool(tool_id='fail_identifier',
+                                            inputs=inputs,
+                                            history_id=history_id,
+                                            assert_ok=True)
+            unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
+            assert unpaused_dataset['state'] == 'ok'
+
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
         workflow_id = self._upload_yaml_workflow("""
