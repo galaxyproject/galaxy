@@ -148,13 +148,19 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             // Remove active class
             $(element).removeClass( "toolForm-active" );
         },
+        set_tool_version: function () {
+            if (this.config_form) {
+                this.tool_version = this.config_form.version;
+                this.content_id = this.config_form.id;
+            }
+        },
         init_field_data : function ( data ) {
             if ( data.type ) {
                 this.type = data.type;
             }
             this.name = data.name;
             this.config_form = data.config_form;
-            this.tool_version = this.config_form && this.config_form.version;
+            this.set_tool_version();
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip ? data.tooltip : "";
@@ -232,7 +238,7 @@ define(['mvc/workflow/workflow-view-node'], function( NodeView ) {
             });
             this.tool_state = data.tool_state;
             this.config_form = data.config_form;
-            this.tool_version = this.config_form && this.config_form.version;
+            this.set_tool_version();
             this.errors = data.errors;
             this.annotation = data['annotation'];
             this.label = data.label;
