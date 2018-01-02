@@ -49,6 +49,7 @@ class DataManager(BaseUIController):
         }
 
     @web.expose
+    @web.json
     def manage_data_manager(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
@@ -60,9 +61,32 @@ class DataManager(BaseUIController):
         if data_manager is None:
             return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error"))
         jobs = list(reversed([assoc.job for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id)]))
-        return trans.fill_template("data_manager/manage_data_manager.mako", data_manager=data_manager, jobs=jobs, view_only=not_is_admin, message=message, status=status)
+        
+        jobs_list = list()
+        for job in jobs:
+            job_dict = {
+                "id": job.id,
+                "encoded_id": trans.security.encode_id( job.id ),
+                "history_user_email": job.history.user.email if job.history and job.history.user else 'anonymous',
+                "update_time": str(job.update_time),
+                "state": str(job.state),
+                "command_line": str(job.command_line),
+                "runner_name": str(job.job_runner_name),
+                "runner_external_id": str(job.job_runner_external_id)
+            }
+            jobs_list.append(job_dict)
+
+        return {
+            "data_manager_name": data_manager.name,
+            "data_manager_description": data_manager.description,
+            "jobs": jobs_list,
+            "view_only": not_is_admin,
+            "message": message,
+            "status": status
+        }
 
     @web.expose
+    @web.json
     def view_job(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
@@ -70,6 +94,7 @@ class DataManager(BaseUIController):
         message = escape(kwd.get('message', ''))
         status = escape(kwd.get('status', 'info'))
         job_id = kwd.get('id', None)
+        from galaxy.util import nice_size, unicodify
         try:
             job_id = trans.security.decode_id(job_id)
             job = trans.sa_session.query(trans.app.model.Job).get(job_id)
@@ -93,7 +118,33 @@ class DataManager(BaseUIController):
             for key, value in data_manager_json.get('data_tables', {}).items():
                 values.append((key, value))
             data_manager_output.append(values)
-        return trans.fill_template("data_manager/view_job.mako", data_manager=data_manager, job=job, view_only=not_is_admin, hdas=hdas, data_manager_output=data_manager_output, message=message, status=status, error_messages=error_messages)
+
+        hda_list = list()
+        for hda in hdas:
+            hda_dict = {
+            	"name": hda.name,
+            	"id": hda.id,
+            	"encoded_id": trans.security.encode_id(hda.id),
+            	"file_name": hda.file_name,
+            	"created_time": unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
+                "file_size": nice_size(hda.dataset.file_size)
+            }
+            hda_list.append(hda_dict)
+
+        return {
+            "data_manager": {
+                "tool_id": data_manager.tool.id,
+                "name": data_manager.name,
+                "description": data_manager.description
+            },
+            "job": { "encoded_id": trans.security.encode_id( job.id ), "exit_code": str(job.exit_code)},
+            "data_manager_output": data_manager_output,
+            "hdas": hda_list,
+            "view_only": not_is_admin,
+            "message": message,
+            "status": status,
+            "error_messages": error_messages
+        }
 
     @web.expose
     def manage_data_table(self, trans, **kwd):

@@ -27,7 +27,7 @@
                     <div style="margin-left:1em">
                         <ul>
                             <li v-for="dataManager in dataManagers">
-                                <a v-bind:href="setAnchorUrl('data_manager/manage_data_manager?id=' + dataManager.id)" target="galaxy_main">
+                                <a v-on:click.prevent="openUrl('admin/data_manager/manage_data_manager?id=' + dataManager.id)" target="galaxy_main" href="#">
                                     <strong>{{ dataManager.name }}</strong>
                                 </a> - {{ dataManager.description }}
                             </li>
@@ -107,12 +107,12 @@ export default {
         showError: function(errorMsg) {
             mod_toastr.error(errorMsg);
         },
-        setAnchorUrl: function( url ) {
+        setAnchorUrl: function(url) {
             return Galaxy.root + url;
+        },
+        openUrl: function(url) {
+            window.location.href = Galaxy.root + url;
         }
-    },
-    updated: function() {
-        
     }
 }    
 

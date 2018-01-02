@@ -12,6 +12,8 @@ import Page from "layout/page";
 import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
 import DataManager from "components/admin/DataManager.vue";
+import ManageDataManager from "components/admin/ManageDataManager.vue";
+import ViewJobDataManager from "components/admin/ViewJobDataManager.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
@@ -31,7 +33,9 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/api_keys": "show_user_api_keys",
             "(/)admin/data_tables": "show_data_tables",
-            "(/)admin/data_manager": "show_data_manager"
+            "(/)admin/data_manager": "show_data_manager",
+            "(/)admin/data_manager/manage_data_manager": "show_manage_data_manager",
+            "(/)admin/data_manager/view_job": "show_job_data_manager"
         },
 
         authenticate: function() {
@@ -108,6 +112,20 @@ window.app = function app(options, bootstrapped) {
             var vueMountDataManager = document.createElement("div");
             this.page.display(vueMountDataManager);
             new Vue(DataManager).$mount(vueMountDataManager);
+        },
+        
+        show_manage_data_manager: function() {
+            var manageDataManagerInstance = Vue.extend(ManageDataManager),
+                vueMountManageDataManager = document.createElement("div");
+            this.page.display(vueMountManageDataManager);
+            new manageDataManagerInstance({ propsData: { dataManagerId: QueryStringParsing.get("id") } }).$mount(vueMountManageDataManager);
+        },
+        
+        show_job_data_manager: function() {
+            var viewJobDataManagerInstance = Vue.extend(ViewJobDataManager),
+                vueMountViewJobDataManager = document.createElement("div");
+            this.page.display(vueMountViewJobDataManager);
+            new viewJobDataManagerInstance({ propsData: { jobId: QueryStringParsing.get("id") } }).$mount(vueMountViewJobDataManager);
         },
 
         show_forms: function() {
