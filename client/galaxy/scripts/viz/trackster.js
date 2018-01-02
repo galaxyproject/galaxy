@@ -2,14 +2,14 @@ import _l from "utils/localization";
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
-//import * as $ from 'jquery';
+//import * as $ from "jquery";  TODO: fix local import here
 import * as _ from "libs/underscore";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
-import mod_icon_btn from "mvc/ui/icon-button";
+import IconButton from "mvc/ui/icon-button";
 import query_string from "utils/query-string-parsing";
 import GridView from "mvc/grid/grid-view";
-import mod_utils from "utils/utils";
+import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
 import "libs/jquery/jquery.event.hover";
 import "libs/jquery/jquery.mousewheel";
@@ -19,8 +19,6 @@ import "libs/farbtastic";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
-
-var view = null;
 
 /**
  * User interface controls for trackster
@@ -32,11 +30,11 @@ class TracksterUI extends Backbone.Model {
 
     initialize(baseURL) {
         this.baseURL = baseURL;
-        mod_utils.cssLoadFile("static/style/jquery.rating.css");
-        mod_utils.cssLoadFile("static/style/autocomplete_tagging.css");
-        mod_utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
-        mod_utils.cssLoadFile("static/style/library.css");
-        mod_utils.cssLoadFile("static/style/trackster.css");
+        Utils.cssLoadFile("static/style/jquery.rating.css");
+        Utils.cssLoadFile("static/style/autocomplete_tagging.css");
+        Utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
+        Utils.cssLoadFile("static/style/library.css");
+        Utils.cssLoadFile("static/style/trackster.css");
     }
 
     /**
@@ -60,14 +58,16 @@ class TracksterUI extends Backbone.Model {
         });
 
         // FIXME: give unique IDs to Drawables and save overview as ID.
-        var overview_track_name = view.overview_drawable ? view.overview_drawable.config.get_value("name") : null;
+        var overview_track_name = this.view.overview_drawable
+            ? this.view.overview_drawable.config.get_value("name")
+            : null;
 
         var viz_config = {
-            view: view.to_dict(),
+            view: this.view.to_dict(),
             viewport: {
-                chrom: view.chrom,
-                start: view.low,
-                end: view.high,
+                chrom: this.view.chrom,
+                start: this.view.low,
+                end: this.view.high,
                 overview: overview_track_name
             },
             bookmarks: bookmarks
@@ -79,17 +79,17 @@ class TracksterUI extends Backbone.Model {
             type: "POST",
             dataType: "json",
             data: {
-                id: view.vis_id,
-                title: view.config.get_value("name"),
-                dbkey: view.dbkey,
+                id: this.view.vis_id,
+                title: this.view.config.get_value("name"),
+                dbkey: this.view.dbkey,
                 type: "trackster",
                 vis_json: JSON.stringify(viz_config)
             }
         })
             .success(vis_info => {
                 Galaxy.modal.hide();
-                view.vis_id = vis_info.vis_id;
-                view.has_changes = false;
+                this.view.vis_id = vis_info.vis_id;
+                this.view.has_changes = false;
 
                 // Needed to set URL when first saving a visualization.
                 window.history.pushState({}, "", vis_info.url + window.location.hash);
@@ -112,15 +112,15 @@ class TracksterUI extends Backbone.Model {
      * Create button menu
      */
     createButtonMenu() {
-        var menu = mod_icon_btn.create_icon_buttons_menu(
+        var menu = IconButton.create_icon_buttons_menu(
             [
                 {
                     icon_class: "plus-button",
                     title: _l("Add tracks"),
                     on_click: () => {
-                        visualization.select_datasets({ dbkey: view.dbkey }, new_tracks => {
+                        visualization.select_datasets({ dbkey: this.view.dbkey }, new_tracks => {
                             _.each(new_tracks, track => {
-                                view.add_drawable(tracks.object_from_template(track, view, view));
+                                this.view.add_drawable(tracks.object_from_template(track, this.view, this.view));
                             });
                         });
                     }
@@ -129,8 +129,8 @@ class TracksterUI extends Backbone.Model {
                     icon_class: "block--plus",
                     title: _l("Add group"),
                     on_click: () => {
-                        view.add_drawable(
-                            new tracks.DrawableGroup(view, view, {
+                        this.view.add_drawable(
+                            new tracks.DrawableGroup(this.view, this.view, {
                                 name: "New Group"
                             })
                         );
@@ -148,7 +148,7 @@ class TracksterUI extends Backbone.Model {
                     icon_class: "globe",
                     title: _l("Circster"),
                     on_click: () => {
-                        window.location = `${this.baseURL}visualization/circster?id=${view.vis_id}`;
+                        window.location = `${this.baseURL}visualization/circster?id=${this.view.vis_id}`;
                     }
                 },
                 {
@@ -162,7 +162,7 @@ class TracksterUI extends Backbone.Model {
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: () => {
-                        this.handle_unsaved_changes(view);
+                        this.handle_unsaved_changes(this.view);
                     }
                 }
             ],
@@ -190,11 +190,12 @@ class TracksterUI extends Backbone.Model {
             .addClass("position")
             .appendTo(new_bookmark);
 
-        var position_link = $("<a href=''/>")
+        //position_link
+        $("<a href=''/>")
             .text(position)
             .appendTo(position_div)
             .click(() => {
-                view.go_to(position);
+                this.view.go_to(position);
                 return false;
             });
 
@@ -211,11 +212,12 @@ class TracksterUI extends Backbone.Model {
                     // Remove bookmark.
                     new_bookmark.slideUp("fast");
                     new_bookmark.remove();
-                    view.has_changes = true;
+                    this.view.has_changes = true;
                     return false;
                 });
 
-            var delete_icon = $("<a href=''/>")
+            // delete_icon
+            $("<a href=''/>")
                 .addClass("icon-button delete")
                 .appendTo(delete_icon_container);
 
@@ -228,7 +230,7 @@ class TracksterUI extends Backbone.Model {
                 .addClass("annotation");
         }
 
-        view.has_changes = true;
+        this.view.has_changes = true;
         return new_bookmark;
     }
 
@@ -237,45 +239,41 @@ class TracksterUI extends Backbone.Model {
      */
     create_visualization(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
         // Create view.
-        view = new tracks.TracksterView(_.extend(view_config, { header: false }));
+        this.view = new tracks.TracksterView(_.extend(view_config, { header: false }));
+        this.view.editor = true;
 
-        view.editor = true;
-        $.when(view.load_chroms_deferred).then(chrom_info => {
+        $.when(this.view.load_chroms_deferred).then(chrom_info => {
+            var overview_drawable_name = null;
             // Viewport config.
             if (viewport_config) {
                 var chrom = viewport_config.chrom;
                 var start = viewport_config.start;
                 var end = viewport_config.end;
-                var overview_drawable_name = viewport_config.overview;
+                overview_drawable_name = viewport_config.overview;
 
                 if (chrom && start !== undefined && end) {
-                    view.change_chrom(chrom, start, end);
+                    this.view.change_chrom(chrom, start, end);
                 } else {
                     // No valid viewport, so use first chromosome.
-                    view.change_chrom(chrom_info[0].chrom);
+                    this.view.change_chrom(chrom_info[0].chrom);
                 }
             } else {
                 // No viewport, so use first chromosome.
-                view.change_chrom(chrom_info[0].chrom);
+                this.view.change_chrom(chrom_info[0].chrom);
             }
 
             // Add drawables to view.
             if (drawables_config) {
                 // FIXME: can from_dict() be used to create view and add drawables?
-                var drawable_config;
-
-                var drawable_type;
-                var drawable;
                 for (let i = 0; i < drawables_config.length; i++) {
-                    view.add_drawable(tracks.object_from_template(drawables_config[i], view, view));
+                    this.view.add_drawable(tracks.object_from_template(drawables_config[i], this.view, this.view));
                 }
             }
 
             // Set overview.
-            var overview_drawable;
-            for (let i = 0; i < view.drawables.length; i++) {
-                if (view.drawables[i].config.get_value("name") === overview_drawable_name) {
-                    view.set_overview(view.drawables[i]);
+            for (let i = 0; i < this.view.drawables.length; i++) {
+                if (this.view.drawables[i].config.get_value("name") === overview_drawable_name) {
+                    this.view.set_overview(this.view.drawables[i]);
                     break;
                 }
             }
@@ -285,18 +283,19 @@ class TracksterUI extends Backbone.Model {
                 var bookmark;
                 for (let i = 0; i < bookmarks_config.length; i++) {
                     bookmark = bookmarks_config[i];
-                    this.add_bookmark(bookmark["position"], bookmark["annotation"], editable);
+                    this.add_bookmark(bookmark.position, bookmark.annotation, editable);
                 }
             }
 
             // View has no changes as of yet.
-            view.has_changes = false;
+            this.view.has_changes = false;
         });
 
         // Final initialization.
-        this.set_up_router({ view: view });
+        this.set_up_router({ view: this.view });
 
-        return view;
+        // TODO: This is hopefully not necessary anymore, since we're using the instance view.  Do it for compatibility for now.
+        return this.view;
     }
 
     /**
@@ -393,7 +392,7 @@ class TracksterView extends Backbone.View {
 
         // resize view when showing/hiding right panel (bookmarks for now).
         $("#right-border").click(() => {
-            view.resize_window();
+            this.ui.view.resize_window();
         });
 
         // hide right panel
@@ -457,7 +456,7 @@ class TracksterView extends Backbone.View {
                     window.location = `${Galaxy.root}visualizations/list`;
                 },
                 "Add to visualization": () => {
-                    $(parent.document)
+                    $(window.parent.document)
                         .find("input[name=id]:checked")
                         .each(() => {
                             dataset_params.id = $(this).val();
@@ -474,7 +473,7 @@ class TracksterView extends Backbone.View {
         var viz_config = window.galaxy_config.app.viz_config;
 
         // view
-        view = this.ui.create_visualization(
+        this.ui.create_visualization(
             {
                 container: $("#center .unified-panel-body"),
                 name: viz_config.title,
@@ -566,11 +565,46 @@ class TracksterView extends Backbone.View {
         return html;
     }
 
+    // initialization for editor-specific functions.
+    init_editor() {
+        // set title
+        $("#center .unified-panel-title").text(`${this.ui.view.config.get_value("name")} (${this.ui.view.dbkey})`);
+
+        // add dataset
+        if (window.galaxy_config.app.add_dataset)
+            $.ajax({
+                url: `${Galaxy.root}api/datasets/${window.galaxy_config.app.add_dataset}`,
+                data: { hda_ldda: "hda", data_type: "track_config" },
+                dataType: "json",
+                success: track_data => {
+                    this.ui.view.add_drawable(tracks.object_from_template(track_data, this.ui.view, this.ui.view));
+                }
+            });
+
+        // initialize icons
+        $("#add-bookmark-button").click(() => {
+            // add new bookmark.
+            var position = `${this.ui.view.chrom}:${this.ui.view.low}-${this.ui.view.high}`;
+
+            var annotation = "Bookmark description";
+            return this.ui.add_bookmark(position, annotation, true);
+        });
+
+        // initialize keyboard
+        this.ui.init_keyboard_nav(this.ui.view);
+
+        $(window).on("beforeunload", () => {
+            if (this.ui.view.has_changes) {
+                return "There are unsaved changes to your visualization that will be lost if you leave this page.";
+            }
+        });
+    }
+
     // create
     create_browser(name, dbkey) {
         $(document).trigger("convert_to_values");
 
-        view = this.ui.create_visualization(
+        this.ui.create_visualization(
             {
                 container: $("#center .unified-panel-body"),
                 name: name,
@@ -583,42 +617,7 @@ class TracksterView extends Backbone.View {
         this.init_editor();
 
         // modify view setting
-        view.editor = true;
-    }
-
-    // initialization for editor-specific functions.
-    init_editor() {
-        // set title
-        $("#center .unified-panel-title").text(`${view.config.get_value("name")} (${view.dbkey})`);
-
-        // add dataset
-        if (window.galaxy_config.app.add_dataset)
-            $.ajax({
-                url: `${Galaxy.root}api/datasets/${window.galaxy_config.app.add_dataset}`,
-                data: { hda_ldda: "hda", data_type: "track_config" },
-                dataType: "json",
-                success: track_data => {
-                    view.add_drawable(tracks.object_from_template(track_data, view, view));
-                }
-            });
-
-        // initialize icons
-        $("#add-bookmark-button").click(() => {
-            // add new bookmark.
-            var position = `${view.chrom}:${view.low}-${view.high}`;
-
-            var annotation = "Bookmark description";
-            return this.ui.add_bookmark(position, annotation, true);
-        });
-
-        // initialize keyboard
-        this.ui.init_keyboard_nav(view);
-
-        $(window).on("beforeunload", () => {
-            if (view.has_changes) {
-                return "There are unsaved changes to your visualization that will be lost if you leave this page.";
-            }
-        });
+        this.ui.view.editor = true;
     }
 }
 
