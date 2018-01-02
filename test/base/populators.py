@@ -275,19 +275,19 @@ class BaseDatasetPopulator(object):
         data = {}
         if filename:
             data["filename"] = filename
-        display_response = self.__get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
+        display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
-        details_response = self.__get_contents_request(history_id, "/datasets/%s" % dataset_id)
+        details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
         assert details_response.status_code == 200
         return details_response.json()
 
     def get_history_collection_details(self, history_id, **kwds):
         hdca_id = self.__history_content_id(history_id, **kwds)
-        details_response = self.__get_contents_request(history_id, "/dataset_collections/%s" % hdca_id)
+        details_response = self._get_contents_request(history_id, "/dataset_collections/%s" % hdca_id)
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
@@ -320,7 +320,7 @@ class BaseDatasetPopulator(object):
             history_content_id = kwds["dataset"]["id"]
         else:
             hid = kwds.get("hid", None)  # If not hid, just grab last dataset
-            history_contents = self.__get_contents_request(history_id).json()
+            history_contents = self._get_contents_request(history_id).json()
             if hid:
                 history_content_id = None
                 for history_item in history_contents:
@@ -333,7 +333,7 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def __get_contents_request(self, history_id, suffix="", data={}):
+    def _get_contents_request(self, history_id, suffix="", data={}):
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)

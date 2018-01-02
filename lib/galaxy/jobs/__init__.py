@@ -34,7 +34,7 @@ from galaxy.util.handlers import ConfiguresHandlers
 from galaxy.util.xml_macros import load
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
-from .output_checker import check_output
+from .output_checker import check_output, DETECTED_JOB_STATE
 
 log = logging.getLogger(__name__)
 
@@ -1030,6 +1030,7 @@ class JobWrapper(object, HasResourceParameters):
                 dataset_assoc.dataset.dataset.state = dataset_assoc.dataset.dataset.states.PAUSED
                 dataset_assoc.dataset.info = message
                 self.sa_session.add(dataset_assoc.dataset)
+            log.debug("Pausing Job '%d', %s", job.id, message)
             job.set_state(job.states.PAUSED)
             self.sa_session.add(job)
 
@@ -1122,6 +1123,7 @@ class JobWrapper(object, HasResourceParameters):
         stdout,
         stderr,
         tool_exit_code=None,
+        check_output_detected_state=None,
         remote_working_directory=None,
         remote_metadata_directory=None,
     ):
@@ -1162,8 +1164,11 @@ class JobWrapper(object, HasResourceParameters):
         # The job's stdout and stderr will be set accordingly.
 
         # We set final_job_state to use for dataset management, but *don't* set
-        # job.state until after dataset collection to prevent history issues
-        if self.check_tool_output(stdout, stderr, tool_exit_code, job) and not tool_provided_metadata.has_failed_outputs():
+        # job.state until after dataset discovery to prevent history issues
+        if check_output_detected_state is None:
+            check_output_detected_state = self.check_tool_output(stdout, stderr, tool_exit_code, job)
+
+        if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = job.states.OK
         else:
             final_job_state = job.states.ERROR
@@ -1893,7 +1898,7 @@ class TaskWrapper(JobWrapper):
         self.sa_session.add(task)
         self.sa_session.flush()
 
-    def finish(self, stdout, stderr, tool_exit_code=None):
+    def finish(self, stdout, stderr, tool_exit_code=None, **kwds):
         # DBTODO integrate previous finish logic.
         # Simple finish for tasks.  Just set the flag OK.
         """
@@ -1922,7 +1927,7 @@ class TaskWrapper(JobWrapper):
         # Check what the tool returned. If the stdout or stderr matched
         # regular expressions that indicate errors, then set an error.
         # The same goes if the tool's exit code was in a given range.
-        if (self.check_tool_output(stdout, stderr, tool_exit_code, task)):
+        if self.check_tool_output(stdout, stderr, tool_exit_code, task) == DETECTED_JOB_STATE.OK:
             task.state = task.states.OK
         else:
             task.state = task.states.ERROR

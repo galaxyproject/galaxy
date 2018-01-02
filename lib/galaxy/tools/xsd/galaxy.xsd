@@ -2669,8 +2669,9 @@ If present on the ``command`` tag, this attribute can be one of:
 
 * ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
 * ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive`` error if tool exit code is not 0 or either ``Exception:`` or ``Error:``
-  appears in standard error/output. (The @bgruening recommendation).
+* ``aggressive`` error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
+  various messages related to being out of memory appear in the standard error or output.
+  (The @bgruening recommendation).
 
 For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
 Legacy tools default to ``default`` behavior described above (erroring if the tool
@@ -2698,6 +2699,11 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
         <xs:attribute name="detect_errors" type="xs:string">
           <xs:annotation>
             <xs:documentation></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="oom_exit_code" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Only used if ``detect_errors="exit_code", tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
@@ -4838,9 +4844,11 @@ The following is an example of the <exit_code> tag:
 
 ```xml
 <stdio>
-    <exit_code range="2"   level="fatal"   description="Out of Memory" />
     <exit_code range="3:5" level="warning" description="Low disk space" />
     <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <exit_code range="2"   level="fatal_oom"   description="Out of Memory" />
 </stdio>
 ```
 
@@ -4912,6 +4920,12 @@ The following is an example of regular expressions that may be used:
            source="stdout"
            level="fatal"
            description="Unknown error encountered" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <regex match="out of memory"
+           source="stdout"
+           level="fatal_oom"
+           description="Out of memory error occurred" />
     <regex match="[CG]{12}"
            description="Fatal error - CG island 12 nts long found" />
     <regex match="^Branch A"
