@@ -6,7 +6,7 @@ import sys
 
 from six.moves.urllib.error import URLError
 
-from common import display  # noqa: I100
+from common import display  # noqa: I100,I202
 
 try:
     display(*sys.argv[1:3])

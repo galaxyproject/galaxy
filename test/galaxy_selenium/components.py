@@ -43,6 +43,15 @@ class SelectorTemplate(Target):
         assert self.selector_type == "css"
         return SelectorTemplate(self._selector, self.selector_type, kwds=self.__kwds, with_classes=self.with_classes + [class_], children=self._children)
 
+    def descendant(self, has_selector):
+        assert self.selector_type == "css"
+        if hasattr(has_selector, "selector"):
+            selector = has_selector.selector
+        else:
+            selector = has_selector
+
+        return SelectorTemplate(self.selector + " " + selector, self.selector_type, kwds=self.__kwds, children=self._children)
+
     def __call__(self, **kwds):
         new_kwds = self.__kwds
         new_kwds.update(**kwds)

@@ -25,5 +25,6 @@
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
+    <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
   </registration>
 </datatypes>

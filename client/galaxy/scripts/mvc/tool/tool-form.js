@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /* This is the regular tool form */
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -61,7 +62,7 @@ var View = Backbone.View.extend({
                                 } else {
                                     Galaxy.modal &&
                                         Galaxy.modal.show({
-                                            title: "Tool request failed",
+                                            title: _l("Tool request failed"),
                                             body: error_message,
                                             buttons: {
                                                 Close: function() {
@@ -119,7 +120,7 @@ var View = Backbone.View.extend({
         var execute_button = new Ui.Button({
             icon: "fa-check",
             tooltip: `Execute: ${options.name} (${options.version})`,
-            title: "Execute",
+            title: _l("Execute"),
             cls: "btn btn-primary ui-clear-float",
             wait_cls: "btn btn-info ui-clear-float",
             onclick: function() {
@@ -216,7 +217,7 @@ var View = Backbone.View.extend({
                 }
                 if (!input_found) {
                     self.modal.show({
-                        title: "Job submission failed",
+                        title: _l("Job submission failed"),
                         body: self._templateError(job_def, response && response.err_msg),
                         buttons: {
                             Close: function() {
@@ -268,9 +269,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
-                            n
-                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

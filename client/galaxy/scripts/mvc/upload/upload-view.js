@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
@@ -112,23 +113,23 @@ export default Backbone.View.extend({
             this.default_view = new UploadViewDefault(this);
             this.tabs.add({
                 id: "regular",
-                title: "Regular",
+                title: _l("Regular"),
                 $el: this.default_view.$el
             });
             this.composite_view = new UploadViewComposite(this);
             this.tabs.add({
                 id: "composite",
-                title: "Composite",
+                title: _l("Composite"),
                 $el: this.composite_view.$el
             });
             this.collection_view = new UploadViewCollection(this);
             this.tabs.add({
                 id: "collection",
-                title: "Collection",
+                title: _l("Collection"),
                 $el: this.collection_view.$el
             });
             this.modal = new Modal.View({
-                title: "Download from web or upload from disk",
+                title: _l("Download from web or upload from disk"),
                 body: this.tabs.$el,
                 height: this.options.height,
                 width: this.options.width,

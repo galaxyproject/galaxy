@@ -31,16 +31,11 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
 
         self.libraries_dataset_import_from_history()
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
-        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
-        assert "1.txt" in history_elements[0].text
-        history_elements[0].find_element_by_css_selector("input").click()
+        self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("libraries_dataset_import")
-        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
-        # Let the progress bar disappear...
-        self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+        self.libraries_dataset_import_from_history_click_ok()
         self._assert_num_displayed_items_is(1)
 
     # Fine test locally but the upload doesn't work in Docker compose. I'd think
@@ -103,6 +98,4 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.libraries_open()
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
-        self.wait_for_overlays_cleared()
-        self.libraries_index_search_for(self.name)
-        self.libraries_index_table_elements()[0].find_element_by_css_selector("td a").click()
+        self.libraries_open_with_name(self.name)

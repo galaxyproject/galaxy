@@ -52,6 +52,11 @@
 </%def>
 
 <%def name="javascripts()">
+    <script>
+        window.Galaxy = window.Galaxy || {};
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        window.jQuery = window.jquery = window.$;
+    </script>
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}
@@ -67,6 +72,7 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
@@ -104,6 +110,7 @@
 
         // extra configuration global
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
+        window.galaxy_config = galaxy_config;
     </script>
 
     ${h.js(
@@ -117,12 +124,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( jscript ){
-                require([ jscript ], function( js_lib ){
-                    $( function(){
-                        // load galaxy module application
-                        var module = new js_lib.default.GalaxyApp();
-                    });
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
+                $( function(){
+                    // load galaxy module application
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
@@ -142,14 +147,14 @@
         ## configure left panel
         %if self.galaxy_config['left_panel']:
             var lp = new panels.LeftPanel({ el: '#left' });
-            force_left_panel = function( x ) { lp.force_panel( x ) };
+            window.force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
             var rp = new panels.RightPanel({ el: '#right' });
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-            force_right_panel = function( x ) { rp.force_panel( x ) };
+            window.force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     </script>
 </%def>

@@ -105,7 +105,6 @@ class Configuration(object):
         self.smtp_username = kwargs.get('smtp_username', None)
         self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
-        self.start_job_runners = kwargs.get('start_job_runners', None)
         self.email_from = kwargs.get('email_from', None)
         self.nginx_upload_path = kwargs.get('nginx_upload_path', False)
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
@@ -123,12 +122,6 @@ class Configuration(object):
         self.log_events = False
         self.cloud_controller_instance = False
         self.server_name = ''
-        self.job_manager = ''
-        self.default_job_handlers = []
-        self.default_cluster_job_runner = 'local:///'
-        self.job_handlers = []
-        self.tool_handlers = []
-        self.tool_runners = []
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.

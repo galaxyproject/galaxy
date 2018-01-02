@@ -130,8 +130,6 @@ class HistoryListGrid(grids.Grid):
     ]
     default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
     num_rows_per_page = 15
-    preserve_state = False
-    use_async = True
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
 
@@ -194,7 +192,6 @@ class HistoryAllPublishedGrid(grids.Grid):
     default_filter = dict(public_url="All", username="All", tags="All")
     use_paging = True
     num_rows_per_page = 50
-    use_async = True
     columns = [
         NameURLColumn("Name", key="name", filterable="advanced"),
         grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.HistoryAnnotationAssociation, filterable="advanced"),
@@ -246,7 +243,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -316,7 +312,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
                 trans.sa_session.flush()
         # Render the list view
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = sanitize_text(message)
             kwargs['status'] = status
@@ -454,16 +449,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 message = "Unshared %d shared histories" % len(ids)
                 status = 'done'
         # Render the list view
-        kwargs['dict_format'] = True
         return self.shared_list_grid(trans, status=status, message=message, **kwargs)
-
-    # ......................................................................... html
-    @web.expose
-    def citations(self, trans):
-        # Get history
-        history = trans.history
-        history_id = trans.security.encode_id(history.id)
-        return trans.fill_template("history/citations.mako", history=history, history_id=history_id)
 
     @web.expose
     def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
@@ -1192,33 +1178,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         self.rate_item(trans.sa_session, trans.get_user(), history, rating)
         return self.get_ave_item_rating_data(trans.sa_session, history)
         # TODO: used in display_base.mako
-
-    @web.expose
-    # TODO: Remove require_login when users are warned that, if they are not
-    # logged in, this will remove their current history.
-    @web.require_login("use Galaxy histories")
-    def import_archive(self, trans, **kwargs):
-        """ Import a history from a file archive. """
-        # Set archive source and type.
-        archive_file = kwargs.get('archive_file', None)
-        archive_url = kwargs.get('archive_url', None)
-        archive_source = None
-        if hasattr(archive_file, 'file'):
-            archive_source = archive_file.file.name
-            archive_type = 'file'
-        elif archive_url:
-            archive_source = archive_url
-            archive_type = 'url'
-        # If no source to create archive from, show form to upload archive or specify URL.
-        if not archive_source:
-            form = web.FormBuilder(web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit")
-            form.add_input("text", "Archived History URL", "archive_url", value="", error=None)
-            form.add_input("file", "Archived History File", "archive_file", value="", error=None)
-            return trans.show_form(form)
-        self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-        return trans.show_message("Importing history from '%s'. \
-                                    This history will be visible when the import is complete" % archive_source)
-        # TODO: used in this file and index.mako
 
     @web.expose
     def export_archive(self, trans, id=None, gzip=True, include_hidden=False, include_deleted=False, preview=False):

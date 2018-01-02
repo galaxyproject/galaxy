@@ -64,19 +64,13 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_collections) == 1, dataset_collection
 
     def test_create_list_of_new_pairs(self):
-        pair_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
-        element_identifiers = [dict(
-            src="new_collection",
-            name="test_pair",
-            collection_type="paired",
-            element_identifiers=pair_identifiers,
-        )]
+        identifiers = self.dataset_collection_populator.nested_collection_identifiers(self.history_id, "list:paired")
         payload = dict(
             collection_type="list:paired",
             instance_type="history",
             history_id=self.history_id,
             name="a nested collection",
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=json.dumps(identifiers),
         )
         create_response = self._post("dataset_collections", payload)
         dataset_collection = self._check_create_response(create_response)
@@ -85,9 +79,11 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         returned_collections = dataset_collection["elements"]
         assert len(returned_collections) == 1, dataset_collection
         pair_1_element = returned_collections[0]
-        self._assert_has_keys(pair_1_element, "element_index")
+        self._assert_has_keys(pair_1_element, "element_identifier", "element_index", "object")
+        assert pair_1_element["element_identifier"] == "test_level_1", pair_1_element
+        assert pair_1_element["element_index"] == 0, pair_1_element
         pair_1_object = pair_1_element["object"]
-        self._assert_has_keys(pair_1_object, "collection_type", "elements")
+        self._assert_has_keys(pair_1_object, "collection_type", "elements", "element_count")
         self.assertEquals(pair_1_object["collection_type"], "paired")
         self.assertEquals(pair_1_object["populated"], True)
         pair_elements = pair_1_object["elements"]
@@ -195,7 +191,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
     def _check_create_response(self, create_response):
         self._assert_status_code_is(create_response, 200)
         dataset_collection = create_response.json()
-        self._assert_has_keys(dataset_collection, "elements", "url", "name", "collection_type")
+        self._assert_has_keys(dataset_collection, "elements", "url", "name", "collection_type", "element_count")
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):

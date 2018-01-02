@@ -1,9 +1,7 @@
-import mod_masthead from "layout/masthead";
-import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_folderrow_view from "mvc/library/library-folderrow-view";
-import mod_library_dataset_view from "mvc/library/library-dataset-view";
+
 var FolderListView = Backbone.View.extend({
     el: "#folder_items_element",
     // progress percentage

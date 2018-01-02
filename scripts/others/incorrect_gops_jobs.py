@@ -5,12 +5,12 @@ wherein the second dataset doesn't have chr, start and end in standard columns 1
 """
 from __future__ import print_function
 
-import ConfigParser
 import os
 import sys
 import tempfile
 
 import sqlalchemy as sa
+from six.moves.configparser import ConfigParser
 
 import galaxy.app
 import galaxy.model.mapping
@@ -34,7 +34,7 @@ class TestApplication(object):
 
 def main():
     ini_file = sys.argv[1]
-    conf_parser = ConfigParser.ConfigParser({'here': os.getcwd()})
+    conf_parser = ConfigParser({'here': os.getcwd()})
     conf_parser.read(ini_file)
     configuration = {}
     for key, value in conf_parser.items("app:main"):
