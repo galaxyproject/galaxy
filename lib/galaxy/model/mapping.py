@@ -29,8 +29,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
+from sqlalchemy.orm import backref, class_mapper, column_property, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
@@ -142,10 +143,25 @@ model.HistoryDatasetAssociation.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("visible", Boolean),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("version", Integer, default=1, nullable=True, index=True),
     Column("hid", Integer),
     Column("purged", Boolean, index=True, default=False),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
+
+
+model.HistoryDatasetAssociationHistory.table = Table(
+    "history_dataset_association_history", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("update_time", DateTime, default=now),
+    Column("version", Integer),
+    Column("name", TrimmedString(255)),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", MetadataType(), key="_metadata"),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+)
+
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -464,6 +480,7 @@ model.Job.table = Table(
     Column("tool_version", TEXT, default="1.0.0"),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
+    Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
     Column("param_filename", String(1024)),
@@ -504,6 +521,7 @@ model.JobToInputDatasetAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("dataset_version", Integer),
     Column("name", String(255)))
 
 model.JobToOutputDatasetAssociation.table = Table(
@@ -1474,6 +1492,8 @@ simple_mapping(model.Dataset,
         backref='datasets')
 )
 
+mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
+
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
     user=relation(model.User)
@@ -1965,6 +1985,20 @@ mapper(model.Job, model.Job.table, properties=dict(
     input_datasets=relation(model.JobToInputDatasetAssociation),
     input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    any_output_dataset_deleted=column_property(
+        exists([model.HistoryDatasetAssociation],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                    model.HistoryDatasetAssociation.table.c.deleted == true())
+               )
+    ),
+    any_output_dataset_collection_instances_deleted=column_property(
+        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+               )
+    ),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, lazy=False),

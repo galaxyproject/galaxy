@@ -346,7 +346,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: handle dbkeys
         params = util.Params(inputs, sanitize=False)
         incoming = params.__dict__
-        vars = tool.handle_input(trans, incoming, history=target_history)
+
+        # use_cached_job can be passed in via the top-level payload or among the tool inputs.
+        # I think it should be a top-level parameter, but because the selector is implemented
+        # as a regular tool parameter we accept both.
+        use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
+        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])

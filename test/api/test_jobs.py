@@ -274,15 +274,16 @@ class JobsApiTestCase(api.ApiTestCase):
 
     def test_search(self):
         history_id, dataset_id = self.__history_with_ok_dataset()
+        # We first copy the datasets, so that the update time is lower than the job creation time
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
         })
         self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
         # We test that a job can be found even if the dataset has been copied to another history
-        new_history_id = self.dataset_populator.new_history()
-        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
-        self._assert_status_code_is(copy_response, 200)
         new_dataset_id = copy_response.json()['id']
         copied_inputs = json.dumps({
             'input1': {'src': 'hda', 'id': new_dataset_id}
@@ -296,6 +297,21 @@ class JobsApiTestCase(api.ApiTestCase):
         # Now we also delete the copy -- we shouldn't find a job
         delete_respone = self._delete("histories/%s/contents/%s" % (new_history_id, new_dataset_id))
         self._assert_status_code_is(delete_respone, 200)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_handle_identifiers(self):
+        # Test that input name and element identifier of a jobs' output must match for a job to be returned.
+        history_id, dataset_id = self.__history_with_ok_dataset()
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
+        dataset_details = self._get("histories/%s/contents/%s" % (history_id, dataset_id)).json()
+        dataset_details['name'] = 'Renamed Test Dataset'
+        dataset_update_response = self._put("histories/%s/contents/%s" % (history_id, dataset_id), data=dict(name='Renamed Test Dataset'))
+        self._assert_status_code_is(dataset_update_response, 200)
+        assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
+        search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
     def test_search_delete_outputs(self):
@@ -411,7 +427,7 @@ class JobsApiTestCase(api.ApiTestCase):
     def _search(self, payload, expected_search_count=1):
         # in case job and history aren't updated at exactly the same
         # time give time to wait
-        for i in range(15):
+        for i in range(5):
             search_count = self._search_count(payload)
             if search_count == expected_search_count:
                 break
