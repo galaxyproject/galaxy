@@ -620,6 +620,9 @@
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
     <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="false"/>
+    <datatype extension="neostore.zip" type="galaxy.datatypes.neo4j:Neo4jDBzip" display_in_upload="true">
+        <converter file="neostorezip_to_neostore_converter.xml" target_datatype="neostore"/>
+    </datatype>
     <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="true">
         <display file="ucsc/trackhub.xml" />
     </datatype>
@@ -824,5 +827,6 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
   </sniffers>
 </datatypes>
