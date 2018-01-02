@@ -15,13 +15,38 @@ log = logging.getLogger(__name__)
 class DataManager(BaseUIController):
 
     @web.expose
+    @web.json
     def index(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))
         status = escape(kwd.get('status', 'info'))
-        return trans.fill_template("data_manager/index.mako", data_managers=trans.app.data_managers, tool_data_tables=trans.app.tool_data_tables, view_only=not_is_admin, message=message, status=status)
+        
+        data_managers = trans.app.data_managers
+        data_managers_items = list()
+        if data_managers.data_managers:
+            data_manager_items = data_managers.data_managers.iteritems()
+            for data_manager_id, data_manager in sorted(data_manager_items, key = lambda x:x[1].name):
+                data_manager_dict = {
+                    "id": data_manager_id,
+                    "tool_id": data_manager.tool.id,
+                    "name": data_manager.name,
+                    "description": data_manager.description
+                }
+                data_managers_items.append(data_manager_dict)
+        tool_data_tables = trans.app.tool_data_tables
+        tool_data_tables = sorted(tool_data_tables.get_tables().keys())
+        managed_table_names = data_managers.managed_data_tables.keys()
+        
+        return {
+            "data_managers": data_managers_items,
+            "tool_data_tables": tool_data_tables,
+            "managed_table_names": managed_table_names,
+            "view_only": not_is_admin,
+            "status": status,
+            "message": message
+        }
 
     @web.expose
     def manage_data_manager(self, trans, **kwd):

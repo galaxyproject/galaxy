@@ -103,6 +103,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
+    webapp.add_client_route('/admin/data_manager', 'admin')
     webapp.add_client_route('/tours')
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')

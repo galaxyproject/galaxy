@@ -11,6 +11,7 @@ import Utils from "utils/utils";
 import Page from "layout/page";
 import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
+import DataManager from "components/admin/DataManager.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
@@ -29,7 +30,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/api_keys": "show_user_api_keys",
-            "(/)admin/data_tables": "show_data_tables"
+            "(/)admin/data_tables": "show_data_tables",
+            "(/)admin/data_manager": "show_data_manager"
         },
 
         authenticate: function() {
@@ -100,6 +102,12 @@ window.app = function app(options, bootstrapped) {
             var vueMount = document.createElement("div");
             this.page.display(vueMount);
             new Vue(DataTables).$mount(vueMount);
+        },
+        
+        show_data_manager: function() {
+            var vueMountDataManager = document.createElement("div");
+            this.page.display(vueMountDataManager);
+            new Vue(DataManager).$mount(vueMountDataManager);
         },
 
         show_forms: function() {
