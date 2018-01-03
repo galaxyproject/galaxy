@@ -76,6 +76,7 @@ class DataManager(BaseUIController):
         return {
             "data_manager_name": data_manager.name,
             "data_manager_description": data_manager.description,
+            "data_manager_id": data_manager.id,
             "jobs": jobs_list,
             "view_only": not_is_admin,
             "message": message,
