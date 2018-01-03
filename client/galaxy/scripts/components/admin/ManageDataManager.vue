@@ -2,8 +2,8 @@
     <div v-cloak>
         <message :message="message" :status="status"></message>
         <h2>Data Manager: {{ dataManagerName + ' - ' + dataManagerDesc }}</h2>
-        <div v-if="viewOnly"> Not implemented </div>
-        <div> Access managed data by job </div>
+        <p v-if="viewOnly">Not implemented</p>
+        <p>Access managed data by job</p>
         <div v-if="jobs.length > 0">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
 		<tr class="header">
