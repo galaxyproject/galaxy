@@ -33,9 +33,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
 
-        
-
-        '''with self.main_panel():
+        with self.main_panel():
             dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
             number_found = name_found = format_found = False
             for key, value in dataset_details_key_value_pairs:
@@ -51,7 +49,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
             assert number_found
             assert name_found
-            assert format_found'''
+            assert format_found
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)

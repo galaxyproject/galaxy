@@ -413,7 +413,8 @@ class ShedTwillTestCase(TwillTestCase):
         for data_manager_name in data_manager_names:
             guid = data_managers[data_manager_name]['guid']
             url = '/data_manager/manage_data_manager?id=%s' % guid
-            self.match_data_managers(url, guid)
+            self.visit_galaxy_url(url)
+            self.match_data_managers(guid)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         if strings_displayed is None:

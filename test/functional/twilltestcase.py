@@ -90,11 +90,14 @@ class TwillTestCase(FunctionalTestCase):
             errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % (patt, fname)
             raise AssertionError(errmsg)
 
-    def match_data_managers(self, url, guid):
+    def match_data_managers(self, guid):
         """ Match the ids of data managers from repository and database """
-        page_json = self.json_from_url(url)
-        if page_json["data_manager_id"] != guid:
-            errmsg = "data manager (%s) not equal to (%s)" % (page_json["data_manager_id"], guid)
+        page = self.last_page()
+        print page
+        print page["data_manager_id"]
+        print guid
+        if page["data_manager_id"] != guid:
+            errmsg = "data manager (%s) not equal to (%s)" % (page["data_manager_id"], guid)
             raise AssertionError(errmsg)
 
     # Functions associated with user accounts
