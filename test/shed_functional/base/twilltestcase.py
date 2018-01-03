@@ -413,7 +413,6 @@ class ShedTwillTestCase(TwillTestCase):
         for data_manager_name in data_manager_names:
             url = '/admin/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
             self.visit_galaxy_url(url)
-            time.sleep(1)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
