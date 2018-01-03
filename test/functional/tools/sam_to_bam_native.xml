@@ -1,18 +1,25 @@
 <tool id="sam_to_bam_native_conversion" name="Test sam to bam native conversion">
+    <requirements>
+        <requirement type="package" version="1.6">samtools</requirement>
+    </requirements>
     <command><![CDATA[
-        cat '$input1' > '$outfile1'
+        samtools view
+            -b
+            -@ \${GALAXY_SLOTS:-2}
+            -o '${output}'
+            '$input'
     ]]>
     </command>
     <inputs>
-        <param name="input1" type="data" format="bam" label="Concatenate Dataset"/>
+        <param name="input" type="data" format="sam" label="SAM file"/>
     </inputs>
     <outputs>
-        <data name="out_file1" format="bam"/>
+        <data name="output" format="bam_native"/>
     </outputs>
     <tests>
         <test>
             <param name="input1" value="sam_with_header.sam" ftype="sam"/>
-            <output name="outfile1" file="bam_native_from_sam.bam"/>
+            <output name="outfile1" file="bam_native_from_sam.bam" ftype="bam_native"/>
         </test>
     </tests>
     <help>
