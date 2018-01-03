@@ -47,7 +47,7 @@ http {
 
 **Notes:**
 
-Make sure that you either comment out or modify line containing default configuration for enabled sites.
+Make sure that you either comment out or modify line containing default configuration for enabled sites (if present, e.g. on Debian/Ubuntu systems).
 
 ```
 include /etc/nginx/sites-enabled/*;
