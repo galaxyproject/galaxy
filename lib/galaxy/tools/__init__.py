@@ -26,6 +26,7 @@ from galaxy import (
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
+from galaxy.managers.jobs import JobSearch
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -438,6 +439,7 @@ class Tool(object, Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
+        self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
@@ -1279,7 +1281,7 @@ class Tool(object, Dictifiable):
         log.debug('Validated and populated state for tool request %s' % validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None):
+    def handle_input(self, trans, incoming, history=None, use_cached_job=False):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1294,7 +1296,20 @@ class Tool(object, Dictifiable):
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
             mapping_params = MappingParameters(incoming, all_params)
-            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            completed_jobs = {}
+            for i, param in enumerate(all_params):
+                if use_cached_job:
+                    completed_jobs[i] = self.job_search.by_tool_input(
+                        trans=trans,
+                        tool_id=self.id,
+                        tool_version=self.version,
+                        param=param,
+                        param_dump=self.params_to_strings(param, self.app, nested=True),
+                        job_state=None,
+                    )
+                else:
+                    completed_jobs[i] = None
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)
             # Raise an exception if there were jobs to execute and none of them were submitted,
             # if at least one is submitted or there are no jobs to execute - return aggregate
             # information including per-job errors. Arguably we should just always return the
@@ -1311,7 +1326,7 @@ class Tool(object, Dictifiable):
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None):
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
@@ -1324,6 +1339,7 @@ class Tool(object, Dictifiable):
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
+                completed_job=completed_job,
             )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack

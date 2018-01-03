@@ -3,6 +3,7 @@ Basic tool parameters.
 """
 from __future__ import print_function
 
+import cgi
 import logging
 import os
 import os.path
@@ -543,6 +544,8 @@ class FileToolParameter(ToolParameter):
                 return value['local_filename']
             except KeyError:
                 return None
+        elif isinstance(value, cgi.FieldStorage):
+            return value.filename
         raise Exception("FileToolParameter cannot be persisted")
 
     def to_python(self, value, app):

@@ -214,7 +214,7 @@ class WorkflowModule(object):
         state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
         return state
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         """ Execute the given workflow invocation step.
 
         Use the supplied workflow progress object to track outputs, find
@@ -333,13 +333,13 @@ class SubWorkflowModule(WorkflowModule):
     def get_content_id(self):
         return self.trans.security.encode_id(self.subworkflow.id)
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         """ Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        subworkflow_invoker = progress.subworkflow_invoker(trans, step)
+        subworkflow_invoker = progress.subworkflow_invoker(trans, step, use_cached_job=use_cached_job)
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
@@ -367,7 +367,7 @@ class InputModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         step_outputs = dict(output=step.state.inputs['input'])
@@ -504,7 +504,7 @@ class InputParameterModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
         step_outputs = dict(output=step.state.inputs['input'])
         progress.set_outputs_for_input(invocation_step, step_outputs)
@@ -535,7 +535,7 @@ class PauseModule(WorkflowModule):
         state.inputs = dict()
         return state
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
 
@@ -805,7 +805,7 @@ class ToolModule(WorkflowModule):
         else:
             raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
@@ -873,6 +873,19 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        completed_jobs = {}
+        for i, param in enumerate(param_combinations):
+            if use_cached_job:
+                completed_jobs[i] = tool.job_search.by_tool_input(
+                    trans=trans,
+                    tool_id=tool.id,
+                    tool_version=tool.version,
+                    param=param,
+                    param_dump=tool.params_to_strings(param, trans.app, nested=True),
+                    job_state=None,
+                )
+            else:
+                completed_jobs[i] = None
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -886,6 +899,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
+                completed_jobs=completed_jobs
             )
             complete = True
         except PartialJobExecution as pje:

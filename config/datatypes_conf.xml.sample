@@ -620,6 +620,9 @@
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
     <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="false"/>
+    <datatype extension="neostore.zip" type="galaxy.datatypes.neo4j:Neo4jDBzip" display_in_upload="true">
+        <converter file="neostorezip_to_neostore_converter.xml" target_datatype="neostore"/>
+    </datatype>
     <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="true">
         <display file="ucsc/trackhub.xml" />
     </datatype>
@@ -631,18 +634,27 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
+    <!--
+    The commented entries in this section are required by versions 1.0.0, 1.0.1 and 1.0.2 of the
+    PlantTribes tools in the MTS Phylogenetics category, and are not required by version 1.0.3 of
+    later.  These datatypes will be removed in a future Galaxy release.  
+    -->
+    <!--
     <datatype extension="ptalign" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignment" />
     <datatype extension="ptalignca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentCodonAlignment" />
     <datatype extension="ptaligntrimmed" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmed" />
     <datatype extension="ptaligntrimmedca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment" />
     <datatype extension="ptalignfiltered" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFiltered" />
     <datatype extension="ptalignfilteredca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment" />
+    -->
     <datatype extension="ptkscmp" type="galaxy.datatypes.plant_tribes:PlantTribesKsComponents" display_in_upload="true"/>
+    <!--
     <datatype extension="ptortho" type="galaxy.datatypes.plant_tribes:PlantTribesOrtho" />
     <datatype extension="ptorthocs" type="galaxy.datatypes.plant_tribes:PlantTribesOrthoCodingSequence" />
     <datatype extension="ptphylip" type="galaxy.datatypes.plant_tribes:PlantTribesPhylip" />
     <datatype extension="pttgf" type="galaxy.datatypes.plant_tribes:PlantTribesTargetedGeneFamilies" />
     <datatype extension="pttree" type="galaxy.datatypes.plant_tribes:PlantTribesPhylogeneticTree" />
+    -->
     <datatype extension="smat" type="galaxy.datatypes.plant_tribes:Smat" display_in_upload="true" />
     <!-- Start Haplotype / LOD Datatypes -->
     <datatype extension="alohomora_gts" type="galaxy.datatypes.genetics:GenotypeMatrix" />
@@ -815,5 +827,6 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
   </sniffers>
 </datatypes>
