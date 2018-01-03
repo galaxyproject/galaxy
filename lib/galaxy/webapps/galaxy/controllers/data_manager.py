@@ -22,12 +22,11 @@ class DataManager(BaseUIController):
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))
         status = escape(kwd.get('status', 'info'))
-        
         data_managers = trans.app.data_managers
         data_managers_items = list()
         if data_managers.data_managers:
             data_manager_items = data_managers.data_managers.iteritems()
-            for data_manager_id, data_manager in sorted(data_manager_items, key = lambda x:x[1].name):
+            for data_manager_id, data_manager in sorted(data_manager_items, key=lambda x: x[1].name):
                 data_manager_dict = {
                     "id": data_manager_id,
                     "tool_id": data_manager.tool.id,
@@ -38,7 +37,6 @@ class DataManager(BaseUIController):
         tool_data_tables = trans.app.tool_data_tables
         tool_data_tables = sorted(tool_data_tables.get_tables().keys())
         managed_table_names = data_managers.managed_data_tables.keys()
-        
         return {
             "data_managers": data_managers_items,
             "tool_data_tables": tool_data_tables,
@@ -61,12 +59,11 @@ class DataManager(BaseUIController):
         if data_manager is None:
             return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error"))
         jobs = list(reversed([assoc.job for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id)]))
-        
         jobs_list = list()
         for job in jobs:
             job_dict = {
                 "id": job.id,
-                "encoded_id": trans.security.encode_id( job.id ),
+                "encoded_id": trans.security.encode_id(job.id),
                 "history_user_email": job.history.user.email if job.history and job.history.user else 'anonymous',
                 "update_time": str(job.update_time),
                 "state": str(job.state),
@@ -132,12 +129,8 @@ class DataManager(BaseUIController):
             hda_list.append(hda_dict)
 
         return {
-            "data_manager": {
-                "tool_id": data_manager.tool.id,
-                "name": data_manager.name,
-                "description": data_manager.description
-            },
-            "job": { "encoded_id": trans.security.encode_id( job.id ), "exit_code": str(job.exit_code)},
+            "data_manager": {"tool_id": data_manager.tool.id, "name": data_manager.name, "description": data_manager.description},
+            "job": {"encoded_id": trans.security.encode_id(job.id), "exit_code": str(job.exit_code)},
             "data_manager_output": data_manager_output,
             "hdas": hda_list,
             "view_only": not_is_admin,

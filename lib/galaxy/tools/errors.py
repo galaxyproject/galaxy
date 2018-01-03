@@ -33,7 +33,6 @@ The user ${email_str} provided the following information:
 
 ${message}
 -----------------------------------------------------------------------------
-info url: ${hda_show_params_link}
 job id: ${job_id} (${job_id_encoded})
 tool id: ${job_tool_id}
 tool version: ${tool_version}
@@ -67,7 +66,7 @@ error_report_template_html = """
 <h3>Error Localization</h3>
 <table style="margin:1em">
     <tbody>
-        <tr><td>Dataset</td><td><a href="${hda_show_params_link}">${dataset_id} (${dataset_id_encoded})</a></td></tr>
+        <tr><td>Dataset</td><td><a href="#">${dataset_id} (${dataset_id_encoded})</a></td></tr>
         <tr style="background-color: #f2f2f2"><td>History</td><td><a href="${history_view_link}">${history_id} (${history_id_encoded})</a></td></tr>
         <tr><td>Failed Job</td><td>${hid}: ${history_item_name} (${hda_id_encoded})</td></tr>
     </tbody>
@@ -84,7 +83,7 @@ ${message}
 
 <h3>Detailed Job Information</h3>
 
-Job environment and execution information is available at the job <a href="${hda_show_params_link}">info page</a>.
+Job environment and execution information is available at the job <a href="#">info page</a>.
 
 <table style="margin:1em">
     <tbody>
@@ -161,7 +160,7 @@ class ErrorReporter(object):
         history_id_encoded = self.app.security.encode_id(hda.history_id)
         history_view_link = web.url_for(controller="history", action="view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        #hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
         if user and user.email != email:
             email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
@@ -178,7 +177,7 @@ class ErrorReporter(object):
             hid=hda.hid,
             history_item_name=hda.get_display_name(),
             history_view_link=history_view_link,
-            hda_show_params_link=hda_show_params_link,
+            #hda_show_params_link=hda_show_params_link,
             job_id_encoded=self.app.security.encode_id(job.id),
             job_id=job.id,
             tool_version=job.tool_version,

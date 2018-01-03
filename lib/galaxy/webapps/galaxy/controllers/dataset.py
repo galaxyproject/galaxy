@@ -27,8 +27,8 @@ from galaxy.util import (
     smart_str,
     unicodify
 )
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.create_history_template import inputs_recursive
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago

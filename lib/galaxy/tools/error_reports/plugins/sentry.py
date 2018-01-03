@@ -82,12 +82,14 @@ class SentryPlugin(ErrorPlugin):
                 },
                 # This allows us to link to the dataset info page in case
                 # anything is missing from this report.
+                # This is commented out because after converting the
+                # 'view details' view using vueJS, there is not url anymore
                 'request': {
-                    'url': web.url_for(
+                    ''''url': web.url_for(
                         controller="dataset", action="show_params",
                         dataset_id=self.app.security.encode_id(dataset.id),
                         qualified=True
-                    )
+                    )'''
                 }
             })
 
