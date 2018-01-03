@@ -217,6 +217,17 @@ class BamNative(Binary):
     def init_meta(self, dataset, copy_from=None):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
+    def sniff(self, filename):
+        # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
+        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
+        try:
+            header = gzip.open(filename).read(4)
+            if header == b'BAM\1':
+                return True
+            return False
+        except Exception:
+            return False
+
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
@@ -256,12 +267,7 @@ class BamNative(Binary):
         return zip(file_paths, rel_paths)
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        index_file = dataset.metadata.bam_index
-        if index_file:
-            index_filename = index_file.file_name
-        else:
-            index_filename = None
-        with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_filename) as bamfile:
+        with pysam.AlignmentFile(dataset.file_name, "rb") as bamfile:
             ck_size = 300  # 300 lines
             ck_data = ""
             header_line_count = 0
@@ -389,16 +395,8 @@ class Bam(BamNative):
             # fail metadata to end in the error state
             pass
 
-    def sniff(self, filename):
-        # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
-        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
-        try:
-            header = gzip.open(filename).read(4)
-            if header == b'BAM\1':
-                return True
-            return False
-        except Exception:
-            return False
+    def sniff(self, file_name):
+        return super(Bam, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     # ------------- Dataproviders
     # pipe through samtools view
