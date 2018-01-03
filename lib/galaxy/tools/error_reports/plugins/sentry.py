@@ -1,7 +1,6 @@
 """The module describes the ``sentry`` error plugin plugin."""
 import logging
 
-from galaxy import web
 from galaxy.util import string_as_bool, unicodify
 from ..plugins import ErrorPlugin
 

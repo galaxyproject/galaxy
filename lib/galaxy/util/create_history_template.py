@@ -94,7 +94,7 @@ def render_item_job(trans, job, children):
     params_object = None
     try:
         params_object = job.get_param_values(trans.app, ignore_errors=True)
-    except Exception exp:
+    except Exception:
         pass
     template += '<div class="header"><div class="toolFormTitle"><span class="bold">' + tool_name + '</span>'
     template += '<span class="light"> - ' + tool_desc + '</span></div>'
@@ -113,7 +113,7 @@ def render_item_job(trans, job, children):
     template += '</div></div>'
     return template
 
-          
+
 def render_item_wf(trans, wf, children):
     """
     Render a workflow and its children (jobs/toolForms)

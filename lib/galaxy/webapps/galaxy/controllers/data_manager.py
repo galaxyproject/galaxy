@@ -119,11 +119,11 @@ class DataManager(BaseUIController):
         hda_list = list()
         for hda in hdas:
             hda_dict = {
-            	"name": hda.name,
-            	"id": hda.id,
-            	"encoded_id": trans.security.encode_id(hda.id),
-            	"file_name": hda.file_name,
-            	"created_time": unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
+                "name": hda.name,
+                "id": hda.id,
+                "encoded_id": trans.security.encode_id(hda.id),
+                "file_name": hda.file_name,
+                "created_time": unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
                 "file_size": nice_size(hda.dataset.file_size)
             }
             hda_list.append(hda_dict)
