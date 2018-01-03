@@ -207,7 +207,7 @@ class BamNative(Binary):
     @staticmethod
     def merge(split_files, output_file):
         """
-        Merges Bam files
+        Merges BAM files
 
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
