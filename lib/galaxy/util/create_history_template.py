@@ -3,6 +3,7 @@ Methods to create template for history details recursively.
 Used in dataset and history controllers
 """
 
+from galaxy.web import url_for
 from galaxy.util import listify
 
 
