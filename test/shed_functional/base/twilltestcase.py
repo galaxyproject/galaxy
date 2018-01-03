@@ -411,12 +411,9 @@ class ShedTwillTestCase(TwillTestCase):
         else:
             data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
-            url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
-            self.visit_galaxy_url(url)
-            page = self.last_page()
-            print page[ "data_manager_id" ]
-            print data_managers[data_manager_name]['guid']
-            assert page[ "data_manager_id" ], data_managers[data_manager_name]['guid']
+            guid = data_managers[data_manager_name]['guid']
+            url = '/data_manager/manage_data_manager?id=%s' % guid
+            self.match_data_managers(url, guid)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         if strings_displayed is None:
