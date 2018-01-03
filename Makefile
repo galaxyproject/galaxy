@@ -18,7 +18,7 @@ SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
-YARN := $(shell command -v yern 2> /dev/null)
+YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
