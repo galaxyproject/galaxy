@@ -47,7 +47,7 @@ export default {
                 return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
                     model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation( hda ),
                     el              : $('#hda-' + hda.id),
-                    linkTarget      : '_self',
+                    linkTarget      : 'galaxy_main',
                     purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     logger          : Galaxy.logger
                 }).render( 0 );
