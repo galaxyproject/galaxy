@@ -261,23 +261,23 @@ var DatasetListItemView = _super.extend(
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
                     ev.preventDefault();
-                    let showParamsInstance = Vue.extend( ShowParams ),
-                        mountView = document.createElement( "div" );
-                    if ( Galaxy.frame && Galaxy.frame.active ) {
+                    let showParamsInstance = Vue.extend(ShowParams),
+                        mountView = document.createElement("div");
+                    if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
                             title: _l("Dataset details")
                         });
-                        let $elFrame = $( ".corner.frame" ),
-                            $elLatestFrame = $( $elFrame[ $elFrame.length - 1 ] ).find( ".f-content" );
+                        let $elFrame = Galaxy.frame.frames.$el[0].lastChild,
+                            $elFrameContent = $($elFrame.childNodes[1]);
                         // open metadata in a scratchbook
-                        $elLatestFrame.html( mountView );
-                        $elLatestFrame.css('overflow', 'auto');
+                        $elFrameContent.html(mountView);
+                        $elFrameContent.css('overflow', 'auto');
                     }
                     else {
                         // open metadata in the center panel of the Galaxy 
-                        Galaxy.page.center.display( mountView );
+                        Galaxy.page.center.display(mountView);
                     }
-                    new showParamsInstance({ propsData: { metadataId: self.model.get( "id" ) } }).$mount( mountView );
+                    new showParamsInstance({propsData: {metadataId: self.model.get("id")}}).$mount(mountView);
                 }
             });
         },
