@@ -112,7 +112,6 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
-    webapp.add_client_route('/visualizations/show/{visualization_id}')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')

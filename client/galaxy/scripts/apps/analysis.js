@@ -22,7 +22,6 @@ import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Visualization from "mvc/visualization/visualization-view";
-import VisualizationClient from "mvc/visualization/visualization-client";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
 
@@ -104,14 +103,6 @@ window.app = function app(options, bootstrapped) {
                     action_id: action_id,
                     plural: "Visualizations",
                     item: "visualization"
-                })
-            );
-        },
-
-        show_visualizations_client : function(visualization_id) {
-            this.page.display(
-                new VisualizationClient.View({
-                    id: visualization_id
                 })
             );
         },
