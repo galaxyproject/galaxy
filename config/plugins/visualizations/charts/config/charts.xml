@@ -14,5 +14,5 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="mako">charts.mako</entry_point>
+    <entry_point entry_point_type="script">charts.js</entry_point>
 </visualization>

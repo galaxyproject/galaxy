@@ -29,7 +29,7 @@ class VisualizationsConfigParser(object):
             -- what information needs to be added to the query string
     """
     #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ['mako', 'html', 'script']
+    ALLOWED_ENTRY_POINT_TYPES = ['mako', 'html', 'script', 'chart']
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ['galaxy_main', '_top', '_blank']
 
