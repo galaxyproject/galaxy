@@ -2,15 +2,19 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
+import inspect
 import json
 import logging
 import os
+import re
+from collections import OrderedDict
 
 from galaxy.managers import configuration, users
 from galaxy.queue_worker import send_control_task
 from galaxy.web import (
     _future_expose_api as expose_api,
     _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose,
     require_admin
 )
 from galaxy.web.base.controller import BaseAPIController
@@ -25,6 +29,64 @@ class ConfigurationController(BaseAPIController):
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
         self.user_manager = users.UserManager(app)
+
+    @expose
+    def api_docs(self, trans, **kwd):
+        """
+        GET /api/docs
+
+        :returns: Returns basic API documentation as HTML
+        :rtype:   string
+
+        """
+        def format_methods(r):
+            if r.conditions:
+                method = r.conditions.get('method', '')
+                return type(method) is str and method or ', '.join(method)
+            else:
+                return ''
+
+        route_paths = {}
+        # see also mapper.__str__()
+        for r in trans.webapp.mapper.matchlist:
+            if r.routepath.startswith('api/'):
+                controller_name = r.defaults.get('controller', '')
+                controller = trans.webapp.api_controllers.get(controller_name, None)
+
+                action = r.defaults.get('action', '')
+                if r.routepath:
+                    a_doc = inspect.getdoc(getattr(controller, action, controller))
+                    route_dict = OrderedDict([
+                        ('Action', action),
+                        ('Description', a_doc),
+                        ('Route_name', r.name or ''),
+                        ('Methods', format_methods(r)),
+                        ('Controller', controller_name),
+                    ])
+                    if r.routepath in route_paths:
+                        route_paths[r.routepath].append(route_dict)
+                    else:
+                        route_paths[r.routepath] = [route_dict]
+
+        # This should probably go in a .mako
+        body = '<html><body><ul>{url_list}</ul></body></html>'
+        url_list = ''
+        for routepath in sorted(route_paths.keys()):
+            url_template = '<a href="{routepath_url}">{routepath}</a>'
+            if re.search(r'[:({]', routepath):
+                url_template = '<a href="{routepath_url}" style="pointer-events: none;">{routepath}</a>'
+            url_template = url_template.format(routepath_url=routepath.replace('api/', ''), routepath=routepath)
+            for route_dict in route_paths[routepath]:
+                url_template += '<details><summary><strong>{Methods}</strong> &raquo; {Action}</summary>'\
+                                '<div><pre>{Description}\n'\
+                                'Route name: {Route_name}\n'\
+                                'Methods: {Methods}\n'\
+                                'Controller: {Controller}'\
+                                '</pre></div>'\
+                                '</details><br />'.format(routepath=routepath, **route_dict)
+            url_list += '<li>' + url_template + '</li>'
+        body = body.format(url_list=url_list)
+        return body
 
     @expose_api
     def whoami(self, trans, **kwd):

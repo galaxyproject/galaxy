@@ -322,6 +322,9 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource('configuration', 'configuration', path_prefix='/api')
+    webapp.mapper.connect("api_docs",
+                          "/api/docs", controller="configuration",
+                          action="api_docs", conditions=dict(method=["GET"]))
     webapp.mapper.connect("configuration_version",
                           "/api/version", controller="configuration",
                           action="version", conditions=dict(method=["GET"]))
