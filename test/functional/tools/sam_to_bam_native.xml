@@ -3,23 +3,34 @@
         <requirement type="package" version="1.6">samtools</requirement>
     </requirements>
     <command><![CDATA[
+    #if $input1:
         samtools view
             -b
             -@ \${GALAXY_SLOTS:-2}
             -o '${output}'
-            '$input'
+            '$input1'
+    #else
+        cp '$input2' '$output'
+    #end if
     ]]>
     </command>
     <inputs>
-        <param name="input" type="data" format="sam" label="SAM file"/>
+        <param name="input1" type="data" format="sam" label="SAM file" optional="true"/>
+        <param name="input2" type="data" format="bam_native" label="Unsorted BAM file" optional="true"/>
     </inputs>
     <outputs>
         <data name="output" format="bam_native"/>
     </outputs>
     <tests>
+        <!-- Test that bam native output won't be sorted-->
         <test>
             <param name="input1" value="sam_with_header.sam" ftype="sam"/>
-            <output name="outfile1" file="bam_native_from_sam.bam" ftype="bam_native"/>
+            <output name="output" file="bam_native_from_sam.bam" ftype="bam_native"/>
+        </test>
+        <!-- Test that sam input is properly converted to bam native -->
+        <test>
+            <param name="input2" value="sam_with_header.sam" ftype="sam"/>
+            <output name="output" file="bam_native_from_sam.bam" ftype="bam_native"/>
         </test>
     </tests>
     <help>
