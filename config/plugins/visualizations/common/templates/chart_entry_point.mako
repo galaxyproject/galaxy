@@ -46,9 +46,10 @@
         $(function() {
             var config = ${ h.dumps( config ) };
             var app = bundleEntries.chart({
-                visualization_id : ${ h.dumps( visualization_id ) } || undefined,
-                dataset_id       : config.dataset_id,
-                chart_dict       : config.chart_dict
+                visualization_id    : ${h.dumps(visualization_id)} || undefined,
+                visualization_name  : ${h.dumps(visualization_name)},
+                dataset_id          : config.dataset_id,
+                chart_dict          : config.chart_dict
             });
             $('body').append(app.$el);
         });
