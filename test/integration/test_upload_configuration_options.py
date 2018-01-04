@@ -257,13 +257,13 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
         assert len(ftp_files) == 1, ftp_files
         assert ftp_files[0]["path"] == "test"
         assert os.path.exists(ftp_path)
+        # set to_posix_lines to None to exercise purging - by default this file type wouldn't
+        # be purged.
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, ftp_files="test", file_type="txt", wait=True
+            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
         )
         self._check_content(dataset, content)
-        # Purge is set by default so this should be gone.
-        # ... but it isn't - is this a bug? Are only certain kinds of uploads purged?
-        # assert not os.path.exists(ftp_path)
+        assert not os.path.exists(ftp_path)
 
     def _get_user_ftp_path(self):
         return os.path.join(self.ftp_dir(), TEST_USER)
@@ -311,8 +311,9 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
         assert len(ftp_files) == 1
         assert ftp_files[0]["path"] == "test"
         assert os.path.exists(ftp_path)
+        # gotta set to_posix_lines to None currently to force purging of non-binary data.
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, ftp_files="test", file_type="txt", wait=True
+            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
         )
         self._check_content(dataset, content)
         # Purge is disabled, this better still be here.
