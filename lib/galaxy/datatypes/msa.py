@@ -40,7 +40,7 @@ class InfernalCM(Text):
         True
         >>> fname = get_test_fname( 'test.mz5' )
         >>> InfernalCM().sniff( fname )
-        False        
+        False
         """
         with open(filename, 'r') as f:
             first_line = f.readline()
@@ -58,8 +58,7 @@ class InfernalCM(Text):
         with open(dataset.file_name, 'r') as f:
             first_line = f.readline()
             if first_line.startswith("INFERNAL"):
-                dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL','')
-
+                dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL', '')
 
 
 class Hmmer(Text):
