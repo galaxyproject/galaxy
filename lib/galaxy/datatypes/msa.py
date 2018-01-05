@@ -45,7 +45,7 @@ class InfernalCM(Text):
         with open(filename, 'r') as f:
             first_line = f.readline()
 
-        return first_line.startswith("INFERNAL"):
+        return first_line.startswith("INFERNAL")
 
     def set_meta(self, dataset, **kwd):
         """
