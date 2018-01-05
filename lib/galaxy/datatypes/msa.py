@@ -45,14 +45,11 @@ class InfernalCM(Text):
         with open(filename, 'r') as f:
             first_line = f.readline()
 
-        if first_line.startswith("INFERNAL"):
-            return True
-        else:
-            return False
+        return first_line.startswith("INFERNAL"):
 
     def set_meta(self, dataset, **kwd):
         """
-        Set the number of models in dataset.
+        Set the number of models and the version of CM file in dataset.
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL', dataset.file_name)
         with open(dataset.file_name, 'r') as f:
