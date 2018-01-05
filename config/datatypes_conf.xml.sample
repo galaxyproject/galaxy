@@ -498,7 +498,7 @@
     <datatype extension="snaphmm" type="galaxy.datatypes.annotation:SnapHmm" display_in_upload="true" />
     <datatype extension="augustus" type="galaxy.datatypes.annotation:Augustus" display_in_upload="true" />
     <!-- MSA Datatypes -->
-    <datatype extension="cm" type="galaxy.datatypes.msa:Infernal_CM_1_1" display_in_upload="False" />
+    <datatype extension="cm" type="galaxy.datatypes.msa:InfernalCM" display_in_upload="False" />
     <datatype extension="hmm2" type="galaxy.datatypes.msa:Hmmer2" display_in_upload="true" />
     <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="true" />
@@ -764,7 +764,7 @@
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.msa:MauveXmfa" />
-    <sniffer type="galaxy.datatypes.msa:Infernal_CM_1_1"/>
+    <sniffer type="galaxy.datatypes.msa:InfernalCM"/>
     <sniffer type="galaxy.datatypes.annotation:SnapHmm" />
     <sniffer type="galaxy.datatypes.binary:Cel" />
     <sniffer type="galaxy.datatypes.binary:RData" />

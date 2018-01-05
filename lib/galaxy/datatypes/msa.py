@@ -33,6 +33,15 @@ class InfernalCM(Text):
             dataset.blurb = 'file purged from disc'
 
     def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'infernal_model.cm' )
+        >>> Cool().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> Cool().sniff( fname )
+        False        
+        """
         with open(filename, 'r') as f:
             first_line = f.readline()
 
@@ -40,6 +49,13 @@ class InfernalCM(Text):
             return True
         else:
             return False
+
+    def set_meta(self, dataset, **kwd):
+        """
+
+        Set the number of models in dataset.
+        """
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL1/a', dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
