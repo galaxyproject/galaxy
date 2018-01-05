@@ -1017,6 +1017,9 @@ class JobParameter(object):
         self.name = name
         self.value = value
 
+    def copy(self):
+        return JobParameter(name=self.name, value=self.value)
+
 
 class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
