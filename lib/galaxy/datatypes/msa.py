@@ -55,11 +55,10 @@ class InfernalCM(Text):
         Set the number of models in dataset.
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL', dataset.file_name)
-
-        with open(filename, 'r') as f:
+        with open(dataset.file_name, 'r') as f:
             first_line = f.readline()
-        if first_line.startswith("INFERNAL"):
-            dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL','')
+            if first_line.startswith("INFERNAL"):
+                dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL','')
 
 
 
