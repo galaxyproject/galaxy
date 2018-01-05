@@ -34,6 +34,7 @@ from base.constants import (
 )
 from base.populators import (
     DatasetPopulator,
+    LibraryPopulator,
     skip_without_datatype,
 )
 
@@ -49,6 +50,7 @@ class BaseUploadContentConfigurationTestCase(integration_util.IntegrationTestCas
     def setUp(self):
         super(BaseUploadContentConfigurationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
 
@@ -85,6 +87,12 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
 
+    def test_disallowed_for_libraries(self):
+        library = self.library_populator.new_private_library("pathpastedisallowedlibraries")
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths="%s/1.txt" % TEST_DATA_DIRECTORY)
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 403, response.json()
+
 
 class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
@@ -99,9 +107,15 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
             self.history_id, 'file://%s/random-file' % TEST_DATA_DIRECTORY,
         )
         create_response = self._post("tools", data=payload)
-        # Ideally this would be 403 but the tool API endpoint isn't using
-        # the newer API decorator that handles those details.
+        # Is admin - so this should work fine!
         assert create_response.status_code == 200
+
+    def test_admin_path_paste_libraries(self):
+        library = self.library_populator.new_private_library("pathpasteallowedlibraries")
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths="%s/1.txt" % TEST_DATA_DIRECTORY)
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        # Was 403 for non-admin above.
+        assert response.status_code == 200
 
 
 class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase):
@@ -121,9 +135,9 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     def test_gzipped_html_content_blocked_by_default(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, 'file://%s/bad.html.gz' % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, 'file://%s/bad.html.gz' % TEST_DATA_DIRECTORY, file_type="auto", wait=True, assert_ok=False
         )
-        dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
+        dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset, assert_ok=False)
         assert dataset["file_size"] == 0
 
 
@@ -414,3 +428,45 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
 
     def _write_user_ftp_file(self, path, content):
         return self._write_ftp_file(os.path.join(self.ftp_dir(), TEST_USER), content, filename=path)
+
+
+class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
+
+    require_admin_user = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["library_import_dir"] = None
+
+    def test_server_dir_uploads_403_if_dir_not_set(self):
+        library = self.library_populator.new_private_library("serverdiroffbydefault")
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="foobar")
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 403, response.json()
+        assert '"library_import_dir" is not set' in response.json()["err_msg"]
+
+
+class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
+
+    require_admin_user = True
+
+    def test_valid_server_dir_uploads_okay(self):
+        library = self.library_populator.new_private_library("serverdirupload")
+        # upload $GALAXY_ROOT/test-data/library
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="library")
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 200, response.json()
+
+
+class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["user_library_import_dir"] = None
+
+    def test_library_import_dir_not_available_to_non_admins(self):
+        # same test case above works for admins
+        library = self.library_populator.new_private_library("serverdirupload")
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="library")
+        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
+        assert response.status_code == 403, response.json()

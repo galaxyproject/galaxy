@@ -16,8 +16,9 @@ var paths = {
     node_modules: './node_modules',
     scripts: [
         'galaxy/scripts/**/*.js',
-        '!galaxy/scripts/apps/**/*.js',
-        '!galaxy/scripts/libs/**/*.js'
+        '!galaxy/scripts/qunit/**/*',
+        '!galaxy/scripts/apps/**/*',
+        '!galaxy/scripts/libs/**/*'
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -25,7 +26,7 @@ var paths = {
         // not be necessary.
         'backbone': [ 'backbone.js', 'backbone.js' ],
         'd3': [ 'd3.js', 'd3.js' ],
-        'bib2json': [ 'Parser.js', 'bibtex.js' ],
+        'bibtex-parse-js': [ 'bibtexParse.js', 'bibtexParse.js' ],
         'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
         'jquery.complexify':     [ 'jquery.complexify.js', 'jquery/jquery.complexify.js' ],
         'jquery.cookie': [ 'jquery.cookie.js', 'jquery/jquery.cookie.js' ],
@@ -33,25 +34,29 @@ var paths = {
         'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ],
-        'underscore': [ 'underscore.js', 'underscore.js' ],
+        'underscore': [ 'underscore.js', 'underscore.js' ]
     },
     libs: ['galaxy/scripts/libs/**/*.js']
 };
 
-var nopack_mode = function(){
-    return process.env.GXY_NOPACK || false;
+var dev_mode = function(){
+    return process.env.NODE_ENV != "production";
+};
+
+var source_maps = function(){
+    return dev_mode() || process.env.GXY_BUILD_SOURCEMAPS !== undefined;
 };
 
 gulp.task('scripts', function() {
   return gulp.src(paths.scripts)
     .pipe(plumber())
     .pipe(cached('scripts'))
-    .pipe(sourcemaps.init())
+    .pipe(gulpif(source_maps, sourcemaps.init()))
     .pipe(babel({
         plugins: ['transform-es2015-modules-amd']
     }))
-    .pipe(gulpif(nopack_mode, beautify(), uglify()))
-    .pipe(sourcemaps.write('../maps/'))
+    .pipe(gulpif(dev_mode, beautify(), uglify()))
+    .pipe(gulpif(source_maps, sourcemaps.write('../maps/')))
     .pipe(gulp.dest('../static/scripts/'));
 });
 

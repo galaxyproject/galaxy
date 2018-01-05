@@ -7,7 +7,7 @@ import xml.etree.ElementTree
 from collections import namedtuple
 
 from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util import plugin_config, string_as_bool, string_as_bool_or_none
+from galaxy.util import plugin_config, string_as_bool
 
 log = logging.getLogger(__name__)
 
@@ -55,8 +55,8 @@ class AuthManager(object):
         message = ''
         status = 'done'
         for provider, options in self.active_authenticators(email, username, password):
-            allow_reg = _get_tri_state(options, 'allow-register', True)
-            if allow_reg is None:  # i.e. challenge
+            allow_reg = _get_allow_register(options)
+            if allow_reg == 'challenge':
                 auth_result, msg = provider.authenticate(email, username, password, options)
                 if auth_result is True:
                     break
@@ -102,7 +102,7 @@ class AuthManager(object):
                         else:
                             break  # end for loop if we can't make a unique username
                     log.debug("Email: %s, auto-register with username: %s" % (auto_email, auto_username))
-                    return (_get_bool(options, 'auto-register', False), auto_email, auto_username)
+                    return (string_as_bool(options.get('auto-register', False)), auto_email, auto_username)
                 elif auth_result is None:
                     log.debug("Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username))
                     break  # end authentication (skip rest)
@@ -131,7 +131,7 @@ class AuthManager(object):
             else:
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:
-                    if _get_bool(options, "allow-password-change", False):
+                    if string_as_bool(options.get("allow-password-change", False)):
                         return (True, '')  # accept user
                     else:
                         return (False, 'Password change not supported.')
@@ -160,15 +160,10 @@ class AuthManager(object):
 Authenticator = namedtuple('Authenticator', ['plugin', 'filter_template', 'options'])
 
 
-def _get_bool(d, k, o):
-    if k in d:
-        return string_as_bool(d[k])
+def _get_allow_register(d):
+    s = d.get('allow-register', True)
+    lower_s = str(s).lower()
+    if lower_s == 'challenge':
+        return lower_s
     else:
-        return o
-
-
-def _get_tri_state(d, k, o):
-    if k in d:
-        return string_as_bool_or_none(d[k])
-    else:
-        return o
+        return string_as_bool(s)

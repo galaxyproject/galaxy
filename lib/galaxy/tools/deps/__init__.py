@@ -6,7 +6,6 @@ import json
 import logging
 import os.path
 import shutil
-
 from collections import OrderedDict
 
 from galaxy.util import (
@@ -14,7 +13,6 @@ from galaxy.util import (
     plugin_config
 )
 from galaxy.util.oset import OrderedSet
-
 from .requirements import (
     ToolRequirement,
     ToolRequirements

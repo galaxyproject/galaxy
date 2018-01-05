@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import tempfile
-
 from distutils.version import LooseVersion
 from sys import platform as _platform
 
@@ -531,7 +530,7 @@ def build_isolated_environment(
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
         offline_works = (conda_context.conda_version < LooseVersion("4.3")) or \
-                        (conda_context.conda_version >= LooseVersion("4.3.18"))
+                        (conda_context.conda_version >= LooseVersion("4.4"))
         if offline_works:
             create_args.extend(["--offline"])
         else:

@@ -173,7 +173,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** the class used to display individual elements */
         elementViewClass: DatasetCollectionElementView,
         /** the class this creator will create and save */
-        collectionClass: HDCA.HistoryListDatasetCollection,
+        collectionClass: HDCA.HistoryDatasetCollection,
         className: "list-collection-creator collection-creator flex-row-container",
 
         /** minimum number of valid elements to start with in order to build a collection of this type */
@@ -278,8 +278,8 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function(element) {
-            if (element.history_content_type !== "dataset") {
-                return _l("is not a dataset");
+            if (element.history_content_type === "dataset_collection") {
+                return _l("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || _.contains(STATES.NOT_READY_STATES, element.state);
             if (!validState) {

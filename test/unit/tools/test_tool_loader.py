@@ -1,5 +1,4 @@
 import os
-
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp

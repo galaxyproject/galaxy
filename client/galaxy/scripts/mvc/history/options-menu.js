@@ -150,8 +150,12 @@ var menu = [
     },
     {
         html: _l("Export Tool Citations"),
-        href: "history/citations",
-        anon: true
+        anon: true,
+        func: function() {
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/citations?id=${Galaxy.currHistoryPanel.model.id}`);
+            }
+        }
     },
     {
         html: _l("Export History to File"),
@@ -165,7 +169,8 @@ var menu = [
     },
     {
         html: _l("Import from File"),
-        href: "history/import_archive"
+        href: "histories/import",
+        target: "_top"
     }
 ];
 

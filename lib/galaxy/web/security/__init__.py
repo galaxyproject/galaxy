@@ -1,14 +1,13 @@
 import collections
+import logging
 import os
 import os.path
-import logging
 
 from Crypto.Cipher import Blowfish
-from Crypto.Util.randpool import RandomPool
 from Crypto.Util import number
+from Crypto.Util.randpool import RandomPool
 
 import galaxy.exceptions
-
 from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)
@@ -99,7 +98,7 @@ class SecurityHelper(object):
                 if recursive and isinstance(v, dict):
                     rval[k] = self.encode_all_ids(v, recursive)
                 elif recursive and isinstance(v, list):
-                    rval[k] = map(lambda el: self.encode_all_ids(el, True), v)
+                    rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
     def decode_id(self, obj_id, kind=None):

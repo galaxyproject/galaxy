@@ -809,8 +809,6 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
         # revisions from the changelog.
         self.reset_all_tool_versions(repo)
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.app.tool_data_tables.data_tables = {}
 
     def reset_all_tool_versions(self, repo):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
@@ -989,8 +987,6 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                                                                    self.repository,
                                                                    self.metadata_dict)
             status = 'error'
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.app.tool_data_tables.data_tables = {}
         return message, status
 
     def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):

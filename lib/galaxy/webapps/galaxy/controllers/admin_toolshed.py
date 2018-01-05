@@ -22,7 +22,6 @@ from tool_shed.galaxy_install.tools import (
     data_manager,
     tool_panel_manager
 )
-from tool_shed.tools import tool_version_manager
 from tool_shed.util import (
     common_util,
     encoding_util,
@@ -35,7 +34,6 @@ from tool_shed.util import (
     workflow_util
 )
 from tool_shed.util.web_util import escape
-
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
@@ -90,7 +88,6 @@ class AdminToolshed(AdminGalaxy):
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = 'success' if status in ['ok', 'done', 'success'] else 'error'
-        kwd['dict_format'] = True
         return self.installed_repository_grid(trans, **kwd)
 
     @web.expose
@@ -175,12 +172,13 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     def browse_toolsheds(self, trans, **kwd):
         app = {
-            'jscript': "admin.toolshed"
+            'jscript': "adminToolshed"
         }
         return trans.fill_template('galaxy.panels.mako',
                                    config={
                                        'title': 'Galaxy Tool Sheds',
-                                       'app': app})
+                                       'app': app,
+                                       'bundle': 'extended'})
 
     @web.expose
     @web.require_admin
@@ -240,7 +238,7 @@ class AdminToolshed(AdminGalaxy):
                         message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                         status = max(status, statuses.index('error'))
         status = statuses[status]
-        remove_from_disk_check_box = CheckboxField('remove_from_disk', checked=remove_from_disk_checked)
+        remove_from_disk_check_box = CheckboxField('remove_from_disk', value=remove_from_disk_checked)
         return trans.fill_template('/admin/tool_shed_repository/deactivate_or_uninstall_repository.mako',
                                    repository=tool_shed_repositories,
                                    remove_from_disk_check_box=remove_from_disk_check_box,
@@ -536,10 +534,10 @@ class AdminToolshed(AdminGalaxy):
         else:
             install_tool_dependencies_check_box_checked = True
         install_tool_dependencies_check_box = CheckboxField('install_tool_dependencies',
-                                                            checked=install_tool_dependencies_check_box_checked)
+                                                            value=install_tool_dependencies_check_box_checked)
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', checked=True)
+            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', value=True)
         else:
             install_resolver_dependencies_check_box = None
         return trans.fill_template('/admin/tool_shed_repository/install_tool_dependencies_with_update.mako',
@@ -1055,12 +1053,12 @@ class AdminToolshed(AdminGalaxy):
         else:
             install_tool_dependencies_check_box_checked = True
         install_tool_dependencies_check_box = CheckboxField('install_tool_dependencies',
-                                                            checked=install_tool_dependencies_check_box_checked)
+                                                            value=install_tool_dependencies_check_box_checked)
         # Handle repository dependencies check box.
-        install_repository_dependencies_check_box = CheckboxField('install_repository_dependencies', checked=True)
+        install_repository_dependencies_check_box = CheckboxField('install_repository_dependencies', value=True)
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', checked=True)
+            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', value=True)
         else:
             install_resolver_dependencies_check_box = None
         encoded_repo_info_dicts = encoding_util.encoding_sep.join(encoded_repo_info_dicts)
@@ -1393,7 +1391,7 @@ class AdminToolshed(AdminGalaxy):
             else:
                 original_section_name = ''
             tool_panel_section_select_field = tool_util.build_tool_panel_section_select_field(trans.app)
-            no_changes_check_box = CheckboxField('no_changes', checked=True)
+            no_changes_check_box = CheckboxField('no_changes', value=True)
             if original_section_name:
                 message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
                     % (escape(tool_shed_repository.name), original_section_name)
@@ -1424,7 +1422,7 @@ class AdminToolshed(AdminGalaxy):
         # whether installed or missing.
         containers_dict = dd.merge_missing_repository_dependencies_to_installed_container(containers_dict)
         # Handle repository dependencies check box.
-        install_repository_dependencies_check_box = CheckboxField('install_repository_dependencies', checked=True)
+        install_repository_dependencies_check_box = CheckboxField('install_repository_dependencies', value=True)
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
@@ -1434,10 +1432,10 @@ class AdminToolshed(AdminGalaxy):
             install_tool_dependencies_check_box_checked = False
         else:
             install_tool_dependencies_check_box_checked = True
-        install_tool_dependencies_check_box = CheckboxField('install_tool_dependencies', checked=install_tool_dependencies_check_box_checked)
+        install_tool_dependencies_check_box = CheckboxField('install_tool_dependencies', value=install_tool_dependencies_check_box_checked)
         view = views.DependencyResolversView(self.app)
         if view.installable_resolvers:
-            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', checked=True)
+            install_resolver_dependencies_check_box = CheckboxField('install_resolver_dependencies', value=True)
         else:
             install_resolver_dependencies_check_box = None
         return trans.fill_template('/admin/tool_shed_repository/reselect_tool_panel_section.mako',
@@ -1537,45 +1535,6 @@ class AdminToolshed(AdminGalaxy):
         return trans.response.send_redirect(web.url_for(controller='admin_toolshed',
                                                         action='manage_repository',
                                                         id=repository_id))
-
-    @web.expose
-    @web.require_admin
-    def set_tool_versions(self, trans, **kwd):
-        """
-        Get the tool_versions from the tool shed for each tool in the installed revision of a selected tool shed
-        repository and update the metadata for the repository's revision in the Galaxy database.
-        """
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
-        params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
-        pathspec = ['repository', 'get_tool_versions']
-        text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        if text:
-            tool_version_dicts = json.loads(text)
-            tvm = tool_version_manager.ToolVersionManager(trans.app)
-            tvm.handle_tool_versions(tool_version_dicts, repository)
-            message = "Tool versions have been set for all included tools."
-            status = 'done'
-        else:
-            message = ("Version information for the tools included in the <b>%s</b> repository is missing.  "
-                       "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
-                       "from the installed repository's <b>Repository Actions</b> menu.  " % escape(repository.name))
-            status = 'error'
-        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
-        repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, repository.name))
-        dd = dependency_display.DependencyDisplayer(trans.app)
-        containers_dict = dd.populate_containers_dict_from_repository_metadata(tool_shed_url=tool_shed_url,
-                                                                               tool_path=tool_path,
-                                                                               repository=repository,
-                                                                               reinstalling=False,
-                                                                               required_repo_info_dicts=None)
-        return trans.fill_template('/admin/tool_shed_repository/manage_repository.mako',
-                                   repository=repository,
-                                   description=repository.description,
-                                   repo_files_dir=repo_files_dir,
-                                   containers_dict=containers_dict,
-                                   message=message,
-                                   status=status)
 
     @web.json
     def tool_dependency_status_updates(self, trans, ids=None, status_list=None):

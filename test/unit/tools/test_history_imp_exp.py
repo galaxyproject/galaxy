@@ -6,7 +6,6 @@ from tempfile import mkdtemp
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
-
 from ..unittest_utils.galaxy_mock import MockApp
 
 

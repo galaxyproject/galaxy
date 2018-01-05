@@ -16,7 +16,6 @@ import sys
 import tempfile
 import threading
 import time
-
 from datetime import timedelta
 
 from six import string_types
@@ -31,7 +30,7 @@ from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import register_postfork_function
+from galaxy.web.stack import get_stack_facts, register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -42,7 +41,6 @@ PATH_DEFAULTS = dict(
     data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
     datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
     build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
-    external_service_type_config_file=['config/external_service_types_conf.xml', 'external_service_types_conf.xml', 'config/external_service_types_conf.xml.sample'],
     job_config_file=['config/job_conf.xml', 'job_conf.xml'],
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
@@ -79,6 +77,49 @@ PATH_LIST_DEFAULTS = dict(
                       'tool_conf.xml,shed_tool_conf.xml',
                       'config/tool_conf.xml.sample,config/shed_tool_conf.xml']
 )
+
+LOGGING_CONFIG_DEFAULT = {
+    'version': 1,
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'galaxy': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': 0,
+            'qualname': 'galaxy',
+        },
+        'paste.httpserver.ThreadPool': {
+            'level': 'WARN',
+            'qualname': 'paste.httpserver.ThreadPool',
+        },
+        'routes.middleware': {
+            'level': 'WARN',
+            'qualname': 'routes.middleware',
+        },
+    },
+    'filters': {
+        'stack': {
+            '()': 'galaxy.web.stack.application_stack_log_filter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'stack',
+            'level': 'DEBUG',
+            'stream': 'ext://sys.stderr',
+            'filters': ['stack'],
+        },
+    },
+    'formatters': {
+        'stack': {
+            '()': 'galaxy.web.stack.application_stack_log_formatter',
+        },
+    },
+}
 
 
 def resolve_path(path, root):
@@ -246,8 +287,6 @@ class Configuration(object):
         self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
-        self.local_job_queue_workers = int(kwargs.get("local_job_queue_workers", "5"))
-        self.cluster_job_queue_workers = int(kwargs.get("cluster_job_queue_workers", "3"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = os.path.abspath(kwargs.get("cluster_files_directory", "database/pbs"))
 
@@ -270,11 +309,6 @@ class Configuration(object):
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         self.retry_job_output_collection = int(kwargs.get('retry_job_output_collection', 0))
         self.check_job_script_integrity = string_as_bool(kwargs.get("check_job_script_integrity", True))
-        self.job_walltime = kwargs.get('job_walltime', None)
-        self.job_walltime_delta = None
-        if self.job_walltime is not None:
-            h, m, s = [int(v) for v in self.job_walltime.split(':')]
-            self.job_walltime_delta = timedelta(0, s, 0, 0, m, h)
         self.admin_users = kwargs.get("admin_users", "")
         self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
@@ -307,7 +341,6 @@ class Configuration(object):
         self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
         self.track_jobs_in_database = string_as_bool(kwargs.get('track_jobs_in_database', 'True'))
-        self.start_job_runners = listify(kwargs.get('start_job_runners', ''))
         self.expose_dataset_path = string_as_bool(kwargs.get('expose_dataset_path', 'False'))
         self.expose_potentially_sensitive_job_metrics = string_as_bool(kwargs.get('expose_potentially_sensitive_job_metrics', 'False'))
         self.enable_communication_server = string_as_bool(kwargs.get('enable_communication_server', 'False'))
@@ -316,8 +349,6 @@ class Configuration(object):
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
-        # External Service types used in sample tracking
-        self.external_service_type_path = resolve_path(kwargs.get('external_service_type_path', 'external_service_types'), self.root)
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
@@ -340,9 +371,6 @@ class Configuration(object):
         # Beta containers interface used by GIEs
         self.enable_beta_containers_interface = string_as_bool(kwargs.get('enable_beta_containers_interface', 'False'))
 
-        # Deprecated API for sample tracking
-        self.enable_legacy_sample_tracking_api = string_as_bool(kwargs.get('enable_legacy_sample_tracking_api', 'False'))
-
         # Certain modules such as the pause module will automatically cause
         # workflows to be scheduled in job handlers the way all workflows will
         # be someday - the following two properties can also be used to force this
@@ -354,13 +382,9 @@ class Configuration(object):
         self.history_local_serial_workflow_scheduling = string_as_bool(kwargs.get('history_local_serial_workflow_scheduling', 'False'))
         self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
+        self.maximum_workflow_jobs_per_scheduling_iteration = int(kwargs.get("maximum_workflow_jobs_per_scheduling_iteration", -1))
 
-        # Per-user Job concurrency limitations
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
-        self.user_job_limit = int(kwargs.get('user_job_limit', 0))
-        self.registered_user_job_limit = int(kwargs.get('registered_user_job_limit', self.user_job_limit))
-        self.anonymous_user_job_limit = int(kwargs.get('anonymous_user_job_limit', self.user_job_limit))
-        self.default_cluster_job_runner = kwargs.get('default_cluster_job_runner', 'local:///')
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
@@ -402,10 +426,8 @@ class Configuration(object):
         self.library_import_dir = kwargs.get('library_import_dir', None)
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
+        self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
         # Searching data libraries
-        self.enable_lucene_library_search = string_as_bool(kwargs.get('enable_lucene_library_search', False))
-        self.enable_whoosh_library_search = string_as_bool(kwargs.get('enable_whoosh_library_search', False))
-        self.whoosh_index_dir = resolve_path(kwargs.get("whoosh_index_dir", "database/whoosh_indexes"), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -521,10 +543,12 @@ class Configuration(object):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
-        # Allow explicit override of server name in confg params
+        # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
-        # Store all configured server names
+        # The application stack code may manipulate the server name
+        self.base_server_name = self.server_name
+        # Store all configured server names for the message queue routing
         self.server_names = []
         for section in global_conf_parser.sections():
             if section.startswith('server:'):
@@ -553,12 +577,8 @@ class Configuration(object):
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
 
         # Store advanced job management config
-        self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        # Store per-tool runner configs
-        self.tool_handlers = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_handlers', 'name')
-        self.tool_runners = self.__read_tool_job_config(global_conf_parser, 'galaxy:tool_runners', 'url')
         # Galaxy messaging (AMQP) configuration options
         self.amqp = {}
         try:
@@ -594,6 +614,8 @@ class Configuration(object):
         self.api_folders = string_as_bool(kwargs.get('api_folders', False))
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool(kwargs.get('new_lib_browse', False))
+        # Logging configuration with logging.config.configDict:
+        self.logging = kwargs.get('logging', None)
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Statistics and profiling with statsd
@@ -693,41 +715,6 @@ class Configuration(object):
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
 
-    def __read_tool_job_config(self, global_conf_parser, section, key):
-        try:
-            tool_runners_config = global_conf_parser.items(section)
-
-            # Process config to group multiple configs for the same tool.
-            rval = {}
-            for entry in tool_runners_config:
-                tool_config, val = entry
-                tool = None
-                runner_dict = {}
-                if tool_config.find("[") != -1:
-                    # Found tool with additional params; put params in dict.
-                    tool, params = tool_config[:-1].split("[")
-                    param_dict = {}
-                    for param in params.split(","):
-                        name, value = param.split("@")
-                        param_dict[name] = value
-                    runner_dict['params'] = param_dict
-                else:
-                    tool = tool_config
-
-                # Add runner URL.
-                runner_dict[key] = val
-
-                # Create tool entry if necessary.
-                if tool not in rval:
-                    rval[tool] = []
-
-                # Add entry to runners.
-                rval[tool].append(runner_dict)
-
-            return rval
-        except configparser.NoSectionError:
-            return {}
-
     def get(self, key, default):
         return self.config_dict.get(key, default)
 
@@ -759,8 +746,7 @@ class Configuration(object):
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
-                     self.nginx_upload_store, self.whoosh_index_dir,
-                     self.object_store_cache_path):
+                     self.nginx_upload_store, self.object_store_cache_path):
             self._ensure_directory(path)
         # Check that required files exist
         tool_configs = self.tool_configs
@@ -896,34 +882,18 @@ def configure_logging(config):
         paste_configures_logging = False
     auto_configure_logging = not paste_configures_logging and string_as_bool(config.get("auto_configure_logging", "True"))
     if auto_configure_logging:
-        format = config.get("log_format", "%(name)s %(levelname)s %(asctime)s %(message)s")
-        level = logging._levelNames[config.get("log_level", "DEBUG")]
-        destination = config.get("log_destination", "stdout")
-        log.info("Logging at '%s' level to '%s'" % (level, destination))
-        # Set level
-        root.setLevel(level)
-
-        disable_chatty_loggers = string_as_bool(config.get("auto_configure_logging_disable_chatty", "True"))
-        if disable_chatty_loggers:
-            # Turn down paste httpserver logging
-            if level <= logging.DEBUG:
-                for chatty_logger in ["paste.httpserver.ThreadPool", "routes.middleware"]:
-                    logging.getLogger(chatty_logger).setLevel(logging.WARN)
-
-        # Remove old handlers
-        for h in root.handlers[:]:
-            root.removeHandler(h)
-        # Create handler
-        if destination == "stdout":
-            handler = logging.StreamHandler(sys.stdout)
-        else:
-            handler = logging.FileHandler(destination)
-        # Create formatter
-        formatter = logging.Formatter(format)
-        # Hook everything up
-        handler.setFormatter(formatter)
-        root.addHandler(handler)
-    # If sentry is configured, also log to it
+        logging_conf = config.get('logging', None)
+        if logging_conf is None:
+            # if using the default logging config, honor the log_level setting
+            logging_conf = LOGGING_CONFIG_DEFAULT
+            if config.get('log_level', 'DEBUG') != 'DEBUG':
+                logging_conf['handlers']['console']['level'] = config.get('log_level', 'DEBUG')
+        # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
+        for name, conf in logging_conf.get('handlers', {}).items():
+            if conf['class'].startswith('logging.') and conf['class'].endswith('FileHandler') and 'filename_template' in conf:
+                conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
+                logging_conf['handlers'][name] = conf
+        logging.config.dictConfig(logging_conf)
     if getattr(config, "sentry_dsn", None):
         from raven.handlers.logging import SentryHandler
         sentry_handler = SentryHandler(config.sentry_dsn)

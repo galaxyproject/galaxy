@@ -623,7 +623,6 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 
             var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
 
-            //TODO: use ListPairedCollection.create()
             var ajaxData = {
                 type: "dataset_collection",
                 collection_type: "list:paired",
@@ -1797,7 +1796,8 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         oncreate: function(creator, response) {
             Galaxy.modal.hide();
             deferred.resolve(response);
-        }
+        },
+        title: _l("Create a collection of paired datasets")
     });
 
     if (!window.Galaxy || !Galaxy.modal) {
@@ -1806,7 +1806,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
 
     creator = new PairedCollectionCreator(options);
     Galaxy.modal.show({
-        title: "Create a collection of paired datasets",
+        title: options.title,
         body: creator.$el,
         width: "80%",
         height: "800px",

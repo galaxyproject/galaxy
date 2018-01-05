@@ -8,6 +8,7 @@ class CollectionTypeDescriptionFactory(object):
         self.type_registry = type_registry
 
     def for_collection_type(self, collection_type):
+        assert collection_type is not None
         return CollectionTypeDescription(collection_type, self)
 
 

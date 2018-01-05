@@ -1,13 +1,8 @@
+import _l from "utils/localization";
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
-
-// global variables
-var ui = null;
-var view = null;
-var browser_router = null;
-
-// trackster viewer
+//import * as $ from 'jquery';
 import * as _ from "libs/underscore";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
@@ -24,6 +19,12 @@ import "libs/farbtastic";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
+
+// trackster global variables
+var ui = null;
+var view = null;
+var browser_router = null;
+
 /**
  * Base Object/Model for inhertiance.
  */
@@ -105,7 +106,7 @@ var TracksterUI = Base.extend({
             .error(() => {
                 // show dialog
                 Galaxy.modal.show({
-                    title: "Could Not Save",
+                    title: _l("Could Not Save"),
                     body: "Could not save visualization. Please try again later.",
                     buttons: {
                         Cancel: function() {
@@ -126,7 +127,7 @@ var TracksterUI = Base.extend({
             [
                 {
                     icon_class: "plus-button",
-                    title: "Add tracks",
+                    title: _l("Add tracks"),
                     on_click: function() {
                         visualization.select_datasets({ dbkey: view.dbkey }, new_tracks => {
                             _.each(new_tracks, track => {
@@ -137,7 +138,7 @@ var TracksterUI = Base.extend({
                 },
                 {
                     icon_class: "block--plus",
-                    title: "Add group",
+                    title: _l("Add group"),
                     on_click: function() {
                         view.add_drawable(
                             new tracks.DrawableGroup(view, view, {
@@ -148,29 +149,29 @@ var TracksterUI = Base.extend({
                 },
                 {
                     icon_class: "bookmarks",
-                    title: "Bookmarks",
+                    title: _l("Bookmarks"),
                     on_click: function() {
                         // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                        force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
+                        window.force_right_panel($("div#right").css("right") == "0px" ? "hide" : "show");
                     }
                 },
                 {
                     icon_class: "globe",
-                    title: "Circster",
+                    title: _l("Circster"),
                     on_click: function() {
                         window.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
                     }
                 },
                 {
                     icon_class: "disk--arrow",
-                    title: "Save",
+                    title: _l("Save"),
                     on_click: function() {
                         self.save_viz();
                     }
                 },
                 {
                     icon_class: "cross-circle",
-                    title: "Close",
+                    title: _l("Close"),
                     on_click: function() {
                         self.handle_unsaved_changes(view);
                     }
@@ -249,7 +250,7 @@ var TracksterUI = Base.extend({
         // Create view.
         var self = this;
 
-        var view = new tracks.TracksterView(_.extend(view_config, { header: false }));
+        view = new tracks.TracksterView(_.extend(view_config, { header: false }));
 
         view.editor = true;
         $.when(view.load_chroms_deferred).then(chrom_info => {
@@ -357,7 +358,7 @@ var TracksterUI = Base.extend({
         if (view.has_changes) {
             var self = this;
             Galaxy.modal.show({
-                title: "Close visualization",
+                title: _l("Close visualization"),
                 body: "There are unsaved changes to your visualization which will be lost if you do not save them.",
                 buttons: {
                     Cancel: function() {
@@ -407,10 +408,10 @@ var TracksterView = Backbone.View.extend({
         });
 
         // hide right panel
-        force_right_panel("hide");
+        window.force_right_panel("hide");
 
         // check if id is available
-        if (galaxy_config.app.id) {
+        if (window.galaxy_config.app.id) {
             this.view_existing();
         } else if (query_string.get("dataset_id")) {
             this.choose_existing_or_new();
@@ -458,11 +459,10 @@ var TracksterView = Backbone.View.extend({
     view_in_saved: function(dataset_params) {
         var tracks_grid = new GridView({
             url_base: `${Galaxy.root}visualization/list_tracks`,
-            dict_format: true,
             embedded: true
         });
         Galaxy.modal.show({
-            title: "Add Data to Saved Visualization",
+            title: _l("Add Data to Saved Visualization"),
             body: tracks_grid.$el,
             buttons: {
                 Cancel: function() {
@@ -483,7 +483,7 @@ var TracksterView = Backbone.View.extend({
     // view
     view_existing: function() {
         // get config
-        var viz_config = galaxy_config.app.viz_config;
+        var viz_config = window.galaxy_config.app.viz_config;
 
         // view
         view = ui.create_visualization(
@@ -518,7 +518,7 @@ var TracksterView = Backbone.View.extend({
             success: function(response) {
                 // show dialog
                 Galaxy.modal.show({
-                    title: "New Visualization",
+                    title: _l("New Visualization"),
                     body: self.template_view_new(response),
                     buttons: {
                         Cancel: function() {
@@ -533,8 +533,11 @@ var TracksterView = Backbone.View.extend({
 
                 // select default
                 var dbkeys_in_genomes = response.map(r => r[1]);
-                if (galaxy_config.app.default_dbkey && _.contains(dbkeys_in_genomes, galaxy_config.app.default_dbkey)) {
-                    $("#new-dbkey").val(galaxy_config.app.default_dbkey);
+                if (
+                    window.galaxy_config.app.default_dbkey &&
+                    _.contains(dbkeys_in_genomes, window.galaxy_config.app.default_dbkey)
+                ) {
+                    $("#new-dbkey").val(window.galaxy_config.app.default_dbkey);
                 }
 
                 // change focus
@@ -572,7 +575,7 @@ var TracksterView = Backbone.View.extend({
         // close selection/finalize template
         html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
             Galaxy.root
-        }user/dbkeys?use_panels=True">Add a Custom Build</a></div></form>`;
+        }custom_builds">Add a Custom Build</a></div></form>`;
 
         // return
         return html;
@@ -588,7 +591,7 @@ var TracksterView = Backbone.View.extend({
                 name: name,
                 dbkey: dbkey
             },
-            galaxy_config.app.gene_region
+            window.galaxy_config.app.gene_region
         );
 
         // initialize editor
@@ -604,9 +607,9 @@ var TracksterView = Backbone.View.extend({
         $("#center .unified-panel-title").text(`${view.config.get_value("name")} (${view.dbkey})`);
 
         // add dataset
-        if (galaxy_config.app.add_dataset)
+        if (window.galaxy_config.app.add_dataset)
             $.ajax({
-                url: `${Galaxy.root}api/datasets/${galaxy_config.app.add_dataset}`,
+                url: `${Galaxy.root}api/datasets/${window.galaxy_config.app.add_dataset}`,
                 data: { hda_ldda: "hda", data_type: "track_config" },
                 dataType: "json",
                 success: function(track_data) {

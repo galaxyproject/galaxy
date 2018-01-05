@@ -3,13 +3,11 @@ import re
 import sys
 import traceback
 import uuid
-
 from math import isinf
 
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-
 from .interface import (
     InputSource,
     PageSource,
@@ -129,12 +127,13 @@ class XmlToolSource(ToolSource):
         return environment_variables
 
     def parse_interpreter(self):
+        interpreter = None
         command_el = self._command_el
-        interpreter = (command_el is not None) and command_el.get("interpreter", None)
-        if not self.legacy_defaults:
-            log.warning("Deprecated interpeter attribute on command element is now ignored.")
+        if command_el is not None:
+            interpreter = command_el.get("interpreter", None)
+        if interpreter and not self.legacy_defaults:
+            log.warning("Deprecated interpreter attribute on command element is now ignored.")
             interpreter = None
-
         return interpreter
 
     def parse_version_command(self):
@@ -328,9 +327,15 @@ class XmlToolSource(ToolSource):
         detect_errors = None
         if command_el is not None:
             detect_errors = command_el.get("detect_errors")
+
         if detect_errors and detect_errors != "default":
             if detect_errors == "exit_code":
-                return error_on_exit_code()
+                oom_exit_code = None
+                if command_el is not None:
+                    oom_exit_code = command_el.get("oom_exit_code", None)
+                if oom_exit_code is not None:
+                    int(oom_exit_code)
+                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:

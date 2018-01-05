@@ -1,13 +1,13 @@
-import galaxy.model
 import collections
 import logging
+
 import sqlalchemy as sa
-
-from galaxy import util
-from galaxy.web.base.controller import BaseUIController, web
-
 from markupsafe import escape
 from sqlalchemy import and_
+
+import galaxy.model
+from galaxy import util
+from galaxy.web.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +54,7 @@ class History(BaseUIController):
         sort_by = kwd.get('sorting', 'User')
         sorting = 0 if sort_by == 'User' else 1 if sort_by == "HSort" else 2 if sort_by == "DSort" else 3
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        reverse = descending == 1
 
         # select count (h.id) as history, u.email as email
         # from history h, galaxy_user u
@@ -94,18 +95,18 @@ class History(BaseUIController):
         datasets = dict([(_.email if _.email is not None else "Unknown", (int(_.dataset), int(_.size)))
                          for _ in datasets.execute()])
 
-        sorting_functions = [
-            lambda first, second: descending if first[0].lower() > second[0].lower() else -descending,
-            lambda first, second: descending if histories.get(first, 0) < histories.get(second, 0) else -descending,
-            lambda first, second: descending if datasets.get(first, [0])[0] < datasets.get(second, [0])[0] else -descending,
-            lambda first, second: descending if datasets.get(first, [0, 0])[1] < datasets.get(second, [0, 0])[1] else -descending
-        ]
+        sort_keys = (
+            lambda v: v[0].lower(),
+            lambda v: histories.get(v, 0),
+            lambda v: datasets.get(v, [0])[0],
+            lambda v: datasets.get(v, [0][0])[1]
+        )
 
         # fetch all users
         users = list(set(histories.keys()) | set(datasets.keys()))
 
         # sort users depending on sort function, defined by user choices
-        users.sort(sorting_functions[sorting])
+        users.sort(key=sort_keys[sorting], reverse=reverse)
         if user_cutoff > 0:
             users = users[:user_cutoff]
 
@@ -133,6 +134,7 @@ class History(BaseUIController):
         message = escape(util.restore_text(kwd.get('message', '')))
         user_cutoff = int(kwd.get('user_cutoff', 60))
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
+        reverse = descending == 1
         user_selection = kwd.get('user_selection', None)
 
         # select d.state, h.name
@@ -159,7 +161,7 @@ class History(BaseUIController):
                 for _ in histories.execute()]
 
         # sort by names descending or ascending
-        data.sort(lambda first, second: descending if first[0].lower() > second[0].lower() else -descending)
+        data.sort(key=lambda v: v[0].lower(), reverse=reverse)
 
         # fetch names in the first list and status in the second
         if data:

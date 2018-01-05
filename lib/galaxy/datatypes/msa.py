@@ -69,7 +69,7 @@ class Hmmer(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
         else:
             dataset.peek = 'file does not exist'
@@ -144,9 +144,6 @@ class HmmerPress(Binary):
         self.add_composite_file('model.hmm.h3p', is_binary=True)
 
 
-Binary.register_unsniffable_binary_ext("hmmpress")
-
-
 class Stockholm_1_0(Text):
     edam_data = "data_0863"
     edam_format = "format_1961"
@@ -156,12 +153,11 @@ class Stockholm_1_0(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
@@ -239,12 +235,11 @@ class MauveXmfa(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
-            if dataset.metadata.number_of_models == 1:
+            if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'

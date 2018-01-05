@@ -1,14 +1,18 @@
 import logging
 
-from galaxy import util
-from galaxy import web
-from galaxy import exceptions
-from galaxy.web import require_admin as require_admin
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+import tool_shed.util.shed_util_common as suc
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    require_admin as require_admin
+)
 from galaxy.web.base.controller import BaseAPIController
 from tool_shed.util import repository_util
-import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger(__name__)
 

@@ -14,79 +14,77 @@ var AdminPanel = Backbone.View.extend({
         });
         this.categories = new Backbone.Collection([
             {
-                title: "Server",
+                title: _l("Server"),
                 items: [
                     {
-                        title: "Data types",
+                        title: _l("Data types"),
                         url: "admin/view_datatypes_registry"
                     },
                     {
-                        title: "Data tables",
-                        url: "admin/view_tool_data_tables"
+                        title: _l("Data tables"),
+                        url: "admin/data_tables",
+                        target: "__use_router__"
                     },
                     {
-                        title: "Data libraries",
-                        url: "library_admin/browse_libraries"
-                    },
-                    {
-                        title: "Display applications",
+                        title: _l("Display applications"),
                         url: "admin/display_applications"
                     },
                     {
-                        title: "Manage jobs",
+                        title: _l("Manage jobs"),
                         url: "admin/jobs"
                     },
                     {
-                        title: "Local data",
+                        title: _l("Local data"),
                         url: "data_manager"
                     }
                 ]
             },
             {
-                title: "User Management",
+                title: _l("User Management"),
                 items: [
                     {
-                        title: "Users",
+                        title: _l("Users"),
                         url: "admin/users",
                         target: "__use_router__"
                     },
                     {
-                        title: "Quotas",
+                        title: _l("Quotas"),
                         url: "admin/quotas",
                         target: "__use_router__",
                         enabled: self.config.enable_quotas
                     },
                     {
-                        title: "Groups",
+                        title: _l("Groups"),
                         url: "admin/groups",
                         target: "__use_router__"
                     },
                     {
-                        title: "Roles",
+                        title: _l("Roles"),
                         url: "admin/roles",
                         target: "__use_router__"
                     },
                     {
-                        title: "Forms",
+                        title: _l("Forms"),
                         url: "admin/forms",
                         target: "__use_router__"
                     },
                     {
-                        title: "API keys",
-                        url: "userskeys/all_users"
+                        title: _l("API keys"),
+                        url: "admin/api_keys",
+                        target: "__use_router__"
                     },
                     {
-                        title: "Impersonate a user",
+                        title: _l("Impersonate a user"),
                         url: "admin/impersonate",
                         enabled: self.config.allow_user_impersonation
                     }
                 ]
             },
             {
-                title: "Tool Management",
+                title: _l("Tool Management"),
                 items: [
                     {
-                        title: "Install new tools",
+                        title: _l("Install new tools"),
                         url: "admin_toolshed/browse_tool_sheds",
                         enabled: self.settings.is_tool_shed_installed
                     },
@@ -96,40 +94,40 @@ var AdminPanel = Backbone.View.extend({
                         enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
                     },
                     {
-                        title: "Monitor installation",
+                        title: _l("Monitor installation"),
                         url: "admin_toolshed/monitor_repository_installation",
                         enabled: self.settings.installing_repository_ids
                     },
                     {
-                        title: "Manage tools",
+                        title: _l("Manage tools"),
                         url: "admin/repositories",
                         enabled: self.settings.is_repo_installed,
                         target: "__use_router__"
                     },
                     {
-                        title: "Manage metadata",
+                        title: _l("Manage metadata"),
                         url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
                         enabled: self.settings.is_repo_installed
                     },
                     {
-                        title: "Manage whitelist",
+                        title: _l("Manage whitelist"),
                         url: "admin/sanitize_whitelist"
                     },
                     {
-                        title: "Manage dependencies",
+                        title: _l("Manage dependencies"),
                         url: "admin/manage_tool_dependencies"
                     },
                     {
-                        title: "View lineage",
+                        title: _l("View lineage"),
                         url: "admin/tool_versions",
                         target: "__use_router__"
                     },
                     {
-                        title: "View migration stages",
+                        title: _l("View migration stages"),
                         url: "admin/review_tool_migration_stages"
                     },
                     {
-                        title: "View error logs",
+                        title: _l("View error logs"),
                         url: "admin/tool_errors"
                     }
                 ]

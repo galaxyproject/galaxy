@@ -41,7 +41,9 @@ export default Backbone.Model.extend({
             field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
             Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
-        input_def.value === undefined && (input_def.value = null);
+        if (input_def.value === undefined) {
+            input_def.value = null;
+        }
         field.value(input_def.value);
         return field;
     },

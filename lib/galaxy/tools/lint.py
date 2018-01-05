@@ -4,7 +4,6 @@ from __future__ import print_function
 import inspect
 
 from galaxy.util import submodules
-
 from .parser import get_tool_source
 
 

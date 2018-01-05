@@ -8,7 +8,6 @@ import unittest
 from six import StringIO
 
 from galaxy.datatypes.dataproviders import base, exceptions
-
 from ...unittest_utils import tempfilecache, utility
 
 log = logging.getLogger(__name__)

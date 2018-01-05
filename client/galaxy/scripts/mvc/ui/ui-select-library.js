@@ -1,8 +1,7 @@
 // dependencies
-import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
-import Table from "mvc/ui/ui-table";
 import List from "mvc/ui/ui-list";
+
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
     url: `${Galaxy.root}api/libraries?deleted=false`
@@ -85,7 +84,9 @@ var View = Backbone.View.extend({
 
         // add change event. fires on trigger
         this.on("change", () => {
-            options.onchange && options.onchange(self.value());
+            if (options.onchange) {
+                options.onchange(self.value());
+            }
         });
 
         // create elements

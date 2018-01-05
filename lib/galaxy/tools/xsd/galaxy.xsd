@@ -471,8 +471,8 @@ This function is called before the tool is executed. If it raises any exceptions
 ```python
 def validate(incoming):
     """Validator for the plotting program"""
-    
-    
+
+
     bins = incoming.get("bins","")
     col = incoming.get("col","")
 
@@ -523,8 +523,8 @@ This code executes after the background process running the tool finishes its ru
 from galaxy import datatypes
 def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
     ext = param_dict.get('extension', 'text')
-    items = out_data.items()   
-    for name, data in items: 
+    items = out_data.items()
+    for name, data in items:
         newdata = datatypes.factory(ext)(id=data.id)
         for key, value in data. __dict__.items():
             setattr(newdata, key, value)
@@ -2120,7 +2120,7 @@ effectively be a list with one ``None``-like entity in it.
 
 The following idiom can be used to iterate over such a list and build a hypothetical ``-B``
 parameter for each file - the ``if`` block is used to handle the case where a ``None``-like
-entity appears in the list because no files were selected: 
+entity appears in the list because no files were selected:
 
 ```
 #for $input in $input1
@@ -2656,6 +2656,7 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 Name | Description
 ---- | -----------
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
+``\$GALAXY_MEMORY_MB`` | Amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
@@ -2668,8 +2669,9 @@ If present on the ``command`` tag, this attribute can be one of:
 
 * ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
 * ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive`` error if tool exit code is not 0 or either ``Exception:`` or ``Error:``
-  appears in standard error/output. (The @bgruening recommendation).
+* ``aggressive`` error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
+  various messages related to being out of memory appear in the standard error or output.
+  (The @bgruening recommendation).
 
 For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
 Legacy tools default to ``default`` behavior described above (erroring if the tool
@@ -2697,6 +2699,11 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
         <xs:attribute name="detect_errors" type="xs:string">
           <xs:annotation>
             <xs:documentation></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="oom_exit_code" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Only used if ``detect_errors="exit_code", tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
@@ -2829,7 +2836,7 @@ exclusively use ``filter``s to populate options.
 ### ``from_data_table``
 
 See Galaxy's
-[data tables documentation](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+[data tables documentation](https://galaxyproject.org/admin/tools/data-tables)
 for information on setting up data tables.
 
 Once a data table has been configured and populated, these can be easily
@@ -3131,7 +3138,7 @@ specified by the ``skip`` attribute.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data table name to check against
 if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
-[tool data tables](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+[tool data tables](https://galaxyproject.org/admin/tools/data-tables)
 and [data managers](https://galaxyproject.org/admin/tools/data-managers/) for
 more information.</xs:documentation>
           </xs:annotation>
@@ -4837,9 +4844,11 @@ The following is an example of the <exit_code> tag:
 
 ```xml
 <stdio>
-    <exit_code range="2"   level="fatal"   description="Out of Memory" />
     <exit_code range="3:5" level="warning" description="Low disk space" />
     <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <exit_code range="2"   level="fatal_oom"   description="Out of Memory" />
 </stdio>
 ```
 
@@ -4911,6 +4920,12 @@ The following is an example of regular expressions that may be used:
            source="stdout"
            level="fatal"
            description="Unknown error encountered" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <regex match="out of memory"
+           source="stdout"
+           level="fatal_oom"
+           description="Out of memory error occurred" />
     <regex match="[CG]{12}"
            description="Fatal error - CG island 12 nts long found" />
     <regex match="^Branch A"

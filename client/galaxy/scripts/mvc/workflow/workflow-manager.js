@@ -35,9 +35,7 @@ $.extend(Workflow.prototype, {
         }
         if (!this.canLabelOutputWith(toLabel)) {
             Toastr.warning(
-                `Workflow contains duplicate workflow output labels ${
-                    toLabel
-                }. This must be fixed before it can be saved.`
+                `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
         if (toLabel) {
@@ -300,6 +298,7 @@ $.extend(Workflow.prototype, {
             this.active_node.make_inactive();
             this.active_node = null;
         }
+        document.activeElement.blur();
         this.app.showAttributes();
     },
     activate_node: function(node) {

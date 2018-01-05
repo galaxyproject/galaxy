@@ -15,6 +15,8 @@ import tempfile
 from cgi import escape
 from json import dumps
 
+import pysam
+
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.metadata import MetadataElement
@@ -23,7 +25,7 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.util import compression_utils
-
+from galaxy.util.checkers import is_gzip
 from . import dataproviders
 
 if sys.version_info > (3,):
@@ -52,7 +54,7 @@ class TabularData(data.Text):
         raise NotImplementedError
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super(TabularData, self).set_peek(dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+        super(TabularData, self).set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % (dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -734,6 +736,11 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = 'vcf'
 
+    def sniff(self, filename):
+        if is_gzip(filename):
+            return False
+        return super(Vcf, self).sniff(filename)
+
 
 class VcfGz(BaseVcf, binary.Binary):
     file_ext = 'vcf_bgzip'
@@ -741,33 +748,23 @@ class VcfGz(BaseVcf, binary.Binary):
 
     MetadataElement(name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True)
 
+    def sniff(self, filename):
+        if not is_gzip(filename):
+            return False
+        return super(VcfGz, self).sniff(filename)
+
     def set_meta(self, dataset, **kwd):
         super(BaseVcf, self).set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.bcf_index
+        index_file = dataset.metadata.tabix_index
         if not index_file:
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
-        # Create the bcf index
-        # $ bcftools index
-        # Usage: bcftools index <in.bcf>
 
-        dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name))) + ".vcf.gz"
-        os.symlink(dataset.file_name, dataset_symlink)
-
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
-        command = ['bcftools', 'index', '-t', dataset_symlink]
         try:
-            subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.tbi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
         except Exception as e:
-            stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
-        finally:
-            # Remove temp file and symlink
-            os.remove(stderr_name)
-            os.remove(dataset_symlink)
+            raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
         dataset.metadata.tabix_index = index_file
 
 
@@ -826,7 +823,7 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
+        with compression_utils.get_fileobj(filename, compressed_formats=['gzip']) as fh:
             count = 0
             while True:
                 line = fh.readline()

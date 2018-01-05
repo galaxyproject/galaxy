@@ -18,13 +18,6 @@ export default Backbone.Model.extend({
     },
 
     /**
-     * Return true if operation can be done asynchronously.
-     */
-    can_async_op: function(op) {
-        return _.indexOf(this.attributes.async_ops, op) !== -1;
-    },
-
-    /**
      * Add filtering criterion.
      */
     add_filter: function(key, value, append) {

@@ -171,7 +171,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
     @expose_api
     def outputs(self, trans, id, **kwd):
         """
-        show( trans, id )
+        outputs( trans, id )
         * GET /api/jobs/{id}/outputs
             returns output datasets created by job
 
@@ -183,6 +183,25 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         """
         job = self.__get_job(trans, id)
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
+    @expose_api
+    def delete(self, trans, id, **kwd):
+        """
+        delete( trans, id )
+        * Delete /api/jobs/{id}
+            cancels specified job
+
+        :type   id: string
+        :param  id: Encoded job id
+        """
+        job = self.__get_job(trans, id)
+        if not job.finished:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+            trans.sa_session.flush()
+            self.app.job_manager.job_stop_queue.put(job.id)
+            return True
+        else:
+            return False
 
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
@@ -212,7 +231,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
     def __dictify_associations(self, trans, *association_lists):
         rval = []
         for association_list in association_lists:
-            rval.extend(map(lambda a: self.__dictify_association(trans, a), association_list))
+            rval.extend(self.__dictify_association(trans, a) for a in association_list)
         return rval
 
     def __dictify_association(self, trans, job_dataset_association):
@@ -274,7 +293,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             raise exceptions.ObjectAttributeMissingException("No inputs defined")
         inputs = payload.get('inputs', {})
         # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.iteritems():
+        for k, v in payload.items():
             if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
@@ -283,9 +302,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             return []
         params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
         jobs = []
-        for param_dump in params_dump:
+        for param_dump, param in zip(params_dump, all_params):
             job = self.job_search.by_tool_input(trans=trans,
                                                 tool_id=tool_id,
+                                                tool_version=tool.version,
+                                                param=param,
                                                 param_dump=param_dump,
                                                 job_state=payload.get('state'))
             if job:

@@ -2,41 +2,51 @@ import json
 import logging
 import os
 import tarfile
-import StringIO
 from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
+from six import StringIO
 from sqlalchemy import and_, false
 
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
+from galaxy.exceptions import (
+    ActionInputError,
+    ConfigDoesNotAllowException,
+    InsufficientPermissionsException,
+    MalformedId,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+    RequestParameterMissingException
+)
 from galaxy.util import checkers
-from galaxy.exceptions import ActionInputError
-from galaxy.exceptions import ConfigDoesNotAllowException
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import MalformedId
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import RequestParameterMissingException
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import HTTPBadRequest
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    HTTPBadRequest
+)
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
-from tool_shed.util import basic_util
-from tool_shed.util import commit_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_content_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
+from tool_shed.util import (
+    basic_util,
+    commit_util,
+    encoding_util,
+    hg_util,
+    metadata_util,
+    repository_content_util,
+    repository_util,
+    tool_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -1065,7 +1075,7 @@ class RepositoriesController(BaseAPIController):
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
         if isinstance(file_data, FieldStorage):
-            assert not isinstance(file_data.file, StringIO.StringIO)
+            assert not isinstance(file_data.file, StringIO)
             assert file_data.file.name != '<fdopen>'
             local_filename = util.mkstemp_ln(file_data.file.name, 'upload_file_data_')
             file_data.file.close()

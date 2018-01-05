@@ -1,31 +1,43 @@
 from __future__ import absolute_import
 
-from six import string_types
-
-from collections import namedtuple
-import logging
 import json
+import logging
 import uuid
+from collections import namedtuple
 
+from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
 
-from galaxy import model
-from galaxy import util
-from galaxy import exceptions
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import safe_loads
-from galaxy.workflow import modules
-from .base import decode_id
-
-# For WorkflowContentManager
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.workflow.steps import attach_ordered_steps
-from galaxy.workflow.modules import module_factory, is_tool_module_type, ToolModule, WorkflowModuleInjector
-from galaxy.tools.parameters.basic import DataToolParameter, DataCollectionToolParameter, RuntimeValue, workflow_building_modes
-from galaxy.tools.parameters import visit_input_values, params_to_incoming
+from galaxy import (
+    exceptions,
+    model,
+    util
+)
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import (
+    params_to_incoming,
+    visit_input_values
+)
+from galaxy.tools.parameters.basic import (
+    DataCollectionToolParameter,
+    DataToolParameter,
+    RuntimeValue,
+    workflow_building_modes
+)
+from galaxy.util.json import safe_loads
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
+from galaxy.workflow import modules
+from galaxy.workflow.modules import (
+    is_tool_module_type,
+    module_factory,
+    ToolModule,
+    WorkflowModuleInjector
+)
+from galaxy.workflow.steps import attach_ordered_steps
+from .base import decode_id
 
 log = logging.getLogger(__name__)
 
@@ -401,7 +413,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {
-                    'inputs' : [input.to_dict(trans) for input in inputs.itervalues()]
+                    'inputs' : [input.to_dict(trans) for input in inputs.values()]
                 }
             step_model['step_type'] = step.type
             step_model['step_label'] = step.label
@@ -701,7 +713,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # tools. This should be removed at some point. Mirrored
             # hack in _workflow_from_dict should never be removed so
             # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems():
+            for input_name, input_conn in dict(input_conn_dict).items():
                 if len(input_conn) == 1:
                     input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
@@ -778,7 +790,7 @@ class WorkflowContentsManager(UsesAnnotations):
         supplied_steps = data['steps']
         # Try to iterate through imported workflow in such a way as to
         # preserve step order.
-        step_indices = supplied_steps.keys()
+        step_indices = list(supplied_steps.keys())
         try:
             step_indices = sorted(step_indices, key=int)
         except ValueError:
@@ -915,7 +927,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for step in steps:
             # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
+            for input_name, conn_list in step.temp_input_connections.items():
                 if not conn_list:
                     continue
                 if not isinstance(conn_list, list):  # Older style singleton connection

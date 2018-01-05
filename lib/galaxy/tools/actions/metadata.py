@@ -5,7 +5,6 @@ from json import dumps
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.odict import odict
-
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -104,7 +103,7 @@ class SetMetadataToolAction(ToolAction):
         sa_session.flush()
 
         # Queue the job for execution
-        app.job_queue.put(job.id, tool.id)
+        app.job_manager.job_queue.put(job.id, tool.id)
         # FIXME: need to add event logging to app and log events there rather than trans.
         # trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 
