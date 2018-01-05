@@ -102,7 +102,7 @@ define([ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view'
                             input.help = input.step_linked ? input.help + ', ' : '';
                             input.help += 'Output dataset \'' + connection.output_name + '\' from step ' + ( parseInt( i ) + 1 );
                             input.step_linked = input.step_linked || [];
-                            input.step_linked.push( step );
+                            input.step_linked.push( { index: step.index, step_type: step.step_type } );
                         }
                     });
                 });
