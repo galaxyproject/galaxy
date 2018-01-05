@@ -52,63 +52,9 @@ class InfernalCM(Text):
 
     def set_meta(self, dataset, **kwd):
         """
-
         Set the number of models in dataset.
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL1/a', dataset.file_name)
-
-    def split(cls, input_datasets, subdir_generator_function, split_params):
-        """
-        Split the input files by model records.
-        """
-        if split_params is None:
-            return None
-
-        if len(input_datasets) > 1:
-            raise Exception("CM-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
-
-        chunk_size = None
-        if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for CM-files.' % split_params['split_mode'])
-        elif split_params['split_mode'] == 'to_size':
-            chunk_size = int(split_params['split_size'])
-        else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
-
-        def _read_cm_records(filename):
-            lines = []
-            with open(filename) as handle:
-                for line in handle:
-                    if line.startswith("INFERNAL1/a") and lines:
-                        yield lines
-                        lines = [line]
-                    else:
-                        lines.append(line)
-            yield lines
-
-        def _write_part_cm_file(accumulated_lines):
-            part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
-
-        try:
-            cm_records = _read_cm_records(input_files[0])
-            cm_lines_accumulated = []
-            for counter, cm_record in enumerate(cm_records, start=1):
-                cm_lines_accumulated.extend(cm_record)
-                if counter % chunk_size == 0:
-                    _write_part_cm_file(cm_lines_accumulated)
-                    cm_lines_accumulated = []
-            if cm_lines_accumulated:
-                _write_part_cm_file(cm_lines_accumulated)
-        except Exception as e:
-            log.error('Unable to split files: %s' % str(e))
-            raise
-
-    split = classmethod(split)
 
 
 class Hmmer(Text):
