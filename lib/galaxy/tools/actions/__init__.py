@@ -531,6 +531,9 @@ class DefaultToolAction(object):
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
+            for p in old_job.parameters:
+                if p.name.endswith('|__identifier__'):
+                    current_job.parameters.append(p.copy())
             remapped_hdas = {}
             input_hdcas = set()
             for jtod in old_job.output_datasets:
