@@ -17,7 +17,7 @@ class InfernalCM(Text):
     MetadataElement(name="number_of_models", default=0, desc="Number of covariance models",
                     readonly=True, visible=True, optional=True, no_value=0)
 
-    MetadataElement(name="cm_version", default=1.1, desc="Infernal Covariance Model version",
+    MetadataElement(name="cm_version", default="1/a", desc="Infernal Covariance Model version",
                     readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -36,16 +36,16 @@ class InfernalCM(Text):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'infernal_model.cm' )
-        >>> Cool().sniff( fname )
+        >>> InfernalCM().sniff( fname )
         True
         >>> fname = get_test_fname( 'test.mz5' )
-        >>> Cool().sniff( fname )
+        >>> InfernalCM().sniff( fname )
         False        
         """
         with open(filename, 'r') as f:
             first_line = f.readline()
 
-        if "INFERNAL1/a" in first_line:
+        if first_line.startswith("INFERNAL"):
             return True
         else:
             return False
@@ -54,7 +54,13 @@ class InfernalCM(Text):
         """
         Set the number of models in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL1/a', dataset.file_name)
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL', dataset.file_name)
+
+        with open(filename, 'r') as f:
+            first_line = f.readline()
+        if first_line.startswith("INFERNAL"):
+            dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL','')
+
 
 
 class Hmmer(Text):
