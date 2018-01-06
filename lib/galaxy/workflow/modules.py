@@ -825,6 +825,9 @@ class ToolModule(WorkflowModule):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+        if not tool.is_workflow_compatible:
+            message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
+            raise Exception(message)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
