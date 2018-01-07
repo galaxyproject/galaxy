@@ -801,7 +801,7 @@ class Registry(object):
     def get_converters_by_datatype(self, ext, priority_formats=None):
         """
             Returns available converters by source type.
-            `priority_formats` will contain a lis of format extensions that should
+            `priority_formats` will contain a list of format extensions that should
             be handled with priority. This means they will end up infront of the
             returned ordered dictionary.
         """
