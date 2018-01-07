@@ -339,7 +339,7 @@ HistoryPanel.prototype.data = {
         info : {
             selector : '.icon-btn.params-btn',
             tooltip  : 'View details',
-            hrefTpl  : '/datasets/%s/show_params',
+            hrefTpl  : 'javascript:void(0);',
             nodeName : 'a'
         },
         rerun : {

@@ -1,7 +1,6 @@
 """The module describes the ``sentry`` error plugin plugin."""
 import logging
 
-from galaxy import web
 from galaxy.util import string_as_bool, unicodify
 from ..plugins import ErrorPlugin
 
@@ -79,15 +78,6 @@ class SentryPlugin(ErrorPlugin):
                 'user': {
                     'name': user.username,
                     'email': user.email,
-                },
-                # This allows us to link to the dataset info page in case
-                # anything is missing from this report.
-                'request': {
-                    'url': web.url_for(
-                        controller="dataset", action="show_params",
-                        dataset_id=self.app.security.encode_id(dataset.id),
-                        qualified=True
-                    )
                 }
             })
 

@@ -22,9 +22,12 @@ from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
+    nice_size,
     sanitize_text,
-    smart_str
+    smart_str,
+    unicodify
 )
+from galaxy.util.create_history_template import inputs_recursive
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -1032,6 +1035,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise Exception(message)
 
     @web.expose
+    @web.json
     def show_params(self, trans, dataset_id=None, from_noframe=None, **kwd):
         """
         Show the parameters used for the job associated with an HDA
@@ -1081,15 +1085,73 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if job is None:
             return trans.show_error_message("Job information is not available for this dataset.")
         # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template("show_params.mako",
-                                   inherit_chain=inherit_chain,
-                                   history=trans.get_history(),
-                                   hda=hda,
-                                   job=job,
-                                   tool=tool,
-                                   params_objects=params_objects,
-                                   upgrade_messages=upgrade_messages,
-                                   has_parameter_errors=has_parameter_errors)
+
+        # transform hda object to be passed as json
+        encoded_id = trans.security.encode_id(hda.id)
+        encoded_history_id = trans.security.encode_id(hda.history_id)
+
+        hda_data = {
+            "number" : hda.hid,
+            "name" : hda.name,
+            "created_time" : unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
+            "file_size" : nice_size(hda.dataset.file_size),
+            "db_key" : hda.dbkey,
+            "format" : hda.ext,
+            "peek" : hda.peek
+        }
+
+        job_data = {
+            "tool_id" : job.tool_id,
+            "tool_job_version" : job.tool_version,
+            "tool_hda_version" : hda.tool_version,
+            "tool_std_output" : url_for(controller='dataset', action='stdout', dataset_id=encoded_id),
+            "tool_std_error" : url_for(controller='dataset', action='stderr', dataset_id=encoded_id),
+            "tool_exit_code" : job.exit_code,
+            "user_is_admin" : trans.user_is_admin(),
+            "hda_id" : hda.id,
+            "encoded_hda_id" : encoded_id,
+            "job_id" : job.id,
+            "encoded_job_id" : trans.security.encode_id(job.id),
+            "history_id" : hda.history_id,
+            "encoded_history_id" : encoded_history_id,
+            "hda_dataset_uuid" : str(hda.dataset.uuid),
+            "tool_path" : trans.user_is_admin() or trans.app.config.expose_dataset_path,
+            "hda_purged" : hda.purged,
+            "hda_filename" : hda.file_name,
+            "command_line" : job.command_line,
+            "dependencies" : job.dependencies
+        }
+
+        sorted_plugins = sorted(set([metric.plugin for metric in job.metrics]))
+        job_metrics = {
+            "expose_metrics" : True if (job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics)) else False,
+            "plugins" : sorted_plugins
+        }
+        job_metrics["plugin_metric_displays"] = dict()
+        for plugin in sorted_plugins:
+            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
+            plugin_metric_displays = [trans.app.job_metrics.format(metric.plugin, metric.metric_name, metric.metric_value) for metric in plugin_metrics]
+            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])
+            job_metrics["plugin_metric_displays"][plugin] = plugin_metric_displays
+
+        # create template for tool parameters using a recursive method
+        tool_parameter_template = ''
+        if params_objects and tool:
+            tool_parameter_template = inputs_recursive(trans, tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
+        elif params_objects is None:
+            tool_parameter_template = '<tr><td colspan="3">Unable to load parameters.</td></tr>'
+        else:
+            tool_parameter_template = '<tr><td colspan="3">No parameters.</td></tr>'
+
+        return {
+            'tool_name': tool.name if tool else 'Unknown tool',
+            'hda': hda_data,
+            'job': job_data,
+            'inherit_chain': inherit_chain,
+            'job_metrics': job_metrics,
+            'tool_parameter_template': tool_parameter_template,
+            'has_parameter_errors': has_parameter_errors
+        }
 
     @web.expose
     def copy_datasets(self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd):

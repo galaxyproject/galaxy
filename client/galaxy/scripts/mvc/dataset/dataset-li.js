@@ -3,6 +3,8 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import Vue from "vue";
+import ShowParams from "components/ShowParams.vue";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -252,21 +254,30 @@ var DatasetListItemView = _super.extend(
          */
         _renderShowParamsButton: function() {
             // gen. safe to show in all cases
+            let self = this;
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
-                href: this.model.urls.show_params,
-                target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
+                    ev.preventDefault();
+                    let showParamsInstance = Vue.extend(ShowParams),
+                        mountView = document.createElement("div");
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
-                            title: _l("Dataset details"),
-                            url: this.href
+                            title: _l("Dataset details")
                         });
-                        ev.preventDefault();
-                        ev.stopPropagation();
+                        let $elFrame = Galaxy.frame.frames.$el[0].lastChild,
+                            $elFrameContent = $($elFrame.childNodes[1]);
+                        // open metadata in a scratchbook
+                        $elFrameContent.html(mountView);
+                        $elFrameContent.css('overflow', 'auto');
                     }
+                    else {
+                        // open metadata in the center panel of the Galaxy 
+                        Galaxy.page.center.display(mountView);
+                    }
+                    new showParamsInstance({propsData: {metadataId: self.model.get("id")}}).$mount(mountView);
                 }
             });
         },
