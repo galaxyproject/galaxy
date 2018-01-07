@@ -798,20 +798,34 @@ class Registry(object):
                 tabular.CSV()
             ]
 
-    def get_converters_by_datatype(self, ext):
-        """Returns available converters by source type"""
+    def get_converters_by_datatype(self, ext, priority_formats=None):
+        """
+            Returns available converters by source type.
+            `priority_formats` will contain a lis of format extensions that should
+            be handled with priority. This means they will end up infront of the
+            returned ordered dictionary.
+        """
         if ext not in self._converters_by_datatype:
             converters = odict()
+            prio_converters = odict()
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
-
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
                 if issubclass(source_datatype, converter_datatype):
-                    converters.update(converters_dict)
+                    for k, v in converters_dict.items():
+                        if k in priority_formats:
+                            prio_converters[k] = v
+                        else:
+                            converters[k] = v
             # Ensure ext-level converters are present
             if ext in self.datatype_converters.keys():
-                converters.update(self.datatype_converters[ext])
-            self._converters_by_datatype[ext] = converters
+                for k, v in self.datatype_converters[ext].items():
+                    if k in priority_formats:
+                        prio_converters[k] = v
+                    else:
+                        converters[k] = v
+            prio_converters.update(converters)
+            self._converters_by_datatype[ext] = prio_converters
         return self._converters_by_datatype[ext]
 
     def get_converter_by_target_type(self, source_ext, target_ext):
@@ -824,20 +838,9 @@ class Registry(object):
     def find_conversion_destination_for_dataset_by_extensions(self, dataset, accepted_formats, converter_safe=True):
         """Returns ( target_ext, existing converted dataset )"""
 
-        converters = self.get_converters_by_datatype(dataset.ext)
-        new_order = odict()
+        converters = self.get_converters_by_datatype(dataset.ext, [k.file_ext for k in accepted_formats])
 
-        accepted_format_keys = list()
-        for k in accepted_formats:
-            accepted_format_keys.append(k.file_ext)
-            if k.file_ext in converters:
-                new_order[k.file_ext] = converters[k.file_ext]
-
-        for k,v in converters.items():
-            if not k in accepted_format_keys:
-                new_order[k] = v
-
-        for convert_ext in new_order:
+        for convert_ext in converters:
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
