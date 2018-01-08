@@ -1,0 +1,83 @@
+.charts-viewer {
+    overflow: auto;
+}
+
+.charts-viewer .ui-message {
+    position: absolute;
+    width: calc(100% - 20px);
+    z-index: 100;
+}
+
+.charts-description {
+    margin-bottom: 20px;
+}
+.charts-description-image-td {
+    vertical-align: top;
+}
+
+.charts-description-image {
+    width: 50px;
+    height: 43px;
+    margin-right: 10px;
+}
+
+.charts-description-title {
+    font-weight: bold;
+}
+
+.charts-description-text {
+    word-wrap: break-word;
+}
+
+.charts-tooltip {
+    position: absolute;
+    text-align: center;
+    padding: 3px 5px 3px 5px;
+    font: 12px sans-serif;
+    background: white;
+    border: 1px solid gray;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.charts-tooltip-first {
+    font-weight: bold;
+    text-align: left;
+    padding-right: 5px;
+}  
+
+.charts-viewport {
+    height: inherit;
+    min-height: 50px;
+}
+
+.charts-viewport .info {
+	position: absolute;
+	margin: 40px 20px 50px 10px;
+}
+
+.charts-viewport .text {
+    position: relative;
+    margin-left: 5px;
+    top: -1px;
+    font-size: 1.0em;
+    display: inline;
+}
+
+.charts-viewport .icon {
+    font-size: 1.2em;
+    display: inline-block;
+}
+
+.charts-viewport .charts-viewport-container {
+    float: left;
+    display: block;
+    height: 100%;
+}
+
+.charts-viewport .charts-viewport-canvas {
+    display: block;
+    width: 100%;
+    min-height: 100px;
+    height: inherit;
+}

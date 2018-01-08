@@ -48,6 +48,7 @@
             var app = bundleEntries.chart({
                 visualization_id    : ${h.dumps(visualization_id)} || undefined,
                 visualization_name  : ${h.dumps(visualization_name)},
+                visualization_plugin: ${h.dumps(visualization_plugin)},
                 dataset_id          : config.dataset_id,
                 chart_dict          : config.chart_dict
             });

@@ -9,7 +9,6 @@ import Viewer from "mvc/visualization/chart/views/viewer";
 var View = Backbone.View.extend({
     initialize: function(options) {
         this.options = options;
-        window.console.log(options);
         this.modal = (parent.Galaxy && parent.Galaxy.modal) || new Modal.View();
         this.setElement("<div/>")
         $.ajax({
@@ -17,7 +16,9 @@ var View = Backbone.View.extend({
         })
         .done(dataset => {
             this.dataset = dataset;
-            this.chart = new Chart({}, options);
+            this.chart = new Chart({}, options.charts_dict);
+            this.chart.definition = options.visualization_plugin;
+            window.console.log(this.chart.definition);
             this.deferred = new Deferred();
             this.viewer = new Viewer(this);
             this.editor = new Editor(this);
