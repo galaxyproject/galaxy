@@ -3,6 +3,8 @@ import historyCopyDialog from "mvc/history/copy-dialog";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import Webhooks from "mvc/webhooks";
+import Vue from "vue";
+import DisplayStructure from "components/DisplayStructured.vue";
 
 // ============================================================================
 var menu = [
@@ -47,8 +49,13 @@ var menu = [
     },
     {
         html: _l("Show Structure"),
-        href: "history/display_structured",
-        anon: true
+        anon: true,
+        func: function() {
+            let displayStructureInstance = Vue.extend( DisplayStructure ),
+                mountView = document.createElement( "div" );
+            Galaxy.page.center.display( mountView );
+            new displayStructureInstance().$mount( mountView );
+        }
     },
     {
         html: _l("Extract Workflow"),
