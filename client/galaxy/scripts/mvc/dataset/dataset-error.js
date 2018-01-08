@@ -55,17 +55,15 @@ var View = Backbone.View.extend({
             <h2>Dataset Error</h2>
             <p>An error occured while running the tool <b>${job.tool_id}</b>.</p>
             <p>Tool execution generated the following messages:</p>
-            <pre class="code">
-                ${_.escape(job.stderr)}
-            </pre>
-            <h2>Report This Error</pre>
+            <pre class="code">${_.escape(job.stderr)}</pre>
+            <h2>Report This Error</h2>
             <p>
                 Usually the local Galaxy administrators regularly review errors that occur on the server
                 However, if you would like to provide additional information (such as what you were trying
                 to do when the error occurred) and a contact e-mail address, we will be better able to
                 investigate your problem and get back to you.
-            </p>
-            ${this._getBugFormTemplate(dataset, job)}`);
+            </p>`);
+        this.$el.append(this._getBugFormTemplate(dataset, job));
     },
 
     /** Display actions messages */
