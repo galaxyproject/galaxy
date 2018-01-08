@@ -50,16 +50,22 @@ var View = Backbone.View.extend({
 
     /** Render the view */
     render_error_page: function(dataset, job) {
-        this.$el.empty().append(this._templateHeader());
-        this.$el.append("<h2>Dataset Error</h2>");
-        this.$el.append(`<p>An error occured while running the tool <b>${job.tool_id}</b>.</p>`);
-        this.$el.append("<p>Tool execution generated the following messages:</p>");
-        this.$el.append(`<pre class="code">${_.escape(job.stderr)}</pre>`);
-        this.$el.append("<h2>Report This Error</pre>");
-        this.$el.append(
-            "<p>Usually the local Galaxy administrators regularly review errors that occur on the server. However, if you would like to provide additional information (such as what you were trying to do when the error occurred) and a contact e-mail address, we will be better able to investigate your problem and get back to you.</p>"
-        );
-        this.$el.append(this._getBugFormTemplate(dataset, job));
+        this.$el.empty().append(`
+            ${this._templateHeader()}
+            <h2>Dataset Error</h2>
+            <p>An error occured while running the tool <b>${job.tool_id}</b>.</p>
+            <p>Tool execution generated the following messages:</p>
+            <pre class="code">
+                ${_.escape(job.stderr)}
+            </pre>
+            <h2>Report This Error</pre>
+            <p>
+                Usually the local Galaxy administrators regularly review errors that occur on the server
+                However, if you would like to provide additional information (such as what you were trying
+                to do when the error occurred) and a contact e-mail address, we will be better able to
+                investigate your problem and get back to you.
+            </p>
+            ${this._getBugFormTemplate(dataset, job)}`);
     },
 
     /** Display actions messages */
