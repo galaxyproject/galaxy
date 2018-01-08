@@ -147,6 +147,7 @@ class MockJobWrapper(object):
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
         self.cleanup_job = "never"
+        self.tmp_dir_creation_statement = ""
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -210,3 +211,9 @@ class MockJobWrapper(object):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code
+
+    def tmp_directory(self):
+        return None
+
+    def home_directory(self):
+        return None
