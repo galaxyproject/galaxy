@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Bar diagram (NVD3)" regular="True">
+    <description>Renders a regular bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.CSV</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
+    <groups>
+        <color>
+            <label>Pick a series color</label>
+            <type>color</type>
+        </color>
+        <tooltip>
+            <label>Data point labels</label>
+            <type>data_column</type>
+            <is_label>true</is_label>
+            <is_auto>true</is_auto>
+        </tooltip>
+        <x>
+            <label>Values for x-axis</label>
+            <type>data_column</type>
+            <is_label>true</is_label>
+            <is_auto>true</is_auto>
+        </x>
+        <y>
+            <label>Values for y-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </y>
+        <key>
+            <label>Provide a label</label>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </key>
+    </groups>
+    <settings>
+        <x_axis_label>
+            <name>x_axis_label</name>
+            <label>X-Axis label</label>
+            <help>Provide a label for the axis.</help>
+            <type>text</type>
+            <value>X-axis</value>
+            <placeholder>Axis label</placeholder>
+        </x_axis_label>
+    </settings>
+</visualization>

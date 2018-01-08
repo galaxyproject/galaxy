@@ -31,7 +31,7 @@ export default Backbone.View.extend({
                 var model_value = self.chart.settings.get(name);
                 model_value !== undefined && !input.hidden && (input.value = model_value);
             });
-            this.form = new Form.View({
+            this.form = new Form({
                 inputs: inputs,
                 cls: "ui-portlet-plain",
                 onchange: function() {

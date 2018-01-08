@@ -152,7 +152,9 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'target'        : self.config.get('render_target', 'galaxy_main'),
             'embeddable'    : self.config.get('embeddable', False),
             'entry_point'   : self.config.get('entry_point'),
-            'static_url'    : '/'.join(['plugins', self.static_url])
+            'static_url'    : '/'.join(['plugins', self.static_url]),
+            'settings'      : self.config.get('settings'),
+            'groups'        : self.config.get('groups')
         }
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
@@ -185,6 +187,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             title=kwargs.get('title', None),
             saved_visualization=None,
             visualization_id=None,
+            visualization_plugin=self.to_dict(),
             # NOTE: passing *unparsed* kwargs as query
             query=kwargs,
         )

@@ -1,6 +1,6 @@
 import logging
-
 from six import string_types
+from xml.etree import cElementTree as ElementTree
 
 import galaxy.model
 from galaxy import util
@@ -47,6 +47,38 @@ class VisualizationsConfigParser(object):
         xml_tree = util.parse_xml(xml_filepath)
         visualization = self.parse_visualization(xml_tree.getroot())
         return visualization
+
+    def xml_to_json(self, xml_input, json_output):
+        '''Converts an xml file to json.'''
+        self.dict_to_json(self.etree_to_dict(self.xml_to_etree(xml_input), True), json_output)
+
+    def xml_to_etree(self, xml_input):
+        '''Converts xml to a lxml etree.'''
+        f = open(xml_input, 'r')
+        xml = f.read()
+        f.close()
+        return etree.HTML(xml)
+
+    def etree_to_dict(self, tree, only_child):
+        '''Converts an lxml etree into a dictionary.'''
+        mydict = dict([(item[0], item[1]) for item in tree.items()])
+        children = tree.getchildren()
+        if children:
+            if len(children) > 1:
+                mydict['children'] = [self.etree_to_dict(child, False) for child in children]
+            else:
+                child = children[0]
+                mydict[child.tag] = self.etree_to_dict(child, True)
+        if only_child:
+            return mydict
+        else:
+            return {tree.tag: mydict}
+
+    def dict_to_json(self, dictionary, json_output):
+        '''Coverts a dictionary into a json file.'''
+        f = open(json_output, 'w')
+        f.write(json.dumps(dictionary, sort_keys=True, indent=4))
+        f.close()
 
     def parse_visualization(self, xml_tree):
         """
@@ -151,7 +183,18 @@ class VisualizationsConfigParser(object):
             returned['render_target'] = 'galaxy_main'
         # consider unifying the above into its own element and parsing method
 
+        # load data group specifiers
+        groups_section = xml_tree.find('groups')
+        if groups_section:
+            returned['groups'] = DictParser(groups_section)
+
+        # load data settings specifiers
+        settings_section = xml_tree.find('settings')
+        if settings_section:
+            returned['settings'] = DictParser(settings_section)
+
         return returned
+
 
     def parse_entry_point(self, xml_tree):
         """
@@ -381,6 +424,67 @@ class DataSourceParser(object):
                 to_param_dict[param_name] = param
 
         return to_param_dict
+
+
+class DictParser(dict):
+    '''
+    Example usage:
+
+    >>> tree = ElementTree.parse('your_file.xml')
+    >>> root = tree.getroot()
+    >>> xmldict = DictParser(root)
+
+    Or, if you want to use an XML string:
+
+    >>> root = ElementTree.XML(xml_string)
+    >>> xmldict = DictParser(root)
+
+    And then use xmldict for what it is... a dict.
+    '''
+
+    class ListParser(list):
+        def __init__(self, aList):
+            for element in aList:
+                if element:
+                    if len(element) == 1 or element[0].tag != element[1].tag:
+                        self.append(DictParser(element))
+                    elif element[0].tag == element[1].tag:
+                        self.append(ListParser(element))
+                elif element.text:
+                    text = element.text.strip()
+                    if text:
+                        self.append(text)
+
+    def __init__(self, parent_element):
+        if parent_element.items():
+            self.update(dict(parent_element.items()))
+        for element in parent_element:
+            if element:
+                # treat like dict - we assume that if the first two tags
+                # in a series are different, then they are all different.
+                if len(element) == 1 or element[0].tag != element[1].tag:
+                    aDict = DictParser(element)
+                # treat like list - we assume that if the first two tags
+                # in a series are the same, then the rest are the same.
+                else:
+                    # here, we put the list in dictionary; the key is the
+                    # tag name the list elements all share in common, and
+                    # the value is the list itself 
+                    aDict = {element[0].tag: ListParser(element)}
+                # if the tag has attributes, add those to the dict
+                if element.items():
+                    aDict.update(dict(element.items()))
+                self.update({element.tag: aDict})
+            # this assumes that if you've got an attribute in a tag,
+            # you won't be having any text. This may or may not be a 
+            # good idea -- time will tell. It works for the way we are
+            # currently doing XML configuration files...
+            elif element.items():
+                self.update({element.tag: dict(element.items())})
+            # finally, if there are no child tags and no attributes, extract
+            # the text
+            else:
+                self.update({element.tag: element.text})
 
 
 class ParamParser(object):

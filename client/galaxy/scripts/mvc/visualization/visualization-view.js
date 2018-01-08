@@ -34,7 +34,7 @@ var View = Backbone.View.extend({
                 id              : id,
                 name            : v.name,
                 keywords        : v.keywords || [],
-                title           : v.title ? type.title + ' (' + v.html + ')' : v.html,
+                title           : v.html,
                 image_src       : v.logo ? Galaxy.root + v.logo : null,
                 description     : v.description || 'No description available.',
                 regular         : v.regular,
