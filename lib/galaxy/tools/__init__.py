@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import threading
 from cgi import FieldStorage
+from collections import OrderedDict
 from datetime import datetime
 from distutils.version import LooseVersion
 from xml.etree import ElementTree
@@ -2497,14 +2498,28 @@ class SortTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history):
         hdca = incoming["input"]
-        sorttype = incoming["sort_type"]
+        sorttype = incoming["sort_type"]["sort_type"]
         new_elements = odict()
         elements = hdca.collection.elements
+        presort_elements = []
         if sorttype == 'alpha':
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == 'numeric':
             presort_elements = [(int(re.sub('[^0-9]', '', dce.element_identifier)), dce) for dce in elements]
-        sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if presort_elements:
+            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if sorttype == 'file':
+            hda = incoming["sort_type"]["sort_file"]
+            if hda.metadata and hda.metadata.get('data_lines', 0) == len(elements):
+                old_elements_dict = OrderedDict()
+                for element in elements:
+                    old_elements_dict[element.element_identifier] = element
+                try:
+                    sorted_elements = [old_elements_dict[line.strip()] for line in open(hda.file_name)]
+                except KeyError:
+                    hdca_history_name = "%s: %s" (hdca.hid, hdca.name)
+                    message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
+                    raise Exception(message)
 
         for dce in sorted_elements:
             dce_object = dce.element_object
