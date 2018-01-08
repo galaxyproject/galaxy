@@ -78,10 +78,10 @@ let buildconfig = {
                     }
                 ]
             },
-              {
+            {
                 test: /\.vue$/,
-                loader: 'vue-loader',
-              }
+                loader: "vue-loader"
+            }
         ]
     },
     node: {
@@ -112,8 +112,8 @@ let buildconfig = {
     ]
 };
 
-if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development"){
-    buildconfig.devtool = 'source-map';
+if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
+    buildconfig.devtool = "source-map";
 }
 
 module.exports = buildconfig;
