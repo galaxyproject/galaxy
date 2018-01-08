@@ -17,14 +17,12 @@ var GroupView = Backbone.View.extend({
         });
         this.render();
     },
-
     render: function() {
         var self = this;
         var inputs = this.chart.definition.groups ? Utils.clone(this.chart.definition.groups) : {};
         var dataset_id = this.chart.get("dataset_id");
-        var chart_type = this.chart.get("type");
         var chart_definition = this.chart.definition;
-        if (dataset_id && chart_type) {
+        if (dataset_id) {
             this.chart.state("wait", "Loading metadata...");
             this.app.deferred.execute(function(process) {
                 Utils.get({
@@ -58,7 +56,7 @@ var GroupView = Backbone.View.extend({
                             value: data_columns
                         };
                         self.chart.state("ok", "Metadata initialized...");
-                        self.form = new Form.View({
+                        self.form = new Form({
                             inputs: inputs,
                             cls: "ui-portlet-plain",
                             onchange: function() {
@@ -124,7 +122,6 @@ export default Backbone.View.extend({
             });
         });
     },
-
     render: function() {
         if (_.size(this.chart.definition.groups) > 0) {
             this.repeat.$el.show();

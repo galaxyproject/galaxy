@@ -45,7 +45,6 @@
     </groups>
     <settings>
         <x_axis_label>
-            <name>x_axis_label</name>
             <label>X-Axis label</label>
             <help>Provide a label for the axis.</help>
             <type>text</type>
