@@ -2,20 +2,35 @@ define(["i18n!nls/locale"], function(localeStrings) {
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
-    // support both requirejs and webpack from the same file
-    // if loaded via webpack, it will be a different format than via requirejs - convert
-    if (localeStrings.hasOwnProperty("__root")) {
-        //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
-        var locale =
-            typeof navigator === "undefined"
-                ? "__root"
-                : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
-        localeStrings =
-            localeStrings["__" + locale] || localeStrings["__" + locale.split("-")[0]] || localeStrings.__root;
+    function onloadLocaleConfig() {
+        // Wait until Galaxy.config is loaded.
+        if (Galaxy.config && localeStrings.hasOwnProperty("__root")) {
+            var global_locale = Galaxy.config.default_locale ? Galaxy.config.default_locale.toLowerCase() : false;
 
-        // } else {
-        //     console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );
+            var extra_user_preferences = {};
+            if (Galaxy.user && Galaxy.user.attributes.preferences && 'extra_user_preferences' in Galaxy.user.attributes.preferences) {
+                extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+            }
+
+            var user_locale = 'localization|locale' in extra_user_preferences ? extra_user_preferences['localization|locale'].toLowerCase() : false;
+
+            var nav_locale =
+                typeof navigator === "undefined"
+                    ? "__root"
+                    : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
+
+            console.debug('global_locale: ' + global_locale);
+            console.debug('user_locale: ' + user_locale);
+            console.debug('nav_locale: ' + nav_locale);
+
+            localeStrings =
+                localeStrings["__" + user_locale] || localeStrings["__" + global_locale] || localeStrings["__" + nav_locale] || localeStrings["__" + nav_locale.split("-")[0]] || localeStrings.__root;
+        } else {
+            setTimeout(onloadLocaleConfig, 100);
+        }
     }
+    onloadLocaleConfig();
+
     // TODO: when this is no longer necessary remove this, i18n.js, and the resolveModule in config
 
     // -----------------------------------------------------------------------------

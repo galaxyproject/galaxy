@@ -583,6 +583,14 @@ nglims_config_file = tool-data/nglims.yaml
 #   standard).
 #pretty_datetime_format = $locale (UTC)
 
+# Default localization for Galaxy UI.
+# Allowed values are listed at the end of client/galaxy/scripts/nls/locale.js.
+# With the default value (auto), the locale will be automatically adjusted to
+# the user's navigator language.
+# Users can override this settings in their user preferences if the localization
+# settings are enabled in user_preferences_extra_conf.yml
+#default_locale = auto
+
 # URL (with schema http/https) of the Galaxy instance as accessible within your
 # local network - if specified used as a default by pulsar file staging and
 # Jupyter Docker container for communicating back with Galaxy via the API.
