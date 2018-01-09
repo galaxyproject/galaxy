@@ -14,6 +14,15 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
+    <specs>
+        <tag>svg</tag>
+        <use_panels>both</use_panels>
+        <exports>
+            <exports>png</exports>
+            <exports>svg</exports>
+            <exports>pdf</exports>
+        </exports>
+    </specs>
     <groups>
         <color>
             <label>Pick a series color</label>
