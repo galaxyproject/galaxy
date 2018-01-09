@@ -152,9 +152,10 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'target'        : self.config.get('render_target', 'galaxy_main'),
             'embeddable'    : self.config.get('embeddable', False),
             'entry_point'   : self.config.get('entry_point'),
-            'static_url'    : '/'.join(['plugins', self.static_url]),
             'settings'      : self.config.get('settings'),
-            'groups'        : self.config.get('groups')
+            'groups'        : self.config.get('groups'),
+            'specs'         : self.config.get('specs'),
+            'static_url'    : '/'.join(['plugins', self.static_url])
         }
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):

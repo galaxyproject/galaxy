@@ -183,12 +183,17 @@ class VisualizationsConfigParser(object):
             returned['render_target'] = 'galaxy_main'
         # consider unifying the above into its own element and parsing method
 
-        # load data group specifiers
+        # load optional custom configuration specifiers
+        specs_section = xml_tree.find('specs')
+        if specs_section:
+            returned['specs'] = DictParser(specs_section)
+
+        # load group specifiers
         groups_section = xml_tree.find('groups')
         if groups_section:
             returned['groups'] = ListParser(groups_section)
 
-        # load data settings specifiers
+        # load settings specifiers
         settings_section = xml_tree.find('settings')
         if settings_section:
             returned['settings'] = ListParser(settings_section)
