@@ -155,6 +155,8 @@ def build_docker_run_command(
     if terminal:
         command_parts.append("-t")
     for env_directive in env_directives:
+        # e.g. -e "GALAXY_SLOTS=$GALAXY_SLOTS"
+        # These are environment variable expansions so we don't quote these.
         command_parts.extend(["-e", env_directive])
     for volume in volumes:
         command_parts.extend(["-v", shlex_quote(str(volume))])

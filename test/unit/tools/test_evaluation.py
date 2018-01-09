@@ -304,7 +304,7 @@ class MockTool(object):
         return self._config_files[0]
 
     @property
-    def tmp_directories(self):
+    def tmp_directory_vars(self):
         return ["TMP"]
 
     @property

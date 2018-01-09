@@ -114,7 +114,7 @@ class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegratio
         job_directory = os.path.dirname(job_env.pwd)
 
         # Since job_conf sets tmp_dir parameter to True - temp is in job_directory
-        assert job_env.tmp.startswith(job_directory)
+        assert job_env.tmp.startswith(job_directory), job_env
 
 
 class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):

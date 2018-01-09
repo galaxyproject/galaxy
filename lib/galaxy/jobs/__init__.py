@@ -1617,7 +1617,7 @@ class JobWrapper(object, HasResourceParameters):
         tmp_dir = self.get_destination_configuration("tmp_dir", None)
         if not tmp_dir or tmp_dir.lower() == "true":
             working_directory = self.working_directory
-            return '$(mktemp -d "%s/tmp.XXXXXXXXX")' % working_directory
+            return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
         else:
             return tmp_dir
 

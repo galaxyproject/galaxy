@@ -101,12 +101,12 @@ class ToolSource(object):
         """
         return "job_tmp"
 
-    def parse_tmp_directories(self):
+    def parse_tmp_directory_vars(self):
         """Directories to override if a tmp_target is not None."""
         return ["TMPDIR", "TMP", "TEMP"]
 
     def parse_docker_env_pass_through(self):
-        return ["GALAXY_SLOTS", "HOME"] + self.parse_tmp_directories()
+        return ["GALAXY_SLOTS", "HOME"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):

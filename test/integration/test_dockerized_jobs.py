@@ -55,7 +55,8 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert job_env.home == job_env.pwd, job_env.home
+        assert job_env.home.startswith(self.jobs_directory)
+        assert job_env.home.endswith("/home")
 
     def test_docker_job_environment_legacy(self):
         job_env = self._run_and_get_environment_properties("job_environment_default_legacy")
