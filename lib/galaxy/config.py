@@ -35,29 +35,43 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
+# CONFIG_IN_ROOT_PATH_DEFAULTS has paths that may be stored in galaxy's
+# root_dir. This used to be the default back when we had universe.ini instead of galaxy.ini
+CONFIG_IN_ROOT_PATH_DEFAULTS = dict(
+    data_manager_config_files='data_manager_conf.xml',
+    datatypes_config_file='datatypes.conf',
+    job_config_file='job_conf.xml',
+    job_metrics_config_file='job_metrics_conf.xml',
+    migrated_tools_config='migrated_tools_conf.xml',
+    object_store_config_file='object_store_conf.xml',
+    openid_config_file='openid_conf.xml',
+    shed_data_manager_config_file='shed_data_manager_conf.xml',
+    shed_tool_data_table_config='shed_tool_data_table_conf.xml',
+    tool_sheds_config_file='tool_sheds_conf.xml',
+)
 
-PATH_DEFAULTS = dict(
-    auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
-    data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
-    datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
-    build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
-    job_config_file=['config/job_conf.xml', 'job_conf.xml'],
-    tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
-    job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
-    error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
-    job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
-    migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
-    object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
-    openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
-    shed_data_manager_config_file=['shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml'],
-    shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
-    tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
-    workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
-    modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
-    local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
-    containers_config_file=['config/containers_conf.yml'],
+CONFIG_PATH_DEFAULTS = dict(
+    auth_config_file=['auth_conf.xml', 'auth_conf.xml.sample'],
+    data_manager_config_file=['data_manager_conf.xml', 'data_manager_conf.xml.sample'],
+    datatypes_config_file=['datatypes_conf.xml', 'datatypes_conf.xml.sample'],
+    build_sites_config_file=['build_sites.yml', 'build_sites.yml.sample'],
+    job_config_file=['job_conf.xml'],
+    tool_destinations_config_file=['tool_destinations.yml', 'tool_destinations.yml.sample'],
+    job_metrics_config_file=['job_metrics_conf.xml', 'job_metrics_conf.xml.sample'],
+    error_report_file=['error_report.yml', 'error_report.yml.sample'],
+    dependency_resolvers_config_file=['dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    job_resource_params_file=['job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    migrated_tools_config=['migrated_tools_conf.xml'],
+    object_store_config_file=['object_store_conf.xml'],
+    openid_config_file=['openid_conf.xml', 'openid_conf.xml.sample'],
+    shed_data_manager_config_file=['shed_data_manager_conf.xml'],
+    shed_tool_data_table_config=['shed_tool_data_table_conf.xml'],
+    tool_sheds_config_file=['tool_sheds_conf.xml', 'tool_sheds_conf.xml.sample'],
+    workflow_schedulers_config_file=['workflow_schedulers_conf.xml', 'workflow_schedulers_conf.xml.sample'],
+    modules_mapping_files=['environment_modules_mapping.yml', 'environment_modules_mapping.yml.sample'],
+    local_conda_mapping_file=['local_conda_mapping.yml', 'local_conda_mapping.yml.sample'],
+    user_preferences_extra_config_file=['user_preferences_extra_conf.yml'],
+    containers_config_file=['containers_conf.yml'],
 )
 
 PATH_LIST_DEFAULTS = dict(
@@ -122,28 +136,58 @@ LOGGING_CONFIG_DEFAULT = {
 }
 
 
-def resolve_path(path, root):
+def resolve_path(path, root, config_dir=None):
     """If 'path' is relative make absolute by prepending 'root'"""
     if not os.path.isabs(path):
-        path = os.path.join(root, path)
+        if config_dir is not None and path.startswith('config/'):
+            # This hack is necessary to maintain the order and precedence
+            # in which tool_conf/shed_tool_conf files in PATH_LIST_DEFAULTS
+            # are read.
+            path = os.path.join(config_dir, path[len('config/'):])
+        else:
+            path = os.path.join(root, path)
     return path
 
 
-def find_path(kwargs, var, root):
-    """Find a configuration path that may exist at different defaults."""
-    defaults = PATH_DEFAULTS[var]
+def find_path(kwargs, var, root, config_dir):
+    """
+    Find a configuration path that may exist at different defaults.
 
-    if kwargs.get(var, None) is not None:
+    This can be a config file in the config_dir, or a config file
+    in the root dir, or a config sample file (ending with .sample)
+    in the config dir. config files in the root dir take precedence.
+    """
+    if kwargs.get(var) is not None:
+        # A path has been set in galaxy.ini
+        path = kwargs.get(var)
+        if os.path.exists(resolve_path(path, config_dir)):
+            # The path is either absolute or relative to the config dir
+            return resolve_path(path, config_dir)
+        else:
+            # This is the default pre-18.01, resolve the path
+            # relative to galaxy's root dir
+            return resolve_path(path, root)
+
+    # Next we check if the config file exists in the galaxy root
+    # This was common before 15.10
+    root_path_default = CONFIG_IN_ROOT_PATH_DEFAULTS.get(var)
+    if root_path_default and os.path.exists(resolve_path(root_path_default, root)):
+        return resolve_path(root_path_default, root)
+
+    # We now try to get the config files in the config dir,
+    # and if they don't exist we use the sample file in the config dir
+    defaults = CONFIG_PATH_DEFAULTS[var]
+    if kwargs.get(var) is not None:
         path = kwargs.get(var)
     else:
         for default in defaults:
-            if os.path.exists(resolve_path(default, root)):
+            if os.path.exists(resolve_path(default, config_dir)):
                 path = default
                 break
         else:
             path = defaults[-1]
 
-    return resolve_path(path, root)
+    return resolve_path(path, config_dir)
 
 
 def find_root(kwargs):
@@ -157,6 +201,7 @@ class Configuration(object):
     def __init__(self, **kwargs):
         self.config_dict = kwargs
         self.root = find_root(kwargs)
+        self.config_dir = kwargs.get('global_conf', {}).get('here', os.path.join(self.root, 'config'))
 
         # Resolve paths of other config files
         self.__parse_config_file_options(kwargs)
@@ -219,8 +264,8 @@ class Configuration(object):
         self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
-        self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
+        self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "plugins/tours"), self.config_dir)
+        self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "plugins/webhooks"), self.config_dir)
 
         self.expose_user_name = kwargs.get("expose_user_name", False)
         self.expose_user_email = kwargs.get("expose_user_email", False)
@@ -401,7 +446,7 @@ class Configuration(object):
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))
-        self.sanitize_whitelist_file = resolve_path(kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"), self.root)
+        self.sanitize_whitelist_file = resolve_path(kwargs.get('sanitize_whitelist_file', "sanitize_whitelist.txt"), self.config_dir)
         self.serve_xss_vulnerable_mimetypes = string_as_bool(kwargs.get('serve_xss_vulnerable_mimetypes', False))
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" in kwargs:
@@ -475,7 +520,7 @@ class Configuration(object):
         self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
         if containers_resolvers_config_file:
-            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.config_dir)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
         involucro_path = kwargs.get('involucro_path', None)
@@ -692,24 +737,24 @@ class Configuration(object):
         Backwards compatibility for config files moved to the config/ dir.
         """
 
-        for var in PATH_DEFAULTS:
-            setattr(self, var, find_path(kwargs, var, self.root))
+        for var in CONFIG_PATH_DEFAULTS:
+            setattr(self, var, find_path(kwargs, var, self.root, self.config_dir))
 
         for var, defaults in PATH_LIST_DEFAULTS.items():
             paths = []
-            if kwargs.get(var, None) is not None:
+            if kwargs.get(var) is not None:
                 paths = listify(kwargs.get(var))
             else:
                 for default in defaults:
                     for path in listify(default):
-                        if not os.path.exists(resolve_path(path, self.root)):
+                        if not os.path.exists(resolve_path(path, self.root, self.config_dir)):
                             break
                     else:
                         paths = listify(default)
                         break
                 else:
                     paths = listify(defaults[-1])
-            setattr(self, var, [resolve_path(x, self.root) for x in paths])
+            setattr(self, var, [resolve_path(x, self.root, self.config_dir) for x in paths])
 
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file

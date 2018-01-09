@@ -28,7 +28,8 @@ def _build_dependency_manager_no_config(kwargs):
     """
     configure_logging(kwargs)
     root = find_root(kwargs)
-    dependency_resolvers_config_file = find_path(kwargs, "dependency_resolvers_config_file", root)
+    config_dir = kwargs.get('here')
+    dependency_resolvers_config_file = find_path(kwargs, "dependency_resolvers_config_file", root, config_dir)
     use_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
         parse_dependency_options(kwargs, root, dependency_resolvers_config_file)
 
