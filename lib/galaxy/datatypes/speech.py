@@ -1,45 +1,11 @@
-from galaxy.datatypes.text import Text
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import MetadataElement, ListParameter, DictParameter
-from galaxy import util
-
-import wave
 import re
-
 import logging
+
+from galaxy.datatypes.text import Text
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
+
 log = logging.getLogger(__name__)
 
-class WAV( Binary ):
-    """RIFF WAV audio file"""
-
-    file_ext = "wav"
-    blurb = "RIFF WAV Audio file"
-    is_binary = True
-
-    def get_mime(self):
-        """Returns the mime type of the datatype"""
-        return 'audio/wav'
-
-    def sniff(self, filename):
-        """
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('hello.wav')
-        >>> WAV().sniff(fname)
-        True
-
-        >>> fname = get_test_fname('drugbank_drugs.cml')
-        >>> WAV().sniff(fname)
-        False
-        """
-
-        try:
-            fp = wave.open(filename, 'rb')
-            fp.close()
-            return True
-        except wave.Error:
-            return False
-
-Binary.register_sniffable_binary_format('wav', 'wav', WAV)
 
 class TextGrid( Text ):
     """Praat Textgrid file for speech annotations
@@ -65,12 +31,12 @@ class TextGrid( Text ):
     def sniff(self, filename):
 
         with open(filename, 'r') as fd:
-            firstline = fd.readline()
-            secondline = fd.readline()
+            text = fd.read(len(header))
 
-            return firstline+secondline == self.header
+            return text == self.header
 
         return False
+
 
 class BPF( Text ):
     """Munich BPF annotation format
@@ -112,9 +78,11 @@ class BPF( Text ):
         # in case the file is empty
         return False
 
+
 def _test():
     import doctest
     doctest.testmod()
+
 
 if __name__ == "__main__":
     _test()
