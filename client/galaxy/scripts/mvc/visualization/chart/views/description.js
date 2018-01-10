@@ -1,25 +1,19 @@
-/** This class renders the chart configuration form. */
+/** Renders the visualization header with title, logo and description. */
 import Utils from "utils/utils";
 export default Backbone.View.extend({
     initialize: function(app) {
-        var self = this;
-        this.chart = app.chart;
+        this.plugin = app.plugin;
         this.setElement(this._template());
         this.$title = this.$(".charts-description-title");
         this.$image = this.$(".charts-description-image");
         this.$text = this.$(".charts-description-text");
-        this.listenTo(this.chart, "change", function() {
-            self.render();
-        });
         this.render();
     },
     render: function() {
-        if (this.chart.get("type")) {
-            this.$image.attr(
-                "src", Galaxy.root + this.chart.definition.logo
-            );
-            this.$title.html(this.chart.definition.html);
-            this.$text.html(Utils.linkify(this.chart.definition.description || ""));
+        if (this.plugin.logo) {
+            this.$image.attr("src", Galaxy.root + this.plugin.logo);
+            this.$title.html(this.plugin.html || "Unavailable");
+            this.$text.html(Utils.linkify(this.plugin.description || ""));
             this.$el.show();
         } else {
             this.$el.hide();
