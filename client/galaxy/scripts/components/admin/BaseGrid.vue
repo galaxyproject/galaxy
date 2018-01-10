@@ -25,19 +25,19 @@
 
 <script>
 export default {
-  props: {
-    isLoaded: {
-      type: Boolean
-    },
-    title: {
-      type: String
-    },
-    columns: {
-      type: Array
-    },
-    rows: {
-      type: Array
+    props: {
+        isLoaded: {
+            type: Boolean
+        },
+        title: {
+            type: String
+        },
+        columns: {
+            type: Array
+        },
+        rows: {
+            type: Array
+        }
     }
-  }
-}
+};
 </script>
