@@ -132,6 +132,7 @@ client/galaxy/scripts/libs/*
 # Documentation build files.
 doc/build
 doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.rst
 
 # Misc
