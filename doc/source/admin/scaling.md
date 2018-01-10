@@ -23,15 +23,12 @@ Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` 
     and receive messages from uWSGI web workers
   * **[Zerg Mode][uwsgi-zerg-mode]** - uWSGI configuration where multiple copies of the same application can be started
     simultaneously in order to maintain availability during application restarts
-  * **[Emperor Mode][uwsgi-emperor-mode]** - uWSGI configuration where multiple distinct applications can be started by
-    a single master uWSGI process
 * **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/WSGI server
 * **[Paste][paste]** - Application server written in pure Python that implements the HTTP and Python WSGI protocols
 
 [uwsgi]: http://uwsgi-docs.readthedocs.io/
 [uwsgi-mules]: http://uwsgi-docs.readthedocs.io/en/latest/Mules.html
 [uwsgi-zerg-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
-[uwsgi-emperor-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Emperor.html
 [paste]: http://paste.readthedocs.io/
 
 ## Application Servers
