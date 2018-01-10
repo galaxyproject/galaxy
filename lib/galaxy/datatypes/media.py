@@ -10,9 +10,8 @@ log = logging.getLogger(__name__)
 
 
 def ffprobe(path):
-    data = json.loads(subprocess.check_output(['ffprobe', '-show_format', '-show_streams', '-of', 'json', path]))
+    data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]))
     return data['format'], data['streams']
-
 
 class Video(Binary):
 
@@ -112,10 +111,10 @@ class WAV( Binary ):
     blurb = "RIFF WAV Audio file"
     is_binary = True
 
-    MetadataElement( name="rate", desc="Sample Rate", param=MetadataParameter, readonly=True, visible=True, optional=True )
-    MetadataElement( name="nframes", desc="Number of Samples", param=MetadataParameter, readonly=True, visible=True, optional=True )
-    MetadataElement( name="nchannels", desc="Number of Channels", param=MetadataParameter, readonly=True, visible=True, optional=True )
-    MetadataElement( name="sampwidth", desc="Sample Width", param=MetadataParameter, readonly=True, visible=True, optional=True )
+    MetadataElement( name="rate", desc="Sample Rate", default=0, no_value=0, readonly=True, visible=True, optional=True )
+    MetadataElement( name="nframes", desc="Number of Samples", default=0, no_value=0, readonly=True, visible=True, optional=True )
+    MetadataElement( name="nchannels", desc="Number of Channels", default=0, no_value=0, readonly=True, visible=True, optional=True )
+    MetadataElement( name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True )
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -140,7 +139,7 @@ class WAV( Binary ):
         except wave.Error:
             return False
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
         """
 
@@ -149,12 +148,7 @@ class WAV( Binary ):
         dataset.metadata.nframes = fd.getnframes()
         dataset.metadata.sampwidth = fd.getsampwidth()
         dataset.metadata.nchannels = fd.getnchannels()
-        #dataset.metadata.identifier = os.path.splitext(dataset.dataset.element_identifier)[0]
         fd.close()
-
-    #def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
-
-    #    return trans.fill_template( "/dataset/audio.mako", dataset=dataset)
 
 
 Binary.register_sniffable_binary_format('wav', 'wav', WAV)

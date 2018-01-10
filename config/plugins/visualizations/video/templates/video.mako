@@ -17,9 +17,13 @@
     # If the video is skinnier than min_width px, bump to a minimum of min_width and
     # then scale y appropriately to retain aspect ratio
     # If we do not do this, controls will be hidden on small videos
-    if int(hda.metadata.resolution_x) < int(min_width):
-        video_x = 600
-        video_y = (float(min_width)/float(hda.metadata.resolution_x)) * float(hda.metadata.resolution_y)
+    if hda.metadata.resolution_x is not None:
+        if int(hda.metadata.resolution_x) < int(min_width):
+            video_x = 600
+            video_y = (float(min_width)/float(hda.metadata.resolution_x)) * float(hda.metadata.resolution_y)
+    else:
+       video_x = 600
+       video_y = 400
 %>
 <!DOCTYPE HTML>
 <html>
