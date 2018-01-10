@@ -7,9 +7,10 @@ This documentation is in the midst of being ported and unified based on resource
    :maxdepth: 2
 
    config
+   config_logging
    production
-   cluster
    scaling
+   cluster
    jobs
    tool_panel
    authentication
