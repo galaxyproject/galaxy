@@ -55,16 +55,6 @@ var View = Backbone.View.extend({
         this.viewer.hide();
         this.editor.hide();
         this[view_id].show();
-    },
-
-    /** Split chart type into path components */
-    split: function(chart_type) {
-        var path = chart_type.split(/_(.+)/);
-        if (path.length >= 2) {
-            return path[0] + "/" + path[1];
-        } else {
-            return chart_type;
-        }
     }
 });
 export default { View: View }
