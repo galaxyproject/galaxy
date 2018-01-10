@@ -66,6 +66,8 @@ define({
     "保存数据集",
 "Saved Pages":
     "保存页面",
+"Tools":
+    "工具",
 
 //Tooltip
 "Account and saved data" :
@@ -84,8 +86,10 @@ define({
    "将工具链接到工作流程中",
 "Analysis home view" :
    "数据分析主页",
-
+    
 // ---------------------------------------------------------------------------- histories
+"History",
+     "历史",
 // ---- history/options-menu
 "History Lists":
      "历史列表",
