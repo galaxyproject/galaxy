@@ -8,23 +8,22 @@ import Description from "mvc/visualization/chart/views/description";
 var GroupView = Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
-        this.app = app;
+        this.deferred = app.deferred;
         this.chart = app.chart;
         this.group = options.group;
         this.setElement($("<div/>"));
-        this.listenTo(this.chart, "change:dataset_id change:type", function() {
+        this.listenTo(this.chart, "change:dataset_id", function() {
             self.render();
         });
         this.render();
     },
     render: function() {
         var self = this;
-        var inputs = this.chart.definition.groups ? Utils.clone(this.chart.definition.groups) : {};
+        var inputs = Utils.clone(this.chart.plugin.groups) || {};
         var dataset_id = this.chart.get("dataset_id");
-        var chart_definition = this.chart.definition;
         if (dataset_id) {
             this.chart.state("wait", "Loading metadata...");
-            this.app.deferred.execute(function(process) {
+            this.deferred.execute(function(process) {
                 Utils.get({
                     url: Galaxy.root + "api/datasets/" + dataset_id,
                     cache: true,
@@ -123,7 +122,7 @@ export default Backbone.View.extend({
         });
     },
     render: function() {
-        if (_.size(this.chart.definition.groups) > 0) {
+        if (_.size(this.chart.plugin.groups) > 0) {
             this.repeat.$el.show();
             this.message.$el.hide();
         } else {

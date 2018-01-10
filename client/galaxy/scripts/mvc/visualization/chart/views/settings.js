@@ -14,8 +14,8 @@ export default Backbone.View.extend({
     },
     render: function() {
         var self = this;
-        var inputs = Utils.clone(this.chart.definition.settings) || {};
-        var panel_option = this.chart.definition.use_panels;
+        var inputs = Utils.clone(this.chart.plugin.settings) || {};
+        var panel_option = this.chart.plugin.use_panels;
         if (panel_option == "both") {
             inputs["__use_panels"] = {
                 type: "boolean",

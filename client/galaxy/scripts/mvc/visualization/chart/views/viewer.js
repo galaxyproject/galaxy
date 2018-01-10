@@ -140,7 +140,7 @@ export default Backbone.View.extend({
     render: function() {
         var title = this.chart.get("title");
         this.portlet.title(title);
-        var exports = (this.chart.definition && this.chart.definition.exports) || [];
+        var exports = (this.chart.plugin && this.chart.plugin.exports) || [];
         this.export_button.collection.each(function(model) {
             model.set("visible", exports.indexOf(model.get("key")) !== -1);
         });
