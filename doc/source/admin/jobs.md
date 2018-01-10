@@ -46,8 +46,7 @@ The collection contains `<handler>` elements.
 
 ```eval_rst
 id
-    A server name (e.g. a ``[server:<name>]``</code> in <code>config/galaxy.ini</code> such as ``[server:main]``) that should be used to run jobs. </td>
-    <td> required </td>
+    A server name that should be used to run jobs. Server names are dependent on your application server deployment scenario and are explained in the :ref:`configuration section of the scaling documentation <scaling-configuration>`.
 
 tags
     A comma-separated set of strings that optional define tags to which this handler belongs. 

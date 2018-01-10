@@ -133,6 +133,10 @@ run multiple Galaxy processes, but each web worker and job handler process had t
 This was the default configuration prior to the 18.01 Galaxy release and offered the simplest out-of-the-box setup at
 the expense of performance and scalability.
 
+```eval_rst
+.. _scaling-configuration:
+```
+
 ## Configuration
 
 ### uWSGI
