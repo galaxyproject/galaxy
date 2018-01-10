@@ -120,6 +120,7 @@ LOGGING_CONFIG_DEFAULT = {
         },
     },
 }
+"""Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
 def resolve_path(path, root):
