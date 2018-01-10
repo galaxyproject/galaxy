@@ -84,7 +84,7 @@ Additional configuration files and their purposes are:
   interface when searching for new tools.
 - ``workflow_schedulers_conf.xml``: Similar to the job configuration, controls the scheduling of workflows as jobs.
 
-.. _standardize and unify configuration formats: https://github.com/galaxyproject/galaxy/issues/...
+.. _standardize and unify configuration formats: https://github.com/galaxyproject/galaxy/issues/5148
 .. _Installing Tools into Galaxy: https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 .. _Datatypes documentation: https://galaxyproject.org/learn/datatypes/
 .. _Cluster documentation: https://galaxyproject.org/admin/config/performance/cluster/
@@ -107,14 +107,14 @@ Configuration Basics
     - uWSGI has a `large number of options`_. The Galaxy documentation refers to some of them, but many additional
       advanced deployment scenarios are available.
 
-- Run Galaxy in a uWSGI server with ``GALAXY_UWSGI=1 sh run.sh``
+- Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
 
 .. _uWSGI YAML configuration file: http://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
 .. _large number of options: http://uwsgi-docs.readthedocs.io/en/latest/Options.html
   
-.. ----------------------------
-.. Configuration Options
-.. ----------------------------
-.. 
-.. .. include:: galaxy_options.rst
+----------------------------
+Configuration Options
+----------------------------
+
+.. include:: galaxy_options.rst
