@@ -88,7 +88,7 @@
     "karma-webpack": "^2.0.6",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
-    "prettier": "^1.9.1",
+    "prettier": "^1.10.1",
     "qunitjs": "^2.4.1",
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
