@@ -185,17 +185,17 @@ class VisualizationsConfigParser(object):
 
         # load optional custom configuration specifiers
         specs_section = xml_tree.find('specs')
-        if specs_section:
+        if specs_section is not None:
             returned['specs'] = DictParser(specs_section)
 
         # load group specifiers
         groups_section = xml_tree.find('groups')
-        if groups_section:
+        if groups_section is not None:
             returned['groups'] = ListParser(groups_section)
 
         # load settings specifiers
         settings_section = xml_tree.find('settings')
-        if settings_section:
+        if settings_section is not None:
             returned['settings'] = ListParser(settings_section)
 
         return returned
