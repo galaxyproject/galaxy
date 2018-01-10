@@ -16,7 +16,7 @@ export default Backbone.View.extend({
         var self = this;
         var inputs = Utils.clone(this.chart.plugin.settings) || {};
         var panel_option = this.chart.plugin.use_panels;
-        if (panel_option == "both") {
+        if (panel_option == "optional") {
             inputs["__use_panels"] = {
                 type: "boolean",
                 label: "Use multi-panels",
