@@ -124,7 +124,6 @@ export default Backbone.View.extend({
             return;
         }
         var valid = true;
-        var chart_def = this.chart.definition;
         this.chart.groups.each(function(group) {
             if (valid) {
                 _.each(group.get("__data_columns"), function(data_columns, name) {

@@ -2,7 +2,7 @@
 import Utils from "utils/utils";
 export default Backbone.View.extend({
     initialize: function(app) {
-        this.plugin = app.plugin;
+        this.plugin = app.chart.plugin;
         this.setElement(this._template());
         this.$title = this.$(".charts-description-title");
         this.$image = this.$(".charts-description-image");
