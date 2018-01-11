@@ -113,7 +113,7 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         expect_msg = "Your database has version '%d' but this code expects version '%d'" % (db_schema.version, migrate_repository.versions.latest)
         instructions = ""
         if db_schema.version > migrate_repository.versions.latest:
-            instructions = "To downgrade the database schema you have to return to the newest Galaxy version. "
+            instructions = "To downgrade the database schema you have to checkout the Galaxy version that you were running previously. "
             cmd_msg = "sh manage_db.sh%s downgrade %d" % (config_arg, migrate_repository.versions.latest)
         else:
             cmd_msg = "sh manage_db.sh%s upgrade" % config_arg
