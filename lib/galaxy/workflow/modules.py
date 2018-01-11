@@ -320,13 +320,29 @@ class SubWorkflowModule(WorkflowModule):
                     continue
                 output_step = workflow_output.workflow_step
                 label = workflow_output.label
+                target_output_name = workflow_output.output_name
                 if not label:
-                    label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                    label = "%s:%s" % (output_step.order_index, target_output_name)
+                output_module = module_factory.from_workflow_step(self.trans, output_step)
+                data_outputs = output_module.get_data_outputs()
+                target_output = {}
+                for data_output in data_outputs:
+                    if data_output["name"] == target_output_name:
+                        target_output = data_output
                 output = dict(
                     name=label,
                     label=label,
-                    extensions=['input'],  # TODO
+                    extensions=target_output.get('extensions', ['input']),
                 )
+                if target_output.get("collection"):
+                    output["collection"] = True
+                    output["collection_type"] = target_output["collection_type"]
+                    # TODO: collection_type_source should be set here to be more precise/correct -
+                    # but it can't be passed through as is since it would reference something
+                    # the editor can't see. Since we fix input collection types to workflows
+                    # the more correct thing to do would be to walk the subworkflow and
+                    # determine the effective collection type if collection_type_source
+                    # is set.
                 outputs.append(output)
         return outputs
 
