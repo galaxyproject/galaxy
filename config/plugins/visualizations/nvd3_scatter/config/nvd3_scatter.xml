@@ -2,7 +2,7 @@
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Scatter plot (NVD3)" regular="True">
     <macros>
-        <import>../../nvd3bar/config/nvd3shared.xml</import>
+        <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>
     <description>Renders a scatter plot using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
