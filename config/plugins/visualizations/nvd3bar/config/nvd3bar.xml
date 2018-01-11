@@ -56,6 +56,6 @@
         </key>
     </groups>
     <settings>
-        <expand macro="default"/>
+        <expand macro="settings"/>
     </settings>
 </visualization>

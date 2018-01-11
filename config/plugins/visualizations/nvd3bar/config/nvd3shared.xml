@@ -1,5 +1,14 @@
 <macros>
-    <xml name="default">
+    <xml name="specs">
+        <tag>svg</tag>
+        <use_panels>optional</use_panels>
+        <exports>
+            <exports>png</exports>
+            <exports>svg</exports>
+            <exports>pdf</exports>
+        </exports>
+    </xml>
+    <xml name="settings">
         <x_axis_label>
             <label>X-Axis label</label>
             <help>Provide a label for the axis.</help>
