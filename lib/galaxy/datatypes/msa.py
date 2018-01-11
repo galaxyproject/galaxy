@@ -11,6 +11,53 @@ from galaxy.util import nice_size
 log = logging.getLogger(__name__)
 
 
+class InfernalCM(Text):
+    file_ext = "cm"
+
+    MetadataElement(name="number_of_models", default=0, desc="Number of covariance models",
+                    readonly=True, visible=True, optional=True, no_value=0)
+
+    MetadataElement(name="cm_version", default="1/a", desc="Infernal Covariance Model version",
+                    readonly=True, visible=True, optional=True, no_value=0)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            if dataset.metadata.number_of_models == 1:
+                dataset.blurb = "1 model"
+            else:
+                dataset.blurb = "%s models" % dataset.metadata.number_of_models
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'infernal_model.cm' )
+        >>> InfernalCM().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> InfernalCM().sniff( fname )
+        False
+        """
+        with open(filename, 'r') as f:
+            first_line = f.readline()
+
+        return first_line.startswith("INFERNAL")
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set the number of models and the version of CM file in dataset.
+        """
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL', dataset.file_name)
+        with open(dataset.file_name, 'r') as f:
+            first_line = f.readline()
+            if first_line.startswith("INFERNAL"):
+                dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL', '')
+
+
 class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
