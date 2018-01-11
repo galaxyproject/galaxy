@@ -15,7 +15,7 @@ from galaxy.util import (
 
 log = logging.getLogger(__name__)
 
-VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca"]
+VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca", "hdas"]
 ELEMENTS_FROM_TYPE = ["archive", "bagit", "bagit_archive", "directory"]
 # These elements_from cannot be sym linked to because they only exist during upload.
 ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
