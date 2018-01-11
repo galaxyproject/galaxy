@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Bar diagram (NVD3)" regular="True">
+<visualization name="Scatter plot (NVD3)" regular="True">
     <macros>
-        <import>nvd3shared.xml</import>
+        <import>../../nvd3bar/config/nvd3shared.xml</import>
     </macros>
-    <description>Renders a regular bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
-        <expand macro="data"/>
+    <description>Renders a scatter plot using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
     <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
     <specs>
         <expand macro="specs"/>
@@ -16,8 +16,7 @@
         <x>
             <label>Values for x-axis</label>
             <type>data_column</type>
-            <is_label>true</is_label>
-            <is_auto>true</is_auto>
+            <is_numeric>true</is_numeric>
         </x>
         <y>
             <label>Values for y-axis</label>
