@@ -66,7 +66,7 @@ roles (serving static content, serving dataset downloads, etc.) as described in 
 configuration](production.html) documentation.
 
 When using uWSGI with a proxy server, it is recommended that you use the native high performance uWSGI protocol
-(supported by both [Apache](special_topics/apache.html) and [nginx](special_topics/nginx.html)) between uWSGI and the
+(supported by both [Apache](special_topics/apache.html) and [nginx](nginx.html)) between uWSGI and the
 proxy server, rather than HTTP.
 
 ### uWSGI with jobs handled by web workers (default configuration)
@@ -244,10 +244,16 @@ permissions, but you can also listen on a port:
 
 The choice of port 4001 is arbitrary, but in both cases, the socket location must match whatever socket the proxy server
 is configured to communicate with. If using a UNIX domain socket, be sure that the proxy server's user has read/write
-permission on the socket (uWSGI's `chmod-socket` option can help here).
+permission on the socket. Because Galaxy and the proxy server most likely run as different users, this is not likely to
+be the case by default. One common solution is to add the proxy server's user to the Galaxy user's primary group.
+uWSGI's `chmod-socket` option can also help here.
 
-You can consult the Galaxy documentation for [Apache](special_topics/apache.html) or [nginx](special_topics/nginx.html)
+You can consult the Galaxy documentation for [Apache](special_topics/apache.html) or [nginx](nginx.html)
 for help with the proxy-side configuration.
+
+By setting the `socket` option, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
+you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with uWSGI
+while `socket` is set, you can use the `http` option as shown in the directions below.
 
 **Without a proxy server** or with a proxy server that does not speak the uWSGI native protocol:
 

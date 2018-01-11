@@ -10,6 +10,7 @@ This documentation is in the midst of being ported and unified based on resource
    config_logging
    production
    scaling
+   nginx
    cluster
    jobs
    tool_panel

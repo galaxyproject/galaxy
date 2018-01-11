@@ -5,7 +5,6 @@ Special Topics
 .. toctree::
    :maxdepth: 2
 
-   nginx
    apache
    ftp
    interactive_environments
