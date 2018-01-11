@@ -5,7 +5,7 @@
         <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>
     <description>Uses the R-based `charts` tool to derive a histogram and displays it as regular or stacked bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
-        <expand macro="data"/>
+    <expand macro="data"/>
     <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
     <specs>
         <expand macro="specs"/>
