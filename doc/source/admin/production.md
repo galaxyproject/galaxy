@@ -95,7 +95,7 @@ Downloading and uploading data can also be moved to the proxy server.  This is e
 
 Virtually any server that proxies HTTP should work, although we provide configuration examples for:
 
-* [Apache](special_topics/apache.html), and
+* [Apache](apache.html), and
 * [nginx](nginx.html), a high performance reverse proxy, used by our public Galaxy sites
 
 ### Using a compute cluster
@@ -163,4 +163,4 @@ Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you in
 
 ### Make the proxy handle uploads and downloads
 
-By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](special_topics/apache.html) and [nginx](nginx.html) proxy instruction pages.
+By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](apache.html) and [nginx](nginx.html) proxy instruction pages.

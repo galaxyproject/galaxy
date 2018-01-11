@@ -66,7 +66,7 @@ roles (serving static content, serving dataset downloads, etc.) as described in 
 configuration](production.html) documentation.
 
 When using uWSGI with a proxy server, it is recommended that you use the native high performance uWSGI protocol
-(supported by both [Apache](special_topics/apache.html) and [nginx](nginx.html)) between uWSGI and the
+(supported by both [Apache](apache.html) and [nginx](nginx.html)) between uWSGI and the
 proxy server, rather than HTTP.
 
 ### uWSGI with jobs handled by web workers (default configuration)
@@ -248,7 +248,7 @@ permission on the socket. Because Galaxy and the proxy server most likely run as
 be the case by default. One common solution is to add the proxy server's user to the Galaxy user's primary group.
 uWSGI's `chmod-socket` option can also help here.
 
-You can consult the Galaxy documentation for [Apache](special_topics/apache.html) or [nginx](nginx.html)
+You can consult the Galaxy documentation for [Apache](apache.html) or [nginx](nginx.html)
 for help with the proxy-side configuration.
 
 By setting the `socket` option, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that

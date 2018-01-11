@@ -5,10 +5,6 @@ Galaxy sites ([Main](https://galaxyproject.org/main/) and [Test](https://galaxyp
 [Docker Galaxy project](https://github.com/bgruening/docker-galaxy-stable) use nginx to proxy rather than Apache for its
 simple, fast load balancing and other features.
 
-```eval_rst
-.. warning:: Please note that Galaxy should *never* be located on disk inside nginx's document root. By default, this
-   would expose all of Galaxy (including datasets) to anyone on the web.
-```
 
 ## Prerequisites
 
@@ -24,6 +20,11 @@ For the purposes of this example, we assume that:
 
 Throughout the configuration examples in this document, in order to avoid reptition, `#...` is used to denote a location
 where existing or previously given configuration statements would appear.
+
+```eval_rst
+.. warning:: Please note that Galaxy should *never* be located on disk inside nginx's document root. By default, this
+   would expose all of Galaxy (including datasets) to anyone on the web.
+```
 
 ## Basic Configuration
 
@@ -313,7 +314,7 @@ previous section:
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
-Configuration](/src/admin/config/performance/production-server/index.md) for a more in-depth explanation).
+Configuration](production.html) for a more in-depth explanation).
 
 Nginx can assume this task instead and as an added benefit, speed up downloads. This is accomplished through the use of
 the special `X-Accel-Redirect` header. Dataset security is maintained in this configuration because nginx will still
@@ -459,4 +460,4 @@ To secure this page to only Galaxy administrators, adjust your nginx config acco
 ### External User Authentication
 
 - [Nginx for External Authentication](https://galaxyproject.org/admin/config/nginx-external-user-auth/)
-- [Built-in Galaxy External Authentication](../authentication.html)
+- [Built-in Galaxy External Authentication](authentication.html)

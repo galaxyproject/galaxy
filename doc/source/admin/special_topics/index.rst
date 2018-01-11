@@ -5,7 +5,6 @@ Special Topics
 .. toctree::
    :maxdepth: 2
 
-   apache
    ftp
    interactive_environments
    mulled_containers

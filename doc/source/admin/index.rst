@@ -11,6 +11,7 @@ This documentation is in the midst of being ported and unified based on resource
    production
    scaling
    nginx
+   apache
    cluster
    jobs
    tool_panel
