@@ -247,6 +247,42 @@ def collect_dynamic_outputs(
                 filenames,
             )
             collection_builder.populate()
+        elif destination_type == "hdas":
+            history = job.history
+
+            datasets = []
+
+            def collect_elements_for_history(elements):
+                for element in elements:
+                    if "elements" in element:
+                        collect_elements_for_history(element["elements"])
+                    else:
+                        discovered_file = discovered_file_for_unnamed_output(element, job_working_directory)
+                        fields_match = discovered_file.match
+                        designation = fields_match.designation
+                        ext = fields_match.ext
+                        dbkey = fields_match.dbkey
+                        info = element.get("info", None)
+                        link_data = discovered_file.match.link_data
+
+                        # Create new primary dataset
+                        name = fields_match.name or designation
+
+                        dataset = job_context.create_dataset(
+                            ext=ext,
+                            designation=designation,
+                            visible=True,
+                            dbkey=dbkey,
+                            name=name,
+                            filename=discovered_file.path,
+                            info=info,
+                            link_data=link_data
+                        )
+                        dataset.raw_set_dataset_state('ok')
+                        datasets.append(dataset)
+
+            collect_elements_for_history(elements)
+            job.history.add_datasets(job_context.sa_session, datasets)
 
     for name, has_collection in output_collections.items():
         if name not in tool.output_collections:
