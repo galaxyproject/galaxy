@@ -288,8 +288,8 @@
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
-        <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
+        <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
