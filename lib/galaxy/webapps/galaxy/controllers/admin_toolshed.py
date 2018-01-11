@@ -221,7 +221,7 @@ class AdminToolshed(AdminGalaxy):
             status = statuses.index(status)
         else:
             status = 1
-        remove_from_disk = kwd.get('remove_from_disk', '')
+        remove_from_disk = kwd.get('remove_from_disk', 'true')
         remove_from_disk_checked = CheckboxField.is_checked(remove_from_disk)
         tool_shed_repositories = repository_util.get_installed_tool_shed_repository(trans.app, kwd['id'])
         if not isinstance(tool_shed_repositories, list):
