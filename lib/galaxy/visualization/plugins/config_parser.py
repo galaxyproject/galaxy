@@ -4,6 +4,7 @@ from xml.etree import cElementTree as ElementTree
 
 import galaxy.model
 from galaxy import util
+from galaxy.util.xml_macros import load
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class VisualizationsConfigParser(object):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        xml_tree = util.parse_xml(xml_filepath)
+        xml_tree = load(xml_filepath)
         visualization = self.parse_visualization(xml_tree.getroot())
         return visualization
 
