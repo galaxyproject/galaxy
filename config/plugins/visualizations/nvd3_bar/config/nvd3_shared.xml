@@ -39,6 +39,19 @@
             <value>Data label</value>
         </key>
     </xml>
+    <xml name="groups_bar">
+        <x>
+            <label>Values for x-axis</label>
+            <type>data_column</type>
+            <is_label>true</is_label>
+            <is_auto>true</is_auto>
+        </x>
+        <y>
+            <label>Values for y-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </y>
+    </xml>
     <xml name="settings">
         <x_axis_label>
             <label>X-Axis label</label>
