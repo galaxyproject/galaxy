@@ -11,6 +11,7 @@ Phylip datatype sniffer
 from galaxy import util
 from galaxy.datatypes.data import Text, get_file_peek
 from metadata import MetadataElement
+from galaxy.util import nice_size
 import os
 
 class Phylip(Text):
