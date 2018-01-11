@@ -6,6 +6,7 @@
     #if $input1:
         samtools view
             -b
+            -h
             -@ \${GALAXY_SLOTS:-2}
             -o '${output}'
             '$input1'

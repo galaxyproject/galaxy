@@ -6,6 +6,7 @@
     <command><![CDATA[
         samtools view
             -b
+            -h
             -@ \${GALAXY_SLOTS:-2}
             -o '${output}'
             '$input'
