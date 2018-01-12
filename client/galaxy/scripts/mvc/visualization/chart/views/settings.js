@@ -1,8 +1,8 @@
 /** This class renders the chart configuration form. */
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";
+
 export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
@@ -17,7 +17,7 @@ export default Backbone.View.extend({
         var inputs = Utils.clone(this.chart.plugin.settings) || {};
         var panel_option = this.chart.plugin.use_panels;
         if (panel_option == "optional") {
-            inputs["__use_panels"] = {
+            inputs.__use_panels = {
                 type: "boolean",
                 label: "Use multi-panels",
                 help: "Would you like to separate your data into individual panels?"
@@ -29,7 +29,9 @@ export default Backbone.View.extend({
         if (_.size(inputs) > 0) {
             FormData.visitInputs(inputs, function(input, name) {
                 var model_value = self.chart.settings.get(name);
-                model_value !== undefined && !input.hidden && (input.value = model_value);
+                if (model_value !== undefined && !input.hidden) {
+                    input.value = model_value;
+                }
             });
             this.form = new Form({
                 inputs: inputs,

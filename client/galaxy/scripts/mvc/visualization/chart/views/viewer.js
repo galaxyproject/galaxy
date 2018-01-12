@@ -1,9 +1,9 @@
 /** This class renders the chart viewer which encapsulates the chart viewport. */
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
-import Utils from "utils/utils";
 import Viewport from "mvc/visualization/chart/views/viewport";
 import Screenshot from "mvc/visualization/chart/components/screenshot";
+
 export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;

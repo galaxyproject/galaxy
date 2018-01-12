@@ -115,7 +115,7 @@ export default Backbone.View.extend({
             title: this.title.value(),
             date: Utils.time()
         });
-        if (this.chart.groups.length == 0) {
+        if (this.chart.groups.length === 0) {
             this.message.update({
                 message: "Please specify data options before rendering the visualization.",
                 persistent: false

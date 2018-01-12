@@ -33,21 +33,29 @@ var GroupView = Backbone.View.extend({
                             if (input.type == "data_column") {
                                 data_columns[prefixed] = Utils.clone(input);
                                 var columns = [];
-                                input.is_auto && columns.push({ label: "Column: Row Number", value: "auto" });
-                                input.is_zero && columns.push({ label: "Column: None", value: "zero" });
+                                if (input.is_auto) {
+                                    columns.push({ label: "Column: Row Number", value: "auto" });
+                                }
+                                if (input.is_zero) {
+                                    columns.push({ label: "Column: None", value: "zero" });
+                                }
                                 var meta = dataset.metadata_column_types;
                                 for (var key in meta) {
-                                    var valid =
+                                    if (
                                         (["int", "float"].indexOf(meta[key]) != -1 && input.is_numeric) ||
-                                        input.is_label;
-                                    valid && columns.push({ label: "Column: " + (parseInt(key) + 1), value: key });
+                                        input.is_label
+                                    ) {
+                                        columns.push({ label: "Column: " + (parseInt(key) + 1), value: key });
+                                    }
                                 }
                                 input.data = columns;
                             }
                             var model_value = self.group.get(prefixed);
-                            model_value !== undefined && !input.hidden && (input.value = model_value);
+                            if (model_value !== undefined && !input.hidden) {
+                                input.value = model_value;
+                            }
                         });
-                        inputs["__data_columns"] = {
+                        inputs.__data_columns = {
                             name: "__data_columns",
                             type: "hidden",
                             hidden: true,
