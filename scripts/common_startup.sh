@@ -66,14 +66,14 @@ done
 # Check client build state.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     gitbranch=$(git rev-parse --abbrev-ref HEAD)
-    if [ $gitbranch == "dev" ]; then
+    if [ "$gitbranch" = "dev" ]; then
         # We're on dev.  This branch (only, currently) doesn't have build
         # artifacts.  We should probabably swap to a list of releases?
         # Compare hash.
         if [ -f static/client_build_hash.txt ]; then
             githash=$(git rev-parse HEAD)
             statichash=$(cat static/client_build_hash.txt)
-            if [ $githash == $statichash ]; then
+            if [ "$githash" = "$statichash" ]; then
                 SKIP_CLIENT_BUILD=1
             fi
         fi
@@ -174,7 +174,7 @@ if [ $DEV_WHEELS -eq 1 ]; then
 fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    pip install "$requirement_args" --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))")
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
 fi
