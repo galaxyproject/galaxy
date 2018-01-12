@@ -155,7 +155,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),
             'specs'         : self.config.get('specs'),
-            'static_url'    : '/'.join(['plugins', self.static_url])
+            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url])  # Todo: refactor so this isn't generated here
         }
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
