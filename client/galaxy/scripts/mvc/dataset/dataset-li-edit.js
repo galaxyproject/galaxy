@@ -165,7 +165,6 @@ var DatasetListItemEdit = _super.extend(
                 href: "#",
                 faIcon: "fa-question",
                 onclick: function() {
-                    var divString = `thdiv-${datasetID}`;
                     if (self.$el.find(".toolhelp").length > 0) {
                         self.$el.find(".toolhelp").toggle();
                     } else {
@@ -276,8 +275,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** add scratchbook functionality to visualization links */
         _addScratchBookFn: function($links) {
-            var li = this;
-            $links.click(function(ev) {
+            $links.click(ev => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.add({
                         title: _l("Visualization"),
