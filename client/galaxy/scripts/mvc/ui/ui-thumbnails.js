@@ -25,8 +25,6 @@ var View = Backbone.View.extend({
     },
 
     _renderRegular: function() {
-        var self = this;
-        var index = [];
         var title_length = 20;
         var $el = $("<div/>").addClass("ui-thumbnails-grid");
         this.collection.each(model => {
