@@ -52,7 +52,7 @@ For the purposes of this example, we assume that:
 - Galaxy runs as the user `galaxy` with primary group `galaxy`
 - Galaxy is served from the hostname `galaxy.example.org`
 
-Throughout the configuration examples in this document, in order to avoid reptition, `#...` is used to denote a location
+Throughout the configuration examples in this document, in order to avoid repetition, `#...` is used to denote a location
 where existing or previously given configuration statements would appear.
 
 ```eval_rst
@@ -251,7 +251,7 @@ On Debian-based distribution, you'd then need to symlink the configs with (or do
   Use the guides referenced in [basic configuration](#basic-configuration) section to configure SSL properly.
 - If your existing Apache configuration contains a line or included config file defining a default server, be sure to
   disable it by commenting its `<VirtualHost>` or preventing its inclusion (under Debian-based operating systems, this
-  is done by removing its symlink from `/etc/apache2/sites-enabled`.
+  is done by removing its symlink from `/etc/apache2/sites-enabled`).
 - `ProxyTimeout` can be adjusted as appropriate for your site. This is the amount of time allowed for communication
   between Apache and uWSGI to block while waiting for a response from Galaxy, and is useful for holding client (browser)
   connections while uWSGI is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
