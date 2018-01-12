@@ -1,6 +1,4 @@
 /** This class enables users to export/download a chart as PNG, SVG or PDF. */
-import _ from "libs/underscore";
-
 /** PNG export */
 function createPNG(options) {
     if (options.$el.find("svg").length > 0) {

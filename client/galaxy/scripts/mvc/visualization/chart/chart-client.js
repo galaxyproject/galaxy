@@ -1,15 +1,13 @@
 import Deferred from "utils/deferred";
 import Modal from "mvc/ui/ui-modal";
-import Portlet from "mvc/ui/ui-portlet";
-import Ui from "mvc/ui/ui-misc";
-import Utils from "utils/utils";
 import Chart from "mvc/visualization/chart/components/model";
 import Editor from "mvc/visualization/chart/views/editor";
 import Viewer from "mvc/visualization/chart/views/viewer";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         this.options = options;
-        this.modal = (parent.Galaxy && parent.Galaxy.modal) || new Modal.View();
+        this.modal = (window.parent.Galaxy && window.parent.Galaxy.modal) || new Modal.View();
         this.setElement("<div/>");
         $.ajax({
             url: `${Galaxy.root}api/datasets/${options.dataset_id}`

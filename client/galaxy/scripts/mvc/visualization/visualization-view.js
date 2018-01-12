@@ -1,10 +1,7 @@
 /**
  *  Visualization selection grid
  */
-import Utils from "utils/utils";
 import Thumbnails from "mvc/ui/ui-thumbnails";
-import Portlet from "mvc/ui/ui-portlet";
-import Ui from "mvc/ui/ui-misc";
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;

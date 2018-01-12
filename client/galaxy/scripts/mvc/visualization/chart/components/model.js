@@ -64,15 +64,21 @@ export default Backbone.Model.extend({
             .then(function(response) {
                 if (response && response.id) {
                     self.viz_options.visualization_id = response.id;
-                    options.success && options.success();
+                    if (options.success) {
+                        options.success();
+                    }
                     console.debug("model::save() - Received visualization id: " + response.id);
                 } else {
-                    options.error && options.error();
+                    if (options.error) {
+                        options.error();
+                    }
                     console.debug("model::save() - Unrecognized response. Saving may have failed.");
                 }
             })
             .fail(function(response) {
-                options.error && options.error();
+                if (options.error) {
+                    options.error();
+                }
                 console.debug("model::save() - Saving failed.");
             });
         console.debug("model::save() - Saved with configuration:");

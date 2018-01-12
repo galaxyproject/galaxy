@@ -2,9 +2,8 @@
  *  The viewport creates and manages the dom elements used by the visualization plugins to draw the chart.
  *  This is the last class of the charts core classes before handing control over to the visualization plugins.
  */
-import Portlet from "mvc/ui/ui-portlet";
-import Ui from "mvc/ui/ui-misc";
 import Utils from "utils/utils";
+
 export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
@@ -93,7 +92,6 @@ export default Backbone.View.extend({
 
     /** Draws a new chart by loading and executing the corresponding chart wrapper */
     _draw: function(process, chart) {
-        var self = this;
         var n_panels = chart.settings.get("__use_panels") == "true" ? chart.groups.length : 1;
         this._createContainer(chart.plugin.tag, n_panels);
         chart.state("wait", "Please wait...");
