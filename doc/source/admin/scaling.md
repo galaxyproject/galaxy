@@ -466,6 +466,13 @@ Python application.
 The `chdir` option is useful if you are not using `run.sh`, to be able to call `uwsgi` from anywhere without having to
 `cd` to the Galaxy directory first.
 
+**Monitoring**
+
+The [uwsgitop](https://github.com/xrmx/uwsgitop) tool uses uWSGI's stats server (the `stats` option, which is configured
+to listen on a socket or port in the same manner as the `socket` option) to report on the health and performance of the
+web workers. It can be installed with `pip install uwsgitop`. This tool can be useful for determing whether a worker is
+stuck, or seeing the throughput of traffic on your site.
+
 ## Starting and Stopping
 
 If you are using the **uWSGI + Webless job handlers** deployment strategy or want to run your Galaxy server as a
