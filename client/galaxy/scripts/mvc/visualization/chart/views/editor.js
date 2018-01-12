@@ -6,8 +6,8 @@ import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
-import Groups from "mvc/visualization/chart/views/groups"
-import Settings from "mvc/visualization/chart/views/settings"
+import Groups from "mvc/visualization/chart/views/groups";
+import Settings from "mvc/visualization/chart/views/settings";
 import Description from "mvc/visualization/chart/views/description";
 export default Backbone.View.extend({
     initialize: function(app, options) {
@@ -64,7 +64,7 @@ export default Backbone.View.extend({
                         .addClass("ui-form-info ui-margin-bottom")
                         .html("This title will appear in the list of 'Saved Visualizations'.")
                 )
-                .append( new Settings(this.app).$el )
+                .append(new Settings(this.app).$el)
         });
         this.tabs.add({
             id: "groups",
@@ -130,8 +130,7 @@ export default Backbone.View.extend({
                     if (group.attributes[name] === null) {
                         self.message.update({
                             status: "danger",
-                            message:
-                                "This visualization type requires column types not found in your tabular file.",
+                            message: "This visualization type requires column types not found in your tabular file.",
                             persistent: false
                         });
                         self.tabs.show("groups");

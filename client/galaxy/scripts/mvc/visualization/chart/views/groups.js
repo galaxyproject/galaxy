@@ -40,8 +40,7 @@ var GroupView = Backbone.View.extend({
                                     var valid =
                                         (["int", "float"].indexOf(meta[key]) != -1 && input.is_numeric) ||
                                         input.is_label;
-                                    valid &&
-                                        columns.push({ label: "Column: " + (parseInt(key) + 1), value: key });
+                                    valid && columns.push({ label: "Column: " + (parseInt(key) + 1), value: key });
                                 }
                                 input.data = columns;
                             }

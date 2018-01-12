@@ -261,15 +261,16 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
 
-            if( visualizations.length >= 1 ) {
-                var url = Galaxy.root + "visualizations/dataset_id=" + this.model.get( "id" );
-                return $( '<a/>' ).addClass( 'visualization-link icon-btn' )
-                              .attr( 'href', url )
-                              .append( $( '<span/>' ).addClass( 'fa fa-bar-chart-o' ) )
-                              .on( 'click', function( e ) {
-                                  Galaxy.frame.add( { url: url } );
-                                  e.preventDefault();
-                              });
+            if (visualizations.length >= 1) {
+                var url = Galaxy.root + "visualizations/dataset_id=" + this.model.get("id");
+                return $("<a/>")
+                    .addClass("visualization-link icon-btn")
+                    .attr("href", url)
+                    .append($("<span/>").addClass("fa fa-bar-chart-o"))
+                    .on("click", function(e) {
+                        Galaxy.frame.add({ url: url });
+                        e.preventDefault();
+                    });
             }
         },
 
