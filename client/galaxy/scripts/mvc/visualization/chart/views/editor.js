@@ -9,9 +9,9 @@ import Tabs from "mvc/ui/ui-tabs";
 import Groups from "mvc/visualization/chart/views/groups";
 import Settings from "mvc/visualization/chart/views/settings";
 import Description from "mvc/visualization/chart/views/description";
+
 export default Backbone.View.extend({
     initialize: function(app, options) {
-        var self = this;
         this.app = app;
         this.chart = this.app.chart;
         this.description = new Description(this.app);
@@ -24,17 +24,17 @@ export default Backbone.View.extend({
                     icon: "fa-line-chart",
                     tooltip: "Render Visualization",
                     title: "Visualize",
-                    onclick: function() {
-                        self._drawChart();
+                    onclick: () => {
+                        this._drawChart();
                     }
                 }),
                 back: new Ui.ButtonIcon({
                     icon: "fa-caret-left",
                     tooltip: "Return to Viewer",
                     title: "Cancel",
-                    onclick: function() {
-                        self.app.go("viewer");
-                        self.chart.load();
+                    onclick: () => {
+                        this.app.go("viewer");
+                        this.chart.load();
                     }
                 })
             }
@@ -43,8 +43,8 @@ export default Backbone.View.extend({
         // input field for chart title
         this.title = new Ui.Input({
             placeholder: "Chart title",
-            onchange: function() {
-                self.chart.set("title", self.title.value());
+            onchange: () => {
+                this.chart.set("title", this.title.value());
             }
         });
 
@@ -81,11 +81,11 @@ export default Backbone.View.extend({
         this.setElement(this.portlet.$el);
 
         // chart events
-        this.listenTo(this.chart, "change:title", function(chart) {
-            self._refreshTitle();
+        this.listenTo(this.chart, "change:title", chart => {
+            this._refreshTitle();
         });
-        this.listenTo(this.chart, "redraw", function(chart) {
-            self.portlet.showOperation("back");
+        this.listenTo(this.chart, "redraw", chart => {
+            this.portlet.showOperation("back");
         });
         this.chart.reset();
     },
@@ -109,7 +109,6 @@ export default Backbone.View.extend({
 
     /** Draw chart data */
     _drawChart: function() {
-        var self = this;
         this.chart.set({
             type: this.types.value(),
             title: this.title.value(),
@@ -124,16 +123,16 @@ export default Backbone.View.extend({
             return;
         }
         var valid = true;
-        this.chart.groups.each(function(group) {
+        this.chart.groups.each(group => {
             if (valid) {
-                _.each(group.get("__data_columns"), function(data_columns, name) {
+                _.each(group.get("__data_columns"), (data_columns, name) => {
                     if (group.attributes[name] === null) {
-                        self.message.update({
+                        this.message.update({
                             status: "danger",
                             message: "This visualization type requires column types not found in your tabular file.",
                             persistent: false
                         });
-                        self.tabs.show("groups");
+                        this.tabs.show("groups");
                         valid = false;
                     }
                 });
@@ -141,8 +140,8 @@ export default Backbone.View.extend({
         });
         if (valid) {
             this.app.go("viewer");
-            this.app.deferred.execute(function() {
-                self.chart.trigger("redraw");
+            this.app.deferred.execute(() => {
+                this.chart.trigger("redraw");
             });
         }
     }
