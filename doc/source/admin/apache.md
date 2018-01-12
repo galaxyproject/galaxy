@@ -1,25 +1,50 @@
+```eval_rst
+.. |PROXY| replace:: Apache
+```
 # Proxying Galaxy with Apache
 
-For various reasons (performance, authentication, etc.) in a production environment, it's recommended to run Galaxy
-behind a web server proxy. Although any proxy could work, Apache is a common choice. Alternatively, we use
-[nginx](http://nginx.net/) for our public sites and open source infrastructure, and [details are
-available](nginx.html) for it, too.
+In a production environment, it is recommended to run Galaxy behind a proxy web server for performance and security 
+reasons. The proxy server sits between clients and your Galaxy server, relaying requests between them and offloading 
+some of the more menial and resource-intensive tasks.
 
-Currently, the only recommended way to run Galaxy with Apache is using `mod_rewrite`, `mod_proxy`, and
-`mod_proxy_uwsgi`. These modules must be enabled in the Apache config. The main proxy directives, `ProxyRequests` and
-`ProxyVia` do **not** need to be enabled.
+[The Apache HTTP Server][apache] is a widely deployed and very featureful general purpose web server with mature
+proxying capabilities.
+
+Instructions for [proxying with NGINX](nginx.html), which is the proxy server used by The Galaxy Project's public
+servers, [usegalaxy.org][main] ("Main") and [Test][test], as well as the [Docker Galaxy project][docker-galaxy], are
+also available.
+
+[apache]: https://httpd.apache.org/
+[main]: https://galaxyproject.org/main/
+[test]: https://galaxyproject.org/test/
+[docker-galaxy]: https://github.com/bgruening/docker-galaxy-stable
 
 ## Prerequisites
 
-Make sure that inbound (and outbound) traffic to the TCP protocol HTTP on port 80 (and HTTPS on port 443 if using SSL)
-is permitted by your server's firewall/security.
+```eval_rst
+.. include:: _inc_proxy_prereq.rst
+```
 
-These directions are written for Apache 2.4+. Apache 2.4 for Enterprise Linux (EL) 6 can be obtained from the [CentOS
-SCLo SIG Repo](https://wiki.centos.org/SpecialInterestGroup/SCLo/CollectionsList).
+### Apache Proxy Prerequisites
+
+Currently, the only recommended way to proxy Galaxy with Apache is using `mod_rewrite`, `mod_proxy`, and
+`mod_proxy_uwsgi`. These modules must be enabled in the Apache config. The main proxy directives, `ProxyRequests` and
+`ProxyVia` do **not** need to be enabled.
+
+Additionally, these directions are written for Apache 2.4+. Apache 2.4 for EL 6 can be obtained from the [CentOS SCLo
+SIG Repo][sclo-sig-repo]. Otherwise, your system package manager's version of Apache should be suitable. On EL, you will
+need to enable the [EPEL][epel] repository to obtain the `mod_proxy_uwsgi` package.
+
+```eval_rst
+.. caution:: ``mod_uwsgi`` is not the same module as ``mod_proxy_uwsgi``. The former is the old and unsupported module.
+   Be sure that you have installed ``mod_proxy_uwsgi``.
+```
 
 Ensure that the `mod_headers`, `mod_rewrite`, `mod_proxy`, and `mod_proxy_uwsgi` modules are loaded. Although not
 required, the configuration examples also use `mod_deflate` and `mod_expires` for increased client/server performance,
-so these should also be enabled. On Debian-based Linux distributions, you can do this with:
+so these should also be enabled.
+
+On Debian you can install the necessary packages and enable the modules this with the following:
 
 ```shell-session
 # apt-get install apache2 libapache2-mod-proxy-uwsgi
@@ -38,68 +63,34 @@ To activate the new configuration, you need to run:
   service apache2 restart
 ```
 
-On EL-based distributions, you will need to enable the [EPEL](https://fedoraproject.org/wiki/EPEL) repository and then:
+And on EL:
 
 ```shell-session
 # yum install httpd mod_proxy_uwsgi
 # echo "LoadModule proxy_uwsgi_module modules/mod_proxy_uwsgi.so" > /etc/httpd/conf.modules.d/10-proxy-uwsgi.conf
 ```
 
-For the purposes of this example, we assume that:
-
-- the Galaxy server is installed at `/srv/galaxy/server`
-- Apache runs as the user `www-data` (this is the default under Debian-based Linux distributions)
-- Galaxy runs as the user `galaxy` with primary group `galaxy`
-- Galaxy is served from the hostname `galaxy.example.org`
-
-Throughout the configuration examples in this document, in order to avoid repetition, `#...` is used to denote a location
-where existing or previously given configuration statements would appear.
-
-```eval_rst
-.. warning:: Please note that Galaxy should *never* be located on disk inside Apache's `DocumentRoot`. By default, this
-   would expose all of Galaxy (including datasets) to anyone on the web.
-```
+[sclo-sig-repo]: https://wiki.centos.org/SpecialInterestGroup/SCLo/CollectionsList
+[epel]: https://fedoraproject.org/wiki/EPEL
 
 ## Basic configuration
 
-The use of SSL is **strongly encouraged** to avoid exposure of confidential information such as datasets and user
-credentials to eavesdroppers. The instructions in this document are for setting an SSL-enabled Galaxy server.
-
-When setting up an SSL server, simply enabling SSL with the default options is not enough. In most cases, the
-configuration is weak and vulnerable to one or more of the multitude of SSL attacks that have been recently prevalent.
-The [Qualys SSL/TLS Deployment Best Practices](https://www.ssllabs.com/projects/best-practices/) is an excellent and
-up-to-date guide covering everything necessary for securing an SSL server. In addition, the [Mozilla SSL Configuration
-Generator](https://mozilla.github.io/server-side-tls/ssl-config-generator/) can provide you with a best practices config
-tailored to your desired security level and software versions.
-
-Finally, Google's [PageSpeed Insights](https://developers.google.com/speed/pagespeed/insights/) tool is helpful for
-determining how you can improve responsiveness as related to proxying, such as verifying that caching and compression
-are configured properly.
-
-If you need to run more than one site on your Galaxy server, there are two options:
-
-- Run them on the same server but serve them on different hostnames
-- Serve them from different URL prefixes on a single hostname
-
-The former option is typically cleaner, but if serving more than one SSL site, you will need an SSL certificate with
-[subjectAltName](http://wiki.cacert.org/FAQ/subjectAltName)s for each hostname served by the server.
+```eval_rst
+.. include:: _inc_proxy_ssl.rst
+```
 
 ### Serving Galaxy at the Web Server Root
 
-This configuration assumes that Galaxy will be the only site on your server using the given hostname (e.g.
-`https://galaxy.example.org`).
-
-Beginning with Galaxy Release 18.01, the default application server that Galaxy runs under is uWSGI. Because of this,
-the native high performance uWSGI protocol should be used for communication between the proxy server and Galaxy, rather
-than HTTP. Legacy instructions for proxying via HTTP can be found in the [Galaxy Release 17.09 Apache
-documentation](https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/apache.html).
-
-Since Apache is more efficient than uWSGI at serving static content, it is best to serve it directly, reducing the load
-on the Galaxy process and allowing for more effective compression (if enabled), caching, and pipelining. Directives to
-do so are included in the example below.
+```eval_rst
+.. include:: _inc_proxy_serving_root.rst
+.. _Galaxy Release 17.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/apache.html
+```
 
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
-be incorporated with your existing/default Apache config as is appropriate for your server:
+be incorporated with your existing/default Apache config as is appropriate for your server.  Notably, the Apache package
+you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+documentation.
 
 ```apache
 SSLProtocol             all -SSLv3
@@ -184,74 +175,14 @@ uWSGI socket path. With the default configuration, uWSGI will bind to a random T
 a fixed value as described in the [Scaling and Load Balancing](scaling.html) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
-### Implementation-specific Notes
-
-It is possible to perform the entire configuration in the main Apache configuration file, however, Apache packages as
-provided by Linux distribution package managers typically provide a slightly more complex layout that is designed to
-prevent conflicts in the main Apahce config file when updating the package.
-
-On Debian-based Linux distributions (Debian, Ubuntu, etc.), the Apache package's default configuration in
-`/etc/apache2/apache2.conf` contains two include directives:
-
-- One which includes any configuration files with the `.conf` extension in the `/etc/apache2/conf-enabled` directory,
-  which contains symlinks to `/etc/apache2/confs-available`, where you would place global (non-VirtualHost)
-  configuration directives.
-- One which includes all files in the `/etc/apache2/sites-enabled` directory, which contains symlinks to
-  `/etc/apache2/sites-available`, where you would place the `<VirtualHost>` configurations for websites hosted by this
-  Apache server.
-
-On EL-based Linux distributions (RedHat Enterprise Linux, CentOS, etc.), the Apache package's default configuration in
-`/etc/httpd/conf/httpd.conf` contains a directive in that includes any configuration files with the `.conf` extension in
-the `/etc/httpd/conf.d` directory.
-
-Thus, you might create:
-
-- `/etc/httpd/conf.d/galaxy_options.conf` on Debian-based distributions
-- `/etc/apache2/confs-available/galaxy.conf` on Debian-based distributions
-
-With the global configuration directives:
-
-```apache
-SSLProtocol             all -SSLv3
-SSLCipherSuite          ...
-#...
-```
-
-Then for the site configurations, you might create:
-
-- `/etc/httpd/conf.d/galaxy_site.conf` on EL-based distributions
-- `/etc/apache2/sites-available/galaxy` on Debian-based distributions
-
-With the `<VirtualHost>` blocks:
-
-```apache
-<VirtualHost _default_:80>
-    Redirect permanent / https://galaxy.example.org
-</VirtualHost>
-
-<VirtualHost _default_:443>
-    SSLEngine on
-    SSLCertificateFile      /etc/apache2/ssl/server.crt
-    SSLCertificateKeyFile   /etc/apache2/ssl/server.key
-	#...
-</VirtualHost>
-```
-
-On Debian-based distribution, you'd then need to symlink the configs with (or do it by hand with `ln -s`):
-
-```shell-session
-# a2enconf galaxy
-# a2ensite galaxy
-```
-
 ### Additional Notes
 
 - **Do not** simply copy the SSL configuration directives and expect them to work on your server or to be secure! These
   are provided as examples of some of the best practices as of the time of writing, but will not always be up to date.
   Use the guides referenced in [basic configuration](#basic-configuration) section to configure SSL properly.
 - If your existing Apache configuration contains a line or included config file defining a default server, be sure to
-  disable it by commenting its `<VirtualHost>` or preventing its inclusion (under Debian-based operating systems, this
-  is done by removing its symlink from `/etc/apache2/sites-enabled`).
+  disable it by commenting its `<VirtualHost>` or preventing its inclusion (under Debian this is done by removing its
+  symlink from `/etc/apache2/sites-enabled`).
 - `ProxyTimeout` can be adjusted as appropriate for your site. This is the amount of time allowed for communication
   between Apache and uWSGI to block while waiting for a response from Galaxy, and is useful for holding client (browser)
   connections while uWSGI is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
@@ -328,9 +259,9 @@ Apache can assume this task instead and as an added benefit, speed up downloads.
 still check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
 
 To enable it, you must first install `mod_xsendfile`. This is usually available via your package manager
-(`libapache2-mod-xsendfile` on Debian-based distributions and `mod_xsendfile` from EPEL on EL-based distributions). Once
-installed, add the appropriate `LoadModule` directive to your Apache configuration (`LoadModule xsendfile_module
-/path/to/mod_xsendfile.so`, but both the Debian and EPEL packages do this for you upon installation).
+(`libapache2-mod-xsendfile` on Debian and `mod_xsendfile` from EPEL on EL). Once installed, add the appropriate
+`LoadModule` directive to your Apache configuration (`LoadModule xsendfile_module /path/to/mod_xsendfile.so`, but both
+the Debian and EPEL packages do this for you upon installation).
 
 The, add `XSendFile` directives to your proxy configuration:
 

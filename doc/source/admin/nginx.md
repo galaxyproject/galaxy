@@ -1,73 +1,64 @@
+```eval_rst
+.. |PROXY| replace:: nginx
+```
+
 # Proxying Galaxy with NGINX
 
-[NGINX](http://nginx.org/en/) is a lightweight http server designed with high performance proxying in mind. The public
-Galaxy sites ([Main](https://galaxyproject.org/main/) and [Test](https://galaxyproject.org/test/)) as well as the
-[Docker Galaxy project](https://github.com/bgruening/docker-galaxy-stable) use nginx to proxy rather than Apache for its
-simple, fast load balancing and other features.
+In a production environment, it is recommended to run Galaxy behind a proxy web server for performance and security
+reasons. The proxy server sits between clients and your Galaxy server, relaying requests between them and offloading
+some of the more menial and resource-intensive tasks.
 
+[NGINX][nginx] is a lightweight HTTP server designed with high performance proxying in mind. The Galaxy Project's public
+servers, [usegalaxy.org][main] ("Main") and [Test][test], as well as the [Docker Galaxy project][docker-galaxy] use
+NGINX, rather than Apache, to proxy Galaxy. NGINX was chosen for its simple, fast load balancing and other
+proxy-oriented features.
+
+Instructions for [proxying with Apache](apache.html) are also available.
+
+[nginx]: http://nginx.org/en/
+[main]: https://galaxyproject.org/main/
+[test]: https://galaxyproject.org/test/
+[docker-galaxy]: https://github.com/bgruening/docker-galaxy-stable
 
 ## Prerequisites
 
-Make sure that inbound (and outbound) traffic to the TCP protocol HTTP on port 80 (and HTTPS on port 443 if using SSL)
-is permitted by your server's firewall/security.
-
-For the purposes of this example, we assume that:
-
-- the Galaxy server is installed at `/srv/galaxy/server`
-- nginx runs as the user `www-data` (this is the default under Debian-based Linux distributions)
-- Galaxy runs as the user `galaxy` with primary group `galaxy`
-- Galaxy is served from the hostname `galaxy.example.org`
-
-Throughout the configuration examples in this document, in order to avoid repetition, `#...` is used to denote a location
-where existing or previously given configuration statements would appear.
-
 ```eval_rst
-.. warning:: Please note that Galaxy should *never* be located on disk inside nginx's document root. By default, this
-   would expose all of Galaxy (including datasets) to anyone on the web.
+.. include:: _inc_proxy_prereq.rst
 ```
+
+### NGINX Proxy Prerequisities
+
+If you plan to use nginx to handle your file uploads, you will (most likely) not be able to use your package manager's
+version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx) section explains this in detail and
+provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
+
+Otherwise, your system package manager's version of nginx should be suitable. Under Debian, the
+[nginx-light][nginx-light] package contains all the necessary modules used in this guide. On EL, the [EPEL][epel]
+version of nginx is suitable.
+
+[nginx-light]: https://packages.debian.org/search?keywords=nginx-light
+[epel]: https://fedoraproject.org/wiki/EPEL
 
 ## Basic Configuration
 
-The use of SSL is **strongly encouraged** to avoid exposure of confidential information such as datasets and user
-credentials to eavesdroppers. The instructions in this document are for setting an SSL-enabled Galaxy server.
-
-When setting up an SSL server, simply enabling SSL with the default options is not enough. In most cases, the
-configuration is weak and vulnerable to one or more of the multitude of SSL attacks that have been recently prevalent.
-The [Qualys SSL/TLS Deployment Best Practices](https://www.ssllabs.com/projects/best-practices/) is an excellent and
-up-to-date guide covering everything necessary for securing an SSL server. In addition, the [Mozilla SSL Configuration
-Generator](https://mozilla.github.io/server-side-tls/ssl-config-generator/) can provide you with a best practices config
-tailored to your desired security level and software versions.
-
-Finally, Google's [PageSpeed Insights](https://developers.google.com/speed/pagespeed/insights/) tool is helpful for
-determining how you can improve responsiveness as related to proxying, such as verifying that caching and compression
-are configured properly.
-
-If you need to run more than one site on your Galaxy server, there are two options:
-
-- Run them on the same server but serve them on different hostnames
-- Serve them from different URL prefixes on a single hostname
-
-The former option is typically cleaner, but if serving more than one SSL site, you will need an SSL certificate with
-[subjectAltName](http://wiki.cacert.org/FAQ/subjectAltName)s for each hostname served by the server.
+```eval_rst
+.. include:: _inc_proxy_ssl.rst
+```
 
 ### Serving Galaxy at the Web Server Root
 
-This configuration assumes that Galaxy will be the only site on your server using the given hostname (e.g.
-`https://galaxy.example.org`).
-
-Beginning with Galaxy Release 18.01, the default application server that Galaxy runs under is uWSGI. Because of this,
-the native high performance uWSGI protocol should be used for communication between the proxy server and Galaxy, rather
-than HTTP. Legacy instructions for proxying via HTTP can be found in the [Galaxy Release 17.09 nginx
-documentation](https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/nginx.html).
+```eval_rst
+.. include:: _inc_proxy_serving_root.rst
+.. _Galaxy Release 17.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/nginx.html
+```
 
 uWSGI protocol support is built in to nginx, so (unlike Apache) no extra modules or recompiling should be required.
 
-Since nginx is more efficient than uWSGI at serving static content, it is best to serve it directly, reducing the load
-on the Galaxy process and allowing for more effective compression (if enabled), caching, and pipelining. Directives to
-do so are included in the example below.
-
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
-be incorporated with your existing/default nginx config as is appropriate for your server:
+be incorporated with your existing/default nginx config as is appropriate for your server. Notably, the nginx package
+you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+documentation.
 
 ```nginx
 http {
@@ -171,74 +162,14 @@ uWSGI socket path. With the default configuration, uWSGI will bind to a random T
 a fixed value as described in the [Scaling and Load Balancing](scaling.html) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
-### Implementation-specific Notes
-
-It is possible to perform the entire configuration in the main nginx configuration file (typically
-`/etc/nginx/nginx.conf`), however, nginx packages as provided by Linux distribution package managers typically provide a
-slightly more complex layout that is designed to prevent conflicts in `nginx.conf` when updating the package.
-
-On Debian-based Linux distributions (Debian, Ubuntu, etc.), the nginx package's default configuration contains two
-include directives in the `http {}` block:
-
-- One which includes any configuration files with the `.conf` extension in the `/etc/nginx/conf.d` directory, where you
-  would place directives that belong in the `http {}` block.
-- One which includes all files in the `/etc/nginx/sites-enabled` directory, which contains symlinks to
-  `/etc/nginx/sites-available`, where you would place the `server {}` configurations for websites hosted by this nginx
-  server.
-
-On EL-based Linux distributions (RedHat Enterprise Linux, CentOS, etc.), the EPEL nginx package's default configuration
-contains a directive in the `http {}` block that includes any configuration files with the `.conf` extension in the
-`/etc/nginx/conf.d` directory.
-
-Thus, on both Debian- and EL-based distributions, you might put the `http` directives in
-`/etc/nginx/conf.d/galaxy_http_options.conf`. Note that these are **not** enclosed in an `http {}` block themselves, as
-they are already enclosed by the `http {}` block in `/etc/nginx/nginx.conf`:
-
-```nginx
-uwsgi_read_timeout 180;
-client_max_body_size 10g;
-ssl_certificate /etc/nginx/ssl/server.crt;
-ssl_certificate_key /etc/nginx/ssl/server.key;
-#...
-```
-
-Then for the site configurations, you might create:
-
-- `/etc/nginx/conf.d/galaxy_site.conf` on EL-based distributions
-- `/etc/nginx/sites-available/galaxy` on Debian-based distributions
-
-With the `server {}` blocks (again, not enclosed in an `http {}`):
-
-```nginx
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-	#...
-}
-
-server {
-	listen 443 default_server;
-	listen [::]:443 default_server;
-	server_name _;
-	#...
-}
-```
-
-On Debian-based distribution, you'd then need to symlink the config with:
-
-```shell-session
-# ln -s /etc/nginx/sites-available/galaxy /etc/nginx/sites-enabled/galaxy
-```
-
 ### Additional Notes
 
 - **Do not** simply copy the SSL configuration directives and expect them to work on your server or to be secure! These
   are provided as examples of some of the best practices as of the time of writing, but will not always be up to date.
   Use the guides referenced in [basic configuration](#basic-configuration) section to configure SSL properly.
 - If your existing nginx configuration contains a line or included config file defining a default server, be sure to
-  disable it by commenting its `server {}` or preventing its inclusion (under Debian-based operating systems, this
-  is done by removing its symlink from `/etc/nginx/sites-enabled`).
+  disable it by commenting its `server {}` or preventing its inclusion (under Debian this is done by removing its
+  symlink from `/etc/nginx/sites-enabled`).
 - `uwsgi_read_timeout` can be adjusted as appropriate for your site. This is the amount of time allowed for
   communication between nginx and uWSGI to block while waiting for a response from Galaxy, and is useful for holding
   client (browser) connections while uWSGI is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
