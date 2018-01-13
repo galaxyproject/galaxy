@@ -615,6 +615,13 @@ nglims_config_file = tool-data/nglims.yaml
 # The URL linked by the "Support" link in the "Help" menu.
 #support_url = https://galaxyproject.org/support
 
+# The following options enable integration with a custom Biostar instance.
+#biostar_url = None
+#biostar_key_name = None
+#biostar_key = None
+#biostar_enable_bug_reports = True
+#biostar_never_authenticate = False
+
 # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
 #citation_url = https://galaxyproject.org/citing-galaxy
 
