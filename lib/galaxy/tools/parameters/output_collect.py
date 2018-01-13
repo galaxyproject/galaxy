@@ -474,7 +474,7 @@ def discover_files(output_name, tool_provided_metadata, extra_file_collectors, j
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1
         extra_file_collector = extra_file_collectors[0]
-        target_directory = discover_target_directory(extra_file_collector, job_working_directory)
+        target_directory = discover_target_directory(extra_file_collector.directory, job_working_directory)
         for dataset in tool_provided_metadata.get_new_datasets(output_name):
             filename = dataset["filename"]
             path = os.path.join(target_directory, filename)
