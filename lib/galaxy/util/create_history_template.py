@@ -32,7 +32,7 @@ def render_item_hda(trans, hda, children):
     else:
         template = '<div id="hda-' + trans.security.encode_id(hda.id) + '" class="dataset hda state-' + hda.state + '"></div>'
     return template
-    
+
 def render_hda_copied_from_history(trans, hda, children):
     """
     Wrap an hda in info about the history from where it was copied
@@ -73,7 +73,7 @@ def render_hda_copied_from_library(trans, hda, children):
     template += '<a href="' + url + '">' + folder.name + '</a></span></div></div>'
     template += '<div id="hda-'+ id +'" class="dataset hda state-' + hda.state + '"></div></div>'
     return template
-    
+ 
 def render_item_job(trans, job, children):
     """
     Render a job (as a toolForm) and its children (hdas)
@@ -108,7 +108,7 @@ def render_item_job(trans, job, children):
     template += child_template
     template += '</div></div>'
     return template
-            
+      
 def render_item_wf(trans, wf, children):
     """
     Render a workflow and its children (jobs/toolForms)
@@ -131,7 +131,6 @@ def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_message
     """
     Recursive method for tool parameter section
     """
-
     tool_parameter_template = ''
     if upgrade_messages is None:
         upgrade_messages = {}

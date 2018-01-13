@@ -45,12 +45,12 @@ export default {
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
                 return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
-                    model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation( hda ),
+                    model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation(hda),
                     el              : $('#hda-' + hda.id),
                     linkTarget      : 'galaxy_main',
                     purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
                     logger          : Galaxy.logger
-                }).render( 0 );
+                }).render(0);
             });
             // toggle the body section of each item in the structure
             $(function(){
@@ -90,6 +90,7 @@ export default {
 
 .workflow {
     border: solid gray 1px;
+    margin-bottom: 1%;
 }
 .workflow > .header {
     background: lightgray;
@@ -103,6 +104,7 @@ export default {
 }
 .workflow > .body > .toolForm {
     border: 0px;
+    margin: 0;
 }
 
 div.toolForm {
