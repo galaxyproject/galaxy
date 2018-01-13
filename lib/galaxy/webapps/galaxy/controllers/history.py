@@ -547,14 +547,14 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         
         # logic taken from mako files
         from galaxy.managers import hdas
-        hda_serializer = hdas.HDASerializer( trans.app )
-        controller = trans.webapp.controllers[ 'history' ]
+        hda_serializer = hdas.HDASerializer(trans.app)
+        controller = trans.webapp.controllers['history']
         hda_dicts = []
         id_hda_dict_map = {}
         for hda in history.active_datasets:
-            hda_dict = hda_serializer.serialize_to_view( hda, user=trans.user, trans=trans, view='detailed' )
-            id_hda_dict_map[ hda_dict[ 'id' ] ] = hda_dict
-            hda_dicts.append( hda_dict )
+            hda_dict = hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, view='detailed')
+            id_hda_dict_map[hda_dict['id']] = hda_dict
+            hda_dicts.append(hda_dict)
 
         html_template = ''
         for entity, children in items:

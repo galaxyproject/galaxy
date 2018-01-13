@@ -73,7 +73,7 @@ def render_hda_copied_from_library(trans, hda, children):
     template += '<a href="' + url + '">' + folder.name + '</a></span></div></div>'
     template += '<div id="hda-'+ id +'" class="dataset hda state-' + hda.state + '"></div></div>'
     return template
- 
+
 def render_item_job(trans, job, children):
     """
     Render a job (as a toolForm) and its children (hdas)
