@@ -804,7 +804,6 @@ class Registry(object):
             converters = odict()
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
-
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
                 if issubclass(source_datatype, converter_datatype):
                     converters.update(converters_dict)
@@ -823,21 +822,7 @@ class Registry(object):
 
     def find_conversion_destination_for_dataset_by_extensions(self, dataset, accepted_formats, converter_safe=True):
         """Returns ( target_ext, existing converted dataset )"""
-
-        converters = self.get_converters_by_datatype(dataset.ext)
-        new_order = odict()
-
-        accepted_format_keys = list()
-        for k in accepted_formats:
-            accepted_format_keys.append(k.file_ext)
-            if k.file_ext in converters:
-                new_order[k.file_ext] = converters[k.file_ext]
-
-        for k,v in converters.items():
-            if not k in accepted_format_keys:
-                new_order[k] = v
-
-        for convert_ext in new_order:
+        for convert_ext in self.get_converters_by_datatype(dataset.ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
