@@ -125,6 +125,8 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
 
     @skip_without_datatype("velvet")
     def test_disallowed_for_composite_file(self):
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        assert os.path.exists(path)
         payload = self.dataset_populator.upload_payload(
             self.history_id,
             "sequences content",
@@ -132,7 +134,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
             extra_inputs={
                 "files_1|url_paste": "roadmaps content",
                 "files_1|type": "upload_dataset",
-                "files_2|url_paste": "file://%s/1.txt" % TEST_DATA_DIRECTORY,
+                "files_2|url_paste": "file://%s" % path,
                 "files_2|type": "upload_dataset",
             },
         )
@@ -140,15 +142,21 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
+        assert os.path.exists(path)
 
     def test_disallowed_for_libraries(self):
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        assert os.path.exists(path)
         library = self.library_populator.new_private_library("pathpastedisallowedlibraries")
-        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths="%s/1.txt" % TEST_DATA_DIRECTORY)
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path)
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 403, response.json()
+        assert os.path.exists(path)
 
     def test_disallowed_for_fetch(self):
-        elements = [{"src": "path", "path": "%s/1.txt" % TEST_DATA_DIRECTORY}]
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        assert os.path.exists(path)
+        elements = [{"src": "path", "path": path}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -156,9 +164,12 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         }
         response = self.fetch_target(target)
         self._assert_status_code_is(response, 403)
+        assert os.path.exists(path)
 
     def test_disallowed_for_fetch_urls(self):
-        elements = [{"src": "url", "url": "file://%s/1.txt" % TEST_DATA_DIRECTORY}]
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        assert os.path.exists(path)
+        elements = [{"src": "url", "url": "file://%s" % path}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -166,6 +177,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         }
         response = self.fetch_target(target)
         self._assert_status_code_is(response, 403)
+        assert os.path.exists(path)
 
 
 class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
@@ -196,7 +208,8 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         assert os.path.exists(path)
 
     def test_admin_fetch(self):
-        elements = [{"src": "path", "path": "%s/1.txt" % TEST_DATA_DIRECTORY}]
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        elements = [{"src": "path", "path": path}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -204,9 +217,11 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         }
         response = self.fetch_target(target)
         self._assert_status_code_is(response, 200)
+        assert os.path.exists(path)
 
     def test_admin_fetch_file_url(self):
-        elements = [{"src": "url", "url": "file://%s/1.txt" % TEST_DATA_DIRECTORY}]
+        path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
+        elements = [{"src": "url", "url": "file://%s" % path}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -214,6 +229,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         }
         response = self.fetch_target(target)
         self._assert_status_code_is(response, 200)
+        assert os.path.exists(path)
 
 
 class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase):
@@ -705,6 +721,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
     def test_fetch_path_to_folder(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("simple_fetch")
         bed_test_data_path = self.test_data_resolver.get_filename("4.bed")
+        assert os.path.exists(bed_test_data_path)
         items = [{"src": "path", "path": bed_test_data_path, "info": "my cool bed"}]
         targets = [{
             "destination": destination,
@@ -717,10 +734,12 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
+        assert os.path.exists(bed_test_data_path)
 
     def test_fetch_link_data_only(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("fetch_and_link")
         bed_test_data_path = self.test_data_resolver.get_filename("4.bed")
+        assert os.path.exists(bed_test_data_path)
         items = [{"src": "path", "path": bed_test_data_path, "info": "my cool bed", "link_data_only": True}]
         targets = [{
             "destination": destination,
@@ -734,6 +753,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
         assert dataset["file_name"] == bed_test_data_path, dataset
+        assert os.path.exists(bed_test_data_path)
 
     def test_fetch_recursive_archive(self):
         history_id, library, destination = self.library_populator.setup_fetch_to_folder("recursive_archive")
