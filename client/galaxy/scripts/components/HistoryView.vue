@@ -1,7 +1,23 @@
 <template>
     <div v-cloak>
-        <div>
+        <div id="history-view-controls" class="clear"> 
+            <div class="pull-left">
+                <span v-if="history.history['purged'] == false" >
+                    <span v-if="history.user_is_owner == false" >
+                        <button id="import" class="btn btn-default">Import and start using history</button>
+                    </span>
+                    <span v-if="history.history_is_current == false">
+                        <button id="switch-history" class="btn btn-default" v-on:click="switchHistory">Switch to this history</button>
+                    </span>
+                    <button id="show-structure" class="btn btn-default" v-on:click="showStructure">Show structure</button>
+                </span>
+            </div>
+            <div class="pull-right">
+                <button id="toggle-deleted" class="btn btn-default">Include deleted</button>
+                <button id="toggle-hidden" class="btn btn-default">Include hidden</button>
+            </div>
         </div>
+        <div :id="'history-' + history.history['id']" class="history-panel unified-panel-body" style="overflow: auto;"></div>
     </div>
 </template>
 
@@ -9,7 +25,8 @@
 
 import axios from "axios";
 import * as mod_toastr from "libs/toastr";
-
+import Vue from "vue";
+import DisplayStructure from "components/DisplayStructured.vue";
 
 export default {
     props: {
@@ -20,41 +37,67 @@ export default {
     },
     data() {
         return {
-            historyDict: {},
-            userIsOwner: false,
-            historyIsCurrent: false,
-            showDeleted: false,
-            showHidden: false
+            history: {}
         };
     },
     created: function() {
-       this.ajaxCall();
+       let url = Galaxy.root + 'history/view/' + this.id;
+       this.ajaxCall(url, this.updateHistoryView);
     },
     methods: {
-        ajaxCall: function() {
+        ajaxCall: function(url, callBack) {
             axios
-                .get(`${Galaxy.root}history/view/${this.id}`)
+                .get(url)
                 .then(response => {
-                    this._updateHistoryView(response);
+                    callBack(response);
                 })
                 .catch(e => {
                     this.showError(e);
                 });
         },
-        _updateHistoryView: function(response) {
-            let history = response.data;
+        updateHistoryView: function(response) {
+            this.history = response.data;
         },
         showError: function(errorMsg) {
             mod_toastr.error(errorMsg);
         },
-        makeHistoryView: function() {
-            
+        makeHistoryView: function(history) {
+            $(function(){
+                let options = {
+                    hasMasthead: history.use_panels ? 'true': 'false',
+                    userIsOwner: history.user_is_owner ? 'true': 'false',
+                    isCurrent: history.history_is_current ? 'true': 'false',
+                    historyJSON: history.history,
+                    showDeletedJson: history.show_deleted,
+                    showHiddenJson: history.show_hidden,
+                    initialModeDeleted: history.show_deleted ? 'showing_deleted': 'not_showing_deleted',
+                    initialModeHidden: history.show_hidden ? 'showing_hidden': 'not_showing_hidden',
+                    allowUserDatasetPurge: history.allow_user_dataset_purge ? 'true': 'false'
+                };
+                options.viewToUse = options.userIsOwner ?
+                    ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
+                    ({ location: 'mvc/history/history-view',       className: 'HistoryView' });
+                window.bundleEntries.history(options);
+            });
+        },
+        showStructure: function() {
+            let displayStructureInstance = Vue.extend( DisplayStructure ),
+                mountView = document.createElement( "div" );
+            Galaxy.page.center.display( mountView );
+            new displayStructureInstance().$mount( mountView );
+        },
+        switchHistory: function() {
+            let url = Galaxy.root + 'history/switch_to_history?hist_id=' + this.history.history['id'];
+            this.ajaxCall(url, this.reloadPage);
+        },
+        reloadPage: function() {
+            window.location.reload();
         }
     },
     updated: function() {
-    
+        this.makeHistoryView(this.history);
     }
-}    
+}
 
 </script>
 

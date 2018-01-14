@@ -598,6 +598,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs)
 
     @web.expose
+    @web.json
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
         View a history. If a history is importable, then it is viewable by any user.
@@ -638,7 +639,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "user_is_owner": user_is_owner,
             "history_is_current": history_is_current,
             "show_deleted": show_deleted,
-            "show_hidden": show_hidden
+            "show_hidden": show_hidden,
+            "use_panels": use_panels,
+            "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge
         }
 
     @web.require_login("use more than one Galaxy history")

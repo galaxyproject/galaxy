@@ -3,6 +3,7 @@ Methods to create template for history details recursively.
 Used in dataset and history controllers
 """
 
+from galaxy.web import url_for
 from galaxy.util import listify
 
 
@@ -40,12 +41,12 @@ def render_hda_copied_from_history(trans, hda, children):
     template = ''
     id = trans.security.encode_id(hda.id)
     history_id = trans.security.encode_id(hda.copied_from_history_dataset_association.history_id)
-    url = url_for(controller='history', action='view', id=history_id)
+    url = url_for('/histories/view?id=' + history_id)
     template = '<div class="copied-from copied-from-history"><div class="header"><div class="copied-from-dataset">'
     template += '<span class="light"> Copied from history dataset: </span>'
     template += '<span class="bold">' + hda.copied_from_history_dataset_association.name + '</span>'
     template += '</div><div class="copied-from-source">'
-    template += '<span class="light">History</span>'
+    template += '<span class="light">History: </span>'
     template += '<span class="bold">'
     template += '<a href="' + url + '">' + hda.copied_from_history_dataset_association.history.name + '</a>'
     template += '</span></div></div>'
@@ -60,7 +61,7 @@ def render_hda_copied_from_library(trans, hda, children):
     id = trans.security.encode_id(hda.id)
     folder = hda.copied_from_library_dataset_dataset_association.library_dataset.folder
     folder_id = 'F' + trans.security.encode_id(folder.id)
-    url = url_for(controller='library', action='list') + '#folders/F' + folder_id
+    url = url_for('/library/list#folders/' + folder_id)
     template = '<div class="copied-from copied-from-library">'
     template += '<div class="header">'
     template += '<div class="copied-from-dataset">'
@@ -68,7 +69,7 @@ def render_hda_copied_from_library(trans, hda, children):
     template += '<span class="bold">' + hda.copied_from_library_dataset_dataset_association.name + '</span>'
     template += '</div>'
     template += '<div class="copied-from-source">'
-    template += '<span class="light">Library:</span>'
+    template += '<span class="light">Library: </span>'
     template += '<span class="bold">'
     template += '<a href="' + url + '">' + folder.name + '</a></span></div></div>'
     template += '<div id="hda-'+ id +'" class="dataset hda state-' + hda.state + '"></div></div>'

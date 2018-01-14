@@ -15,7 +15,8 @@ import "apps/extended.js";
 export default {
     data() {
         return {
-            historyTemplate: ""
+            historyTemplate: "",
+            historyJSON: {}
         };
     },
     created: function() {
