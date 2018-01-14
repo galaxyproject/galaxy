@@ -15,7 +15,6 @@ import "apps/extended.js";
 export default {
     data() {
         return {
-            historyName: "",
             historyTemplate: ""
         };
     },
@@ -35,7 +34,6 @@ export default {
         },
         _updateHistoryData: function(response) {
             let historyItems = response.data;
-            this.historyName = historyItems.name ? historyItems.name : 'Structure';
             this.historyTemplate = historyItems.template;    
             this.historyJSON = historyItems.history_json;    
         },
