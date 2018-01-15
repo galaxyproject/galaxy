@@ -196,8 +196,9 @@ class Strategy(BaseStrategy):
         path = path or ''
         if path.startswith('http://') or path.startswith('https://'):
             return path
-        return self.trans.request.host + '/authn' + \
-               ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
+        return \
+            self.trans.request.host +\
+            '/authn' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
 
     def redirect(self, url):
         return url
