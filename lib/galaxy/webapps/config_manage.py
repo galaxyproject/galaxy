@@ -1,22 +1,22 @@
-from __future__ import absolute_import
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import argparse
-from collections import namedtuple
-from collections import OrderedDict
 import copy
 import os
 import shutil
 import string
 import sys
 import tempfile
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 from textwrap import TextWrapper
-import urllib2
 
+import requests
 import six
-from six import StringIO
-
 import yaml
+from six import StringIO
 
 try:
     from pykwalify.core import Core
@@ -26,8 +26,8 @@ except ImportError:
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
-from galaxy.util.properties import nice_config_parser
 from galaxy.util import safe_makedirs
+from galaxy.util.properties import nice_config_parser
 
 DESCRIPTION = "Convert configuration files."
 
@@ -267,7 +267,7 @@ def main(argv=None):
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument('action', metavar='ACTION', type=str,
-                        choices=ACTIONS.keys(),
+                        choices=list(ACTIONS.keys()),
                         help='action to perform')
     parser.add_argument('app', metavar='APP', type=str, nargs="?",
                         help=APP_DESCRIPTION)
@@ -307,9 +307,8 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
 
 
 def _build_uwsgi_schema(args, app_desc):
-    req = urllib2.Request('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
-    response = urllib2.urlopen(req)
-    rst_options = response.read()
+    req = requests.get('https://raw.githubusercontent.com/unbit/uwsgi-docs/master/Options.rst')
+    rst_options = req.text
     last_line = None
     current_opt = None
 
@@ -691,7 +690,7 @@ def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
     def _dict_representer(dumper, data):
         return dumper.represent_mapping(
             yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            data.items())
+            list(data.items()))
     OrderedDumper.add_representer(OrderedDict, _dict_representer)
     return yaml.dump(data, stream, OrderedDumper, **kwds)
 

@@ -60,7 +60,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
     def __str__(self):
         try:
             return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
-        except:
+        except Exception:
             # Most likely None, which lacks __module__.
             return str(self.obj)
 
@@ -212,7 +212,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def get(self, key, default=None):
             try:
                 return getattr(self, key)
-            except:
+            except Exception:
                 return default
 
         def items(self):
@@ -223,7 +223,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             try:
                 # TODO: allow this to work when working with grouping
                 ext = tool.inputs[name].extensions[0]
-            except:
+            except Exception:
                 ext = 'data'
             self.dataset = wrap_with_safe_string(NoneDataset(datatypes_registry=datatypes_registry, ext=ext), no_wrap_classes=ToolParameterValueWrapper)
         else:
@@ -430,3 +430,21 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         # not specified or if resulting collection is empty.
         return self.__input_supplied and bool(self.__element_instance_list)
     __nonzero__ = __bool__
+
+
+class ElementIdentifierMapper(object):
+    """Track mapping of dataset collection elements datasets to element identifiers."""
+
+    def __init__(self, input_datasets=None):
+        if input_datasets is not None:
+            self.identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())
+        else:
+            self.identifier_key_dict = {}
+
+    def identifier(self, dataset_value, input_values):
+        identifier_key = self.identifier_key_dict.get(dataset_value, None)
+        element_identifier = None
+        if identifier_key:
+            element_identifier = input_values.get(identifier_key, None)
+
+        return element_identifier

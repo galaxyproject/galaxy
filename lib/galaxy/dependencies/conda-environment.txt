@@ -34,7 +34,6 @@ pycrypto
 Paste
 PasteDeploy
 docutils
-#wchartype
 repoze.lru
 Routes
 WebOb
@@ -72,4 +71,4 @@ Fabric
 # We still pin these dependencies because of modifications to the upstream packages
 
 # Flexible BAM index naming
-#pysam==0.8.4+gx5
+pysam>=0.13

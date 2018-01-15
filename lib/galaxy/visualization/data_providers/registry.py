@@ -1,13 +1,20 @@
 from six import string_types
 
-from galaxy.visualization.data_providers.basic import ColumnDataProvider
-from galaxy.visualization.data_providers import genome
-from galaxy.model import NoConverterException
-from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
-from galaxy.datatypes.tabular import Tabular, Vcf
-from galaxy.datatypes.interval import Interval, ENCODEPeak, ChromatinInteractions, Gtf, Gff, Bed
-from galaxy.datatypes.xml import Phyloxml
 from galaxy.datatypes.data import Newick, Nexus
+from galaxy.datatypes.interval import (
+    Bed,
+    ChromatinInteractions,
+    ENCODEPeak,
+    Gff,
+    Gtf,
+    Interval
+)
+from galaxy.datatypes.tabular import Tabular, Vcf
+from galaxy.datatypes.xml import Phyloxml
+from galaxy.model import NoConverterException
+from galaxy.visualization.data_providers import genome
+from galaxy.visualization.data_providers.basic import ColumnDataProvider
+from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 
 class DataProviderRegistry(object):

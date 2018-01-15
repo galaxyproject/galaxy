@@ -9,13 +9,11 @@ import logging
 import sys
 
 from bx import (
-    bbi as bx_bbi,
     seq as bx_seq,
     wiggle as bx_wig
 )
 
 from galaxy.util import sqlite
-
 from . import (
     base,
     column,
@@ -168,9 +166,9 @@ class ConvertedDatasetDataProvider(DatasetDataProvider):
 
     def __init__(self, dataset, **kwargs):
         raise NotImplementedError('Abstract class')
-        self.original_dataset = dataset
-        self.converted_dataset = self.convert_dataset(dataset, **kwargs)
-        super(ConvertedDatasetDataProvider, self).__init__(self.converted_dataset, **kwargs)
+        # self.original_dataset = dataset
+        # self.converted_dataset = self.convert_dataset(dataset, **kwargs)
+        # super(ConvertedDatasetDataProvider, self).__init__(self.converted_dataset, **kwargs)
         # NOTE: now self.converted_dataset == self.dataset
 
     def convert_dataset(self, dataset, **kwargs):
@@ -553,12 +551,12 @@ class BigWigDataProvider(base.LimitedOffsetDataProvider):
         raise NotImplementedError('Work in progress')
         # TODO: validate is a wig
         # still good to maintain a ref to the raw source bc Reader won't
-        self.raw_source = source
-        self.parser = bx_bbi.bigwig_file.BigWigFile(source)
-        super(BigWigDataProvider, self).__init__(self.parser, **kwargs)
+        # self.raw_source = source
+        # self.parser = bx_bbi.bigwig_file.BigWigFile(source)
+        # super(BigWigDataProvider, self).__init__(self.parser, **kwargs)
 
-        self.named_columns = named_columns
-        self.column_names = column_names or self.COLUMN_NAMES
+        # self.named_columns = named_columns
+        # self.column_names = column_names or self.COLUMN_NAMES
 
     def __iter__(self):
         parent_gen = super(BigWigDataProvider, self).__iter__()
@@ -586,8 +584,8 @@ class DatasetSubprocessDataProvider(external.SubprocessDataProvider):
         :type args: variadic function args
         """
         raise NotImplementedError('Abstract class')
-        super(DatasetSubprocessDataProvider, self).__init__(*args, **kwargs)
-        self.dataset = dataset
+        # super(DatasetSubprocessDataProvider, self).__init__(*args, **kwargs)
+        # self.dataset = dataset
 
 
 class SamtoolsDataProvider(line.RegexLineDataProvider):
@@ -699,7 +697,7 @@ class BcftoolsDataProvider(line.RegexLineDataProvider):
     def __init__(self, dataset, **kwargs):
         # TODO: as samtools
         raise NotImplementedError()
-        super(BcftoolsDataProvider, self).__init__(dataset, **kwargs)
+        # super(BcftoolsDataProvider, self).__init__(dataset, **kwargs)
 
 
 class BGzipTabixDataProvider(base.DataProvider):
@@ -712,7 +710,7 @@ class BGzipTabixDataProvider(base.DataProvider):
     def __init__(self, dataset, **kwargs):
         # TODO: as samtools - need more info on output format
         raise NotImplementedError()
-        super(BGzipTabixDataProvider, self).__init__(dataset, **kwargs)
+        # super(BGzipTabixDataProvider, self).__init__(dataset, **kwargs)
 
 
 class SQliteDataProvider(base.DataProvider):

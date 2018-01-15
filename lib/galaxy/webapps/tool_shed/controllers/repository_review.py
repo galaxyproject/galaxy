@@ -1,20 +1,28 @@
 import logging
 
-from sqlalchemy import and_, func, false
+from sqlalchemy import (
+    and_,
+    false,
+    func
+)
 
 import tool_shed.grids.repository_review_grids as repository_review_grids
 import tool_shed.grids.util as grids_util
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.tool_shed.util import ratings_util
-from tool_shed.util import hg_util
-from tool_shed.util import review_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import (
+    hg_util,
+    metadata_util,
+    repository_util,
+    review_util,
+    shed_util_common as suc
+)
 from tool_shed.util.container_util import STRSEP
 from tool_shed.util.web_util import escape
 
@@ -270,6 +278,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 # The star rating form field is a radio button list, so it will not be received if it was not clicked in the form.
                 # Due to this behavior, default the value to 0.
                 rating = 0
+                private = False
                 for k, v in kwd.items():
                     if k.startswith('%s%s' % (component_name, STRSEP)):
                         component_review_attr = k.replace('%s%s' % (component_name, STRSEP), '')

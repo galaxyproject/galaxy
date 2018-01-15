@@ -12,10 +12,10 @@ log = logging.getLogger(__name__)
 
 
 class ToolShedRepository(object):
-    dict_collection_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
-    dict_element_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
+    dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
+    dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
     installation_status = Bunch(NEW='New',
                                 CLONING='Cloning',
                                 SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -143,7 +143,7 @@ class ToolShedRepository(object):
                             if tool_id in tool_ids:
                                 self.shed_config_filename = name
                                 return shed_tool_conf_dict
-        if self.includes_datatypes:
+        if self.includes_datatypes or self.includes_data_managers:
             # We need to search by file paths here, which is less desirable.
             tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
             for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
@@ -583,7 +583,7 @@ class ToolDependency(object):
 
 
 class ToolVersion(object, Dictifiable):
-    dict_element_visible_keys = ('id', 'tool_shed_repository')
+    dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
         self.id = id

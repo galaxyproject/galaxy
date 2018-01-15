@@ -28,10 +28,6 @@ In Galaxy:
    repository is also installed. Make sure to install the repositories in a specified section of the tool panel.
 
 2) Uninstall the filter_1430 repository.
-
-3) Repair the column_1430 repository.
-
-4) Make sure the filter_1430 repository is reinstalled and the tool is loaded into the tool panel in the same section specified in step 1.
 '''
 
 
@@ -150,24 +146,3 @@ class TestRepairRepository(ShedTwillTestCase):
                                  "Galaxy's filter tool for test 1430",
                                  installed_repository.installed_changeset_revision]
         self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
-
-    def test_0030_repair_column_repository(self):
-        '''Repair the column_1430 repository.'''
-        '''
-        This is step 3 - Repair the column_1430 repository.
-        '''
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner('column_1430', common.test_user_1_name)
-        self.repair_installed_repository(column_repository)
-
-    def test_0035_verify_tool_panel_section(self):
-        '''Check the tool panel section after repairing.'''
-        '''
-        This is step 4 - Make sure the filter_1430 repository is reinstalled and the tool is loaded into the tool panel
-        in the same section specified in step 1.
-        '''
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner('filter_1430', common.test_user_1_name)
-        strings_displayed = ['filter_1430',
-                             "Galaxy's filter tool for test 1430",
-                             filter_repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        self.check_galaxy_repository_tool_panel_section(repository=filter_repository, expected_tool_panel_section='repair')

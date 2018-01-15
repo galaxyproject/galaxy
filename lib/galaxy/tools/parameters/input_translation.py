@@ -1,6 +1,8 @@
 """
 Tool Input Translation.
 """
+from __future__ import print_function
+
 import logging
 
 from galaxy.util.bunch import Bunch
@@ -15,7 +17,7 @@ class ToolInputTranslator(object):
 
     >>> from galaxy.util import Params
     >>> from xml.etree.ElementTree import XML
-    >>> translator = ToolInputTranslator.from_element( XML(
+    >>> translator = ToolInputTranslator.from_element(XML(
     ... '''
     ... <request_param_translation>
     ...  <request_param galaxy_name="URL_method" remote_name="URL_method" missing="post" />
@@ -40,10 +42,10 @@ class ToolInputTranslator(object):
     ...   </value_translation>
     ...  </request_param>
     ... </request_param_translation>
-    ... ''' ) )
-    >>> params = Params( { 'db':'hg17', 'URL':'URL_value', 'org':'Human', 'hgta_outputType':'primaryTable'  } )
-    >>> translator.translate( params )
-    >>> print sorted(list(params.__dict__.keys()))
+    ... '''))
+    >>> params = Params({'db':'hg17', 'URL':'URL_value', 'org':'Human', 'hgta_outputType':'primaryTable'})
+    >>> translator.translate(params)
+    >>> print(sorted(params.__dict__.keys()))
     ['URL', 'URL_method', 'data_type', 'db', 'dbkey', 'description', 'hgta_outputType', 'org', 'organism', 'table']
     >>> params.get('URL', None) in ['URL_value?GALAXY_URL=0&_export=1', 'URL_value?_export=1&GALAXY_URL=0']
     True

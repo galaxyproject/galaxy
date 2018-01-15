@@ -102,58 +102,59 @@
             </div>
         </div>
         <div style="float: left; padding-left: 10px; font-size: 36px;">&rarr;</div>
-        <div class="toolForm" style="float: right; width: 45%; padding: 0px;">
-            <div class="toolFormTitle">Destination History:</div>
-            <div class="toolFormBody">
-                <div class="form-row" id="single-destination">
-                    <select id="single-dest-select" name="target_history_id">
-                        %for i, hist in enumerate(target_histories):
-                            <%
-                                encoded_id = trans.security.encode_id(hist.id)
-                                source_history_text = ""
-                                selected = ""
-                                if hist == source_history:
-                                    source_history_text = " (source history)"
-                                if encoded_id == target_history_id:
-                                    selected = " selected='selected'"
-                            %>
-                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate( util.unicodify( hist.name ), 30) | h}${source_history_text}</option>
-                        %endfor
-                    </select><br /><br />
-                    <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>
-                </div>
-                <div id="multiple-destination" style="display: none;">
-                    %for i, hist in enumerate( target_histories ):
-                        <%
-                            cur_history_text = ""
-                            encoded_id = trans.security.encode_id(hist.id)
-                            if hist == source_history:
-                                cur_history_text = " <strong>(source history)</strong>"
-                        %>
-                        <div class="form-row">
-                            <input type="checkbox" name="target_history_ids" id="hist_${encoded_id}" value="${encoded_id}"/>
-                            <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${ util.unicodify( hist.name ) | h }${cur_history_text}</label>
-                        </div>
-                    %endfor
-                </div>
-                %if trans.get_user():
-                    <%
-                        checked = ""
-                        if "create_new_history" in target_history_ids:
-                            checked = " checked='checked'"
-                    %>
-                    <hr />
-                    <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
-                    <div class="form-row">
-                        <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
-                        <input id="new_history_name" type="text" name="new_history_name" />
+        <div style="float: right; width: 45%; padding: 0px;">
+            <div class="toolForm">
+                <div class="toolFormTitle">Destination History:</div>
+                <div class="toolFormBody">
+                    <div class="form-row" id="single-destination">
+                        <select id="single-dest-select" name="target_history_id">
+                            %for i, hist in enumerate(target_histories):
+                                <%
+                                    encoded_id = trans.security.encode_id(hist.id)
+                                    source_history_text = ""
+                                    selected = ""
+                                    if hist == source_history:
+                                        source_history_text = " (source history)"
+                                    if encoded_id == target_history_id:
+                                        selected = " selected='selected'"
+                                %>
+                                <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate( util.unicodify( hist.name ), 30) | h}${source_history_text}</option>
+                            %endfor
+                        </select><br /><br />
+                        <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>
                     </div>
-                %endif
+                    <div id="multiple-destination" style="display: none;">
+                        %for i, hist in enumerate( target_histories ):
+                            <%
+                                cur_history_text = ""
+                                encoded_id = trans.security.encode_id(hist.id)
+                                if hist == source_history:
+                                    cur_history_text = " <strong>(source history)</strong>"
+                            %>
+                            <div class="form-row">
+                                <input type="checkbox" name="target_history_ids" id="hist_${encoded_id}" value="${encoded_id}"/>
+                                <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${ util.unicodify( hist.name ) | h }${cur_history_text}</label>
+                            </div>
+                        %endfor
+                    </div>
+                    %if trans.get_user():
+                        <%
+                            checked = ""
+                            if "create_new_history" in target_history_ids:
+                                checked = " checked='checked'"
+                        %>
+                        <hr />
+                        <div style="text-align: center; color: #888;">&mdash; OR &mdash;</div>
+                        <div class="form-row">
+                            <label for="new_history_name" style="display: inline; font-weight:normal;">New history named:</label>
+                            <input id="new_history_name" type="text" name="new_history_name" />
+                        </div>
+                    %endif
+                </div>
             </div>
-        </div>
-        <div style="clear: both"></div>
-        <div class="form-row" style="text-align: center;">
-            <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
+            <div class="form-row" style="text-align: center;">
+                <input type="submit" class="primary-button" name="do_copy" value="Copy History Items"/>
+            </div>
         </div>
     </form>
 </div>

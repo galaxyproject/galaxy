@@ -41,7 +41,7 @@ class Slurm(BaseJobExec):
                 if not k.startswith('-'):
                     k = argmap[k]
                 scriptargs[k] = v
-            except:
+            except Exception:
                 log.warning('Unrecognized long argument passed to Slurm CLI plugin: %s' % k)
 
         # Generated template.

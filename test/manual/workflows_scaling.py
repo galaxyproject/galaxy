@@ -19,12 +19,12 @@ from bioblend import galaxy
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
-from base.populators import (
+from base.populators import (  # noqa: I100,I202
     GiDatasetCollectionPopulator,
     GiDatasetPopulator,
     GiWorkflowPopulator,
 )
-from api.workflows_format_2.converter import python_to_workflow
+from base.workflows_format_2.converter import python_to_workflow  # noqa: I100
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."

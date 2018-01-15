@@ -52,7 +52,7 @@ class TaskedJobRunner(BaseJobRunner):
             parallelism = job_wrapper.get_parallelism()
             try:
                 splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
-            except:
+            except Exception:
                 job_wrapper.change_state(model.Job.states.ERROR)
                 job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
                 return
@@ -125,7 +125,7 @@ class TaskedJobRunner(BaseJobRunner):
         # Finish the job
         try:
             job_wrapper.finish(stdout, stderr, job_exit_code)
-        except:
+        except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
@@ -206,15 +206,6 @@ class TaskedJobRunner(BaseJobRunner):
     def _check_pid(self, pid):
         # DBTODO Need to check all subtask pids and return some sort of cumulative result.
         return True
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError as e:
-            if e.errno == errno.ESRCH:
-                log.debug("_check_pid(): PID %d is dead" % pid)
-            else:
-                log.warning("_check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
-            return False
 
     def _stop_pid(self, pid, job_id):
         """

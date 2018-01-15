@@ -20,7 +20,7 @@
     <form name="new_repo_alert" id="new_repo_alert" action="${h.url_for( controller='repository', action='manage_email_alerts' )}" method="post" >
         <div class="form-row">
             <label>New repository alert:</label>
-            ${new_repo_alert_check_box.get_html()}
+            ${render_checkbox(new_repo_alert_check_box)}
             <div class="toolParamHelp" style="clear: both;">
                 Check the box and click <b>Save</b> to receive email when the first change set is created for a new repository.
             </div>

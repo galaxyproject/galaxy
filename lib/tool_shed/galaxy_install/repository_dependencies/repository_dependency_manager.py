@@ -6,7 +6,7 @@ import json
 import logging
 import os
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import Request, urlopen
 
 from galaxy.util import asbool, build_url, url_get
@@ -354,7 +354,7 @@ class RepositoryDependencyInstallManager(object):
                             for components_list in val:
                                 try:
                                     only_if_compiling_contained_td = components_list[5]
-                                except:
+                                except IndexError:
                                     only_if_compiling_contained_td = 'False'
                                 # Skip listing a repository dependency if it is required only to compile a tool dependency
                                 # defined for the dependent repository (see above comment).
@@ -380,9 +380,8 @@ class RepositoryDependencyInstallManager(object):
                     pathspec = ['repository', 'get_required_repo_info_dict']
                     url = build_url(tool_shed_url, pathspec=pathspec)
                     # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided
-                    url = urlopen(Request(url)).geturl()
-                    request = Request(url, data=urlencode(dict(encoded_str=encoded_required_repository_str)))
-                    response = urlopen(request).read()
+                    url = _urlopen(url).geturl()
+                    response = _urlopen(url, urlencode(dict(encoded_str=encoded_required_repository_str))).read()
                     if response:
                         try:
                             required_repo_info_dict = json.loads(response)
@@ -469,3 +468,9 @@ class RepositoryDependencyInstallManager(object):
         repository.error_message = None
         self.app.install_model.context.add(repository)
         self.app.install_model.context.flush()
+
+
+def _urlopen(url, data=None):
+    scheme = urlparse(url).scheme
+    assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    return urlopen(Request(url, data))

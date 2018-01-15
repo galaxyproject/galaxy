@@ -52,6 +52,16 @@
         </object_store>
         -->
 
+        <!-- Sample Cloud Object Store
+        <object_store type="cloud">
+            <auth access_key="..." secret_key="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+            <extra_dir type="temp" path="database/tmp_s3"/>
+        </object_store>
+        -->
+
 
     </backends>
 </object_store>

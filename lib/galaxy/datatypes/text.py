@@ -10,6 +10,8 @@ import re
 import subprocess
 import tempfile
 
+from six.moves import shlex_quote
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import iter_headers
@@ -48,13 +50,10 @@ class Html(Text):
         True
         """
         headers = iter_headers(filename, None)
-        try:
-            for i, hdr in enumerate(headers):
-                if hdr and hdr[0].lower().find('<html>') >= 0:
-                    return True
-            return False
-        except:
-            return True
+        for i, hdr in enumerate(headers):
+            if hdr and hdr[0].lower().find('<html>') >= 0:
+                return True
+        return False
 
 
 class Json(Text):
@@ -63,7 +62,7 @@ class Json(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
         else:
             dataset.peek = 'file does not exist'
@@ -102,7 +101,7 @@ class Json(Text):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -111,7 +110,7 @@ class Ipynb(Json):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = 'file does not exist'
@@ -128,7 +127,7 @@ class Ipynb(Json):
                     return True
                 else:
                     return False
-            except:
+            except Exception:
                 return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
@@ -148,13 +147,12 @@ class Ipynb(Json):
             ofilename = ofile_handle.name
             ofile_handle.close()
             try:
-                cmd = 'jupyter nbconvert --to html --template full %s --output %s' % (dataset.file_name, ofilename)
-                log.info("Calling command %s" % cmd)
-                subprocess.call(cmd, shell=True)
+                cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
+                subprocess.check_call(cmd)
                 ofilename = '%s.html' % ofilename
-            except:
+            except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
-                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', cmd)
+                log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
             return open(ofilename)
 
     def set_meta(self, dataset, **kwd):
@@ -170,6 +168,7 @@ class Biom1(Json):
         http://biom-format.org/documentation/format_versions/biom-1.0.html
     """
     file_ext = "biom1"
+    edam_format = "format_3746"
 
     MetadataElement(name="table_rows", default=[], desc="table_rows", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="table_matrix_element_type", default="", desc="table_matrix_element_type", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
@@ -184,7 +183,7 @@ class Biom1(Json):
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
-        super(Biom1, self).set_peek(dataset, is_multi_byte)
+        super(Biom1, self).set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
@@ -268,7 +267,7 @@ class Obo(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
         else:
             dataset.peek = 'file does not exist'
@@ -307,7 +306,7 @@ class Arff(Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
             dataset.blurb += ", %s comments, %s attributes" % (dataset.metadata.comment_lines, dataset.metadata.columns)
         else:
@@ -349,8 +348,8 @@ class Arff(Text):
             5.1,3.5,1.4,0.2,Iris-setosa
             4.9,3.0,1.4,0.2,Iris-setosa
         """
+        comment_lines = column_count = 0
         if dataset.has_data():
-            comment_lines = 0
             first_real_line = False
             data_block = False
             with open(dataset.file_name) as handle:
@@ -418,7 +417,7 @@ class SnpEffDb(Text):
             if m:
                 snpeff_version = m.groups()[0] + m.groups()[1]
             fh.close()
-        except:
+        except Exception:
             pass
         return snpeff_version
 
@@ -463,7 +462,7 @@ class SnpEffDb(Text):
                         fh.write("annotations: %s\n" % ','.join(annotations))
                     if regulations:
                         fh.write("regulations: %s\n" % ','.join(regulations))
-            except:
+            except Exception:
                 pass
 
 
@@ -501,20 +500,19 @@ class SnpSiftDbNSFP(Text):
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        self.regenerate_primary_file(dataset)
+        return '<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>'
 
     def regenerate_primary_file(self, dataset):
         """
         cannot do this until we are setting metadata
         """
         annotations = "dbNSFP Annotations: %s\n" % ','.join(dataset.metadata.annotation)
-        f = open(dataset.file_name, 'a')
-        if dataset.metadata.bgzip:
-            bn = dataset.metadata.bgzip
-            f.write(bn)
-            f.write('\n')
-        f.write(annotations)
-        f.close()
+        with open(dataset.file_name, 'a') as f:
+            if dataset.metadata.bgzip:
+                bn = dataset.metadata.bgzip
+                f.write(bn)
+                f.write('\n')
+            f.write(annotations)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         try:
@@ -547,3 +545,33 @@ class SnpSiftDbNSFP(Text):
             else:
                 dataset.peek = 'file does not exist'
                 dataset.blurb = 'file purged from disc'
+
+
+class IQTree(Text):
+    """IQ-TREE format"""
+    file_ext = 'iqtree'
+
+    def sniff(self, filename):
+        """
+        Detect the IQTree file
+
+        Scattered text file containing various headers and data
+        types.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('example.iqtree')
+        >>> IQTree().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('temp.txt')
+        >>> IQTree().sniff(fname)
+        False
+
+        >>> fname = get_test_fname('test_tab1.tabular')
+        >>> IQTree().sniff(fname)
+        False
+        """
+        with open(filename, 'r') as fio:
+            return fio.read(7) == "IQ-TREE"
+
+        return False

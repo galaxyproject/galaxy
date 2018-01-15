@@ -38,6 +38,8 @@
                 error   : function(){},
                 assert  : function(){}
             };
+            window.jQuery = window.jquery = window.$;
+            define( 'jquery', [], function(){ return window.$; })
             require.config({
                 baseUrl: Galaxy.root + "static/scripts/",
                 paths: {

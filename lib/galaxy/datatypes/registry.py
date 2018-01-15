@@ -6,14 +6,13 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
-import tempfile
 from collections import OrderedDict as odict
+from string import Template
 from xml.etree.ElementTree import Element
 
 import yaml
 
 import galaxy.util
-
 from . import (
     binary,
     coverage,
@@ -72,7 +71,10 @@ class Registry(object):
         self.imported_modules = []
         self.datatype_elems = []
         self.sniffer_elems = []
-        self.xml_filename = None
+        self._registry_xml_string = None
+        self._edam_formats_mapping = None
+        self._edam_data_mapping = None
+        self._converters_by_datatype = {}
         # Build sites
         self.build_sites = {}
         self.display_sites = {}
@@ -247,6 +249,7 @@ class Registry(object):
                                         datatype_class.edam_format = edam_format
                                     if edam_data:
                                         datatype_class.edam_data = edam_data
+                                datatype_class.is_subclass = make_subclass
                                 self.datatypes_by_extension[extension] = datatype_class()
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
@@ -310,15 +313,14 @@ class Registry(object):
         self.set_default_values()
 
         def append_to_sniff_order():
-            # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext, datatype in self.datatypes_by_extension.items():
-                included = False
-                for atype in self.sniff_order:
-                    if isinstance(atype, datatype.__class__):
-                        included = True
-                        break
-                if not included:
+            sniff_order_classes = set(type(_) for _ in self.sniff_order)
+            for datatype in self.datatypes_by_extension.values():
+                # Add a datatype only if it is not already in sniff_order, it
+                # has a sniff() method and was not defined with subclass="true"
+                if type(datatype) not in sniff_order_classes and \
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass:
                     self.sniff_order.append(datatype)
+
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
@@ -356,7 +358,7 @@ class Registry(object):
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
             if build_sites_config_file and os.path.exists(build_sites_config_file):
                 with open(build_sites_config_file, "r") as f:
-                    build_sites_config = yaml.load(f)
+                    build_sites_config = yaml.safe_load(f)
                 if not isinstance(build_sites_config, list):
                     self.log.exception("Build sites configuration YAML file does not declare list of sites.")
                     return
@@ -462,6 +464,10 @@ class Registry(object):
                                     if sniffer_class is not None:
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
+
+    def is_extension_unsniffable_binary(self, ext):
+        datatype = self.get_datatype_by_extension(ext)
+        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, 'sniff')
 
     def get_datatype_class_by_name(self, name):
         """
@@ -669,7 +675,6 @@ class Registry(object):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        self.to_xml_file()
         set_meta_tool = toolbox.load_hidden_lib_tool("galaxy/datatypes/set_metadata_tool.xml")
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
@@ -795,16 +800,18 @@ class Registry(object):
 
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
-        converters = odict()
-        source_datatype = type(self.get_datatype_by_extension(ext))
-        for ext2, converters_dict in self.datatype_converters.items():
-            converter_datatype = type(self.get_datatype_by_extension(ext2))
-            if issubclass(source_datatype, converter_datatype):
-                converters.update(converters_dict)
-        # Ensure ext-level converters are present
-        if ext in self.datatype_converters.keys():
-            converters.update(self.datatype_converters[ext])
-        return converters
+        if ext not in self._converters_by_datatype:
+            converters = odict()
+            source_datatype = type(self.get_datatype_by_extension(ext))
+            for ext2, converters_dict in self.datatype_converters.items():
+                converter_datatype = type(self.get_datatype_by_extension(ext2))
+                if issubclass(source_datatype, converter_datatype):
+                    converters.update(converters_dict)
+            # Ensure ext-level converters are present
+            if ext in self.datatype_converters.keys():
+                converters.update(self.datatype_converters[ext])
+            self._converters_by_datatype[ext] = converters
+        return self._converters_by_datatype[ext]
 
     def get_converter_by_target_type(self, source_ext, target_ext):
         """Returns a converter based on source and target datatypes"""
@@ -853,53 +860,41 @@ class Registry(object):
     def edam_formats(self):
         """
         """
-        mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
-        return mapping
+        if not self._edam_formats_mapping:
+            self._edam_formats_mapping = dict((k, v.edam_format) for k, v in self.datatypes_by_extension.items())
+        return self._edam_formats_mapping
 
     @property
     def edam_data(self):
         """
         """
-        mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
-        return mapping
+        if not self._edam_data_mapping:
+            self._edam_data_mapping = dict((k, v.edam_data) for k, v in self.datatypes_by_extension.items())
+        return self._edam_data_mapping
 
-    @property
-    def integrated_datatypes_configs(self):
-        if self.xml_filename and os.path.isfile(self.xml_filename):
-            return self.xml_filename
-        return self.xml_filename
-
-    def to_xml_file(self):
-        if self.xml_filename is not None:
-            # If persisted previously, attempt to remove the temporary file in which we were written.
-            try:
-                os.unlink(self.xml_filename)
-            except:
-                pass
-            self.xml_filename = None
-        fd, filename = tempfile.mkstemp()
-        self.xml_filename = os.path.abspath(filename)
-        if self.converters_path_attr:
-            converters_path_str = ' converters_path="%s"' % self.converters_path_attr
-        else:
-            converters_path_str = ''
-        if self.display_path_attr:
-            display_path_str = ' display_path="%s"' % self.display_path_attr
-        else:
-            display_path_str = ''
-        os.write(fd, '<?xml version="1.0"?>\n')
-        os.write(fd, '<datatypes>\n')
-        os.write(fd, '<registration%s%s>\n' % (converters_path_str, display_path_str))
-        for elem in self.datatype_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</registration>\n')
-        os.write(fd, '<sniffers>\n')
-        for elem in self.sniffer_elems:
-            os.write(fd, '%s' % galaxy.util.xml_to_string(elem))
-        os.write(fd, '</sniffers>\n')
-        os.write(fd, '</datatypes>\n')
-        os.close(fd)
-        os.chmod(self.xml_filename, 0o644)
+    def to_xml_file(self, path):
+        if not self._registry_xml_string:
+            registry_string_template = Template("""<?xml version="1.0"?>
+            <datatypes>
+              <registration converters_path="$converters_path" display_path="$display_path">
+                $datatype_elems
+              </registration>
+              <sniffers>
+                $sniffer_elems
+              </sniffers>
+            </datatypes>
+            """)
+            converters_path = self.converters_path_attr or ''
+            display_path = self.display_path_attr or ''
+            datatype_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.datatype_elems))
+            sniffer_elems = "".join((galaxy.util.xml_to_string(elem) for elem in self.sniffer_elems))
+            self._registry_xml_string = registry_string_template.substitute(converters_path=converters_path,
+                                                                            display_path=display_path,
+                                                                            datatype_elems=datatype_elems,
+                                                                            sniffer_elems=sniffer_elems)
+        with open(os.path.abspath(path), 'w') as registry_xml:
+            os.chmod(path, 0o644)
+            registry_xml.write(self._registry_xml_string)
 
     def get_extension(self, elem):
         """

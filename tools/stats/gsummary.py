@@ -6,7 +6,7 @@ import sys
 import tempfile
 try:
     from rpy2.rpy_classic import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
-except:
+except ImportError:
     # RPy isn't maintained, and doesn't work with R>3.0, use it as a fallback
     from rpy import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
 
@@ -31,7 +31,7 @@ def main():
         datafile = sys.argv[1]
         outfile_name = sys.argv[2]
         expression = sys.argv[3]
-    except:
+    except Exception:
         stop_err('Usage: python gsummary.py input_file ouput_file expression')
 
     math_allowed = S3_METHODS()['Math']
@@ -56,10 +56,10 @@ def main():
     for col in re.compile('c[0-9]+').findall(expression):
         try:
             cols.append(int(col[1:]) - 1)
-        except:
+        except Exception:
             pass
 
-    tmp_file = tempfile.NamedTemporaryFile('w+b')
+    tmp_file = tempfile.NamedTemporaryFile('w+')
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
     tmp_file.write("%s\n" % hdr_str)
@@ -75,7 +75,7 @@ def main():
             for col in cols:
                 try:
                     float(fields[col])
-                except:
+                except Exception:
                     skipped_lines += 1
                     if not first_invalid_line:
                         first_invalid_line = i + 1

@@ -1,10 +1,11 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
-
-import socket
-from galaxy.util import safe_str_cmp
 import logging
+import socket
+
+from galaxy.util import safe_str_cmp
+
 log = logging.getLogger(__name__)
 
 errorpage = """
@@ -191,7 +192,7 @@ class RemoteUser(object):
             return self.app(environ, start_response)
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
-            for k, v in environ.iteritems():
+            for k, v in environ.items():
                 log.debug("%s = %s", k, v)
 
             title = "Access to Galaxy is denied"

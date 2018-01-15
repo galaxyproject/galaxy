@@ -2,14 +2,13 @@ import json
 import os
 import unittest
 
-import tools_support
 from galaxy import (
     model,
     util
 )
 from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from galaxy.tools.parser import output_collection_def
-
+from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"

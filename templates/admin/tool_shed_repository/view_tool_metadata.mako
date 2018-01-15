@@ -78,8 +78,6 @@ ${render_galaxy_repository_actions( repository )}
                             </tr>
                         %endfor
                     </table>
-                %else:
-                    No tool versions are defined for this tool so it is critical that you <b>Set tool versions</b> from the <b>Manage repository</b> page.
                 %endif
             </div>
             <div class="form-row">

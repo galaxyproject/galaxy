@@ -141,7 +141,7 @@ def __main__():
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, tmpfastq.name))
             tmpf.close()
-        except:
+        except Exception:
             stop_err("Error converting data to fastq format.")
 
         # Make a temp directory where the split fastq files will be stored
@@ -203,7 +203,7 @@ def __main__():
                             g += 1
                         else:
                             c += 1
-                    except:
+                    except Exception:
                         pass
                 print("%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c), file=out_f2)
         except Exception as er2:
@@ -246,7 +246,7 @@ def __main__():
             t = int(elems[6])
             g = int(elems[7])
             c = int(elems[8])
-        except:
+        except Exception:
             continue
         fcov.write("%s\t%s\n" % (pos, cov))
         try:

@@ -1,5 +1,4 @@
 from galaxy.util.tool_version import remove_version_from_guid
-
 from .interface import ToolLineage
 
 

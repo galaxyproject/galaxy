@@ -565,7 +565,7 @@ All in `config/plugins/visualizations`:
 
 - `csg` - Chemical structure viewer
 - `graphviz` - Visualize graph data using [cytoscape.js](http://www.cytoscape.org/)
-- `charts` - A more elobrate builds on more Galaxy abstractions.
+- `charts` - Classic charts as well as some integrated BioJS visualizations
 - `trackster` - Genome browser, deeply tied to Galaxy internals.
 
 ---
@@ -585,7 +585,7 @@ Data providers process data before sending to browser - slice, filter, reformat,
 
 ### Interactive Environments
 
-Similar to vizualizations: config and template
+Similar to visualizations: config and template
 
 Within the base template, launch a Docker container running a web accessible
 process
@@ -1149,7 +1149,7 @@ galaxy.tools.special_tools DEBUG 2016-06-23 19:13:38,108 Loaded history export t
 
 class: reduce70
 
-### Vizualization Plugins
+### Visualization Plugins
 
 .code[```
 galaxy.web.base.pluginframework INFO 2016-06-23 19:13:38,109 VisualizationsRegistry, loaded plugin: charts

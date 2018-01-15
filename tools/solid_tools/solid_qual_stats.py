@@ -71,7 +71,7 @@ def __main__():
             try:
                 item = int(item)
                 position_dict[ind][item] += 1
-            except:
+            except Exception:
                 pass
 
     invalid_positions = 0
@@ -125,7 +125,7 @@ def __main__():
             right_whisker = min(q3 + 1.5 * iqr, highest)
 
             print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (pos + 1, total, lowest, highest, qsum, mean, q1, median, q3, iqr, left_whisker, right_whisker), file=fout)
-        except:
+        except Exception:
             invalid_positions += 1
             nullvals = ['NA'] * 11
             print("%s\t%s" % (pos + 1, '\t'.join(nullvals)), file=fout)

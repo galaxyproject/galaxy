@@ -100,7 +100,15 @@ class UsesAnnotations:
 
     def get_item_annotation_str(self, db_session, user, item):
         """ Returns a user's annotation string for an item. """
-        annotation_obj = self.get_item_annotation_obj(db_session, user, item)
+        if hasattr(item, 'annotations'):
+            # If we already have an annotations object we use it.
+            annotation_obj = None
+            for annotation in item.annotations:
+                if annotation.user == user:
+                    annotation_obj = annotation
+                    break
+        else:
+            annotation_obj = self.get_item_annotation_obj(db_session, user, item)
         if annotation_obj:
             return galaxy.util.unicodify(annotation_obj.annotation)
         return None

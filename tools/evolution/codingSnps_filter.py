@@ -2,11 +2,6 @@
 
 # runs after the job (and after the default post-filter)
 from galaxy.tools.parameters import DataToolParameter
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
 
 
 def validate_input(trans, error_map, param_values, page_param_map):
@@ -27,7 +22,7 @@ def validate_input(trans, error_map, param_values, page_param_map):
                     int(param.metadata.chromCol)
                     if param.metadata.strandCol is not None:
                         int(param.metadata.strandCol)
-                except:
+                except Exception:
                     error_msg = ("The attributes of this dataset are not properly set. "
                         "Click the pencil icon in the history item to set the chrom, start, end and strand columns.")
                     error_map[name] = error_msg

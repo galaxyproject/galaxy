@@ -26,6 +26,7 @@ from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    ElementIdentifierMapper,
     InputValueWrapper,
     RawObjectWrapper,
     SelectToolParameterWrapper,
@@ -91,7 +92,6 @@ class ToolEvaluator(object):
                     self.dataset = dataset
                     self.file_name = dataset.file_name
                     self.metadata = dict()
-                    self.children = []
 
             special = get_special()
             if special:
@@ -134,6 +134,7 @@ class ToolEvaluator(object):
             raise SyntaxError("Unbound variable input.")  # Don't let $input hang Python evaluation process.
 
         param_dict["input"] = input
+        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = os.path.join(job_working_directory, 'registry.xml')
 
         param_dict.update(self.tool.template_macro_params)
         # All parameters go into the param_dict
@@ -233,11 +234,9 @@ class ToolEvaluator(object):
                     real_path = dataset.file_name
                     if real_path in input_dataset_paths:
                         wrapper_kwds["dataset_path"] = input_dataset_paths[real_path]
-                identifier_key = identifier_key_dict.get(dataset, None)
-                if identifier_key:
-                    element_identifier = param_dict.get(identifier_key, None)
-                    if element_identifier:
-                        wrapper_kwds["identifier"] = element_identifier
+                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                if element_identifier:
+                    wrapper_kwds["identifier"] = element_identifier
                 input_values[input.name] = \
                     DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
@@ -265,7 +264,7 @@ class ToolEvaluator(object):
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())  # allows lookup of identifier through HDA.
+            element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
@@ -302,9 +301,6 @@ class ToolEvaluator(object):
                         dataset_path = input_dataset_paths[real_path]
                         wrapper_kwds['dataset_path'] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
-            if data:
-                for child in data.children:
-                    param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites(output_paths)
@@ -354,8 +350,6 @@ class ToolEvaluator(object):
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
-            for child in hda.children:
-                param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -391,7 +385,6 @@ class ToolEvaluator(object):
         # For the upload tool, we need to know the root directory and the
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath(self.app.config.root)
-        param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
         param_dict['__user__'] = RawObjectWrapper(param_dict.get('__user__', None))
 

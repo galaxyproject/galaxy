@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -30,21 +30,21 @@ def __main__():
                 else:
                     try:
                         feature = elems[3]
-                    except:
+                    except Exception:
                         feature = 'feature%d' % (i + 1)
                 start = int(elems[1]) + 1
                 end = int(elems[2])
                 try:
                     score = elems[4]
-                except:
+                except Exception:
                     score = '0'
                 try:
                     strand = elems[5]
-                except:
+                except Exception:
                     strand = '+'
                 try:
                     group = elems[3]
-                except:
+                except Exception:
                     group = 'group%d' % (i + 1)
                 if complete_bed:
                     out.write('%s\tbed2gff\t%s\t%d\t%d\t%s\t%s\t.\t%s %s;\n' % (chrom, feature, start, end, score, strand, feature, group))
@@ -59,7 +59,7 @@ def __main__():
                         exon_start = int(start) + int(block_starts[j])
                         exon_end = exon_start + int(block_sizes[j]) - 1
                         out.write('%s\tbed2gff\texon\t%d\t%d\t%s\t%s\t.\texon %s;\n' % (chrom, exon_start, exon_end, score, strand, group))
-            except:
+            except Exception:
                 skipped_lines += 1
                 if not first_skipped_line:
                     first_skipped_line = i + 1

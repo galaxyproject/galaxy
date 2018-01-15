@@ -39,7 +39,7 @@ def upgrade(migrate_engine):
                 # Encoding errors?  Just to be safe.
                 print("Attempting to fix row %s" % row['id'])
                 print("Prior to replacement: %s" % field_values_str)
-            except:
+            except Exception:
                 pass
             field_values_dict = {}
             # look for each field name in the values and extract its value (string)
@@ -77,7 +77,7 @@ def upgrade(migrate_engine):
             migrate_engine.execute(cmd)
             try:
                 print("Post replacement: %s" % json_values)
-            except:
+            except Exception:
                 pass
     if corrupted_rows:
         print('Fixed %i corrupted rows.' % corrupted_rows)

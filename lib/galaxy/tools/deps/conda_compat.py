@@ -61,7 +61,7 @@ def _render_jinja2(recipe_dir):
 
 @_Memoized
 def yamlize(data):
-    res = yaml.load(data)
+    res = yaml.safe_load(data)
     # ensure the result is a dict
     if res is None:
         res = {}

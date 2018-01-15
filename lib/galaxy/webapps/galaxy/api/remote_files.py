@@ -1,16 +1,17 @@
 """
 API operations on remote files.
 """
+import hashlib
+import logging
 import os
 import time
-import hashlib
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import jstree, unicodify
-from galaxy.web.base.controller import BaseAPIController
 from operator import itemgetter
 
-import logging
+from galaxy import exceptions
+from galaxy.util import jstree, unicodify
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import BaseAPIController
+
 log = logging.getLogger(__name__)
 
 
@@ -107,7 +108,7 @@ class RemoteFilesAPIController(BaseAPIController):
         subfolders and returns a flat list.
         """
         response = []
-        if os.path.exists(directory):
+        if os.path.exists(directory) and not os.path.islink(directory):
             for (dirpath, dirnames, filenames) in os.walk(directory):
                 for filename in filenames:
                     path = os.path.relpath(os.path.join(dirpath, filename), directory)
@@ -130,7 +131,7 @@ class RemoteFilesAPIController(BaseAPIController):
         """
         userdir_jstree = None
         jstree_paths = []
-        if os.path.exists(directory):
+        if os.path.exists(directory) and not os.path.islink(directory):
             for (dirpath, dirnames, filenames) in os.walk(directory):
                 for dirname in dirnames:
                     dir_path = os.path.relpath(os.path.join(dirpath, dirname), directory)

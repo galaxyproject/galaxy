@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    require(['libs/toastr'], function(Toastr){
+    require(['libs/toastr', 'mvc/tours'], function(Toastr, Tours) {
         window.TourGenerator = Backbone.View.extend({
             initialize: function(options) {
                 var me = this;
@@ -58,17 +58,7 @@ $(document).ready(function() {
             },
 
             _generateTour: function(data) {
-                var tourData = Tours.hooked_tour_from_data(data);
-                sessionStorage.setItem('activeGalaxyTour', JSON.stringify(data));
-
-                // Generate and run the tour
-                var tour = new Tour(_.extend({
-                    steps: tourData.steps
-                }));
-                tour.init();
-                tour.goTo(0);
-                tour.restart();
-
+                var tour = Tours.giveTourWithData(data);
                 // Force ending the tour when pressing the Execute button
                 $('#execute').on('mousedown', function() {
                     if (tour) {

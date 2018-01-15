@@ -9,7 +9,6 @@
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
-      <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
@@ -17,7 +16,9 @@
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
-    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage"/>
+    <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
+        <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
+    </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Bed">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -38,7 +39,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
-    <datatype extension="dmnd" type="galaxy.datatypes.binary:Binary:DMND" subclass="True" display_in_upload="false"/>
+    <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml" />
       <display file="igb/bb.xml" />
@@ -61,7 +62,7 @@
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
-    <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
     <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html" />
@@ -144,6 +145,8 @@
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true" />
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="cool" type="galaxy.datatypes.binary:Cool" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
@@ -234,13 +237,18 @@
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true" />
     <datatype extension="cps" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="ct" type="galaxy.datatypes.tabular:ConnectivityTable" display_in_upload="true"/>
+    <datatype extension="postgresql" type="galaxy.datatypes.binary:PostgresqlArchive" display_in_upload="True"/>
     <datatype extension="searchgui_archive" type="galaxy.datatypes.binary:SearchGuiArchive" display_in_upload="true"/>
+    <datatype extension="fast5.tar" type="galaxy.datatypes.binary:Fast5Archive" display_in_upload="true"/>
+    <datatype extension="fast5.tar.gz" type="galaxy.datatypes.binary:Fast5ArchiveGz" display_in_upload="true"/>
+    <datatype extension="fast5.tar.bz2" type="galaxy.datatypes.binary:Fast5ArchiveBz2" display_in_upload="true"/>
     <datatype extension="peptideshaker_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="percin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="percout" type="galaxy.datatypes.xml:GenericXml" subclass="true" />
     <datatype extension="hardklor" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="kronik" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
     <datatype extension="imzml" type="galaxy.datatypes.proteomics:ImzML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="analyze75" type="galaxy.datatypes.proteomics:Analyze75" mimetype="application/xml" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
     <datatype extension="deeptools_compute_matrix_archive" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="deeptools_coverage_matrix" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
@@ -274,13 +282,13 @@
     <datatype extension="qualillumina" type="galaxy.datatypes.qualityscore:QualityScoreIllumina" display_in_upload="true"/>
     <datatype extension="qualsolid" type="galaxy.datatypes.qualityscore:QualityScoreSOLiD" display_in_upload="true"/>
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
-    <datatype extension="Roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
+    <datatype extension="roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
         <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
-    <datatype extension="Sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
+    <datatype extension="sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
     <datatype extension="snpeffdb" type="galaxy.datatypes.text:SnpEffDb" display_in_upload="true"/>
     <datatype extension="snpsiftdbnsfp" type="galaxy.datatypes.text:SnpSiftDbNSFP" display_in_upload="true"/>
     <datatype extension="dbnsfp.tabular" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true">
@@ -311,10 +319,12 @@
       <display file="iobio/vcf.xml" />
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true">
-      <converter file="bcf_to_bcf_bgzip_converter.xml" target_datatype="bcf_bgzip"/>
+      <converter file="bcf_to_bcf_uncompressed_converter.xml" target_datatype="bcf_uncompressed"/>
     </datatype>
-    <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" subclass="true">
-      <converter file="bcf_bgzip_to_bcf_converter.xml" target_datatype="bcf"/>
+    <!-- bcf_bgzip is just an alias for bcf for backward-compatibility -->
+    <datatype extension="bcf_bgzip" type="galaxy.datatypes.binary:Bcf" subclass="true" />
+    <datatype extension="bcf_uncompressed" type="galaxy.datatypes.binary:BcfUncompressed" mimetype="application/octet-stream">
+      <converter file="bcf_uncompressed_to_bcf_converter.xml" target_datatype="bcf"/>
     </datatype>
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
@@ -326,7 +336,7 @@
     <datatype extension="interval_index" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
-    <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" type_extension="bgzip" subclass="true" display_in_upload="true">
+    <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml" />
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
     </datatype>
@@ -334,6 +344,8 @@
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true" />
     <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true" />
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true" />
+    <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree" />
+    <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix" />
     <!-- Start RGenetics Datatypes -->
     <datatype extension="affybatch" type="galaxy.datatypes.genetics:Affybatch" display_in_upload="true"/>
     <!-- eigenstrat pedigree input file -->
@@ -483,7 +495,12 @@
     <datatype extension="score" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="srs" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="srspair" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <!-- Annotation Datatypes -->
+    <datatype extension="snaphmm" type="galaxy.datatypes.annotation:SnapHmm" display_in_upload="true" />
+    <datatype extension="augustus" type="galaxy.datatypes.annotation:Augustus" display_in_upload="true" />
+    <datatype extension="icm" type="galaxy.datatypes.binary:ICM" display_in_upload="true"/>
     <!-- MSA Datatypes -->
+    <datatype extension="cm" type="galaxy.datatypes.msa:InfernalCM" display_in_upload="False" />
     <datatype extension="hmm2" type="galaxy.datatypes.msa:Hmmer2" display_in_upload="true" />
     <datatype extension="hmm3" type="galaxy.datatypes.msa:Hmmer3" display_in_upload="true" />
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="true" />
@@ -502,9 +519,13 @@
     <datatype extension="plybinary" type="galaxy.datatypes.constructive_solid_geometry:PlyBinary" display_in_upload="true" />
     <datatype extension="vtkascii" type="galaxy.datatypes.constructive_solid_geometry:VtkAscii" display_in_upload="true" />
     <datatype extension="vtkbinary" type="galaxy.datatypes.constructive_solid_geometry:VtkBinary" display_in_upload="true" />
-    <!-- Metagenomic Datatype -->
-    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="true" subclass="true" mimetype="application/json">
+    <!-- Metagenomic Datatypes -->
+    <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="true" mimetype="application/json">
         <display file="biom/biom_simple.xml" />
+        <converter file="biom1_to_biom2.xml" target_datatype="biom2"/>
+    </datatype>
+    <datatype extension="biom2" type="galaxy.datatypes.binary:Biom2" mimetype="application/octet-stream" display_in_upload="true">
+        <converter file="biom2_to_biom1.xml" target_datatype="biom1"/>
     </datatype>
     <!-- Strand-specific Coordinate Count Datatype used by the Center for Eukaryotic Gene Regulation labs at Penn State -->
     <datatype extension="scidx" type="galaxy.datatypes.interval:ScIdx" display_in_upload="true" />
@@ -600,6 +621,9 @@
     <datatype extension="mothur.sff.flow" type="galaxy.datatypes.mothur:SffFlow" display_in_upload="true"/>
     <datatype extension="mothur.count_table" type="galaxy.datatypes.mothur:CountTable" display_in_upload="true"/>
     <datatype extension="neostore" type="galaxy.datatypes.neo4j:Neo4jDB" mimetype="text/html"  display_in_upload="false"/>
+    <datatype extension="neostore.zip" type="galaxy.datatypes.neo4j:Neo4jDBzip" display_in_upload="true">
+        <converter file="neostorezip_to_neostore_converter.xml" target_datatype="neostore"/>
+    </datatype>
     <datatype extension="trackhub" type="galaxy.datatypes.tracks:UCSCTrackHub" display_in_upload="true">
         <display file="ucsc/trackhub.xml" />
     </datatype>
@@ -611,19 +635,41 @@
     <datatype extension="maskinfo-asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" subclass="true" display_in_upload="true" />
     <datatype extension="pssm-asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" subclass="true" display_in_upload="true" />
     <!-- PlantTribes datatypes -->
+    <!--
+    The commented entries in this section are required by versions 1.0.0, 1.0.1 and 1.0.2 of the
+    PlantTribes tools in the MTS Phylogenetics category, and are not required by version 1.0.3 of
+    later.  These datatypes will be removed in a future Galaxy release.  
+    -->
+    <!--
     <datatype extension="ptalign" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignment" />
     <datatype extension="ptalignca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentCodonAlignment" />
     <datatype extension="ptaligntrimmed" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmed" />
     <datatype extension="ptaligntrimmedca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentTrimmedCodonAlignment" />
     <datatype extension="ptalignfiltered" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFiltered" />
     <datatype extension="ptalignfilteredca" type="galaxy.datatypes.plant_tribes:PlantTribesMultipleSequenceAlignmentFilteredCodonAlignment" />
+    -->
     <datatype extension="ptkscmp" type="galaxy.datatypes.plant_tribes:PlantTribesKsComponents" display_in_upload="true"/>
+    <!--
     <datatype extension="ptortho" type="galaxy.datatypes.plant_tribes:PlantTribesOrtho" />
     <datatype extension="ptorthocs" type="galaxy.datatypes.plant_tribes:PlantTribesOrthoCodingSequence" />
     <datatype extension="ptphylip" type="galaxy.datatypes.plant_tribes:PlantTribesPhylip" />
     <datatype extension="pttgf" type="galaxy.datatypes.plant_tribes:PlantTribesTargetedGeneFamilies" />
     <datatype extension="pttree" type="galaxy.datatypes.plant_tribes:PlantTribesPhylogeneticTree" />
+    -->
     <datatype extension="smat" type="galaxy.datatypes.plant_tribes:Smat" display_in_upload="true" />
+    <!-- Start Haplotype / LOD Datatypes -->
+    <datatype extension="alohomora_gts" type="galaxy.datatypes.genetics:GenotypeMatrix" />
+    <datatype extension="alohomora_map" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="alohomora_maf" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="alohomora_ped" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <!-- Common input formats: Generated by alohomora, but user may also upload these manually -->
+    <datatype extension="linkage_pedin" type="galaxy.datatypes.tabular:Tabular" subclass="true" />
+    <datatype extension="linkage_datain" type="galaxy.datatypes.genetics:DataIn" />
+    <datatype extension="linkage_map" type="galaxy.datatypes.genetics:MarkerMap" />
+    <!-- All output linkage is converted into the Allegro output format -->
+    <datatype extension="allegro_ihaplo" type="galaxy.datatypes.tabular:Tabular" />
+    <datatype extension="allegro_descent" type="galaxy.datatypes.tabular:Tabular" />
+    <datatype extension="allegro_fparam" type="galaxy.datatypes.genetics:AllegroLOD" />
   </registration>
   <sniffers>
     <!--
@@ -659,6 +705,8 @@
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
+    <sniffer type="galaxy.datatypes.binary:Cool"/>
+    <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
     <sniffer type="galaxy.datatypes.binary:CRAM"/>
@@ -666,6 +714,12 @@
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
     <sniffer type="galaxy.datatypes.binary:DMND" />
+    <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz" />
+    <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2" />
+    <sniffer type="galaxy.datatypes.binary:Fast5Archive" />
+    <sniffer type="galaxy.datatypes.binary:PostgresqlArchive"/>
+    <sniffer type="galaxy.datatypes.binary:ICM" />
+    <sniffer type="galaxy.datatypes.annotation:Augustus" />
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
@@ -724,11 +778,16 @@
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
     <sniffer type="galaxy.datatypes.data:Newick"/>
     <sniffer type="galaxy.datatypes.data:Nexus"/>
+    <sniffer type="galaxy.datatypes.text:IQTree"/>
     <sniffer type="galaxy.datatypes.text:Obo"/>
     <sniffer type="galaxy.datatypes.text:Arff"/>
     <sniffer type="galaxy.datatypes.text:Ipynb"/>
     <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
+    <sniffer type="galaxy.datatypes.genetics:GenotypeMatrix" />
+    <sniffer type="galaxy.datatypes.genetics:DataIn" />
+    <sniffer type="galaxy.datatypes.genetics:MarkerMap" />
+    <sniffer type="galaxy.datatypes.genetics:AllegroLOD" />
     <sniffer type="galaxy.datatypes.sequence:RNADotPlotMatrix"/>
     <sniffer type="galaxy.datatypes.sequence:DotBracket"/>
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
@@ -738,6 +797,8 @@
     <sniffer type="galaxy.datatypes.msa:Hmmer3" />
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0" />
     <sniffer type="galaxy.datatypes.msa:MauveXmfa" />
+    <sniffer type="galaxy.datatypes.msa:InfernalCM"/>
+    <sniffer type="galaxy.datatypes.annotation:SnapHmm" />
     <sniffer type="galaxy.datatypes.binary:Cel" />
     <sniffer type="galaxy.datatypes.binary:RData" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
@@ -768,5 +829,6 @@
     <sniffer type="galaxy.datatypes.binary:OxliStopTags"/>
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
+    <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
   </sniffers>
 </datatypes>

@@ -6,12 +6,12 @@ reloading the toolbox, etc., across multiple processes.
 import logging
 import threading
 
-import galaxy.queues
-from galaxy import util
-
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
+
+import galaxy.queues
+from galaxy import util
 
 logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
@@ -130,6 +130,8 @@ def reload_data_managers(app, **kwargs):
     app.data_managers._reload_count = reload_count + 1
     if hasattr(app, 'tool_cache'):
         app.tool_cache.reset_status()
+    if hasattr(app, 'watchers'):
+        app.watchers.update_watch_data_table_paths()
     log.debug("Data managers reloaded %s", reload_timer)
 
 

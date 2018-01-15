@@ -1,15 +1,17 @@
 """
 Universe configuration builder.
 """
-import os
-import re
 import logging
 import logging.config
-import ConfigParser
+import os
+import re
 from datetime import timedelta
+
+from six.moves import configparser
+
 from galaxy.util import string_as_bool
-from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.version import VERSION, VERSION_MAJOR
+from galaxy.web.formatting import expand_pretty_datetime_format
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +37,7 @@ class Configuration(object):
         self.__parse_config_file_options(kwargs)
 
         # Collect the umask and primary gid from the environment
-        self.umask = os.umask(077)  # get the current umask
+        self.umask = os.umask(0o77)  # get the current umask
         os.umask(self.umask)  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         self.version_major = VERSION_MAJOR
@@ -103,7 +105,6 @@ class Configuration(object):
         self.smtp_username = kwargs.get('smtp_username', None)
         self.smtp_password = kwargs.get('smtp_password', None)
         self.smtp_ssl = kwargs.get('smtp_ssl', None)
-        self.start_job_runners = kwargs.get('start_job_runners', None)
         self.email_from = kwargs.get('email_from', None)
         self.nginx_upload_path = kwargs.get('nginx_upload_path', False)
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
@@ -121,12 +122,6 @@ class Configuration(object):
         self.log_events = False
         self.cloud_controller_instance = False
         self.server_name = ''
-        self.job_manager = ''
-        self.default_job_handlers = []
-        self.default_cluster_job_runner = 'local:///'
-        self.job_handlers = []
-        self.tool_handlers = []
-        self.tool_runners = []
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
@@ -137,7 +132,7 @@ class Configuration(object):
         self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None)
         # Parse global_conf and save the parser
         global_conf = kwargs.get('global_conf', None)
-        global_conf_parser = ConfigParser.ConfigParser()
+        global_conf_parser = configparser.ConfigParser()
         self.global_conf_parser = global_conf_parser
         if global_conf and "__file__" in global_conf:
             global_conf_parser.read(global_conf['__file__'])
@@ -165,13 +160,13 @@ class Configuration(object):
             return None
 
     def __parse_config_file_options(self, kwargs):
-        defaults = dict(
+        path_list_defaults = dict(
             auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
             datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
             shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
         )
 
-        for var, defaults in defaults.items():
+        for var, defaults in path_list_defaults.items():
             if kwargs.get(var, None) is not None:
                 path = kwargs.get(var)
             else:
@@ -244,7 +239,7 @@ def get_database_engine_options(kwargs):
     prefix = "database_engine_option_"
     prefix_len = len(prefix)
     rval = {}
-    for key, value in kwargs.iteritems():
+    for key, value in kwargs.items():
         if key.startswith(prefix):
             key = key[prefix_len:]
             if key in conversions:

@@ -31,7 +31,7 @@ def __main__():
                     if not spec or not chrom:
                         spec = chrom = c.src
                     species.add(spec)
-        except:
+        except Exception:
             print("Invalid MAF file specified", file=sys.stderr)
             return
 

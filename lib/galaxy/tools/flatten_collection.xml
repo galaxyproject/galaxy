@@ -9,9 +9,9 @@
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" />
         <param type="select" name="join_identifier" label="Join collection identifiers using" help="">
-            <option value="_">_</option>
-            <option value=":">:</option>
-            <option value="-">-</option>
+            <option value="_">underscore ( _ )</option>
+            <option value=":">colon ( : )</option>
+            <option value="-">dash ( - )</option>
         </param>
     </inputs>
     <outputs>

@@ -2,9 +2,11 @@
 Sample script for Galaxy Search API
 """
 from __future__ import print_function
+
 import json
-import requests
 import sys
+
+import requests
 
 
 class RemoteGalaxy(object):

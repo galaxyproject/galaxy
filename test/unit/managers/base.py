@@ -3,18 +3,13 @@
 from __future__ import print_function
 
 import json
-import os
-import sys
 import unittest
 
 import sqlalchemy
 from six import string_types
 
 from galaxy.managers.users import UserManager
-
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock
+from ..unittest_utils import galaxy_mock
 
 # =============================================================================
 admin_email = 'admin@admin.admin'
