@@ -90,7 +90,7 @@ ecdsa==0.13
 # GenomeSpace dependencies
 python-genomespaceclient==0.1.8
 
-# OpendID Connect
+# OpendID Connect & OAuth2.0
 oauthlib==1.0.3
 pyjwkest==1.4.0
 PyJWT==1.4.0
