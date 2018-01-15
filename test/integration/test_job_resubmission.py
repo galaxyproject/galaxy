@@ -8,6 +8,8 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.xml")
 JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_default_job_conf.xml")
 JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_dynamic_job_conf.xml")
+JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_small_memory_job_conf.xml")
+JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_small_memory_resubmission_to_large_job_conf.xml")
 JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml")
 
 
@@ -15,12 +17,12 @@ class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase
     framework_tool_and_types = True
 
     def _assert_job_passes(self, resource_parameters={}):
-        self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
+        self._run_tool_test("exit_code_oom", resource_parameters=resource_parameters)
 
     def _assert_job_fails(self, resource_parameters={}):
         exception_thrown = False
         try:
-            self._run_tool_test("simple_constructs", resource_parameters=resource_parameters)
+            self._run_tool_test("exit_code_oom", resource_parameters=resource_parameters)
         except Exception:
             exception_thrown = True
 
@@ -125,6 +127,28 @@ class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTes
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE
+
+    def test_dynamic_resubmission(self):
+        self._assert_job_passes()
+
+
+# Verify the test tool fails if only a small amount of memory is allocated.
+class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE
+
+    def test_dynamic_resubmission(self):
+        self._assert_job_fails()
+
+
+# Verify the test tool fails if only a small amount of memory is allocated.
+class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
         self._assert_job_passes()

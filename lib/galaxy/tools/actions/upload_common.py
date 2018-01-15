@@ -448,7 +448,7 @@ def create_paramfile(trans, uploaded_datasets):
                         auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
                         purge_source=purge_source,
                         space_to_tab=uploaded_dataset.space_to_tab,
-                        run_as_real_user=trans.app.config.external_chown_script is None,
+                        run_as_real_user=trans.app.config.external_chown_script is not None,
                         check_content=trans.app.config.check_upload_content,
                         path=uploaded_dataset.path)
             # TODO: This will have to change when we start bundling inputs.

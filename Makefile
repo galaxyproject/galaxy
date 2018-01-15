@@ -18,6 +18,7 @@ SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
+YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -127,7 +128,13 @@ update-and-commit-dependencies:  ## update and commit linting + dev dependencies
 	sh lib/galaxy/dependencies/pipfiles/update.sh -c
 
 node-deps: ## Install NodeJS dependencies.
+ifndef YARN
+	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	false;
+else
 	cd client && yarn install --check-files
+endif
+	
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build

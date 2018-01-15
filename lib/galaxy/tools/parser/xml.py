@@ -327,9 +327,15 @@ class XmlToolSource(ToolSource):
         detect_errors = None
         if command_el is not None:
             detect_errors = command_el.get("detect_errors")
+
         if detect_errors and detect_errors != "default":
             if detect_errors == "exit_code":
-                return error_on_exit_code()
+                oom_exit_code = None
+                if command_el is not None:
+                    oom_exit_code = command_el.get("oom_exit_code", None)
+                if oom_exit_code is not None:
+                    int(oom_exit_code)
+                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:

@@ -302,9 +302,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             return []
         params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
         jobs = []
-        for param_dump in params_dump:
+        for param_dump, param in zip(params_dump, all_params):
             job = self.job_search.by_tool_input(trans=trans,
                                                 tool_id=tool_id,
+                                                tool_version=tool.version,
+                                                param=param,
                                                 param_dump=param_dump,
                                                 job_state=payload.get('state'))
             if job:

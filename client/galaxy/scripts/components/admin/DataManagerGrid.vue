@@ -24,24 +24,24 @@
 
 <script>
 export default {
-  props: {
-    dataManagerTableName: {
-      type: String,
-      required: true
+    props: {
+        dataManagerTableName: {
+            type: String,
+            required: true
+        },
+        dataManagerColumns: {
+            type: Array,
+            required: true
+        },
+        dataManagerItems: {
+            type: Array,
+            required: true
+        }
     },
-    dataManagerColumns: {
-      type: Array,
-      required: true
-    },
-    dataManagerItems: {
-      type: Array,
-      required: true
+    methods: {
+        handleReloadButtonClick(event) {
+            this.$emit("reloaddatamanager", this.dataManagerTableName);
+        }
     }
-  },
-  methods: {
-    handleReloadButtonClick(event) {
-        this.$emit('reloaddatamanager', this.dataManagerTableName);
-    }
-  }
-}
+};
 </script>

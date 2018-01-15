@@ -141,22 +141,21 @@
         hda_dicts.append( hda_dict )
 %>
     ${parent.javascripts()}
+    ${h.js("bundled/extended.bundled")}
 
     ## load edit views for each of the hdas
     <script type="text/javascript">
         define( 'display-structured', function(){
-            require([ 'mvc/history/hda-li-edit', 'mvc/history/hda-model' ], function( hdaEdit, hdaModel ){
-                var hdaJSON = ${ h.dumps( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
+            var hdaJSON = ${ h.dumps( hda_dicts, indent=( 2 if trans.debug else 0 ) ) };
 
-                window.hdas = hdaJSON.map( function( hda ){
-                    return new hdaEdit.default.HDAListItemEdit({
-                        model           : new hdaModel.default.HistoryDatasetAssociation( hda ),
-                        el              : $( '#hda-' + hda.id ),
-                        linkTarget      : '_self',
-                        purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-                        logger          : Galaxy.logger
-                    }).render( 0 );
-                });
+            window.hdas = hdaJSON.map( function( hda ){
+                return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
+                    model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation( hda ),
+                    el              : $( '#hda-' + hda.id ),
+                    linkTarget      : '_self',
+                    purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
+                    logger          : Galaxy.logger
+                }).render( 0 );
             });
         });
 

@@ -109,6 +109,9 @@ class ConditionalDependencies(object):
         return ('ldap' in self.authenticators or
                 'activedirectory' in self.authenticators)
 
+    def check_python_pam(self):
+        return 'PAM' in self.authenticators
+
     def check_azure_storage(self):
         return 'azure_blob' in self.object_stores
 

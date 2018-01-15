@@ -5,6 +5,8 @@ import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
 
+var WYMeditor = window.WYMeditor;
+
 var CONTROLS = {
     // Item types.
     ITEM_HISTORY: "item_history",
@@ -487,7 +489,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
     }
 };
 
-export default function editor_onload() {
+export default function pagesEditorOnload() {
     // Generic error handling
     $(document).ajaxError((e, x) => {
         // console.log( e, x );

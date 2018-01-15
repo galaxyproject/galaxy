@@ -275,19 +275,19 @@ class BaseDatasetPopulator(object):
         data = {}
         if filename:
             data["filename"] = filename
-        display_response = self.__get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
+        display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.content
         return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
-        details_response = self.__get_contents_request(history_id, "/datasets/%s" % dataset_id)
+        details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
         assert details_response.status_code == 200
         return details_response.json()
 
     def get_history_collection_details(self, history_id, **kwds):
         hdca_id = self.__history_content_id(history_id, **kwds)
-        details_response = self.__get_contents_request(history_id, "/dataset_collections/%s" % hdca_id)
+        details_response = self._get_contents_request(history_id, "/dataset_collections/%s" % hdca_id)
         assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
@@ -320,7 +320,7 @@ class BaseDatasetPopulator(object):
             history_content_id = kwds["dataset"]["id"]
         else:
             hid = kwds.get("hid", None)  # If not hid, just grab last dataset
-            history_contents = self.__get_contents_request(history_id).json()
+            history_contents = self._get_contents_request(history_id).json()
             if hid:
                 history_content_id = None
                 for history_item in history_contents:
@@ -333,7 +333,7 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def __get_contents_request(self, history_id, suffix="", data={}):
+    def _get_contents_request(self, history_id, suffix="", data={}):
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)
@@ -461,9 +461,8 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
 
 class LibraryPopulator(object):
 
-    def __init__(self, api_test_case):
-        self.api_test_case = api_test_case
-        self.galaxy_interactor = api_test_case.galaxy_interactor
+    def __init__(self, galaxy_interactor):
+        self.galaxy_interactor = galaxy_interactor
 
     def new_private_library(self, name):
         library = self.new_library(name)
@@ -500,44 +499,57 @@ class LibraryPopulator(object):
 
     def user_private_role_id(self):
         user_email = self.user_email()
-        roles_response = self.api_test_case.galaxy_interactor.get("roles", admin=True)
+        roles_response = self.galaxy_interactor.get("roles", admin=True)
         users_roles = [r for r in roles_response.json() if r["name"] == user_email]
         assert len(users_roles) == 1
         return users_roles[0]["id"]
 
     def create_dataset_request(self, library, **kwds):
+        upload_option = kwds.get("upload_option", "upload_file")
         create_data = {
             "folder_id": kwds.get("folder_id", library["root_folder_id"]),
             "create_type": "file",
             "files_0|NAME": kwds.get("name", "NewFile"),
-            "upload_option": kwds.get("upload_option", "upload_file"),
+            "upload_option": upload_option,
             "file_type": kwds.get("file_type", "auto"),
             "db_key": kwds.get("db_key", "?"),
         }
-        files = {
-            "files_0|file_data": kwds.get("file", StringIO(kwds.get("contents", "TestData"))),
-        }
+
+        if upload_option == "upload_file":
+            files = {
+                "files_0|file_data": kwds.get("file", StringIO(kwds.get("contents", "TestData"))),
+            }
+        elif upload_option == "upload_paths":
+            create_data["filesystem_paths"] = kwds["paths"]
+            files = {}
+        elif upload_option == "upload_directory":
+            create_data["server_dir"] = kwds["server_dir"]
+            files = {}
+
         return create_data, files
 
     def new_library_dataset(self, name, **create_dataset_kwds):
         library = self.new_private_library(name)
         payload, files = self.create_dataset_request(library, **create_dataset_kwds)
-        url_rel = "libraries/%s/contents" % (library["id"])
-        dataset = self.api_test_case.galaxy_interactor.post(url_rel, payload, files=files).json()[0]
+        dataset = self.raw_library_contents_create(library["id"], payload, files=files).json()[0]
 
         def show():
-            return self.api_test_case.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
+            return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
 
         wait_on_state(show, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
+    def raw_library_contents_create(self, library_id, payload, files={}):
+        url_rel = "libraries/%s/contents" % library_id
+        return self.galaxy_interactor.post(url_rel, payload, files=files)
+
     def show_ldda(self, library_id, library_dataset_id):
-        return self.api_test_case.galaxy_interactor.get("libraries/%s/contents/%s" % (library_id, library_dataset_id))
+        return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library_id, library_dataset_id))
 
     def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
         library = self.new_private_library(library_name)
         payload, files = self.create_dataset_request(library, file_type="txt", contents="create_test")
-        create_response = self.api_test_case.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files)
+        create_response = self.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files)
         api_asserts.assert_status_code_is(create_response, 200)
         library_datasets = create_response.json()
         assert len(library_datasets) == 1

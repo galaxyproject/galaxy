@@ -259,7 +259,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("library_data")
     def test_library_data_param(self):
         with self.dataset_populator.test_history() as history_id:
-            ld = LibraryPopulator(self).new_library_dataset("lda_test_library")
+            ld = LibraryPopulator(self.galaxy_interactor).new_library_dataset("lda_test_library")
             inputs = {
                 "library_dataset": ld["ldda_id"],
                 "library_dataset_multiple": [ld["ldda_id"], ld["ldda_id"]]
@@ -302,6 +302,25 @@ class ToolsTestCase(api.ApiTestCase):
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             self.assertEqual(output1_content.strip(), "Cat1Test")
+
+    @skip_without_tool("cat1")
+    def test_run_cat1_use_cached_job(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Run simple non-upload tool with an input data parameter.
+            new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test')
+            inputs = dict(
+                input1=dataset_to_param(new_dataset),
+            )
+            outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run_cat1(history_id, inputs=inputs, use_cached_job=False, assert_ok=True, wait_for_job=True)
+            outputs_three = self._run_cat1(history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True)
+            dataset_details = []
+            for output in [outputs_one, outputs_two, outputs_three]:
+                output_id = output['outputs'][0]['id']
+                dataset_details.append(self._get("datasets/%s" % output_id).json())
+            filenames = [dd['file_name'] for dd in dataset_details]
+            assert len(filenames) == 3, filenames
+            assert len(set(filenames)) <= 2, filenames
 
     @skip_without_tool("cat1")
     def test_run_cat1_listified_param(self):
@@ -1384,10 +1403,10 @@ class ToolsTestCase(api.ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         return create_response.json()['outputs']
 
-    def _run_cat1(self, history_id, inputs, assert_ok=False):
-        return self._run('cat1', history_id, inputs, assert_ok=assert_ok)
+    def _run_cat1(self, history_id, inputs, assert_ok=False, **kwargs):
+        return self._run('cat1', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id, history_id, inputs, assert_ok=False, tool_version=None):
+    def _run(self, tool_id, history_id, inputs, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
@@ -1395,7 +1414,11 @@ class ToolsTestCase(api.ApiTestCase):
         )
         if tool_version is not None:
             payload["tool_version"] = tool_version
+        if use_cached_job:
+            payload['use_cached_job'] = True
         create_response = self._post("tools", data=payload)
+        if wait_for_job:
+            self.dataset_populator.wait_for_job(job_id=create_response.json()['jobs'][0]['id'])
         if assert_ok:
             self._assert_status_code_is(create_response, 200)
             create = create_response.json()

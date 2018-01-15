@@ -296,21 +296,21 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         if not preferences:
             return []
-        data = []
-        # Get data if present
-        data_key = "extra_user_preferences"
-        if data_key in user.preferences:
-            data = json.loads(user.preferences[data_key])
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
         for item, value in preferences.items():
             if value is not None:
                 for input in value["inputs"]:
-                    input['help'] = 'Required' if input['required'] else ''
+                    help = input.get('help', '')
+                    required = 'Required' if util.string_as_bool(input.get('required')) else ''
+                    if help:
+                        input['help'] = "%s %s" % (help, required)
+                    else:
+                        input['help'] = required
                     field = item + '|' + input['name']
-                    for data_item in data:
+                    for data_item in user.extra_preferences:
                         if field in data_item:
-                            input['value'] = data[data_item]
+                            input['value'] = user.extra_preferences[data_item]
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
@@ -455,9 +455,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
 
         # Update values for extra user preference items
         extra_user_pref_data = dict()
-        get_extra_pref_keys = self._get_extra_user_preferences(trans)
-        if get_extra_pref_keys is not None:
-            for key in get_extra_pref_keys:
+        extra_pref_keys = self._get_extra_user_preferences(trans)
+        if extra_pref_keys is not None:
+            for key in extra_pref_keys:
                 key_prefix = key + '|'
                 for item in payload:
                     if item.startswith(key_prefix):
@@ -465,7 +465,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                         if payload[item] == "":
                             # Raise an exception when a required field is empty while saving the form
                             keys = item.split("|")
-                            section = get_extra_pref_keys[keys[0]]
+                            section = extra_pref_keys[keys[0]]
                             for input in section['inputs']:
                                 if input['name'] == keys[1] and input['required']:
                                     raise MessageException("Please fill the required field")

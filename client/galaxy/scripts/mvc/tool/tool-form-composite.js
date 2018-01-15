@@ -119,7 +119,7 @@ var View = Backbone.View.extend({
                         input.help = input.step_linked ? `${input.help}, ` : "";
                         input.help += `Output dataset '${connection.output_name}' from step ${parseInt(i) + 1}`;
                         input.step_linked = input.step_linked || [];
-                        input.step_linked.push(step);
+                        input.step_linked.push({ index: step.index, step_type: step.step_type });
                     }
                 });
             });
@@ -200,6 +200,7 @@ var View = Backbone.View.extend({
         this._renderMessage();
         this._renderParameters();
         this._renderHistory();
+        this._renderUseCachedJob();
         _.each(this.steps, step => {
             self._renderStep(step);
         });
@@ -309,6 +310,39 @@ var View = Backbone.View.extend({
             ]
         });
         this._append(this.$steps, this.history_form.$el);
+    },
+
+    /** Render job caching option */
+    _renderUseCachedJob: function() {
+        var extra_user_preferences = {};
+        if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
+            extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+        }
+        var display_use_cached_job_checkbox =
+            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
+                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"]
+                : false;
+        this.display_use_cached_job_checkbox = display_use_cached_job_checkbox === "true";
+        if (this.display_use_cached_job_checkbox) {
+            this.job_options_form = new Form({
+                cls: "ui-portlet-narrow",
+                title: "<b>Job re-use Options</b>",
+                inputs: [
+                    {
+                        type: "conditional",
+                        name: "use_cached_job",
+                        test_param: {
+                            name: "check",
+                            label: "BETA: Attempt to reuse jobs with identical parameters?",
+                            type: "boolean",
+                            value: "false",
+                            help: "This may skip executing jobs that you have already run."
+                        }
+                    }
+                ]
+            });
+            this._append(this.$steps, this.job_options_form.$el);
+        }
     },
 
     /** Render step */
@@ -510,6 +544,9 @@ var View = Backbone.View.extend({
             // so that inputs can be batched.
             batch: true
         };
+        if (this.display_use_cached_job_checkbox) {
+            job_def["use_cached_job"] = this.job_options_form.data.create()["use_cached_job|check"] === "true";
+        }
         var validated = true;
         for (var i in this.forms) {
             var form = this.forms[i];

@@ -5,7 +5,7 @@ import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 /** View of the individual workflows */
-var WorkflowItemView = Backbone.View.extend({
+const WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
     initialize: function() {
         _.bindAll(
@@ -33,15 +33,20 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     showInToolPanel: function() {
-        this.model.set("show_in_tool_panel", !this.model.get("show_in_tool_panel"));
-        this.model.save();
         // This reloads the whole page, so that the workflow appears in the tool panel.
         // Ideally we would notify only the tool panel of a change
-        window.location = `${Galaxy.root}workflows/list`;
+        this.model.save(
+            { show_in_tool_panel: !this.model.get("show_in_tool_panel") },
+            {
+                success: function() {
+                    window.location = `${Galaxy.root}workflows/list`;
+                }
+            }
+        );
     },
 
     removeWorkflow: function() {
-        var wfName = this.model.get("name");
+        const wfName = this.model.get("name");
         if (window.confirm(`Are you sure you want to delete workflow '${wfName}'?`)) {
             this.model.destroy({
                 success: function() {
@@ -53,8 +58,8 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     renameWorkflow: function() {
-        var oldName = this.model.get("name");
-        var newName = window.prompt(`Enter a new Name for workflow '${oldName}'`, oldName);
+        const oldName = this.model.get("name");
+        const newName = window.prompt(`Enter a new Name for workflow '${oldName}'`, oldName);
         if (newName) {
             this.model.save(
                 { name: newName },
@@ -69,16 +74,15 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
-        var self = this;
-        var oldName = this.model.get("name");
+        const oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
-            var newName = `Copy of ${oldName}`;
-            var currentOwner = self.model.get("owner");
+            let newName = `Copy of ${oldName}`;
+            const currentOwner = this.model.get("owner");
             if (currentOwner != Galaxy.user.attributes.username) {
                 newName += ` shared by user ${currentOwner}`;
             }
             wfJson.name = newName;
-            self.collection.create(wfJson, {
+            this.collection.create(wfJson, {
                 at: 0,
                 wait: true,
                 success: function() {
@@ -96,12 +100,12 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     _rowTemplate: function() {
-        var show = this.model.get("show_in_tool_panel");
-        var wfId = this.model.id;
-        var checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
+        let show = this.model.get("show_in_tool_panel");
+        let wfId = this.model.id;
+        const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
             show ? `checked="${show}"` : ""
         } value="${wfId}">`;
-        var trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
+        const trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
             this.model.get("name")
         )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${wfId} tags-display"></div></td><td>${
             this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")
@@ -112,7 +116,7 @@ var WorkflowItemView = Backbone.View.extend({
     },
 
     renderTagEditor: function() {
-        var TagEditor = new TAGS.TagsEditor({
+        const TagEditor = new TAGS.TagsEditor({
             model: this.model,
             el: $.find(`.${this.model.id}.tags-display`),
             workflow_mode: true
@@ -150,7 +154,7 @@ var WorkflowItemView = Backbone.View.extend({
 });
 
 /** View of the main workflow list page */
-var WorkflowListView = Backbone.View.extend({
+const WorkflowListView = Backbone.View.extend({
     title: _l("Workflows"),
     initialize: function() {
         this.setElement("<div/>");
@@ -180,18 +184,16 @@ var WorkflowListView = Backbone.View.extend({
         // TODO: check that file is valid galaxy workflow
         this.unhighlightDropZone();
         e.preventDefault();
-        var files = e.dataTransfer.files;
-        var self = this;
-        for (var i = 0, f; (f = files[i]); i++) {
-            self.readWorkflowFiles(f);
+        const files = e.dataTransfer.files;
+        for (let i = 0, f; (f = files[i]); i++) {
+            this.readWorkflowFiles(f);
         }
     },
 
     readWorkflowFiles: function(f) {
-        var self = this;
-        var reader = new FileReader();
+        const reader = new FileReader();
         reader.onload = theFile => {
-            var wf_json;
+            let wf_json;
             try {
                 wf_json = JSON.parse(reader.result);
             } catch (e) {
@@ -199,7 +201,7 @@ var WorkflowListView = Backbone.View.extend({
                 wf_json = null;
             }
             if (wf_json) {
-                self.collection.create(wf_json, {
+                this.collection.create(wf_json, {
                     at: 0,
                     wait: true,
                     success: function() {
@@ -216,8 +218,8 @@ var WorkflowListView = Backbone.View.extend({
 
     _showArgErrors: _.once(() => {
         // Parse args out of params, display if there's a message.
-        var msg_text = QueryStringParsing.get("message");
-        var msg_status = QueryStringParsing.get("status");
+        const msg_text = QueryStringParsing.get("message");
+        const msg_status = QueryStringParsing.get("status");
         if (msg_status === "error") {
             mod_toastr.error(_.escape(msg_text || "Unknown Error, please report this to an administrator."));
         } else if (msg_text) {
@@ -227,18 +229,17 @@ var WorkflowListView = Backbone.View.extend({
 
     render: function() {
         // Add workflow header
-        var header = this._templateHeader();
+        const header = this._templateHeader();
         // Add the actions buttons
-        var templateActions = this._templateActionButtons();
-        var tableTemplate = this._templateWorkflowTable();
+        const templateActions = this._templateActionButtons();
+        const tableTemplate = this._templateWorkflowTable();
         this.$el.html(header + templateActions + tableTemplate);
-        var self = this;
         _(this.collection.models).each(item => {
             // in case collection is not empty
-            self.appendItem(item);
-            self.confirmDelete(item);
+            this.appendItem(item);
+            this.confirmDelete(item);
         }, this);
-        var minQueryLength = 3;
+        const minQueryLength = 3;
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
         this._showArgErrors();
@@ -246,7 +247,7 @@ var WorkflowListView = Backbone.View.extend({
     },
 
     appendItem: function(item) {
-        var workflowItemView = new WorkflowItemView({
+        const workflowItemView = new WorkflowItemView({
             model: item,
             collection: this.collection
         });
@@ -256,7 +257,7 @@ var WorkflowListView = Backbone.View.extend({
 
     /** Add confirm box before removing/unsharing workflow */
     confirmDelete: function(workflow) {
-        var $el_shared_wf_link = this.$(`.link-confirm-shared-${workflow.id}`);
+        const $el_shared_wf_link = this.$(`.link-confirm-shared-${workflow.id}`);
         $el_shared_wf_link.click(() =>
             window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)
         );
@@ -265,12 +266,12 @@ var WorkflowListView = Backbone.View.extend({
     /** Implement client side workflow search/filtering */
     searchWorkflow: function($el_searchinput, $el_tabletr, min_querylen) {
         $el_searchinput.on("keyup", function() {
-            var query = $(this).val();
+            const query = $(this).val();
             // Filter when query is at least 3 characters
             // otherwise show all rows
             if (query.length >= min_querylen) {
                 // Ignore the query's case using 'i'
-                var regular_expression = new RegExp(query, "i");
+                const regular_expression = new RegExp(query, "i");
                 $el_tabletr.hide();
                 $el_tabletr
                     .filter(function() {
@@ -311,7 +312,7 @@ var WorkflowListView = Backbone.View.extend({
 
     /** Template for workflow table */
     _templateWorkflowTable: function() {
-        var tableHtml =
+        const tableHtml =
             '<table class="table colored"><thead>' +
             '<tr class="header">' +
             "<th>Name</th>" +
@@ -339,7 +340,7 @@ var WorkflowListView = Backbone.View.extend({
     }
 });
 
-var ImportWorkflowView = Backbone.View.extend({
+const ImportWorkflowView = Backbone.View.extend({
     initialize: function() {
         this.setElement("<div/>");
         this.render();
@@ -347,9 +348,8 @@ var ImportWorkflowView = Backbone.View.extend({
 
     /** Open page to import workflow */
     render: function() {
-        var self = this;
         $.getJSON(`${Galaxy.root}workflow/upload_import_workflow`, options => {
-            self.$el.empty().append(self._mainTemplate(options));
+            this.$el.empty().append(this._mainTemplate(options));
         });
     },
 
