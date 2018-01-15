@@ -3,7 +3,7 @@
     <provider name="Google">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
-        <redirect_uri> ... </redirect_uri>
+        <redirect_uri>http://localhost:8080/authnz/google/callback</redirect_uri>
 
         <!--The value of this parameter specifies whether the Google authorization server should prompt a galaxy
           user for (re)authorization and consent. The possible values are: `none`, `consent`, and `select_account`.
