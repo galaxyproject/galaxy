@@ -1,6 +1,6 @@
 """
-Contains implementations for authentication and authorization against third-party
-OAuth2.0 authorization servers and OpenID Connect Identity providers.
+Contains implementations for authentication and authorization against an
+OpenID Connect (OIDC) Identity Provider (IdP).
 
 This package follows "authorization code flow" authentication protocol to authenticate
 Galaxy users against third-party identity providers.
@@ -9,33 +9,30 @@ Additionally, this package implements functionalist's to request temporary acces
 credentials for cloud-based resource providers (e.g., Amazon AWS, Microsoft Azure).
 """
 
-import logging
-import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import ParseError
-
-log = logging.getLogger(__name__)
-
 
 class IdentityProvider(object):
     """
     OpenID Connect Identity Provider abstract interface.
     """
 
-    def __init__(self, config):
+    def __init__(self, provider, config):
         """
         Initialize the identity provider using the provided configuration,
         and raise a ParseError (or any more related specific exception) in
         case the configuration is malformed.
 
+        :type provider: string
+        :param provider: is the name of the identity provider (e.g., Google).
+
         :type config: xml.etree.ElementTree.Element
         :param config: Is the configuration element of the provider
-            from the configuration file (e.g., OAuth2_config.xml).
+            from the configuration file (e.g., oidc_config.xml).
             This element contains the all the provider-specific
             configuration elements.
         """
         raise NotImplementedError()
 
-    def authenticate(self, trans):
+    def authenticate(self, provider, trans):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user
         is authenticated, if not, it generates a provider-specific
@@ -49,7 +46,7 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
-    def callback(self, state_token, authz_code, trans):
+    def callback(self, state_token, authz_code, trans, login_redirect_url):
         """
         Handles authentication call-backs from identity providers.
         This process maps `state-token` to a user
@@ -67,72 +64,5 @@ class IdentityProvider(object):
         """
         raise NotImplementedError()
 
-
-class AuthnzManager(object):
-
-    def __init__(self, config):
-        """
-        :type config: string
-        :param config: sets the path for OAuth2.0 configuration
-            file (e.g., OAuth2_config.xml).
-        """
-        self._parse_config(config)
-
-    def _parse_config(self, config):
-        self.providers = {}
-        try:
-            tree = ET.parse(config)
-            root = tree.getroot()
-            if root.tag != 'OAuth2.0':
-                raise ParseError("The root element in OAuth2.0 config xml file is expected to be `OAuth2.0`, "
-                                 "found `{}` instead -- unable to continue.".format(root.tag))
-            for child in root:
-                if child.tag != 'provider':
-                    log.error("Expect a node with `provider` tag, found a node with `{}` tag instead; "
-                              "skipping the node.".format(child.tag))
-                    continue
-                if 'name' not in child.attrib:
-                    log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
-                    continue
-                provider = child.get('name')
-                try:
-                    if provider == 'Google':
-                        from .oidc_idp_google import OIDCIdPGoogle
-                        self.providers[provider] = OIDCIdPGoogle(child)
-                except ParseError:
-                    log.error("Could not initialize `{}` identity provider; skipping this node.".format(provider))
-                    continue
-            if len(self.providers) == 0:
-                raise ParseError("No valid provider configuration parsed.")
-        except ImportError:
-            raise
-        except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config, e.message))
-        except Exception:
-            raise ParseError("Malformed OAuth2.0 Configuration XML -- unable to continue.")
-
-    def authenticate(self, provider, trans):
-        """
-        :type provider: string
-        :param provider: set the name of the identity provider to be
-            used for authentication flow.
-        :type trans: GalaxyWebTransaction
-        :param trans: Galaxy web transaction.
-        :return: an identity provider specific authentication redirect URI.
-        """
-        if provider in self.providers:
-            try:
-                return self.providers[provider].authenticate(trans)
-            except:
-                raise
-        else:
-            log.error("The provider '{}' is not a recognized and expected provider.".format(provider))
-
-    def callback(self, provider, state_token, authz_code, trans):
-        if provider in self.providers:
-            try:
-                return self.providers[provider].callback(state_token, authz_code, trans)
-            except:
-                raise
-        else:
-            raise NameError("The provider '{}' is not a recognized and expected provider.".format(provider))
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+        raise NotImplementedError()

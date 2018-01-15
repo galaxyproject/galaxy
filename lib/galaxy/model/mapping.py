@@ -9,6 +9,7 @@ from sqlalchemy import (
     and_,
     asc,
     Boolean,
+    BOOLEAN,
     Column,
     DateTime,
     desc,
@@ -25,7 +26,8 @@ from sqlalchemy import (
     Text,
     true,
     Unicode,
-    UniqueConstraint
+    UniqueConstraint,
+    VARCHAR
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -91,16 +93,46 @@ model.UserOpenID.table = Table(
     Column("openid", TEXT, index=True, unique=True),
     Column("provider", TrimmedString(255)))
 
-model.UserOAuth2.table = Table(
-    "galaxy_user_oauth2", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
-    Column("provider", String, nullable=False),
-    Column("state_token", String, nullable=False, index=True),
-    Column("id_token", String),
-    Column("refresh_token", String),
-    Column("expiration_date", DateTime),
-    Column("access_token", String))
+model.PSAAssociation.table = Table(
+    "psa_association", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('handle', VARCHAR(255)),
+    Column('secret', VARCHAR(255)),
+    Column('issued', Integer),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
+model.PSACode.table = Table(
+    "psa_code", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('email', VARCHAR(200)),
+    Column('code', VARCHAR(32)))
+
+model.PSANonce.table = Table(
+    "psa_nonce", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('timestamp', Integer),
+    Column('salt', VARCHAR(40)))
+
+model.PSAPartial.table = Table(
+    "psa_partial", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('token', VARCHAR(32)),
+    Column('data', TEXT),
+    Column('next_step', Integer),
+    Column('backend', VARCHAR(32)))
+
+model.UserAuthnzToken.table = Table(
+    "oidc_user_authnz_tokens", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('uid', VARCHAR(255)),
+    Column('provider', VARCHAR(32)),
+    Column('extra_data', TEXT),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
@@ -1432,9 +1464,18 @@ mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
         order_by=desc(model.UserOpenID.table.c.update_time))
 ))
 
-mapper(model.UserOAuth2, model.UserOAuth2.table, properties=dict(
+mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
+
+mapper(model.PSACode, model.PSACode.table, properties=None)
+
+mapper(model.PSANonce, model.PSANonce.table, properties=None)
+
+mapper(model.PSAPartial, model.PSAPartial.table, properties=None)
+
+mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
-        primaryjoin=(model.UserOAuth2.table.c.user_id == model.User.table.c.id))
+                  primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='social_auth')
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
