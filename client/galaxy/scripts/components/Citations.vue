@@ -57,7 +57,10 @@ export default {
     },
     computed: {
         formattedReferences: function() {
-            return this.citations.reduce((a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`), "");
+            return this.citations.reduce(
+                (a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`),
+                ""
+            );
         }
     },
     created: function() {
@@ -187,16 +190,16 @@ export default {
 };
 </script>
 <style>
-.citations-formatted{
+.citations-formatted {
     word-wrap: break-word;
 }
 
-.citations-bibtex-text{
+.citations-bibtex-text {
     width: 100%;
     height: 500px;
 }
 
-.citation-padding{
-    padding:5px 10px;
+.citation-padding {
+    padding: 5px 10px;
 }
 </style>

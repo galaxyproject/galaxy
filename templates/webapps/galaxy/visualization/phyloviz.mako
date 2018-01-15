@@ -138,41 +138,23 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/require" )}
 
     <script type="text/javascript">
 
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts')}",
-            shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/d3": { exports: "d3" }
-            },
-            urlArgs: 'v=${app.server_starttime}'
-        });
+        $(function(){
+            var config = ${ h.dumps( config )};
+            var data = ${h.dumps(data['data'])};
 
-        require(["viz/phyloviz"], function(phyloviz_mod) {
-
-            function initPhyloViz(data, config) {
-                var phyloviz;
-
-                // -- Initialization code |-->
-                phyloviz = new phyloviz_mod.default.PhylovizView({
-                    data    : data,
-                    layout  : "Linear",
-                    config  :  config
-                });
-
-                // -- Render viz. --
-                phyloviz.render();
-
-            };
-
-            $(function firstVizLoad(){       // calls when viz is loaded for the first time
-                var config = ${ h.dumps( config )};
-                var data = ${h.dumps(data['data'])};
-                initPhyloViz(data, config);
+            // -- Initialization code |-->
+            var phyloviz = new bundleEntries.phyloviz({
+                data    : data,
+                layout  : "Linear",
+                config  :  config
             });
+
+            // -- Render viz. --
+            phyloviz.render();
+
         });
 
     </script>

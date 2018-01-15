@@ -1,0 +1,33 @@
+<tool id="exit_code_oom" name="exit_code_oom">
+    <!-- tool errors out with identified OOM error if less than 10MB are allocated. -->
+    <command detect_errors="exit_code" oom_exit_code="42"><![CDATA[
+        echo 'Hello' > '$out_file1';
+        echo "\$GALAXY_MEMORY_MB";
+        : \${GALAXY_MEMORY_MB:=20};
+        echo "\$GALAXY_MEMORY_MB";
+        if [ "\$GALAXY_MEMORY_MB" -lt 10 ];
+        then
+            exit 42;
+        else
+            exit 0;
+        fi
+    ]]></command>
+    <inputs>
+        <param name="input" type="integer" label="Dummy" value="6" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" />
+    </outputs>
+    <help>
+    </help>
+    <tests>
+        <test>
+            <param name="input" value="5" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="Hello" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

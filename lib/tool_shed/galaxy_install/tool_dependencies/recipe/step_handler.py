@@ -22,7 +22,7 @@ from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
 
-VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
+VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz'
 
 
 class CompressedFile(object):

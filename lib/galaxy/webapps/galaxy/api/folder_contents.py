@@ -92,7 +92,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
 
-            if content_item.api_type == 'file':
+            elif content_item.api_type == 'file':
                 #  Is the dataset public or private?
                 #  When both are False the dataset is 'restricted'
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency

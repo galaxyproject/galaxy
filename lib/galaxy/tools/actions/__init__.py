@@ -8,7 +8,7 @@ from six import string_types
 from galaxy import model
 from galaxy.exceptions import ObjectInvalid
 from galaxy.model import LibraryDatasetDatasetAssociation
-from galaxy.tools.parameters import update_param
+from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util import ExecutionTimer
@@ -195,7 +195,7 @@ class DefaultToolAction(object):
 
         return history, inp_data, inp_dataset_collections
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None):
+    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -223,7 +223,7 @@ class DefaultToolAction(object):
                 continue
 
             # Convert LDDA to an HDA.
-            if isinstance(data, LibraryDatasetDatasetAssociation):
+            if isinstance(data, LibraryDatasetDatasetAssociation) and not completed_job:
                 data = data.to_history_dataset_association(None)
                 inp_data[name] = data
 
@@ -246,13 +246,14 @@ class DefaultToolAction(object):
             inp_data.update({"chromInfo": db_dataset})
         incoming["chromInfo"] = chrom_info
 
-        # Determine output dataset permission/roles list
-        existing_datasets = [inp for inp in inp_data.values() if inp]
-        if existing_datasets:
-            output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
-        else:
-            # No valid inputs, we will use history defaults
-            output_permissions = app.security_agent.history_get_default_permissions(history)
+        if not completed_job:
+            # Determine output dataset permission/roles list
+            existing_datasets = [inp for inp in inp_data.values() if inp]
+            if existing_datasets:
+                output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            else:
+                # No valid inputs, we will use history defaults
+                output_permissions = app.security_agent.history_get_default_permissions(history)
 
         # Add the dbkey to the incoming parameters
         incoming["dbkey"] = input_dbkey
@@ -301,7 +302,18 @@ class DefaultToolAction(object):
                     inp_dataset_collections,
                     input_ext
                 )
-                data = app.model.HistoryDatasetAssociation(extension=ext, create_dataset=True, flush=False)
+                create_datasets = True
+                dataset = None
+
+                if completed_job:
+                    for output_dataset in completed_job.output_datasets:
+                        if output_dataset.name == name:
+                            create_datasets = False
+                            completed_data = output_dataset.dataset
+                            dataset = output_dataset.dataset.dataset
+                            break
+
+                data = app.model.HistoryDatasetAssociation(extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False)
                 if hidden is None:
                     hidden = output.hidden
                 if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
@@ -311,14 +323,17 @@ class DefaultToolAction(object):
                 if dataset_collection_elements is not None and name in dataset_collection_elements:
                     dataset_collection_elements[name].hda = data
                 trans.sa_session.add(data)
-                trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
+                if not completed_job:
+                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
             for _, tag in preserved_tags.items():
                 data.tags.append(tag.copy())
 
             # Must flush before setting object store id currently.
             # TODO: optimize this.
+
             trans.sa_session.flush()
-            object_store_populator.set_object_store_id(data)
+            if not completed_job:
+                object_store_populator.set_object_store_id(data)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -338,7 +353,12 @@ class DefaultToolAction(object):
             # Take dbkey from LAST input
             data.dbkey = str(input_dbkey)
             # Set state
-            data.blurb = "queued"
+            if completed_job:
+                data.blurb = completed_data.blurb
+                data.peek = completed_data.peek
+                data._metadata = completed_data._metadata
+            else:
+                data.blurb = "queued"
             # Set output label
             data.name = self.get_output_name(output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params)
             # Store output
@@ -447,45 +467,17 @@ class DefaultToolAction(object):
         if job_params:
             job.params = dumps(job_params)
         job.set_handler(tool.get_job_handler(job_params))
+        if completed_job:
+            job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            try:
-                old_job = trans.sa_session.query(app.model.Job).get(rerun_remap_job_id)
-                assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, job.id)
-                assert old_job.tool_id == job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, job.id, old_job.tool_id, job.tool_id)
-                if trans.user is not None:
-                    assert old_job.user_id == trans.user.id, '(%s/%s): Old user id (%s) does not match rerun user id (%s)' % (old_job.id, job.id, old_job.user_id, trans.user.id)
-                elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
-                    assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, job.id, old_job.session_id, galaxy_session.id)
-                else:
-                    raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, job.id))
-                # Duplicate PJAs before remap.
-                for pjaa in old_job.post_job_actions:
-                    job.add_post_job_action(pjaa.post_job_action)
-                for jtod in old_job.output_datasets:
-                    for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
-                        if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (trans.user is None and job_to_remap.session_id == galaxy_session.id):
-                            if job_to_remap.state == job_to_remap.states.PAUSED:
-                                job_to_remap.state = job_to_remap.states.NEW
-                            for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
-                                if hda.state == hda.states.PAUSED:
-                                    hda.state = hda.states.NEW
-                                    hda.info = None
-                            input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
-                            update_param(jtid.name, input_values, str(out_data[jtod.name].id))
-                            for p in job_to_remap.parameters:
-                                p.value = json.dumps(input_values[p.name])
-                            jtid.dataset = out_data[jtod.name]
-                            jtid.dataset.hid = jtod.dataset.hid
-                            log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
-                            trans.sa_session.add(job_to_remap)
-                            trans.sa_session.add(jtid)
-                    jtod.dataset.visible = False
-                    trans.sa_session.add(jtod)
-            except Exception:
-                log.exception('Cannot remap rerun dependencies.')
+            self._remap_job_on_rerun(trans=trans,
+                                     galaxy_session=galaxy_session,
+                                     rerun_remap_job_id=rerun_remap_job_id,
+                                     current_job=job,
+                                     out_data=out_data)
 
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
 
@@ -517,6 +509,67 @@ class DefaultToolAction(object):
             app.job_manager.job_queue.put(job.id, job.tool_id)
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
+
+    def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
+        """
+        Re-connect dependent datasets for a job that is being rerun (because it failed initially).
+
+        If a job fails, the user has the option to try the job again with changed parameters.
+        To be able to resume jobs that depend on this jobs output datasets we change the dependent's job
+        input datasets to be those of the job that is being rerun.
+        """
+        try:
+            old_job = trans.sa_session.query(trans.app.model.Job).get(rerun_remap_job_id)
+            assert old_job is not None, '(%s/%s): Old job id is invalid' % (rerun_remap_job_id, current_job.id)
+            assert old_job.tool_id == current_job.tool_id, '(%s/%s): Old tool id (%s) does not match rerun tool id (%s)' % (old_job.id, current_job.id, old_job.tool_id, current_job.tool_id)
+            if trans.user is not None:
+                assert old_job.user_id == trans.user.id, '(%s/%s): Old user id (%s) does not match rerun user id (%s)' % (old_job.id, current_job.id, old_job.user_id, trans.user.id)
+            elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
+                assert old_job.session_id == galaxy_session.id, '(%s/%s): Old session id (%s) does not match rerun session id (%s)' % (old_job.id, current_job.id, old_job.session_id, galaxy_session.id)
+            else:
+                raise Exception('(%s/%s): Remapping via the API is not (yet) supported' % (old_job.id, current_job.id))
+            # Duplicate PJAs before remap.
+            for pjaa in old_job.post_job_actions:
+                current_job.add_post_job_action(pjaa.post_job_action)
+            for p in old_job.parameters:
+                if p.name.endswith('|__identifier__'):
+                    current_job.parameters.append(p.copy())
+            remapped_hdas = {}
+            input_hdcas = set()
+            for jtod in old_job.output_datasets:
+                for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
+                    if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
+                            trans.user is None and job_to_remap.session_id == galaxy_session.id):
+                        if job_to_remap.state == job_to_remap.states.PAUSED:
+                            job_to_remap.state = job_to_remap.states.NEW
+                        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
+                            if hda.state == hda.states.PAUSED:
+                                hda.state = hda.states.NEW
+                                hda.info = None
+                        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+                        remapped_hdas[jtod.dataset] = out_data[jtod.name]
+                        for jtidca in job_to_remap.input_dataset_collections:
+                            input_hdcas.add(jtidca.dataset_collection)
+                        old_dataset_id = jtod.dataset_id
+                        new_dataset_id = out_data[jtod.name].id
+                        input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
+                        for p in job_to_remap.parameters:
+                            p.value = json.dumps(input_values[p.name])
+                        jtid.dataset = out_data[jtod.name]
+                        jtid.dataset.hid = jtod.dataset.hid
+                        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+                        trans.sa_session.add(job_to_remap)
+                        trans.sa_session.add(jtid)
+                for hdca in input_hdcas:
+                    hdca.collection.replace_failed_elements(remapped_hdas)
+                    if hdca.implicit_collection_jobs:
+                        for job in hdca.implicit_collection_jobs.jobs:
+                            if job.job_id == old_job.id:
+                                job.job_id = current_job.id
+                jtod.dataset.visible = False
+                trans.sa_session.add(jtod)
+        except Exception:
+            log.exception('Cannot remap rerun dependencies.')
 
     def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)

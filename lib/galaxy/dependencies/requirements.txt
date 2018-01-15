@@ -5,7 +5,7 @@ bx-python
 MarkupSafe
 PyYAML
 SQLAlchemy
-mercurial
+mercurial; python_version < '3.0'
 pycrypto
 # Flexible BAM index naming is new to main pysam
 pysam>=0.13

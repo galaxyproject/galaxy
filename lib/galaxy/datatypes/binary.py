@@ -267,27 +267,35 @@ class BamNative(Binary):
         return zip(file_paths, rel_paths)
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        with pysam.AlignmentFile(dataset.file_name, "rb") as bamfile:
-            ck_size = 300  # 300 lines
-            ck_data = ""
-            header_line_count = 0
-            if offset == 0:
-                ck_data = bamfile.text.replace('\t', ' ')
-                header_line_count = bamfile.text.count('\n')
-            else:
-                bamfile.seek(offset)
-            for line_number, alignment in enumerate(bamfile) :
-                # return only Header lines if 'header_line_count' exceeds 'ck_size'
-                # FIXME: Can be problematic if bam has million lines of header
-                offset = bamfile.tell()
-                if (line_number + header_line_count) > ck_size:
-                    break
-                else:
-                    bamline = alignment.tostring(bamfile)
-                    # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                    # Below code will remove spaces between each tag.
-                    bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
-                    ck_data = "%s\n%s" % (ck_data, bamline_modified)
+        if not offset == -1:
+            try:
+                with pysam.AlignmentFile(dataset.file_name, "rb") as bamfile:
+                    ck_size = 300  # 300 lines
+                    ck_data = ""
+                    header_line_count = 0
+                    if offset == 0:
+                        ck_data = bamfile.text.replace('\t', ' ')
+                        header_line_count = bamfile.text.count('\n')
+                    else:
+                        bamfile.seek(offset)
+                    for line_number, alignment in enumerate(bamfile) :
+                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
+                        # FIXME: Can be problematic if bam has million lines of header
+                        offset = bamfile.tell()
+                        if (line_number + header_line_count) > ck_size:
+                            break
+                        else:
+                            bamline = alignment.tostring(bamfile)
+                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
+                            # Below code will remove spaces between each tag.
+                            bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
+                            ck_data = "%s\n%s" % (ck_data, bamline_modified)
+            except Exception as e:
+                offset = -1
+                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+        else:
+            ck_data = ''
+            offset = -1
         return dumps({'ck_data': util.unicodify(ck_data),
                       'offset': offset})
 

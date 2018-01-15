@@ -148,6 +148,28 @@ var View = Backbone.View.extend({
                     "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run."
             });
         }
+
+        // Job Re-use Options
+        var extra_user_preferences = {};
+        if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
+            extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+        }
+        var use_cached_job =
+            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
+                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"]
+                : false;
+        if (use_cached_job === "true") {
+            options.inputs.push({
+                label: "BETA: Attempt to re-use jobs with identical parameters ?",
+                help: "This may skip executing jobs that you have already run",
+                name: "use_cached_job",
+                type: "select",
+                display: "radio",
+                ignore: "__ignore__",
+                value: "__ignore__",
+                options: [["No", false], ["Yes", true]]
+            });
+        }
     },
 
     /** Submit a regular job.
@@ -269,9 +291,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
-                            n
-                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

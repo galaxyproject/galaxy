@@ -3,6 +3,7 @@ Basic tool parameters.
 """
 from __future__ import print_function
 
+import cgi
 import logging
 import os
 import os.path
@@ -75,7 +76,6 @@ class ToolParameter(object, Dictifiable):
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
         self.tool = tool
-        self.refresh_on_change_values = []
         self.argument = input_source.get("argument")
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
@@ -544,6 +544,8 @@ class FileToolParameter(ToolParameter):
                 return value['local_filename']
             except KeyError:
                 return None
+        elif isinstance(value, cgi.FieldStorage):
+            return value.filename
         raise Exception("FileToolParameter cannot be persisted")
 
     def to_python(self, value, app):

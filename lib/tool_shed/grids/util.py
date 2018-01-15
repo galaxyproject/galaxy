@@ -71,9 +71,7 @@ def build_changeset_revision_select_field(trans, repository, selected_value=None
         name = 'changeset_revision_%d' % repository.id
     else:
         name = 'changeset_revision'
-    select_field = SelectField(name=name,
-                               refresh_on_change=True,
-                               refresh_on_change_values=refresh_on_change_values)
+    select_field = SelectField(name=name, refresh_on_change=True)
     for option_tup in options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option(option_tup[0], option_tup[1], selected=selected)

@@ -47,18 +47,8 @@
         .css( 'height', '100%' )
         .addClass( 'flex-vertical-container' );
 
-    require.config({
-        baseUrl : "${h.url_for( '/static/scripts' )}",
-        urlArgs: 'v=${app.server_starttime}'
-    })([
-        'mvc/history/history-view-annotated',
-        'mvc/history/copy-dialog',
-    ], function( panelMod, historyCopyDialog ){
-        // history module is already in the dpn chain from the panel. We can re-scope it here.
-        var HISTORY = require( 'mvc/history/history-model' );
-        var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
-
-        var HistoryContentsWithAnnotations = HISTORY_CONTENTS.default.HistoryContents.extend({
+    $(function(){
+        var HistoryContentsWithAnnotations = window.bundleEntries.HistoryContents.extend({
             _buildFetchData : function( options ){
                 console.log( '_buildFetchData:' );
                 options = options || {};
@@ -66,10 +56,10 @@
                     options.view = 'summary';
                     options.keys = 'annotation,tags';
                 }
-                return HISTORY_CONTENTS.default.HistoryContents.prototype._buildFetchData.call( this, options );
+                return window.bundleEntries.HistoryContents.prototype._buildFetchData.call( this, options );
             }
         });
-        var HistoryWithAnnotations = HISTORY.default.History.extend({
+        var HistoryWithAnnotations = window.bundleEntries.History.extend({
             contentsClass : HistoryContentsWithAnnotations
         });
 
@@ -78,16 +68,16 @@
         });
 
         $( '.history-copy-link' ).click( function( ev ){
-            historyCopyDialog.default( historyModel, { useImport: true, allowAll: false })
+            window.bundleEntries.HistoryCopyDialog( historyModel, { useImport: true, allowAll: false })
                 .done( function(){
                     var mainWindow = ( window && ( window !== window.parent ) )? window.top : window;
                     mainWindow.location.href = Galaxy.root;
                 });
         });
 
-        window.historyView = new panelMod.default.AnnotatedHistoryView({
+        window.historyView = new window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView({
             el              : $( "#history-" + historyJSON.id ),
-            className       : panelMod.default.AnnotatedHistoryView.prototype.className + ' wide',
+            className       : window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView.prototype.className + ' wide',
             model           : historyModel,
             show_deleted    : false,
             show_hidden     : false,

@@ -240,7 +240,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
 
                     # Set parameters. May be useful to look at metadata.py for creating parameters.
                     # TODO: there may be a better way to set parameters, e.g.:
-                    #   for name, value in tool.params_to_strings( incoming, trans.app ).iteritems():
+                    #   for name, value in tool.params_to_strings( incoming, trans.app ).items():
                     #       job.add_parameter( name, value )
                     # to make this work, we'd need to flesh out the HDA objects. The code below is
                     # relatively similar.

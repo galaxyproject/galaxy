@@ -104,7 +104,7 @@ def check_newlines(fname, bytes_to_read=52428800):
     return False
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix=None):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -166,7 +166,7 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix=None):
+def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice

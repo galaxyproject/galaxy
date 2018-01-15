@@ -1,3 +1,4 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -195,7 +196,7 @@
                 </div>
             %endif
         %else:
-            ${repository_type_select_field.get_html()}
+            ${render_select(repository_type_select_field)}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.

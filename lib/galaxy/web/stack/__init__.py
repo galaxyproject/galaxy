@@ -370,8 +370,8 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    import urllib2
-    urllib2._opener = None
+    from six.moves.urllib.request import install_opener
+    install_opener(None)
 
 
 if uwsgi:

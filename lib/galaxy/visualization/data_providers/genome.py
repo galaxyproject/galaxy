@@ -44,8 +44,8 @@ def get_bounds(reads, start_pos_index, end_pos_index):
     '''
     Returns the minimum and maximum position for a set of reads.
     '''
-    max_low = sys.maxint
-    max_high = -sys.maxint
+    max_low = sys.maxsize
+    max_high = -sys.maxsize
     for read in reads:
         if read[start_pos_index] < max_low:
             max_low = read[start_pos_index]
@@ -182,7 +182,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom=None, low=None, high=None, start_val=0, max_vals=sys.maxint, **kwargs):
+    def get_data(self, chrom=None, low=None, high=None, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns data in region defined by chrom, start, and end. start_val and
         max_vals are used to denote the data to return: start_val is the first element to
@@ -233,7 +233,7 @@ class GenomeDataProvider(BaseDataProvider):
             column_names = self.original_dataset.datatype.column_names
         except AttributeError:
             try:
-                column_names = range(self.original_dataset.metadata.columns)
+                column_names = list(range(self.original_dataset.metadata.columns))
             except Exception:  # Give up
                 return []
 
@@ -511,7 +511,7 @@ class BedDataProvider(GenomeDataProvider):
             if length >= 12:
                 block_sizes = [int(n) for n in feature[10].split(',') if n != '']
                 block_starts = [int(n) for n in feature[11].split(',') if n != '']
-                blocks = zip(block_sizes, block_starts)
+                blocks = list(zip(block_sizes, block_starts))
                 payload.append([(int(feature[1]) + block[1], int(feature[1]) + block[1] + block[0]) for block in blocks])
 
             # Score (filter data)
@@ -1022,7 +1022,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
                 count += 1
 
         # Take care of reads whose mates are out of range.
-        for qname, read in paired_pending.iteritems():
+        for qname, read in paired_pending.items():
             if read['mate_start'] < read['start']:
                 # Mate is before read.
                 read_start = read['mate_start']
@@ -1286,7 +1286,7 @@ class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
                         out.write(line)
                     else:
                         reader = GFFReaderWrapper(source, fix_strand=True)
-                        feature = reader.next()
+                        feature = next(reader)
                         for interval in feature.intervals:
                             out.write('\t'.join(interval.fields) + '\n')
 
@@ -1328,7 +1328,7 @@ class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
 
                 # GFF dataset.
                 reader = GFFReaderWrapper(source, fix_strand=True)
-                feature = reader.next()
+                feature = next(reader)
                 payload = package_gff_feature(feature, no_detail, filter_cols)
                 payload.insert(0, offset)
 
@@ -1604,7 +1604,7 @@ class ChromatinInteractionsDataProvider(GenomeDataProvider):
 
 
 class ChromatinInteractionsTabixDataProvider(TabixDataProvider, ChromatinInteractionsDataProvider):
-    def get_iterator(self, data_file, chrom, start=0, end=sys.maxint, interchromosomal=False, **kwargs):
+    def get_iterator(self, data_file, chrom, start=0, end=sys.maxsize, interchromosomal=False, **kwargs):
         """
         """
         # Modify start as needed to get earlier interactions with start region.
@@ -1661,7 +1661,7 @@ def package_gff_feature(feature, no_detail=False, filter_cols=[]):
     # Add blocks.
     block_sizes = [(interval.end - interval.start) for interval in feature_intervals]
     block_starts = [(interval.start - feature.start) for interval in feature_intervals]
-    blocks = zip(block_sizes, block_starts)
+    blocks = list(zip(block_sizes, block_starts))
     payload.append([(feature.start + block[1], feature.start + block[1] + block[0]) for block in blocks])
 
     # Add filter data to payload.
