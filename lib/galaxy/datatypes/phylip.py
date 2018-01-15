@@ -8,11 +8,12 @@ Created on January. 05, 2018
 Phylip datatype sniffer
 """
 
-from galaxy import util
-from galaxy.datatypes.data import Text, get_file_peek
 from metadata import MetadataElement
+
+from galaxy import util
+from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.util import nice_size
-import os
+
 
 class Phylip(Text):
     """Phylip format stores a multiple sequence alignment"""
