@@ -51,13 +51,83 @@ App = namedtuple(
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
-        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.""",
+        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use ':$default_port' to listen on all available network interfaces.""",
         'default': '127.0.0.1:$default_port',
         'type': 'str',
     }),
-    ('threads', {
-        'default': 8,
+    ('processes', {
+        'desc': """Number of web server (worker) processes to fork after the application has loaded.""",
+        'default': '1',
         'type': 'int',
+    }),
+    ('threads', {
+        'desc': """Number of threads for each web server process.""",
+        'default': 4,
+        'type': 'int',
+    }),
+    ('offload-threads', {
+        'desc': """Number of threads for serving static content and handling internal routing requests.""",
+        'default': '2',
+        'type': 'int',
+    }),
+    ('static-map.1', {
+        'key': 'static-map',
+        'desc': """Mapping to serve style content.""",
+        'default': '/static/style=static/style/blue',
+        'type': 'str',
+    }),
+    ('static-map.2', {
+        'key': 'static-map',
+        'desc': """Mapping to serve the remainder of the static content.""",
+        'default': '/static=static',
+        'type': 'str',
+    }),
+    ('master', {
+        'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
+        'default': 'false',
+        'type': 'str',
+    }),
+    ('virtualenv', {
+        'desc': """Path to the application's Python virtual environment.""",
+        'default': '.venv',
+        'type': 'str',
+    }),
+    ('pythonpath', {
+        'desc': """Path to the application's Python library.""",
+        'default': 'lib',
+        'type': 'str',
+    }),
+    ('module', {
+        'desc': """The entry point which returns the web application (e.g. Galaxy, Reports, etc.) that you are loading.""",
+        'default': '$uwsgi_module',
+        'type': 'str',
+    }),
+    ('die-on-term', {
+        'desc': """Cause uWSGI to respect the traditional behavior of dying on SIGTERM (its default is to brutally reload workers)""",
+        'default': 'true',
+        'type': 'str',
+    }),
+    ('hook-master-start.1', {
+        'key': 'hook-master-start',
+        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGINT (its default is to brutally kill workers)""",
+        'default': 'unix_signal:2 gracefully_kill_them_all',
+        'type': 'str',
+    }),
+    ('hook-master-start.2', {
+        'key': 'hook-master-start',
+        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGTERM (its default is to brutally kill workers)""",
+        'default': 'unix_signal:15 gracefully_kill_them_all',
+        'type': 'str',
+    }),
+    ('py-call-osafterfork', {
+        'desc': """Feature necessary for proper mule signal handling""",
+        'default': 'true',
+        'type': 'str',
+    }),
+    ('enable-threads', {
+        'desc': """Ensure application threads will run if `threads` is unset.""",
+        'default': 'true',
+        'type': 'str',
     }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
@@ -74,16 +144,9 @@ UWSGI_OPTIONS = OrderedDict([
     # ('route-run', {
     #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
     # }),
-    ('http-raw-body', {
-        'default': 'True'
-    }),
-    ('offload-threads', {
-        'default': '8',
-    }),
-    ('module', {
-        'default': '$uwsgi_module',
-        'type': 'str',
-    })
+    #('http-raw-body', {
+    #    'default': 'True'
+    #}),
 ])
 
 DROP_OPTION_VALUE = object()
@@ -654,6 +717,8 @@ def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsg
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
+        # support uWSGI "dumb yaml parser" (unbit/uwsgi#863)
+        key = option.get('key', key)
         _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
 
 
