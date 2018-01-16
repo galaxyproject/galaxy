@@ -90,6 +90,7 @@ var CommonWrapper = Backbone.View.extend({
 
 export default {
     nvd3_bar: function(options) {
+        alert('test');
         options.type = "multiBarChart";
         new CommonWrapper(options);
     }
