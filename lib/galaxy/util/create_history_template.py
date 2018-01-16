@@ -176,8 +176,9 @@ def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_message
                     if element.history_content_type == "dataset":
                         hda = element
                         encoded_id = trans.security.encode_id(hda.id)
-                        tool_parameter_template += '<a class="input-dataset-show-params" data-hda-id="' + encoded_id + '"'
-                        tool_parameter_template += 'href="#">' + str(hda.hid) + ':' + hda.name + '</a>'
+                        dataset_info_url = url_for(controller="dataset", action="show_params", dataset_id=encoded_id)
+                        tool_parameter_template += '<a class="input-dataset-show-params" target="galaxy_main" data-hda-id="' + encoded_id + '"'
+                        tool_parameter_template += 'href="' + dataset_info_url + '">' + str(hda.hid) + ':' + hda.name + '</a>'
                     else:
                         tool_parameter_template += element.hid + ':' + element.name
                     tool_parameter_template += '</td><td></td></tr>'
