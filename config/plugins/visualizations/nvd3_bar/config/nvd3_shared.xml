@@ -22,45 +22,51 @@
         </exports>
     </xml>
     <xml name="groups">
-        <color>
+        <input>
             <label>Pick a series color</label>
+            <name>color</name>
             <type>color</type>
-        </color>
-        <tooltip>
+        </input>
+        <input>
             <label>Data point labels</label>
+            <name>tooltip</name>
             <type>data_column</type>
             <is_label>true</is_label>
             <is_auto>true</is_auto>
-        </tooltip>
-        <key>
+        </input>
+        <input>
             <label>Provide a label</label>
+            <name>key</name>
             <type>text</type>
             <placeholder>Data label</placeholder>
             <value>Data label</value>
-        </key>
+        </input>
     </xml>
     <xml name="groups_bar">
-        <x>
+        <input>
+            <name>x</name>
             <label>Values for x-axis</label>
             <type>data_column</type>
             <is_label>true</is_label>
             <is_auto>true</is_auto>
-        </x>
-        <y>
+        </input>
+        <input>
+            <name>y</name>
             <label>Values for y-axis</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
-        </y>
+        </input>
     </xml>
     <xml name="settings">
-        <x_axis_label>
+        <input>
+            <name>x_axis_label</name>
             <label>X-Axis label</label>
             <help>Provide a label for the axis.</help>
             <type>text</type>
             <value>X-axis</value>
             <placeholder>Axis label</placeholder>
-        </x_axis_label>
-        <x_axis_type>
+        </input>
+        <input>
             <name>x_axis_type</name>
             <type>conditional</type>
             <test_param>
@@ -228,15 +234,16 @@
                     <value>s</value>
                 </cases>
             </cases>
-        </x_axis_type>
-        <y_axis_label>
+        </input>
+        <input>
+            <name>y_axis_label</name>
             <label>Y-Axis label</label>
             <help>Provide a label for the axis.</help>
             <type>text</type>
             <value>Y-axis</value>
             <placeholder>Axis label</placeholder>
-        </y_axis_label>
-        <y_axis_type>
+        </input>
+        <input>
             <name>y_axis_type</name>
             <type>conditional</type>
             <test_param>
@@ -404,6 +411,6 @@
                     <value>s</value>
                 </cases>
             </cases>
-        </y_axis_type>
+        </input>
     </xml>
 </macros>
