@@ -1,3 +1,5 @@
+import six
+
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
@@ -149,7 +151,7 @@ class PSAAuthnz(IdentityProvider):
         strategy = Strategy(trans, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         response = do_disconnect(backend, self._get_current_user(trans), association_id)
-        if isinstance(response, basestring):
+        if isinstance(response, six.string_types):
             return True, "", response
         return response.get('success', False), response.get('message', ""), ""
 
