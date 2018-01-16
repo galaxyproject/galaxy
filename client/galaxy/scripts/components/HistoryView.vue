@@ -2,11 +2,11 @@
     <div v-cloak>
         <div id="history-view-controls" class="clear"> 
             <div class="pull-left">
-                <span v-if="history.history['purged'] == false" >
-                    <span v-if="history.user_is_owner == false" >
+                <span v-if="historyHistory['purged'] == false" >
+                    <span v-if="historyData.user_is_owner == false" >
                         <button id="import" class="btn btn-default">Import and start using history</button>
                     </span>
-                    <span v-if="history.history_is_current == false">
+                    <span v-if="historyData.history_is_current == false">
                         <button id="switch-history" class="btn btn-default" v-on:click="switchHistory">Switch to this history</button>
                     </span>
                     <button id="show-structure" class="btn btn-default" v-on:click="showStructure">Show structure</button>
@@ -17,7 +17,7 @@
                 <button id="toggle-hidden" class="btn btn-default">Include hidden</button>
             </div>
         </div>
-        <div :id="'history-' + history.history['id']" class="history-panel unified-panel-body" style="overflow: auto;"></div>
+        <div :id="'history-' + historyHistory['id']" class="history-panel unified-panel-body" style="overflow: auto;"></div>
     </div>
 </template>
 
@@ -38,7 +38,8 @@ export default {
     },
     data() {
         return {
-            history: {}
+            historyData: {},
+            historyHistory: {}
         };
     },
     created: function() {
@@ -57,7 +58,8 @@ export default {
                 });
         },
         updateHistoryView: function(response) {
-            this.history = response.data;
+            this.historyData = response.data;
+            this.historyHistory = response.data.history;
         },
         showError: function(errorMsg) {
             mod_toastr.error(errorMsg);
@@ -88,7 +90,7 @@ export default {
             new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") }}).$mount(mountView);
         },
         switchHistory: function() {
-            let url = Galaxy.root + 'history/switch_to_history?hist_id=' + this.history.history['id'];
+            let url = Galaxy.root + 'history/switch_to_history?hist_id=' + this.historyHistory['id'];
             this.ajaxCall(url, this.reloadPage);
         },
         reloadPage: function() {
@@ -96,7 +98,7 @@ export default {
         }
     },
     updated: function() {
-        this.makeHistoryView(this.history);
+        this.makeHistoryView(this.historyData);
     }
 }
 
