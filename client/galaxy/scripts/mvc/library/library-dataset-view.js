@@ -409,6 +409,11 @@ var LibraryDatasetView = Backbone.View.extend({
             ld.set("misc_info", new_info);
             is_changed = true;
         }
+        var new_message = this.$el.find(".input_dataset_message").val();
+        if (typeof new_message !== "undefined" && new_message !== ld.get("message")) {
+            ld.set("message", new_message);
+            is_changed = true;
+        }
         var new_genome_build = this.select_genome.$el.select2("data").id;
         if (typeof new_genome_build !== "undefined" && new_genome_build !== ld.get("genome_build")) {
             ld.set("genome_build", new_genome_build);
@@ -972,7 +977,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 "</tr>",
                 "<tr>",
                 '<th scope="row">Message</th>',
-                '<td scope="row"><%= _.escape(item.get("message")) %></td>',
+                '<td scope="row"><input class="input_dataset_message form-control" type="text" placeholder="message" value="<%= _.escape(item.get("message")) %>"></td>',
                 "</tr>",
                 "<tr>",
                 '<th scope="row">Misc. blurb</th>',
