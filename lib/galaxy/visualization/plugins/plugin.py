@@ -330,7 +330,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         render_vars['embedded'] = self._parse_embedded(embedded)
         render_vars.update(vars={})
         render_vars.update({
-            "script_tag_attributes" : self.config['entry_point']['attr']
+            "script_attributes" : self.config['entry_point']['attr']
         })
         template_filename = os.path.join(self.MAKO_TEMPLATE)
         return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)

@@ -18,7 +18,7 @@
            'libs/jquery/jquery-ui',
            'bundled/libs.bundled',
            'bundled/chart.bundled')}
-    <script type="text/javascript" src="${script_tag_attributes.get("src")}"></script>
+    <script type="text/javascript" src="${script_attributes.get("src")}"></script>
     <script type="text/javascript">
         $(function() {
             var config = ${h.dumps(config)};
@@ -27,7 +27,8 @@
                 visualization_name: ${h.dumps(visualization_name)},
                 visualization_plugin: ${h.dumps(visualization_plugin)},
                 dataset_id: config.dataset_id,
-                chart_dict: config.chart_dict
+                chart_dict: config.chart_dict,
+                chart_func: bundleEntries["${script_attributes.get("func")}"]
             });
             $('body').append(app.$el);
         });
