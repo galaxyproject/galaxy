@@ -51,10 +51,10 @@ var menu = [
         html: _l("Show Structure"),
         anon: true,
         func: function() {
-            let displayStructureInstance = Vue.extend( DisplayStructure ),
-                mountView = document.createElement( "div" );
-            Galaxy.page.center.display( mountView );
-            new displayStructureInstance().$mount( mountView );
+            let displayStructureInstance = Vue.extend(DisplayStructure),
+                mountView = document.createElement("div");
+            Galaxy.page.center.display(mountView);
+            new displayStructureInstance({ propsData: { id: "" }}).$mount(mountView);
         }
     },
     {

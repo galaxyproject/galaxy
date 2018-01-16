@@ -13,6 +13,12 @@ import "apps/extended.js";
 
 
 export default {
+    props: {
+        id: {
+            type: String,
+            required: false
+        }
+    },
     data() {
         return {
             historyTemplate: "",
@@ -20,12 +26,21 @@ export default {
         };
     },
     created: function() {
-       this.ajaxCall();
+        let historyId = this.id,
+            url = "";
+        console.log(historyId);
+        if( historyId !== undefined && historyId !== "" && historyId !== null) {
+            url = Galaxy.root + 'history/display_structured?id=' + historyId;   
+        }
+        else {
+            url = Galaxy.root + 'history/display_structured';
+        }
+        this.ajaxCall(url);
     },
     methods: {
-        ajaxCall: function() {
+        ajaxCall: function(url) {
             axios
-                .get(`${Galaxy.root}history/display_structured`)
+                .get(url)
                 .then(response => {
                     this._updateHistoryData(response);
                 })
@@ -158,6 +173,7 @@ div.toolFormTitle {
 .copied-from {
     border: 1px solid lightgrey;
     border-width: 1px 1px 0px 1px;
+    margin-bottom: 1%;
 }
 .copied-from .header {
     border-bottom: 1px solid lightgrey;

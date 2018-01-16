@@ -27,6 +27,7 @@ import axios from "axios";
 import * as mod_toastr from "libs/toastr";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
+import QueryStringParsing from "utils/query-string-parsing";
 
 export default {
     props: {
@@ -81,10 +82,10 @@ export default {
             });
         },
         showStructure: function() {
-            let displayStructureInstance = Vue.extend( DisplayStructure ),
+            let displayStructureInstance = Vue.extend(DisplayStructure),
                 mountView = document.createElement( "div" );
             Galaxy.page.center.display( mountView );
-            new displayStructureInstance().$mount( mountView );
+            new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") }}).$mount(mountView);
         },
         switchHistory: function() {
             let url = Galaxy.root + 'history/switch_to_history?hist_id=' + this.history.history['id'];
