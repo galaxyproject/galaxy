@@ -28,7 +28,6 @@ export default {
     created: function() {
         let historyId = this.id,
             url = "";
-        console.log(historyId);
         if( historyId !== undefined && historyId !== "" && historyId !== null) {
             url = Galaxy.root + 'history/display_structured?id=' + historyId;   
         }
