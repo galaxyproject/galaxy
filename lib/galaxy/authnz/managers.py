@@ -2,8 +2,8 @@
 import importlib
 import logging
 import xml.etree.ElementTree as ET
-
 from xml.etree.ElementTree import ParseError
+
 from .psa_authnz import PSAAuthnz
 
 log = logging.getLogger(__name__)

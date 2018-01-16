@@ -5,7 +5,6 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import base64
-import codecs
 import errno
 import json
 import logging
@@ -13,15 +12,15 @@ import numbers
 import operator
 import os
 import pwd
-import socket
-import time
 import random
-from datetime import datetime, timedelta
 import string
+import time
+from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
 from six import string_types
+from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
     and_,
     func,
@@ -34,10 +33,8 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import aliased, joinedload, object_session
 from sqlalchemy.schema import UniqueConstraint
-
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -57,8 +54,6 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
-
-from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 
 log = logging.getLogger(__name__)
 
