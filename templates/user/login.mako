@@ -49,7 +49,7 @@ def inherit(context):
         ${render_login_form()}
 
         <br/>
-        %if trans.app.config.enable_oidc:
+        %if hasattr(trans.app.config, 'enable_oidc') and trans.app.config.enable_oidc:
             <br/>
             ${render_oidc_form()}
         %endif
