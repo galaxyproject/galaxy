@@ -95,15 +95,6 @@ export default Backbone.View.extend({
         var n_panels = chart.settings.get("__use_panels") == "true" ? chart.groups.length : 1;
         this._createContainer(chart.plugin.tag, n_panels);
         chart.state("wait", "Please wait...");
-        /*require(["repository/build/" + chart.get("type")], function(ChartView) {
-            new ChartView({ process: process, chart: chart, dataset: self.app.dataset, targets: self.targets });
-        }, function(err) {
-            chart.state(
-                "failed",
-                "Please verify that your internet connection works properly. This visualization could not be accessed in the repository. Please contact the Galaxy Team if this error persists."
-            );
-            console.debug(err);
-            process.resolve();
-        });*/
+        this.app.chart_func({ process: process, chart: chart, dataset: this.app.dataset, targets: this.targets });
     }
 });

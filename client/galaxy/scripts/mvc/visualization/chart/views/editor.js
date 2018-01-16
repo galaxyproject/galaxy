@@ -110,7 +110,6 @@ export default Backbone.View.extend({
     /** Draw chart data */
     _drawChart: function() {
         this.chart.set({
-            type: this.types.value(),
             title: this.title.value(),
             date: Utils.time()
         });
