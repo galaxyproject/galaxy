@@ -18,8 +18,8 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.create_history_template import render_item
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -544,11 +544,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items.extend(wf_invocations.items())
         # Sort items by age
         items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        
         # logic taken from mako files
         from galaxy.managers import hdas
         hda_serializer = hdas.HDASerializer(trans.app)
-        controller = trans.webapp.controllers['history']
         hda_dicts = []
         id_hda_dict_map = {}
         for hda in history.active_datasets:

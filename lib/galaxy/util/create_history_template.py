@@ -21,6 +21,7 @@ def render_item(trans, entity, children):
         template = render_item_wf(trans, entity, children)
     return template
 
+
 def render_item_hda(trans, hda, children):
     """
     Render hdas as a id'd stub for js to fill later
@@ -33,6 +34,7 @@ def render_item_hda(trans, hda, children):
     else:
         template = '<div id="hda-' + trans.security.encode_id(hda.id) + '" class="dataset hda state-' + hda.state + '"></div>'
     return template
+
 
 def render_hda_copied_from_history(trans, hda, children):
     """
@@ -53,6 +55,7 @@ def render_hda_copied_from_history(trans, hda, children):
     template += '<div id="hda-' + id + '" class="dataset hda state-' + hda.state + '"></div></div>'
     return template
 
+
 def render_hda_copied_from_library(trans, hda, children):
     """
     Wrap an hda in info about the library from where it was copied
@@ -72,8 +75,9 @@ def render_hda_copied_from_library(trans, hda, children):
     template += '<span class="light">Library: </span>'
     template += '<span class="bold">'
     template += '<a href="' + url + '">' + folder.name + '</a></span></div></div>'
-    template += '<div id="hda-'+ id +'" class="dataset hda state-' + hda.state + '"></div></div>'
+    template += '<div id="hda-' + id + '" class="dataset hda state-' + hda.state + '"></div></div>'
     return template
+
 
 def render_item_job(trans, job, children):
     """
@@ -86,12 +90,12 @@ def render_item_job(trans, job, children):
         tool_name = tool.name
         tool_desc = tool.description
     else:
-        tool_name = "Unknown tool with id '%s'" % job.tool_id
+        tool_name = "Unknown tool with id: %s" % job.tool_id
         tool_desc = ''
     params_object = None
     try:
         params_object = job.get_param_values(trans.app, ignore_errors=True)
-    except Exception, exc:
+    except Exception as exc:
         pass
     template += '<div class="header"><div class="toolFormTitle"><span class="bold">' + tool_name + '</span>'
     template += '<span class="light"> - ' + tool_desc + '</span></div>'
@@ -109,7 +113,8 @@ def render_item_job(trans, job, children):
     template += child_template
     template += '</div></div>'
     return template
-      
+
+
 def render_item_wf(trans, wf, children):
     """
     Render a workflow and its children (jobs/toolForms)
@@ -122,11 +127,13 @@ def render_item_wf(trans, wf, children):
     template += '</div></div>'
     return template
 
+
 def inputs_recursive_indent(text, depth):
     """
     Add an indentation depending on the depth in a <tr>
     """
     return '<td style="padding-left:' + str((depth - 1) * 10) + 'px">' + text + '</td>'
+
 
 def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_messages=None):
     """
@@ -197,5 +204,5 @@ def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_message
             else:
                 label = input.label or input.name
                 tool_parameter_template += inputs_recursive_indent(text=label, depth=depth)
-                tool_parameter_template += '<td><em> not used (parameter was added after this job was run)</em></td><td></td></tr>'  
+                tool_parameter_template += '<td><em> not used (parameter was added after this job was run)</em></td><td></td></tr>'
     return tool_parameter_template
