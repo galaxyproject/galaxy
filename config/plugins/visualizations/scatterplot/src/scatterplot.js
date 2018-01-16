@@ -1,10 +1,11 @@
-import * as VisualizationModel from "mvc/visualization/visualization-model";
 import * as bootstrap from "bootstrap";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
+import * as d3 from "d3";
 import "jquery-ui-bundle";
-import * as d3 from "libs/d3";
-import "ui/peek-column-selector";
-import "ui/pagination";
+import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
+import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
+import "../../../../../client/galaxy/scripts/ui/pagination";
+//TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 
 /**
  *  Two Variable scatterplot visualization using d3
@@ -930,7 +931,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         }
         var view = this,
             config = this.model.get("config"),
-            meanWorker = new Worker("/plugins/visualizations/scatterplot/static/worker-stats.js");
+            meanWorker = new Worker("worker-stats.js");
         meanWorker.postMessage({
             data: this.data,
             keys: [config.xColumn, config.yColumn]
