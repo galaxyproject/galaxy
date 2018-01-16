@@ -1874,16 +1874,19 @@ class Dataset(StorableObject):
 
     def _calculate_size(self, wait_seconds=0):
         if self.external_filename:
-            exists = False
-            while exists is False and wait_seconds > 0:
-                exists = os.path.exists(self.external_filename)
-                if exists is False:
+            try:
+                size = os.path.getsize(self.external_filename)
+            except OSError:
+                size = 0
+            while size == 0 and wait_seconds > 0:
+                try:
+                    size = os.path.getsize(self.external_filename)
+                except OSError:
+                    pass
+                if size == 0:
                     time.sleep(0.25)
                     wait_seconds -= 0.25
-            try:
-                return os.path.getsize(self.external_filename)
-            except OSError:
-                return 0
+            return size
         else:
             return self.object_store.size(self)
 
