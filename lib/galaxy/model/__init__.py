@@ -1872,8 +1872,14 @@ class Dataset(StorableObject):
             self.external_extra_files_path = extra_files_path
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
-    def _calculate_size(self):
+    def _calculate_size(self, wait_seconds=0):
         if self.external_filename:
+            exists = False
+            while exists is False and wait_seconds > 0:
+                exists = os.path.exists(self.external_filename)
+                if exists is False:
+                    time.sleep(0.25)
+                    wait_seconds -= 0.25
             try:
                 return os.path.getsize(self.external_filename)
             except OSError:
@@ -1881,7 +1887,7 @@ class Dataset(StorableObject):
         else:
             return self.object_store.size(self)
 
-    def get_size(self, nice_size=False):
+    def get_size(self, nice_size=False, wait_seconds=0):
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -1890,9 +1896,9 @@ class Dataset(StorableObject):
                 return self.file_size
         else:
             if nice_size:
-                return galaxy.util.nice_size(self._calculate_size())
+                return galaxy.util.nice_size(self._calculate_size(wait_seconds=wait_seconds))
             else:
-                return self._calculate_size()
+                return self._calculate_size(wait_seconds=wait_seconds)
 
     def set_size(self):
         """Sets the size of the data on disk"""
@@ -1918,12 +1924,7 @@ class Dataset(StorableObject):
 
     def has_data(self, wait_seconds=0):
         """Detects whether there is any data"""
-        size = self.get_size()
-        while size == 0 and wait_seconds > 0:
-            time.sleep(0.25)
-            wait_seconds -= 0.25
-            size = self.get_size()
-        return size > 0
+        return self.get_size(wait_seconds=wait_seconds) > 0
 
     def mark_deleted(self):
         self.deleted = True

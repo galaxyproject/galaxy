@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 import threading
+import time
 from xml.etree import ElementTree
 
 try:
@@ -365,7 +366,13 @@ class DiskObjectStore(ObjectStore):
 
         Returns 0 if the object doesn't exist yet or other error.
         """
-        if self.exists(obj, **kwargs):
+        exists = self.exists(obj, **kwargs)
+        wait_seconds = getattr(self.config, 'retry_job_output_collection', 0)
+        while exists is False and wait_seconds > 0:
+            wait_seconds -= 0.25
+            time.sleep(0.25)
+            exists = self.exists(obj, **kwargs)
+        if exists:
             try:
                 return os.path.getsize(self.get_filename(obj, **kwargs))
             except OSError:
