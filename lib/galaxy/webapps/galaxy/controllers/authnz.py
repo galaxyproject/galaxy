@@ -71,4 +71,8 @@ class OIDC(BaseUIController):
         success, message, redirect_url = trans.app.authnz_manager.disconnect(provider,
                                                                              trans,
                                                                              disconnect_redirect_url=url_for('/'))
+        if success is False:
+            return trans.show_error_message(message)
+        if redirect_url is None:
+            redirect_url = url_for('/')
         return trans.response.send_redirect(redirect_url)
