@@ -5,7 +5,7 @@ window.bundleEntries = window.bundleEntries || {};
 
 export const bundleEntries = {
     chart: function chartEntry(options) {
-        return new ChartClient.View(options);
+        return new ChartClient(options);
     }
 };
 

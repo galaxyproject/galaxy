@@ -4,7 +4,7 @@ import Chart from "mvc/visualization/chart/components/model";
 import Editor from "mvc/visualization/chart/views/editor";
 import Viewer from "mvc/visualization/chart/views/viewer";
 
-var View = Backbone.View.extend({
+export default Backbone.View.extend({
     initialize: function(options) {
         this.options = options;
         this.modal = (window.parent.Galaxy && window.parent.Galaxy.modal) || new Modal.View();
@@ -55,4 +55,3 @@ var View = Backbone.View.extend({
         this[view_id].show();
     }
 });
-export default { View: View };
