@@ -1,11 +1,11 @@
-from ..authnz import IdentityProvider
-from ..model import UserAuthnzToken, PSANonce, PSAAssociation, PSAPartial, PSACode
-
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
-from social_core.utils import setting_name, module_member
+from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
+
+from ..authnz import IdentityProvider
+from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
 
 # key: a component name which PSA requests.
@@ -133,7 +133,7 @@ class PSAAuthnz(IdentityProvider):
         self._on_the_fly_config(trans)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans, Storage, self.config)
-        strategy.session_set(BACKENDS_NAME[self.config['provider']]+'_state', state_token)
+        strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         redirect_url = do_complete(
             backend,

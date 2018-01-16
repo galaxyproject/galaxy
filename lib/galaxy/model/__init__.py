@@ -15,8 +15,8 @@ import os
 import pwd
 import socket
 import time
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 import string
 from string import Template
 from uuid import UUID, uuid4
@@ -58,7 +58,7 @@ from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      WorkflowMappingField)
 from galaxy.web.framework.helpers import to_unicode
 
-from social_core.storage import UserMixin, NonceMixin, AssociationMixin, PartialMixin, CodeMixin
+from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 
 log = logging.getLogger(__name__)
 

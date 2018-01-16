@@ -2,8 +2,9 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-from __future__ import absolute_import
 import logging
+
+from __future__ import absolute_import
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
