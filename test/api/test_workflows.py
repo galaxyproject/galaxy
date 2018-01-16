@@ -13,6 +13,7 @@ from base import api  # noqa: I100,I202
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
+    flakey,
     skip_without_tool,
     wait_on,
     WorkflowPopulator
@@ -773,6 +774,8 @@ test_data:
                                             assert_ok=True)
             unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
             assert unpaused_dataset['state'] == 'ok'
+            contents = self.dataset_populator.get_history_dataset_content(history_id, hid=7, assert_ok=False)
+            assert contents == 'fail\nsuccess\n', contents
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
@@ -1820,6 +1823,7 @@ test_data:
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.5)
 
+    @flakey
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")

@@ -96,10 +96,12 @@ def add_file(dataset, registry, json_file, output_path):
     # if running as the real user so the file can be cleaned up by Galaxy.
     purge_source = dataset.get('purge_source', True) and not run_as_real_user
 
-    # in_place is True only if we are running as a real user and not importing external paths (i.e.
+    # in_place is True unless we are running as a real user or importing external paths (i.e.
     # this is a real upload and not a path paste or ftp import).
-    # In this case we try to reuse the uploaded file that has been chowned to this user already.
-    in_place = run_as_real_user and dataset.type not in ('server_dir', 'path_paste', 'ftp_import')
+    # in_place should always be False if running as real user because the uploaded file will
+    # be owned by Galaxy and not the user and it should be False for external paths so Galaxy doesn't
+    # modify files not controlled by Galaxy.
+    in_place = not run_as_real_user and dataset.type not in ('server_dir', 'path_paste', 'ftp_import')
 
     # Base on the check_upload_content Galaxy config option and on by default, this enables some
     # security related checks on the uploaded content, but can prevent uploads from working in some cases.

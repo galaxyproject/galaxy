@@ -37,7 +37,7 @@ nate@weyerbacher% sh run.sh
 
 ## Basic configuration
 
-The steps to install Galaxy mostly follow those of the regular instructions at [Admin/GetGalaxy](https://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.ini.sample config/galaxy.ini`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
+The steps to install Galaxy mostly follow those of the [regular instructions](http://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.ini.sample config/galaxy.ini`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
 
 ### Disable the developer settings
 

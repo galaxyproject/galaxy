@@ -15,39 +15,39 @@
 </template>
 
 <script>
-import BaseGrid from './BaseGrid.vue';
+import BaseGrid from "./BaseGrid.vue";
 
 export default {
-  props: {
-    isLoaded: {
-      type: Boolean,
-      required: true
+    props: {
+        isLoaded: {
+            type: Boolean,
+            required: true
+        },
+        rows: {
+            type: Array,
+            required: true
+        }
     },
-    rows: {
-      type: Array,
-      required: true
-    }
-  },
 
-  data() {
-    return {
-      columns: [
-        { text: 'Name', dataIndex: 'name' },
-        { text: 'Filename', dataIndex: 'filename' },
-        { text: 'Tool data path', dataIndex: 'tool_data_path' },
-        { text: 'Errors', dataIndex: 'errors' }
-      ]
-    }
-  },
+    data() {
+        return {
+            columns: [
+                { text: "Name", dataIndex: "name" },
+                { text: "Filename", dataIndex: "filename" },
+                { text: "Tool data path", dataIndex: "tool_data_path" },
+                { text: "Errors", dataIndex: "errors" }
+            ]
+        };
+    },
 
-  components: {
-      'base-grid': BaseGrid
-  },
+    components: {
+        "base-grid": BaseGrid
+    },
 
-  methods: {
-    handleTableNameClick(event) {
-      this.$emit('changeview', event.target.text);
+    methods: {
+        handleTableNameClick(event) {
+            this.$emit("changeview", event.target.text);
+        }
     }
-  }
-}
+};
 </script>

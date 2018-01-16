@@ -32,10 +32,11 @@
   },
   "scripts": {
     "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
-    "build": "NODE_ENV=development gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\"",
-    "build-production": "NODE_ENV=production gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\"",
-    "build-production-maps": "NODE_ENV=production gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\"",
+    "build": "NODE_ENV=development gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
+    "build-production": "NODE_ENV=production gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
+    "build-production-maps": "NODE_ENV=production gulp stage-libs && concurrently \"yarn run style\" \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",
     "webpack": "webpack -d",
+    "save-build-hash": "git rev-parse HEAD > ../static/client_build_hash.txt",
     "webpack-watch": "webpack -d --watch",
     "webpack-production": "webpack -p",
     "webpack-production-maps": "GXY_BUILD_SOURCEMAPS=1 webpack -p",
@@ -50,7 +51,7 @@
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
     "build-scatterplot": "NODE_PATH=./node_modules webpack -p --config ../config/plugins/visualizations/scatterplot/webpack.config.js",
-    "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/*.js\""
+    "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/{*.js,*.vue}\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",
@@ -87,7 +88,7 @@
     "karma-webpack": "^2.0.6",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
-    "prettier": "^1.9.1",
+    "prettier": "^1.10.1",
     "qunitjs": "^2.4.1",
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
