@@ -1916,9 +1916,14 @@ class Dataset(StorableObject):
             for root, dirs, files in os.walk(self.extra_files_path):
                 self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
-    def has_data(self):
+    def has_data(self, wait_seconds=0):
         """Detects whether there is any data"""
-        return self.get_size() > 0
+        size = self.get_size()
+        while size == 0 and wait_seconds > 0:
+            time.sleep(0.25)
+            wait_seconds -= 0.25
+            size = self.get_size()
+        return size > 0
 
     def mark_deleted(self):
         self.deleted = True
@@ -2098,9 +2103,9 @@ class DatasetInstance(object):
     def set_total_size(self):
         return self.dataset.set_total_size()
 
-    def has_data(self):
+    def has_data(self, wait_seconds=0):
         """Detects whether there is any data"""
-        return self.dataset.has_data()
+        return self.dataset.has_data(wait_seconds=wait_seconds)
 
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
