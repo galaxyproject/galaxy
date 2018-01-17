@@ -37,8 +37,8 @@ var CommonWrapper = Backbone.View.extend({
                 }
                 d3chart.xAxis.showMaxMin(false);
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
-                d3chart.tooltipContent(function(key, x, y, graph) {
-                    return "<h3>" + (graph.point.tooltip || key) + "</h3>";
+                d3chart.tooltip.contentGenerator(function(context) {
+                    return "<h3>" + (context.data.tooltip || context.data.key) + "</h3>";
                 });
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
