@@ -129,6 +129,8 @@ def setup_galaxy_config(
     update_integrated_tool_panel=False,
     prefer_template_database=False,
     log_format=None,
+    conda_auto_init=False,
+    conda_auto_install=False
 ):
     """Setup environment and build config for test Galaxy instance."""
     if not os.path.exists(tmpdir):
@@ -188,7 +190,8 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
-        conda_auto_init=False,
+        conda_auto_init=conda_auto_init,
+        conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
@@ -793,6 +796,8 @@ class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
 
     testing_shed_tools = False
+    conda_auto_init = False
+    conda_auto_install = False
 
     def setup(self, config_object=None):
         """Setup a Galaxy server for functional test (if needed).
@@ -851,6 +856,8 @@ class GalaxyTestDriver(TestDriver):
                     datatypes_conf=datatypes_conf_override,
                     prefer_template_database=getattr(config_object, "prefer_template_database", False),
                     log_format=log_format,
+                    conda_auto_init=self.conda_auto_init,
+                    conda_auto_install=self.conda_auto_install,
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,
