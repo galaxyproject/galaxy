@@ -1,5 +1,5 @@
-import Utils from "./utils";
-import Datasets from "./datasets";
+import Utils from "utils/utils";
+import Datasets from "mvc/visualization/chart/utilities/datasets";
 
 /** build job dictionary */
 function buildJobDictionary( chart, module ) {

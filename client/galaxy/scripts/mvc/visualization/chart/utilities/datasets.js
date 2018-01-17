@@ -1,5 +1,5 @@
 /** This class handles, formats and caches datasets. */
-import Utils from "./utils";
+import Utils from "utils/utils";
 
 /** Fills request dictionary with data from cache/response */
 var _cache = {};
