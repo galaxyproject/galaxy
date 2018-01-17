@@ -2,8 +2,6 @@ from __future__ import print_function
 
 from shutil import copyfile
 
-from galaxy import tools
-
 
 def load_microbial_data(GALAXY_DATA_INDEX_DIR, sep='\t'):
     # FIXME: this function is duplicated in the DynamicOptions class.  It is used here only to
