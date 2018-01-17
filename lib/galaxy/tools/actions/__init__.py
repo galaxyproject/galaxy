@@ -534,42 +534,50 @@ class DefaultToolAction(object):
             for p in old_job.parameters:
                 if p.name.endswith('|__identifier__'):
                     current_job.parameters.append(p.copy())
-            remapped_hdas = {}
-            input_hdcas = set()
+            remapped_hdas = self.__remap_data_inputs(old_job=old_job, current_job=current_job)
             for jtod in old_job.output_datasets:
                 for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                     if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
                             trans.user is None and job_to_remap.session_id == galaxy_session.id):
-                        if job_to_remap.state == job_to_remap.states.PAUSED:
-                            job_to_remap.state = job_to_remap.states.NEW
-                        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
-                            if hda.state == hda.states.PAUSED:
-                                hda.state = hda.states.NEW
-                                hda.info = None
-                        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
-                        remapped_hdas[jtod.dataset] = out_data[jtod.name]
-                        for jtidca in job_to_remap.input_dataset_collections:
-                            input_hdcas.add(jtidca.dataset_collection)
-                        old_dataset_id = jtod.dataset_id
-                        new_dataset_id = out_data[jtod.name].id
-                        input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
-                        for p in job_to_remap.parameters:
-                            p.value = json.dumps(input_values[p.name])
-                        jtid.dataset = out_data[jtod.name]
-                        jtid.dataset.hid = jtod.dataset.hid
-                        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+                        self.__remap_parameters(job_to_remap, jtid, jtod, out_data)
                         trans.sa_session.add(job_to_remap)
                         trans.sa_session.add(jtid)
-                for hdca in input_hdcas:
-                    hdca.collection.replace_failed_elements(remapped_hdas)
-                    if hdca.implicit_collection_jobs:
-                        for job in hdca.implicit_collection_jobs.jobs:
-                            if job.job_id == old_job.id:
-                                job.job_id = current_job.id
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
+            for jtodc in old_job.output_dataset_collection_instances:
+                hdca = jtodc.dataset_collection_instance
+                hdca.collection.replace_failed_elements(remapped_hdas)
+                if hdca.implicit_collection_jobs:
+                    for job in hdca.implicit_collection_jobs.jobs:
+                        if job.job_id == old_job.id:
+                            job.job_id = current_job.id
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
+
+    def __remap_data_inputs(self, old_job, current_job):
+        """Record output datasets from old_job and build a dictionary that maps the old output HDAs to the new output HDAs."""
+        remapped_hdas = {}
+        old_output_datasets = {jtod.name: jtod.dataset for jtod in old_job.output_datasets}
+        for jtod in current_job.output_datasets:
+            remapped_hdas[old_output_datasets[jtod.name]] = jtod.dataset
+        return remapped_hdas
+
+    def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
+        if job_to_remap.state == job_to_remap.states.PAUSED:
+            job_to_remap.state = job_to_remap.states.NEW
+        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
+            if hda.state == hda.states.PAUSED:
+                hda.state = hda.states.NEW
+                hda.info = None
+        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+        old_dataset_id = jtod.dataset_id
+        new_dataset_id = out_data[jtod.name].id
+        input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
+        for p in job_to_remap.parameters:
+            p.value = json.dumps(input_values[p.name])
+        jtid.dataset = out_data[jtod.name]
+        jtid.dataset.hid = jtod.dataset.hid
+        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
 
     def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
