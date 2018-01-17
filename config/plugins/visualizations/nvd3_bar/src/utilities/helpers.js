@@ -1,5 +1,5 @@
 import Utils from "./utils";
-import Datasets from "./tabular-datasets";
+import Datasets from "./datasets";
 
 /** build job dictionary */
 function buildJobDictionary( chart, module ) {

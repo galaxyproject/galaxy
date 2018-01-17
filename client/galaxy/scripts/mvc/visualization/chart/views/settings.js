@@ -14,14 +14,15 @@ export default Backbone.View.extend({
     },
     render: function() {
         var self = this;
-        var inputs = Utils.clone(this.chart.plugin.settings) || {};
-        var panel_option = this.chart.plugin.use_panels;
+        var inputs = Utils.clone(this.chart.plugin.settings) || [];
+        var panel_option = this.chart.plugin.specs.use_panels;
         if (panel_option == "optional") {
-            inputs.__use_panels = {
+            inputs.push({
+                name: "__use_panels",
                 type: "boolean",
                 label: "Use multi-panels",
                 help: "Would you like to separate your data into individual panels?"
-            };
+            });
         } else {
             this.chart.settings.set("__use_panels", panel_option == "yes" ? "true" : "false");
         }

@@ -18,6 +18,6 @@
         "parcel-bundler": "^1.4.1"
     },
     "scripts": {
-        "build": "parcel build static/nvd3.js -d static/dist"
+        "build": "parcel build src/nvd3.js -d static"
     }
 }

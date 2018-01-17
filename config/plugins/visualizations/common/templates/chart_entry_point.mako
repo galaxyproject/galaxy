@@ -3,6 +3,7 @@
 <%def name="stylesheets()">
     ${h.css('jquery-ui/smoothness/jquery-ui')}
     ${h.css('base')}
+    <link rel="stylesheet" href="${script_attributes.get("css")}">
 </%def>
 <%def name="javascripts()">
     <script type="text/javascript">
