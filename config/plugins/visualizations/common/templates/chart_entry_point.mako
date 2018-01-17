@@ -17,7 +17,6 @@
     </script>
     ${h.js('libs/jquery/jquery',
            'libs/jquery/jquery-ui',
-           'libs/d3',
            'bundled/libs.bundled',
            'bundled/chart.bundled')}
     <script type="text/javascript" src="${script_attributes.get("src")}"></script>
