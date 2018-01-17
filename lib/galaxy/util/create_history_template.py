@@ -3,8 +3,8 @@ Methods to create template for history details recursively.
 Used in dataset and history controllers
 """
 
-from galaxy.web import url_for
 from galaxy.util import listify
+from galaxy.web import url_for
 
 
 def render_item(trans, entity, children):
@@ -95,7 +95,7 @@ def render_item_job(trans, job, children):
     params_object = None
     try:
         params_object = job.get_param_values(trans.app, ignore_errors=True)
-    except Exception as exc:
+    except Exception:
         pass
     template += '<div class="header"><div class="toolFormTitle"><span class="bold">' + tool_name + '</span>'
     template += '<span class="light"> - ' + tool_desc + '</span></div>'
