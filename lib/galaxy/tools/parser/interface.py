@@ -211,6 +211,9 @@ class ToolSource(object):
         """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
         """
 
+    def macro_paths(self):
+        return []
+
     def parse_tests_to_dict(self):
         return {'tests': []}
 
