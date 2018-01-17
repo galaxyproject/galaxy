@@ -15,8 +15,8 @@
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" />
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
-        <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
+        <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bam" />
