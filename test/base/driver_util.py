@@ -796,8 +796,6 @@ class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
 
     testing_shed_tools = False
-    conda_auto_init = False
-    conda_auto_install = False
 
     def setup(self, config_object=None):
         """Setup a Galaxy server for functional test (if needed).
@@ -856,8 +854,8 @@ class GalaxyTestDriver(TestDriver):
                     datatypes_conf=datatypes_conf_override,
                     prefer_template_database=getattr(config_object, "prefer_template_database", False),
                     log_format=log_format,
-                    conda_auto_init=self.conda_auto_init,
-                    conda_auto_install=self.conda_auto_install,
+                    conda_auto_init=getattr(config_object, "conda_auto_init", False),
+                    conda_auto_install=getattr(config_object, "conda_auto_install", False),
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,
