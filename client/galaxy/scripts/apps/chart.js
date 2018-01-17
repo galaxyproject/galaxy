@@ -7,7 +7,7 @@ import Jobs from "mvc/visualization/chart/utilities/jobs";
 window.bundleEntries = window.bundleEntries || {};
 
 export const bundleEntries = {
-    chart: function (options) {
+    chart: function(options) {
         return new Client(options);
     },
     chartUtilities: {
