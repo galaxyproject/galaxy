@@ -88,4 +88,4 @@ paramiko==2.2.1
 ecdsa==0.13
 
 # GenomeSpace dependencies
-python-genomespaceclient<2.0.0
+python-genomespaceclient>=1.0.0,<2.0.0
