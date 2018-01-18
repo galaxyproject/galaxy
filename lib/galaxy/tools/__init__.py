@@ -1890,6 +1890,9 @@ class Tool(object, Dictifiable):
                 try:
                     if [hda.dependent_jobs for hda in [jtod.dataset for jtod in job.output_datasets] if hda.dependent_jobs]:
                         return True
+                    elif job.output_dataset_collection_instances:
+                        # We'll want to replace this item
+                        return 'job_produced_collection_elements'
                 except Exception as exception:
                     log.error(str(exception))
                     pass
