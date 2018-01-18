@@ -9,6 +9,7 @@ from galaxy import util
 from galaxy.util.image_util import image_type
 
 if sys.version_info < (3, 3):
+    gzip.GzipFile.read1 = gzip.GzipFile.read  # workaround for https://bugs.python.org/issue12591
     try:
         import bz2file as bz2
     except ImportError:
