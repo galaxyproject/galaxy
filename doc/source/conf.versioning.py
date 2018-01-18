@@ -24,8 +24,7 @@ of the latest release's documentation</a>."""
 MIN_DOC_VERSION = LooseVersion('17.05')
 
 # Enable simpleversioning
-if GIT_BRANCH:
-    extensions += ['sphinxcontrib.simpleversioning']
+extensions += ['sphinxcontrib.simpleversioning']
 
 # -- sphinxcontrib-simpleversioning Settings ---------------------------------
 
@@ -56,9 +55,11 @@ simpleversioning_versions.append(
     {'id': 'latest', 'name': 'dev'},
 )
 
-if TARGET_GIT_BRANCH.startswith('release_') and not TARGET_GIT_BRANCH == 'release_%s' % _stable:
-    simpleversioning_show_banner = True
-    simpleversioning_banner_message = OLD_BANNER
+if TARGET_GIT_BRANCH.startswith('release_'):
+    # The current stable release will go here but fail the next conditional, avoiding either banner.
+    if TARGET_GIT_BRANCH != 'release_%s' % _stable:
+        simpleversioning_show_banner = True
+        simpleversioning_banner_message = OLD_BANNER
 elif TARGET_GIT_BRANCH != 'master':
     simpleversioning_show_banner = True
     simpleversioning_banner_message = DEV_BANNER
