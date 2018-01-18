@@ -38,9 +38,9 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.xAxis.showMaxMin(false);
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
                 d3chart.tooltip.contentGenerator(function(context) {
-                    return "<h3>" + (context.data.tooltip || context.data.key) + "</h3>";
+                    //return "<h3>" + (context.data.tooltip || context.data.key) + "</h3>";
                 });
-                d3chart.duration(0);
+                //d3chart.duration(0);
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
                     canvas.datum(groups).call(d3chart);
@@ -93,6 +93,15 @@ var CommonWrapper = Backbone.View.extend({
 _.extend(window.bundleEntries || {}, {
     nvd3_bar: function(options) {
         options.type = "multiBarChart";
-        new CommonWrapper(options);
+        return new CommonWrapper(options);
+    },
+    nvd3_scatter: function(options) {
+        options.type = 'scatterChart';
+        options.makeConfig = function( nvd3_model ) {
+            nvd3_model.showDistX( true )
+                      .showDistY( true )
+                      .color( d3.scale.category10().range() );
+        };
+        return new CommonWrapper(options);
     }
 });
