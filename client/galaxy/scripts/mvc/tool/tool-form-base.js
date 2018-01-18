@@ -204,7 +204,7 @@ export default FormBase.extend({
         Webhooks.load({
             type: "tool-menu",
             callback: function(webhooks) {
-                webhooks.each((model) => {
+                webhooks.each(model => {
                     var webhook = model.toJSON();
                     if (webhook.activate && webhook.config.function) {
                         menu_button.addMenu({

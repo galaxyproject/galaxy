@@ -182,7 +182,7 @@ $(document).ready(() => {
             // Load all webhooks with the type 'onload'
             Webhooks.load({
                 type: "onload",
-                callback: function (webhooks) {
+                callback: function(webhooks) {
                     webhooks.each(model => {
                         var webhook = model.toJSON();
                         if (webhook.activate && webhook.script) {

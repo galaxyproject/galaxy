@@ -107,7 +107,7 @@ var Collection = Backbone.Collection.extend({
         //
         Webhooks.load({
             type: "masthead",
-            callback: function (webhooks) {
+            callback: function(webhooks) {
                 $(document).ready(() => {
                     webhooks.each(model => {
                         var webhook = model.toJSON();
