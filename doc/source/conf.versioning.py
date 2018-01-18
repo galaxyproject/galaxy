@@ -8,6 +8,7 @@
 import os
 from distutils.version import LooseVersion
 from subprocess import check_output
+
 # This is set by the Jenkins Git Plugin
 GIT_BRANCH = os.environ.get('GIT_BRANCH')
 
@@ -48,7 +49,7 @@ if GIT_BRANCH:
                 _stable = _tag
             if LooseVersion(_tag) >= MIN_DOC_VERSION:
                 simpleversioning_versions.append(
-                    {'id': 'release_%s' % _tag[1:], 'name': _tag}
+                    {'id': 'release_%s' % _tag, 'name': _tag}
                 )
 
     simpleversioning_versions.append(
