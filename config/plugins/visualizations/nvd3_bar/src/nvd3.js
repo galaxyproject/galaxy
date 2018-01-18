@@ -23,7 +23,7 @@ var CommonWrapper = Backbone.View.extend({
         nv.addGraph(function() {
             try {
                 d3chart.xAxis.axisLabel(chart.settings.get("x_axis_label"));
-                d3chart.yAxis.axisLabel(chart.settings.get("y_axis_label")).axisLabelDistance(30);
+                d3chart.yAxis.axisLabel(chart.settings.get("y_axis_label"));
                 d3chart.options({ showControls: false });
                 if (d3chart.showLegend) {
                     d3chart.showLegend(chart.settings.get("show_legend") == "true");
@@ -40,6 +40,7 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.tooltip.contentGenerator(function(context) {
                     return "<h3>" + (context.data.tooltip || context.data.key) + "</h3>";
                 });
+                d3chart.duration(0);
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
                     canvas.datum(groups).call(d3chart);
