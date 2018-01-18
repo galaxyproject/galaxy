@@ -6,23 +6,25 @@
     </macros>
     <description>Renders a scatter plot using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
+    <entry_point entry_point_type="chart" src="../nvd3_bar/static/nvd3.js" css="../nvd3_bar/static/nvd3.css" func="nvd3_scatter"/>
     <specs>
         <expand macro="specs"/>
         <zoomable>true</zoomable>
     </specs>
     <groups>
         <expand macro="groups"/>
-        <x>
+        <input>
+            <name>x</name>
             <label>Values for x-axis</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
-        </x>
-        <y>
+        </input>
+        <input>
+            <name>y</name>
             <label>Values for y-axis</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
-        </y>
+        </input>
     </groups>
     <settings>
         <expand macro="settings"/>
