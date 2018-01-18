@@ -631,7 +631,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                         name=name, path=self.app.config.cookie_path)
 
     def check_user_library_import_dir(self, user):
-        if self.app.config.user_library_import_dir_auto_creation:
+        if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
             # try to create a user library import directory
             try:
                 self.app.config._ensure_directory(os.path.join(self.app.config.user_library_import_dir, user.email))
