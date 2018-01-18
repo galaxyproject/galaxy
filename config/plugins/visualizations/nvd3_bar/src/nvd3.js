@@ -38,13 +38,14 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.xAxis.showMaxMin(false);
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
                 d3chart.tooltip.contentGenerator(function(context) {
-                    //return "<h3>" + (context.data.tooltip || context.data.key) + "</h3>";
+                    var data = context.data || context.point;
+                    return "<h3>" + (data.tooltip || data.key) + "</h3>";
                 });
-                //d3chart.duration(0);
+                d3chart.duration(0);
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
                     canvas.datum(groups).call(d3chart);
-                    if (chart.definition.zoomable && chart.definition.zoomable != "native") {
+                    if (chart.plugin.specs.zoomable && chart.plugin.specs.zoomable != "native") {
                         if (d3chart.clipEdge) {
                             d3chart.clipEdge(true);
                         }
