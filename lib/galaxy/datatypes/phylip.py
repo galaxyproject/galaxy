@@ -50,10 +50,6 @@ class Phylip(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def __init__(self, **kwd):
-        """Initialize datatype"""
-        Text.__init__(self, **kwd)
-
     def sniff(self, filename):
         """
         All Phylip files starts with the number of sequences so we can use this
