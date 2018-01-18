@@ -12,6 +12,7 @@ from metadata import MetadataElement
 
 from galaxy import util
 from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
 
 
@@ -29,15 +30,11 @@ class Phylip(Text):
         """
         Set the number of sequences and the number of data lines in dataset.
         """
-        data_lines = 0
-        sequences = 0
-        for line in open(dataset.file_name):
-            line = line.strip()
-            if data_lines == 0:
-                sequences = line.split()[0]
-            data_lines += 1
-        dataset.metadata.data_lines = data_lines
-        dataset.metadata.sequences = sequences
+        dataset.metadata.data_lines = self.count_data_lines(dataset)
+        try:
+            dataset.metadata.sequences = int(get_headers(dataset.file_name, '\t', count=1)[0][0].split()[0])
+        except:
+            raise Exception("Header does not correspond to PHYLIP header.")
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -57,15 +54,16 @@ class Phylip(Text):
         """
         with open(filename, "r") as f:
             # Get number of sequence from first line
-            nb_seq = int(f.readline().split()[0])
+            try:
+                nb_seq = int(f.readline().split()[0])
+            except:
+                return False
             # counts number of sequence from first stack
             count = 0
             for line in f:
                 if not line.split():
                     break
                 count += 1
-
-        if count == nb_seq:
-            return True
-        else:
-            return False
+                if count > nb_seq:
+                    return False
+        return count == nb_seq
