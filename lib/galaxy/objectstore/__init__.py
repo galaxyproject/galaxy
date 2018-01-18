@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 import threading
+import time
 from xml.etree import ElementTree
 
 try:
@@ -367,7 +368,12 @@ class DiskObjectStore(ObjectStore):
         """
         if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                size = os.path.getsize(self.get_filename(obj, **kwargs))
+                if size == 0:
+                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+                    time.sleep(0.01)
+                    size = os.path.getsize(self.get_filename(obj, **kwargs))
+                return size
             except OSError:
                 return 0
         else:
