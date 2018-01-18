@@ -250,9 +250,9 @@ def to_cwl_job(tool, param_dict, local_working_directory):
         else:
             return str(param_dict_value)
 
-    for input_name, input in inputs.iteritems():
+    for input_name, input in inputs.items():
         if input.type == "repeat":
-            only_input = input.inputs.values()[0]
+            only_input = next(iter(input.inputs.values()))
             array_value = []
             for instance in param_dict[input_name]:
                 array_value.append(simple_value(only_input, instance[input_name[:-len("_repeat")]]))
@@ -297,7 +297,7 @@ def to_galaxy_parameters(tool, as_dict):
         else:
             return param_dict_value
 
-    for input_name, input in inputs.iteritems():
+    for input_name, input in inputs.items():
         as_dict_value = as_dict.get(input_name, NOT_PRESENT)
         galaxy_input_type = input.type
 
@@ -305,7 +305,7 @@ def to_galaxy_parameters(tool, as_dict):
             if input_name not in as_dict:
                 continue
 
-            only_input = input.inputs.values()[0]
+            only_input = next(iter(input.inputs.values()))
             for index, value in enumerate(as_dict_value):
                 key = "%s_repeat_0|%s" % (input_name, only_input.name)
                 galaxy_value = from_simple_value(only_input, value)

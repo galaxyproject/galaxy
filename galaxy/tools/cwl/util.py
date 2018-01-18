@@ -7,7 +7,6 @@ import json
 import os
 import tarfile
 import tempfile
-
 from collections import namedtuple
 
 from six import iteritems, python_2_unicode_compatible, StringIO

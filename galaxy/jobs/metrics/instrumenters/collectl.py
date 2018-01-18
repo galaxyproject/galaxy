@@ -4,7 +4,6 @@ import os
 import shutil
 
 from galaxy import util
-
 from ..collectl import (
     cli,
     processes,

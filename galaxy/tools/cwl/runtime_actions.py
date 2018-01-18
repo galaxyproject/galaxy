@@ -3,13 +3,11 @@ import os
 import shutil
 
 from galaxy.util import safe_makedirs
-
 from .cwltool_deps import ref_resolver
 from .parser import (
     JOB_JSON_FILE,
     load_job_proxy,
 )
-
 from .util import (
     SECONDARY_FILES_INDEX_PATH,
     STORE_SECONDARY_FILES_WITH_BASENAME,

@@ -47,7 +47,6 @@ def main(argv=None):
             continue
         if ret > 0:
             sys.exit(ret)
-        
 
 
 def generate_targets(target_source):
