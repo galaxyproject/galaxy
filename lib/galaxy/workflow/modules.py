@@ -917,7 +917,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
-                completed_jobs=completed_jobs
+                completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters
             )
             complete = True
