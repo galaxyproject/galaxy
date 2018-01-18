@@ -143,9 +143,9 @@ UWSGI_OPTIONS = OrderedDict([
     # ('route-run', {
     #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
     # }),
-    #('http-raw-body', {
-    #    'default': 'True'
-    #}),
+    # ('http-raw-body', {
+    #     'default': 'True'
+    # }),
 ])
 
 DROP_OPTION_VALUE = object()
