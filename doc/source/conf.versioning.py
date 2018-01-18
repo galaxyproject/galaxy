@@ -9,8 +9,8 @@ import os
 from distutils.version import LooseVersion
 from subprocess import check_output
 
-# This is set by the Jenkins Git Plugin
-GIT_BRANCH = os.environ.get('GIT_BRANCH')
+# This is set in the Jenkins matrix config
+TARGET_GIT_BRANCH = os.environ.get('TARGET_GIT_BRANCH', 'dev')
 
 # Version message templates
 OLD_BANNER = """This document is for an old release of Galaxy. You can alternatively <a href="%(stable_path)s">view this
@@ -31,41 +31,34 @@ if GIT_BRANCH:
 
 simpleversioning_path_template = '/en/{version}/{pagename}'
 simpleversioning_stable_version = 'master'
+simpleversioning_current_version = TARGET_GIT_BRANCH
+simpleversioning_versions = [
+    {'id': 'master', 'name': 'stable'},
+    # Additional versions added below
+]
 
-if GIT_BRANCH:
+# Used for determining the latest stable release so the banner can be added to older releases.
+_stable = None
 
-    _stable = None
-    _branch = GIT_BRANCH.rsplit('/', 1)[-1]
+# Use tags to determine versions - a stable version will have a branch before it's released, but not a tag.
+for _tag in reversed(check_output(('git', 'tag')).splitlines()):
+    if _tag.startswith('v') and _tag.count('.') == 1:
+        # this version is released
+        _ver = _tag[1:]
+        if not _stable:
+            _stable = _ver
+        if LooseVersion(_ver) >= MIN_DOC_VERSION:
+            simpleversioning_versions.append(
+                {'id': 'release_%s' % _ver, 'name': _ver}
+            )
 
-    simpleversioning_versions = [
-        {'id': 'master', 'name': 'stable'},
-    ]
+simpleversioning_versions.append(
+    {'id': 'latest', 'name': 'dev'},
+)
 
-    for _tag in reversed(check_output(('git', 'tag')).splitlines()):
-        if _tag.startswith('v') and _tag.count('.') == 1:
-            # this version is released
-            _tag = _tag[1:]
-            if not _stable:
-                _stable = _tag
-            if LooseVersion(_tag) >= MIN_DOC_VERSION:
-                simpleversioning_versions.append(
-                    {'id': 'release_%s' % _tag, 'name': _tag}
-                )
-
-    simpleversioning_versions.append(
-        {'id': 'latest', 'name': 'dev'},
-    )
-
-    simpleversioning_current_version = _branch
-    if _branch == 'master':
-        pass  # avoid the else
-    elif _branch == 'release_%s' % _stable:
-        simpleversioning_current_version = _stable
-    elif _branch.startswith('release_'):
-        simpleversioning_current_version = _branch[len('release_'):]
-        simpleversioning_show_banner = True
-        simpleversioning_banner_message = OLD_BANNER
-    else:
-        simpleversioning_current_version = 'latest'
-        simpleversioning_show_banner = True
-        simpleversioning_banner_message = DEV_BANNER
+if TARGET_GIT_BRANCH.startswith('release_') and not TARGET_GIT_BRANCH == 'release_%s' % _stable:
+    simpleversioning_show_banner = True
+    simpleversioning_banner_message = OLD_BANNER
+elif TARGET_GIT_BRANCH != 'master':
+    simpleversioning_show_banner = True
+    simpleversioning_banner_message = DEV_BANNER
