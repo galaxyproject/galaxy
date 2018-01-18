@@ -5,6 +5,7 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import errno
+import json
 import logging
 import numbers
 import operator
@@ -16,10 +17,20 @@ from string import Template
 from uuid import UUID, uuid4
 
 from six import string_types
-from sqlalchemy import (and_, func, join, not_, or_, select, true, type_coerce,
-                        types)
+from sqlalchemy import (
+    and_,
+    func,
+    inspect,
+    join,
+    not_,
+    or_,
+    select,
+    true,
+    type_coerce,
+    types)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import aliased, joinedload, object_session
+
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -200,6 +211,17 @@ class User(object, Dictifiable):
         self.histories = []
         self.credentials = []
         # ? self.roles = []
+
+    @property
+    def extra_preferences(self):
+        data = {}
+        extra_user_preferences = self.preferences.get('extra_user_preferences')
+        if extra_user_preferences:
+            try:
+                data = json.loads(extra_user_preferences)
+            except Exception:
+                pass
+        return data
 
     def set_password_cleartext(self, cleartext):
         """
@@ -474,6 +496,7 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
         self.user_id = None
         self.tool_id = None
         self.tool_version = None
+        self.copied_from_job_id = None
         self.command_line = None
         self.dependencies = []
         self.param_filename = None
@@ -541,6 +564,9 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def get_parameters(self):
         return self.parameters
+
+    def get_copied_from_job_id(self):
+        return self.copied_from_job_id
 
     def get_input_datasets(self):
         return self.input_datasets
@@ -624,6 +650,9 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
 
     def set_parameters(self, parameters):
         self.parameters = parameters
+
+    def set_copied_from_job_id(self, job_id):
+        self.copied_from_job_id = job_id
 
     def set_input_datasets(self, input_datasets):
         self.input_datasets = input_datasets
@@ -988,11 +1017,15 @@ class JobParameter(object):
         self.name = name
         self.value = value
 
+    def copy(self):
+        return JobParameter(name=self.name, value=self.value)
+
 
 class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
+        self.dataset_version = dataset.version if dataset else None
 
 
 class JobToOutputDatasetAssociation(object):
@@ -1957,7 +1990,7 @@ class DatasetInstance(object):
         self.metadata = metadata or dict()
         self.extended_metadata = extended_metadata
         if dbkey:  # dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
-            self.dbkey = dbkey
+            self._metadata['dbkey'] = dbkey
         self.deleted = deleted
         self.visible = visible
         # Relationships
@@ -2043,8 +2076,6 @@ class DatasetInstance(object):
         if "dbkey" in self.datatype.metadata_spec:
             if not isinstance(value, list):
                 self.metadata.dbkey = [value]
-            else:
-                self.metadata.dbkey = value
     dbkey = property(get_dbkey, set_dbkey)
 
     def change_datatype(self, new_ext):
@@ -2394,6 +2425,36 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
+    def __create_version__(self, session):
+        state = inspect(self)
+        changes = {}
+
+        for attr in state.attrs:
+            hist = state.get_history(attr.key, True)
+
+            if not hist.has_changes():
+                continue
+
+            # hist.deleted holds old value(s)
+            changes[attr.key] = hist.deleted
+        if self.update_time and self.state == self.states.OK:
+            # We only record changes to HDAs that exist in the database and have a update_time
+            new_values = {}
+            new_values['name'] = changes.get('name', self.name)
+            new_values['dbkey'] = changes.get('dbkey', self.dbkey)
+            new_values['extension'] = changes.get('extension', self.extension)
+            new_values['extended_metadata_id'] = changes.get('extended_metadata_id', self.extended_metadata_id)
+            for k, v in new_values.items():
+                if isinstance(v, list):
+                    new_values[k] = v[0]
+            new_values['update_time'] = self.update_time
+            new_values['version'] = self.version or 1
+            new_values['metadata'] = self._metadata
+            past_hda = HistoryDatasetAssociationHistory(history_dataset_association_id=self.id,
+                                                        **new_values)
+            self.version = self.version + 1 if self.version else 1
+            session.add(past_hda)
+
     def copy(self, parent_id=None):
         """
         Create a copy of this HDA.
@@ -2607,6 +2668,27 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             new_tag_assoc = source_tag_assoc.copy()
             new_tag_assoc.user = target_user
             self.tags.append(new_tag_assoc)
+
+
+class HistoryDatasetAssociationHistory(object):
+    def __init__(self,
+                 history_dataset_association_id,
+                 name,
+                 dbkey,
+                 update_time,
+                 version,
+                 extension,
+                 extended_metadata_id,
+                 metadata,
+                 ):
+        self.history_dataset_association_id = history_dataset_association_id
+        self.name = name
+        self.dbkey = dbkey
+        self.update_time = update_time
+        self.version = version
+        self.extension = extension
+        self.extended_metadata_id = extended_metadata_id
+        self._metadata = metadata
 
 
 class HistoryDatasetAssociationDisplayAtAuthorization(object):
@@ -3138,6 +3220,13 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
         object_session(self).add(new_collection)
         object_session(self).flush()
         return new_collection
+
+    def replace_failed_elements(self, replacements):
+        for element in self.elements:
+            if element.element_object in replacements:
+                if element.element_type == 'hda':
+                    element.hda = replacements[element.element_object]
+                # TODO: handle the case where elements are collections
 
     def set_from_dict(self, new_data):
         # Nothing currently editable in this class.

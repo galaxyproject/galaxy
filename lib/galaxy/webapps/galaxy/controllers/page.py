@@ -62,7 +62,6 @@ class PageListGrid(grids.Grid):
 class PageAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
-    use_async = True
     title = "Published Pages"
     model_class = model.Page
     default_sort_key = "update_time"
@@ -104,7 +103,6 @@ class ItemSelectionGrid(grids.Grid):
     show_item_checkboxes = True
     default_filter = {"deleted": "False", "sharing": "All"}
     default_sort_key = "-update_time"
-    use_async = True
     use_paging = True
     num_rows_per_page = 10
 
@@ -322,7 +320,6 @@ class PageController(BaseUIController, SharableMixin,
             session.flush()
 
         # Build grid dictionary.
-        kwargs['dict_format'] = True
         grid = self._page_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -330,7 +327,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.expose
     @web.json
     def list_published(self, trans, *args, **kwargs):
-        kwargs['dict_format'] = True
         grid = self._all_published_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -700,7 +696,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more histories. """
-        kwargs['dict_format'] = True
         return self._history_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -708,7 +703,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a workflow from saved workflows")
     def list_workflows_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more workflows. """
-        kwargs['dict_format'] = True
         return self._workflow_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -716,7 +710,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a visualization from saved visualizations")
     def list_visualizations_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more visualizations. """
-        kwargs['dict_format'] = True
         return self._visualization_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -724,7 +717,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a page from saved pages")
     def list_pages_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more pages. """
-        kwargs['dict_format'] = True
         return self._page_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -732,7 +724,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a dataset from saved datasets")
     def list_datasets_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more datasets. """
-        kwargs['dict_format'] = True
         return self._datasets_selection_grid(trans, **kwargs)
 
     @web.expose

@@ -60,7 +60,6 @@ var View = Backbone.View.extend({
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,
             success: function(response) {
-                response.dict_format = true;
                 self.model.set(response);
                 self.render();
             }

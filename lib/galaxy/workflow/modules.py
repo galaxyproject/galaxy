@@ -214,7 +214,7 @@ class WorkflowModule(object):
         state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
         return state
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         """ Execute the given workflow invocation step.
 
         Use the supplied workflow progress object to track outputs, find
@@ -320,26 +320,42 @@ class SubWorkflowModule(WorkflowModule):
                     continue
                 output_step = workflow_output.workflow_step
                 label = workflow_output.label
+                target_output_name = workflow_output.output_name
                 if not label:
-                    label = "%s:%s" % (output_step.order_index, workflow_output.output_name)
+                    label = "%s:%s" % (output_step.order_index, target_output_name)
+                output_module = module_factory.from_workflow_step(self.trans, output_step)
+                data_outputs = output_module.get_data_outputs()
+                target_output = {}
+                for data_output in data_outputs:
+                    if data_output["name"] == target_output_name:
+                        target_output = data_output
                 output = dict(
                     name=label,
                     label=label,
-                    extensions=['input'],  # TODO
+                    extensions=target_output.get('extensions', ['input']),
                 )
+                if target_output.get("collection"):
+                    output["collection"] = True
+                    output["collection_type"] = target_output["collection_type"]
+                    # TODO: collection_type_source should be set here to be more precise/correct -
+                    # but it can't be passed through as is since it would reference something
+                    # the editor can't see. Since we fix input collection types to workflows
+                    # the more correct thing to do would be to walk the subworkflow and
+                    # determine the effective collection type if collection_type_source
+                    # is set.
                 outputs.append(output)
         return outputs
 
     def get_content_id(self):
         return self.trans.security.encode_id(self.subworkflow.id)
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         """ Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        subworkflow_invoker = progress.subworkflow_invoker(trans, step)
+        subworkflow_invoker = progress.subworkflow_invoker(trans, step, use_cached_job=use_cached_job)
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
@@ -367,7 +383,7 @@ class InputModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         step_outputs = dict(output=step.state.inputs['input'])
@@ -504,7 +520,7 @@ class InputParameterModule(WorkflowModule):
     def get_data_inputs(self):
         return []
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
         step_outputs = dict(output=step.state.inputs['input'])
         progress.set_outputs_for_input(invocation_step, step_outputs)
@@ -535,7 +551,7 @@ class PauseModule(WorkflowModule):
         state.inputs = dict()
         return state
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
 
@@ -805,7 +821,7 @@ class ToolModule(WorkflowModule):
         else:
             raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id)
 
-    def execute(self, trans, progress, invocation_step):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
@@ -875,6 +891,19 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
+        completed_jobs = {}
+        for i, param in enumerate(param_combinations):
+            if use_cached_job:
+                completed_jobs[i] = tool.job_search.by_tool_input(
+                    trans=trans,
+                    tool_id=tool.id,
+                    tool_version=tool.version,
+                    param=param,
+                    param_dump=tool.params_to_strings(param, trans.app, nested=True),
+                    job_state=None,
+                )
+            else:
+                completed_jobs[i] = None
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -888,6 +917,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
+                completed_jobs=completed_jobs
                 workflow_resource_parameters=resource_parameters
             )
             complete = True

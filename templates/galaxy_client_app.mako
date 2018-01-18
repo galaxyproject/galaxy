@@ -24,19 +24,16 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
     ${ self.bootstrap( **kwargs ) }
     <script type="text/javascript">
-        require([ 'require', 'galaxy' ], function( require, galaxy ){
-            //TODO: global...
-            window.Galaxy = new galaxy.default.GalaxyApp({
-                root               : '${h.url_for( "/" )}',
-                config             : ${ render_json( get_config_dict() )},
-                user               : ${ render_json( get_user_dict() )},
-                session_csrf_token : '${ trans.session_csrf_token }'
-            }, window.bootstrapped );
+        window.Galaxy = new window.bundleEntries.GalaxyApp.GalaxyApp({
+            root               : '${h.url_for( "/" )}',
+            config             : ${ render_json( get_config_dict() )},
+            user               : ${ render_json( get_user_dict() )},
+            session_csrf_token : '${ trans.session_csrf_token }'
+        }, window.bootstrapped );
 
-            %if app:
-                require([ '${app}' ]);
-            %endif
-        });
+        %if app:
+            require([ '${app}' ]);
+        %endif
     </script>
 </%def>
 

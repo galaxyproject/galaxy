@@ -255,6 +255,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
         :type   allow_tool_state_corrections:  bool
+
+        :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
+                                             and will copy the outputs of the previously executed step.
         """
         ways_to_create = set([
             'workflow_id',
@@ -336,10 +339,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval = {}
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
-        for step in workflow.steps:
-            if step.type == 'tool' or step.type is None:
-                for v in outputs[step.id].values():
-                    rval['outputs'].append(trans.security.encode_id(v.id))
+        if outputs:
+            # Newer outputs don't necessarily fill outputs (?)
+            for step in workflow.steps:
+                if step.type == 'tool' or step.type is None:
+                    for v in outputs[step.id].values():
+                        rval['outputs'].append(trans.security.encode_id(v.id))
 
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in

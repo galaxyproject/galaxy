@@ -17,10 +17,8 @@ var Router = Backbone.Router.extend({
         data.__identifer = Math.random()
             .toString(36)
             .substr(2);
-        if (!$.isEmptyObject(data)) {
-            url += url.indexOf("?") == -1 ? "?" : "&";
-            url += $.param(data, true);
-        }
+        url += url.indexOf("?") == -1 ? "?" : "&";
+        url += $.param(data, true);
         Galaxy.params = data;
         this.navigate(url, { trigger: true });
     },

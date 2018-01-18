@@ -104,7 +104,7 @@ th.button_heading{
         margin-right: 0.2em;
     }
     .toolbar-item{
-        margin-left: 1em;
+        margin-left: 0.5em;
     }
 }
 #libraries_element, #folder_items_element{
@@ -112,7 +112,7 @@ th.button_heading{
         margin-left: 0.5em;
     }
 }
-.help-button{
+.right-float{
     float: right;
 }
 .pagination-sm{
@@ -128,11 +128,6 @@ th.button_heading{
 .libimport-select-all{
     margin-left: 0.5em;
 }
-.library-modal-item{
-    width:90%;
-    margin-left: 1em;
-    margin-right: 1em;
-}
 .paginator-bottom{
     width: 27em;
     margin-left: auto;
@@ -143,60 +138,26 @@ th.button_heading{
 }
 
 // Extra style for Galaxy modal
-.modal-content #selected_history_content{
-    ul{
-        list-style-type: none;
+.modal-content{
+    .library_selected_history_content{
+        ul{
+            list-style-type: none;
+        }
+    }
+    .library-collection-type-select, .library-collection-history-select{
+        margin-left:auto;
+        margin-right:auto;
+        width:200px;
+        min-width:200px;
+    }
+    .library-modal-item{
+        width:90%;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 1.5em;
     }
 }
 
-// Follows the style for the deprecated admin libraries interface
-#library-grid{
-    ul{
-        list-style: none;
-    }
-    span.expandLink{
-        padding-left: 12px;
-        display: inline-block;
-        vertical-align: middle;
-        background: url(../images/silk/resultset_next.png) no-repeat;
-    }
-    .folderRow.expanded span.expandLink{
-        background: url(../images/silk/resultset_bottom.png) no-repeat;
-    }
-    .folderRow span.rowIcon{
-        float: left;
-        margin-right: 5px;
-        width: 16px;
-        height: 16px;
-        display: inline-block;
-        vertical-align: middle;
-        background: url(../images/silk/folder.png);
-    }
-    .libraryItem-error{
-        margin-right: 2px;
-        padding: 0 2px 0 2px;
-        border: 1px solid @state-danger-border;
-        background: @state-danger-bg;
-    }
-    .libraryItem-queued{
-        margin-right: 2px;
-        padding: 0 2px 0 2px;
-        border: 1px solid @state-default-border;
-        background: @state-default-bg;
-    }
-    .libraryItem-running{
-        margin-right: 2px;
-        padding: 0 2px 0 2px;
-        border: 1px solid @state-running-border;
-        background: @state-running-bg;
-    }
-    .libraryItem-upload{
-        margin-right: 2px;
-        padding: 0 2px 0 2px;
-        border: 1px solid @state-upload-border;
-        background: @state-upload-bg;
-    }
-}
 .libraryTitle{
     th{
         text-align: left;

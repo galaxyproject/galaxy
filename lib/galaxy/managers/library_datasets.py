@@ -78,6 +78,10 @@ class LibraryDatasetsManager(object):
         if new_misc_info is not None and new_misc_info != ldda.info:
             ldda.info = new_misc_info
             changed = True
+        new_message = new_data.get('message', None)
+        if new_message is not None and new_message != ldda.message:
+            ldda.message = new_message
+            changed = True
         new_file_ext = new_data.get('file_ext', None)
         if new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
@@ -103,7 +107,7 @@ class LibraryDatasetsManager(object):
                     raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ('misc_info'):
+            if key in ('misc_info', 'message'):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('file_ext'):

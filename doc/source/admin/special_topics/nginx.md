@@ -47,7 +47,7 @@ http {
 
 **Notes:**
 
-Make sure that you either comment out or modify line containing default configuration for enabled sites.
+Make sure that you either comment out or modify line containing default configuration for enabled sites (if present, e.g. on Debian/Ubuntu systems).
 
 ```
 include /etc/nginx/sites-enabled/*;
@@ -304,4 +304,4 @@ server {          # This you should already have.
 ### External User Authentication
 
 - [Nginx for External Authentication](https://galaxyproject.org/admin/config/nginx-external-user-auth/)
-- [Built-in Galaxy External Authentication](../authentication.md)
+- [Built-in Galaxy External Authentication](../authentication.html)

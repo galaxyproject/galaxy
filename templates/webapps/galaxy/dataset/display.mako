@@ -5,31 +5,24 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js("bundled/extended.bundled")}
 
     ## If data is chunkable, use JavaScript for display.
     %if item.datatype.CHUNKABLE:
-
-    <script type="text/javascript">
-        require(['mvc/dataset/data'], function(data) {
-            //
-            // Use tabular data display progressively by deleting data from page body
-            // and then showing dataset view.
-            //
-            $('.page-body').children().remove();
-
-            data.default.createTabularDatasetChunkedView({
-                // TODO: encode id.
-                dataset_config:
-                    _.extend( ${h.dumps( item.to_dict() )}, {
-                        chunk_url: "${h.url_for( controller='/dataset', action='display',
-                                         dataset_id=trans.security.encode_id( item.id ))}",
-                        first_data_chunk: ${first_chunk}
-                    }),
-                parent_elt: $('.page-body')
+        <script type="text/javascript">
+            $(function(){
+                // Use tabular data display progressively by deleting data from page body
+                // and then showing dataset view.
+                var dataset_config = _.extend( ${h.dumps( item.to_dict() )}, {
+                        chunk_url: "${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( item.id ))}",
+                        first_data_chunk: ${first_chunk}});
+                $('.page-body').children().remove();
+                window.bundleEntries.createTabularDatasetChunkedView({
+                    dataset_config: dataset_config,
+                    parent_elt: $('.page-body')
+                });
             });
-        });
-    </script>
-
+        </script>
     %endif
 </%def>
 

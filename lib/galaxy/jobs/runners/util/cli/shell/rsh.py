@@ -3,8 +3,8 @@ import time
 
 import paramiko
 
+from galaxy.util.bunch import Bunch
 from .local import LocalShell
-from ....util import Bunch
 
 log = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)  # paramiko logging is very verbose

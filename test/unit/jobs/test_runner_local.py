@@ -156,6 +156,9 @@ class MockJobWrapper(object):
             build_dependency_shell_commands=lambda: []
         )
 
+    def check_tool_output(*args, **kwds):
+        return "ok"
+
     def wait_for_external_id(self):
         """Test method for waiting til an external id has been registered."""
         external_id = None
@@ -203,7 +206,7 @@ class MockJobWrapper(object):
         self.fail_message = message
         self.fail_exception = exception
 
-    def finish(self, stdout, stderr, exit_code):
+    def finish(self, stdout, stderr, exit_code, **kwds):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code

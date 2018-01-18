@@ -42,7 +42,14 @@ class WorkflowRunConfig(object):
     :type param_map: dict
     """
 
-    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False, resource_params={}):
+    def __init__(self, target_history,
+                 replacement_dict,
+                 copy_inputs_to_history=False,
+                 inputs={},
+                 param_map={},
+                 allow_tool_state_corrections=False,
+                 use_cached_job=False,
+                 resource_params={}):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
@@ -50,6 +57,7 @@ class WorkflowRunConfig(object):
         self.param_map = param_map
         self.resource_params = resource_params
         self.allow_tool_state_corrections = allow_tool_state_corrections
+        self.use_cached_job = use_cached_job
 
 
 def _normalize_inputs(steps, inputs, inputs_by):
@@ -199,6 +207,7 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
 def build_workflow_run_configs(trans, workflow, payload):
     app = trans.app
     allow_tool_state_corrections = payload.get('allow_tool_state_corrections', False)
+    use_cached_job = payload.get('use_cached_job', False)
 
     # Sanity checks.
     if len(workflow.steps) == 0:
@@ -333,6 +342,7 @@ def build_workflow_run_configs(trans, workflow, payload):
             inputs=normalized_inputs,
             param_map=param_map,
             allow_tool_state_corrections=allow_tool_state_corrections,
+            use_cached_job=use_cached_job,
             resource_params=resource_params,
         ))
 
@@ -370,6 +380,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 target_history=run_config.target_history,
                 replacement_dict=run_config.replacement_dict,
                 copy_inputs_to_history=False,
+                use_cached_job=run_config.use_cached_job,
                 inputs={},
                 param_map={},
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
@@ -398,8 +409,8 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     resource_parameters = run_config.resource_params
     for key, value in resource_parameters.items():
         add_parameter(key, value, param_types.RESOURCE_PARAMETERS)
-    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false",
-                  param_types.META_PARAMETERS)
+    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS)
+    add_parameter("use_cached_job", "true" if run_config.use_cached_job else "false", param_types.META_PARAMETERS)
     return workflow_invocation
 
 
@@ -411,6 +422,7 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
     param_map = {}
     resource_params = {}
     copy_inputs_to_history = None
+    use_cached_job = False
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -419,6 +431,8 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         elif parameter_type == param_types.META_PARAMETERS:
             if parameter.name == "copy_inputs_to_history":
                 copy_inputs_to_history = (parameter.value == "true")
+            if parameter.name == 'use_cached_job':
+                use_cached_job = (parameter.value == 'true')
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
     for input_association in workflow_invocation.input_datasets:
@@ -435,6 +449,7 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         inputs=inputs,
         param_map=param_map,
         copy_inputs_to_history=copy_inputs_to_history,
+        use_cached_job=use_cached_job,
         resource_params=resource_params,
     )
     return workflow_run_config
