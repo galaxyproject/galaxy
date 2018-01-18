@@ -413,7 +413,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {
-                    'inputs' : [input.to_dict(trans) for input in inputs.itervalues()]
+                    'inputs' : [input.to_dict(trans) for input in inputs.values()]
                 }
             step_model['step_type'] = step.type
             step_model['step_label'] = step.label
@@ -713,7 +713,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # tools. This should be removed at some point. Mirrored
             # hack in _workflow_from_dict should never be removed so
             # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems():
+            for input_name, input_conn in dict(input_conn_dict).items():
                 if len(input_conn) == 1:
                     input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
@@ -790,7 +790,7 @@ class WorkflowContentsManager(UsesAnnotations):
         supplied_steps = data['steps']
         # Try to iterate through imported workflow in such a way as to
         # preserve step order.
-        step_indices = supplied_steps.keys()
+        step_indices = list(supplied_steps.keys())
         try:
             step_indices = sorted(step_indices, key=int)
         except ValueError:
@@ -927,7 +927,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for step in steps:
             # Input connections
-            for input_name, conn_list in step.temp_input_connections.iteritems():
+            for input_name, conn_list in step.temp_input_connections.items():
                 if not conn_list:
                     continue
                 if not isinstance(conn_list, list):  # Older style singleton connection

@@ -5,11 +5,11 @@ import datetime
 import logging
 import os
 import time
-from Queue import (
+
+from six.moves.queue import (
     Empty,
     Queue
 )
-
 from sqlalchemy.sql.expression import (
     and_,
     func,
@@ -305,6 +305,21 @@ class JobHandlerQueue(Monitors, object):
             try:
                 # Check the job's dependencies, requeue if they're not done.
                 # Some of these states will only happen when using the in-memory job queue
+                if job.copied_from_job_id:
+                    copied_from_job = self.sa_session.query(model.Job).get(job.copied_from_job_id)
+                    job.numeric_metrics = copied_from_job.numeric_metrics
+                    job.text_metrics = copied_from_job.text_metrics
+                    job.dependencies = copied_from_job.dependencies
+                    job.state = copied_from_job.state
+                    job.stderr = copied_from_job.stderr
+                    job.stdout = copied_from_job.stdout
+                    job.command_line = copied_from_job.command_line
+                    job.traceback = copied_from_job.traceback
+                    job.tool_version = copied_from_job.tool_version
+                    job.exit_code = copied_from_job.exit_code
+                    job.job_runner_name = copied_from_job.job_runner_name
+                    job.job_runner_external_id = copied_from_job.job_runner_external_id
+                    continue
                 job_state = self.__check_job_state(job)
                 if job_state == JOB_WAIT:
                     new_waiting_jobs.append(job.id)
@@ -343,7 +358,7 @@ class JobHandlerQueue(Monitors, object):
         if not self.track_jobs_in_database:
             self.waiting_jobs = new_waiting_jobs
         # Remove cached wrappers for any jobs that are no longer being tracked
-        for id in self.job_wrappers.keys():
+        for id in list(self.job_wrappers.keys()):
             if id not in new_waiting_jobs:
                 del self.job_wrappers[id]
         # Flush, if we updated the state
@@ -896,7 +911,7 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.itervalues():
+        for runner in self.job_runners.values():
             try:
                 runner.shutdown()
             except Exception:

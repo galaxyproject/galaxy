@@ -1111,12 +1111,12 @@ class ShedTwillTestCase(TwillTestCase):
         params = dict(id=encoded_repository_id, no_changes=no_changes, new_tool_panel_section_label=new_tool_panel_section_label)
         doseq = False
         if install_repository_dependencies:
-            params['install_repository_dependencies'] = ['True', 'True']
+            params['install_repository_dependencies'] = True
             doseq = True
         else:
             params['install_repository_dependencies'] = False
         if install_tool_dependencies:
-            params['install_tool_dependencies'] = ['True', 'True']
+            params['install_tool_dependencies'] = True
             doseq = True
         else:
             params['install_tool_dependencies'] = False

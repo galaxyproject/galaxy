@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
@@ -179,7 +180,7 @@ var LibraryDatasetView = Backbone.View.extend({
             self.modal = Galaxy.modal;
             self.modal.show({
                 closing_events: true,
-                title: "Import into History",
+                title: _l("Import into History"),
                 body: template({ histories: self.histories.models }),
                 buttons: {
                     Import: function() {
@@ -406,6 +407,11 @@ var LibraryDatasetView = Backbone.View.extend({
         var new_info = this.$el.find(".input_dataset_misc_info").val();
         if (typeof new_info !== "undefined" && new_info !== ld.get("misc_info")) {
             ld.set("misc_info", new_info);
+            is_changed = true;
+        }
+        var new_message = this.$el.find(".input_dataset_message").val();
+        if (typeof new_message !== "undefined" && new_message !== ld.get("message")) {
+            ld.set("message", new_message);
             is_changed = true;
         }
         var new_genome_build = this.select_genome.$el.select2("data").id;
@@ -971,7 +977,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 "</tr>",
                 "<tr>",
                 '<th scope="row">Message</th>',
-                '<td scope="row"><%= _.escape(item.get("message")) %></td>',
+                '<td scope="row"><input class="input_dataset_message form-control" type="text" placeholder="message" value="<%= _.escape(item.get("message")) %>"></td>',
                 "</tr>",
                 "<tr>",
                 '<th scope="row">Misc. blurb</th>',

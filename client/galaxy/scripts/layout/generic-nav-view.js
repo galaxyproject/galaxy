@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /** Real-time Communication feature **/
 import Modal from "mvc/ui/ui-modal";
 var GenericNavView = Backbone.View.extend({
@@ -90,7 +91,7 @@ var GenericNavView = Backbone.View.extend({
         navItem = {
             id: "show-chat-online",
             icon: "fa-comment-o",
-            tooltip: "Chat online",
+            tooltip: _l("Chat online"),
             visible: false,
             onclick: self.makeModalIframe
         };

@@ -49,11 +49,10 @@ class JobSearch(object):
         self.ldda_manager = LDDAManager(app)
         self.decode_id = self.app.security.decode_id
 
-    def by_tool_input(self, trans, tool_id, param_dump=None, job_state='ok', is_workflow_step=False):
+    def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         user = trans.user
         input_data = defaultdict(list)
-        input_ids = defaultdict(dict)
 
         def populate_input_data_input_id(path, key, value):
             """Traverses expanded incoming using remap and collects input_ids and input_data."""
@@ -63,187 +62,205 @@ class JobSearch(object):
                 for p in path:
                     current_case = current_case[p]
                 src = current_case['src']
-                input_data[path_key].append({'src': src, 'id': value})
-                input_ids[src][value] = True
-                return key, value
+                current_case = param
+                for i, p in enumerate(path):
+                    if p == 'values' and i == len(path) - 2:
+                        continue
+                    if isinstance(current_case, (list, dict)):
+                        current_case = current_case[p]
+                identifier = getattr(current_case, "element_identifier", None)
+                input_data[path_key].append({'src': src,
+                                             'id': value,
+                                             'identifier': identifier,
+                                             })
+                return key, "__id_wildcard__"
             return key, value
 
-        remap(param_dump, visit=populate_input_data_input_id)
+        wildcard_param_dump = remap(param_dump, visit=populate_input_data_input_id)
         return self.__search(tool_id=tool_id,
+                             tool_version=tool_version,
                              user=user,
                              input_data=input_data,
                              job_state=job_state,
                              param_dump=param_dump,
-                             input_ids=input_ids,
-                             is_workflow_step=is_workflow_step)
+                             wildcard_param_dump=wildcard_param_dump)
 
-    def __search(self, tool_id, user, input_data, input_ids=None, job_state=None, param_dump=None, is_workflow_step=False):
+    def __search(self, tool_id, tool_version, user, input_data, job_state=None, param_dump=None, wildcard_param_dump=None):
         search_timer = ExecutionTimer()
-        query = self.sa_session.query(model.Job).filter(
-            model.Job.tool_id == tool_id,
-            model.Job.user == user
-        )
+
+        def replace_dataset_ids(path, key, value):
+            """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in param_dump with dataset ids used in job."""
+            if key == 'id':
+                current_case = param_dump
+                for p in path:
+                    current_case = current_case[p]
+                src = current_case['src']
+                value = job_input_ids[src][value]
+                return key, value
+            return key, value
+
+        conditions = [and_(model.Job.tool_id == tool_id,
+                           model.Job.user == user)]
+
+        if tool_version:
+            conditions.append(model.Job.tool_version == str(tool_version))
 
         if job_state is None:
-            query = query.filter(
-                or_(
-                    model.Job.state == 'running',
-                    model.Job.state == 'queued',
-                    model.Job.state == 'waiting',
-                    model.Job.state == 'running',
-                    model.Job.state == 'ok',
-                )
+            conditions.append(
+                model.Job.state.in_([model.Job.states.NEW,
+                                     model.Job.states.QUEUED,
+                                     model.Job.states.WAITING,
+                                     model.Job.states.RUNNING,
+                                     model.Job.states.OK])
             )
         else:
             if isinstance(job_state, string_types):
-                query = query.filter(model.Job.state == job_state)
+                conditions.append(model.Job.state == job_state)
             elif isinstance(job_state, list):
                 o = []
                 for s in job_state:
                     o.append(model.Job.state == s)
-                query = query.filter(
+                conditions.append(
                     or_(*o)
                 )
 
+        # We now build the query filters that relate to the input datasets
+        # that this job uses. We keep track of the requested dataset id in `requested_ids`,
+        # the type (hda, hdca or lda) in `data_types`
+        # and the ids that have been used in the job that has already been run in `used_ids`.
+        requested_ids = []
+        data_types = []
+        used_ids = []
         for k, input_list in input_data.items():
             for type_values in input_list:
                 t = type_values['src']
                 v = type_values['id']
+                requested_ids.append(v)
+                data_types.append(t)
+                identifier = type_values['identifier']
                 if t == 'hda':
                     a = aliased(model.JobToInputDatasetAssociation)
                     b = aliased(model.HistoryDatasetAssociation)
                     c = aliased(model.HistoryDatasetAssociation)
-                    query = query.filter(and_(
+                    d = aliased(model.JobParameter)
+                    e = aliased(model.HistoryDatasetAssociationHistory)
+                    conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         a.dataset_id == b.id,
                         c.dataset_id == b.dataset_id,
-                        c.id == v,
+                        c.id == v,  # c is the requested job input HDA
+                        # We can compare input dataset names and metadata for a job
+                        # if we know that the input dataset hasn't changed since the job was run,
+                        # or if the job recorded a dataset_version and name and metadata of the current
+                        # job request matches those that were recorded for the job in question (introduced in release 18.01)
+                        or_(and_(
+                            b.update_time < model.Job.create_time,
+                            b.name == c.name,
+                            b.extension == c.extension,
+                            b.metadata == c.metadata,
+                        ), and_(
+                            b.id == e.history_dataset_association_id,
+                            a.dataset_version == e.version,
+                            e.name == c.name,
+                            e.extension == c.extension,
+                            e._metadata == c._metadata,
+                        )),
                         or_(b.deleted == false(), c.deleted == false())
                     ))
+                    if identifier:
+                        conditions.append(and_(model.Job.id == d.job_id,
+                                             d.name == "%s|__identifier__" % k,
+                                             d.value == json.dumps(identifier)))
+                    used_ids.append(a.dataset_id)
                 elif t == 'ldda':
                         a = aliased(model.JobToInputLibraryDatasetAssociation)
-                        query = query.filter(and_(
+                        conditions.append(and_(
                             model.Job.id == a.job_id,
                             a.name == k,
                             a.ldda_id == v
                         ))
+                        used_ids.append(a.ldda_id)
                 elif t == 'hdca':
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
                     c = aliased(model.HistoryDatasetCollectionAssociation)
-                    query = query.filter(and_(
+                    conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
                         b.id == a.dataset_collection_id,
                         c.id == v,
+                        b.name == c.name,
                         or_(and_(b.deleted == false(), b.id == v),
                             and_(or_(c.copied_from_history_dataset_collection_association_id == b.id,
                                      b.copied_from_history_dataset_collection_association_id == c.id),
-                                 c.deleted == false()
+                                 c.deleted == false(),
                                  )
                             )
                     ))
+                    used_ids.append(a.dataset_collection_id)
                 else:
                     return []
 
+        for k, v in wildcard_param_dump.items():
+            wildcard_value = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
+            a = aliased(model.JobParameter)
+            conditions.append(and_(
+                model.Job.id == a.job_id,
+                a.name == k,
+                a.value.like(wildcard_value)
+            ))
+
+        conditions.append(and_(
+            model.Job.any_output_dataset_collection_instances_deleted == false(),
+            model.Job.any_output_dataset_deleted == false()
+        ))
+
+        query = self.sa_session.query(model.Job.id, *used_ids).filter(and_(*conditions))
         for job in query.all():
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
             # possibly equivalent job, which may have been run on copies of the original input data.
-            replacement_timer = ExecutionTimer()
             job_input_ids = {}
-            for src, items in input_ids.items():
-                for dataset_id in items:
-                    if src in job_input_ids and dataset_id in job_input_ids[src]:
-                        continue
-                    if src == 'hda':
-                        a = aliased(model.JobToInputDatasetAssociation)
-                        b = aliased(model.HistoryDatasetAssociation)
-                        c = aliased(model.HistoryDatasetAssociation)
-
-                        (job_dataset_id,) = self.sa_session.query(b.id).filter(
-                            and_(
-                                a.job_id == job.id,
-                                b.id == a.dataset_id,
-                                c.dataset_id == b.dataset_id,
-                                c.id == dataset_id
-                            )
-                        ).first()
-                    elif src == 'hdca':
-                        a = aliased(model.JobToInputDatasetCollectionAssociation)
-                        b = aliased(model.HistoryDatasetCollectionAssociation)
-                        c = aliased(model.HistoryDatasetCollectionAssociation)
-
-                        (job_dataset_id,) = self.sa_session.query(b.id).filter(
-                            and_(
-                                a.job_id == job.id,
-                                b.id == a.dataset_collection_id,
-                                c.id == dataset_id,
-                                or_(b.id == c.id, or_(c.copied_from_history_dataset_collection_association_id == b.id,
-                                                      b.copied_from_history_dataset_collection_association_id == c.id)
-                                    )
-                            )
-                        ).first()
-                    elif src == 'ldda':
-                        job_dataset_id = dataset_id
-                    else:
-                        return []
+            if len(job) > 1:
+                # We do have datasets to check
+                job_id, current_jobs_data_ids = job[0], job[1:]
+                job_parameter_conditions = [model.Job.id == job_id]
+                for src, requested_id, used_id in zip(data_types, requested_ids, current_jobs_data_ids):
                     if src not in job_input_ids:
-                        job_input_ids[src] = {dataset_id: job_dataset_id}
+                        job_input_ids[src] = {requested_id: used_id}
                     else:
-                        job_input_ids[src][dataset_id] = job_dataset_id
-
-            def replace_dataset_ids(path, key, value):
-                """Exchanges dataset_ids (HDA, LDA, HDCA, not Dataset) in param_dump with dataset ids used in job."""
-                if key == 'id':
-                    current_case = param_dump
-                    for p in path:
-                        current_case = current_case[p]
-                    src = current_case['src']
-                    value = job_input_ids[src][value]
-                    return key, value
-                return key, value
-
-            new_param_dump = remap(param_dump, visit=replace_dataset_ids)
-            log.info("Parameter replacement finished %s", replacement_timer)
-            # new_param_dump has its dataset ids remapped to those used by the job.
-            # We now ask if the remapped job parameters match the current job.
-            query = self.sa_session.query(model.Job).filter(model.Job.id == job.id)
-            for k, v in new_param_dump.items():
-                a = aliased(model.JobParameter)
-                query = query.filter(and_(
-                    a.job_id == job.id,
-                    a.name == k,
-                    a.value == json.dumps(v)
-                ))
-            if query.first() is None:
-                continue
-            if is_workflow_step:
-                add_n_parameters = 3
+                        job_input_ids[src][requested_id] = used_id
+                new_param_dump = remap(param_dump, visit=replace_dataset_ids)
+                # new_param_dump has its dataset ids remapped to those used by the job.
+                # We now ask if the remapped job parameters match the current job.
+                for k, v in new_param_dump.items():
+                    a = aliased(model.JobParameter)
+                    job_parameter_conditions.append(and_(
+                        a.name == k,
+                        a.value == json.dumps(v)
+                    ))
             else:
-                add_n_parameters = 2
-            if not len(job.parameters) == (len(new_param_dump) + add_n_parameters):
-                # Verify that equivalent jobs had the same number of job parameters
-                # We add 2 or 3 to new_param_dump because chrominfo and dbkey (and __workflow_invocation_uuid__) are not passed
-                # as input parameters
+                job_parameter_conditions = [model.Job.id == job]
+            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
+            job = query.first()
+            if job is None:
                 continue
-            # check to make sure none of the output datasets or collections have been deleted
-            # TODO: refactors this into the initial job query
-            outputs_deleted = False
-            for hda in job.output_datasets:
-                if hda.dataset.deleted:
-                    outputs_deleted = True
-                    break
-            if not outputs_deleted:
-                for collection_instance in job.output_dataset_collection_instances:
-                    if collection_instance.dataset_collection_instance.deleted:
-                        outputs_deleted = True
-                        break
-            if not outputs_deleted:
-                log.info("Searching jobs finished %s", search_timer)
-                return job
+            n_parameters = 0
+            # Verify that equivalent jobs had the same number of job parameters
+            # We skip chrominfo, dbkey, __workflow_invocation_uuid__ and identifer
+            # parameter as these are not passed along when expanding tool parameters
+            # and they can differ without affecting the resulting dataset.
+            for parameter in job.parameters:
+                if parameter.name in {'__workflow_invocation_uuid__', 'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
+                    continue
+                n_parameters += 1
+            if not n_parameters == len(param_dump):
+                continue
+            log.info("Found equivalent job %s", search_timer)
+            return job
+        log.info("No equivalent jobs found %s", search_timer)
         return None
 
 

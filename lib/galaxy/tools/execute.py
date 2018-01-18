@@ -31,7 +31,7 @@ class PartialJobExecution(Exception):
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
 
 
-def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None):
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -49,7 +49,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice):
+    def execute_single_job(execution_slice, completed_job):
         job_timer = ExecutionTimer()
         params = execution_slice.param_combination
         if workflow_invocation_uuid:
@@ -59,7 +59,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # values or rerun parameters.
             del params['__workflow_invocation_uuid__']
 
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -89,13 +89,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
 
     if (job_count < burst_at or burst_threads < 2):
-        for execution_slice in execution_tracker.new_execution_slices():
+        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
             else:
-                execute_single_job(execution_slice)
-                jobs_executed += 1
+                execute_single_job(execution_slice, completed_jobs[i])
     else:
         # TODO: re-record success...
         q = Queue()
@@ -111,12 +110,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             t.daemon = True
             t.start()
 
-        for execution_slice in execution_tracker.new_execution_slices():
+        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
             else:
-                q.put(execution_slice)
+                q.put(execution_slice, completed_jobs[i])
                 jobs_executed += 1
 
         q.join()

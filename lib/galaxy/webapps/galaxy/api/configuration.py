@@ -91,7 +91,7 @@ class ConfigurationController(BaseAPIController):
         # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
         # server. A dedicated endpoint should probably be added to do that instead.
         confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
-        return map(_tool_conf_to_dict, confs)
+        return list(map(_tool_conf_to_dict, confs))
 
     @expose_api
     @require_admin

@@ -9,6 +9,7 @@ import tarfile
 import tempfile
 import threading
 from cgi import FieldStorage
+from collections import OrderedDict
 from datetime import datetime
 from distutils.version import LooseVersion
 from xml.etree import ElementTree
@@ -26,6 +27,7 @@ from galaxy import (
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
+from galaxy.managers.jobs import JobSearch
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -309,11 +311,9 @@ class ToolBox(BaseGalaxyToolBox):
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
-        refresh_on_change_values = []
         for tool in tools:
             options.insert(0, (tool.version, tool.id))
-            refresh_on_change_values.append(tool.id)
-        select_field = SelectField(name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values)
+        select_field = SelectField(name='tool_id')
         for option_tup in options:
             selected = set_selected and option_tup[1] == tool_id
             if selected:
@@ -341,7 +341,7 @@ class DefaultToolState(object):
         """
         self.inputs = {}
         context = ExpressionContext(self.inputs)
-        for input in tool.inputs.itervalues():
+        for input in tool.inputs.values():
             self.inputs[input.name] = input.get_initial_value(trans, context)
 
     def encode(self, tool, app, nested=False):
@@ -440,6 +440,7 @@ class Tool(object, Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
+        self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
@@ -940,9 +941,10 @@ class Tool(object, Dictifiable):
         for citation_elem in citations_elem:
             if citation_elem.tag != "citation":
                 pass
-            citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
-            if citation:
-                citations.append(citation)
+            if hasattr(self.app, 'citations_manager'):
+                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                if citation:
+                    citations.append(citation)
         return citations
 
     def parse_input_elem(self, page_source, enctypes, context=None):
@@ -1041,8 +1043,6 @@ class Tool(object, Dictifiable):
                 group.default_file_type = elem.get('default_file_type', group.default_file_type)
                 group.metadata_ref = elem.get('metadata_ref', group.metadata_ref)
                 rval[group.file_type_name].refresh_on_change = True
-                rval[group.file_type_name].refresh_on_change_values = \
-                    self.app.datatypes_registry.get_composite_extensions()
                 group_page_source = XmlPageSource(elem)
                 group.inputs = self.parse_input_elem(group_page_source, enctypes, context)
                 rval[group.name] = group
@@ -1282,7 +1282,7 @@ class Tool(object, Dictifiable):
         log.debug('Validated and populated state for tool request %s' % validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input(self, trans, incoming, history=None):
+    def handle_input(self, trans, incoming, history=None, use_cached_job=False):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1297,7 +1297,20 @@ class Tool(object, Dictifiable):
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
             mapping_params = MappingParameters(incoming, all_params)
-            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
+            completed_jobs = {}
+            for i, param in enumerate(all_params):
+                if use_cached_job:
+                    completed_jobs[i] = self.job_search.by_tool_input(
+                        trans=trans,
+                        tool_id=self.id,
+                        tool_version=self.version,
+                        param=param,
+                        param_dump=self.params_to_strings(param, self.app, nested=True),
+                        job_state=None,
+                    )
+                else:
+                    completed_jobs[i] = None
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)
             # Raise an exception if there were jobs to execute and none of them were submitted,
             # if at least one is submitted or there are no jobs to execute - return aggregate
             # information including per-job errors. Arguably we should just always return the
@@ -1314,7 +1327,7 @@ class Tool(object, Dictifiable):
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None):
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
@@ -1327,6 +1340,7 @@ class Tool(object, Dictifiable):
                 rerun_remap_job_id=rerun_remap_job_id,
                 execution_cache=execution_cache,
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
+                completed_job=completed_job,
             )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
@@ -1378,7 +1392,7 @@ class Tool(object, Dictifiable):
         for input_param in self.input_params:
             if isinstance(input_param, SelectToolParameter) and input_param.is_dynamic:
                 options = input_param.options
-                if options and options.missing_index_file and input_param not in params:
+                if options and options.tool_data_table and options.tool_data_table.missing_index_file and input_param not in params:
                     params.append(input_param)
         return params
 
@@ -1876,6 +1890,9 @@ class Tool(object, Dictifiable):
                 try:
                     if [hda.dependent_jobs for hda in [jtod.dataset for jtod in job.output_datasets] if hda.dependent_jobs]:
                         return True
+                    elif job.output_dataset_collection_instances:
+                        # We'll want to replace this item
+                        return 'job_produced_collection_elements'
                 except Exception as exception:
                     log.error(str(exception))
                     pass
@@ -2484,14 +2501,28 @@ class SortTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history):
         hdca = incoming["input"]
-        sorttype = incoming["sort_type"]
+        sorttype = incoming["sort_type"]["sort_type"]
         new_elements = odict()
         elements = hdca.collection.elements
+        presort_elements = []
         if sorttype == 'alpha':
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == 'numeric':
             presort_elements = [(int(re.sub('[^0-9]', '', dce.element_identifier)), dce) for dce in elements]
-        sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if presort_elements:
+            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if sorttype == 'file':
+            hda = incoming["sort_type"]["sort_file"]
+            if hda.metadata and hda.metadata.get('data_lines', 0) == len(elements):
+                old_elements_dict = OrderedDict()
+                for element in elements:
+                    old_elements_dict[element.element_identifier] = element
+                try:
+                    sorted_elements = [old_elements_dict[line.strip()] for line in open(hda.file_name)]
+                except KeyError:
+                    hdca_history_name = "%s: %s" % (hdca.hid, hdca.name)
+                    message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
+                    raise Exception(message)
 
         for dce in sorted_elements:
             dce_object = dce.element_object

@@ -46,8 +46,7 @@ define({
     // ---- history/options-menu
     "History Lists": "Tableaux des historiques",
     // Saved histories is defined above.
-    // "Saved Histories":
-    //     false,
+    // "Saved Histories":        //         false,
     "Histories Shared with Me": "Historiques partagés avec moi",
     "Current History": "Cet Historique",
     "Create New": "Créer un nouveau",
@@ -56,8 +55,7 @@ define({
     "Show Structure": "Montrer la structure",
     "Extract Workflow": "Extraire un Workflow",
     // Delete is defined elsewhere, but is also in this menu.
-    // "Delete":
-    //     false,
+    // "Delete":        //         false,
     "Delete Permanently": "Supprimer définitivement",
     "Dataset Actions": "Actions sur les jeux de données",
     "Copy Datasets": "Copier des jeux de données",
@@ -82,9 +80,7 @@ define({
         "Une erreur s'est produite lors de la réception des données depuis le serveur",
     "Please contact a Galaxy administrator if the problem persists":
         "Veuillez contacter un administrateur de l'instance Galaxy si ce problème persiste",
-    //TODO:
-    //"An error was encountered while <% where %>" :
-    //false,
+    //TODO:        //"An error was encountered while <% where %>" :        //false,
     "search datasets": "Rechercher des données",
     "You are currently viewing a deleted history!": "Vous consultez actuellement un historique supprimé!",
     "You are over your disk quota": "Vous avez dépassé votre quota d'espace disque",
@@ -118,9 +114,7 @@ define({
     "This history is empty. Click 'Get Data' on the left tool menu to start":
         "Cet historique est vide. Cliquer sur 'Get Data' au niveau du menu d'outils à gauche pour démarrer",
     "You must be logged in to create histories": "Vous devez être connecté pour créer un historique",
-    //TODO:
-    //"You can <% loadYourOwn %> or <% externalSource %>" :
-    //"Vous pouvez <% loadYourOwn %> ou <% externalSource %>",
+    //TODO:        //"You can <% loadYourOwn %> or <% externalSource %>" :        //"Vous pouvez <% loadYourOwn %> ou <% externalSource %>",
     "load your own data": "Charger vos propres données",
     "get data from an external source": "Charger des données depuis une source externe",
 
@@ -214,8 +208,255 @@ define({
 
     "Edit dataset tags": "Editer les mots-clés du jeu de données",
     "Edit dataset annotation": "Editer les annotations du jeu de données",
+    "Tool Help": "Aide outil",
+    // ---------------------------------------------------------------------------- admin
+    "Reset passwords": "Réinitialiser les mots de passe",
+    "Search Tool Shed": "Chercher via un Tool Shed",
+    "Monitor installing repositories": "Contrôler les dépôts installés",
+    "Manage installed tools": "Gérer les outils installés",
+    "Reset metadata": "Réinitialiser les métadonnées",
+    "Download local tool": "Télécharger un outil en local",
+    "Tool lineage": "Affiliation des outils",
+    "Reload a tool's configuration": "Recharger une configuration d'outils",
+    "Review tool migration stages": "Vérifier les étapes de migration d'outils",
+    "View Tool Error Logs": "Voir les logs d'erreur d'outils",
+    "Manage Display Whitelist": "Gérer la liste blanche d'outils graphiques",
+    "Manage Tool Dependencies": "Gérer les dépendances d'outils",
+    Users: false,
+    Groups: false,
+    "API keys": "Clé d'API",
+    "Impersonate a user": "Prendre la place d'un utilisateur",
+    Data: false,
+    Quotas: false,
+    Roles: false,
+    "Local data": "Données locales",
+    "Form Definitions": "Définitions de formulaires",
+
+    // ---------------------------------------------------------------------------- Scratchbook
+    "Enable/Disable Scratchbook": "Activer/Désactiver la visu Scratchbook",
+    "Show/Hide Scratchbook": "Montrer/cacher la visu Scratchbook",
 
     // ---------------------------------------------------------------------------- misc. MVC
     Tags: "Mots-clés",
-    "Edit annotation": "Editer les annotations"
+    "Edit annotation": "Editer les annotations",
+    // ---------------------------------------------------------------------------- galaxy.pages
+    Subscript: false,
+    Superscript: false,
+    // ---------------------------------------------------------------------------- data
+    Trackster: false,
+    Visualize: false,
+    // ---------------------------------------------------------------------------- dataset-error
+    "Any additional comments you can provide regarding what you were doing at the time of the bug.":
+        "N'importe quel commentaire que vous pouvez fournir concernant ce que vous faisiez lorsque le bug est apparu",
+    "Your email address": "Votre adresse e-mail",
+    Report: false,
+    "Error Report": "Rapport d'erreur",
+    // ---------------------------------------------------------------------------- dataset-li
+    "Dataset details": "Détails du jeu de données",
+    // ---------------------------------------------------------------------------- dataset-edit-attributes
+    "Save permissions.": "Sauvegarder les permissions",
+    "Change the datatype to a new type.": "Changer en un nouveau format de données",
+    "Convert the datatype to a new format.": "Convertir le format de données",
+    "Save attributes of the dataset.": "Sauvegarder les attributs du jeu de données",
+    "Change data type": "Changer le format de données",
+    "Edit dataset attributes": "Modifier les attributs du jeu de données",
+    "Save permissions": "Sauvegarder les permissions",
+    "Manage dataset permissions": "Gérer les permissions sur les jeux de données",
+    "Change datatype": "Changer le format de données",
+    "Convert datatype": "Convertir le format de données",
+    "Convert to new format": "Convertir en un nouveau format de données",
+    Save: false,
+    Permissions: false,
+    Datatypes: false,
+    Convert: false,
+    Attributes: false,
+    // ---------------------------------------------------------------------------- dataset-li-edit
+    Visualization: false,
+    // ---------------------------------------------------------------------------- library-dataset-view
+    "Import into History": "Importer dans l'historique",
+    // ---------------------------------------------------------------------------- library-foldertoolbar-view
+    "Location Details": "Détails de localisation",
+    "Deleting selected items": "Suppression des objets sélectionnés",
+    "Please select folders or files": "S'il vous plaît sélectionnez des dossiers ou fichiers",
+    "Please enter paths to import": "S'il vous plaît entrer des chemins/URLs à importer",
+    "Adding datasets from your history": "Ajouts de jeux de données à partir de votre historique",
+    "Create New Folder": "Créer un nouveau dossier",
+    // ---------------------------------------------------------------------------- library-librarytoolbar-view
+    "Create New Library": "Créer une nouvelle bibliothèque",
+    // ---------------------------------------------------------------------------- tours
+    Tours: false,
+    // ---------------------------------------------------------------------------- user-preferences
+    "Click here to sign out of all sessions.": false,
+    "Add or remove custom builds using history datasets.": false,
+    "Associate OpenIDs with your account.": false,
+    "Customize your Toolbox by displaying or omitting sets of Tools.": false,
+    "Access your current API key or create a new one.": false,
+    "Enable or disable the communication feature to chat with other users.": false,
+    "Allows you to change your login credentials.": false,
+    "User Preferences": false,
+    "Sign out": false,
+    "Manage custom builds": false,
+    "Manage OpenIDs": false,
+    "Manage Toolbox filters": false,
+    "Manage API key": false,
+    "Set dataset permissions for new histories": false,
+    "Change communication settings": false,
+    "Change password": false,
+    "Manage information": false,
+    // ---------------------------------------------------------------------------- history-list
+    Histories: false,
+    // ---------------------------------------------------------------------------- shed-list-view
+    "Configured Galaxy Tool Sheds": false,
+    // ---------------------------------------------------------------------------- repository-queue-view
+    "Repository Installation Queue": false,
+    // ---------------------------------------------------------------------------- repo-status-view
+    "Repository Status": false,
+    // ---------------------------------------------------------------------------- workflows-view
+    "Workflows Missing Tools": false,
+    // ---------------------------------------------------------------------------- tool-form-base
+    "See in Tool Shed": false,
+    Requirements: false,
+    Download: false,
+    Share: false,
+    Search: false,
+    // ---------------------------------------------------------------------------- tool-form-composite
+    "Workflow submission failed": false,
+    "Run workflow": false,
+    // ---------------------------------------------------------------------------- tool-form
+    "Job submission failed": false,
+    Execute: false,
+    "Tool request failed": false,
+    // ---------------------------------------------------------------------------- workflow
+    Workflows: false,
+    // ---------------------------------------------------------------------------- workflow-view
+    "Copy and insert individual steps": false,
+    Warning: false,
+    // ---------------------------------------------------------------------------- workflow-forms
+    "An email notification will be sent when the job has completed.": false,
+    "Add a step label.": false,
+    "Assign columns": false,
+    // ---------------------------------------------------------------------------- form-repeat
+    "Delete this repeat block": false,
+    placeholder: false,
+    Repeat: false,
+    // ---------------------------------------------------------------------------- ui-select-genomespace
+    "Browse GenomeSpace": false,
+    Browse: false,
+    // ---------------------------------------------------------------------------- ui-frames
+    Error: false,
+    Close: false,
+    // ---------------------------------------------------------------------------- upload-view
+    "Download from web or upload from disk": false,
+    Collection: false,
+    Composite: false,
+    Regular: false,
+    // ---------------------------------------------------------------------------- default-row
+    "Upload configuration": false,
+    // ---------------------------------------------------------------------------- default-view
+    "FTP files": false,
+    Reset: false,
+    Pause: false,
+    Start: false,
+    "Choose FTP file": false,
+    "Choose local file": false,
+    // ---------------------------------------------------------------------------- collection-view
+    Build: false,
+    "Choose FTP files": false,
+    "Choose local files": false,
+    // ---------------------------------------------------------------------------- composite-row
+    Select: false,
+    // ---------------------------------------------------------------------------- list-of-pairs-collection-creator
+    "Create a collection of paired datasets": false,
+    // ---------------------------------------------------------------------------- history-panel
+    "View all histories": false,
+    "History options": false,
+    "Refresh history": false,
+    // ---------------------------------------------------------------------------- admin-panel
+    "View error logs": false,
+    "View migration stages": false,
+    "View lineage": false,
+    "Manage dependencies": false,
+    "Manage whitelist": false,
+    "Manage metadata": false,
+    "Manage tools": false,
+    "Monitor installation": false,
+    "Install new tools": false,
+    "Tool Management": false,
+    Forms: false,
+    Roles: false,
+    Groups: false,
+    Quotas: false,
+    Users: false,
+    "User Management": false,
+    "Manage jobs": false,
+    "Display applications": false,
+    "Data tables": false,
+    "Data types": false,
+    Server: false,
+    // ---------------------------------------------------------------------------- circster
+    "Could Not Save": false,
+    "Saving...": false,
+    Settings: false,
+    "Add tracks": false,
+    // ---------------------------------------------------------------------------- trackster
+    "New Visualization": false,
+    "Add Data to Saved Visualization": false,
+    "Close visualization": false,
+    Circster: false,
+    Bookmarks: false,
+    "Add group": false,
+    // ---------------------------------------------------------------------------- sweepster
+    "Remove parameter from tree": false,
+    "Add parameter to tree": false,
+    Remove: false,
+    // ---------------------------------------------------------------------------- visualization
+    "Select datasets for new tracks": false,
+    Libraries: false,
+    // ---------------------------------------------------------------------------- phyloviz
+    "Zoom out": false,
+    "Zoom in": false,
+    "Phyloviz Help": false,
+    "Save visualization": false,
+    "PhyloViz Settings": false,
+    Title: false,
+    // ---------------------------------------------------------------------------- filters
+    "Filtering Dataset": false,
+    "Filter Dataset": false,
+    // ---------------------------------------------------------------------------- tracks
+    "Show individual tracks": false,
+    "Trackster Error": false,
+    "Tool parameter space visualization": false,
+    Tool: false,
+    "Set as overview": false,
+    "Set display mode": false,
+    Filters: false,
+    "Show composite track": false,
+    "Edit settings": false,
+    // ---------------------------------------------------------------------------- modal_tests
+    "Test title": false,
+    // ---------------------------------------------------------------------------- popover_tests
+    "Test Title": false,
+    "Test button": false,
+    // ---------------------------------------------------------------------------- ui_tests
+    title: false,
+    // ---------------------------------------------------------------------------- user-custom-builds
+    "Create new Build": false,
+    "Delete custom build.": false,
+    "Provide the data source.": false,
+    // ---------------------------------------------------------------------------- scratchbook
+    "Next in History": false,
+    "Previous in History": false,
+    // ---------------------------------------------------------------------------- generic-nav-view
+    "Chat online": false,
+    // ---------------------------------------------------------------------------- ui-select-content
+    "Multiple collections": false,
+    "Dataset collections": false,
+    "Dataset collection": false,
+    "Multiple datasets": false,
+    "Single dataset": false,
+    // ---------------------------------------------------------------------------- upload-button
+    "Download from URL or upload files from disk": false,
+    // ---------------------------------------------------------------------------- workflow_editor_tests
+    "tool tooltip": false
+    // ----------------------------------------------------------------------------
 });

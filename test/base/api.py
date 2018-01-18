@@ -76,6 +76,9 @@ class UsesApiTestCaseMixin:
     def _delete(self, *args, **kwds):
         return self.galaxy_interactor.delete(*args, **kwds)
 
+    def _put(self, *args, **kwds):
+        return self.galaxy_interactor.put(*args, **kwds)
+
     def _patch(self, *args, **kwds):
         return self.galaxy_interactor.patch(*args, **kwds)
 
@@ -129,3 +132,6 @@ class ApiTestInteractor(BaseInteractor):
 
     def patch(self, *args, **kwds):
         return self._patch(*args, **kwds)
+
+    def put(self, *args, **kwds):
+        return self._put(*args, **kwds)

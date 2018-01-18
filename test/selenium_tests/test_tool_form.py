@@ -1,3 +1,4 @@
+from base.populators import flakey
 from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 from .framework import (
@@ -84,13 +85,16 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
+    @flakey
     @selenium_test
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")
         test_path_decoy = self.get_filename("1.txt")
+        # Upload form posts bad data if executed two times in a row like this, so
+        # wait between uploads. xref https://github.com/galaxyproject/galaxy/issues/5169
         self.perform_upload(test_path)
-        self.perform_upload(test_path_decoy)
         self.history_panel_wait_for_hid_ok(1)
+        self.perform_upload(test_path_decoy)
         self.history_panel_wait_for_hid_ok(2)
 
         self.home()

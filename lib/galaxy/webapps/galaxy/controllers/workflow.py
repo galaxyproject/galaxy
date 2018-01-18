@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import base64
-import httplib
 import json
 import logging
 import os
@@ -9,6 +8,7 @@ import sgmllib
 
 import requests
 from markupsafe import escape
+from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
@@ -102,7 +102,6 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
     model_class = model.StoredWorkflow
     default_sort_key = "update_time"
     default_filter = dict(public_url="All", username="All", tags="All")
-    use_async = True
     columns = [
         grids.PublicURLColumn("Name", key="name", filterable="advanced", attach_popup=True),
         grids.OwnerAnnotationColumn("Annotation",
@@ -202,7 +201,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose
@@ -680,7 +678,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         auth_header = base64.b64encode('%s:%s' % (myexp_username, myexp_password))
         headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
         myexp_url = trans.app.config.get("myexperiment_url", self.__myexp_url)
-        conn = httplib.HTTPConnection(myexp_url)
+        conn = HTTPConnection(myexp_url)
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
         response = conn.getresponse()
@@ -989,7 +987,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     # Extract just the output flags for this step.
                     p = "%s|otag|" % step.id
                     l = len(p)
-                    outputs = [k[l:] for (k, v) in kwargs.iteritems() if k.startswith(p)]
+                    outputs = [k[l:] for (k, v) in kwargs.items() if k.startswith(p)]
                     if step.workflow_outputs:
                         for existing_output in step.workflow_outputs:
                             if existing_output.output_name not in outputs:
@@ -1060,10 +1058,10 @@ def _expand_multiple_inputs(kwargs):
     input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
 
     # Input name that are multiply specified
-    multi_input_keys = matched_multi_inputs.keys() + multiplied_multi_inputs.keys()
+    multi_input_keys = list(matched_multi_inputs.keys()) + list(multiplied_multi_inputs.keys())
 
     for input_combo in input_combos:
-        for key, value in input_combo.iteritems():
+        for key, value in input_combo.items():
             kwargs[key] = value
         yield (kwargs, multi_input_keys)
 
@@ -1074,14 +1072,14 @@ def _extend_with_matched_combos(single_inputs, multi_inputs):
 
     matched_multi_inputs = []
 
-    first_multi_input_key = multi_inputs.keys()[0]
+    first_multi_input_key = next(iter(multi_inputs.keys()))
     first_multi_value = multi_inputs.get(first_multi_input_key)
 
     for value in first_multi_value:
         new_inputs = _copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
         matched_multi_inputs.append(new_inputs)
 
-    for multi_input_key, multi_input_values in multi_inputs.iteritems():
+    for multi_input_key, multi_input_values in multi_inputs.items():
         if multi_input_key == first_multi_input_key:
             continue
         if len(multi_input_values) != len(first_multi_value):
@@ -1094,7 +1092,7 @@ def _extend_with_matched_combos(single_inputs, multi_inputs):
 def _extend_with_multiplied_combos(input_combos, multi_inputs):
     combos = input_combos
 
-    for multi_input_key, multi_input_value in multi_inputs.iteritems():
+    for multi_input_key, multi_input_value in multi_inputs.items():
         iter_combos = []
 
         for combo in combos:
@@ -1114,7 +1112,7 @@ def _copy_and_extend_inputs(inputs, key, value):
 def _split_inputs(kwargs):
     """
     """
-    input_keys = filter(lambda a: a.endswith('|input'), kwargs)
+    input_keys = [a for a in kwargs if a.endswith('|input')]
     single_inputs = {}
     matched_multi_inputs = {}
     multiplied_multi_inputs = {}

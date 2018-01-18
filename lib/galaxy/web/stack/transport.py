@@ -76,7 +76,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         if num < need:
             raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
             sys.exit(1)
-        self._locks.extend(map(lambda x: 'RECV_MSG_FARM_' + x, farms))
+        self._locks.extend(['RECV_MSG_FARM_' + x for x in farms])
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
         # if len(self.lock_map) > 1:
         #     uwsgi.set_option('locks', len(self.lock_map))
@@ -136,7 +136,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             if not uwsgi.in_farm():
                 raise RuntimeError('Mule %s is not in a farm! Set `farm = <pool_name>:%s` in uWSGI configuration'
                                    % (uwsgi.mule_id(),
-                                      ','.join(map(str, range(1, len(filter(lambda x: x.endswith('galaxy/main.py'), self.stack._configured_mules)) + 1)))))
+                                      ','.join(map(str, range(1, len([x for x in self.stack._configured_mules if x.endswith('galaxy/main.py')]) + 1)))))
             elif len(self.stack._farms) > 1:
                 raise RuntimeError('Mule %s is in multiple farms! This configuration is not supported due to locking issues' % uwsgi.mule_id())
             # only mules receive messages so don't bother starting the dispatcher if we're not a mule (although

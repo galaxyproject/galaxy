@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 /* This is the regular tool form */
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -61,7 +62,7 @@ var View = Backbone.View.extend({
                                 } else {
                                     Galaxy.modal &&
                                         Galaxy.modal.show({
-                                            title: "Tool request failed",
+                                            title: _l("Tool request failed"),
                                             body: error_message,
                                             buttons: {
                                                 Close: function() {
@@ -119,7 +120,7 @@ var View = Backbone.View.extend({
         var execute_button = new Ui.Button({
             icon: "fa-check",
             tooltip: `Execute: ${options.name} (${options.version})`,
-            title: "Execute",
+            title: _l("Execute"),
             cls: "btn btn-primary ui-clear-float",
             wait_cls: "btn btn-info ui-clear-float",
             onclick: function() {
@@ -135,16 +136,44 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
+            if (options.job_remap === "job_produced_collection_elements") {
+                var label = "Replace elements in collection ?";
+                var help = "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
+            } else {
+                var label = "Resume dependencies from this job ?";
+                var help = "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+            }
             options.inputs.push({
-                label: "Resume dependencies from this job",
+                label: label,
                 name: "rerun_remap_job_id",
                 type: "select",
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
                 options: [["Yes", options.job_id], ["No", "__ignore__"]],
-                help:
-                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run."
+                help: help,
+            });
+        }
+
+        // Job Re-use Options
+        var extra_user_preferences = {};
+        if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
+            extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+        }
+        var use_cached_job =
+            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
+                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"]
+                : false;
+        if (use_cached_job === "true") {
+            options.inputs.push({
+                label: "BETA: Attempt to re-use jobs with identical parameters ?",
+                help: "This may skip executing jobs that you have already run",
+                name: "use_cached_job",
+                type: "select",
+                display: "radio",
+                ignore: "__ignore__",
+                value: "__ignore__",
+                options: [["No", false], ["Yes", true]]
             });
         }
     },
@@ -216,7 +245,7 @@ var View = Backbone.View.extend({
                 }
                 if (!input_found) {
                     self.modal.show({
-                        title: "Job submission failed",
+                        title: _l("Job submission failed"),
                         body: self._templateError(job_def, response && response.err_msg),
                         buttons: {
                             Close: function() {
@@ -268,9 +297,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
-                            n
-                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

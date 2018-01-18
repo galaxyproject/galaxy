@@ -143,9 +143,13 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         self._handle_metadata_if_needed(job_wrapper)
+
+        job_destination = job_wrapper.job_destination
+        job_state = JobState(job_wrapper, job_destination)
+        job_state.stop_job = False
         # Finish the job!
         try:
-            job_wrapper.finish(stdout, stderr, exit_code)
+            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
         except Exception:
             log.exception("Job wrapper finish method failed")
             self._fail_job_local(job_wrapper, "Unable to finish job")

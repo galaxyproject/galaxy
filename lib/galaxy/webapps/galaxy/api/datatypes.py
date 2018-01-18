@@ -42,7 +42,7 @@ class DatatypesController(BaseAPIController):
                     if extension in datatypes_registry.datatypes_by_extension:
                         composite_files = datatypes_registry.datatypes_by_extension[extension].composite_files
                         if composite_files:
-                            dictionary['composite_files'] = [_.dict() for _ in composite_files.itervalues()]
+                            dictionary['composite_files'] = [_.dict() for _ in composite_files.values()]
                     rval.append(dictionary)
                 return rval
         except Exception as exception:
@@ -61,7 +61,7 @@ class DatatypesController(BaseAPIController):
         try:
             ext_to_class_name = dict()
             classes = []
-            for k, v in self._datatypes_registry.datatypes_by_extension.iteritems():
+            for k, v in self._datatypes_registry.datatypes_by_extension.items():
                 c = v.__class__
                 ext_to_class_name[k] = c.__module__ + "." + c.__name__
                 classes.append(c)
@@ -109,7 +109,7 @@ class DatatypesController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def converters(self, trans, **kwd):
         converters = []
-        for (source_type, targets) in self._datatypes_registry.datatype_converters.iteritems():
+        for (source_type, targets) in self._datatypes_registry.datatype_converters.items():
             for target_type in targets:
                 converters.append({
                     'source': source_type,

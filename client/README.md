@@ -3,12 +3,20 @@ Client Build System
 
 Installs, stages, and builds the client-side scripts necessary for running the
 Galaxy webapp. There's no need to use this system unless you are modifying or
-developing client-side scripts.
+developing client-side scripts, or are running the development branch of
+Galaxy.
 
 The base dependencies you will need are Node.js and Yarn.  On OSX the easiest
 way to get set up is using homebrew and the command `brew install nodejs yarn`.
 More information including instructions for other platforms is available  at
 nodejs.org and yarnpkg.com.
+
+The Galaxy client build has necessarily grown more complex in the past several
+years, but we're still trying to keep things as simple as possible for
+developers (everyone, really).  If you're having any trouble with building the
+client after following the instructions below please create an issue on Github
+or reach out for help directly on Gitter at
+https://gitter.im/galaxyproject/Lobby.
 
 
 Complete Client Build
@@ -66,13 +74,3 @@ As mentioned above, 'make client' will also rebuild styles.  If you *only* want
 to run the style task, use the following command from the `client` directory:
 
     yarn run style
-
-
-The Toolshed Client Build
-=========================
-
-The toolshed client is not tightly integrated with the rest of the build
-system.  To build the toolshed client, execute the following command from the
-`client` directory.
-
-	yarn run build-toolshed

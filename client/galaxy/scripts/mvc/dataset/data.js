@@ -1,7 +1,6 @@
-// Additional dependencies: jQuery, underscore.
-import Modal from "mvc/ui/ui-modal";
-import Frames from "mvc/ui/ui-frames";
+import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
+// Additional dependencies: jQuery, underscore.
 /**
  * Dataset metedata.
  */
@@ -466,7 +465,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // create the icon
         var btn_viz = new mod_icon_btn.IconButtonView({
             model: new mod_icon_btn.IconButton({
-                title: "Visualize",
+                title: _l("Visualize"),
                 icon_class: "chart_curve",
                 id: "btn_viz"
             })
@@ -543,7 +542,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
             $("#btn_viz").off("click");
             $("#btn_viz").click(() => {
                 self.frame.add({
-                    title: "Trackster",
+                    title: _l("Trackster"),
                     url: `${self.url_viz}/trackster?${$.param(btn_viz_pars)}`
                 });
             });

@@ -154,9 +154,9 @@ function show_in_overlay(options) {
         closeButton: true,
         title: "&nbsp;",
         body: $(
-            `<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='${options.url}' width='${
-                width
-            }' height='${height}' scrolling='${scroll}' frameborder='0'></iframe></div>`
+            `<div style='margin: -5px;'><iframe style='margin: 0; padding: 0;' src='${
+                options.url
+            }' width='${width}' height='${height}' scrolling='${scroll}' frameborder='0'></iframe></div>`
         )
     });
     modal.show({ backdrop: true });

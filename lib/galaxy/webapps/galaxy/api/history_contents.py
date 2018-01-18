@@ -96,7 +96,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         contents_kwds = {'types': types}
         if ids:
-            ids = map(lambda id: self.decode_id(id), ids.split(','))
+            ids = [self.decode_id(id) for id in ids.split(',')]
             contents_kwds['ids'] = ids
             # If explicit ids given, always used detailed result.
             details = 'all'
@@ -209,7 +209,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             ids = util.listify(ids)
             types = util.listify(types)
-        return map(lambda s: self.encode_all_ids(trans, s), fetch_job_states(self.app, trans.sa_session, ids, types))
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(self.app, trans.sa_session, ids, types)]
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):

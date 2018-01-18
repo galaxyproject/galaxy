@@ -953,6 +953,41 @@ mapping:
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
          
+      biostar_url:
+        type: str
+        default: null
+        required: false
+        desc: |
+          Enable integration with a custom Biostar instance.
+         
+      biostar_key_name:
+        type: str
+        default: null
+        required: false
+        desc: |
+          Enable integration with a custom Biostar instance.
+         
+      biostar_key:
+        type: str
+        default: null
+        required: false
+        desc: |
+          Enable integration with a custom Biostar instance.
+         
+      biostar_enable_bug_reports:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enable integration with a custom Biostar instance.
+         
+      biostar_never_authenticate:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable integration with a custom Biostar instance.
+         
       citation_url:
         type: str
         default: https://galaxyproject.org/citing-galaxy
@@ -1606,6 +1641,15 @@ mapping:
           is comma-separated). Be aware that *any* user with library import permissions
           can import from anywhere in these directories (assuming they are able to
           create symlinks to them).
+         
+      user_library_import_check_permissions:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          In conjunction or alternatively, Galaxy can restrict user library imports to
+          those files that the user can read (by checking basic unix permissions).
+          For this to work, the username has to match the username on the filesystem.
          
       allow_path_paste:
         type: bool
