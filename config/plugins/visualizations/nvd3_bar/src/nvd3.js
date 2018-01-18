@@ -41,7 +41,6 @@ var CommonWrapper = Backbone.View.extend({
                     var data = context.data || context.point;
                     return "<h3>" + (data.tooltip || data.key) + "</h3>";
                 });
-                d3chart.duration(0);
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
                     canvas.datum(groups).call(d3chart);
