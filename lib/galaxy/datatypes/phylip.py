@@ -51,6 +51,14 @@ class Phylip(Text):
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.phylip')
+        >>> Phylip().sniff(fname)
+        True
+        >>> fname = get_test_fname('sequence.fasta')
+        >>> Phylip().sniff(fname)
+        False
         """
         with open(filename, "r") as f:
             # Get number of sequence from first line
