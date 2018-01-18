@@ -33,7 +33,7 @@ class Phylip(Text):
         dataset.metadata.data_lines = self.count_data_lines(dataset)
         try:
             dataset.metadata.sequences = int(get_headers(dataset.file_name, '\t', count=1)[0][0].split()[0])
-        except:
+        except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -64,7 +64,7 @@ class Phylip(Text):
             # Get number of sequence from first line
             try:
                 nb_seq = int(f.readline().split()[0])
-            except:
+            except Exception:
                 return False
             # counts number of sequence from first stack
             count = 0
