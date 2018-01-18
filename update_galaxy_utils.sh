@@ -40,8 +40,8 @@ GALAXY_LIB_DIR=$GALAXY_DIRECTORY/lib
 GALAXY_UNIT_TEST_DIR=$GALAXY_DIRECTORY/test/unit
 GALAXY_DOCS_DIRECTORY=$GALAXY_DIRECTORY/doc/source
 
-UTIL_FILES=(__init__.py aliaspickler.py bunch.py checkers.py compression_utils.py dictifiable.py docutils_template.txt filelock.py expressions.py hash_util.py heartbeat.py heartbeat.py image_util.py inflection.py json.py lazy_process.py odict.py oset.py object_wrapper.py plugin_config.py properties.py simplegraph.py sleeper.py sockets.py specs.py sqlite.py submodules.py tool_version.py topsort.py topsort.py xml_macros.py)
-GALAXY_LIB=(galaxy/objectstore galaxy/tools/deps galaxy/tools/parser galaxy/tools/verify  galaxy/jobs/metrics galaxy/tools/locations galaxy/tools/linters galaxy/tools/fetcher.py galaxy/tools/loader_directory.py galaxy/tools/loader.py galaxy/tools/lint.py galaxy/tools/lint_util.py galaxy/tools/deps galaxy/tools/toolbox galaxy/exceptions galaxy/tools/cwl galaxy/web/stack)
+UTIL_FILES=(__init__.py aliaspickler.py bunch.py checkers.py compression_utils.py dictifiable.py docutils_template.txt facts.py filelock.py expressions.py hash_util.py heartbeat.py heartbeat.py image_util.py inflection.py json.py lazy_process.py odict.py oset.py object_wrapper.py plugin_config.py properties.py simplegraph.py sleeper.py sockets.py specs.py sqlite.py submodules.py tool_version.py topsort.py topsort.py xml_macros.py)
+GALAXY_LIB=(galaxy/objectstore galaxy/tools/deps galaxy/tools/parser galaxy/tools/verify  galaxy/jobs/metrics galaxy/tools/locations galaxy/tools/linters galaxy/tools/fetcher.py galaxy/tools/loader_directory.py galaxy/tools/loader.py galaxy/tools/lint.py galaxy/tools/lint_util.py galaxy/tools/deps galaxy/tools/toolbox galaxy/exceptions galaxy/tools/cwl galaxy/util/logging galaxy/util/path galaxy/web/stack)
 TEST_FILES=(tools/test_parsing.py tools/test_toolbox_filters.py tools/test_watcher.py test_sqlite_utils.py tools/test_tool_deps.py tools/test_tool_loader.py test_topsort.py test_sockets.py test_objectstore.py test_lazy_process.py)
 DOC_FILES=(mulled.rst dependency_resolution.rst)
 

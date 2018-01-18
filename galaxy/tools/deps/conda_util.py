@@ -6,7 +6,6 @@ import os
 import re
 import shutil
 import tempfile
-
 from distutils.version import LooseVersion
 from sys import platform as _platform
 
@@ -459,13 +458,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     else:
         search_cmd.extend(conda_context._override_channels_args)
     search_cmd.append(conda_target.package)
-
-    try:
-        res = commands.execute(search_cmd)
-    except commands.CommandLineException as e:
-        log.warning(e)
-        return (None, None)
-
+    res = commands.execute(search_cmd)
     hits = json.loads(res).get(conda_target.package, [])
     hits = sorted(hits, key=lambda hit: LooseVersion(hit['version']), reverse=True)
 
@@ -537,7 +530,7 @@ def build_isolated_environment(
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
         offline_works = (conda_context.conda_version < LooseVersion("4.3")) or \
-                        (conda_context.conda_version >= LooseVersion("4.3.18"))
+                        (conda_context.conda_version >= LooseVersion("4.4"))
         if offline_works:
             create_args.extend(["--offline"])
         else:

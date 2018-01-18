@@ -18,7 +18,6 @@ from galaxy.exceptions import MessageException
 from galaxy.util import listify, safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-
 from .cwltool_deps import (
     ensure_cwltool_available,
     pathmapper,
@@ -32,7 +31,6 @@ from .representation import (
     USE_FIELD_TYPES,
     USE_STEP_PARAMETERS,
 )
-
 from .schema import non_strict_schema_loader, schema_loader
 from .util import SECONDARY_FILES_EXTRA_PREFIX
 

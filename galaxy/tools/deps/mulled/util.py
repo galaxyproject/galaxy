@@ -3,10 +3,9 @@ from __future__ import print_function
 
 import collections
 import hashlib
-import time
-import threading
 import sys
-
+import threading
+import time
 from distutils.version import LooseVersion
 
 try:

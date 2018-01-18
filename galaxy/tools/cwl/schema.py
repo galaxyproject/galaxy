@@ -1,6 +1,5 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
 import os
-
 from collections import namedtuple
 
 from six.moves.urllib.parse import urldefrag
