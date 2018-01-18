@@ -1255,6 +1255,56 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~
+``biostar_url``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enable integration with a custom Biostar instance.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``biostar_key_name``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable integration with a custom Biostar instance.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``biostar_key``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enable integration with a custom Biostar instance.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biostar_enable_bug_reports``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable integration with a custom Biostar instance.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biostar_never_authenticate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable integration with a custom Biostar instance.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``citation_url``
 ~~~~~~~~~~~~~~~~
@@ -1734,6 +1784,20 @@
 :Type: str
 
 
+~~~~~~~~~~~
+``logging``
+~~~~~~~~~~~
+
+:Description:
+    Controls where and how the server logs messages. If unset, the
+    default is to log all messages to standard output at the level
+    defined by the `log_level` configuration option. Configuration is
+    described in the documentation at:
+    https://docs.galaxyproject.org/en/master/admin/config_logging.html
+:Default: ``galaxy.config.LOGGING_CONFIG_DEFAULT``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``database_engine_option_echo``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2138,6 +2202,19 @@
     symlinks to them).
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_library_import_check_permissions``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    In conjunction or alternatively, Galaxy can restrict user library
+    imports to those files that the user can read (by checking basic
+    unix permissions). For this to work, the username has to match the
+    username on the filesystem.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~

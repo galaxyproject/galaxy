@@ -650,6 +650,21 @@ galaxy:
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: 'https://galaxyproject.org/support'
 
+  # Enable integration with a custom Biostar instance.
+  #biostar_url: null
+
+  # Enable integration with a custom Biostar instance.
+  #biostar_key_name: null
+
+  # Enable integration with a custom Biostar instance.
+  #biostar_key: null
+
+  # Enable integration with a custom Biostar instance.
+  #biostar_enable_bug_reports: true
+
+  # Enable integration with a custom Biostar instance.
+  #biostar_never_authenticate: false
+
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: 'https://galaxyproject.org/citing-galaxy'
 
@@ -1043,6 +1058,12 @@ galaxy:
   # these directories (assuming they are able to create symlinks to
   # them).
   #user_library_import_symlink_whitelist: null
+
+  # In conjunction or alternatively, Galaxy can restrict user library
+  # imports to those files that the user can read (by checking basic
+  # unix permissions). For this to work, the username has to match the
+  # username on the filesystem.
+  #user_library_import_check_permissions: false
 
   # Allow admins to paste filesystem paths during upload. For libraries
   # this adds an option to the admin library upload tool allowing admins
