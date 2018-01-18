@@ -5,12 +5,11 @@
 # This file is written to the end of conf.py by Jenkins
 #
 
-import os
 from distutils.version import LooseVersion
 from subprocess import check_output
 
 # This is set in the Jenkins matrix config
-TARGET_GIT_BRANCH = os.environ.get('TARGET_GIT_BRANCH', 'dev')
+TARGET_GIT_BRANCH = os.environ.get('TARGET_GIT_BRANCH', 'dev')  # noqa: F821
 
 # Version message templates
 OLD_BANNER = """This document is for an old release of Galaxy. You can alternatively <a href="%(stable_path)s">view this
@@ -24,7 +23,7 @@ of the latest release's documentation</a>."""
 MIN_DOC_VERSION = LooseVersion('17.05')
 
 # Enable simpleversioning
-extensions += ['sphinxcontrib.simpleversioning']
+extensions += ['sphinxcontrib.simpleversioning']  # noqa: F821
 
 # -- sphinxcontrib-simpleversioning Settings ---------------------------------
 
