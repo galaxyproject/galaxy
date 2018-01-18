@@ -39,7 +39,7 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
                 d3chart.tooltip.contentGenerator(function(context) {
                     var data = context.data || context.point;
-                    return "<h3>" + (data.tooltip || data.key) + "</h3>";
+                    return "<h3>" + (data.tooltip || data.key || data.y) + "</h3>";
                 });
                 if ($("#" + canvas_id).length > 0) {
                     var canvas = d3.select("#" + canvas_id);
