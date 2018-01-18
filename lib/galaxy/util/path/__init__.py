@@ -317,7 +317,7 @@ def __copy_self(names=__name__, parent=None):
     if isinstance(names, string_types):
         names = iter(names.split('.'))
     try:
-        name = names.next()
+        name = next(names)
     except StopIteration:
         return parent
     path = parent and parent.__path__

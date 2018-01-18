@@ -1,18 +1,12 @@
 import gzip
 import io
-import sys
 import zipfile
 
 from .checkers import (
+    bz2,
     is_bz2,
     is_gzip
 )
-
-if sys.version_info < (3, 3):
-    import bz2file as bz2
-    gzip.GzipFile.read1 = gzip.GzipFile.read  # workaround for https://bugs.python.org/issue12591
-else:
-    import bz2
 
 
 def get_fileobj(filename, mode="r", compressed_formats=None):
