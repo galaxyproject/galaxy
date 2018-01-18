@@ -87,6 +87,9 @@ class ConfigurationController(BaseAPIController):
     @expose_api
     @require_admin
     def dynamic_tool_confs(self, trans):
+        # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
+        # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
+        # server. A dedicated endpoint should probably be added to do that instead.
         confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
         return list(map(_tool_conf_to_dict, confs))
 

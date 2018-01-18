@@ -14,7 +14,7 @@ Plugin activation
 -----------------
 All webhooks that are included in the main Galaxy distribution are located in the ``config/plugins/webhooks/demo`` folder
 and are deactivated by default.
-To activate these demo webhooks make sure this path is added to ``webhooks_dir`` in your ``galaxy.ini``. You can add as many
+To activate these demo webhooks make sure this path is added to ``webhooks_dir`` in your ``galaxy.yml``. You can add as many
 webhook folders as you like as a comma separated list.
 Webhooks supports one additional layer of activating/deactivating by changing the ``activate: true`` in each config of each webhook.
 

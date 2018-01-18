@@ -120,6 +120,7 @@ LOGGING_CONFIG_DEFAULT = {
         },
     },
 }
+"""Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
 def resolve_path(path, root):
@@ -533,7 +534,7 @@ class Configuration(object):
         global_conf_parser = configparser.ConfigParser()
         self.config_file = None
         self.global_conf_parser = global_conf_parser
-        if global_conf and "__file__" in global_conf:
+        if global_conf and "__file__" in global_conf and ".yml" not in global_conf["__file__"]:
             self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
@@ -583,14 +584,6 @@ class Configuration(object):
         # Store advanced job management config
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        # Galaxy messaging (AMQP) configuration options
-        self.amqp = {}
-        try:
-            amqp_config = global_conf_parser.items("galaxy_amqp")
-        except configparser.NoSectionError:
-            amqp_config = {}
-        for k, v in amqp_config:
-            self.amqp[k] = v
         # Galaxy internal control queue configuration.
         # If specified in universe, use it, otherwise we use whatever 'real'
         # database is specified.  Lastly, we create and use new sqlite database

@@ -6,7 +6,7 @@ parse_common_args() {
     while :
     do
         case "$1" in
-            --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip)
+            --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip|--skip-client-build)
                 common_startup_args="$common_startup_args $1"
                 shift
                 ;;
@@ -34,6 +34,7 @@ parse_common_args() {
                     paster_args="$paster_args $1"
                 fi
                 uwsgi_args="$uwsgi_args --reload $PID_FILE"
+                restart_arg_set=1
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
@@ -41,7 +42,7 @@ parse_common_args() {
                 paster_args="$paster_args --pid-file $PID_FILE --log-file $LOG_FILE --daemon"
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
-                uwsgi_args="$uwsgi_args --daemonize2 $LOG_FILE --safe-pidfile $PID_FILE"
+                uwsgi_args="--master --daemonize2 $LOG_FILE --pidfile2 $PID_FILE $uwsgi_args"
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
@@ -109,7 +110,11 @@ find_server() {
         [ "$server_config" != "none" ] && arg_getter_args="-c $server_config"
         [ -n "$server_app" ] && arg_getter_args="--app $server_app"
         run_server="$UWSGI"
-        server_args="$(python ./scripts/get_uwsgi_args.py $arg_getter_args) $uwsgi_args"
+        server_args=
+        if [ -z "$stop_daemon_arg_set" -a -z "$restart_arg_set" ]; then
+            server_args="$(python ./scripts/get_uwsgi_args.py $arg_getter_args)"
+        fi
+        server_args="$server_args $uwsgi_args"
     else
         run_server="python"
         server_args="./scripts/paster.py serve $server_config $paster_args"

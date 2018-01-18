@@ -73,6 +73,17 @@ class SentryPlugin(ErrorPlugin):
             error_message = ERROR_TEMPLATE.format(**extra)
 
             # Update context with user information in a sentry-specific manner
+
+            # Getting the url allows us to link to the dataset info page in case
+            # anything is missing from this report.
+            try:
+                url = web.url_for(controller="dataset",
+                                  action="show_params",
+                                  dataset_id=self.app.security.encode_id(dataset.id),
+                                  qualified=True)
+            except AttributeError:
+                # The above does not work when handlers are separate from the web handlers
+                url = None
             self.sentry_client.context.merge({
                 # User information here also places email links + allows seeing
                 # a list of affected users in the tags/filtering.
@@ -80,14 +91,8 @@ class SentryPlugin(ErrorPlugin):
                     'name': user.username,
                     'email': user.email,
                 },
-                # This allows us to link to the dataset info page in case
-                # anything is missing from this report.
                 'request': {
-                    'url': web.url_for(
-                        controller="dataset", action="show_params",
-                        dataset_id=self.app.security.encode_id(dataset.id),
-                        qualified=True
-                    )
+                    'url': url
                 }
             })
 
