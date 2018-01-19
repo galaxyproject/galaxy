@@ -1155,6 +1155,9 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         archive_url = kwargs.get('archive_url', None)
         archive_source = None
         if hasattr(archive_file, 'file'):
+            # archive_file.file is a TemporaryFile and will be deleted once it is closed.
+            # We prevent this by setting `delete` to `False`.
+            archive_file.file.delete = False
             archive_source = archive_file.file.name
             archive_type = 'file'
         elif archive_url:
