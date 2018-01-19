@@ -12,7 +12,6 @@ from metadata import MetadataElement
 
 from galaxy import util
 from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.sniff import get_headers
 from galaxy.util import nice_size
 
 
@@ -56,9 +55,6 @@ class Phylip(Text):
         >>> fname = get_test_fname('test.phylip')
         >>> Phylip().sniff(fname)
         True
-        >>> fname = get_test_fname('sequence.fasta')
-        >>> Phylip().sniff(fname)
-        False
         """
         with open(filename, "r") as f:
             # Get number of sequence from first line
