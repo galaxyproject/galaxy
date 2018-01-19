@@ -83,11 +83,17 @@ class AuthManager(object):
         else:
             email = None
             username = login
+        auth_return = {
+            "auto_reg": False,
+            "email": "",
+            "username": ""
+        }
         for provider, options in self.active_authenticators(email, username, password):
             if provider is None:
                 log.debug("Unable to find module: %s" % options)
             else:
-                auth_result, auto_email, auto_username = provider.authenticate(email, username, password, options)
+                auth_results = provider.authenticate(email, username, password, options)
+                auth_result, auto_email, auto_username = auth_results[:3]
                 auto_email = str(auto_email).lower()
                 auto_username = str(auto_username).lower()
                 if auth_result is True:
@@ -102,11 +108,21 @@ class AuthManager(object):
                         else:
                             break  # end for loop if we can't make a unique username
                     log.debug("Email: %s, auto-register with username: %s" % (auto_email, auto_username))
-                    return (string_as_bool(options.get('auto-register', False)), auto_email, auto_username)
+                    auth_return["auto_reg"] = string_as_bool(options.get('auto-register', False))
+                    auth_return["email"] = auto_email
+                    auth_return["username"] = auto_username
+                    auth_return["auto_create_roles"] = string_as_bool(options.get('auto-create-roles', False))
+                    auth_return["auto_create_groups"] = string_as_bool(options.get('auto-create-groups', False))
+                    auth_return["auto_assign_roles_to_groups_only"] = string_as_bool(
+                        options.get('auto-assign-roles-to-groups-only', False))
+
+                    if len(auth_results) == 4:
+                        auth_return["attributes"] = auth_results[3]
+                    return auth_return
                 elif auth_result is None:
                     log.debug("Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username))
                     break  # end authentication (skip rest)
-        return (False, '', '')
+        return auth_return
 
     def check_password(self, user, password):
         """Checks the username/email and password using auth providers."""

@@ -92,6 +92,20 @@ class LDAP(AuthProvider):
                 log.debug('LDAP authenticate: email must be used to login, cannot be None')
                 return (failure_mode, '', '')
 
+        auto_create_roles = string_as_bool(options.get('auto-create-roles', False))
+        auto_create_groups = string_as_bool(options.get('auto-create-groups', False))
+        auto_create_roles_or_groups = auto_create_roles or auto_create_groups
+        auto_assign_roles_to_groups_only = string_as_bool(options.get('auto-assign-roles-to-groups-only', False))
+        if auto_assign_roles_to_groups_only and not (auto_create_roles and auto_create_groups):
+            raise ConfigurationError("If 'auto-assign-roles-to-groups-only' is True, auto-create-roles and "
+                                     "auto-create-groups have to be True as well.")
+
+        role_search_option = 'auto-register-roles'
+        role_search_attribute = options.get(role_search_option, None)
+        if auto_create_roles_or_groups and role_search_attribute is None:
+            raise ConfigurationError("If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
+                                     " be provided." % role_search_option)
+
         try:
             import ldap
         except ImportError:
@@ -132,6 +146,8 @@ class LDAP(AuthProvider):
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
+                if auto_create_roles_or_groups and role_search_attribute not in attributes:
+                    attributes.append(role_search_attribute)
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -150,6 +166,15 @@ class LDAP(AuthProvider):
                             params[attr] = str(attrs[attr][0])
                         else:
                             params[attr] = ""
+                    if auto_create_roles_or_groups:
+                        if role_search_attribute in attrs:
+                            params[role_search_option] = attrs[role_search_attribute]
+                        else:
+                            hint = ""
+                            if role_search_attribute.startswith('{'):
+                                hint = "Note: '%s' value should not be surrounded by brackets." % role_search_option
+                            raise ConfigurationError("Missing '%s' parameter in LDAP options. %s" %
+                                                     (role_search_attribute, hint))
                 params['dn'] = dn
             except Exception:
                 log.exception('LDAP authenticate: search exception')
@@ -177,9 +202,13 @@ class LDAP(AuthProvider):
             return (failure_mode, '', '')
 
         log.debug('LDAP authentication successful')
+        attributes = {}
+        if auto_create_roles_or_groups:
+            attributes['roles'] = params[role_search_option]
         return (True,
                 _get_subs(options, 'auto-register-email', params),
-                _get_subs(options, 'auto-register-username', params))
+                _get_subs(options, 'auto-register-username', params),
+                attributes)
 
     def authenticate_user(self, user, password, options):
         """

@@ -15,6 +15,7 @@ from sqlalchemy import (
     or_,
     true
 )
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     model,
@@ -485,6 +486,41 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    form_input_auto_focus=True,
                                    active_view="user")
 
+    def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
+                                              auto_create_groups=False, auto_assign_roles_to_groups_only=False):
+        for role_name in roles:
+            role = None
+            group = None
+            if auto_create_roles:
+                try:
+                    # first try to find the role
+                    role = trans.app.security_agent.get_admin_role(role_name)
+                except NoResultFound:
+                    # or create it
+                    role, num_in_groups = trans.app.security_agent.create_admin_role(
+                        role_name, "Auto created upon user registration", [], [],
+                        create_group_for_role=auto_create_groups)
+                    if auto_create_groups:
+                        trans.log_event("Created role and group for auto-registered user.")
+                    else:
+                        trans.log_event("Created role for auto-registered user.")
+            if auto_create_groups:
+                # only create a group if not existing yet
+                try:
+                    group = self.sa_session.query(trans.app.model.Group).filter(
+                        trans.app.model.Group.table.c.name == role_name).first()
+                except NoResultFound:
+                    group = self.model.Group(name=role_name)
+                    self.sa_session.add(group)
+                trans.app.security_agent.associate_user_group(user, group)
+
+            if auto_assign_roles_to_groups_only and group and role:
+                trans.log_event("Assigning role to group only")
+                trans.app.security_agent.associate_group_role(group, role)
+            elif not auto_assign_roles_to_groups_only and role:
+                trans.log_event("Assigning role to newly created user")
+                trans.app.security_agent.associate_user_role(user, role)
+
     def __validate_login(self, trans, **kwd):
         """Validates numerous cases that might happen during the login time."""
         status = kwd.get('status', 'error')
@@ -500,9 +536,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
             autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
-            if autoreg[0]:
-                kwd['email'] = autoreg[1]
-                kwd['username'] = autoreg[2]
+            if autoreg["auto_reg"]:
+                kwd['email'] = autoreg["email"]
+                kwd['username'] = autoreg["username"]
                 message = " ".join([validate_email(trans, kwd['email']),
                                     validate_publicname(trans, kwd['username'])]).rstrip()
                 if not message:
@@ -513,6 +549,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                         trans.handle_user_login(user)
                         trans.log_event("User (auto) created a new account")
                         trans.log_event("User logged in")
+                        if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                            self.__handle_role_and_group_auto_creation(
+                                trans, user, autoreg["attributes"]["roles"],
+                                auto_create_groups=autoreg["auto_create_groups"],
+                                auto_create_roles=autoreg["auto_create_roles"],
+                                auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
                     else:
                         message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
                 else:
@@ -762,6 +804,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     except Exception:
                         log.exception('Subscribing to the mailing list has failed.')
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
