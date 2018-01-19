@@ -188,10 +188,12 @@ class Configuration(object):
 
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
+        self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Galaxy OpenID settings
@@ -481,7 +483,7 @@ class Configuration(object):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+            involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
 
