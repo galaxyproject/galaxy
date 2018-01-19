@@ -28,6 +28,7 @@ from galaxy.exceptions import ConfigurationError, MessageException
 from galaxy.managers import context
 from galaxy.util import (
     asbool,
+    safe_makedirs,
     safe_str_cmp
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -634,7 +635,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
             # try to create a user library import directory
             try:
-                self.app.config._ensure_directory(os.path.join(self.app.config.user_library_import_dir, user.email))
+                safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))
             except ConfigurationError as e:
                 self.log_event(str(e))
 
