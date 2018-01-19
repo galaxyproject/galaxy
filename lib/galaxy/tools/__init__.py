@@ -623,6 +623,23 @@ class Tool(object, Dictifiable):
 
         self.parse_command(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
+        self.tmp_directory_vars = tool_source.parse_tmp_directory_vars()
+
+        home_target = tool_source.parse_home_target()
+        tmp_target = tool_source.parse_tmp_target()
+        # If a tool explicitly sets one of these variables just respect that and turn off
+        # explicit processing by Galaxy.
+        for environment_variable in self.environment_variables:
+            if environment_variable.get("name") == "HOME":
+                home_target = None
+                continue
+            for tmp_directory_var in self.tmp_directory_vars:
+                if environment_variable.get("name") == tmp_directory_var:
+                    tmp_target = None
+                    break
+        self.home_target = home_target
+        self.tmp_target = tmp_target
+        self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -1890,6 +1907,9 @@ class Tool(object, Dictifiable):
                 try:
                     if [hda.dependent_jobs for hda in [jtod.dataset for jtod in job.output_datasets] if hda.dependent_jobs]:
                         return True
+                    elif job.output_dataset_collection_instances:
+                        # We'll want to replace this item
+                        return 'job_produced_collection_elements'
                 except Exception as exception:
                     log.error(str(exception))
                     pass
@@ -2517,7 +2537,7 @@ class SortTool(DatabaseOperationTool):
                 try:
                     sorted_elements = [old_elements_dict[line.strip()] for line in open(hda.file_name)]
                 except KeyError:
-                    hdca_history_name = "%s: %s" (hdca.hid, hdca.name)
+                    hdca_history_name = "%s: %s" % (hdca.hid, hdca.name)
                     message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
                     raise Exception(message)
 

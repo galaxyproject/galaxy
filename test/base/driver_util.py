@@ -129,8 +129,12 @@ def setup_galaxy_config(
     update_integrated_tool_panel=False,
     prefer_template_database=False,
     log_format=None,
+    conda_auto_init=False,
+    conda_auto_install=False
 ):
     """Setup environment and build config for test Galaxy instance."""
+    # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
+    tmpdir = os.path.realpath(tmpdir)
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
     file_path = os.path.join(tmpdir, 'files')
@@ -188,7 +192,8 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
-        conda_auto_init=False,
+        conda_auto_init=conda_auto_init,
+        conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
@@ -510,7 +515,7 @@ def build_galaxy_app(simple_kwargs):
     """
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
-    simple_kwargs['global_conf']['__file__'] = "config/galaxy.ini.sample"
+    simple_kwargs['global_conf']['__file__'] = "config/galaxy.yml.sample"
     simple_kwargs = load_app_properties(
         kwds=simple_kwargs
     )
@@ -534,7 +539,7 @@ def build_shed_app(simple_kwargs):
     """
     log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
     # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs['__file__'] = 'tool_shed_wsgi.ini.sample'
+    simple_kwargs['__file__'] = 'tool_shed_wsgi.yml.sample'
     simple_kwargs['global_conf'] = get_webapp_global_conf()
 
     app = ToolshedUniverseApplication(**simple_kwargs)
@@ -851,6 +856,8 @@ class GalaxyTestDriver(TestDriver):
                     datatypes_conf=datatypes_conf_override,
                     prefer_template_database=getattr(config_object, "prefer_template_database", False),
                     log_format=log_format,
+                    conda_auto_init=getattr(config_object, "conda_auto_init", False),
+                    conda_auto_install=getattr(config_object, "conda_auto_install", False),
                 )
                 galaxy_config = setup_galaxy_config(
                     galaxy_db_path,

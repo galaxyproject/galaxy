@@ -871,6 +871,16 @@ class PulsarComputeEnvironment(ComputeEnvironment):
     def tool_directory(self):
         return self._tool_dir
 
+    def home_directory(self):
+        # TODO: revisit and implement this, won't break anything working in the
+        # meantime.
+        return None
+
+    def tmp_directory(self):
+        # TODO: revisit and implement this, won't break anything working in the
+        # meantime.
+        return None
+
 
 class UnsupportedPulsarException(Exception):
 

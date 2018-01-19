@@ -1110,6 +1110,15 @@ class JobWrapper(object, HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
+    @property
+    def home_target(self):
+        home_target = self.tool.home_target
+        return home_target
+
+    @property
+    def tmp_target(self):
+        return self.tool.tmp_target
+
     def get_destination_configuration(self, key, default=None):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
@@ -1251,7 +1260,7 @@ class JobWrapper(object, HasResourceParameters):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif not purged and dataset.has_data():
+                elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'data')
@@ -1299,7 +1308,7 @@ class JobWrapper(object, HasResourceParameters):
                     except Exception:
                         dataset.set_peek()
                 else:
-                    # Handle an empty dataset.
+                    # Handle purged datasets.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'txt')
@@ -1602,6 +1611,39 @@ class JobWrapper(object, HasResourceParameters):
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
         return None
+
+    @property
+    def tmp_dir_creation_statement(self):
+        tmp_dir = self.get_destination_configuration("tmp_dir", None)
+        if not tmp_dir or tmp_dir.lower() == "true":
+            working_directory = self.working_directory
+            return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
+        else:
+            return tmp_dir
+
+    def home_directory(self):
+        home_target = self.home_target
+        return self._target_to_directory(home_target)
+
+    def tmp_directory(self):
+        tmp_target = self.tmp_target
+        return self._target_to_directory(tmp_target)
+
+    def _target_to_directory(self, target):
+        working_directory = self.working_directory
+        tmp_dir = self.get_destination_configuration("tmp_dir", None)
+        if target is None or (target == "job_tmp_if_explicit" and tmp_dir is None):
+            return None
+        elif target in ["job_tmp", "job_tmp_if_explicit"]:
+            return "$_GALAXY_JOB_TMP_DIR"
+        elif target == "shared_home":
+            return self.get_destination_configuration("shared_home_dir", None)
+        elif target == "job_home":
+            return "$_GALAXY_JOB_HOME_DIR"
+        elif target == "pwd":
+            return os.path.join(working_directory, "working")
+        else:
+            raise Exception("Unknown target type [%s]" % target)
 
     def get_tool_provided_job_metadata(self):
         if self.tool_provided_job_metadata is not None:
@@ -2027,6 +2069,14 @@ class ComputeEnvironment(object):
         be rewritten.)
         """
 
+    @abstractmethod
+    def home_directory(self):
+        """Home directory of target job - none if HOME should not be set."""
+
+    @abstractmethod
+    def tmp_directory(self):
+        """Temp directory of target job - none if HOME should not be set."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2071,6 +2121,12 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tool_directory(self):
         return os.path.abspath(self.job_wrapper.tool.tool_dir)
+
+    def home_directory(self):
+        return self.job_wrapper.home_directory()
+
+    def tmp_directory(self):
+        return self.job_wrapper.tmp_directory()
 
 
 class NoopQueue(object):

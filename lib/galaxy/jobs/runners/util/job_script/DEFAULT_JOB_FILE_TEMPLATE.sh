@@ -12,7 +12,12 @@ _galaxy_setup_environment() {
         fi
         export PYTHONPATH
     fi
+    _GALAXY_JOB_HOME_DIR="$working_directory/home"
+    _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
     $env_setup_commands
+    # These don't get cleaned on a re-run but may in the future.
+    [ -z "$_GALAXY_JOB_TMP_DIR" -a ! -f "$_GALAXY_JOB_TMP_DIR" ] || mkdir -p "$_GALAXY_JOB_TMP_DIR"
+    [ -z "$_GALAXY_JOB_HOME_DIR" -a ! -f "$_GALAXY_JOB_HOME_DIR" ] || mkdir -p "$_GALAXY_JOB_HOME_DIR"
     if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" \
          -a "`command -v python`" != "$GALAXY_VIRTUAL_ENV/bin/python" ]; then
         . "$GALAXY_VIRTUAL_ENV/bin/activate"
