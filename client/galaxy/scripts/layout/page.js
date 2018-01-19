@@ -61,11 +61,12 @@ var View = Backbone.View.extend({
         this.render();
 
         // start the router
-        this.router &&
+        if (this.router) {
             Backbone.history.start({
                 root: Galaxy.root,
                 pushState: true
             });
+        }
     },
 
     render: function() {
