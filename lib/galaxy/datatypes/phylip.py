@@ -32,7 +32,7 @@ class Phylip(Text):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
         try:
-            dataset.metadata.sequences = int(get_headers(dataset.file_name, '\t', count=1)[0][0].split()[0])
+            dataset.metadata.sequences = int(open(dataset.file_name).readline().split()[0])
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
@@ -62,10 +62,7 @@ class Phylip(Text):
         """
         with open(filename, "r") as f:
             # Get number of sequence from first line
-            try:
-                nb_seq = int(f.readline().split()[0])
-            except Exception:
-                return False
+            nb_seq = int(f.readline().split()[0])
             # counts number of sequence from first stack
             count = 0
             for line in f:
