@@ -23,8 +23,12 @@
         <param name="input3" type="data" format="bam" label="Sorted BAM file" optional="true"/>
     </inputs>
     <outputs>
-        <data name="bam_native_output" format="bam_native"/>
-        <data name="bam_output" format="bam"/>
+        <data name="bam_native_output" format="bam_native">
+            <filter>input1 or input2</filter>
+        </data>
+        <data name="bam_output" format="bam">
+            <filter>input3</filter>
+        </data>
     </outputs>
     <tests>
         <!-- Test that bam native output won't be sorted-->
