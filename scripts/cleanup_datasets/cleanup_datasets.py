@@ -19,7 +19,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 import galaxy.config
 import galaxy.model.mapping
-from galaxy.datatypes import registry
+from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
@@ -527,9 +527,9 @@ class CleanupDatasetsApplication(object):
         self.object_store = build_object_store_from_config(config)
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init(config.file_path, config.database_connection, engine_options={}, create_tables=False, object_store=self.object_store)
-        r = registry.Registry()
-        r.load_datatypes()
-        galaxy.model.set_datatypes_registry(r)
+        registry = Registry()
+        registry.load_datatypes()
+        galaxy.model.set_datatypes_registry(registry)
 
     @property
     def sa_session(self):
