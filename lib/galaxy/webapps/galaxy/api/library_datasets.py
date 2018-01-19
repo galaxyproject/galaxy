@@ -25,7 +25,7 @@ from galaxy.managers import (
 )
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.util.path import safe_contains, safe_relpath, unsafe_walk
+from galaxy.util.path import full_path_permission_for_user, safe_contains, safe_relpath, unsafe_walk
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
     _future_expose_api as expose_api,
@@ -432,20 +432,30 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
             unsafe = None
+            username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
             if user_base_dir is None:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from user directories.')
             full_dir = os.path.join(user_base_dir, user_login)
+
             if not safe_contains(full_dir, path, whitelist=trans.app.config.user_library_import_symlink_whitelist):
                 # the path is a symlink outside the user dir
                 path = os.path.join(full_dir, path)
                 log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', path, os.path.realpath(path))
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
+            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(full_dir, path, username):
+                log.error('User attempted to import a path that resolves to a path outside of their import dir: '
+                        '%s -> %s and cannot be read by them.', path, os.path.realpath(path))
+                raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(full_dir, path)
-            for unsafe in unsafe_walk(path, whitelist=[full_dir] + trans.app.config.user_library_import_symlink_whitelist):
+            for unsafe in unsafe_walk(path, whitelist=[full_dir] + trans.app.config.user_library_import_symlink_whitelist, username=username):
                 # the path is a dir and contains files that symlink outside the user dir
-                log.error('User attempted to import a directory containing a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
+                error = 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', \
+                        path, os.path.realpath(path)
+                if trans.app.config.user_library_import_check_permissions:
+                    error += ' or is not readable for them.'
+                log.error(error)
             if unsafe:
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             if not os.path.exists(path):

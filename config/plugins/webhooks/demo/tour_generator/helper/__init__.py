@@ -174,7 +174,7 @@ class TourGenerator(object):
             elif input.type == 'select':
                 params = []
                 if name in test_inputs:
-                    for option in self._tool.inputs[name].static_options:
+                    for option in input.static_options:
                         for test_option in self._test.inputs[name]:
                             if test_option == option[1]:
                                 params.append(option[0])

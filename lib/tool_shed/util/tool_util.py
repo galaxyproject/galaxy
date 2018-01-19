@@ -41,13 +41,13 @@ def build_tool_panel_section_select_field(app):
 
 def copy_sample_file(app, filename, dest_path=None):
     """
-    Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path
-    is ~/tool-data.
+    Copies a sample file at `filename` to `the dest_path`
+    directory and strips the '.sample' extensions from `filename`.
     """
     if dest_path is None:
         dest_path = os.path.abspath(app.config.tool_data_path)
     sample_file_name = basic_util.strip_path(filename)
-    copied_file = sample_file_name.replace('.sample', '')
+    copied_file = sample_file_name.rsplit('.sample', 1)[0]
     full_source_path = os.path.abspath(filename)
     full_destination_path = os.path.join(dest_path, sample_file_name)
     # Don't copy a file to itself - not sure how this happens, but sometimes it does...
@@ -159,14 +159,11 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                 for sample_file in sample_files:
                     sample_file_name = basic_util.strip_path(sample_file)
                     if sample_file_name == '%s.sample' % missing_file_name:
-                        copy_sample_file(app, sample_file)
+                        copy_sample_file(app, os.path.join(tool_path, sample_file))
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file(options.missing_index_file)
                         sample_files_copied.append(options.missing_index_file)
                         break
-        # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool(os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
-        repository_tools_tups[index] = (tup_path, guid, repository_tool)
     return repository_tools_tups, sample_files_copied
 
 

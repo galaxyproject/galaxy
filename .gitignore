@@ -74,6 +74,7 @@ config/plugins/interactive_environments/**/*.ini
 !config/plugins
 static/welcome.html.*
 static/welcome.html
+static/client_build_hash.txt
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -132,6 +133,9 @@ client/galaxy/scripts/libs/*
 # Documentation build files.
 doc/build
 doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/api/api.rst
+doc/source/api/ts_api.rst
 doc/source/dev/schema.rst
 
 # Misc

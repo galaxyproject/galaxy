@@ -232,7 +232,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     def parse_destination_params(self, params):
         parsed_params = {}
-        for k, spec in self.DESTINATION_PARAMS_SPEC.iteritems():
+        for k, spec in self.DESTINATION_PARAMS_SPEC.items():
             value = params.get(k, spec.get('default'))
             map_to = spec.get('map_name')
             mapper = spec.get('map')
@@ -264,7 +264,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     def _retrieve_job(self, job_id):
         jobs = self._chronos_client.list()
-        job = filter((lambda x: x['name'] == job_id), jobs)
+        job = [x for x in jobs if x['name'] == job_id]
         if len(job) > 1:
             msg = 'Multiple jobs found with name {name!r}'.format(name=job_id)
             LOGGER.error(msg)

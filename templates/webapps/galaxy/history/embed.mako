@@ -40,99 +40,87 @@
 //  In order to handle this, find this script and cache the previous node (the div above).
 //  (Since we need thisScript to be locally scoped or it will get overwritten, enclose in self-calling function)
 (function(){
-    var scripts = document.getElementsByTagName( 'script' ),
+    var scripts = document.getElementsByTagName( 'script' );
         // this is executed immediately, so the last script will be this script
-        thisScript = scripts[ scripts.length - 1 ],
-        $embeddedHistory = $( thisScript ).prev();
+    var thisScript = scripts[ scripts.length - 1 ];
+    var $embeddedHistory = $( thisScript ).prev();
 
-    require.config({
-        baseUrl: "${h.url_for( '/static/scripts' )}",
-        urlArgs: 'v=${app.server_starttime}'
-    });
-    require([
-        'mvc/history/history-view-annotated',
-        'mvc/history/copy-dialog'
-    ], function( viewMod, historyCopyDialog ){
-        var $embeddedHistory = $( thisScript ).prev();
-        $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' );
+    var $embeddedHistory = $( thisScript ).prev();
+    $embeddedHistory.find( '.item-content' ).addClass( 'flex-vertical-container' );
 
-        $(function(){
-            var HISTORY = require( 'mvc/history/history-model' );
-            var HISTORY_CONTENTS = require( 'mvc/history/history-contents' );
+    $(function(){
+        var HistoryContentsWithAnnotations = window.bundleEntries.HistoryContents.extend({
+            _buildFetchData : function( options ){
+                console.log( '_buildFetchData:' );
+                options = options || {};
+                if( !options.keys && !options.view ){
+                    options.view = 'summary';
+                    options.keys = 'annotation,tags';
+                }
+                return window.bundleEntries.HistoryContents.prototype._buildFetchData.call( this, options );
+            }
+        });
+        var HistoryWithAnnotations = window.bundleEntries.History.extend({
+            contentsClass : HistoryContentsWithAnnotations
+        });
 
-            var HistoryContentsWithAnnotations = HISTORY_CONTENTS.default.HistoryContents.extend({
-                _buildFetchData : function( options ){
-                    console.log( '_buildFetchData:' );
-                    options = options || {};
-                    if( !options.keys && !options.view ){
-                        options.view = 'summary';
-                        options.keys = 'annotation,tags';
-                    }
-                    return HISTORY_CONTENTS.default.HistoryContents.prototype._buildFetchData.call( this, options );
+        var historyJSON = ${h.dumps( history_dict )};
+        var historyModel = new HistoryWithAnnotations( historyJSON, null, {
+            order           : 'hid-asc',
+        });
+
+        var historyView = new window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView({
+            el          : $embeddedHistory.find( ".history-panel" ),
+            className   : window.bundleEntries.HistoryViewAnnotated.AnnotatedHistoryView.prototype.className + ' wide',
+            model       : historyModel
+        });
+
+        historyView.trigger( 'loading' );
+        historyModel.fetchContents({ silent: true })
+            .fail( function(){ alert( 'Galaxy history failed to load' ); })
+            .done( function(){
+                historyView.trigger( 'loading-done' );
+                historyView.render();
+            });
+
+        function toggleExpanded( ev ){
+            ev.preventDefault();
+            $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
+            $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
+            $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
+            $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
+        }
+
+        $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
+        $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
+
+        function showConfirmationModal( name ){
+            var body = [
+                    '<div class="donemessagelarge">',
+                        _l( 'History imported' ), ': ', _.escape( historyModel.get( 'name' ) ),
+                    '</div>'
+                ].join('');
+            Galaxy.modal.show({
+                title : _l( 'Success!' ),
+                body : $( body ),
+                buttons : {
+                    'Return to the published page' : function(){
+                        Galaxy.modal.hide();
+                    },
+                    'Start using the history' : function(){
+                        window.location = Galaxy.root;
+                    },
                 }
             });
-            var HistoryWithAnnotations = HISTORY.default.History.extend({
-                contentsClass : HistoryContentsWithAnnotations
-            });
+            Galaxy.modal.$( '.modal-header' ).hide();
+            Galaxy.modal.$( '.modal-body' ).css( 'padding-bottom', 0 );
+            Galaxy.modal.$( '.modal-footer' ).css({ border : 0, 'padding-top': 0 });
+        }
 
-            var historyJSON = ${h.dumps( history_dict )};
-            var historyModel = new HistoryWithAnnotations( historyJSON, null, {
-                order           : 'hid-asc',
-            });
-
-            var historyView = new viewMod.default.AnnotatedHistoryView({
-                el          : $embeddedHistory.find( ".history-panel" ),
-                className   : viewMod.default.AnnotatedHistoryView.prototype.className + ' wide',
-                model       : historyModel
-            });
-
-            historyView.trigger( 'loading' );
-            historyModel.fetchContents({ silent: true })
-                .fail( function(){ alert( 'Galaxy history failed to load' ); })
-                .done( function(){
-                    historyView.trigger( 'loading-done' );
-                    historyView.render();
-                });
-
-            function toggleExpanded( ev ){
-                ev.preventDefault();
-                $embeddedHistory.find( '.expand-content-btn' ).toggleClass( 'toggle-expand' ).toggleClass( 'toggle' );
-                $embeddedHistory.find( ".summary-content" ).slideToggle( "fast" );
-                $embeddedHistory.find( ".annotation" ).slideToggle( "fast" );
-                $embeddedHistory.find( ".expanded-content" ).slideToggle( "fast" );
-            }
-
-            $embeddedHistory.find( '.expand-content-btn' ).click( toggleExpanded );
-            $embeddedHistory.find( '.toggle-embed' ).click( toggleExpanded );
-
-            function showConfirmationModal( name ){
-                var body = [
-                        '<div class="donemessagelarge">',
-                            _l( 'History imported' ), ': ', _.escape( historyModel.get( 'name' ) ),
-                        '</div>'
-                    ].join('');
-                Galaxy.modal.show({
-                    title : _l( 'Success!' ),
-                    body : $( body ),
-                    buttons : {
-                        'Return to the published page' : function(){
-                            Galaxy.modal.hide();
-                        },
-                        'Start using the history' : function(){
-                            window.location = Galaxy.root;
-                        },
-                    }
-                });
-                Galaxy.modal.$( '.modal-header' ).hide();
-                Galaxy.modal.$( '.modal-body' ).css( 'padding-bottom', 0 );
-                Galaxy.modal.$( '.modal-footer' ).css({ border : 0, 'padding-top': 0 });
-            }
-
-            $embeddedHistory.find( '.import' ).click( function( ev ){
-                var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
-                historyCopyDialog.default( historyModel, dialogOptions ).done( showConfirmationModal );
-            })
-        });
+        $embeddedHistory.find( '.import' ).click( function( ev ){
+            var dialogOptions = { useImport: true, allowAll: false, autoClose: false };
+            window.bundleEntries.HistoryCopyDialog( historyModel, dialogOptions ).done( showConfirmationModal );
+        })
     });
 })();
 </script>

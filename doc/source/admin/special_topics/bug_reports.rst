@@ -46,7 +46,7 @@ information about the job and links to the precise locations within Galaxy.
 
 As a plugin, nothing has changed to this functionality, though future updates
 may add features. It currently takes all of its configuration from your
-``$GALAXY/config/galaxy.ini``, e.g. the variables ``error_email_to`` and
+``$GALAXY/config/galaxy.yml``, e.g. the variables ``error_email_to`` and
 ``email_from``.
 
 JSON

@@ -33,7 +33,6 @@ from galaxy.util import (
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework import (
     base,
-    formbuilder,
     helpers,
     url_for
 )
@@ -103,8 +102,6 @@ class WebApplication(base.WebApplication):
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
     def make_body_iterable(self, trans, body):
-        if isinstance(body, formbuilder.FormBuilder):
-            body = trans.show_form(body)
         return base.WebApplication.make_body_iterable(self, trans, body)
 
     def transaction_chooser(self, environ, galaxy_app, session_cookie):
@@ -874,15 +871,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
-
-    def show_form(self, form, header=None, template="form.mako", use_panels=False, active_view=""):
-        """
-        Convenience method for displaying a simple page with a single HTML
-        form.
-        """
-        return self.fill_template(template, form=form, header=header,
-                                  use_panels=(form.use_panels or use_panels),
-                                  active_view=active_view)
 
     @property
     def session_csrf_token(self):

@@ -449,7 +449,7 @@ class ImzML(Binary):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>imzML Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.get('description'):
@@ -493,7 +493,7 @@ class Analyze75(Binary):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:

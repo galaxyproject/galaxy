@@ -136,6 +136,7 @@ class WorkflowInvoker(object):
             self.workflow_invocation = workflow_invocation
 
         self.workflow_invocation.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
+        self.workflow_invocation.use_cached_job = workflow_run_config.use_cached_job
         self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
 
         module_injector = modules.WorkflowModuleInjector(trans)
@@ -255,7 +256,10 @@ class WorkflowInvoker(object):
                 pass
 
     def _invoke_step(self, invocation_step):
-        incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans, self.progress, invocation_step)
+        incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans,
+                                                                          self.progress,
+                                                                          invocation_step,
+                                                                          use_cached_job=self.workflow_invocation.use_cached_job)
         return incomplete_or_none
 
 
@@ -366,7 +370,12 @@ class WorkflowProgress(object):
     def get_replacement_workflow_output(self, workflow_output):
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
-        return self.outputs[step.id][output_name]
+        step_outputs = self.outputs[step.id]
+        if step_outputs is STEP_OUTPUT_DELAYED:
+            delayed_why = "depends on workflow output [%s] but that output has not been created yet" % output_name
+            raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+        else:
+            return step_outputs[output_name]
 
     def set_outputs_for_input(self, invocation_step, outputs=None):
         step = invocation_step.workflow_step
@@ -400,7 +409,15 @@ class WorkflowProgress(object):
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
-                    raise KeyError("Failed to find [%s] in step outputs [%s]" % (output_name, outputs))
+                    message = "Failed to find expected workflow output [%s] in step outputs [%s]" % (output_name, outputs)
+                    # raise KeyError(message)
+                    # Pre-18.01 we would have never even detected this output wasn't configured
+                    # and even in 18.01 we don't have a way to tell the user something bad is
+                    # happening so I guess we just log a debug message and continue sadly for now.
+                    # Once https://github.com/galaxyproject/galaxy/issues/5142 is complete we could
+                    # at least tell the user what happened, give them a warning.
+                    log.debug(message)
+                    continue
                 output = outputs[output_name]
                 self._record_workflow_output(
                     step,
@@ -424,7 +441,7 @@ class WorkflowProgress(object):
             raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
         return subworkflow_invocation
 
-    def subworkflow_invoker(self, trans, step):
+    def subworkflow_invoker(self, trans, step, use_cached_job=False):
         subworkflow_progress = self.subworkflow_progress(step)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         workflow_run_config = WorkflowRunConfig(
@@ -433,6 +450,7 @@ class WorkflowProgress(object):
             inputs={},
             param_map={},
             copy_inputs_to_history=False,
+            use_cached_job=use_cached_job
         )
         return WorkflowInvoker(
             trans,

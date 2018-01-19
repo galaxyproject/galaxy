@@ -465,6 +465,10 @@ class Registry(object):
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
 
+    def is_extension_unsniffable_binary(self, ext):
+        datatype = self.get_datatype_by_extension(ext)
+        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, 'sniff')
+
     def get_datatype_class_by_name(self, name):
         """
         Return the datatype class where the datatype's `type` attribute

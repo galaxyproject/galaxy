@@ -16,7 +16,6 @@ import zipfile
 from six import text_type
 
 from galaxy import util
-from galaxy.datatypes.binary import Binary
 from galaxy.util import compression_utils
 from galaxy.util.checkers import (
     check_binary,
@@ -105,7 +104,7 @@ def check_newlines(fname, bytes_to_read=52428800):
     return False
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix=None):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -167,7 +166,7 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix=None):
+def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
@@ -338,7 +337,7 @@ def guess_ext(fname, sniff_order):
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
-    'bam'
+    'bam_native'
     >>> fname = get_test_fname('test.idpDB')
     >>> guess_ext(fname, sniff_order)
     'idpdb'
@@ -478,7 +477,7 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto'):
         ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order)
 
     if check_binary(filename):
-        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
+        if not datatypes_registry.is_extension_unsniffable_binary(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
             raise InappropriateDatasetContentError('The binary uploaded file contains inappropriate content.')
     elif check_html(filename):
         raise InappropriateDatasetContentError('The uploaded file contains inappropriate HTML content.')

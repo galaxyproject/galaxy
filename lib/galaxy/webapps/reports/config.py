@@ -4,8 +4,6 @@ import os
 import re
 import sys
 
-from six.moves import configparser
-
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -53,11 +51,6 @@ class Configuration(object):
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
-        # Parse global_conf
-        global_conf = kwargs.get('global_conf', None)
-        global_conf_parser = configparser.ConfigParser()
-        if global_conf and "__file__" in global_conf:
-            global_conf_parser.read(global_conf['__file__'])
 
     def get(self, key, default):
         return self.config_dict.get(key, default)

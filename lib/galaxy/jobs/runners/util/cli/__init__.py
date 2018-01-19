@@ -1,5 +1,6 @@
 """
 """
+import json
 from glob import glob
 from os import getcwd
 from os.path import (
@@ -56,9 +57,10 @@ class CliInterface(object):
 
     def get_shell_plugin(self, shell_params):
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
-        if shell_plugin not in self.active_cli_shells:
-            self.active_cli_shells[shell_plugin] = self.cli_shells[shell_plugin](**shell_params)
-        return self.active_cli_shells[shell_plugin]
+        requested_shell_settings = json.dumps(shell_params, sort_keys=True)
+        if requested_shell_settings not in self.active_cli_shells:
+            self.active_cli_shells[requested_shell_settings] = self.cli_shells[shell_plugin](**shell_params)
+        return self.active_cli_shells[requested_shell_settings]
 
     def get_job_interface(self, job_params):
         job_plugin = job_params.get('plugin', None)

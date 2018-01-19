@@ -1,3 +1,4 @@
+import _l from "utils/localization";
 import * as _ from "libs/underscore";
 import data_mod from "mvc/dataset/data";
 import util_mod from "viz/trackster/util";
@@ -45,14 +46,12 @@ var select_datasets = (filters, success_fn) => {
     var history_grid = new GridView({
         url_base: `${Galaxy.root}visualization/list_history_datasets`,
         filters: filters,
-        dict_format: true,
         embedded: true
     });
 
     // library dataset selection tab
     var library_grid = new GridView({
         url_base: `${Galaxy.root}visualization/list_library_datasets`,
-        dict_format: true,
         embedded: true
     });
 
@@ -60,18 +59,18 @@ var select_datasets = (filters, success_fn) => {
     var tabs = new Tabs.View();
     tabs.add({
         id: "histories",
-        title: "Histories",
+        title: _l("Histories"),
         $el: $("<div/>").append(history_grid.$el)
     });
     tabs.add({
         id: "libraries",
-        title: "Libraries",
+        title: _l("Libraries"),
         $el: $("<div/>").append(library_grid.$el)
     });
 
     // modal
     Galaxy.modal.show({
-        title: "Select datasets for new tracks",
+        title: _l("Select datasets for new tracks"),
         body: tabs.$el,
         closing_events: true,
         buttons: {

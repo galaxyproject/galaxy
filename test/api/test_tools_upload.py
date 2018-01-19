@@ -292,6 +292,15 @@ class ToolsUploadTestCase(api.ApiTestCase):
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[2])
             assert content == ONE_TO_SIX_WITH_TABS
 
+    def test_upload_from_invalid_url(self):
+        history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
+        dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
+        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
+
+    def test_upload_from_valid_url(self):
+        history_id, new_dataset = self._upload('https://usegalaxy.org/api/version')
+        self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(
             history_id,
@@ -323,5 +332,5 @@ class ToolsUploadTestCase(api.ApiTestCase):
     def _upload(self, content, **upload_kwds):
         history_id = self.dataset_populator.new_history()
         new_dataset = self.dataset_populator.new_dataset(history_id, content=content, **upload_kwds)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=upload_kwds.get("assert_ok", True))
         return history_id, new_dataset

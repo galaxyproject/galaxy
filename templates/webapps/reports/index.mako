@@ -117,17 +117,6 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='system', action='index' )}">Disk space maintenance</a></div>
                     </div>
                 </div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">
-                    <span>Sample Tracking</span>
-                </div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_month_all' )}">Sequencing requests per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_user' )}">Sequencing requests per user</a></div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

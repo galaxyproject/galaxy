@@ -126,6 +126,27 @@ class XmlToolSource(ToolSource):
             )
         return environment_variables
 
+    def parse_home_target(self):
+        target = "job_home" if self.parse_profile() >= "18.01" else "shared_home"
+        command_el = self._command_el
+        command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
+        if command_legacy is not None:
+            target = "shared_home" if string_as_bool(command_legacy) else "job_home"
+        return target
+
+    def parse_tmp_target(self):
+        # Default to not touching TMPDIR et. al. but if job_tmp is set
+        # in job_conf then do. This is a very conservative approach that shouldn't
+        # break or modify any configurations by default.
+        return "job_tmp_if_explicit"
+
+    def parse_docker_env_pass_through(self):
+        if self.parse_profile() < "18.01":
+            return ["GALAXY_SLOTS"]
+        else:
+            # Pass home, etc...
+            return super(XmlToolSource, self).parse_docker_env_pass_through()
+
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el
@@ -327,9 +348,15 @@ class XmlToolSource(ToolSource):
         detect_errors = None
         if command_el is not None:
             detect_errors = command_el.get("detect_errors")
+
         if detect_errors and detect_errors != "default":
             if detect_errors == "exit_code":
-                return error_on_exit_code()
+                oom_exit_code = None
+                if command_el is not None:
+                    oom_exit_code = command_el.get("oom_exit_code", None)
+                if oom_exit_code is not None:
+                    int(oom_exit_code)
+                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:
