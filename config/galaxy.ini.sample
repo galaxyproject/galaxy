@@ -1335,7 +1335,7 @@ use_interactive = True
 # actual user instead of as the user running the Galaxy server process.  For
 # details on these options, see the documentation at:
 #
-# https://galaxyproject.org/admin/config/performance/cluster#submitting-jobs-as-the-real-user
+# https://docs.galaxyproject.org/en/latest/admin/cluster.html#submitting-jobs-as-the-real-user
 #
 #drmaa_external_runjob_script = sudo -E scripts/drmaa_external_runner.py --assign_all_groups
 #drmaa_external_killjob_script = sudo -E scripts/drmaa_external_killer.py
