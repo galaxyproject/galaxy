@@ -2,35 +2,19 @@ define(["i18n!nls/locale"], function(localeStrings) {
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
-    function onloadLocaleConfig() {
-        // Wait until Galaxy.config is loaded.
-        if (Galaxy.config && localeStrings.hasOwnProperty("__root")) {
-            var global_locale = Galaxy.config.default_locale ? Galaxy.config.default_locale.toLowerCase() : false;
+    if (localeStrings.hasOwnProperty("__root")) {
+        //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
 
-            var extra_user_preferences = {};
-            if (Galaxy.user && Galaxy.user.attributes.preferences && 'extra_user_preferences' in Galaxy.user.attributes.preferences) {
-                extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
-            }
+        locale = sessionStorage.getItem("currentLocale");
 
-            var user_locale = 'localization|locale' in extra_user_preferences ? extra_user_preferences['localization|locale'].toLowerCase() : false;
-
-            var nav_locale =
-                typeof navigator === "undefined"
-                    ? "__root"
-                    : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
-
-            console.debug('global_locale: ' + global_locale);
-            console.debug('user_locale: ' + user_locale);
-            console.debug('nav_locale: ' + nav_locale);
-
+        if (locale) {
             localeStrings =
-                localeStrings["__" + user_locale] || localeStrings["__" + global_locale] || localeStrings["__" + nav_locale] || localeStrings["__" + nav_locale.split("-")[0]] || localeStrings.__root;
-        } else {
-            setTimeout(onloadLocaleConfig, 100);
+                localeStrings["__" + locale] || localeStrings["__" + locale.split("-")[0]] || localeStrings.__root;
         }
-    }
-    onloadLocaleConfig();
 
+        // } else {
+        //     console.debug( 'i18n+requirejs localization for ' + locale + ' loaded' );
+    }
     // TODO: when this is no longer necessary remove this, i18n.js, and the resolveModule in config
 
     // -----------------------------------------------------------------------------
