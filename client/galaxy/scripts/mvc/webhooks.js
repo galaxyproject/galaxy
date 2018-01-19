@@ -1,7 +1,9 @@
 import Utils from "utils/utils";
 
 const Webhooks = Backbone.Collection.extend({
-    url: `${Galaxy.root}api/webhooks`
+    url: function() {
+        return `${Galaxy.root}api/webhooks`;
+    }
 });
 
 const WebhookView = Backbone.View.extend({
