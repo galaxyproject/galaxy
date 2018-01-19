@@ -1,9 +1,10 @@
 """
 This module manages loading of Galaxy webhooks.
 """
-import os
-import yaml
 import logging
+import os
+
+import yaml
 
 from galaxy.util import config_directories_from_setting
 
