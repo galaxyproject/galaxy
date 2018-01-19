@@ -1047,7 +1047,7 @@ use_interactive = True
 
 # When using LDAP for authentication, allow administrators to pre-populate users
 # using an additional form on 'Create new user'
-#show_prepopulate_form = False
+#show_user_prepopulate_form = False
 
 # Allow users to remove their datasets from disk immediately (otherwise,
 # datasets will be removed after a time period specified by an administrator in

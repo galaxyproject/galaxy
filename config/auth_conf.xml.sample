@@ -104,14 +104,14 @@
             <bind-password>{password}</bind-password>
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
-            <auto-register-roles>gidNumber</auto-register-roles>
+            <auto-register-roles>{gidNumber}</auto-register-roles>
 -->
             <!-- For OpenLDAP: -->
 <!--        <bind-user>{dn}</bind-user>
             <bind-password>{password}</bind-password>
             <auto-register-username>{uid}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
-            <auto-register-roles>gid</auto-register-roles>
+            <auto-register-roles>{gid}</auto-register-roles>
 -->
 <!--    </options>
     </authenticator>

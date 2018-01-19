@@ -89,7 +89,7 @@ class Admin(object):
                 ok = False
             else:
                 # Create the role
-                role, num_in_groups = trans.app.security_agent.create_admin_role(
+                role, num_in_groups = trans.app.security_agent.create_role(
                     name, description, in_users, in_groups, create_group_for_role=create_group_for_role_checked)
                 message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
                     % (role.name, len(in_users), num_in_groups)

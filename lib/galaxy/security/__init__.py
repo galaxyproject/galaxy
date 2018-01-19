@@ -776,15 +776,17 @@ class GalaxyRBACAgent(RBACAgent):
                 return None
         return role
 
-    def get_admin_role(self, name):
+    def get_role(self, name, type=None):
+        type = type or self.model.Role.types.ADMIN
         # will raise exception if not found
         return self.sa_session.query(self.model.Role) \
             .filter(and_(self.model.Role.table.c.name == name,
-                     self.model.Role.table.c.type == self.model.Role.types.ADMIN)) \
+                     self.model.Role.table.c.type == type)) \
             .one()
 
-    def create_admin_role(self, name, description, in_users, in_groups, create_group_for_role=False):
-        role = self.model.Role(name=name, description=description, type=self.model.Role.types.ADMIN)
+    def create_role(self, name, description, in_users, in_groups, create_group_for_role=False, type=None):
+        type = type or self.model.Role.types.ADMIN
+        role = self.model.Role(name=name, description=description, type=type)
         self.sa_session.add(role)
         # Create the UserRoleAssociations
         for user in [self.sa_session.query(self.model.User).get(x) for x in in_users]:

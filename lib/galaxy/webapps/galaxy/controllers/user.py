@@ -509,10 +509,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
             if auto_create_roles:
                 try:
                     # first try to find the role
-                    role = trans.app.security_agent.get_admin_role(role_name)
+                    role = trans.app.security_agent.get_role(role_name)
                 except NoResultFound:
                     # or create it
-                    role, num_in_groups = trans.app.security_agent.create_admin_role(
+                    role, num_in_groups = trans.app.security_agent.create_role(
                         role_name, "Auto created upon user registration", [], [],
                         create_group_for_role=auto_create_groups)
                     if auto_create_groups:
@@ -740,13 +740,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        show_prepopulate_form = is_admin and trans.app.config.show_prepopulate_form
+        show_user_prepopulate_form = is_admin and trans.app.config.show_user_prepopulate_form
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
-        elif show_prepopulate_form and params.get('prepopulate_user_button', False):
+        elif show_user_prepopulate_form and params.get('prepopulate_user_button', False):
             # pre-populate the user through a provider like ldap
             csrf_check = trans.check_csrf_token()
             if csrf_check:
@@ -814,7 +814,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    email=email,
                                    username=transform_publicname(trans, username),
                                    subscribe_checked=subscribe_checked,
-                                   show_prepopulate_form=show_prepopulate_form,
+                                   show_user_prepopulate_form=show_user_prepopulate_form,
                                    use_panels=use_panels,
                                    redirect=redirect,
                                    redirect_url=redirect_url,

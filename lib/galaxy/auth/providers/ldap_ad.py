@@ -10,6 +10,12 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
 from ..providers import AuthProvider
 
+try:
+    import ldap
+except ImportError as exc:
+    ldap = None
+    ldap_import_exc = exc
+
 log = logging.getLogger(__name__)
 
 
@@ -105,11 +111,8 @@ class LDAP(AuthProvider):
 
     def ldap_search(self, email, username, options):
         config_ok, failure_mode = self.check_config(username, email, options)
-        try:
-            import ldap
-        except ImportError:
-            log.debug('LDAP authenticate: could not load ldap module')
-            return failure_mode, None
+        if ldap is None:
+            raise RuntimeError("Failed to load LDAP module: %s", str(ldap_import_exc))
 
         if not config_ok:
             return failure_mode, None
@@ -151,8 +154,6 @@ class LDAP(AuthProvider):
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
-                if self.auto_create_roles_or_groups and self.role_search_attribute not in attributes:
-                    attributes.append(self.role_search_attribute)
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -167,19 +168,19 @@ class LDAP(AuthProvider):
                 log.debug(("LDAP authenticate: search attributes are %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
-                        if attr in attrs:
+                        if attr == self.role_search_attribute[1:-1]:  # strip brackets
+                            # keep role names as list
+                            params[self.role_search_option] = attrs[attr]
+                        elif attr in attrs:
                             params[attr] = str(attrs[attr][0])
                         else:
                             params[attr] = ""
-                    if self.auto_create_roles_or_groups:
-                        if self.role_search_attribute in attrs:
-                            params[self.role_search_option] = attrs[self.role_search_attribute]
-                        else:
-                            hint = ""
-                            if self.role_search_attribute.startswith('{'):
-                                hint = "Note: '%s' value should not be surrounded by brackets." % self.role_search_option
-                            raise ConfigurationError("Missing '%s' parameter in LDAP options. %s" %
-                                                     (self.role_search_attribute, hint))
+
+                if self.auto_create_roles_or_groups and self.role_search_option not in params:
+                    raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
+                                             "included in the 'search-fields'." %
+                                             (self.role_search_option, self.role_search_attribute))
+                log.critical(params)
                 params['dn'] = dn
             except Exception:
                 log.exception('LDAP authenticate: search exception')

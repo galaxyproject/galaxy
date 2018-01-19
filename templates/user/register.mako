@@ -128,7 +128,7 @@ def inherit(context):
 
     <div id="registrationForm" class="toolForm">
         ## only display the prepopulate form to admins
-        %if show_prepopulate_form:
+        %if show_user_prepopulate_form:
             <form name="registration" id="prepopulateform" action="${form_action}" method="post" >
                 <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
                 <div class="toolFormTitle">Pre-populate an account through LDAP</div>
