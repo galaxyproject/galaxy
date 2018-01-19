@@ -1251,7 +1251,7 @@ class JobWrapper(object, HasResourceParameters):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif not purged and dataset.has_data():
+                elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'data')
@@ -1299,7 +1299,7 @@ class JobWrapper(object, HasResourceParameters):
                     except Exception:
                         dataset.set_peek()
                 else:
-                    # Handle an empty dataset.
+                    # Handle purged datasets.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'txt')

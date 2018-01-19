@@ -2,8 +2,6 @@ from __future__ import print_function
 
 from shutil import copyfile
 
-from galaxy import tools
-
 
 def load_microbial_data(GALAXY_DATA_INDEX_DIR, sep='\t'):
     # FIXME: this function is duplicated in the DynamicOptions class.  It is used here only to
@@ -101,11 +99,6 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
     # if not (kingdom or group or org):
     if not (kingdom or org):
         print("Parameters are not available.")
-    # workflow passes galaxy.tools.parameters.basic.UnvalidatedValue instead of values
-    if isinstance(kingdom, tools.parameters.basic.UnvalidatedValue):
-        kingdom = kingdom.value
-    if isinstance(org, tools.parameters.basic.UnvalidatedValue):
-        org = org.value
 
     GALAXY_DATA_INDEX_DIR = app.config.tool_data_path
     microbe_info = load_microbial_data(GALAXY_DATA_INDEX_DIR, sep='\t')

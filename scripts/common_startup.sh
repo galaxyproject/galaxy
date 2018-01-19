@@ -29,7 +29,7 @@ for arg in "$@"; do
     [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
-    [ "$arg" = "--no-client-build" ] && SKIP_CLIENT_BUILD=1
+    [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
 
 SAMPLES="
@@ -66,14 +66,14 @@ done
 # Check client build state.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     gitbranch=$(git rev-parse --abbrev-ref HEAD)
-    if [ $gitbranch == "dev" ]; then
+    if [ "$gitbranch" = "dev" ]; then
         # We're on dev.  This branch (only, currently) doesn't have build
         # artifacts.  We should probabably swap to a list of releases?
         # Compare hash.
         if [ -f static/client_build_hash.txt ]; then
             githash=$(git rev-parse HEAD)
             statichash=$(cat static/client_build_hash.txt)
-            if [ $githash == $statichash ]; then
+            if [ "$githash" = "$statichash" ]; then
                 SKIP_CLIENT_BUILD=1
             fi
         fi
@@ -83,18 +83,21 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
     if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         echo "The Galaxy client build is out of date.  Please run 'make client' or your choice of client build target (client-*)."
-        echo "If you're sure you'd like to skip this check, you can run galaxy with the --no-client-build flag, though this is not recommended as the client and server code will potentially be out of sync."
+        echo "If you're sure you'd like to skip this check, you can run galaxy with the --skip-client-build flag, though this is not recommended as the client and server code will potentially be out of sync."
         echo "See ./client/README.md in the Galaxy repository for more information, including how to get help if you're having trouble."
         exit 1
     fi
 fi
 
-: ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
+: ${GALAXY_CONFIG_FILE:=config/galaxy.yml}
+if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
+    GALAXY_CONFIG_FILE=config/galaxy.ini
+fi
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
     GALAXY_CONFIG_FILE=universe_wsgi.ini
 fi
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.ini.sample
+    GALAXY_CONFIG_FILE=config/galaxy.yml.sample
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}

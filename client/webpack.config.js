@@ -78,10 +78,10 @@ let buildconfig = {
                     }
                 ]
             },
-              {
+            {
                 test: /\.vue$/,
-                loader: 'vue-loader',
-              }
+                loader: "vue-loader"
+            }
         ]
     },
     node: {
@@ -99,9 +99,6 @@ let buildconfig = {
             name: "libs",
             filename: "libs.bundled.js"
         }),
-        new webpack.SourceMapDevToolPlugin({
-            filename: '[name].js.map',
-        }),
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({
@@ -115,8 +112,8 @@ let buildconfig = {
     ]
 };
 
-if (process.env.GXY_BUILD_SOURCEMAPS){
-    buildconfig.devtool = 'source-map';
+if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
+    buildconfig.devtool = "source-map";
 }
 
 module.exports = buildconfig;
