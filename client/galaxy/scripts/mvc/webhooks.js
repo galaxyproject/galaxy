@@ -19,8 +19,9 @@ const WebhookView = Backbone.View.extend({
         const webhooks = new Webhooks();
         webhooks.fetch({
             success: data => {
-                data.reset(filterType(data, options.type));
-
+                if (options.type) {
+                    data.reset(filterType(data, options.type));
+                }
                 if (data.length > 0) {
                     this.render(weightedRandomPick(data));
                 }
@@ -50,7 +51,14 @@ const load = options => {
 };
 
 function filterType(data, type) {
-    return data.models.filter(item => item.get("type").indexOf(type) !== -1);
+    return data.models.filter(item => {
+        let itype = item.get("type");
+        if (itype) {
+            return itype.indexOf(type) !== -1;
+        } else {
+            return false;
+        }
+    });
 }
 
 function weightedRandomPick(data) {
