@@ -1239,7 +1239,7 @@ class JobWrapper(object, HasResourceParameters):
                 if not purged:
                     self._collect_extra_files(dataset.dataset, self.working_directory)
                 # Handle composite datatypes of auto_primary_file type
-                if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
+                if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data(wait_seconds=self.app.config.retry_job_output_collection):
                     try:
                         with NamedTemporaryFile() as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
@@ -1251,7 +1251,7 @@ class JobWrapper(object, HasResourceParameters):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif not purged and dataset.has_data():
+                elif not purged and dataset.has_data(wait_seconds=self.app.config.retry_job_output_collection):
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'data')

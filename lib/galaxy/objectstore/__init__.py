@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 import threading
+import time
 from xml.etree import ElementTree
 
 try:
@@ -365,13 +366,22 @@ class DiskObjectStore(ObjectStore):
 
         Returns 0 if the object doesn't exist yet or other error.
         """
+        size = 0
         if self.exists(obj, **kwargs):
+            filename = self.get_filename(obj, **kwargs)
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                size = os.path.getsize(filename)
             except OSError:
-                return 0
-        else:
-            return 0
+                pass
+            wait_seconds = getattr(self.config, 'retry_job_output_collection', 0)
+            while size == 0 and wait_seconds > 0:
+                wait_seconds -= 0.25
+                time.sleep(0.25)
+                try:
+                    size = os.path.getsize(filename)
+                except OSError:
+                    pass
+        return size
 
     def delete(self, obj, entire_dir=False, **kwargs):
         """Override `ObjectStore`'s stub; delete the file or folder on disk."""
