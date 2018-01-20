@@ -63,17 +63,17 @@ def test_shed_conversion_1607_prefix():
         assert uwsgi_config["mount"].startswith("/shed=galaxy.")
 
 
-def test_reports_conversion_1607_gzip():
-    with _config_directory("1607_root_filters") as config_dir:
-        config_dir.manage_cli(["convert", "reports"])
-        config_dir.assert_not_exists("config/reports.ini")
-        config_dir.assert_is_yaml("config/reports.yml")
-        config_dir.assert_moved("config/reports.ini", "config/reports.ini.backup")
-        with config_dir.open("config/reports.yml") as f:
+def test_allow_library_path_paste_conversion():
+    with _config_directory("1705_allow_path_paste") as config_dir:
+        config_dir.manage_cli(["convert", "galaxy"])
+        config_dir.assert_not_exists("config/galaxy.ini")
+        config_dir.assert_is_yaml("config/galaxy.yml")
+        config_dir.assert_moved("config/galaxy.ini", "config/galaxy.ini.backup")
+        with config_dir.open("config/galaxy.yml") as f:
             config = yaml.load(f)
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert uwsgi_config["http-auto-gzip"] is True, uwsgi_config
+        assert "galaxy" in config
+        galaxy_config = config["galaxy"]
+        assert galaxy_config["allow_path_paste"] is True
 
 
 def test_build_uwsgi_yaml():

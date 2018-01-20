@@ -120,6 +120,7 @@ LOGGING_CONFIG_DEFAULT = {
         },
     },
 }
+"""Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
 def resolve_path(path, root):
@@ -187,10 +188,12 @@ class Configuration(object):
 
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
+        self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Galaxy OpenID settings
@@ -283,6 +286,7 @@ class Configuration(object):
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
+        self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
         self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
@@ -480,7 +484,7 @@ class Configuration(object):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+            involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
 
@@ -529,7 +533,7 @@ class Configuration(object):
         global_conf_parser = configparser.ConfigParser()
         self.config_file = None
         self.global_conf_parser = global_conf_parser
-        if global_conf and "__file__" in global_conf:
+        if global_conf and "__file__" in global_conf and ".yml" not in global_conf["__file__"]:
             self.config_file = global_conf['__file__']
             global_conf_parser.read(global_conf['__file__'])
         # Heartbeat log file name override
@@ -579,14 +583,6 @@ class Configuration(object):
         # Store advanced job management config
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
-        # Galaxy messaging (AMQP) configuration options
-        self.amqp = {}
-        try:
-            amqp_config = global_conf_parser.items("galaxy_amqp")
-        except configparser.NoSectionError:
-            amqp_config = {}
-        for k, v in amqp_config:
-            self.amqp[k] = v
         # Galaxy internal control queue configuration.
         # If specified in universe, use it, otherwise we use whatever 'real'
         # database is specified.  Lastly, we create and use new sqlite database

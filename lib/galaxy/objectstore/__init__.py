@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 import threading
+import time
 from xml.etree import ElementTree
 
 try:
@@ -358,7 +359,7 @@ class DiskObjectStore(ObjectStore):
 
     def empty(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by checking file size on disk."""
-        return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
+        return self.size(obj, **kwargs) == 0
 
     def size(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by return file size on disk.
@@ -367,7 +368,14 @@ class DiskObjectStore(ObjectStore):
         """
         if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                filepath = self.get_filename(obj, **kwargs)
+                for _ in range(0, 2):
+                    size = os.path.getsize(filepath)
+                    if size != 0:
+                        break
+                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+                    time.sleep(0.01)
+                return size
             except OSError:
                 return 0
         else:

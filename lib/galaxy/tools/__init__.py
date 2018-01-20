@@ -623,6 +623,23 @@ class Tool(object, Dictifiable):
 
         self.parse_command(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
+        self.tmp_directory_vars = tool_source.parse_tmp_directory_vars()
+
+        home_target = tool_source.parse_home_target()
+        tmp_target = tool_source.parse_tmp_target()
+        # If a tool explicitly sets one of these variables just respect that and turn off
+        # explicit processing by Galaxy.
+        for environment_variable in self.environment_variables:
+            if environment_variable.get("name") == "HOME":
+                home_target = None
+                continue
+            for tmp_directory_var in self.tmp_directory_vars:
+                if environment_variable.get("name") == tmp_directory_var:
+                    tmp_target = None
+                    break
+        self.home_target = home_target
+        self.tmp_target = tmp_target
+        self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
