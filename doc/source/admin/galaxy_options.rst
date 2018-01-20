@@ -2562,6 +2562,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``show_user_prepopulate_form``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When using LDAP for authentication, allow administrators to pre-
+    populate users using an additional form on 'Create new user'
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``allow_user_dataset_purge``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

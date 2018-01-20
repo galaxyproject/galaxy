@@ -1905,6 +1905,14 @@ mapping:
         desc: |
           Allow administrators to log in as other users (useful for debugging)
          
+      show_user_prepopulate_form:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          When using LDAP for authentication, allow administrators to pre-populate users
+          using an additional form on 'Create new user'
+         
       allow_user_dataset_purge:
         type: bool
         default: true

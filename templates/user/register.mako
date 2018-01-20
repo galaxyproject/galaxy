@@ -128,6 +128,30 @@ def inherit(context):
     </script>
 
     <div id="registrationForm" class="toolForm">
+        ## only display the prepopulate form to admins
+        %if show_user_prepopulate_form:
+            <form name="registration" id="prepopulateform" action="${form_action}" method="post" >
+                <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
+                <div class="toolFormTitle">Pre-populate an account through LDAP</div>
+                <div class="form-row">
+                    <label>Email address:</label>
+                    <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>
+                    <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
+                </div>
+                <div class="form-row">
+                    <label>Username:</label>
+                    <input id="name_input" type="text" name="username" size="40" value="${username |h}"/>
+                    <div class="toolParamHelp">
+                        Depending on your LDAP configuration in your auth_conf.xml you can either provide an
+                        email address or username.
+                    </div>
+                </div>
+                <div class="form-row">
+                    <input type="submit" id="prepopulate" name="prepopulate_user_button" value="Prepopulate"/>
+                </div>
+            </form>
+            <br />
+        %endif
         <form name="registration" id="registration" action="${form_action}" method="post" >
             <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="toolFormTitle">Create account</div>

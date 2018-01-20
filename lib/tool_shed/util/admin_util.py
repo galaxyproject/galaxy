@@ -89,27 +89,8 @@ class Admin(object):
                 ok = False
             else:
                 # Create the role
-                role = trans.app.model.Role(name=name, description=description, type=trans.app.model.Role.types.ADMIN)
-                trans.sa_session.add(role)
-                # Create the UserRoleAssociations
-                for user in [trans.sa_session.query(trans.app.model.User).get(x) for x in in_users]:
-                    ura = trans.app.model.UserRoleAssociation(user, role)
-                    trans.sa_session.add(ura)
-                # Create the GroupRoleAssociations
-                for group in [trans.sa_session.query(trans.app.model.Group).get(x) for x in in_groups]:
-                    gra = trans.app.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                if create_group_for_role_checked:
-                    # Create the group
-                    group = trans.app.model.Group(name=name)
-                    trans.sa_session.add(group)
-                    # Associate the group with the role
-                    gra = trans.model.GroupRoleAssociation(group, role)
-                    trans.sa_session.add(gra)
-                    num_in_groups = len(in_groups) + 1
-                else:
-                    num_in_groups = len(in_groups)
-                trans.sa_session.flush()
+                role, num_in_groups = trans.app.security_agent.create_role(
+                    name, description, in_users, in_groups, create_group_for_role=create_group_for_role_checked)
                 message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
                     % (role.name, len(in_users), num_in_groups)
                 if create_group_for_role_checked:
