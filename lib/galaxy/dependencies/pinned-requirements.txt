@@ -21,7 +21,7 @@ pysam>=0.13
 bz2file==0.98; python_version < '3.3'
 ipaddress==1.0.18; python_version < '3.3'
 boltons==17.1.0
-Paste==2.0.2
+Paste==2.0.3
 PasteDeploy==1.5.2
 docutils==0.14
 repoze.lru==0.6
@@ -46,7 +46,7 @@ python-dateutil==2.5.3
 docopt==0.6.2
 
 # Cheetah and dependencies
-Cheetah==2.4.4
+Cheetah3==3.0.0
 Markdown==2.6.3
 
 # Requests and dependencies
