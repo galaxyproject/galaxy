@@ -83,7 +83,7 @@ svgwrite==1.1.6
 pyparsing==2.1.1
 
 # Fabric and dependencies
-Fabric==1.13.2
+Fabric3==1.13.1.post1
 paramiko==2.2.1
 ecdsa==0.13
 

@@ -65,6 +65,6 @@ svgwrite
 pyparsing
 
 # Fabric and dependencies
-Fabric
+Fabric3
 paramiko
 ecdsa
