@@ -223,7 +223,7 @@ class JobConfiguration(ConfiguresHandlers):
         except AttributeError:
             base_server_name = self.app.config.get('base_server_name', None)
         if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
+                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
             # Shortcut for compatibility with existing job confs that use the default handlers block,
             # there are no defined handlers, or there's only one handler and it's this server
             self.__set_default_job_handler()
