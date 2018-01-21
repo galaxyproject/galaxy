@@ -373,7 +373,7 @@ class DefaultToolState(object):
         return new_state
 
 
-class Tool(object, Dictifiable):
+class Tool(Dictifiable):
     """
     Represents a computational tool that can be executed through Galaxy.
     """

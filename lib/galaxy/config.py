@@ -898,7 +898,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin:
+class ConfiguresGalaxyMixin(object):
     """ Shared code for configuring Galaxy-like app objects.
     """
 

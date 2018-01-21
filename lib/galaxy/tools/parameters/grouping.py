@@ -27,7 +27,7 @@ from galaxy.util.expressions import ExpressionContext
 log = logging.getLogger(__name__)
 
 
-class Group(object, Dictifiable):
+class Group(Dictifiable):
 
     dict_collection_visible_keys = ['name', 'type']
 
@@ -693,7 +693,7 @@ class Conditional(Group):
         return cond_dict
 
 
-class ConditionalWhen(object, Dictifiable):
+class ConditionalWhen(Dictifiable):
     dict_collection_visible_keys = ['value']
 
     def __init__(self):
