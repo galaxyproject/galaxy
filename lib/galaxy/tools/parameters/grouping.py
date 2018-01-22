@@ -338,7 +338,7 @@ class UploadDataset(Group):
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
             url_paste_file = group_incoming.get('url_paste', None)
             if url_paste_file is not None:
-                url_paste = open(url_paste_file, 'r').read(1024)
+                url_paste = open(url_paste_file, 'r').read()
 
                 def start_of_url(content):
                     start_of_url_paste = content.lstrip()[0:8].lower()
