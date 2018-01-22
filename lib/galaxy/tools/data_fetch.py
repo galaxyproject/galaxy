@@ -116,7 +116,11 @@ def _fetch_target(upload_config, target):
         if is_binary:
             data_type, ext = handle_sniffable_binary_check(data_type, ext, path, registry)
         if data_type is None:
-            if is_binary:
+            root_datatype = registry.get_datatype_by_extension(ext)
+            if getattr(root_datatype, 'compressed', False):
+                data_type = 'compressed archive'
+                ext = ext
+            elif is_binary:
                 data_type, ext = handle_unsniffable_binary_check(
                     data_type, ext, path, name, is_binary, requested_ext, check_content, registry
                 )

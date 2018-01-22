@@ -776,6 +776,25 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/dir1/file3")
         assert dataset["file_size"] == 11, dataset
 
+    def test_fetch_history_compressed_type(self):
+        destination = {"type": "hdas"}
+        archive = self.test_data_resolver.get_filename("1.fastqsanger.gz")
+        targets = [{
+            "destination": destination,
+            "items": [{"src": "path", "path": archive, "ext": "fastqsanger.gz"}],
+        }]
+        payload = {
+            "history_id": self.history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+        }
+        self.dataset_populator.fetch(payload)
+        contents_response = self.dataset_populator._get_contents_request(self.history_id)
+        assert contents_response.status_code == 200
+        contents = contents_response.json()
+        assert len(contents) == 1
+        print(contents)
+        contents[0]["extension"] == "fastqsanger.gz"
+
     def test_fetch_recursive_archive_history(self):
         destination = {"type": "hdas"}
         archive = self.test_data_resolver.get_filename("testdir1.zip")
