@@ -489,6 +489,13 @@ class Bam(BamNative):
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
 
 
+class ProBam(Bam):
+    """Class describing a BAM binary file - extended for proteomics data"""
+    edam_format = "format_3826"
+    edam_data = "data_0863"
+    file_ext = "probam"
+
+
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
