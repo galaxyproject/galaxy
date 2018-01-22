@@ -1,7 +1,7 @@
+import logging
 from itertools import count
 from time import sleep
 
-import logging
 log = logging.getLogger(__name__)
 
 DEFAULT_MAX_RETRIES = -1  # By default don't retry.

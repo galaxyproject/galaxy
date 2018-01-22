@@ -6,7 +6,7 @@ import textwrap
 
 from Bio import GenBank
 
-assert sys.version_info[:2] >= ( 2, 4 )
+assert sys.version_info[:2] >= (2, 6)
 
 
 def make_fasta(rec):
@@ -17,6 +17,7 @@ def make_fasta(rec):
     head = '>gi:%s, id:%s, org:%s, date:%s\n' % (gi, rec.id, org, date)
     body = '\n'.join(textwrap.wrap(rec.seq.data, width=80))
     return head, body
+
 
 if __name__ == '__main__':
     mode = sys.argv[1]

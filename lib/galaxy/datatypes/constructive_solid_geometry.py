@@ -102,7 +102,7 @@ class Ply(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Faces: %s, Vertices: %s" % (str(dataset.metadata.face), str(dataset.metadata.vertex))
         else:
             dataset.peek = 'File does not exist'
@@ -111,7 +111,7 @@ class Ply(object):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Ply file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -130,11 +130,9 @@ class PlyBinary(Ply, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
-Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
-
 
 class Vtk(object):
-    """
+    r"""
     The Visualization Toolkit provides a number of source and writer objects to
     read and write popular data file formats. The Visualization Toolkit also
     provides some of its own file formats.
@@ -151,8 +149,8 @@ class Vtk(object):
     i.e., the numbers that define points coordinates, scalars, cell indices, and
     so forth.
 
-    Binary data must be placed into the file immediately after the newline (\n)
-    character from the previous ASCII keyword and parameter sequence.
+    Binary data must be placed into the file immediately after the newline
+    ('\\n') character from the previous ASCII keyword and parameter sequence.
 
     TODO: only legacy formats are currently supported and support for XML formats
     should be added.
@@ -300,7 +298,7 @@ class Vtk(object):
                                 dataset.metadata.field_names.append(field_name)
                                 try:
                                     num_components = int(items[-1])
-                                except:
+                                except Exception:
                                     num_components = 1
                                 field_component_indexes = [str(i) for i in range(num_components)]
                                 field_components[field_name] = field_component_indexes
@@ -318,7 +316,7 @@ class Vtk(object):
                                         float(items[0])
                                         # Don't process the cell data.
                                         # 0.0123457 0.197531
-                                    except:
+                                    except Exception:
                                         # Line consists of arrayName numComponents numTuples dataType.
                                         # Example: surface_field1 1 12 double
                                         field_name = items[0]
@@ -428,7 +426,7 @@ class Vtk(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = 'File does not exist'
@@ -437,7 +435,7 @@ class Vtk(object):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Vtk file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -456,7 +454,9 @@ class VtkBinary(Vtk, Binary):
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
-Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
+
+class STL(data.Data):
+    file_ext = "stl"
 
 
 # Utility functions

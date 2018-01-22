@@ -1,4 +1,4 @@
-<tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1">
+<tool id="gff_filter_by_feature_count" name="Filter GFF data by feature count" version="0.1.1">
   <description>using simple expressions</description>
   <command interpreter="python">
     gff_filter_by_feature_count.py $input_file1 $out_file1 "$feature_name" "$cond"

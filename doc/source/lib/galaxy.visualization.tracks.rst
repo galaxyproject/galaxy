@@ -1,5 +1,5 @@
-galaxy.visualization.tracks package
-===================================
+galaxy\.visualization\.tracks package
+=====================================
 
 .. automodule:: galaxy.visualization.tracks
     :members:

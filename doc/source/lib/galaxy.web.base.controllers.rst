@@ -1,5 +1,5 @@
-galaxy.web.base.controllers package
-===================================
+galaxy\.web\.base\.controllers package
+======================================
 
 .. automodule:: galaxy.web.base.controllers
     :members:
@@ -9,8 +9,8 @@ galaxy.web.base.controllers package
 Submodules
 ----------
 
-galaxy.web.base.controllers.admin module
-----------------------------------------
+galaxy\.web\.base\.controllers\.admin module
+--------------------------------------------
 
 .. automodule:: galaxy.web.base.controllers.admin
     :members:

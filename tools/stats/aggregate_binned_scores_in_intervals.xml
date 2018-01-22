@@ -1,9 +1,12 @@
-<tool id="aggregate_scores_in_intervals2" description="such as phastCons, GERP, binCons, and others for a set of genomic intervals" name="Aggregate datapoints" version="1.1.3">
+<tool id="aggregate_scores_in_intervals2" name="Aggregate datapoints" version="1.1.3">
   <description>Appends the average, min, max of datapoints per interval</description>
-  <command interpreter="python">
-    #if $score_source_type.score_source == "user" #aggregate_scores_in_intervals.py $score_source_type.input2 $input1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $out_file1 --chrom_buffer=3
-    #else                                         #aggregate_scores_in_intervals.py $score_source_type.datasets $input1 ${input1.metadata.chromCol} ${input1.metadata.startCol} ${input1.metadata.endCol} $out_file1 -b
-    #end if#
+  <command>
+python '$__tool_directory__/aggregate_scores_in_intervals.py'
+#if $score_source_type.score_source == "user"
+    '$score_source_type.input2' '$input1' '${input1.metadata.chromCol}' '${input1.metadata.startCol}' '${input1.metadata.endCol}' '$out_file1' --chrom_buffer=3
+#else
+    '$score_source_type.datasets' '$input1' '${input1.metadata.chromCol}' '${input1.metadata.startCol}' '${input1.metadata.endCol}' '$out_file1' -b
+#end if
   </command>
   <inputs>
     <param format="interval" name="input1" type="data" label="Interval file"/>
@@ -55,14 +58,13 @@
     </test>
   </tests>
   <help>
-
 .. class:: warningmark
 
 This tool currently only has cached data for genome builds hg16, hg17 and hg18. However, you may use your own data point (wiggle) data, such as those available from UCSC. If you are trying to use your own data point file and it is not appearing as an option, make sure that the builds for your history items are the same.
 
 .. class:: warningmark
 
-This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns. 
+This tool assumes that the input dataset is in interval format and contains at least a chrom column, a start column and an end column.  These 3 columns can be dispersed throughout any number of other data columns.
 
 -----
 
@@ -108,6 +110,5 @@ where:
 * **avg** - average phastCons score for each region
 * **min** - minimum phastCons score for each region
 * **max** - maximum phastCons score for each region
-
   </help>
 </tool>

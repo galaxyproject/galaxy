@@ -1,3 +1,7 @@
+//Globals to be rid of
+var IES = window.IES;
+var toastr = window.toastr;
+
 function message_failed_auth(password){
     toastr.info(
         "Automatic authorization failed. You can manually login with:<br>" + password + "<br> <a href='https://github.com/bgruening/galaxy-ipython/wiki/Automatic-Authorization-Failed' target='_blank'>More details ...</a>",
@@ -34,12 +38,11 @@ function message_no_auth(){
  *
  */
 function load_notebook(password, notebook_login_url, notebook_access_url){
-    $( document ).ready(function() {
-        // Test notebook_login_url for accessibility, executing the login+load function whenever
-        // we've successfully connected to the IE.
-        test_ie_availability(notebook_login_url, function(){
-            _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
-        });
+    // Test notebook_login_url for accessibility, executing the login+load function whenever
+    // we've successfully connected to the IE.
+    IES.test_ie_availability(notebook_login_url, function(){
+        _handle_notebook_loading(password, notebook_login_url, notebook_access_url);
+        keep_alive();
     });
 }
 
@@ -50,34 +53,44 @@ function keep_alive(){
     * this function is not constantly pinging the container, the container will
     * terminate itself.
     */
-
-    var request_count = 0;
-    interval = setInterval(function(){
-        $.ajax({
-            url: notebook_access_url,
-            xhrFields: {
-                withCredentials: true
-            },
-            type: "GET",
-            timeout: 500,
-            success: function(){
-                console.log("Connected to IE, returning");
-            },
-            error: function(jqxhr, status, error){
-                request_count++;
-                console.log("Request " + request_count);
-                if(request_count > 30){
-                    clearInterval(interval);
-                    clear_main_area();
-                    toastr.error(
-                        "Could not connect to IE, contact your administrator",
-                        "Error",
-                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-                    );
-                }
-            }
-        });
-    }, 30000);
+    var warn_at = 4;
+    var count_max = 60;
+    // we sleep 15 seconds between requests and the default timeout for the Jupyter container is 120 seconds, so start
+    // with a pretty high ajax timeout. sleep starts low because we want to get the warning up pretty quickly
+    var spin_state = IES.make_spin_state("IE keepalive", 8000, 16000, 2000, 5000, 15000, 5000, false);
+    var success = function(){
+        console.log("IE keepalive request succeeded");
+        toastr.clear();
+        if(spin_state.count >= warn_at){
+            toastr.clear();
+            toastr.success(
+                "Interactive environment connection restored",
+                {'closeButton': true, 'timeOut': 5000, 'extendedTimeOut': 2000, 'tapToDismiss': true}
+            );
+        }
+        spin_state.count = 0;
+        spin_state.timeout_count = 0;
+        spin_state.error_count = 0;
+        return false;  // keep spinning
+    };
+    var timeout_error = function(jqxhr, status, error){
+        console.log("IE keepalive request failed " + spin_state.count + " time(s) of " + count_max + " max: " + status + ": " + error);
+        if(spin_state.count == warn_at){
+            toastr.warning(
+                "Your browser has been unable to contact the interactive environment for "
+                + spin_state.count + " consecutive attempts, if you do not reestablish "
+                + "a connection, your IE container may be terminated.",
+                "Warning",
+                {'closeButton': true, 'timeOut': 0, 'extendedTimeOut': 0, 'tapToDismiss': false}
+            );
+            return false;  // keep spinning
+        }else if(spin_state.count >= count_max){
+            IES.spin_error("IE keepalive failure limit reached", "Lost connection to interactive environment, contact your administrator", false);
+            return true;  // stop spinning
+        }
+    };
+    console.log("IE keepalive worker starting");
+    IES.spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
 }
 
 
@@ -100,17 +113,17 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
             },
             // If that is successful, load the notebook
             success: function(){
-                append_notebook(notebook_access_url);
+                IES.append_notebook(notebook_access_url);
             },
             error: function(jqxhr, status, error){
                 if(ie_password_auth){
                     // Failure happens due to CORS
                     message_failed_auth(password);
-                    append_notebook(notebook_access_url);
+                    IES.append_notebook(notebook_access_url);
                 }else{
                     message_failed_connection();
                     // Do we want to try and load the notebook anyway? Just in case?
-                    append_notebook(notebook_access_url);
+                    IES.append_notebook(notebook_access_url);
                 }
             }
         });
@@ -118,6 +131,6 @@ function _handle_notebook_loading(password, notebook_login_url, notebook_access_
     else {
         // Not using password auth, just embed it to avoid content-origin issues.
         message_no_auth();
-        append_notebook(notebook_access_url);
+        IES.append_notebook(notebook_access_url);
     }
 }

@@ -3,29 +3,35 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
+import re
+from os import environ as os_environ
+
+from six import text_type
 
 from galaxy import model
-from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
-from os import environ as os_environ
-from six import text_type
+from galaxy.jobs.runners import (
+    AsynchronousJobRunner,
+    AsynchronousJobState,
+    JobState
+)
 
 # pykube imports:
 try:
-    import operator
-
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
-    from pykube.objects import Job
-    from pykube.objects import Pod
+    from pykube.objects import (
+        Job,
+        Pod
+    )
 except ImportError as exc:
-    operator = None
+    KubeConfig = None
     K8S_IMPORT_MESSAGE = ('The Python pykube package is required to use '
                           'this feature, please install it or correct the '
                           'following error:\nImportError %s' % str(exc))
 
 log = logging.getLogger(__name__)
 
-__all__ = ['KubernetesJobRunner']
+__all__ = ('KubernetesJobRunner', )
 
 
 class KubernetesJobRunner(AsynchronousJobRunner):
@@ -36,13 +42,21 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __init__(self, app, nworkers, **kwargs):
         # Check if pykube was importable, fail if not
-        assert operator is not None, K8S_IMPORT_MESSAGE
+        assert KubeConfig is not None, K8S_IMPORT_MESSAGE
         runner_param_specs = dict(
             k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
             k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
+            k8s_job_api_version=dict(map=str, default="batch/v1"),
+            k8s_supplemental_group_id=dict(map=str),
+            k8s_pull_policy=dict(map=str, default="Default"),
+            k8s_fs_group_id=dict(map=int),
+            k8s_default_requests_cpu=dict(map=str, default=None),
+            k8s_default_requests_memory=dict(map=str, default=None),
+            k8s_default_limits_cpu=dict(map=str, default=None),
+            k8s_default_limits_memory=dict(map=str, default=None),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -59,6 +73,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
+
+        self._supplemental_group = self.__get_supplemental_group()
+        self._fs_group = self.__get_fs_group()
+        self._default_pull_policy = self.__get_pull_policy()
 
         self._init_monitor_thread()
         self._init_worker_threads()
@@ -77,17 +95,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
         k8s_job_obj = {
-            "apiVersion": "extensions/v1beta1",
+            "apiVersion": self.runner_params['k8s_job_api_version'],
             "kind": "Job",
-            "metadata":
-            # metadata.name is the name of the pod resource created, and must be unique
-            # http://kubernetes.io/docs/user-guide/configuring-containers/
-                {
+            "metadata": {
+                    # metadata.name is the name of the pod resource created, and must be unique
+                    # http://kubernetes.io/docs/user-guide/configuring-containers/
                     "name": k8s_job_name,
                     "namespace": "default",  # TODO this should be set
-                    "labels": {"app": k8s_job_name},
-                }
-            ,
+                    "labels": {"app": k8s_job_name}
+            },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
@@ -109,6 +125,32 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # external_runJob_script can be None, in which case it's not used.
         external_runjob_script = None
         return external_runjob_script
+
+    def __get_pull_policy(self):
+        if "k8s_pull_policy" in self.runner_params:
+            if self.runner_params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
+                return self.runner_params['k8s_pull_policy']
+        return None
+
+    def __get_supplemental_group(self):
+        if "k8s_supplemental_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_supplemental_group_id"])
+            except Exception:
+                log.warning("Supplemental group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_supplemental_group_id"] + " passed is invalid")
+                return None
+        return None
+
+    def __get_fs_group(self):
+        if "k8s_fs_group_id" in self.runner_params:
+            try:
+                return int(self.runner_params["k8s_fs_group_id"])
+            except Exception:
+                log.warning("FS group passed for Kubernetes runner needs to be an integer, value "
+                         + self.runner_params["k8s_fs_group_id"] + " passed is invalid")
+                return None
+        return None
 
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
@@ -136,6 +178,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
 
+        if self._supplemental_group and self._supplemental_group > 0:
+            k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
+        if self._fs_group and self._fs_group > 0:
+            if "securityContext" in k8s_spec_template["spec"]:
+                k8s_spec_template["spec"]["securityContext"]["fsGroup"] = self._fs_group
+            else:
+                k8s_spec_template["spec"]["securityContext"] = dict(fsGroup=self._fs_group)
+
         return k8s_spec_template
 
     def __get_k8s_restart_policy(self, job_wrapper):
@@ -157,7 +207,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return [k8s_mountable_volume]
 
     def __get_k8s_containers(self, job_wrapper):
-        """Fills in all required for setting up the docker containers to be used."""
+        """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
+           this has been set.
+        """
         k8s_container = {
             "name": self.__get_k8s_container_name(job_wrapper),
             "image": self._find_container(job_wrapper).container_id,
@@ -173,6 +225,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             }]
         }
 
+        resources = self.__get_resources(job_wrapper)
+        if resources:
+            k8s_container['resources'] = resources
+
+        if self._default_pull_policy:
+            k8s_container["imagePullPolicy"] = self._default_pull_policy
         # if self.__requires_ports(job_wrapper):
         #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
@@ -182,6 +240,98 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     #    for k,v self.runner_params:
     #        if k.startswith("container_port_"):
+
+    def __get_resources(self, job_wrapper):
+        mem_request = self.__get_memory_request(job_wrapper)
+        cpu_request = self.__get_cpu_request(job_wrapper)
+
+        mem_limit = self.__get_memory_limit(job_wrapper)
+        cpu_limit = self.__get_cpu_limit(job_wrapper)
+
+        requests = {}
+        limits = {}
+
+        if mem_request:
+            requests['memory'] = mem_request
+        if cpu_request:
+            requests['cpu'] = cpu_request
+
+        if mem_limit:
+            limits['memory'] = mem_limit
+        if cpu_limit:
+            limits['cpu'] = cpu_limit
+
+        resources = {}
+        if requests:
+            resources['requests'] = requests
+        if limits:
+            resources['limits'] = limits
+
+        return resources
+
+    def __get_memory_request(self, job_wrapper):
+        """Obtains memory requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_memory' in job_destinantion.params:
+            return self.__transform_memory_value(job_destinantion.params['requests_memory'])
+        return None
+
+    def __get_memory_limit(self, job_wrapper):
+        """Obtains memory limits for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_memory' in job_destinantion.params:
+            return self.__transform_memory_value(job_destinantion.params['limits_memory'])
+        return None
+
+    def __get_cpu_request(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'requests_cpu' in job_destinantion.params:
+            return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
+        return None
+
+    def __get_cpu_limit(self, job_wrapper):
+        """Obtains cpu requests for job, checking if available on the destination, otherwise using the default"""
+        job_destinantion = job_wrapper.job_destination
+
+        if 'limits_cpu' in job_destinantion.params:
+            return self.__transform_cpu_value(job_destinantion.params['limits_cpu'])
+        return None
+
+    def __transform_cpu_value(self, cpu_value):
+        """Transforms cpu value
+
+           If the value is 0 and not a string, then None is returned.
+           If the value is a float, then it is multiplied by 1000 and expressed as mili cpus.
+           If the value is an integer, then it is and expressed as CPUs (no unit).
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(cpu_value, str) and float(cpu_value) == 0:
+            return None
+        if isinstance(cpu_value, float):
+            return str(int(cpu_value * 1000)) + "m"
+        elif isinstance(cpu_value, int):
+            return str(cpu_value)
+        return cpu_value
+
+    def __transform_memory_value(self, mem_value):
+        """Transforms memory value
+
+           If the value is 0 and not a string, then None is returned.
+           If the value has a decimal part, then it is multiplied by 1000 and expressed as Megabytes.
+           If the value is an integer, then it is truncated and expressed as Gigabytes.
+           If it is an already formatted string, it is returned as it was.
+        """
+        if not isinstance(mem_value, str) and float(mem_value) == 0:
+            return None
+        if isinstance(mem_value, float):
+            return str(int(mem_value * 1000)) + "M"
+        elif isinstance(mem_value, int):
+            return str(mem_value) + "G"
+        return mem_value
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
@@ -204,8 +354,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return k8s_cont_image
 
     def __get_k8s_container_name(self, job_wrapper):
-        # TODO check if this is correct
-        return job_wrapper.job_destination.id
+        # These must follow a specific regex for Kubernetes.
+        raw_id = job_wrapper.job_destination.id
+        if isinstance(raw_id, str):
+            cleaned_id = re.sub("[^-a-z0-9]", "-", raw_id)
+            if cleaned_id.startswith("-") or cleaned_id.endswith("-"):
+                cleaned_id = "x%sx" % cleaned_id
+            return cleaned_id
+        return "job-container"
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
@@ -239,20 +395,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
+            elif failed > 0 and self.__job_failed_due_to_low_memory(job_state):
+                return self._handle_job_failure(job, job_state, reason="OOM")
             elif active > 0 and failed <= max_pod_retrials:
                 job_state.running = True
                 return job_state
             elif failed > max_pod_retrials:
-                self.__produce_log_file(job_state)
-                error_file = open(job_state.error_file, 'w')
-                error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
-                error_file.close()
-                job_state.running = False
-                job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
-                self.mark_as_failed(job_state)
-                job.scale(replicas=0)
-                return None
-
+                return self._handle_job_failure(job, job_state)
             # We should not get here
             log.debug(
                 "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
@@ -275,6 +424,38 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             error_file.close()
             self.mark_as_failed(job_state)
             return job_state
+
+    def _handle_job_failure(self, job, job_state, reason=None):
+        self.__produce_log_file(job_state)
+        error_file = open(job_state.error_file, 'w')
+        if reason == "OOM":
+            error_file.write("Job killed after running out of memory. Try with more memory.\n")
+            job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
+            job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+        else:
+            error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
+            job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
+        error_file.close()
+        job_state.running = False
+        self.mark_as_failed(job_state)
+        job.scale(replicas=0)
+        return None
+
+    def __job_failed_due_to_low_memory(self, job_state):
+        """
+        checks the state of the pod to see if it was killed
+        for being out of memory (pod status OOMKilled). If that is the case
+        marks the job for resubmission (resubmit logic is part of destinations).
+        """
+
+        pods = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
+        pod = Pod(self._pykube_api, pods.response['items'][0])
+
+        if pod.obj['status']['phase'] == "Failed" and \
+                pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
+            return True
+
+        return False
 
     def fail_job(self, job_state):
         """

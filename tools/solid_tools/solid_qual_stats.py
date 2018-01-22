@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Guruprasad Ananda
+from __future__ import print_function
 
 import sys
 import tempfile
@@ -9,16 +10,16 @@ QUAL_UPPER_BOUND = 41
 QUAL_LOWER_BOUND = 1
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
-def unzip( filename ):
-    zip_file = zipfile.ZipFile( filename, 'r' )
+def unzip(filename):
+    zip_file = zipfile.ZipFile(filename, 'r')
     tmpfilename = tempfile.NamedTemporaryFile().name
     for name in zip_file.namelist():
-        open( tmpfilename, 'a' ).write( zip_file.read( name ) )
+        open(tmpfilename, 'a').write(zip_file.read(name))
     zip_file.close()
     return tmpfilename
 
@@ -27,15 +28,15 @@ def __main__():
     infile_score_name = sys.argv[1].strip()
     fout = open(sys.argv[2].strip(), 'r+w')
 
-    if zipfile.is_zipfile( infile_score_name ):
-        infile_name = unzip( infile_score_name )
+    if zipfile.is_zipfile(infile_score_name):
+        infile_name = unzip(infile_score_name)
     else:
         infile_name = infile_score_name
 
     readlen = None
     invalid_lines = 0
     j = 0
-    for line in open( infile_name ):
+    for line in open(infile_name):
         line = line.strip()
         if not(line) or line.startswith("#") or line.startswith(">"):
             continue
@@ -46,7 +47,7 @@ def __main__():
             if not readlen:
                 readlen = len(elems)
             if len(elems) != readlen:
-                print "Note: Reads in the input dataset are of variable lengths."
+                print("Note: Reads in the input dataset are of variable lengths.")
             j += 1
         except ValueError:
             invalid_lines += 1
@@ -54,8 +55,8 @@ def __main__():
             break
 
     position_dict = {}
-    print >>fout, "column\tcount\tmin\tmax\tsum\tmean\tQ1\tmed\tQ3\tIQR\tlW\trW"
-    for k, line in enumerate(file( infile_name )):
+    print("column\tcount\tmin\tmax\tsum\tmean\tQ1\tmed\tQ3\tIQR\tlW\trW", file=fout)
+    for k, line in enumerate(open(infile_name)):
         line = line.strip()
         if not(line) or line.startswith("#") or line.startswith(">"):
             continue
@@ -70,7 +71,7 @@ def __main__():
             try:
                 item = int(item)
                 position_dict[ind][item] += 1
-            except:
+            except Exception:
                 pass
 
     invalid_positions = 0
@@ -123,16 +124,17 @@ def __main__():
             left_whisker = max(q1 - 1.5 * iqr, lowest)
             right_whisker = min(q3 + 1.5 * iqr, highest)
 
-            print >>fout, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (pos + 1, total, lowest, highest, qsum, mean, q1, median, q3, iqr, left_whisker, right_whisker)
-        except:
+            print("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s" % (pos + 1, total, lowest, highest, qsum, mean, q1, median, q3, iqr, left_whisker, right_whisker), file=fout)
+        except Exception:
             invalid_positions += 1
             nullvals = ['NA'] * 11
-            print >>fout, "%s\t%s" % (pos + 1, '\t'.join(nullvals))
+            print("%s\t%s" % (pos + 1, '\t'.join(nullvals)), file=fout)
 
     if invalid_lines:
-        print "Skipped %d reads as invalid." % invalid_lines
+        print("Skipped %d reads as invalid." % invalid_lines)
     if invalid_positions:
-        print "Skipped stats computation for %d read positions." % invalid_positions
+        print("Skipped stats computation for %d read positions." % invalid_positions)
+
 
 if __name__ == "__main__":
     __main__()

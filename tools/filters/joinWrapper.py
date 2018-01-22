@@ -30,7 +30,7 @@ def main():
         os.system("sort -t '	' -k %d,%d -o %s %s" % (field1, field1, tmpfile1.name, infile1))
         os.system("sort -t '	' -k %d,%d -o %s %s" % (field2, field2, tmpfile2.name, infile2))
     except Exception as exc:
-        stop_err( 'Initialization error -> %s' % str(exc) )
+        stop_err('Initialization error -> %s' % str(exc))
 
     option = ""
     for line in open(tmpfile1.name):
@@ -71,6 +71,7 @@ def main():
         os.system(cmdline)
     except Exception as exj:
         stop_err('Error joining the two datasets -> %s' % str(exj))
+
 
 if __name__ == "__main__":
     main()

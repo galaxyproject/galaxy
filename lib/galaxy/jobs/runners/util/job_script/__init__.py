@@ -1,12 +1,15 @@
+import logging
 import os
-from string import Template
 import subprocess
 import time
-from pkg_resources import resource_string
+from string import Template
 
+from pkg_resources import resource_string
 from six import text_type
+
 from galaxy.util import unicodify
 
+log = logging.getLogger(__name__)
 DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
@@ -15,6 +18,9 @@ DEFAULT_JOB_FILE_TEMPLATE = Template(
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
     resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
+
+MEMORY_STATEMENT_DEFAULT = \
+    resource_string(__name__, 'MEMORY_STATEMENT.sh').decode('UTF-8')
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
@@ -40,10 +46,13 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'headers': '',
     'env_setup_commands': [],
     'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
+    'memory_statement': MEMORY_STATEMENT_DEFAULT,
     'instrument_pre_commands': '',
     'instrument_post_commands': '',
     'integrity_injection': INTEGRITY_INJECTION,
     'shell': DEFAULT_SHELL,
+    'preserve_python_environment': True,
+    'tmp_dir_creation_statement': '""',
 }
 
 
@@ -69,6 +78,9 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
     >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
+    True
+    >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
+    >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
     True
     """
     if any([param not in kwds for param in REQUIRED_TEMPLATE_PARAMS]):
@@ -117,11 +129,12 @@ def _handle_script_integrity(path, config):
     sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
     for i in range(count):
         try:
-            proc = subprocess.Popen([path], shell=True, env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
-            proc.wait()
-            if proc.returncode == 42:
+            returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
+            if returncode == 42:
                 script_integrity_verified = True
                 break
+
+            log.debug("Script integrity error for file '%s': returncode was %d", path, returncode)
 
             # Else we will sync and wait to see if the script becomes
             # executable.
@@ -130,19 +143,21 @@ def _handle_script_integrity(path, config):
                 # These have occurred both in Docker containers and on EC2 clusters
                 # under high load.
                 subprocess.check_call(INTEGRITY_SYNC_COMMAND)
-            except Exception:
-                pass
-            time.sleep(sleep_amt)
-        except Exception:
-            pass
+            except Exception as e:
+                log.debug("Error syncing the filesystem: %s", unicodify(e))
+
+        except Exception as exc:
+            log.debug("Script not available yet: %s", unicodify(exc))
+
+        time.sleep(sleep_amt)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script, could not verify job script integrity.")
+        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
 
 
-__all__ = [
+__all__ = (
     'check_script_integrity',
     'job_script',
     'write_script',
     'INTEGRITY_INJECTION',
-]
+)

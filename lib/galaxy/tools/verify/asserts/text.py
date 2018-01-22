@@ -4,7 +4,7 @@ import re
 def assert_has_text(output, text):
     """ Asserts specified output contains the substring specified by
     the argument text."""
-    assert output.find(text) >= 0, "Output file did not contain expected text '%s' (ouptut '%s')" % (text, output)
+    assert output.find(text) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (text, output)
 
 
 def assert_not_has_text(output, text):

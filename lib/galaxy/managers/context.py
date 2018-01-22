@@ -9,34 +9,34 @@ from six import text_type
 from galaxy.util import bunch
 
 
-class ProvidesAppContext( object ):
+class ProvidesAppContext(object):
     """ For transaction-like objects to provide Galaxy convience layer for
     database and event handling.
 
     Mixed in class must provide `app` property.
     """
 
-    def log_action( self, user=None, action=None, context=None, params=None):
+    def log_action(self, user=None, action=None, context=None, params=None):
         """
         Application-level logging of user actions.
         """
         if self.app.config.log_actions:
-            action = self.app.model.UserAction(action=action, context=context, params=text_type( dumps( params ) ) )
+            action = self.app.model.UserAction(action=action, context=context, params=text_type(dumps(params)))
             try:
                 if user:
                     action.user = user
                 else:
                     action.user = self.user
-            except:
+            except Exception:
                 action.user = None
             try:
                 action.session_id = self.galaxy_session.id
-            except:
+            except Exception:
                 action.session_id = None
-            self.sa_session.add( action )
+            self.sa_session.add(action)
             self.sa_session.flush()
 
-    def log_event( self, message, tool_id=None, **kwargs ):
+    def log_event(self, message, tool_id=None, **kwargs):
         """
         Application level logging. Still needs fleshing out (log levels and such)
         Logging events is a config setting - if False, do not log.
@@ -46,29 +46,29 @@ class ProvidesAppContext( object ):
             event.tool_id = tool_id
             try:
                 event.message = message % kwargs
-            except:
+            except Exception:
                 event.message = message
             try:
                 event.history = self.get_history()
-            except:
+            except Exception:
                 event.history = None
             try:
                 event.history_id = self.history.id
-            except:
+            except Exception:
                 event.history_id = None
             try:
                 event.user = self.user
-            except:
+            except Exception:
                 event.user = None
             try:
                 event.session_id = self.galaxy_session.id
-            except:
+            except Exception:
                 event.session_id = None
-            self.sa_session.add( event )
+            self.sa_session.add(event)
             self.sa_session.flush()
 
     @property
-    def sa_session( self ):
+    def sa_session(self):
         """
         Returns a SQLAlchemy session -- currently just gets the current
         session from the threadlocal session context, but this is provided
@@ -76,7 +76,7 @@ class ProvidesAppContext( object ):
         """
         return self.app.model.context.current
 
-    def expunge_all( self ):
+    def expunge_all(self):
         app = self.app
         context = app.model.context
         context.expunge_all()
@@ -91,20 +91,15 @@ class ProvidesAppContext( object ):
         return self.app.toolbox
 
     @property
-    def model( self ):
+    def model(self):
         return self.app.model
 
     @property
-    def install_model( self ):
+    def install_model(self):
         return self.app.install_model
 
-    def request_types(self):
-        if self.sa_session.query( self.app.model.RequestType ).filter_by( deleted=False ).count() > 0:
-            return True
-        return False
 
-
-class ProvidesUserContext( object ):
+class ProvidesUserContext(object):
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about users.
 
@@ -113,10 +108,10 @@ class ProvidesUserContext( object ):
     """
 
     @property
-    def anonymous( self ):
+    def anonymous(self):
         return self.user is None and not self.api_inherit_admin
 
-    def get_current_user_roles( self ):
+    def get_current_user_roles(self):
         user = self.user
         if user:
             roles = user.all_roles()
@@ -124,13 +119,13 @@ class ProvidesUserContext( object ):
             roles = []
         return roles
 
-    def user_is_admin( self ):
+    def user_is_admin(self):
         if self.api_inherit_admin:
             return True
         return self.user and self.user.email in self.app.config.admin_users_list
 
-    def user_can_do_run_as( self ):
-        run_as_users = [ user for user in self.app.config.get( "api_allow_run_as", "" ).split( "," ) if user ]
+    def user_can_do_run_as(self):
+        run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
         if not run_as_users:
             return False
         user_in_run_as_users = self.user and self.user.email in run_as_users
@@ -139,7 +134,7 @@ class ProvidesUserContext( object ):
         return can_do_run_as
 
     @property
-    def user_ftp_dir( self ):
+    def user_ftp_dir(self):
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None:
             return None
@@ -155,7 +150,7 @@ class ProvidesUserContext( object ):
             return path
 
 
-class ProvidesHistoryContext( object ):
+class ProvidesHistoryContext(object):
     """ For transaction-like objects to provide Galaxy convience layer for
     reasoning about histories.
 
@@ -163,7 +158,7 @@ class ProvidesHistoryContext( object ):
     properties.
     """
 
-    def db_dataset_for( self, dbkey ):
+    def db_dataset_for(self, dbkey):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
         """
@@ -171,22 +166,22 @@ class ProvidesHistoryContext( object ):
         if self.history is None:
             return None
         # TODO: when does this happen? is it Bunch or util.bunch.Bunch?
-        if isinstance( self.history, bunch.Bunch ):
+        if isinstance(self.history, bunch.Bunch):
             # The API presents a Bunch for a history.  Until the API is
             # more fully featured for handling this, also return None.
             return None
-        datasets = self.sa_session.query( self.app.model.HistoryDatasetAssociation ) \
-                                  .filter_by( deleted=False, history_id=self.history.id, extension="len" )
+        datasets = self.sa_session.query(self.app.model.HistoryDatasetAssociation) \
+                                  .filter_by(deleted=False, history_id=self.history.id, extension="len")
         for ds in datasets:
             if dbkey == ds.dbkey:
                 return ds
         return None
 
     @property
-    def db_builds( self ):
+    def db_builds(self):
         """
         Returns the builds defined by galaxy and the builds defined by
         the user (chromInfo in history).
         """
         # FIXME: This method should be removed
-        return self.app.genome_builds.get_genome_build_names( trans=self )
+        return self.app.genome_builds.get_genome_build_names(trans=self)

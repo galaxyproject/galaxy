@@ -1,11 +1,17 @@
+from logging import getLogger
+from subprocess import (
+    PIPE,
+    Popen
+)
 from tempfile import TemporaryFile
 from time import sleep
-from subprocess import Popen, PIPE
 
 from ..shell import BaseShellExec
-from ....util import Bunch, kill_pid
+from ....util import (
+    Bunch,
+    kill_pid
+)
 
-from logging import getLogger
 log = getLogger(__name__)
 
 TIMEOUT_ERROR_MESSAGE = u'Execution timed out'
@@ -42,6 +48,7 @@ class LocalShell(BaseShellExec):
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):
+            sleep(0.1)  # For fast returning commands
             r = p.poll()
             if r is not None:
                 break

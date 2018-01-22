@@ -57,13 +57,13 @@ import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
 
-from cleanup_datasets import CleanupDatasetsApplication
+from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 
 log = logging.getLogger()
-log.setLevel(10)
+log.setLevel(logging.INFO)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def main():

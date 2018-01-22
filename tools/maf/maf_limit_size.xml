@@ -3,13 +3,11 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_limit_size.py $input1 $out_file1 $min_size $max_size</command>
+  <command>python '$__tool_directory__/maf_limit_size.py' '$input1' '$out_file1' $min_size $max_size</command>
   <inputs>
-    <page>
         <param format="maf" name="input1" label="MAF File" type="data"/>
         <param name="min_size" label="Minimum Size" value="0" type="integer"/>
         <param name="max_size" label="Maximum Size" value="0" type="integer" help="A maximum size less than 1 indicates no limit"/>
-    </page>
    </inputs>
   <outputs>
     <data format="maf" name="out_file1" />
@@ -23,12 +21,9 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool takes a MAF file and a size range and extracts the MAF blocks which fall within the specified range.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

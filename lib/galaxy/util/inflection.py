@@ -267,7 +267,7 @@ class Inflector:
     based on naming conventions like on Ruby on Rails.
     """
 
-    def __init__( self, Inflector=English ):
+    def __init__(self, Inflector=English):
         assert callable(Inflector), "Inflector should be a callable obj"
         self.Inflector = Inflector()
 

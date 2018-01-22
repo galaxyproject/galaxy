@@ -1,15 +1,16 @@
 from functools import partial
+
 import yaml
 
-from galaxy.util import bunch
 from galaxy import model
 from galaxy.model import mapping
+from galaxy.util import bunch
 from galaxy.web.security import SecurityHelper
 
 
-class MockTrans( object ):
+class MockTrans(object):
 
-    def __init__( self ):
+    def __init__(self):
         self.app = TestApp()
         self.sa_session = self.app.model.context
         self._user = None
@@ -17,8 +18,9 @@ class MockTrans( object ):
     def save_workflow(self, workflow):
         stored_workflow = model.StoredWorkflow()
         stored_workflow.latest_workflow = workflow
+        workflow.stored_workflow = stored_workflow
         stored_workflow.user = self.user
-        self.sa_session.add( stored_workflow )
+        self.sa_session.add(stored_workflow)
         self.sa_session.flush()
         return stored_workflow
 
@@ -32,9 +34,9 @@ class MockTrans( object ):
         return self._user
 
 
-class TestApp( object ):
+class TestApp(object):
 
-    def __init__( self ):
+    def __init__(self):
         self.config = bunch.Bunch(
             tool_secret="awesome_secret",
         )
@@ -48,32 +50,32 @@ class TestApp( object ):
         self.security = SecurityHelper(id_secret="testing")
 
 
-class TestDatatypesRegistry( object ):
+class TestDatatypesRegistry(object):
 
-    def __init__( self ):
+    def __init__(self):
         pass
 
-    def get_datatype_by_extension( self, ext ):
+    def get_datatype_by_extension(self, ext):
         return ext
 
 
-class TestToolbox( object ):
+class TestToolbox(object):
 
-    def __init__( self ):
+    def __init__(self):
         self.tools = {}
 
-    def get_tool( self, tool_id, tool_version=None ):
+    def get_tool(self, tool_id, tool_version=None, exact=False):
         # Real tool box returns None of missing tool also
-        return self.tools.get( tool_id, None )
+        return self.tools.get(tool_id, None)
 
-    def get_tool_id( self, tool_id ):
-        tool = self.get_tool( tool_id )
+    def get_tool_id(self, tool_id):
+        tool = self.get_tool(tool_id)
         return tool and tool.id
 
 
 def yaml_to_model(has_dict, id_offset=100):
     if isinstance(has_dict, str):
-        has_dict = yaml.load(has_dict)
+        has_dict = yaml.safe_load(has_dict)
 
     workflow = model.Workflow()
     workflow.steps = []
@@ -95,12 +97,12 @@ def yaml_to_model(has_dict, id_offset=100):
             step["subworkflow"] = subworkflow
             id_offset += len(subworkflow.steps)
 
-        for key, value in step.iteritems():
+        for key, value in step.items():
             if key == "input_connections":
                 connections = []
                 for conn_dict in value:
                     conn = model.WorkflowStepConnection()
-                    for conn_key, conn_value in conn_dict.iteritems():
+                    for conn_key, conn_value in conn_dict.items():
                         if conn_key == "@output_step":
                             target_step = workflow.steps[conn_value]
                             conn_value = target_step
@@ -112,15 +114,15 @@ def yaml_to_model(has_dict, id_offset=100):
                     connections.append(conn)
                 value = connections
             if key == "workflow_outputs":
-                value = map(partial(_dict_to_workflow_output, workflow_step), value)
+                value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
             setattr(workflow_step, key, value)
-        workflow.steps.append( workflow_step )
+        workflow.steps.append(workflow_step)
 
     return workflow
 
 
 def _dict_to_workflow_output(workflow_step, as_dict):
     output = model.WorkflowOutput(workflow_step)
-    for key, value in as_dict.iteritems():
+    for key, value in as_dict.items():
         setattr(output, key, value)
     return output

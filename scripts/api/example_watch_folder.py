@@ -11,6 +11,7 @@ python example_watch_folder.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/do
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
 from __future__ import print_function
+
 import os
 import shutil
 import sys
@@ -68,12 +69,13 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         wf_data['ds_map'] = {}
                         for step_id, ds_in in workflow['inputs'].items():
                             wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
-                        res = submit( api_key, api_url + 'workflows', wf_data, return_formatted=False)
+                        res = submit(api_key, api_url + 'workflows', wf_data, return_formatted=False)
                         if res:
                             print(res)
                             # Successful workflow execution, safe to move dataset.
                             shutil.move(fullpath, os.path.join(out_folder, fname))
         time.sleep(10)
+
 
 if __name__ == '__main__':
     try:
@@ -84,6 +86,6 @@ if __name__ == '__main__':
         data_library = sys.argv[5]
         workflow = sys.argv[6]
     except IndexError:
-        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename( sys.argv[0] ))
-        sys.exit( 1 )
-    main(api_key, api_url, in_folder, out_folder, data_library, workflow )
+        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename(sys.argv[0]))
+        sys.exit(1)
+    main(api_key, api_url, in_folder, out_folder, data_library, workflow)

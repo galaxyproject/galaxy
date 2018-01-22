@@ -1,43 +1,31 @@
-// from: https://raw.githubusercontent.com/umdjs/umd/master/jqueryPlugin.js
-// Uses AMD or browser globals to create a jQuery plugin.
-(function (factory) {
-    if (typeof define === 'function' && define.amd) {
-        //TODO: So...this turns out to be an all or nothing thing. If I load jQuery in the define below, it will
-        //  (of course) wipe the old jquery *and all the plugins loaded into it*. So the define below *is still
-        //  relying on jquery being loaded globally* in order to preserve plugins.
-        define([ 'jquery' ], factory);
-    } else {
-        // Browser globals
-        factory(jQuery);
-    }
-
-}(function ( jQuery ) {
-'use_strict';
+import jQuery from "jquery";
+("use_strict");
 
 var $ = jQuery;
 
 // ============================================================================
 /**
-* JQuery extension for tagging with autocomplete.
-* @author: Jeremy Goecks
-* @require: jquery.autocomplete plugin
-*/
+ * JQuery extension for tagging with autocomplete.
+ * @author: Jeremy Goecks
+ * @require: jquery.autocomplete plugin
+ */
 //
 // Initialize "tag click functions" for tags.
 //
 function init_tag_click_function(tag_elt, click_func) {
-    $(tag_elt).find('.tag-name').each( function() {
-        $(this).click( function() {
-            var tag_str = $(this).text();
-            var tag_name_and_value = tag_str.split(":");
-            click_func(tag_name_and_value[0], tag_name_and_value[1]);
-            return true;
+    $(tag_elt)
+        .find(".tag-name")
+        .each(function() {
+            $(this).click(function() {
+                var tag_str = $(this).text();
+                var tag_name_and_value = tag_str.split(":");
+                click_func(tag_name_and_value[0], tag_name_and_value[1]);
+                return true;
+            });
         });
-    });
 }
 
 jQuery.fn.autocomplete_tagging = function(options) {
-
     var defaults = {
         get_toggle_link_text_fn: function(tags) {
             var text = "";
@@ -49,11 +37,11 @@ jQuery.fn.autocomplete_tagging = function(options) {
             }
             return text;
         },
-        tag_click_fn : function (name, value) {},
+        tag_click_fn: function(name, value) {},
         editable: true,
         input_size: 20,
         in_form: false,
-        tags : {},
+        tags: {},
         use_toggle_link: true,
         item_id: "",
         add_tag_img: "",
@@ -74,25 +62,25 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Get elements for this object. For this_obj, assume the last element with the id is the "this"; this is somewhat of a hack to address the problem
     // that there may be two tagging elements for a single item if there are both community and individual tags for an element.
     var this_obj = $(this);
-    var tag_area = this_obj.find('.tag-area');
-    var toggle_link = this_obj.find('.toggle-link');
-    var tag_input_field = this_obj.find('.tag-input');
-    var add_tag_button = this_obj.find('.add-tag-button');
+    var tag_area = this_obj.find(".tag-area");
+    var toggle_link = this_obj.find(".toggle-link");
+    var tag_input_field = this_obj.find(".tag-input");
+    var add_tag_button = this_obj.find(".add-tag-button");
 
     // Initialize toggle link.
-    toggle_link.click( function() {
+    toggle_link.click(function() {
         // Take special actions depending on whether toggle is showing or hiding link.
         var after_toggle_fn;
         if (tag_area.is(":hidden")) {
             after_toggle_fn = function() {
                 // If there are no tags, go right to editing mode by generating a click on the area.
-                var num_tags = $(this).find('.tag-button').length;
+                var num_tags = $(this).find(".tag-button").length;
                 if (num_tags === 0) {
                     tag_area.click();
                 }
             };
         } else {
-            after_toggle_fn = function() {
+            after_toggle_fn = () => {
                 tag_area.blur();
             };
         }
@@ -104,14 +92,14 @@ jQuery.fn.autocomplete_tagging = function(options) {
     if (settings.editable) {
         tag_input_field.hide();
     }
-    tag_input_field.keyup( function(e) {
-        if ( e.keyCode === 27 ) {
+    tag_input_field.keyup(function(e) {
+        if (e.keyCode === 27) {
             // Escape key
-            $(this).trigger( "blur" );
+            $(this).trigger("blur");
         } else if (
-            ( e.keyCode === 13 ) || // Return Key
-            ( e.keyCode === 188 ) || // Comma
-            ( e.keyCode === 32 ) // Space
+            e.keyCode === 13 || // Return Key
+            e.keyCode === 188 || // Comma
+            e.keyCode === 32 // Space
         ) {
             //
             // Check input.
@@ -120,14 +108,14 @@ jQuery.fn.autocomplete_tagging = function(options) {
             var new_value = this.value;
 
             // Suppress space after a ":"
-            if ( new_value.indexOf(": ", new_value.length - 2) !== -1) {
-                this.value = new_value.substring(0, new_value.length-1);
+            if (new_value.indexOf(": ", new_value.length - 2) !== -1) {
+                this.value = new_value.substring(0, new_value.length - 1);
                 return false;
             }
 
             // Remove trigger keys from input.
-            if ( (e.keyCode === 188) || (e.keyCode === 32) ) {
-                new_value = new_value.substring( 0 , new_value.length - 1 );
+            if (e.keyCode === 188 || e.keyCode === 32) {
+                new_value = new_value.substring(0, new_value.length - 1);
             }
 
             // Trim whitespace.
@@ -148,7 +136,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
             var new_tag_button = build_tag_button(new_value);
             var tag_buttons = tag_area.children(".tag-button");
             if (tag_buttons.length !== 0) {
-                var last_tag_button = tag_buttons.slice(tag_buttons.length-1);
+                var last_tag_button = tag_buttons.slice(tag_buttons.length - 1);
                 last_tag_button.after(new_tag_button);
             } else {
                 tag_area.prepend(new_tag_button);
@@ -173,13 +161,13 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     delete settings.tags[tag_name_and_value[0]];
                     var new_text = settings.get_toggle_link_text_fn(settings.tags);
                     toggle_link.text(new_text);
-                    alert( "Add tag failed" );
+                    alert("Add tag failed");
                 },
                 success: function() {
                     // Flush autocomplete cache because it's not out of date.
                     // TODO: in the future, we could remove the particular item
                     // that was chosen from the cache rather than flush it.
-                    zz.data('autocompleter').cacheFlush();
+                    zz.data("autocompleter").cacheFlush();
                 }
             });
 
@@ -188,26 +176,28 @@ jQuery.fn.autocomplete_tagging = function(options) {
     });
 
     // Add autocomplete to input.
-    var format_item_func = function(key, row_position, num_rows, value, search_term) {
+    var format_item_func = (key, row_position, num_rows, value, search_term) => {
         var tag_name_and_value = value.split(":");
-        return (tag_name_and_value.length === 1 ? tag_name_and_value[0] : tag_name_and_value[1]);
+        return tag_name_and_value.length === 1 ? tag_name_and_value[0] : tag_name_and_value[1];
     };
-    var autocomplete_options = { selectFirst: false, formatItem: format_item_func,
-            autoFill: false, highlight: false };
-    tag_input_field.autocomplete(settings.ajax_autocomplete_tag_url, autocomplete_options);
-
+    var autocomplete_options = {
+        selectFirst: false,
+        formatItem: format_item_func,
+        autoFill: false,
+        highlight: false
+    };
+    tag_input_field.autocomplete_verheul(settings.ajax_autocomplete_tag_url, autocomplete_options);
 
     // Initialize delete tag images for current tags.
-    this_obj.find('.delete-tag-img').each(function() {
-        init_delete_tag_image( $(this) );
+    this_obj.find(".delete-tag-img").each(function() {
+        init_delete_tag_image($(this));
     });
-
 
     // Initialize tag click function.
     init_tag_click_function($(this), settings.tag_click_fn);
 
     // Initialize "add tag" button.
-    add_tag_button.click( function() {
+    add_tag_button.click(function() {
         $(this).hide();
 
         // Clicking on button is the same as clicking on the tag area.
@@ -220,7 +210,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
     //
     if (settings.editable) {
         // When the tag area blurs, go to "view tag" mode.
-        tag_area.bind("blur", function(e) {
+        tag_area.bind("blur", e => {
             if (_.size(settings.tags) > 0) {
                 add_tag_button.show();
                 tag_input_field.hide();
@@ -232,7 +222,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
         });
 
         // On click, enable user to add tags.
-        tag_area.click( function(e) {
+        tag_area.click(function(e) {
             var is_active = $(this).hasClass("active-tag-area");
 
             // If a "delete image" object was pressed and area is inactive, do nothing.
@@ -257,7 +247,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
             // Add handler to document that will call blur when the tag area is blurred;
             // a tag area is blurred when a user clicks on an element outside the area.
-            var handle_document_click = function(e)  {
+            var handle_document_click = e => {
                 var check_click = function(tag_area, target) {
                     var tag_area_id = tag_area.attr("id");
                     // Blur the tag area if the element clicked on is not in the tag area.
@@ -294,19 +284,18 @@ jQuery.fn.autocomplete_tagging = function(options) {
     // Collapse tag name + value into a single string.
     //
     function build_tag_str(tag_name, tag_value) {
-        return tag_name + ( tag_value ? ":" + tag_value : "");
+        return tag_name + (tag_value ? `:${tag_value}` : "");
     }
-
 
     // Initialize a "delete tag image": when click, delete tag from UI and send delete request to server.
     function init_delete_tag_image(delete_img) {
-        $(delete_img).mouseenter( function () {
+        $(delete_img).mouseenter(function() {
             $(this).attr("src", settings.delete_tag_img_rollover);
         });
-        $(delete_img).mouseleave( function () {
+        $(delete_img).mouseleave(function() {
             $(this).attr("src", settings.delete_tag_img);
         });
-        $(delete_img).click( function () {
+        $(delete_img).click(function() {
             // Tag button is image's parent.
             var tag_button = $(this).parent();
 
@@ -339,15 +328,15 @@ jQuery.fn.autocomplete_tagging = function(options) {
                     } else {
                         tag_area.prepend(tag_button);
                     }
-                    alert( "Remove tag failed" );
+                    alert("Remove tag failed");
 
                     toggle_link.text(settings.get_toggle_link_text_fn(settings.tags));
 
                     // TODO: no idea why it's necessary to set this up again.
-                    delete_img.mouseenter( function () {
+                    delete_img.mouseenter(function() {
                         $(this).attr("src", settings.delete_tag_img_rollover);
                     });
-                    delete_img.mouseleave( function () {
+                    delete_img.mouseleave(function() {
                         $(this).attr("src", settings.delete_tag_img);
                     });
                 },
@@ -363,12 +352,16 @@ jQuery.fn.autocomplete_tagging = function(options) {
     //
     function build_tag_button(tag_str) {
         // Build "delete tag" image.
-        var delete_img = $("<img/>").attr("src", settings.delete_tag_img).addClass("delete-tag-img");
+        var delete_img = $("<img/>")
+            .attr("src", settings.delete_tag_img)
+            .addClass("delete-tag-img");
         init_delete_tag_image(delete_img);
 
         // Build tag button.
-        var tag_name_elt = $("<span>").text(tag_str).addClass("tag-name");
-        tag_name_elt.click( function() {
+        var tag_name_elt = $("<span>")
+            .text(tag_str)
+            .addClass("tag-name");
+        tag_name_elt.click(() => {
             var tag_name_and_value = tag_str.split(":");
             settings.tag_click_fn(tag_name_and_value[0], tag_name_and_value[1]);
             return true;
@@ -383,9 +376,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
 
         return tag_button;
     }
-
 };
 
 // ============================================================================
-    return init_tag_click_function;
-}));
+export default init_tag_click_function;

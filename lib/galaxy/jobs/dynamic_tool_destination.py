@@ -1,17 +1,17 @@
 from __future__ import print_function
 
-__version__ = '1.0.0'
+import argparse
+import collections
+import copy
+import logging
+import os
+import re
+import sys
+from functools import reduce
 
 from yaml import load
 
-import argparse
-import logging
-import os
-import sys
-import copy
-import collections
-import re
-
+__version__ = '1.0.0'
 
 # log to galaxy's logger
 log = logging.getLogger(__name__)
@@ -26,6 +26,17 @@ class MalformedYMLException(Exception):
 
 class ScannerError(Exception):
     pass
+
+
+def get_keys_from_dict(dl, keys_list):
+    """
+    This function builds a list using the keys from nest dictionaries
+    """
+    if isinstance(dl, dict):
+        keys_list += dl.keys()
+        map(lambda x: get_keys_from_dict(x, keys_list), dl.values())
+    elif isinstance(dl, list):
+        map(lambda x: get_keys_from_dict(x, keys_list), dl)
 
 
 class RuleValidator:
@@ -1231,7 +1242,7 @@ def map_tool_to_destination(
                 if priority in config['default_destination']['priority']:
                     destination = config['default_destination']['priority'][priority]
                 else:
-                    destination = ( config['default_destination']['priority'][default_priority])
+                    destination = (config['default_destination']['priority'][default_priority])
             config = config['tools']
             if str(tool.old_id) in config:
                 if 'rules' in config[str(tool.old_id)]:
@@ -1290,18 +1301,21 @@ def map_tool_to_destination(
                             elif rule["rule_type"] == "arguments":
                                 options = job.get_param_values(app)
                                 matched = True
-
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
-                                    if arg in options:
-                                        if rule["arguments"][arg] != options[arg]:
+                                    arg_dict = {arg : rule["arguments"][arg]}
+                                    arg_keys_list = []
+                                    get_keys_from_dict(arg_dict, arg_keys_list)
+                                    try:
+                                        options_value = reduce(dict.__getitem__, arg_keys_list, options)
+                                        arg_value = reduce(dict.__getitem__, arg_keys_list, arg_dict)
+                                        if (arg_value != options_value):
                                             matched = False
-                                            options = "test"
-                                    else:
+                                    except KeyError:
                                         matched = False
                                         if verbose:
                                             error = "Argument '" + str(arg)
-                                            error = + "' not recognized!"
+                                            error += "' not recognized!"
                                             log.debug(error)
 
                             # if we matched a rule
@@ -1370,6 +1384,7 @@ def map_tool_to_destination(
             log.debug(output)
 
     return destination
+
 
 if __name__ == '__main__':
     """

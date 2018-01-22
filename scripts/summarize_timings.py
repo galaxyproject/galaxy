@@ -1,8 +1,8 @@
 """Script to parse timings out of a Galaxy log and summarize."""
 from __future__ import print_function
 
-from argparse import ArgumentParser
 import re
+from argparse import ArgumentParser
 
 import numpy
 
@@ -15,7 +15,7 @@ TIMING_LINE_PATTERN = re.compile("\((\d+.\d+) ms\)")
 def main(argv=None):
     """Entry point for script."""
     arg_parser = ArgumentParser(description=DESCRIPTION)
-    arg_parser.add_argument("--file", default="paster.log")
+    arg_parser.add_argument("--file", default="galaxy.log")
     arg_parser.add_argument("--print_lines", default=False, action="store_true")
     arg_parser.add_argument("--pattern", default=None)
 
@@ -45,6 +45,7 @@ def main(argv=None):
         numpy.std(times)
     )
     print(message)
+
 
 if __name__ == "__main__":
     main()

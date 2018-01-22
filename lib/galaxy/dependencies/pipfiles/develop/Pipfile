@@ -1,0 +1,25 @@
+[[source]]
+
+url = "https://wheels.galaxyproject.org/simple"
+verify_ssl = true
+name = "galaxy"
+
+[[source]]
+
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+
+NoseHTML = "*"
+twill = "==0.9.1"
+mock = "*"
+selenium = "*"
+testfixtures = "*"
+watchdog = "*"
+"pygithub3" = "*"
+Sphinx = "*"
+sphinx_rtd_theme = "*"
+lxml = "*"
+recommonmark = "*"

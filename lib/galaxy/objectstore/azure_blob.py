@@ -7,13 +7,7 @@ import os
 import shutil
 import threading
 import time
-
 from datetime import datetime
-
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms
-from galaxy.util.sleeper import Sleeper
-from ..objectstore import convert_bytes, ObjectStore
 
 try:
     from azure.common import AzureHttpError
@@ -23,10 +17,25 @@ try:
 except ImportError:
     BlockBlobService = None
 
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
+from galaxy.util import (
+    directory_hash_id,
+    umask_fix_perms
+)
+from galaxy.util.path import safe_relpath
+from galaxy.util.sleeper import Sleeper
+from ..objectstore import (
+    convert_bytes,
+    ObjectStore
+)
+
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
                                 "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 class AzureBlobObjectStore(ObjectStore):
@@ -35,6 +44,7 @@ class AzureBlobObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
+
     def __init__(self, config, config_xml):
         if BlockBlobService is None:
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
@@ -44,7 +54,6 @@ class AzureBlobObjectStore(ObjectStore):
         self.transfer_progress = 0
         self._parse_config_xml(config_xml)
         self._configure_connection()
-        self.container_lease = self._get_container_lease()
 
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
@@ -88,28 +97,6 @@ class AzureBlobObjectStore(ObjectStore):
         log.debug("Configuring Connection")
         self.account = CloudStorageAccount(self.account_name, self.account_key)
         self.service = self.account.create_block_blob_service()
-
-    def _get_container_lease(self):
-        """ Sometimes a handle to a container is not established right away so try
-        it a few times. Raise error is connection is not established. """
-        for i in range(5):
-            try:
-                self.service.break_container_lease(self.container_name)
-                container_lease = self.service.acquire_container_lease(self.container_name)
-                log.debug("Using azure blob store with container '%s'", self.container_name)
-                return container_lease
-            except AzureHttpError:
-                try:
-                    log.debug("container not found, creating azure blob store container with name '%s'", self.container_name)
-                    self.service.create_container(self.container_name)
-                    container_lease = self.service.acquire_container_lease(self.container_name)
-                    return container_lease
-                except AzureHttpError:
-                    log.exception("Could not get container '%s', attempt %s/5", self.container_name, i + 1)
-                    time.sleep(2)
-        # All the attempts have been exhausted and connection was not established,
-        # raise error
-        raise AzureHttpError
 
     def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
         # extra_dir should never be constructed from provided data but just
@@ -351,7 +338,7 @@ class AzureBlobObjectStore(ObjectStore):
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound( 'objectstore.empty, object does not exist: %s, kwargs: %s' % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s' % (str(obj), str(kwargs)))
 
     def size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -447,9 +434,7 @@ class AzureBlobObjectStore(ObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound( 'objectstore.get_filename, no cache_path: %s, kwargs: %s' % ( str( obj ), str( kwargs ) ) )
-
-        return cache_path  # Until the upload tool does not explicitly create the dataset, return expected path
+        raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s' % (str(obj), str(kwargs)))
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
@@ -474,7 +459,7 @@ class AzureBlobObjectStore(ObjectStore):
             self._push_to_os(rel_path, source_file)
 
         else:
-            raise ObjectNotFound( 'objectstore.update_from_file, object does not exist: %s, kwargs: %s' % ( str( obj ), str( kwargs ) ) )
+            raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s' % (str(obj), str(kwargs)))
 
     def get_object_url(self, obj, **kwargs):
         if self.exists(obj, **kwargs):

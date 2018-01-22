@@ -1,0 +1,6 @@
+<parameters>
+  <param label="Test Name" name="test_name" type="text" value="" help="Test name to connect client with simulated backend failures." />
+  <param label="Failure Type" name="failure_state" type="text" value="" help="If set, FailsJobRunner fails with this runner state." />
+  <param label="Initial Destination" name="initial_destination" type="text" value="" help="If set, initial destination to route job to." />
+  <param label="Run For" name="run_for" type="integer" value="0" help="If greater than 0, wait this long before triggering runtime failure state (memory or walltime)." />
+</parameters>

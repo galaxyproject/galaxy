@@ -1,3 +1,4 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -195,7 +196,7 @@
                 </div>
             %endif
         %else:
-            ${repository_type_select_field.get_html()}
+            ${render_select(repository_type_select_field)}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.
@@ -280,7 +281,7 @@
                 elif folder.label == 'Invalid tool dependencies':
                     folder_label = "%s<i> - click the tool dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Valid tools':
-                    col_span_str = 'colspan="3"'
+                    col_span_str = 'colspan="4"'
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
@@ -870,6 +871,7 @@
         %endif
         <${cell_type}>${tool.description | h}</${cell_type}>
         <${cell_type}>${tool.version | h}</${cell_type}>
+        <${cell_type}>${tool.profile | h}</${cell_type}>
         ##<${cell_type}>${tool.requirements | h}</${cell_type}>
     </tr>
     <%
@@ -1026,7 +1028,39 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( requirements_status )">
+<%def name="render_dependency_status( dependency, prepare_for_install=False)">
+    <td>${dependency['name'] | h}</td>
+    <td>${dependency['version'] | h}</td>
+    %if not prepare_for_install:
+        %if dependency['dependency_type']:
+            <td>${dependency['dependency_type'].title() | h}</td>
+        %else:
+            <td>${dependency['dependency_type'] | h}</td>
+        %endif
+        <td>${dependency['exact'] | h}</td>
+    %endif
+    %if dependency['dependency_type'] == None:
+        <td>
+           <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+           %if prepare_for_install:
+               Not Installed
+           %endif
+        </td>
+    %elif not dependency['exact']:
+        <td>
+            <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
+        </td>
+    %else:
+        <td>
+            <img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/>
+            %if prepare_for_install:
+                Installed through ${dependency['dependency_type'].title() | h}
+            %endif
+        </td>
+    %endif
+</%def>
+
+<%def name="render_tool_dependency_resolver( requirements_status, prepare_for_install=False )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
@@ -1034,30 +1068,17 @@
                     <tr>
                         <th>Dependency</th>
                         <th>Version</th>
-                        <th>Resolver</th>
-                        <th>Exact version</th>
-                        <th>Status<th>
+                        %if not prepare_for_install:
+                            <th>Resolver</th>
+                            <th>Exact version</th>
+                        %endif
+                        <th>Current Installation Status<th>
                     </tr>
                 </head>
                 <body>
                     %for dependency in requirements_status:
+                        ${render_dependency_status(dependency, prepare_for_install)}
                         <tr>
-                            <td>${dependency['name'] | h}</td>
-                            <td>${dependency['version'] | h}</td>
-                            <td>${dependency['dependency_type'] | h}</td>
-                            <td>${dependency['exact'] | h}</td>
-                        %if dependency['dependency_type'] == None:
-                            <td>
-                               <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
-                            </td>
-                        %elif not dependency['exact']:
-                            <td>
-                                <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
-                            </td>
-                        %else:
-                            <td><img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/></td>
-                        %endif
-                        </tr>
                     %endfor
                 </body>
             </table>

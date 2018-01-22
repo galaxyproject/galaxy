@@ -3,7 +3,7 @@
 <%namespace name="mod_masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
 
 ## Default title
-<%def name="title()">Galaxy</%def>
+<%def name="title()"></%def>
 
 <%def name="javascripts()">
 ${parent.javascripts()}

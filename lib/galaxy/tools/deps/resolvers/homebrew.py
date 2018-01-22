@@ -39,7 +39,9 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
 
         self._init_homebrew(**kwds)
 
-    def resolve(self, name, version, type, **kwds):
+    def resolve(self, requirement, **kwds):
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
             return NullDependency(version=version, name=name)
 
@@ -49,8 +51,8 @@ class HomebrewDependencyResolver(DependencyResolver, UsesHomebrewMixin):
             return self._find_dep_versioned(name, version)
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
 
-__all__ = ['HomebrewDependencyResolver']
+__all__ = ('HomebrewDependencyResolver', )

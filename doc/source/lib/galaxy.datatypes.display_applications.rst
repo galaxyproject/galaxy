@@ -1,5 +1,5 @@
-galaxy.datatypes.display_applications package
-=============================================
+galaxy\.datatypes\.display\_applications package
+================================================
 
 .. automodule:: galaxy.datatypes.display_applications
     :members:
@@ -9,24 +9,24 @@ galaxy.datatypes.display_applications package
 Submodules
 ----------
 
-galaxy.datatypes.display_applications.application module
---------------------------------------------------------
+galaxy\.datatypes\.display\_applications\.application module
+------------------------------------------------------------
 
 .. automodule:: galaxy.datatypes.display_applications.application
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.display_applications.parameters module
--------------------------------------------------------
+galaxy\.datatypes\.display\_applications\.parameters module
+-----------------------------------------------------------
 
 .. automodule:: galaxy.datatypes.display_applications.parameters
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.datatypes.display_applications.util module
--------------------------------------------------
+galaxy\.datatypes\.display\_applications\.util module
+-----------------------------------------------------
 
 .. automodule:: galaxy.datatypes.display_applications.util
     :members:

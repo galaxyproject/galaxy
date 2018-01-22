@@ -3,7 +3,10 @@
 ...using common defaults and configuration mechanisms.
 """
 import os
-from .commands import argv_to_str, shell_quote
+
+from six.moves import shlex_quote
+
+from .commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
 DEFAULT_SUDO = True
@@ -25,7 +28,7 @@ class DockerVolume(object):
         self.from_path = path
         self.to_path = to_path or path
         if not DockerVolume.__valid_how(how):
-            raise ValueError("Invalid way to specify docker volume %s" % how)
+            raise ValueError("Invalid way to specify Docker volume %s" % how)
         self.how = how
 
     @staticmethod
@@ -33,12 +36,12 @@ class DockerVolume(object):
         if not volumes_as_str:
             return []
         volume_strs = [v.strip() for v in volumes_as_str.split(",")]
-        return map(DockerVolume.volume_from_str, volume_strs)
+        return [DockerVolume.volume_from_str(_) for _ in volume_strs]
 
     @staticmethod
     def volume_from_str(as_str):
         if not as_str:
-            raise ValueError("Failed to parse docker volume from %s" % as_str)
+            raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
         kwds = dict(path=parts[0])
         if len(parts) == 2:
@@ -152,19 +155,21 @@ def build_docker_run_command(
     if terminal:
         command_parts.append("-t")
     for env_directive in env_directives:
-        command_parts.extend(["-e", shell_quote(env_directive)])
+        # e.g. -e "GALAXY_SLOTS=$GALAXY_SLOTS"
+        # These are environment variable expansions so we don't quote these.
+        command_parts.extend(["-e", env_directive])
     for volume in volumes:
-        command_parts.extend(["-v", shell_quote(str(volume))])
+        command_parts.extend(["-v", shlex_quote(str(volume))])
     if volumes_from:
-        command_parts.extend(["--volumes-from", shell_quote(str(volumes_from))])
+        command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
     if memory:
-        command_parts.extend(["-m", shell_quote(memory)])
+        command_parts.extend(["-m", shlex_quote(memory)])
     if name:
-        command_parts.extend(["--name", shell_quote(name)])
+        command_parts.extend(["--name", shlex_quote(name)])
     if working_directory:
-        command_parts.extend(["-w", shell_quote(working_directory)])
+        command_parts.extend(["-w", shlex_quote(working_directory)])
     if net:
-        command_parts.extend(["--net", shell_quote(net)])
+        command_parts.extend(["--net", shlex_quote(net)])
     if auto_rm:
         command_parts.append("--rm")
     if run_extra_arguments:
@@ -172,12 +177,17 @@ def build_docker_run_command(
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:
-            user = str(os.geteuid())
-        command_parts.extend(["-u", user])
+            # If future-us is ever in here and fixing this for docker-machine just
+            # use cwltool.docker_id - it takes care of this default nicely.
+            euid = os.geteuid()
+            egid = os.getgid()
+
+            user = "%d:%d" % (euid, egid)
+        command_parts.extend(["--user", user])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
-    command_parts.append(shell_quote(full_image))
+    command_parts.append(shlex_quote(full_image))
     command_parts.append(container_command)
     return " ".join(command_parts)
 

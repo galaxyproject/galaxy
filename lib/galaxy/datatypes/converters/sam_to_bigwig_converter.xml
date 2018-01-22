@@ -5,14 +5,16 @@
         <requirement type="package">bedtools</requirement>
     </requirements>
     <command>
-        samtools view -bh $input | bedtools genomecov -bg -split -ibam stdin -g $chromInfo 
+<![CDATA[
+        samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin -g '$chromInfo'
 
         ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
         ## should only be used on systems with large RAM.
-        ## | wigToBigWig stdin $chromInfo $output
+        ## | wigToBigWig stdin '$chromInfo' '$output'
 
         ## This can be used anywhere.
-        > temp.bg ; bedGraphToBigWig temp.bg $chromInfo $output
+        > temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+]]>
     </command>
     <inputs>
         <param format="bam" name="input" type="data" label="Choose BAM file"/>

@@ -18,6 +18,7 @@ except ImportError:
 def handle_timeout(signum, stack):
     raise IOError("Timed out reading input")
 
+
 # set timeout so we don't block on reading stdin
 signal.alarm(TIMEOUT)
 

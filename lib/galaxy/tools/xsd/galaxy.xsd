@@ -44,7 +44,9 @@ A ``data_source`` tool contains a few more relevant attributes.
     <xs:complexType>
       <xs:all>
         <!-- TODO: Move the anyType further into macros def... -->
-        <xs:element name="macros" type="xs:anyType" minOccurs="0"/>
+        <xs:element name="macros" type="Macros" minOccurs="0"/>
+        <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
+        <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
@@ -61,28 +63,12 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="xs:string" minOccurs="0">
-          <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
-order to get the tool's version string. The resulting value will be found in the
-"Info" field of the history dataset.
-
-Unlike the [``command``](#tool|command) tag, this value is taken as a literal and so there is no
-need to escape values like ``$`` and command inputs are not available for variable
-substitution.
-
-### Example
-
-```xml
-<version_command>tophat -version</version_command>
-```
-]]></xs:documentation>
-          </xs:annotation>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command"/>
-        <xs:element name="request_parameter_translation" type="RequestParameterTranslation" minOccurs="0"/>
+        <xs:element name="request_param_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
         <xs:element name="outputs" type="Outputs" minOccurs="0"/>
         <xs:element name="inputs" type="Inputs" minOccurs="0"/>
@@ -90,7 +76,7 @@ substitution.
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
         <xs:element name="help" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html.
+            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html .
 
 tag | details
 --- | -------
@@ -180,8 +166,8 @@ graphical tool form by setting this to ``false``.</xs:documentation>
           <xs:documentation xml:lang="en">Allows for certain framework
 functionality to be performed on certain types of tools. Normal tools that execute
 typical command-line jobs do not need to specify this, special kinds of tools such
-as [Data Source](https://wiki.galaxyproject.org/Admin/Internals/DataSources) and
-[Data Manager](https://wiki.galaxyproject.org/Admin/Tools/DataManagers) tools should
+as [Data Source](https://galaxyproject.org/admin/internals/data-sources/) and
+[Data Manager](https://galaxyproject.org/admin/tools/data-managers/) tools should
 set this to have values such as ``data_source`` or ``manage_data``.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -210,6 +196,22 @@ communicating with an external data source application (the default is ``get``).
       </xs:attribute>
     </xs:complexType>
   </xs:element>
+
+  <xs:complexType name="Macros">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Frequently, tools may require the same XML
+fragments be repeated in a file (for instance similar conditional branches,
+repeated options, etc...) or among tools in the same repository. Galaxy tools
+have a macro system to address this problem.
+
+For more information, see https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="import" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
 
   <xs:complexType name="ToolAction">
     <xs:annotation>
@@ -251,7 +253,7 @@ programs or modules that the tool depends upon are included in this tag set.
 When a tool runs, Galaxy attempts to *resolve* these requirements (also called
 dependencies). ``requirement``s are meant to be abstract and resolvable by
 multiple different systems (e.g. [conda](http://conda.pydata.org/docs/), the
-[Galaxy Tool Shed dependency management system](https://wiki.galaxyproject.org/ToolShedToolFeatures#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
+[Galaxy Tool Shed dependency management system](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
 or [environment modules](http://modules.sourceforge.net/)).
 
 Read more about dependency resolvers in Galaxy on
@@ -265,7 +267,7 @@ discussed in greater detail
 This example shows a tool that requires the samtools 0.0.18 package.
 
 This package is available via the Tool Shed (see
-[Tool Shed dependency management](https://wiki.galaxyproject.org/ToolShedToolFeatures#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories)
+[Tool Shed dependency management](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories)
 ) as well as [Conda](https://docs.galaxyproject.org/en/master/admin/conda_faq.html)
 and can be configured locally to adapt to any other package management system.
 
@@ -310,12 +312,12 @@ resolver.
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within Docker (https://www.docker.com/) containers -
+configured to run tools within [Docker](https://www.docker.com/) containers -
 this tag allows the tool to suggest possible valid Docker containers for this
 tool.
 
 Read more about configuring Galaxy to run Docker jobs
-[here](https://wiki.galaxyproject.org/Admin/Tools/Docker).
+[here](https://galaxyproject.org/admin/tools/docker/).
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -323,7 +325,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be 'docker'. </xs:documentation>
+            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be ``docker``. </xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -346,7 +348,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for split_inputs</xs:documentation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -359,16 +361,25 @@ Read more about configuring Galaxy to run Docker jobs
         <xs:documentation xml:lang="en">Documentation for split_mode</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="shared_inputs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Code">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-**Deprecated** do not use this unless absolutely necessary.
+**Deprecated** Do not use this unless absolutely necessary.
+
+The extensions described here can cause problems using your tool with certain components
+of Galaxy (like the workflow system). It is highly recommended to avoid these constructs
+unless absolutely necessary.
 
 This tag set provides detailed control of the way the tool is executed. This
 (optional) code can be deployed in a separate file in the same directory as the
 tool's config file. These hooks are being replaced by new tool config features
-and methods in the ~/lib/galaxy/tools/__init__.py code file.
+and methods in the [/lib/galaxy/tools/\__init__.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/__init__.py) code file.
 
 ### Examples
 
@@ -381,10 +392,10 @@ associated with a tool's single input dataset. The 2 metadata elements we're
 using look like this.
 
 ```python
-MetadataElement( name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[] )
+MetadataElement(name="field_names", default=[], desc="Field names", readonly=True, optional=True, visible=True, no_value=[])
 # The keys in the field_components map to the list of field_names in the above element
 # which ensures order for select list options that are built from it.
-MetadataElement( name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={} )
+MetadataElement(name="field_components", default={}, desc="Field names and components", readonly=True, optional=True, visible=True, no_value={})
 ```
 
 Our tool config includes a code file tag like this.
@@ -407,7 +418,7 @@ elements in the ``field_names`` metadata element associated with the selected
 input dataset.
 
 ```xml
-<param name="field_name" type="select" label="Field name" refresh_on_change="True">
+<param name="field_name" type="select" label="Field name" refresh_on_change="true">
     <options>
         <filter type="data_meta" ref="input" key="field_names"/>
         <validator type="no_options" message="The selected shape has no uncolored surface fields." />
@@ -432,11 +443,11 @@ list, which is the behavior we want.
 The ``get_field_components_options()`` method looks like this.
 
 ```python
-def get_field_components_options( dataset, field_name ):
+def get_field_components_options(dataset, field_name):
     options = []
     if dataset.metadata is None:
         return options
-    if not hasattr( dataset.metadata, 'field_names' ):
+    if not hasattr(dataset.metadata, 'field_names'):
         return options
     if dataset.metadata.field_names is None:
         return options
@@ -444,21 +455,104 @@ def get_field_components_options( dataset, field_name ):
         # The expression validator that helps populate the select list of input
         # datsets in the icqsol_color_surface_field tool does not filter out
         # datasets with no field field_names, so we need this check.
-        if len( dataset.metadata.field_names ) == 0:
+        if len(dataset.metadata.field_names) == 0:
             return options
         field_name = dataset.metadata.field_names[0]
-    field_components = dataset.metadata.field_components.get( field_name, [] )
-    for i, field_component in enumerate( field_components ):
-        options.append( ( field_component, field_component, i == 0 ) )
+    field_components = dataset.metadata.field_components.get(field_name, [])
+    for i, field_component in enumerate(field_components):
+        options.append((field_component, field_component, i == 0))
     return options
 ```
+
+#### Parameter Validation
+
+This function is called before the tool is executed. If it raises any exceptions the tool execution will be aborted and the exception's value will be displayed in an error message box. Here is an example:
+
+```python
+def validate(incoming):
+    """Validator for the plotting program"""
+
+
+    bins = incoming.get("bins","")
+    col = incoming.get("col","")
+
+
+    if not bins or not col:
+        raise Exception, "You need to specify a number for bins and columns"
+
+
+    try:
+        bins = int(bins)
+        col = int(col)
+    except:
+        raise Exception, "Parameters are not integers, columns:%s, bins:%s" % (col, bins)
+
+
+    if not 1<bins<100:
+        raise Exception, "The number of bins %s must be a number between 1 and 100" % bins
+```
+
+This code will intercept a number of parameter errors and return corresponding error messages. The parameter ``incoming`` contains a dictionary with all the parameters that were sent through the web.
+
+#### Pre-job and pre-process code
+
+The signature of both of these is the same:
+
+```python
+def exec_before_job(inp_data, out_data, param_dict, tool):
+def exec_before_process(inp_data, out_data, param_dict, tool):
+```
+
+The ``param_dict`` is a dictionary that contains all the values in the ``incoming`` parameter above plus a number of keys and values generated internally by galaxy. The ``inp_data`` and the ``out_data`` are dictionaries keyed by parameter name containing the classes that represent the data.
+
+Example:
+
+```python
+def exec_before_process(inp_data, out_data, param_dict, tool):
+    for name, data in out_data.items():
+        data.name = 'New name'
+```
+
+This custom code will change the name of the data that was created for this tool to **New name**. The difference between these two functions is that the ``exec_before_job`` executes before the page returns and the user will see the new name right away. If one were to use ``exec_before_process`` the new name would be set only once the job starts to execute.
+
+#### Post-process code
+
+This code executes after the background process running the tool finishes its run. The example below is more advanced one that replaces the type of the output data depending on the parameter named ``extension``:
+
+```python
+from galaxy import datatypes
+def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr):
+    ext = param_dict.get('extension', 'text')
+    items = out_data.items()
+    for name, data in items:
+        newdata = datatypes.factory(ext)(id=data.id)
+        for key, value in data. __dict__.items():
+            setattr(newdata, key, value)
+        newdata.ext = ext
+        out_data[name] = newdata
+```
+
+The content of ``stdout`` and ``stderr`` are strings containing the output of the process.
 
 ]]></xs:documentation>
 
     </xs:annotation>
+    <xs:sequence>
+      <xs:element name="hook" type="CodeHook" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
     <xs:attribute name="file" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value is the name of the executable code file, and is called in the exec_before_process(), exec_before_job(), exec_after_process() and exec_after_job()( methods.</xs:documentation>
+        <xs:documentation xml:lang="en">This value is the name of the executable code file, and is called in the ``exec_before_process()``, ``exec_before_job()``, ``exec_after_process()`` and ``exec_after_job()`` methods.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="CodeHook">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">**Deprecated** Map a hook to a function defined in the code file.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="exec_after_process" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Function defined in the code file to which the ``exec_after_process`` hook should be mapped</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -520,15 +614,15 @@ def get_field_components_options( dataset, field_name ):
 
 Container tag set to specify tests via the <test> tag sets. Any number of tests can be included,
 and each test is wrapped within separate <test> tag sets. Functional tests are
-executed via [Planemo](http://planemo.readthedocs.io/) or the
+executed via [Planemo](https://planemo.readthedocs.io/) or the
 [run_tests.sh](https://github.com/galaxyproject/galaxy/blob/dev/run_tests.sh)
 shell script distributed with Galaxy.
 
 The documentation contained here is mostly reference documentation, for
 tutorials on writing tool tests please check out Planemo's
-[Test-Driven Development](http://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
+[Test-Driven Development](https://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)
 documentation or the much older wiki content for
-[WritingTests](https://wiki.galaxyproject.org/Admin/Tools/WritingTests).
+[WritingTests](https://galaxyproject.org/admin/tools/writing-tests/).
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -944,7 +1038,7 @@ associated input ``repeat``.</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set defines the tool's input parameters for executing the tool via the
-functional test framework. See [``test``'s](#tool|tests|test) documentation for
+functional test framework. See [test](#tool-tests-test) documentation for
 some simple examples of parameters.
 
 ]]></xs:documentation>
@@ -984,16 +1078,16 @@ of ``type`` ``data``.</xs:documentation>
   </xs:complexType>
   <xs:complexType name="TestCompositeData">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Define extra composite input files for test input.</xs:documentation>
+      <xs:documentation xml:lang="en">Define extra composite input files for test
+input. The specified ``ftype`` on the parent ``param`` should specify a composite
+datatype with defined static composite files. The order of the defined composite
+files on the datatype must match the order specified with these elements and All
+non-optional composite inputs must be specified as part of the ``param``.
+</xs:documentation>
     </xs:annotation>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Path relative to test-data of composite file.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="ftype" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Optional datatype of composite file for test input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1098,6 +1192,15 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="lines_diff" type="xs:integer">
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``compare`` is set to ``diff``, the number of lines of difference to allow (each line with a modification is a line added and a line removed so this counts as two lines).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="decompress" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+
+]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer">
@@ -1212,7 +1315,7 @@ provides a demonstration of using this tag.
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of the metdata element to check.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element to check.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -1232,7 +1335,7 @@ This directive specifies a test for an output's discovered dataset. It acts as a
 ### Example
 
 The functional test tool
-multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+[multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
 provides a demonstration of using this tag.
 
 ```xml
@@ -1289,7 +1392,7 @@ Define tests for extra files corresponding to an output collection.
 ``output_collection`` directives should specify a ``name`` and ``type``
 attribute to describe the expected output collection as a whole.
 
-Expectations about collecton contents are described using child ``element``
+Expectations about collection contents are described using child ``element``
 directives. For nested collections, these child ``element`` directives may
 themselves contain children.
 
@@ -1315,7 +1418,7 @@ tool demonstrates basic usage of an ``output_collection`` test expectation.
 
 The [CWPair2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/cwpair2/cwpair2.xml)
 tool demonstrates that ``element``s can specify a ``compare`` attribute just
-like [``output``](#tool|tests|test|output).
+like [output](#tool-tests-test-output).
 
 ```xml
 <test>
@@ -1342,7 +1445,7 @@ test tool demonstrates the use of nested ``element`` directives as described
 above. Notice also that it tests the output with ``assert_contents`` instead of
 supplying a ``file`` attribute. Like hinted at with with ``compare`` attribute
 above, the ``element`` tag can specify any of the test attributes that apply to
-the [``output``](#tool|tests|test|output) (e.g. ``md5``, ``compare``, ``diff``,
+the [output](#tool-tests-test-output) (e.g. ``md5``, ``compare``, ``diff``,
 etc...).
 
 ```xml
@@ -1399,7 +1502,7 @@ etc...).
         <xs:documentation xml:lang="en"><![CDATA[
 
 This value is the same as the value of the ``name`` attribute of the
-``<collecton>`` tag set contained within the tool's ``<outputs>`` tag set.
+``<collection>`` tag set contained within the tool's ``<outputs>`` tag set.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1428,7 +1531,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[``galaxy.tools.verify.asserts``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts]
+[/lib/galaxy/tools/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts)
 module.
 ]]>
       </xs:documentation>
@@ -1525,9 +1628,9 @@ module.
   </xs:group>
   <xs:complexType name="Inputs">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Consists of all tag sets that define the
-tool's input parameters. Each ``<param>`` tag within the ``<inputs>`` tag set
-maps to a command line parameter within the [``command``](#tool|command) tag. Most
+      <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
+tool's input parameters. Each [param](#tool-inputs-param) element contained in this element
+can be used as a command line parameter within the [command](#tool-command) text content. Most
 tools will not need to specify any attributes on this tag itself.]]>
 </xs:documentation>
     </xs:annotation>
@@ -1600,13 +1703,13 @@ statement. A good example tool that demonstrates many conditional parameters is
 ```xml
 <conditional name="input_type">
     <param name="input_type_selector" type="select" label="Choose the source BIOM format">
-        <option value="tsv" selected="True">Tabular File</option>
+        <option value="tsv" selected="true">Tabular File</option>
         <option value="biom">BIOM File</option>
     </param>
     <when value="tsv">
         <param name="input_table" type="data" format="tabular" label="Tabular File" argument="--input-fp"/>
         <param name="process_obs_metadata" type="select" label="Process metadata associated with observations when converting" argument="--process-obs-metadata">
-            <option value="" selected="True">Do Not process metadata</option>
+            <option value="" selected="true">Do Not process metadata</option>
             <option value="taxonomy">taxonomy</option>
             <option value="naive">naive</option>
             <option value="sc_separated">sc_separated</option>
@@ -1618,7 +1721,7 @@ statement. A good example tool that demonstrates many conditional parameters is
 </conditional>
 ```
 
-The first directive following the conditional is a [``param``](#tool|inputs|param),
+The first directive following the conditional is a [param](#tool-inputs-param),
 this param must be of type ``select`` or ``boolean``. Depending on the value a
 user selects for this "test" parameter - different UI elements will be shown.
 These different paths are described by the following the ``when`` blocks shown
@@ -1629,7 +1732,7 @@ shown above:
 
 ```
 biom convert -i "${input_type.input_table}" -o "${output_table}"
-#if str( $input_type.input_type_selector ) == "tsv":
+#if str($input_type.input_type_selector) == "tsv":
     #if $input_type.process_obs_metadata:
         --process-obs-metadata "${input_type.process_obs_metadata}"
     #end if
@@ -1643,7 +1746,7 @@ conditionally reference ``${input_type.process_obs_metadata}`` with a Cheetah
 
 A common use of the conditional wrapper is to select between reference data
 managed by the Galaxy admins (for instance via
-[data managers](https://wiki.galaxyproject.org/Admin/Tools/DataManagers)
+[data managers](https://galaxyproject.org/admin/tools/data-managers/)
 ) and
 history files. A good example tool that demonstrates this is
 the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
@@ -1663,7 +1766,7 @@ the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/
     </param>
   </when>
   <when value="history">
-    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+    <param name="own_file" type="data" format="fasta" label="Select reference genome" />
   </when>
 </conditional>
 ```
@@ -1721,7 +1824,7 @@ Is referenced parameter is the same group.]]></xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive describes one potential
 set of input for the tool at this depth. See documentation for the
-[``conditional``](#tool|inputs|conditional) block for more details and examples (XML
+[conditional](#tool-inputs-conditional) block for more details and examples (XML
 and corresponding Cheetah conditionals).</xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1767,7 +1870,7 @@ This Cheetah code can be used in the ``<command>`` tag set or the
 ``<configfile>`` tag set.
 
 ```xml
-#for $i, $s in enumerate( $series )
+#for $i, $s in enumerate($series)
     rank_of_series=$i
     input_path='${s.input}'
     x_colom=${s.xcol}
@@ -1795,7 +1898,7 @@ This is an example test case with multiple repeat elements for the example above
 </test>
 ```
 
-See the documentation on the [``repeat`` test directive](#tool|tests|test|repeat).
+See the documentation on the [repeat test directive](#tool-tests-test-repeat).
 
 An older way to specify repeats in a test is by instances that are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
 
@@ -1869,7 +1972,7 @@ The XML configuration is relatively trivial for sections:
 
 ```xml
 <inputs>
-    <section name="adv" title="Advanced Options" expanded="False">
+    <section name="adv" title="Advanced Options" expanded="false">
         <param name="plot_color" type="color" label="Track color" />
     </section>
 </inputs>
@@ -1882,7 +1985,7 @@ variable:
 --color $adv.plot_color
 ```
 
-Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [PR #35](https://github.com/galaxyproject/galaxy/pull/35)
+Further examples can be found in the [test case](https://github.com/galaxyproject/galaxy/blob/master/test/functional/tools/section.xml) from [pull request #35](https://github.com/galaxyproject/galaxy/pull/35).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -1903,6 +2006,11 @@ Further examples can be found in the [test case](https://github.com/galaxyprojec
         <xs:documentation xml:lang="en">Whether the section should be expanded by default or not. If not, the default set values are used.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="help" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Short help description for section, rendered just below the section.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="Param">
@@ -1920,7 +2028,7 @@ parameter being described. All the attributes for the ``param`` element are
 documented below for completeness, but here are the common ones for each
 type are as follows:
 
-$attribute_list:name,type,optional,label,help,argument
+$attribute_list:name,type,optional,label,help,argument,refresh_on_change:4
 
 ### Parameter Types
 
@@ -1928,8 +2036,6 @@ $attribute_list:name,type,optional,label,help,argument
 
 When ``type="text"``, the parameter is free form text and appears as a text box
 in the tool form.
-
-$attribute_list:value,size,area
 
 ##### Examples
 
@@ -1945,14 +2051,28 @@ The ``size`` parameter can be two dimensional, if it is the textbox will be
 rendered on the tool form as a text area instead of a single line text box.
 
 ```xml
-<param name="foo" type="text" area="True" size="5x25" />
+<param name="foo" type="text" area="true" size="5x25" />
 ```
+
+As of 17.01, ``text`` parameters can also supply a static list of preset
+defaults options. The user **may** be presented with the option to select one of
+these but will be allowed to supply an arbitrary text value.
+
+```xml
+<param name="foo" type="text" value="foo 1">
+    <option value="foo 1">Foo 1 Display</option>
+    <option value="foo 2">Foo 2 Display</option>
+</param>
+```
+
+See [param_text_option.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/param_text_option.xml)
+for a demonstration of this.
+
+$attribute_list:value,size,area:5
 
 #### ``integer`` and ``float``
 
 These parameters represent whole number and real numbers, respectively.
-
-$attribute_list:value,min,max
 
 ##### Example
 
@@ -1960,11 +2080,13 @@ $attribute_list:value,min,max
 <param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
 ```
 
+$attribute_list:value,min,max:5
+
 #### ``boolean``
 
 This represents a binary true or false value.
 
-$attribute_list:checked,truevalue,falsevalue
+$attribute_list:checked,truevalue,falsevalue:5
 
 #### ``data``
 
@@ -1990,7 +2112,34 @@ multiple formats.
        help="The set of aligned reads." />
 ```
 
-$attribute_list:format,multiple
+Perhaps counter-intuitively, a ``multiple="true"`` data parameter requires at least one
+data input. If ``optional="true"`` is specified, this condition is relaxed and the user
+is allowed to select 0 datasets. Unfortunately, if 0 datasets are selected the resulting
+value for the parameter during Cheetah templating (such as in a ``command`` block) will
+effectively be a list with one ``None``-like entity in it.
+
+The following idiom can be used to iterate over such a list and build a hypothetical ``-B``
+parameter for each file - the ``if`` block is used to handle the case where a ``None``-like
+entity appears in the list because no files were selected:
+
+```
+#for $input in $input1
+    #if $input
+        -B "$input"
+    #end if
+#end for
+```
+
+Some example tools using ``multiple="true"`` data parameters include:
+
+- [multi_data_param.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_param.xml)
+- [multi_data_optional.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_data_optional.xml)
+
+Additionally, a detailed discussion of handling multiple homogenous files can be found in the
+the [Planemo Documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#consuming-collections)
+on this topic.
+
+$attribute_list:format,multiple:5
 
 #### ``select``
 
@@ -2016,21 +2165,19 @@ value of ``$upstream_or_down`` will be ``d``, ``u``, ``u,d``, or "".
 </param>
 ```
 
-$attribute_list:data_ref,dynamic_options,display,multiple
+$attribute_list:data_ref,dynamic_options,display,multiple:5
 
 #### ``data_column``
 
 This parameter type is used to select columns from a parameter.
 
-$attribute_list:force_select,numerical,use_header_name
+$attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
-$attribute_list:hierarchy
+$attribute_list:hierarchy:5
 
 #### ``data_collection``
-
-$attribute_list:format,collection_type
 
 The following will create a parameter that only accepts paired FASTQ files grouped into a collection.
 
@@ -2042,11 +2189,11 @@ The following will create a parameter that only accepts paired FASTQ files group
 ```
 
 More detailed information on writing tools that consume collections can be found
-in the [planemo documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#collections).
+in the [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#collections).
+
+$attribute_list:format,collection_type:5
 
 #### ``color``
-
-$attribute_list:value
 
 ##### Examples
 
@@ -2069,6 +2216,8 @@ sanitizer to prevent Galaxy from escaping the result.
   </sanitizer>
 </param>
 ```
+
+$attribute_list:value,rgb:5
 
 This covers examples of the most common parameter types, the remaining parameter
 types are more obsecure and less likely to be useful for most tool authors.
@@ -2146,10 +2295,21 @@ field.</xs:documentation>
 parameter.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="default_value" type="xs:string" gxdocs:deprecated="true">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters (use ``value`` instead).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">If ``false``, parameter must have a
 value. Defaults to "false".</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="rgb" type="xs:string" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">If ``false``, the returned value will be in Hex color code. If ``true``
+it will be a RGB value e.g. 0,0,255. This attribute is only valid when ``type`` is ``color``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:float">
@@ -2202,7 +2362,12 @@ but not always the tool's input dataset).
             <xs:documentation xml:lang="en"></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="force_select" type="PermissiveBoolean">
+        <xs:attribute name="refresh_on_change" type="PermissiveBoolean">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Force a reload of the tool panel when the value of this parameter changes to allow ``code`` file processing. See deprecation-like notice for ``code`` blocks.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if the ``type`` attribute
 value is ``data_column``, this is deprecated and the inverse of ``optional``.
@@ -2269,7 +2434,7 @@ template if the parameter is ``false`` or not checked by the user. Only valid if
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
             <xs:documentation xml:lang="en">Used only if ``type`` attribute
-value is ``text``. To create a multi-line text box add an ``area="True"``
+value is ``text``. To create a multi-line text box add an ``area="true"``
 attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
 or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
           </xs:annotation>
@@ -2304,6 +2469,7 @@ allow access to Python code to generate options for a select list. See
           <xs:documentation xml:lang="en">Documentation for label</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="conversion" type="ParamConversion" />
       <xs:element name="option" type="ParamOption" />
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
@@ -2331,6 +2497,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
+      <xs:enumeration value="hidden_data"/>
       <xs:enumeration value="baseurl"/>
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
@@ -2349,12 +2516,12 @@ parameters supplied in the form with the actual tool executable). Any word
 inside it starting with a dollar sign (``$``) will be treated as a variable whose
 values can be acquired from one of three sources: parameters, metadata, or
 output files. After the substitution of variables with their values, the content
-is interpreted with [Cheetah](http://www.cheetahtemplate.org/) and finally given
+is interpreted with [Cheetah](https://pythonhosted.org/Cheetah/) and finally given
 to the interpreter specified in the corresponding attribute (if any).
 
 ### Examples
 
-The following uses a compiled executable ([bedtools](http://bedtools.readthedocs.io/en/latest/)).
+The following uses a compiled executable ([bedtools](https://bedtools.readthedocs.io/en/latest/)).
 
 ```xml
 <command>bed12ToBed6 -i '$input' > '$output'</command>
@@ -2390,9 +2557,9 @@ bedtools annotate
                 '${bed.inputName}'
             #end for
         #else:
-            #set files = '" "'.join( [ str( $file ) for $file in $names.beds ] )
+            #set files = '" "'.join([str($file) for $file in $names.beds])
             -files '${files}'
-            #set names = '" "'.join( [ str( $name.display_name ) for $name in $names.beds ] )
+            #set names = '" "'.join([str($name.display_name) for $name in $names.beds])
             -names '${names}'
         #end if
         $strand
@@ -2407,9 +2574,9 @@ uses an interpreted executable. In this case a Perl script is shipped with the
 tool and the directory of the tool itself is referenced with ``$__tool_directory__``.
 
 ```xml
-<command>
-  perl $__tool_directory__/xpath -q -e '$expression' '$input' > '$output'
-</command>
+<command><![CDATA[
+perl '$__tool_directory__/xpath' -q -e '$expression' '$input' > '$output'
+]]]]><![CDATA[></command>
 ```
 
 The following example demonstrates accessing metadata from datasets. Metadata values
@@ -2420,7 +2587,7 @@ the following feature components.
 
 A set of "metadata information" is defined for each supported data type (see the
 ``MetadataElement`` objects in the various data types classes in
-[``/lib/galaxy/datatypes``](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
+[/lib/galaxy/datatypes](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/datatypes).
 The ``DatasetFilenameWrapper`` class in the
 [/lib/galaxy/tools/wrappers.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/wrappers.py)
 code file wraps a metadata collection to return metadata parameters wrapped
@@ -2431,7 +2598,7 @@ according to the Metadata spec.
         #set genome = $input.metadata.dbkey
         #set datatype = $input.datatype
         mkdir -p output_dir &&
-        python $__tool_directory__/extract_genomic_dna.py
+        python '$__tool_directory__/extract_genomic_dna.py'
         --input '$input'
         --genome '$genome'
         #if $input.is_of_type("gff"):
@@ -2466,8 +2633,6 @@ In additon to demonstrating accessing metadata, this example demonstrates:
 * ``#set datatype = $input.datatype`` which is the syntax for defining variables
   in Cheetah.
 
-<a name="cheetah_reserved_variables"></a>
-
 ### Reserved Variables
 
 Galaxy provides a few pre-defined variables which can be used in your command line,
@@ -2491,8 +2656,9 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 Name | Description
 ---- | -----------
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
+``\$GALAXY_MEMORY_MB`` | Amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 
-See the [Planemo docs](http://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
+See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
 ### Attributes
@@ -2503,14 +2669,15 @@ If present on the ``command`` tag, this attribute can be one of:
 
 * ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
 * ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive`` error if tool exit code is not 0 or either ``Exception:`` or ``Error:``
-  appears in standard error/output. (The @bgruening recommendation).
+* ``aggressive`` error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
+  various messages related to being out of memory appear in the standard error or output.
+  (The @bgruening recommendation).
 
 For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
 Legacy tools default to ``default`` behavior described above (erroring if the tool
 produces any standard error output).
 
-See [PR 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
+See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
 information and discussion on the ``detect_errors`` attribute.
 
 #### ``strict``
@@ -2534,7 +2701,17 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
             <xs:documentation></xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="false">
+        <xs:attribute name="oom_exit_code" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Only used if ``detect_errors="exit_code", tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="use_shared_home" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>When running a job for this tool, do not isolate its $HOME directory within the job's directory - use either the shared_home_dir setting in Galaxy or the default $HOME specified in the job's default environment.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
             <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
           </xs:annotation>
@@ -2556,7 +2733,7 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
 See [/tools/filters/sorter.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/filters/sorter.xml)
 for typical examples of how to use this tag set. This directive is used to described
 static lists of options and is contained
-within the [``param``](#tool|inputs|param) directive when the ``type`` attribute
+within the [param](#tool-inputs-param) directive when the ``type`` attribute
 value is ``select`` (i.e. ``<param type="select" ...>``).
 
 ### Example
@@ -2605,6 +2782,32 @@ if the corresponding option is selected by default (the default is ``false``).
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="ParamConversion">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+A contrived example of a tool that uses this is the test tool
+[explicit_conversion.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/explicit_conversion.xml).
+
+This directive is optionally contained within the ``<param>`` tag when the
+``type`` attribute value is ``data`` and is used to dynamically generated a converted
+dataset for the contained input of the type specified using the ``type`` tag.
+
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name of Cheetah variable to create for converted dataset.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="type" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short extension describing the datatype to convert to - Galaxy must have a datatype converter from the parent input's type to this.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
 
   <xs:complexType name="ParamOptions">
     <xs:annotation>
@@ -2633,12 +2836,12 @@ exclusively use ``filter``s to populate options.
 * ``from_parameter`` - The options for the select list are dynamically obtained
   from a parameter.
 * Using ``filter``s - various filters can be used to populate options, see
-  examples in the [``filter``](#tool|inputs|param|options|filter) documentation.
+  examples in the [filter](#tool-inputs-param-options-filter) documentation.
 
 ### ``from_data_table``
 
 See Galaxy's
-[data tables documentation](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
+[data tables documentation](https://galaxyproject.org/admin/tools/data-tables)
 for information on setting up data tables.
 
 Once a data table has been configured and populated, these can be easily
@@ -2664,7 +2867,7 @@ alternative to local reference data.
     </param>
   </when>
   <when value="history">
-    <param name="own_file" type="data" format="fasta" metadata_name="dbkey" label="Select reference genome" />
+    <param name="own_file" type="data" format="fasta" label="Select reference genome" />
   </when>
 </conditional>
 ```
@@ -2701,7 +2904,7 @@ and demonstrates generating options from a dataset directly.
 
 Filters can be used to generate options from dataset directly also as the
 example below demonstrates (many more examples are present in the
-[``filter``](#tool|inputs|param|options|filter) documentation).
+[filter](#tool-inputs-param-options-filter) documentation).
 
 ```xml
 <param name="species1" type="select" label="When Species" multiple="false">
@@ -2719,7 +2922,7 @@ dataset is available, admins must add the database to the local file named
 "blastdb.loc". All such databases in that file are included in the options of
 the select list. For a local instance, the file (e.g. ``blastdb.loc`` or
 ``alignseq.loc``) must be stored in the configured
-[``tool_data_path``](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
+[tool_data_path](https://github.com/galaxyproject/galaxy/tree/master/tool-data)
 directory. In this example, the option names and values are taken from column 0
 of the file.
 
@@ -2744,7 +2947,7 @@ wrappers for an example of these.
 
 ### Other Ways to Dynamically Generate Options
 
-Though deprecated and discouraged, [``code``](#tool|code) blocks can also be
+Though deprecated and discouraged, [code](#tool-code) blocks can also be
 used to generate dynamic options.
 
 ]]>
@@ -2877,7 +3080,7 @@ ensures that a dbkey is present and that FASTA indices in the ``fasta_indexes``
 tool data table are present.
 
 ```xml
-<param format="bam" label="BAM file(s)" name="input_bam" type="data" min="1" multiple="True">
+<param format="bam" label="BAM file(s)" name="input_bam" type="data" min="1" multiple="true">
     <validator type="unspecified_build" />
     <validator type="dataset_metadata_in_data_table" metadata_name="dbkey" table_name="fasta_indexes" metadata_column="1"
                message="Sequences are not currently available for the specified build." />
@@ -2940,8 +3143,8 @@ specified by the ``skip`` attribute.</xs:documentation>
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data table name to check against
 if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
-[tool data tables](https://wiki.galaxyproject.org/Admin/Tools/Data%20Tables)
-and [data managers](https://wiki.galaxyproject.org/Admin/Tools/DataManagers) for
+[tool data tables](https://galaxyproject.org/admin/tools/data-tables)
+and [data managers](https://galaxyproject.org/admin/tools/data-managers/) for
 more information.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -2983,13 +3186,13 @@ being used for validation start with a this attribute value.</xs:documentation>
 ``in_range`` - this is the maximum number allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_min" type="xs:decimal">
+        <xs:attribute name="exclude_min" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``min`` value is allowed.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="exclude_max" type="xs:decimal">
+        <xs:attribute name="exclude_max" type="xs:boolean" default="false">
           <xs:annotation>
             <xs:documentation xml:lang="en">When the ``type`` attribute value is
 ``in_range`` - this boolean indicates if the ``max`` value is allowed.</xs:documentation>
@@ -3200,7 +3403,7 @@ to the tool.
 ```
 
 This more advanced example, taken from Mothur's
-[remove.linage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
+[remove.lineage.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/mothur/remove.lineage.xml)
 tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
@@ -3250,7 +3453,7 @@ tool demonstrates adding values to an option list using ``filter``s.
 </param>
 ```
 
-While this fragment from maf_to_interval.xml demonstrates removing items.
+While this fragment from [maf_to_interval.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/maf_to_interval.xml) demonstrates removing items.
 
 ```xml
 <param name="species" type="select" label="Select additional species"
@@ -3315,7 +3518,7 @@ used with ``type`` of ``add_value``).</xs:documentation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">When ``type`` is ``data_meta``, ``param_value``,
-or ``remove_value`` - this is the name of the metadata key of ref to filter by.</xs:documentation>
+or ``remove_value`` - this is the name of the metadata key to filter by.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="multiple" type="PermissiveBoolean" default="false">
@@ -3362,6 +3565,13 @@ is the index into the list to add the option to. If not set, the option will be
 added to the end of the list.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="meta_ref" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Only used when ``type`` is
+``remove_value``. Dataset to look for the value of metadata ``key`` to remove
+from the list.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Outputs">
     <xs:annotation>
@@ -3377,6 +3587,30 @@ the ``<inputs>`` documentation.
     <xs:sequence>
       <xs:group ref="OutputsElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+    <xs:attribute name="provided_metadata_style" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+          Style used for tool provided metadata file (i.e.
+          [galaxy.json](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
+          - this can be either "legacy" or "default". The default of tools with
+          a profile of 17.09 or newer are "default", and "legacy" for older and
+          tools and tools without a specified profile. A discussion of the
+          differences between the styles can be found at
+          https://github.com/galaxyproject/galaxy/pull/4437.
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="provided_metadata_file" type="xs:string" default="galaxy.json">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+          Path relative to tool's working directory to load tool provided
+          metadata from. This metadata can describe dynamic datasets to load,
+          dynamic collection contents, as well as simple metadata (e.g. name, dbkey, etc...) and datatype specific metadata for declared outputs.
+          More information can be found [here](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata). The
+          default is galaxy.json.
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>
@@ -3511,6 +3745,12 @@ The valid values for format can be found in
         <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="default_identifier_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This copies the metadata information
@@ -3561,10 +3801,10 @@ This tag set is contained within the ``<outputs>`` tag set, and it defines the
 output dataset collection description resulting from the tool's execution. The
 value of the attribute ``label`` can be acquired from input parameters or
 metadata in the same way that the command line parameters are (discussed in the
-[``command``](#tool|command) directive).
+[command](#tool-command) directive).
 
 Creating collections in tools is covered in-depth in
-[planemo's documentation](http://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
+[planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -3643,7 +3883,7 @@ conditionals are accessed using a hash named after the conditional.
       <param type="data" format="bam" name="input_bam" label="Aligned reads" />
       <conditional name="options">
         <param label="Use advanced options" name="selection_mode" type="select">
-          <option selected="True" value="defaults">Use default options</option>
+          <option selected="true" value="defaults">Use default options</option>
           <option value="advanced">Use advanced options</option>
         </param>
         <when value="defaults"> </when>
@@ -3655,10 +3895,9 @@ conditionals are accessed using a hash named after the conditional.
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />
-      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf>
+      <data format="vcf" label="Variant summary on ${on_string}" name="output_vcf">
           <filter>options['selection_mode'] == 'advanced' and options['vcf_output']</filter>
       </data>
-    </outputs>
     </outputs>
 ```
 ]]></xs:documentation>
@@ -3683,10 +3922,15 @@ Galaxy, including:
 * https://github.com/galaxyproject/galaxy/tree/master/test/functional/tools/multi_output_configured.xml
 
 More information can be found on Planemo's documentation for
-[multiple output files](http://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
+[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>
@@ -3694,6 +3938,11 @@ More information can be found on Planemo's documentation for
     <xs:attribute name="directory" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="recurse" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="optional">
@@ -3734,7 +3983,12 @@ Galaxy, including:
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="pattern" type="xs:string" use="required">
+    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="pattern" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
       </xs:annotation>
@@ -3796,7 +4050,7 @@ supplied file.
       <when value="indexed">
         <action type="metadata" name="dbkey">
           <option type="from_data_table" name="bowtie2_indexes" column="1" offset="0">
-            <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+            <filter type="param_value" column="0" value="#" compare="startswith" keep="false"/>
             <filter type="param_value" ref="reference_genome.index" column="0"/>
           </option>
         </action>
@@ -3818,7 +4072,7 @@ based on inputs, as shown below:
 
 ```xml
 <data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
-    <filter>( library['type'] == "paired" or library['type'] == "paired_collection" ) and library['unaligned_file'] is True</filter>
+    <filter>(library['type'] == "paired" or library['type'] == "paired_collection") and library['unaligned_file'] is True</filter>
     <actions>
         <conditional name="library.type">
             <when value="paired">
@@ -3834,6 +4088,55 @@ based on inputs, as shown below:
         </conditional>
     </actions>
 </data>
+```
+
+### Unconditional Actions and Column Names
+
+For a static file that contains a fixed number of columns, it is straight forward:
+
+```xml
+<outputs>
+    <data format="tabular" name="table">
+        <actions>
+            <action name="column_names" type="metadata" default="Firstname,Lastname,Age" />
+        </actions>
+    </data>
+</outputs>
+```
+
+It may also be necessary to use column names based on a variable from another
+input file. This is implemented in the
+[htseq-count](https://github.com/galaxyproject/tools-iuc/blob/master/tools/htseq_count/htseq-count.xml)
+and
+[featureCounts](https://github.com/galaxyproject/tools-iuc/blob/master/tools/featurecounts/featurecounts.xml)
+wrappers:
+
+```xml
+<inputs>
+    <data name="input_file" type="data" multiple="false">
+</inputs>
+<outputs>
+    <data format="tabular" name="output_short">
+        <actions>
+            <action name="column_names" type="metadata" default="Geneid,${input_file.name}" />
+        </actions>
+    </data>
+</outputs>
+```
+
+Or in case of multiple files:
+
+```xml
+<inputs>
+    <data name="input_files" type="data" multiple="true">
+</inputs>
+<outputs>
+    <data format="tabular" name="output_short">
+        <actions>
+            <action name="column_names" type="metadata" default="Geneid,${','.join([a.name for a in $input_files])}" />
+        </actions>
+    </data>
+</outputs>
 ```
 
 ### Unconditional Actions - An Older Example
@@ -3856,7 +4159,7 @@ column="1" />`` tag does), then it should be changed to ``equCab2`` (which is th
       <when value="indexed">
            <action type="metadata" name="dbkey">
             <option type="from_file" name="bowtie_indices.loc" column="0" offset="0">
-               <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+               <filter type="param_value" column="0" value="#" compare="startswith" keep="false"/>
                <filter type="param_value" ref="refGenomeSource.index" column="1"/>
             </option>
          </action>
@@ -3894,7 +4197,7 @@ This directive is contained within an output ``data``'s  ``actions`` directive
 describes modifications to either the output's format or metadata (based on
 whether ``type`` is ``format`` or ``metadata``).
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
 ]]></xs:documentation>
@@ -3963,7 +4266,7 @@ This directive describes the state of the inputs required to apply an ``action``
 (specified as children of the child ``when`` directives to this element) to an
 output.
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
 ]]></xs:documentation>
@@ -3983,7 +4286,7 @@ conditional logic on. The value of this parameter will be matched against nested
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-See [``actions``](#tool|outputs|data|actions) documentation for examples
+See [actions](#tool-outputs-data-actions) documentation for examples
 of this directive.
 
       ]]></xs:documentation>
@@ -3991,10 +4294,15 @@ of this directive.
     <xs:sequence>
       <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="value" type="xs:string" use="required">
+    <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Value to match conditional input value
 against.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="datatype_isinstance" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Datatype to match against (if ``value`` is unspecified). This should be the short string describing the format (e.g. ``interval``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4134,7 +4442,6 @@ define.</xs:documentation>
     </xs:simpleContent>
   </xs:complexType>
 
-
   <xs:complexType name="ConfigFiles">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[See
@@ -4171,27 +4478,27 @@ tool config.
 <configfiles>
     <configfile name="script_file">
       ## Setup R error handling to go to stderr
-      options( show.error.messages=F, error = function () { cat( geterrmessage(), file=stderr() ); q( "no", 1, F ) } )
+      options(show.error.messages=F, error = function () { cat(geterrmessage(), file=stderr()); q("no", 1, F) })
       ## Determine range of all series in the plot
-      xrange = c( NULL, NULL )
-      yrange = c( NULL, NULL )
-      #for $i, $s in enumerate( $series )
-          s${i} = read.table( "${s.input.file_name}" )
+      xrange = c(NULL, NULL)
+      yrange = c(NULL, NULL)
+      #for $i, $s in enumerate($series)
+          s${i} = read.table("${s.input.file_name}")
           x${i} = s${i}[,${s.xcol}]
           y${i} = s${i}[,${s.ycol}]
-          xrange = range( x${i}, xrange )
-          yrange = range( y${i}, yrange )
+          xrange = range(x${i}, xrange)
+          yrange = range(y${i}, yrange)
       #end for
       ## Open output PDF file
-      pdf( "${out_file1}" )
+      pdf("${out_file1}")
       ## Dummy plot for axis / labels
-      plot( NULL, type="n", xlim=xrange, ylim=yrange, main="${main}", xlab="${xlab}", ylab="${ylab}" )
+      plot(NULL, type="n", xlim=xrange, ylim=yrange, main="${main}", xlab="${xlab}", ylab="${ylab}")
       ## Plot each series
-      #for $i, $s in enumerate( $series )
+      #for $i, $s in enumerate($series)
           #if $s.series_type['type'] == "line"
-              lines( x${i}, y${i}, lty=${s.series_type.lty}, lwd=${s.series_type.lwd}, col=${s.series_type.col} )
+              lines(x${i}, y${i}, lty=${s.series_type.lty}, lwd=${s.series_type.lwd}, col=${s.series_type.col})
           #elif $s.series_type.type == "points"
-              points( x${i}, y${i}, pch=${s.series_type.pch}, cex=${s.series_type.cex}, col=${s.series_type.col} )
+              points(x${i}, y${i}, pch=${s.series_type.pch}, cex=${s.series_type.cex}, col=${s.series_type.col})
           #end if
       #end for
       ## Close the PDF file
@@ -4203,7 +4510,7 @@ tool config.
 This file is then used in the ``command`` block of the tool as follows:
 
 ```xml
-<command>bash "$__tool_directory__/r_wrapper.sh" "$script_file"</command>
+<command>bash '$__tool_directory__/r_wrapper.sh' '$script_file'</command>
 ```
 
 ]]></xs:documentation>
@@ -4270,11 +4577,55 @@ response to this directive.
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="VersionCommand">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Specifies the command to be run in
+order to get the tool's version string. The resulting value will be found in the
+"Info" field of the history dataset.
+
+Unlike the [command](#tool-command) tag, with the exception of the string
+``$__tool_directory__`` this value is taken as a literal and so there is no
+need to escape values like ``$`` and command inputs are not available for variable
+substitution.
+
+### Examples
+
+A simple example for a [TopHat](https://ccb.jhu.edu/software/tophat/index.shtml)
+tool definition might just be:
+
+```xml
+<version_command>tophat -version</version_command>
+```
+
+An example that leverages a Python script (e.g. ``count_reads.py``) shipped with
+the tool might be:
+
+```xml
+<version_command>python '$__tool_directory__/count_reads.py'</version_command>
+```
+
+Examples are included in the test tools directory including:
+
+- [version_command_plain.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_plain.xml)
+- [version_command_tool_dir.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_tool_dir.xml)
+- [version_command_interpreter.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/version_command_interpreter.xml) (*deprecated*)
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="interpreter" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*: Prefix the version command with an interpreter and the tool directory in order to execute a script shipped with the tool. It is better to just use ``<interpreter> '$__tool_directory__/<script_name>'``.]]></xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
   <xs:complexType name="RequestParameterTranslation">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[
-        See ~/tools/data_source/ucsc_tablebrowser.xml for an example of how to use this tag set. This tag set is used only in "data_source" tools (the "tool_type" attribute value is "data_source"). This tag set is contained within the <param> tag set - it contains a set of <request_param> tags.
-      ]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[See [/tools/data_source/ucsc_tablebrowser.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/data_source/ucsc_tablebrowser.xml) for an example of how to use this tag set. This tag set is used only in "data_source" tools (i.e. whose ``tool_type`` attribute is ``data_source``). This tag set contains a set of [request_param](#tool-request-param-translation-request-param) elements.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="request_param" minOccurs="0" maxOccurs="unbounded" type="RequestParameter"/>
@@ -4283,19 +4634,19 @@ response to this directive.
 
   <xs:complexType name="RequestParameter">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Contained within the <request_param_translation> tag set ( used only in "data_source" tools ) - the external data source application may send back parameter names like "GENOME" which must be translated to "dbkey" in Galaxy.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the [request_param_translation](#tool-request-param-translation) tag set (used only in "data_source" tools). The external data source application may send back parameter names like "GENOME" which must be translated to "dbkey" in Galaxy.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="RequestParameterElement" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="galaxy_name" type="RequestParameterGalaxyNameType">
+    <xs:attribute name="galaxy_name" type="RequestParameterGalaxyNameType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">
-          Each of these maps directly to a remote_name value
+          Each of these maps directly to a ``remote_name`` value
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="remote_name" type="xs:string">
+    <xs:attribute name="remote_name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">
           The string representing the name of the parameter in the remote data source
@@ -4305,7 +4656,7 @@ response to this directive.
     <xs:attribute name="missing" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">
-          The default value to use for galaxy_name if the remote_name parameter is not included in the request
+          The default value to use for ``galaxy_name`` if the ``remote_name`` parameter is not included in the request
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4317,6 +4668,7 @@ response to this directive.
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="URL" />
+      <xs:enumeration value="URL_method" />
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
@@ -4336,7 +4688,7 @@ response to this directive.
 
   <xs:complexType name="RequestParameterAppend">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the <request_param> tag set if galaxy_name="URL" - some remote data sources ( e.g., Gbrowse, Biomart ) send parameters back to Galaxy in the initial response that must be added to the value of "URL" prior to Galaxy sending the secondary request to the remote data source via URL.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the [request_param](#tool-request-param-translation-request-param) element if ``galaxy_name="URL"``. Some remote data sources (e.g., Gbrowse, Biomart) send parameters back to Galaxy in the initial response that must be added to the value of "URL" prior to Galaxy sending the secondary request to the remote data source via URL.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="value" minOccurs="0" maxOccurs="unbounded" type="RequestParameterAppendValue"/>
@@ -4351,7 +4703,7 @@ The text to use to join the requested parameters together (example ``separator="
     <xs:attribute name="first_separator" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-The text to use to join the request_param parameters to the first requested parameter (example ``first_separator="?"``).
+The text to use to join the ``request_param`` parameters to the first requested parameter (example ``first_separator="?"``).
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4366,7 +4718,7 @@ The text to use to join the param name to its value (example ``join="="``).
 
   <xs:complexType name="RequestParameterAppendValue">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Contained within the <append_param> tag set - allows for appending a param name / value pair to the value of URL.
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the [append_param](#tool-request-param-translation-request-param-append-param) tag set. Allows for appending a param name / value pair to the value of URL.
 
 Example:
 
@@ -4384,7 +4736,7 @@ Example:
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Any valid HTTP request parameter name. The name / value pair must be received from the remote data source and will be appended to the value of URL as something like "&_export=1" (e.g. ``name="_export"``).
+Any valid HTTP request parameter name. The name / value pair must be received from the remote data source and will be appended to the value of URL as something like ``"&_export=1"`` (e.g. ``name="_export"``).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -4397,7 +4749,7 @@ Any valid HTTP request parameter name. The name / value pair must be received fr
 
   <xs:complexType name="RequestParameterValueTranslation">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the <request_param> tag set the parameter value received from a remote data source may be named differently in Galaxy, and this tag set allows for the value to be appropriately translated.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Optionally contained within the [request_param](#tool-request-param-translation-request-param) tag set. The parameter value received from a remote data source may be named differently in Galaxy, and this tag set allows for the value to be appropriately translated.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="value" minOccurs="0" maxOccurs="unbounded" type="RequestParameterValueTranslationValue"/>
@@ -4406,7 +4758,7 @@ Any valid HTTP request parameter name. The name / value pair must be received fr
 
   <xs:complexType name="RequestParameterValueTranslationValue">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Contained within the <value_translation> tag set - allows for changing the data type value to something supported by Galaxy.
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the [value_translation](#tool-request-param-translation-request-param-value-translation) tag set - allows for changing the data type value to something supported by Galaxy.
 
 Example:
 
@@ -4484,7 +4836,7 @@ Tools may use exit codes to indicate specific execution errors. Many programs us
 
 The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied <exit_code> tags' ranges, then no errors are applied to the tool's execution.
 
-Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at http://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
+Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at https://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
 
 The <exit_code> tag's supported attributes are as follows:
 
@@ -4502,9 +4854,11 @@ The following is an example of the <exit_code> tag:
 
 ```xml
 <stdio>
-    <exit_code range="2"   level="fatal"   description="Out of Memory" />
     <exit_code range="3:5" level="warning" description="Low disk space" />
     <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <exit_code range="2"   level="fatal_oom"   description="Out of Memory" />
 </stdio>
 ```
 
@@ -4576,6 +4930,12 @@ The following is an example of regular expressions that may be used:
            source="stdout"
            level="fatal"
            description="Unknown error encountered" />
+    <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
+         memory if Galaxy is configured to do this. -->
+    <regex match="out of memory"
+           source="stdout"
+           level="fatal_oom"
+           description="Out of memory error occurred" />
     <regex match="[CG]{12}"
            description="Fatal error - CG island 12 nts long found" />
     <regex match="^Branch A"
@@ -4644,7 +5004,7 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
       <xs:documentation xml:lang="en"><![CDATA[See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
 optionally contained within the ``<data>`` tag set and is the container tag set
 for the following ``<when>`` tag set.]]></xs:documentation>
@@ -4689,22 +5049,23 @@ in the ``<data>`` tag set with ``format="interval"``.
 See
 [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/master/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
-[output_action_change_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_action_change_format.xml)
+[output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
-    <xs:attribute name="input" type="xs:string" use="required">
+    <xs:attribute name="input" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must be the attribute name of
+        <xs:documentation xml:lang="en">This attribute should be the name of
 the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This value must also be an attribute
-name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
+        <xs:documentation xml:lang="en">This must be a possible value of the ``input``
+parameter (e.g. ``value="interval"`` above), or of the deprecated ``input_dataset``'s
+attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="required">
@@ -4713,6 +5074,16 @@ name of an input parameter (e.g. ``value="interval"`` above).</xs:documentation>
 (e.g. ``format="interval"``). See
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
 for a list of supported formats.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="input_dataset" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attribute" type="xs:string" gxdocs:deprecated="true">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -4730,7 +5101,7 @@ well. Likewise, the history menu includes an option allowing users to aggregate
 all such citations across an analysis in a list of citations.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
-http://dx.doi.org/ and cached.
+https://dx.doi.org/ and cached.
 
 ```xml
 <citations>
@@ -4875,6 +5246,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="empty_dataset"/>
+      <xs:enumeration value="empty_extra_files_path"/>
       <xs:enumeration value="expression"/>
       <xs:enumeration value="regex"/>
       <xs:enumeration value="in_range"/>
@@ -4899,6 +5271,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
+      <xs:enumeration value="remove_value"/>
       <xs:enumeration value="sort_by"/>
     </xs:restriction>
   </xs:simpleType>
@@ -5003,4 +5376,54 @@ and ``contains``.</xs:documentation>
       <xs:enumeration value="no"/>
     </xs:restriction>
   </xs:simpleType>
+  <xs:complexType name="EdamTopics">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<edam_topic>`` tags.
+A tool can have any number of EDAM topic references.
+
+```xml
+<!-- Example: this tool is about 'Statistics and probability' (http://edamontology.org/topic_2269) -->
+<edam_topics>
+    <edam_topic>topic_2269</edam_topic>
+</edam_topics>
+```
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="edam_topic" minOccurs="0" maxOccurs="unbounded">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="topic_[0-9]{4}"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="EdamOperations">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<edam_operation>`` tags.
+A tool can have any number of EDAM operation references.
+
+```xml
+<!-- Example: this tool performs a 'Conversion' operation (http://edamontology.org/operation_3434) -->
+<edam_operations>
+    <edam_operation>operation_3434</edam_operation>
+</edam_operations>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+        <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
 </xs:schema>

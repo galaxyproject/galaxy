@@ -10,7 +10,7 @@ import os
 import random
 import shutil
 import threading
-
+import time
 from xml.etree import ElementTree
 
 try:
@@ -22,16 +22,18 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
-    safe_makedirs,
-    safe_relpath,
     umask_fix_perms,
 )
 from galaxy.util.odict import odict
+from galaxy.util.path import (
+    safe_makedirs,
+    safe_relpath,
+)
 from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 class ObjectStore(object):
@@ -80,15 +82,16 @@ class ObjectStore(object):
 
     def __init__(self, config, **kwargs):
         """
-        Create a new ObjectStore.
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the following attributes:
 
-        config -- Python object with any number of attributes. Most likely
-        populated from `galaxy/config.ini`. The following attributes are
-        currently used:
-            object_store_check_old_style (only used by the DiskObjectStore)
-            jobs_directory -- Each job is given a unique empty directory
-                as its current working directory. This option defines in what
-                parent directory those directories will be created.
+            * object_store_check_old_style (only used by the
+              :class:`DiskObjectStore` subclass)
+            * jobs_directory -- Each job is given a unique empty directory
+              as its current working directory. This option defines in what
+              parent directory those directories will be created.
+            * new_file_path -- Used to set the 'temp' extra_dir.
         """
         self.running = True
         self.extra_dirs = {}
@@ -222,24 +225,24 @@ class DiskObjectStore(ObjectStore):
     """
 
     def __init__(self, config, config_xml=None, file_path=None, extra_dirs=None):
-        """The constructor.
-
-        config -- Python object with any number of attributes. Most likely
-            populated from `galaxy/config.ini`. The DiskObjectStore specific
-            attributes are:
-                object_store_check_old_style
-                job_directory -- Each job is given a unique empty
-                    directory as its current working directory. This option
-                    defines in what parent directory those directories will be
-                    created.
-                new_file_path -- Used to set the 'temp' extra_dir.
-                file_path -- Default directory to store objects to disk in.
-                umask -- the permission bits for newly `create()`d files.
-        config_xml -- An ElementTree object.
-        file_path -- Override for the config.file_path value.
-        extra_dirs -- Dictionary: keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config, config_xml=None, file_path=file_path, extra_dirs=extra_dirs)
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the same attributes needed by
+            :class:`ObjectStore` plus:
+
+            * file_path -- Default directory to store objects to disk in.
+            * umask -- the permission bits for newly created files.
+
+        :type config_xml: ElementTree
+
+        :type file_path: str
+        :param file_path: Override for the `config.file_path` value.
+
+        :type extra_dirs: dict
+        :param extra_dirs: Keys are string, values are directory paths.
+        """
+        super(DiskObjectStore, self).__init__(config)
         self.file_path = file_path or config.file_path
         # The new config_xml overrides universe settings.
         if config_xml is not None:
@@ -249,7 +252,7 @@ class DiskObjectStore(ObjectStore):
                 else:
                     self.extra_dirs[e.get('type')] = e.get('path')
         if extra_dirs is not None:
-            self.extra_dirs.update( extra_dirs )
+            self.extra_dirs.update(extra_dirs)
 
     def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
@@ -356,7 +359,7 @@ class DiskObjectStore(ObjectStore):
 
     def empty(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by checking file size on disk."""
-        return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
+        return self.size(obj, **kwargs) == 0
 
     def size(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by return file size on disk.
@@ -365,7 +368,14 @@ class DiskObjectStore(ObjectStore):
         """
         if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                filepath = self.get_filename(obj, **kwargs)
+                for _ in range(0, 2):
+                    size = os.path.getsize(filepath)
+                    if size != 0:
+                        break
+                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+                    time.sleep(0.01)
+                return size
             except OSError:
                 return 0
         else:
@@ -412,7 +422,7 @@ class DiskObjectStore(ObjectStore):
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """`create` parameter is not used in this implementation."""
-        preserve_symlinks = kwargs.pop( 'preserve_symlinks', False )
+        preserve_symlinks = kwargs.pop('preserve_symlinks', False)
         # FIXME: symlinks and the object store model may not play well together
         # these should be handled better, e.g. registering the symlink'd file
         # as an object
@@ -420,10 +430,10 @@ class DiskObjectStore(ObjectStore):
             self.create(obj, **kwargs)
         if file_name and self.exists(obj, **kwargs):
             try:
-                if preserve_symlinks and os.path.islink( file_name ):
-                    force_symlink( os.readlink( file_name ), self.get_filename( obj, **kwargs ) )
+                if preserve_symlinks and os.path.islink(file_name):
+                    force_symlink(os.readlink(file_name), self.get_filename(obj, **kwargs))
                 else:
-                    shutil.copy( file_name, self.get_filename( obj, **kwargs ) )
+                    shutil.copy(file_name, self.get_filename(obj, **kwargs))
             except IOError as ex:
                 log.critical('Error copying %s to %s: %s' % (file_name, self._get_filename(obj, **kwargs), ex))
                 raise ex
@@ -439,7 +449,7 @@ class DiskObjectStore(ObjectStore):
     def get_store_usage_percent(self):
         """Override `ObjectStore`'s stub by return percent storage used."""
         st = os.statvfs(self.file_path)
-        return ( float( st.f_blocks - st.f_bavail ) / st.f_blocks ) * 100
+        return (float(st.f_blocks - st.f_bavail) / st.f_blocks) * 100
 
 
 class NestedObjectStore(ObjectStore):
@@ -452,7 +462,7 @@ class NestedObjectStore(ObjectStore):
 
     def __init__(self, config, config_xml=None):
         """Extend `ObjectStore`'s constructor."""
-        super(NestedObjectStore, self).__init__(config, config_xml=config_xml)
+        super(NestedObjectStore, self).__init__(config)
         self.backends = {}
 
     def shutdown(self):
@@ -471,7 +481,7 @@ class NestedObjectStore(ObjectStore):
 
     def create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
-        random.choice(self.backends.values()).create(obj, **kwargs)
+        random.choice(list(self.backends.values())).create(obj, **kwargs)
 
     def empty(self, obj, **kwargs):
         """For the first backend that has this `obj`, determine if it is empty."""
@@ -512,7 +522,7 @@ class NestedObjectStore(ObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % ( method, str( obj ), str( kwargs ) ) )
+                          % (method, str(obj), str(kwargs)))
         else:
             return default
 
@@ -529,14 +539,17 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_xml=None, fsmon=False):
         """
-        Create a new DistributedObjectStore.
+        :type config: object
+        :param config: An object, most likely populated from
+            `galaxy/config.ini`, having the same attributes needed by
+            :class:`NestedObjectStore` plus:
 
-        config -- Python object with any number of attributes. Most likely
-            populated from `galaxy/config.ini`. The DistributedObjectStore
-            specific attributes are:
-                distributed_object_store_config_file
-        config_xml -- An ElementTree object
-        fsmon -- boolean. If true, monitor the file system for free space,
+            * distributed_object_store_config_file
+
+        :type config_xml: ElementTree
+
+        :type fsmon: bool
+        :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
         super(DistributedObjectStore, self).__init__(config,
@@ -555,10 +568,10 @@ class DistributedObjectStore(NestedObjectStore):
         random.seed()
         self.__parse_distributed_config(config, config_xml)
         self.sleeper = None
-        if fsmon and ( self.global_max_percent_full or filter( lambda x: x != 0.0, self.max_percent_full.values() ) ):
+        if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
             self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
-            self.filesystem_monitor_thread.setDaemon( True )
+            self.filesystem_monitor_thread.setDaemon(True)
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
@@ -570,7 +583,7 @@ class DistributedObjectStore(NestedObjectStore):
             root = config_xml.find('backends')
             log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
         self.global_max_percent_full = float(root.get('maxpctfull', 0))
-        for elem in [ e for e in root if e.tag == 'backend' ]:
+        for elem in [e for e in root if e.tag == 'backend']:
             id = elem.get('id')
             weight = int(elem.get('weight', 1))
             maxpctfull = float(elem.get('maxpctfull', 0))
@@ -610,7 +623,7 @@ class DistributedObjectStore(NestedObjectStore):
                 maxpct = self.max_percent_full[id] or self.global_max_percent_full
                 pct = backend.get_store_usage_percent()
                 if pct > maxpct:
-                    new_weighted_backend_ids = filter(lambda x: x != id, new_weighted_backend_ids)
+                    new_weighted_backend_ids = [_ for _ in new_weighted_backend_ids if _ != id]
             self.weighted_backend_ids = new_weighted_backend_ids
             self.sleeper.sleep(120)  # Test free space every 2 minutes
 
@@ -623,8 +636,8 @@ class DistributedObjectStore(NestedObjectStore):
                 except IndexError:
                     raise ObjectInvalid('objectstore.create, could not generate '
                                         'obj.object_store_id: %s, kwargs: %s'
-                                        % ( str( obj ), str( kwargs ) ) )
-                _create_object_in_session( obj )
+                                        % (str(obj), str(kwargs)))
+                _create_object_in_session(obj)
                 log.debug("Selected backend '%s' for creation of %s %s"
                           % (obj.object_store_id, obj.__class__.__name__, obj.id))
             else:
@@ -638,7 +651,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % ( method, str( obj ), str( kwargs ) ) )
+                          % (method, str(obj), str(kwargs)))
         else:
             return default
 
@@ -656,7 +669,7 @@ class DistributedObjectStore(NestedObjectStore):
                     log.warning('%s object with ID %s found in backend object store with ID %s'
                                 % (obj.__class__.__name__, obj.id, id))
                     obj.object_store_id = id
-                    _create_object_in_session( obj )
+                    _create_object_in_session(obj)
                     return id
         return None
 
@@ -667,7 +680,7 @@ class HierarchicalObjectStore(NestedObjectStore):
     ObjectStore that defers to a list of backends.
 
     When getting objects the first store where the object exists is used.
-    When creating obects only the first store is used.
+    When creating objects only the first store is used.
     """
 
     def __init__(self, config, config_xml=None, fsmon=False):
@@ -696,12 +709,12 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Will use the `object_store_config_file` attribute of the `config` object to
     configure a new object store from the specified XML file.
 
-    Or you can specify the obect store type in the `object_store` attribute of
+    Or you can specify the object store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
 
     """
-    if config_xml is None and os.path.exists( config.object_store_config_file ):
+    if config_xml is None and os.path.exists(config.object_store_config_file):
         # This is a top level invocation of build_object_store_from_config, and
         # we have an object_store_conf.xml -- read the .xml and build
         # accordingly
@@ -718,6 +731,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 's3':
         from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'cloud':
+        from .cloud import Cloud
+        return Cloud(config=config, config_xml=config_xml)
     elif store == 'swift':
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)
@@ -732,6 +748,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 'azure_blob':
         from .azure_blob import AzureBlobObjectStore
         return AzureBlobObjectStore(config=config, config_xml=config_xml)
+    elif store == 'pithos':
+        from .pithos import PithosObjectStore
+        return PithosObjectStore(config=config, config_xml=config_xml)
     # Disable the Pulsar object store for now until it receives some attention
     # elif store == 'pulsar':
     #    from .pulsar import PulsarObjectStore
@@ -740,18 +759,19 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
         log.error("Unrecognized object store definition: {0}".format(store))
 
 
-def local_extra_dirs( func ):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_working_directory and temp)."""
-    def wraps( self, *args, **kwargs ):
-        if kwargs.get( 'base_dir', None ) is None:
-            return func( self, *args, **kwargs )
+def local_extra_dirs(func):
+    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
+
+    def wraps(self, *args, **kwargs):
+        if kwargs.get('base_dir', None) is None:
+            return func(self, *args, **kwargs)
         else:
             for c in self.__class__.__mro__:
                 if c.__name__ == 'DiskObjectStore':
-                    return getattr( c, func.__name__ )( self, *args, **kwargs )
+                    return getattr(c, func.__name__)(self, *args, **kwargs)
             raise Exception("Could not call DiskObjectStore's %s method, does your "
                             "Object Store plugin inherit from DiskObjectStore?"
-                            % func.__name__ )
+                            % func.__name__)
     return wraps
 
 
@@ -778,10 +798,10 @@ def convert_bytes(bytes):
     return size
 
 
-def _create_object_in_session( obj ):
-    session = object_session( obj ) if object_session is not None else None
+def _create_object_in_session(obj):
+    session = object_session(obj) if object_session is not None else None
     if session is not None:
-        object_session( obj ).add( obj )
-        object_session( obj ).flush()
+        object_session(obj).add(obj)
+        object_session(obj).flush()
     else:
-        raise Exception( NO_SESSION_ERROR_MESSAGE )
+        raise Exception(NO_SESSION_ERROR_MESSAGE)

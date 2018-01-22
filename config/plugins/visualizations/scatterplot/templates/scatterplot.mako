@@ -16,7 +16,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>${title or default_title} | ${visualization_display_name}</title>
+<title>${title or default_title | h} | ${visualization_display_name}</title>
 
 ## ----------------------------------------------------------------------------
 ${h.css( 'base', 'jquery-ui/smoothness/jquery-ui')}
@@ -24,33 +24,25 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 
 ## ----------------------------------------------------------------------------
 <script type="text/javascript">
-// TODO: blah
 window.Galaxy = { root: '${ root }' };
 </script>
 ${h.js( 'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/jquery-ui',
-        'libs/bootstrap',
         'libs/underscore',
-        'libs/backbone',
-        'libs/d3',
-        'ui/peek-column-selector',
-        'ui/pagination',
-        'mvc/visualization/visualization-model' )}
-
-${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}
+        'libs/d3')}
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.bundle.js' )}
 
 <script type="text/javascript">
-function getModel(){
-    return new ScatterplotModel({
-        id      : ${h.dumps( visualization_id )} || undefined,
-        title   : "${title or default_title}",
-        config  : ${h.dumps( config, indent=2 )}
-    });
-}
-function getHDAJSON(){
-    return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
-}
+    function getModel(){
+        return new ScatterplotModel({
+            id      : ${h.dumps( visualization_id )} || undefined,
+            title   : "${title or default_title}",
+            config  : ${h.dumps( config, indent=2 )}
+        });
+    }
+    function getHDAJSON(){
+        return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
+    }
+    window.jQuery = window.jquery = window.$;
 </script>
 
 </head>
@@ -73,8 +65,6 @@ function getHDAJSON(){
                     embedded: "${embedded}"
                 }).render();
             display.fetchData();
-            //window.model = model;
-            //window.display = display;
         });
         </script>
 

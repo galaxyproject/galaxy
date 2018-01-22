@@ -6,7 +6,6 @@ lib
 
    galaxy
    galaxy_ext
-   galaxy_utils
    log_tempfile
    mimeparse
    psyco_full

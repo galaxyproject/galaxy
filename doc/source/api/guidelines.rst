@@ -1,14 +1,14 @@
 API Design Guidelines
 =====================
 
-The following section outlines guidelines related to extending and/or modifing
+The following section outlines guidelines related to extending and/or modifying
 the Galaxy API. The Galaxy API has grown in an ad-hoc fashion over time by
 many contributors and so clients SHOULD NOT expect the API will conform to
 these guidelines - but developers contributing to the Galaxy API SHOULD follow
 these guidelines.
 
     - API functionality should include docstring documentation for consumption
-      by readthedocs.org.
+      at docs.galaxyproject.org.
     - Developers should familiarize themselves with the HTTP status code definitions
       http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html. The API responses
       should properly set the status code according to the result - in particular
@@ -37,7 +37,7 @@ these guidelines.
       Various error conditions (once a format has been chosen and framework to
       enforce it in place) should be spelled out in this document.
     - Backward compatibility is important and should be maintained when possible.
-      If changing behavior in a non-backward compatibile way please ensure one
+      If changing behavior in a non-backward compatible way please ensure one
       of the following holds - there is a strong reason to believe no consumers
       depend on a behavior, the behavior is effectively broken, or the API
       method being modified has not been part of a tagged dist release.
@@ -50,12 +50,10 @@ consider them when modifying the API.
       that into Mixins (http://en.wikipedia.org/wiki/Composition_over_inheritance)
       or into Managers (:doc:`galaxy.managers`).
     - API additions are more permanent changes to Galaxy than many other potential
-      changes and so a second opinion on API changes should be sought. (Consider a
-      pull request!)
+      changes and so a second opinion on API changes should be sought.
     - New API functionality should include functional tests. These functional
       tests should be implemented in Python and placed in
-      `test/functional/api`. (Once such a framework is in place - it is not
-      right now).
+      `test/functional/api`.
     - Changes to reflect modifications to the API should be pushed upstream to
       the BioBlend project if possible.
 

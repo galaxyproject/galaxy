@@ -2,12 +2,17 @@
 from .command import get_command
 
 
-def lint_stdio(tool_xml, lint_ctx):
-    stdios = tool_xml.findall("./stdio")
+def lint_stdio(tool_source, lint_ctx):
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    stdios = tool_xml.findall("./stdio") if tool_xml else []
+
     if not stdios:
-        command = get_command(tool_xml)
+        command = get_command(tool_xml) if tool_xml else None
         if command is None or not command.get("detect_errors"):
-            lint_ctx.info("No stdio definition found, tool will determine an error from stderr.")
+            if tool_source.parse_profile() <= "16.01":
+                lint_ctx.info("No stdio definition found, tool indicates error conditions with output written to stderr.")
+            else:
+                lint_ctx.info("No stdio definition found, tool indicates error conditions with non-zero exit codes.")
         return
 
     if len(stdios) > 1:

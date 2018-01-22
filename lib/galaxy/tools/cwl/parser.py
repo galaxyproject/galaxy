@@ -10,17 +10,16 @@ import logging
 import os
 from abc import ABCMeta, abstractmethod
 
+import six
+
 from galaxy.util import safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-
 from .cwltool_deps import (
     ensure_cwltool_available,
-    main,
-    workflow,
+    process,
 )
-
-from .schema import schema_loader
+from .schema import non_strict_schema_loader, schema_loader
 
 log = logging.getLogger(__name__)
 
@@ -40,36 +39,36 @@ SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + [
 ]
 
 
-def tool_proxy(tool_path):
+def tool_proxy(tool_path, strict_cwl_validation=True):
     """ Provide a proxy object to cwltool data structures to just
     grab relevant data.
     """
     ensure_cwltool_available()
-    tool = to_cwl_tool_object(tool_path)
+    tool = to_cwl_tool_object(tool_path, strict_cwl_validation=strict_cwl_validation)
     return tool
 
 
-def workflow_proxy(workflow_path):
+def workflow_proxy(workflow_path, strict_cwl_validation=True):
     ensure_cwltool_available()
-    workflow = to_cwl_workflow_object(workflow_path)
+    workflow = to_cwl_workflow_object(workflow_path, strict_cwl_validation=strict_cwl_validation)
     return workflow
 
 
-def load_job_proxy(job_directory):
+def load_job_proxy(job_directory, strict_cwl_validation=True):
     ensure_cwltool_available()
     job_objects_path = os.path.join(job_directory, JOB_JSON_FILE)
     job_objects = json.load(open(job_objects_path, "r"))
     tool_path = job_objects["tool_path"]
     job_inputs = job_objects["job_inputs"]
     output_dict = job_objects["output_dict"]
-    cwl_tool = tool_proxy(tool_path)
+    cwl_tool = tool_proxy(tool_path, strict_cwl_validation=strict_cwl_validation)
     cwl_job = cwl_tool.job_proxy(job_inputs, output_dict, job_directory=job_directory)
     return cwl_job
 
 
-def to_cwl_tool_object(tool_path):
+def to_cwl_tool_object(tool_path, strict_cwl_validation=True):
     proxy_class = None
-    cwl_tool = schema_loader.tool(path=tool_path)
+    cwl_tool = _schema_loader(strict_cwl_validation).tool(path=tool_path)
     if isinstance(cwl_tool, int):
         raise Exception("Failed to load tool.")
 
@@ -91,15 +90,19 @@ def to_cwl_tool_object(tool_path):
     return proxy
 
 
-def to_cwl_workflow_object(workflow_path):
+def to_cwl_workflow_object(workflow_path, strict_cwl_validation=None):
     proxy_class = WorkflowProxy
-    make_tool = workflow.defaultMakeTool
-    cwl_workflow = main.load_tool(workflow_path, False, False, make_tool, False)
+    cwl_workflow = _schema_loader(strict_cwl_validation).tool(path=workflow_path)
     raw_workflow = cwl_workflow.tool
     check_requirements(raw_workflow, tool=False)
 
     proxy = proxy_class(cwl_workflow, workflow_path)
     return proxy
+
+
+def _schema_loader(strict_cwl_validation):
+    target_schema_loader = schema_loader if strict_cwl_validation else non_strict_schema_loader
+    return target_schema_loader
 
 
 def check_requirements(rec, tool=True):
@@ -119,8 +122,8 @@ def check_requirements(rec, tool=True):
             check_requirements(d, tool=tool)
 
 
-class ToolProxy( object ):
-    __metaclass__ = ABCMeta
+@six.add_metaclass(ABCMeta)
+class ToolProxy(object):
 
     def __init__(self, tool, tool_path):
         self._tool = tool
@@ -176,7 +179,7 @@ class CommandLineToolProxy(ToolProxy):
                 schema = self._tool.schemaDefs[schema_type]
 
             if schema["type"] == "record":
-                return map(_simple_field_to_input, schema["fields"])
+                return [_simple_field_to_input(_) for _ in schema["fields"]]
 
     def output_instances(self):
         outputs_schema = self._tool.outputs_record_schema
@@ -235,13 +238,20 @@ class JobProxy(object):
 
     def _ensure_cwl_job_initialized(self):
         if self._cwl_job is None:
-            self._cwl_job = self._tool_proxy._tool.job(
+
+            self._cwl_job = next(self._tool_proxy._tool.job(
                 self._input_dict,
                 self._output_callback,
                 basedir=self._job_directory,
+                select_resources=self._select_resources,
                 use_container=False
-            ).next()
+            ))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
+
+    def _select_resources(self, request):
+        new_request = request.copy()
+        new_request["cores"] = "$GALAXY_SLOTS"
+        return new_request
 
     @property
     def command_line(self):
@@ -321,6 +331,12 @@ class JobProxy(object):
         if create and not os.path.exists(secondary_files_dir):
             safe_makedirs(secondary_files_dir)
         return secondary_files_dir
+
+    def stage_files(self):
+        cwl_job = self.cwl_job()
+        if hasattr(cwl_job, "pathmapper"):
+            process.stageFiles(self.cwl_job().pathmapper, os.symlink, ignoreWritable=True)
+        # else: expression tools do not have a path mapper.
 
     @staticmethod
     def _job_file(job_directory):
@@ -536,7 +552,7 @@ class ConditionalInstance(object):
             when=odict(),
         )
         for value, block in self.whens:
-            as_dict["when"][value] = map(lambda i: i.to_dict(), block)
+            as_dict["when"][value] = [i.to_dict() for i in block]
 
         return as_dict
 
@@ -616,7 +632,7 @@ class OutputInstance(object):
         self.path = path
 
 
-__all__ = [
+__all__ = (
     'tool_proxy',
     'load_job_proxy',
-]
+)

@@ -1,0 +1,19 @@
+<tool id="compressed_gz_fastq_cat" name="Confirm fastq.gz is not uncompressed">
+    <command>
+        cat '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="fastq.gz" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="fastq.gz"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="1.fastqsanger.gz"/>
+            <output name="out_file1" file="1.fastqsanger.gz" ftype="fastq.gz"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

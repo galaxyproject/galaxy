@@ -67,7 +67,7 @@ class ToolDependency(object):
 # App mock=======================================================
 class App(object):
     def __init__(self, tool_id, params):
-        self.job_config = JobConfig( tool_id, params )
+        self.job_config = JobConfig(tool_id, params)
 
 
 class JobConfig(object):
@@ -78,8 +78,8 @@ class JobConfig(object):
         self.default_id = "waffles_default"
         self.defNativeSpec = "-q test.q"
         self.defRunner = "drmaa"
-        self.keys = { tool_id: self.info( self.tool_id, self.nativeSpec, self.defRunner ),
-                     "waffles_default": self.info( self.default_id, self.defNativeSpec, self.defRunner ), }
+        self.keys = {tool_id: self.info(self.tool_id, self.nativeSpec, self.defRunner),
+                     "waffles_default": self.info(self.default_id, self.defNativeSpec, self.defRunner), }
 
     def get_destination(self, tool_id):
         return self.keys[tool_id]

@@ -1,5 +1,5 @@
-galaxy.visualization package
-============================
+galaxy\.visualization package
+=============================
 
 .. automodule:: galaxy.visualization
     :members:
@@ -19,8 +19,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.visualization.genomes module
------------------------------------
+galaxy\.visualization\.genomes module
+-------------------------------------
 
 .. automodule:: galaxy.visualization.genomes
     :members:

@@ -1,27 +1,31 @@
 /*
     galaxy upload plugins - requires FormData and XMLHttpRequest
 */
-;(function($){
+($ => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
 
     /**
         Posts file data to the API
     */
-    $.uploadpost = function (config) {
+    $.uploadpost = config => {
         // parse options
-        var cnf = $.extend({}, {
-            data            : {},
-            success         : function() {},
-            error           : function() {},
-            progress        : function() {},
-            url             : null,
-            maxfilesize     : 2048,
-            error_filesize  : 'File exceeds 2GB. Please use a FTP client.',
-            error_default   : 'Please make sure the file is available.',
-            error_server    : 'Upload request failed.',
-            error_login     : 'Uploads require you to log in.'
-        }, config);
+        var cnf = $.extend(
+            {},
+            {
+                data: {},
+                success: function() {},
+                error: function() {},
+                progress: function() {},
+                url: null,
+                maxfilesize: 2048,
+                error_filesize: "File exceeds 2GB. Please use a FTP client.",
+                error_default: "Please make sure the file is available.",
+                error_server: "Upload request failed.",
+                error_login: "Uploads require you to log in."
+            },
+            config
+        );
 
         // link data
         var data = cnf.data;
@@ -53,23 +57,26 @@
         }
 
         // prepare request
-        xhr = new XMLHttpRequest();
-        xhr.open('POST', cnf.url, true);
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.setRequestHeader('Cache-Control', 'no-cache');
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", cnf.url, true);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Cache-Control", "no-cache");
+        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 
         // captures state changes
-        xhr.onreadystatechange = function() {
+        xhr.onreadystatechange = () => {
             // check for request completed, server connection closed
             if (xhr.readyState == xhr.DONE) {
                 // parse response
                 var response = null;
+                var extra_info = "";
                 if (xhr.responseText) {
                     try {
                         response = jQuery.parseJSON(xhr.responseText);
+                        extra_info = response.err_msg;
                     } catch (e) {
                         response = xhr.responseText;
+                        extra_info = response;
                     }
                 }
                 // pass any error to the error option
@@ -82,24 +89,28 @@
                     } else if (!text) {
                         text = cnf.error_default;
                     }
-                    cnf.error(text + ' (' + xhr.status + ')');
+                    cnf.error(`${text} (${xhr.status}). ${extra_info}`);
                 } else {
                     cnf.success(response);
                 }
             }
-        }
+        };
 
         // prepare upload progress
-        xhr.upload.addEventListener('progress', function(e) {
-            if (e.lengthComputable) {
-                cnf.progress(Math.round((e.loaded * 100) / e.total));
-            }
-        }, false);
+        xhr.upload.addEventListener(
+            "progress",
+            e => {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                }
+            },
+            false
+        );
 
         // send request
-        Galaxy.emit.debug('uploadbox::uploadpost()', 'Posting following data.', cnf);
+        Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
         xhr.send(form);
-    }
+    };
 
     /**
         Handles the upload events drag/drop etc.
@@ -107,60 +118,72 @@
     $.fn.uploadinput = function(options) {
         // initialize
         var el = this;
-        var opts = $.extend({}, {
-            ondragover  : function() {},
-            ondragleave : function() {},
-            onchange    : function() {},
-            multiple    : false
-        }, options);
+        var opts = $.extend(
+            {},
+            {
+                ondragover: function() {},
+                ondragleave: function() {},
+                onchange: function() {},
+                multiple: false
+            },
+            options
+        );
 
         // append hidden upload field
-        var $input = $('<input type="file" style="display: none" ' + (opts.multiple && 'multiple' || '') + '/>');
-        el.append($input.change(function (e) {
-            opts.onchange(e.target.files);
-            $(this).val('');
-        }));
+        var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
+        el.append(
+            $input.change(function(e) {
+                opts.onchange(e.target.files);
+                $(this).val("");
+            })
+        );
 
         // drag/drop events
-        el.on('drop', function (e) {
+        el.on("drop", e => {
             opts.ondragleave(e);
-            if(e.dataTransfer) {
+            if (e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
         });
-        el.on('dragover',  function (e) {
+        el.on("dragover", e => {
             e.preventDefault();
             opts.ondragover(e);
         });
-        el.on('dragleave', function (e) {
+        el.on("dragleave", e => {
             e.stopPropagation();
             opts.ondragleave(e);
         });
 
         // exports
         return {
-            dialog: function () {
-                $input.trigger('click');
+            dialog: function() {
+                $input.trigger("click");
             }
-        }
-    }
+        };
+    };
 
     /**
         Handles the upload queue and events such as drag/drop etc.
     */
     $.fn.uploadbox = function(options) {
         // parse options
-        var opts = $.extend({}, {
-            dragover        : function() {},
-            dragleave       : function() {},
-            announce        : function(d) {},
-            initialize      : function(d) {},
-            progress        : function(d, m) {},
-            success         : function(d, m) {},
-            error           : function(d, m) { alert(m); },
-            complete        : function() {}
-        }, options);
+        var opts = $.extend(
+            {},
+            {
+                dragover: function() {},
+                dragleave: function() {},
+                announce: function(d) {},
+                initialize: function(d) {},
+                progress: function(d, m) {},
+                success: function(d, m) {},
+                error: function(d, m) {
+                    alert(m);
+                },
+                complete: function() {}
+            },
+            options
+        );
 
         // file queue
         var queue = {};
@@ -175,32 +198,35 @@
 
         // element
         var uploadinput = $(this).uploadinput({
-            multiple    : true,
-            onchange    : function(files) { add(files); },
-            ondragover  : options.ondragover,
-            ondragleave : options.ondragleave
+            multiple: true,
+            onchange: function(files) {
+                add(files);
+            },
+            ondragover: options.ondragover,
+            ondragleave: options.ondragleave
         });
 
         // add new files to upload queue
         function add(files) {
             if (files && files.length && !queue_running) {
-                var current_index = queue_index;
-                _.each(files, function(file, key) {
-                    if (file.mode !== 'new' && _.filter(queue, function(f) {
-                        return f.name === file.name && f.size === file.size;
-                    }).length) {
+                var index = undefined;
+                _.each(files, (file, key) => {
+                    if (
+                        file.mode !== "new" &&
+                        _.filter(queue, f => f.name === file.name && f.size === file.size).length
+                    ) {
                         file.duplicate = true;
                     }
                 });
-                _.each(files, function(file) {
+                _.each(files, file => {
                     if (!file.duplicate) {
-                        var index = String(queue_index++);
+                        index = String(queue_index++);
                         queue[index] = file;
                         opts.announce(index, queue[index]);
                         queue_length++;
                     }
                 });
-                return current_index;
+                return index;
             }
         }
 
@@ -235,15 +261,23 @@
             var file = queue[index];
 
             // remove from queue
-            remove(index)
+            remove(index);
 
             // create and submit data
             $.uploadpost({
-                url      : opts.url,
-                data     : opts.initialize(index),
-                success  : function(message) { opts.success(index, message); process();},
-                error    : function(message) { opts.error(index, message); process();},
-                progress : function(percentage) { opts.progress(index, percentage); }
+                url: opts.url,
+                data: opts.initialize(index),
+                success: function(message) {
+                    opts.success(index, message);
+                    process();
+                },
+                error: function(message) {
+                    opts.error(index, message);
+                    process();
+                },
+                progress: function(percentage) {
+                    opts.progress(index, percentage);
+                }
             });
         }
 
@@ -289,15 +323,14 @@
 
         // export functions
         return {
-            'select'        : select,
-            'add'           : add,
-            'remove'        : remove,
-            'start'         : start,
-            'stop'          : stop,
-            'reset'         : reset,
-            'configure'     : configure,
-            'compatible'    : compatible
+            select: select,
+            add: add,
+            remove: remove,
+            start: start,
+            stop: stop,
+            reset: reset,
+            configure: configure,
+            compatible: compatible
         };
-    }
+    };
 })(jQuery);
-

@@ -2,6 +2,7 @@
 Middleware for sending request statistics to statsd
 """
 from __future__ import absolute_import
+
 import time
 
 try:
@@ -24,8 +25,8 @@ class StatsdMiddleware(object):
                  statsd_port,
                  statsd_prefix):
         if not statsd:
-            raise ImportError( "Statsd middleware configured, but no statsd python module found. "
-                           "Please install the python statsd module to use this functionality." )
+            raise ImportError("Statsd middleware configured, but no statsd python module found. "
+                           "Please install the python statsd module to use this functionality.")
         self.application = application
         self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix=statsd_prefix)
 
@@ -34,4 +35,5 @@ class StatsdMiddleware(object):
         req = self.application(environ, start_response)
         dt = int((time.time() - start_time) * 1000)
         self.statsd_client.timing(environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.'), dt)
+        self.statsd_client.timing('__global__', dt)
         return req

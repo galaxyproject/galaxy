@@ -6,12 +6,18 @@
     from galaxy.util.expressions import ExpressionContext
     from galaxy import util
     from galaxy.tools.parameters.basic import DataToolParameter, ColumnListParameter, GenomeBuildParameter, SelectToolParameter
-    from galaxy.web.form_builder import SelectField
+    from galaxy.web.form_builder import SelectField, TextField
 %>
 
 <html>
     <head>
-        <title>Galaxy tool preview</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | Tool Preview
+        </title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${h.css( "base" )}
     </head>
@@ -69,40 +75,8 @@
         </%def>
         
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
-            <%
-                # Disable refresh_on_change for select lists displayed in the tool shed. 
-                param.refresh_on_change = False
-                label = param.get_label()
-                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
-                    field = SelectField( param.name )
-                    field.add_option( param.name, param.name )
-                    field_html = field.get_html()
-                elif isinstance( param, SelectToolParameter ) and hasattr( param, 'data_ref' ):
-                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
-                    field.add_option( param.data_ref, param.data_ref )
-                    field_html = field.get_html( prefix )
-                elif isinstance( param, SelectToolParameter ) and param.is_dynamic:
-                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
-                    dynamic_options = param.options
-                    if dynamic_options is not None:
-                        if dynamic_options.index_file:
-                            option_label = "Dynamically generated from entries in file %s" % str( dynamic_options.index_file )
-                            field.add_option( option_label, "none" )
-                        elif dynamic_options.missing_index_file:
-                            option_label = "Dynamically generated from entries in missing file %s" % str( dynamic_options.missing_index_file )
-                            field.add_option( option_label, "none" )
-                    else:
-                        field.add_option( "Dynamically generated from old-style Dynamic Options.", "none" )
-                    field_html = field.get_html( prefix )
-                else:
-                    field = param.get_html_field( trans, None, other_values )
-                    field_html = field.get_html( prefix )
-            %>
             <div class="form-row">
-                %if label:
-                    <label for="${param.name}">${label}:</label>
-                %endif
-                <div class="form-row-input">${field_html}</div>
+                <label >${param.label or param.name}:</label>
                 %if param.help:
                     <div class="toolParamHelp" style="clear: both;">
                         ${param.help}
@@ -127,7 +101,7 @@
                 <div class="toolFormTitle">${tool.name | h} (version ${tool.version | h})</div>
                 <div class="toolFormBody">
                     <form id="tool_form" name="tool_form" action="" method="get">
-                        <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
+                        <input type="hidden" name="tool_state" value="">
                         ${do_inputs( tool.inputs_by_page[ tool_state.page ], tool_state.inputs, "" )}
                     </form>
                 </div>

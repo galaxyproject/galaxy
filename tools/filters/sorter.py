@@ -16,8 +16,8 @@ import sys
 from optparse import OptionParser
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -52,6 +52,7 @@ def main():
 
     # exit
     sys.exit(0)
+
 
 if __name__ == "__main__":
     main()

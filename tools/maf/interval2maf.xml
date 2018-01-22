@@ -3,13 +3,14 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
+  <command>
+python '$__tool_directory__/interval2maf.py' --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol}
 #if $maf_source_type.maf_source == "user"
-    interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafFile=$maf_source_type.mafFile --mafIndex=$maf_source_type.mafFile.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
+    --mafFile='$maf_source_type.mafFile' --mafIndex='$maf_source_type.mafFile.metadata.maf_index'
 #else
-    interval2maf.py --dbkey=${input1.dbkey} --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafType=$maf_source_type.mafType --interval_file=$input1 --output_file=$out_file1 --mafIndexFile=${GALAXY_DATA_INDEX_DIR}/maf_index.loc --species=$maf_source_type.species
+    --mafType='$maf_source_type.mafType'
 #end if
---split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
+--interval_file='$input1' --output_file='$out_file1' --mafIndexFile='${GALAXY_DATA_INDEX_DIR}/maf_index.loc' --species=$maf_source_type.species --split_blocks_by_species=$split_blocks_by_species_selector.split_blocks_by_species
 #if $split_blocks_by_species_selector.split_blocks_by_species == "split_blocks_by_species"
     --remove_all_gap_columns=$split_blocks_by_species_selector.remove_all_gap_columns
 #end if
@@ -129,8 +130,6 @@ The interface for this option has two inputs:
  * **MAF file to split**. Choose multiple alignments from history to be split by species.
  * **Collapse empty alignment columns**. Should alignment columns containing only gaps in the new blocks be removed.
 
-
-
 **Example 1**: **Collapse empty alignment columns is Yes**:
 
 For the following alignment::
@@ -209,8 +208,6 @@ the tool will create **a single** history item containing 12 alignment blocks (n
   s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC---AG
   s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC---AG
 
-
-
 **Example 2**: **Collapse empty alignment columns is No**:
 
 For the following alignment::
@@ -288,8 +285,6 @@ the tool will create **a single** history item containing 12 alignment blocks (n
   s species1.chr1 147984645 79 - 245522847 ATGGCGTCGGCCTCCTCCGGGCCGTCGTC---GGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTTGTC---AG
   s species2.chr1 129723925 79 + 229575298 ATGGCGTCGGCCTCCTCCGGGCCGTCGTCTTCGGTCGGTTTTTCATCCTTTGATCCCGCGGTCCCTTCCTGTACCTC------AG
   s species3.chr3  68255714 76 - 258222147 ATGGCGTCCGCCTCCTCAGGGCCAGCGGC---GGCGGGGTTTTCACCCCTTGATTCCGGGGTCCCTGCCGGTACCGC------AG
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

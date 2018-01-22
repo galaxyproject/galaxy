@@ -1,6 +1,5 @@
 import tempfile
 import time
-
 from contextlib import contextmanager
 from os import path
 from shutil import rmtree
@@ -40,6 +39,7 @@ def test_tool_conf_watcher():
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
+        open(tool_conf_path, "w").write("a")
         conf_watcher.watch_file(tool_conf_path)
         time.sleep(1)
         open(tool_conf_path, "w").write("b")
@@ -63,11 +63,11 @@ class Toolbox(object):
     def __init__(self):
         self.reloaded = {}
 
-    def reload_tool_by_id( self, tool_id ):
-        self.reloaded[ tool_id ] = True
+    def reload_tool_by_id(self, tool_id):
+        self.reloaded[tool_id] = True
 
     def was_reloaded(self, tool_id):
-        return self.reloaded.get( tool_id, False )
+        return self.reloaded.get(tool_id, False)
 
 
 class CallbackRecorder(object):

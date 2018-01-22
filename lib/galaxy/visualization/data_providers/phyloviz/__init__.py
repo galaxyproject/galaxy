@@ -2,19 +2,19 @@
 """ Data providers code for PhyloViz """
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser
+from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml_Parser
 
 
-class PhylovizDataProvider( BaseDataProvider ):
+class PhylovizDataProvider(BaseDataProvider):
 
     dataset_type = "phylo"
 
-    def __init__( self, original_dataset=None ):
-        super( PhylovizDataProvider, self ).__init__( original_dataset=original_dataset )
+    def __init__(self, original_dataset=None):
+        super(PhylovizDataProvider, self).__init__(original_dataset=original_dataset)
 
-    def get_data( self, tree_index=0 ):
+    def get_data(self, tree_index=0):
         """
         Returns trees.
         Trees are actually an array of JsonDicts. It's usually one tree, except in the case of Nexus
@@ -24,21 +24,21 @@ class PhylovizDataProvider( BaseDataProvider ):
         file_name = self.original_dataset.file_name
         parseMsg = None
         jsonDicts = []
-        rval = { 'dataset_type': self.dataset_type }
+        rval = {'dataset_type': self.dataset_type}
 
         if file_ext == "nhx":  # parses newick files
             newickParser = Newick_Parser()
-            jsonDicts, parseMsg = newickParser.parseFile( file_name )
+            jsonDicts, parseMsg = newickParser.parseFile(file_name)
         elif file_ext == "phyloxml":  # parses phyloXML files
             phyloxmlParser = Phyloxml_Parser()
-            jsonDicts, parseMsg = phyloxmlParser.parseFile( file_name )
+            jsonDicts, parseMsg = phyloxmlParser.parseFile(file_name)
         elif file_ext == "nex":  # parses nexus files
             nexusParser = Nexus_Parser()
-            jsonDicts, parseMsg = nexusParser.parseFile( file_name )
-            jsonDicts = jsonDicts[ int( tree_index ) ]
+            jsonDicts, parseMsg = nexusParser.parseFile(file_name)
+            jsonDicts = jsonDicts[int(tree_index)]
             rval["trees"] = parseMsg
 
-        rval[ "data" ] = jsonDicts
-        rval[ "msg"] = parseMsg
+        rval["data"] = jsonDicts
+        rval["msg"] = parseMsg
 
         return rval

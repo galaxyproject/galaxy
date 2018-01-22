@@ -1,0 +1,25 @@
+@startuml
+
+!include plantuml_options.txt
+
+object webapp {
+    controllers : dict
+    api_controllers : dict
+    mapper : routes.Mapper
+    handle_request: (environ, start_response) -> ()
+    transaction_factory: (environ) -> GalaxyWebTransaction
+}
+
+object app {
+
+}
+
+object trans {
+
+}
+
+webapp -> "app" app
+app "app" <-- trans
+webapp *-- trans
+
+@enduml

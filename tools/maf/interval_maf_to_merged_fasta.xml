@@ -3,13 +3,16 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
-    #if $maf_source_type.maf_source == "user" #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --mafIndex=$maf_source_type.maf_file.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
-    #else                                     #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
-    #end if# --overwrite_with_gaps=$overwrite_with_gaps
+  <command>
+python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --species=$maf_source_type.species
+#if $maf_source_type.maf_source == "user"
+    --mafSource='$maf_source_type.maf_file' --mafIndex='$maf_source_type.maf_file.metadata.maf_index'
+#else
+    --mafSource='$maf_source_type.maf_identifier'
+#end if
+--interval_file='$input1' --output_file='$out_file1' --chromCol=${input1.metadata.chromCol} --startCol=${input1.metadata.startCol} --endCol=${input1.metadata.endCol} --strandCol=${input1.metadata.strandCol} --mafSourceType=$maf_source_type.maf_source --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps=$overwrite_with_gaps
   </command>
   <inputs>
-    <page>
         <param format="interval" name="input1" type="data" label="Choose intervals">
           <validator type="unspecified_build" />
         </param>
@@ -57,7 +60,6 @@
           <option value="True" selected="true">No</option>
           <option value="False">Yes</option>
         </param>
-    </page>
    </inputs>
   <outputs>
     <data format="fasta" name="out_file1" />
@@ -105,8 +107,6 @@ A single genomic region can be covered by multiple alignment blocks. In many cas
 Here three MAF blocks overlapping a single interval are stitched together. Space between blocks 2 and 3 is filled with gaps:
 
 .. image:: ${static_path}/images/maf_icons/stitchMaf.png
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

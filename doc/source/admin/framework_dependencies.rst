@@ -1,7 +1,7 @@
 .. _framework-dependencies:
 
-Galaxy Framework Dependencies
-=============================
+Framework Dependencies
+======================
 
 Galaxy is a large Python application with a long list of `Python module
 dependencies`_. As a result, the Galaxy developers have made significant effort
@@ -84,7 +84,7 @@ live in ``/srv/galaxy/venv`` and the Galaxy source code has been cloned to
 ``/srv/galaxy/server``.
 
 .. code-block:: console
-    
+
     $ virtualenv /srv/galaxy/venv
     New python executable in /srv/galaxy/venv/bin/python
     Installing setuptools, pip, wheel...done.
@@ -100,12 +100,12 @@ yourself to set up Galaxy pip and the dependencies without creating a
 virtualenv using the ``--no-create-venv`` option:
 
 .. code-block:: console
-    
+
     (venv)$ PYTHONPATH= sh /srv/galaxy/server/scripts/common_startup.sh --no-create-venv
     Ignoring indexes: https://pypi.python.org/simple
     Collecting pip
       Downloading https://wheels.galaxyproject.org/packages/pip-8.0.0+gx1-py2.py3-none-any.whl (1.2MB)
-        100% |████████████████████████████████| 1.2MB 37.8MB/s 
+        100% |████████████████████████████████| 1.2MB 37.8MB/s
     Installing collected packages: pip
       Found existing installation: pip 7.1.2
         Uninstalling pip-7.1.2:
@@ -113,13 +113,13 @@ virtualenv using the ``--no-create-venv`` option:
     Successfully installed pip-8.0.0+gx1
     Collecting bx-python==0.7.3 (from -r requirements.txt (line 2))
       Downloading https://wheels.galaxyproject.org/packages/bx_python-0.7.3-cp27-cp27mu-linux_x86_64.whl (1.7MB)
-        100% |████████████████████████████████| 1.7MB 25.4MB/s 
+        100% |████████████████████████████████| 1.7MB 25.4MB/s
 
     ...
 
     Collecting pysam==0.8.3+gx1 (from -r requirements.txt (line 69))
       Downloading https://wheels.galaxyproject.org/packages/pysam-0.8.3+gx1-cp27-cp27mu-linux_x86_64.whl (7.4MB)
-        100% |████████████████████████████████| 7.4MB 15.1MB/s 
+        100% |████████████████████████████████| 7.4MB 15.1MB/s
     Installing collected packages: bx-python, MarkupSafe, PyYAML, SQLAlchemy,
       mercurial, numpy, pycrypto, six, Paste, PasteDeploy, docutils, wchartype,
       repoze.lru, Routes, WebOb, WebHelpers, Mako, pytz, Babel, Beaker,
@@ -307,48 +307,48 @@ automatic fetching of pinned dependencies.
 
     The following NEW packages will be INSTALLED:
 
-        babel:             2.1.1-py27_0     
-        bioblend:          0.7.0-py27_0     
-        boto:              2.38.0-py27_0    
+        babel:             2.1.1-py27_0
+        bioblend:          0.7.0-py27_0
+        boto:              2.38.0-py27_0
         bx-python:         0.7.3-np110py27_1
-        cheetah:           2.4.4-py27_0     
-        decorator:         4.0.6-py27_0     
-        docutils:          0.12-py27_0      
-        ecdsa:             0.11-py27_0      
-        fabric:            1.10.2-py27_0    
-        libgfortran:       1.0-0            
-        mako:              1.0.3-py27_0     
-        markupsafe:        0.23-py27_0      
-        mercurial:         3.4.2-py27_0     
-        nose:              1.3.7-py27_0     
-        numpy:             1.10.2-py27_0    
-        openblas:          0.2.14-3         
-        openssl:           1.0.2e-0         
-        paramiko:          1.15.2-py27_0    
-        paste:             1.7.5.1-py27_0   
-        pastedeploy:       1.5.2-py27_1     
-        pip:               7.1.2-py27_0     
-        pycrypto:          2.6.1-py27_0     
-        python:            2.7.11-0         
-        pytz:              2015.7-py27_0    
-        pyyaml:            3.11-py27_1      
-        readline:          6.2-2            
-        repoze.lru:        0.6-py27_0       
-        requests:          2.9.1-py27_0     
-        requests-toolbelt: 0.5.0-py27_0     
-        routes:            2.2-py27_0       
-        setuptools:        19.2-py27_0      
-        six:               1.10.0-py27_0    
-        sqlalchemy:        1.0.11-py27_0    
-        sqlite:            3.9.2-0          
-        sqlparse:          0.1.18-py27_0    
-        tk:                8.5.18-0         
-        webob:             1.4.1-py27_0     
-        wheel:             0.26.0-py27_1    
-        yaml:              0.1.6-0          
-        zlib:              1.2.8-0          
+        cheetah:           2.4.4-py27_0
+        decorator:         4.0.6-py27_0
+        docutils:          0.12-py27_0
+        ecdsa:             0.11-py27_0
+        fabric:            1.10.2-py27_0
+        libgfortran:       1.0-0
+        mako:              1.0.3-py27_0
+        markupsafe:        0.23-py27_0
+        mercurial:         3.4.2-py27_0
+        nose:              1.3.7-py27_0
+        numpy:             1.10.2-py27_0
+        openblas:          0.2.14-3
+        openssl:           1.0.2e-0
+        paramiko:          1.15.2-py27_0
+        paste:             1.7.5.1-py27_0
+        pastedeploy:       1.5.2-py27_1
+        pip:               7.1.2-py27_0
+        pycrypto:          2.6.1-py27_0
+        python:            2.7.11-0
+        pytz:              2015.7-py27_0
+        pyyaml:            3.11-py27_1
+        readline:          6.2-2
+        repoze.lru:        0.6-py27_0
+        requests:          2.9.1-py27_0
+        requests-toolbelt: 0.5.0-py27_0
+        routes:            2.2-py27_0
+        setuptools:        19.2-py27_0
+        six:               1.10.0-py27_0
+        sqlalchemy:        1.0.11-py27_0
+        sqlite:            3.9.2-0
+        sqlparse:          0.1.18-py27_0
+        tk:                8.5.18-0
+        webob:             1.4.1-py27_0
+        wheel:             0.26.0-py27_1
+        yaml:              0.1.6-0
+        zlib:              1.2.8-0
 
-    Proceed ([y]/n)? 
+    Proceed ([y]/n)?
 
     Fetching packages ...
     boto-2.38.0-py 100% |############################################| Time: 0:00:00   3.27 MB/s
@@ -397,7 +397,7 @@ automatic fetching of pinned dependencies.
 
     Collecting WebHelpers (from -r lib/galaxy/dependencies/requirements.txt (line 15))
       Downloading https://wheels.galaxyproject.org/packages/WebHelpers-1.3-py2-none-any.whl (149kB)
-        100% |████████████████████████████████| 151kB 55.7MB/s 
+        100% |████████████████████████████████| 151kB 55.7MB/s
 
       ...
 
@@ -425,7 +425,7 @@ install uWSGI into Galaxy virtualenv (by default, ``.venv``) using pip, e.g.:
     (.venv)$ pip install uwsgi
     Collecting uwsgi
       Downloading uwsgi-2.0.12.tar.gz (784kB)
-        100% |████████████████████████████████| 786kB 981kB/s 
+        100% |████████████████████████████████| 786kB 981kB/s
     Building wheels for collected packages: uwsgi
       Running setup.py bdist_wheel for uwsgi
       Stored in directory: /home/nate/.cache/pip/wheels/a4/7b/7c/8cbe2fe2c2b963173361cc18aa726f165dc4803effbb8195fc

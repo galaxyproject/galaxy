@@ -29,14 +29,13 @@ ${ ie.default_javascript_variables() }
 var url = '${ url }';
 ${ ie.plugin_require_config() }
 
-// Keep container running
-requirejs(['interactive_environments', 'plugin/phinch'], function(){
+// Keep container running and load notebook
+requirejs(['galaxy.interactive_environments', 'plugin/phinch'], function(IES){
+    window.IES = IES;
     keep_alive(url);
-});
-
-// Load notebook
-requirejs(['interactive_environments', 'plugin/phinch'], function(){
-    load_notebook(url);
+    IES.load_when_ready(ie_readiness_url, function(){
+        load_notebook(url);
+    });
 });
 
 </script>

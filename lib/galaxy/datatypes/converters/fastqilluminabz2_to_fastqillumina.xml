@@ -1,0 +1,11 @@
+<tool id="CONVERTER_fastqilluminabz2_to_fastqillumina" name="Convert fastqillumina.bz2 files to fastqillumina" version="1.0.0" hidden="true">
+  <command>bzip2 -dcf '$input1' > '$output1'</command>
+  <inputs>
+    <param format="fastqillumina.bz2" name="input1" type="data" label="Choose FASTQ file"/>
+  </inputs>
+  <outputs>
+    <data format="fastqillumina" name="output1"/>
+  </outputs>
+  <help>
+  </help>
+</tool>

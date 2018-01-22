@@ -3,20 +3,21 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">vcf_to_maf_customtrack.py '$out_file1'
-    #if $vcf_source_type.vcf_file
+  <command>
+python '$__tool_directory__/vcf_to_maf_customtrack.py' '$out_file1'
+#if $vcf_source_type.vcf_file
     '${vcf_source_type.vcf_file[0].vcf_input.dbkey}'
-    #else
+#else
     '?'
-    #end if
-    ${vcf_source_type.vcf_source} -n '$track_name'
-    #for $vcf_repeat in $vcf_source_type.vcf_file
+#end if
+${vcf_source_type.vcf_source} -n '$track_name'
+#for $vcf_repeat in $vcf_source_type.vcf_file
     '${vcf_repeat.vcf_input}'
     #if $vcf_source_type.vcf_source == '-p'
-      '${vcf_repeat.population_name}'
+        '${vcf_repeat.population_name}'
     #end if
-    #end for
-    -g
+#end for
+-g
   </command>
   <inputs>
     <param name="track_name" type="text" label="Custom Track Name" value="Galaxy Custom Track" size="30" />
@@ -60,7 +61,7 @@
   <help>
 **What it does**
 
-This tool converts a Variant Call Format (VCF) file into a Multiple Alignment Format (MAF) custom track file suitable for display at genome browsers. 
+This tool converts a Variant Call Format (VCF) file into a Multiple Alignment Format (MAF) custom track file suitable for display at genome browsers.
 
 This file should be used for display purposes only (e.g as a UCSC Custom Track). Performing an analysis using the output created by this tool as input is not recommended; the source VCF file should be used when performing an analysis.
 
@@ -93,9 +94,6 @@ Starting with a VCF::
   20  1110696 rs6040355   A   G,T 67  0   NS=2;DP=10;AF=0.333,0.667;AA=T;DB   GT:GQ:DP:HQ 1|2:21:6:23,27  2|1:2:0:18,2    2/2:35:4:-1,-1
   20  1230237 .   T   .   47  0   NS=3;DP=13;AA=T GT:GQ:DP:HQ 0|0:54:7:56,60  0|0:48:4:51,51  0/0:61:2:-1,-1
   20  1234567 microsat1   G   D4,IGA  50  0   NS=3;DP=9;AA=G  GT:GQ:DP    0/1:35:4    0/2:17:2    1/1:40:3
-  
-
-
 
 Under the following conditions: **VCF Source type:** *Per Population (file)*, **Name for this population:** *CHB+JPT*
 Results in the following MAF custom track::
@@ -103,28 +101,26 @@ Results in the following MAF custom track::
   track name="Galaxy Custom Track" visibility=pack
   ##maf version=1
   a score=0
-  s hg18.chr20  14369 1 + 14370 G 
-  s CHB+JPT_1.1     0 1 +     1 A 
-  
+  s hg18.chr20  14369 1 + 14370 G
+  s CHB+JPT_1.1     0 1 +     1 A
+
   a score=0
-  s hg18.chr20  17329 1 + 17330 T 
-  s CHB+JPT_1.2     0 1 +     1 A 
-  
+  s hg18.chr20  17329 1 + 17330 T
+  s CHB+JPT_1.2     0 1 +     1 A
+
   a score=0
-  s hg18.chr20  1110695 1 + 1110696 A 
-  s CHB+JPT_1.3       0 1 +       1 G 
-  s CHB+JPT_2.3       0 1 +       1 T 
-  
+  s hg18.chr20  1110695 1 + 1110696 A
+  s CHB+JPT_1.3       0 1 +       1 G
+  s CHB+JPT_2.3       0 1 +       1 T
+
   a score=0
-  s hg18.chr20  1230236 1 + 1230237 T 
-  s CHB+JPT_1.4       0 1 +       1 . 
-  
+  s hg18.chr20  1230236 1 + 1230237 T
+  s CHB+JPT_1.4       0 1 +       1 .
+
   a score=0
-  s hg18.chr20  1234565 5 + 1234572 *G--*** 
-  s CHB+JPT_1.5       0 1 +       1 *------ 
-  s CHB+JPT_2.5       0 7 +       7 *GGA*** 
-  
-@HELP_CITATIONS@
+  s hg18.chr20  1234565 5 + 1234572 *G--***
+  s CHB+JPT_1.5       0 1 +       1 *------
+  s CHB+JPT_2.5       0 7 +       7 *GGA***
     </help>
     <expand macro="citations" />
 </tool>

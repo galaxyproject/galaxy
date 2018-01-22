@@ -1,9 +1,9 @@
-<tool id="MAF_To_Interval1" name="MAF to Interval" force_history_refresh="True" version="1.0.0">
+<tool id="MAF_To_Interval1" name="MAF to Interval" version="1.0.0">
   <description>Converts a MAF formatted file to the Interval format</description>
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_to_interval.py "${ input1 }" "${ out_file1 }" "${ out_file1.id }" "." "${ input1.dbkey }" "${ species }" "${ input1.metadata.species }" "${ complete_blocks }" "${ remove_gaps }"</command>
+  <command>python '$__tool_directory__/maf_to_interval.py' '${input1}' '${out_file1}' '${out_file1.id}' '.' '${input1.dbkey}' '${species}' '${input1.metadata.species}' ${complete_blocks} ${remove_gaps}</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>
     <param name="species" type="select" label="Select additional species" display="checkboxes" multiple="true" help="The species matching the dbkey of the alignment is always included. A separate history item will be created for each species.">
@@ -35,15 +35,14 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool converts every MAF block to a set of genomic intervals describing the position of that alignment block within a corresponding genome. Sequences from aligning species are also included in the output.
 
-The interface for this tool contains several options: 
+The interface for this tool contains several options:
 
  * **MAF file to convert**. Choose multiple alignments from history to be converted to BED format.
- * **Choose species**. Choose additional species from the alignment to be included in the output 
+ * **Choose species**. Choose additional species from the alignment to be included in the output
  * **Exclude blocks which have a species missing**. if an alignment block does not contain any one of the species found in the alignment set and this option is set to **exclude blocks with missing species**, then coordinates of such a block **will not** be included in the output (see **Example 2** below).
  * **Remove Gap characters from sequences**. Gaps can be removed from sequences before they are output.
 
@@ -56,16 +55,16 @@ For the following alignment::
 
   ##maf version=1
   a score=68686.000000
-  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
-  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
-  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
 
   a score=10289.000000
-  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 the tool will create **a single** history item containing the following (**note** the name field is numbered iteratively: hg18_0_0, hg18_1_0 etc. where the first number is the block number and the second number is the iteration through the block (if a species appears twice in a block, that interval will be repeated) and sequences for each species are included in the order specified in the header: the field is left empty when no sequence is available for that species)::
 
@@ -82,16 +81,16 @@ For the following alignment::
 
   ##maf version=1
   a score=68686.000000
-  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC- 
-  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA------- 
-  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC------- 
-  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C 
+  s hg18.chr20     56827368 75 +  62435964 GACAGGGTGCATCTGGGAGGG---CCTGCCGGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s panTro2.chr20  56528685 75 +  62293572 GACAGGGTGCATCTGAGAGGG---CCTGCCAGGCCTTTA-TTCAACACTAGATACGCCCCATCTCCAATTCTAATGGAC-
+  s rheMac2.chr10  89144112 69 -  94855758 GACAGGGTGCATCTGAGAGGG---CCTGCTGGGCCTTTG-TTCAAAACTAGATATGCCCCAACTCCAATTCTA-------
+  s mm8.chr2      173910832 61 + 181976762 AGAAGGATCCACCT------------TGCTGGGCCTCTGCTCCAGCAAGACCCACCTCCCAACTCAAATGCCC-------
+  s canFam2.chr24  46551822 67 +  50763139 CG------GCGTCTGTAAGGGGCCACCGCCCGGCCTGTG-CTCAAAGCTACAAATGACTCAACTCCCAACCGA------C
 
   a score=10289.000000
-  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG 
-  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG 
+  s hg18.chr20    56827443 37 + 62435964 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s panTro2.chr20 56528760 37 + 62293572 ATGTGCAGAAAATGTGATACAGAAACCTGCAGAGCAG
+  s rheMac2.chr10 89144181 37 - 94855758 ATGTGCGGAAAATGTGATACAGAAACCTGCAGAGCAG
 
 the tool will create **two** history items (one for hg18 and one for mm8) containing the following (**note** that both history items contain only one line describing the first alignment block. The second MAF block is not included in the output because it does not contain mm8):
 
@@ -113,18 +112,16 @@ History item **2** (for mm8)::
 
 **About formats**
 
-**MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes. 
+**MAF format** multiple alignment format file. This format stores multiple alignments at the DNA level between entire genomes.
 
  - The .maf format is line-oriented. Each multiple alignment ends with a blank line.
  - Each sequence in an alignment is on a single line.
  - Lines starting with # are considered to be comments.
  - Each multiple alignment is in a separate paragraph that begins with an "a" line and contains an "s" line for each sequence in the multiple alignment.
- - Some MAF files may contain two optional line types: 
+ - Some MAF files may contain two optional line types:
 
-   - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line; 
+   - An "i" line containing information about what is in the aligned species DNA before and after the immediately preceding "s" line;
    - An "e" line containing information about the size of the gap between the alignments that span the current block.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

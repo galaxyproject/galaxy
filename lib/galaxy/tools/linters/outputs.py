@@ -20,6 +20,9 @@ def lint_output(tool_xml, lint_ctx):
             continue
         num_outputs += 1
         output_attrib = output.attrib
+        if "name" not in output_attrib:
+            lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.")
+
         if output.tag == "data":
             format_set = False
             if "format" in output_attrib:

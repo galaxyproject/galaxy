@@ -32,8 +32,11 @@
         ${ ie.plugin_require_config() }
 
 
-    requirejs(['interactive_environments', 'plugin/neo'], function () {
-        load_notebook(url);
+    requirejs(['galaxy.interactive_environments', 'plugin/neo'], function (IES) {
+        window.IES = IES;
+        IES.load_when_ready(ie_readiness_url, function(){
+            load_notebook(url);
+        });
     });
 
 </script>

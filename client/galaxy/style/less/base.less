@@ -143,6 +143,24 @@ body  {
     right: 250 + @border-default-color_padding;
     overflow: hidden;
     z-index: 1;
+    .center-container {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        .center-panel {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            overflow: auto;
+        }
+        .center-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    }
 }
 #right-border  {
     right: 250px;
@@ -294,7 +312,7 @@ div.unified-panel-body {
     width: 100%;
     padding: 0px;
 }
-@panel-bg-color: #DFE5F9;
+
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 @panel-bg-color;
 }
@@ -592,7 +610,6 @@ div.toolHelpBody {
     }
 }
 
-
 div.form, div.toolForm {
     border: solid @form-border 1px;
     .border-radius(@panel-border-radius);
@@ -604,6 +621,7 @@ div.form-title, div.toolFormTitle {
     padding: 5px 10px;
     background: @form-heading-bg;
     border-bottom: solid @form-border 1px;
+    word-wrap:break-word;
 }
 
 div.form-body {
@@ -669,6 +687,10 @@ div.form-row-error-message {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
+}
+
+.workflow-right .right-content .section-row {
+    margin-bottom: 10px;
 }
 
 // Selects
@@ -1064,6 +1086,10 @@ div.odd_row {
   .label-info();
 }
 
+.sm-label-pad {
+    margin-right: 2px;
+}
+
 span.toolParameterExpandableCollapsable {
     font-weight: bold;
     cursor: pointer;
@@ -1080,6 +1106,37 @@ ul.manage-table-actions li {
     display: block;
     float: left;
     margin-left: 0.5em;
+}
+
+.state-progress {
+    border: 1px solid gray;
+    position: relative;
+
+    margin-top: 2px;
+    margin-bottom: 1px;
+
+    .info {
+        color: @black;
+        background: @white;
+    }
+
+    .new {
+        background: @state-default-bg;
+    }
+
+    .running {
+        background: @state-running-bg;
+    }
+
+    .ok {
+        background: @state-success-bg;
+    }
+
+    .note {
+        margin-left: 1em;
+        position: absolute;
+    }
+
 }
 
 // State colors
@@ -1247,6 +1304,10 @@ a.action-button {
             .caret();
         }
     }
+}
+
+.menubutton.background-none {
+    background: none;
 }
 
 // A split menu button, the main button has an action, the arrow causes the
@@ -1524,6 +1585,15 @@ div.toolTitle
   }
 }
 
+div a.tool-link {
+	text-decoration: none;
+	display: block;
+
+	span.tool-old-link {
+		text-decoration: underline;
+	}
+}
+
 div.toolSectionBody div.toolPanelLabel
 {
   padding-top: 5px;
@@ -1728,7 +1798,6 @@ div.toolTitleNoSection
 }
 
 // communication channel bootstrap modal 
-
 .chat-modal {
     overflow: hidden;
 }
@@ -1754,7 +1823,7 @@ div.toolTitleNoSection
 }
 
 // password complexity monitor
-#change_password,#registrationForm {
+#change_password, #registrationForm {
     .progress {
         width:200px;
         margin-left: 20px;
@@ -1765,3 +1834,60 @@ div.toolTitleNoSection
     }
 }
 
+
+// workflow
+.wf {
+    overflow: auto;
+    th {
+        white-space: nowrap;
+    }
+    td:first-child {
+        white-space: nowrap;
+    }
+}
+
+.wf-action span {
+    padding-left: 3px;
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+}
+
+
+.wf-nodata {
+    padding-left: 1%;
+}
+
+.wf-back {
+    margin-left: 0.5%;
+}
+
+.other-options {
+    margin-bottom: 2%;
+}
+
+.hidden_description_layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(200, 200, 200, 0.6);
+  visibility: hidden;
+  opacity: 0;
+  font-size: 2.0em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* transition effect. not necessary */
+  transition: opacity .2s, visibility .2s;
+}
+
+.hidden_description_layer.dragover {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* For Vue */
+[v-cloak] {
+    display:none;
+}

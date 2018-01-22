@@ -1,17 +1,19 @@
-from datetime import datetime, timedelta
-from galaxy.web.base.controller import BaseUIController, web
-from galaxy import model
 import calendar
+import logging
+from datetime import datetime, timedelta
+
 import sqlalchemy as sa
+
+from galaxy import model
+from galaxy.web.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 
-import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
-class HomePage( BaseUIController, ReportQueryBuilder ):
+class HomePage(BaseUIController, ReportQueryBuilder):
     @web.expose
-    def run_stats( self, trans, **kwd ):
+    def run_stats(self, trans, **kwd):
         message = ''
         end_date = datetime.utcnow()
         end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour)
@@ -29,16 +31,16 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
         recent_jobs = sa.select(
             (
                 (model.Job.table.c.id),
-                (model.Job.table.c.create_time).label( 'create_time' ),
-                (model.Job.table.c.update_time).label( 'update_time' )
+                (model.Job.table.c.create_time).label('create_time'),
+                (model.Job.table.c.update_time).label('update_time')
             )
         )
 
         for job in recent_jobs.execute():
             if(job.create_time >= start_days and
-               job.create_time < end_date_buffer ):
+               job.create_time < end_date_buffer):
                 if(job.create_time >= start_hours and
-                   job.create_time < end_date_buffer ):
+                   job.create_time < end_date_buffer):
                     # Get the creation time for the jobs in the past day
                     end_day = end_date.day
                     start_day = job.create_time.day
@@ -70,9 +72,9 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                     jc_dy_data[int(day)] += 1
 
             if(job.update_time >= start_days and
-               job.update_time < end_date_buffer ):
+               job.update_time < end_date_buffer):
                 if(job.update_time >= start_hours and
-                   job.update_time < end_date_buffer ):
+                   job.update_time < end_date_buffer):
                     # Get the time finishedfor the jobs in the past day
                     end_day = end_date.day
                     start_day = job.update_time.day
@@ -113,11 +115,11 @@ class HomePage( BaseUIController, ReportQueryBuilder ):
                     minutes = seconds // 60
                     et_dy_data.append(minutes)
 
-        return trans.fill_template( '/webapps/reports/run_stats.mako',
+        return trans.fill_template('/webapps/reports/run_stats.mako',
             jf_hr_data=jf_hr_data,
             jf_dy_data=jf_dy_data,
             jc_hr_data=jc_hr_data,
             jc_dy_data=jc_dy_data,
             et_hr_data=et_hr_data,
             et_dy_data=et_dy_data,
-            message=message )
+            message=message)

@@ -16,15 +16,12 @@
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>
             <li><a href="${h.url_for( controller='user', action='toolbox_filters', cntrller=cntrller )}">${_('Manage your ToolBox filters')}</a></li>
             %if trans.app.config.enable_openid and not trans.app.config.use_remote_user:
-                <li><a href="${h.url_for( controller='user', action='openid_manage', cntrller=cntrller )}">${_('Manage OpenIDs')}</a> linked to your account</li>
+                <li><a href="${h.url_for( controller='openids', action='list' )}">${_('Manage OpenIDs')}</a> linked to your account</li>
             %endif
             <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
         %else:
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
             <li><a href="${h.url_for( controller='user', action='change_password' )}">${_('Change your password')}</a></li>
-            %if trans.app.config.enable_communication_server:
-                <li><a href="${h.url_for( controller='user', action='change_communication', cntrller=cntrller )}">${_('Change your communication settings')}</a></li>
-            %endif
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>
             <li><a href="${h.url_for( controller='repository', action='manage_email_alerts', cntrller=cntrller )}">${_('Manage your email alerts')}</a></li>
             <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
@@ -36,7 +33,7 @@
             %if trans.app.config.enable_quotas:
                 Your disk quota is: <strong>${trans.app.quota_agent.get_quota( trans.user, nice_size=True )}</strong>.
             %endif
-            Is your usage more than expected?  See the <a href="https://wiki.galaxyproject.org/Learn/ManagingDatasets" target="_blank">documentation</a> for tips on how to find all of the data in your account.
+            Is your usage more than expected?  See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.
         </p>
     %endif
 %else:

@@ -1,5 +1,5 @@
 try:
-    from drmaa import Session, JobControlAction
+    from drmaa import JobControlAction, Session
 except ImportError as e:
     # Will not be able to use DRMAA
     Session = None
@@ -11,6 +11,7 @@ class DrmaaSessionFactory(object):
     """
     Abstraction used to production DrmaaSession wrappers.
     """
+
     def __init__(self):
         self.session_constructor = Session
 
@@ -53,4 +54,4 @@ class DrmaaSession(object):
         return self.session.exit()
 
 
-__all__ = ['DrmaaSessionFactory']
+__all__ = ('DrmaaSessionFactory', )

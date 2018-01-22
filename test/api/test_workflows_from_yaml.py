@@ -7,10 +7,10 @@ from .test_workflows import BaseWorkflowsApiTestCase
 WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
-class WorkflowsFromYamlApiTestCase( BaseWorkflowsApiTestCase ):
+class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
 
-    def setUp( self ):
-        super( WorkflowsFromYamlApiTestCase, self ).setUp()
+    def setUp(self):
+        super(WorkflowsFromYamlApiTestCase, self).setUp()
 
     def test_simple_upload(self):
         workflow_id = self._upload_yaml_workflow("""
@@ -55,11 +55,11 @@ steps:
         assert tool_count['random_lines1'] == 1
         assert tool_count['cat1'] == 2
 
-# FIXME:  This test fails on some machines due to (we're guessing) yaml loading
+# FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
 # order being not guaranteed and inconsistent across platforms.  The workflow
-# yaml loader probably needs to enforce order using something like the
+# yaml.safe_loader probably needs to enforce order using something like the
 # approach described here:
-# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml-load
+# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml.safe_load
 #     def test_multiple_input( self ):
 #         history_id = self.dataset_populator.new_history()
 #         self._run_jobs("""
@@ -80,7 +80,7 @@ steps:
 #         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
 #         assert contents1 == "hello world\n123\n"
 
-    def test_simple_output_actions( self ):
+    def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -110,7 +110,7 @@ test_data:
         details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
         assert details2["visible"]
 
-    def test_inputs_to_steps( self ):
+    def test_inputs_to_steps(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -132,7 +132,7 @@ test_data:
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEquals(contents1.strip(), "hello world\nhello world")
 
-    def test_outputs( self ):
+    def test_outputs(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -157,7 +157,7 @@ test_data:
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
 
-    def test_subworkflow_simple( self ):
+    def test_subworkflow_simple(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
@@ -221,7 +221,7 @@ test_data:
         # content = self.dataset_populator.get_history_dataset_content( history_id )
         # self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
-    def test_pause( self ):
+    def test_pause(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
@@ -245,7 +245,7 @@ steps:
 """)
         print(self._get("workflows/%s/download" % workflow_id).json())
 
-    def test_implicit_connections( self ):
+    def test_implicit_connections(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
@@ -279,6 +279,7 @@ steps:
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}
+        assert "steps" in workflow_as_dict, workflow_as_dict
         for step in workflow_as_dict["steps"].values():
             by_label[step['label']] = step
         return by_label

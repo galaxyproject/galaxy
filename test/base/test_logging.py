@@ -1,9 +1,8 @@
 from __future__ import absolute_import
 
-import os
-
 import logging
 import logging.config
+import os
 
 # This is done in paster or galaxy.main for server app, provide
 # an entry point testing as well.

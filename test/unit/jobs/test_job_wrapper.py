@@ -1,17 +1,19 @@
 import os
 from contextlib import contextmanager
-
 from unittest import TestCase
-from galaxy.model import Job
-from galaxy.model import Task
-from galaxy.model import User
-from galaxy.jobs import JobWrapper
-from galaxy.jobs import TaskWrapper
-from galaxy.util.bunch import Bunch
 
+from galaxy.jobs import (
+    JobWrapper,
+    TaskWrapper
+)
+from galaxy.model import (
+    Job,
+    Task,
+    User
+)
 from galaxy.tools import evaluation
-
-from tools_support import UsesApp
+from galaxy.util.bunch import Bunch
+from ..tools_support import UsesApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -157,7 +159,9 @@ class MockTool(object):
 
     def __init__(self, app):
         self.version_string_cmd = TEST_VERSION_COMMAND
+        self.tool_dir = "/path/to/tools"
         self.dependencies = []
+        self.requires_galaxy_python_environment = False
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS
@@ -172,7 +176,7 @@ class MockToolbox(object):
         assert tool_id == TEST_TOOL_ID
         return self.test_tool
 
-    def get_tool( self, tool_id, tool_version, exact=False ):
+    def get_tool(self, tool_id, tool_version, exact=False):
         tool = self.get(tool_id)
         return tool
 

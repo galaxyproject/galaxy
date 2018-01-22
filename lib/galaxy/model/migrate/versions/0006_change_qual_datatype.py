@@ -1,6 +1,6 @@
 """
 This migration script changes certain values in the history_dataset_association.extension
-column, specifically 'qual' is chaged to be 'qual454'.
+column, specifically 'qual' is changed to be 'qual454'.
 """
 from __future__ import print_function
 
@@ -10,54 +10,47 @@ import sys
 from sqlalchemy import Index, MetaData, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 metadata = MetaData()
 
 
-def display_migration_details():
-    print("========================================")
-    print("This migration script changes certain values in the history_dataset_association.extension")
-    print("column, specifically 'qual' is chaged to be 'qual454'.")
-    print("========================================")
-
-
 def upgrade(migrate_engine):
-    display_migration_details()
+    print(__doc__)
     metadata.bind = migrate_engine
-    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
-    HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, autoload=True )
+    db_session = scoped_session(sessionmaker(bind=migrate_engine, autoflush=False, autocommit=True))
+    HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
     # Load existing tables
     metadata.reflect()
     # Add 2 indexes to the galaxy_user table
-    i = Index( 'ix_hda_extension', HistoryDatasetAssociation_table.c.extension )
+    i = Index('ix_hda_extension', HistoryDatasetAssociation_table.c.extension)
     try:
         i.create()
-    except Exception as e:
-        log.debug( "Adding index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Adding index 'ix_hda_extension' to history_dataset_association table failed.")
 
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE history_dataset_association SET extension = 'qual454' WHERE extension = 'qual' and peek like \'>%%\'"
     try:
-        db_session.execute( cmd )
-    except Exception as e:
-        log.debug( "Resetting extension qual to qual454 in history_dataset_association failed: %s" % ( str( e ) ) )
+        db_session.execute(cmd)
+    except Exception:
+        log.exception("Resetting extension qual to qual454 in history_dataset_association failed.")
     cmd = "UPDATE history_dataset_association SET extension = 'qualsolexa' WHERE extension = 'qual' and peek not like \'>%%\'"
     try:
-        db_session.execute( cmd )
-    except Exception as e:
-        log.debug( "Resetting extension qual to qualsolexa in history_dataset_association failed: %s" % ( str( e ) ) )
+        db_session.execute(cmd)
+    except Exception:
+        log.exception("Resetting extension qual to qualsolexa in history_dataset_association failed.")
     # Add 1 index to the history_dataset_association table
     try:
         i.drop()
-    except Exception as e:
-        log.debug( "Dropping index 'ix_hda_extension' to history_dataset_association table failed: %s" % ( str( e ) ) )
+    except Exception:
+        log.exception("Dropping index 'ix_hda_extension' to history_dataset_association table failed.")
 
 
 def downgrade(migrate_engine):

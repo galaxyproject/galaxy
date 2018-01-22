@@ -70,6 +70,11 @@
     "message": "The contents of the request are malformed."
     },
    {
+    "name": "USER_TOOL_MISSING_PROBLEM",
+    "code": 400014,
+    "message": "Tool could not be found."
+   },
+   {
     "name": "USER_AUTHENTICATION_FAILED",
     "code": 401001,
     "message": "Authentication failed, invalid credentials supplied."

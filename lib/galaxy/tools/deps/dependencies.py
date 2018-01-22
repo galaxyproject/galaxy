@@ -1,4 +1,4 @@
-from galaxy.tools.deps.requirements import ToolRequirement
+from galaxy.tools.deps.requirements import ToolRequirements
 from galaxy.util import bunch
 
 
@@ -29,7 +29,7 @@ class DependenciesDescription(object):
             return None
 
         requirements_dicts = as_dict.get('requirements', [])
-        requirements = [ToolRequirement.from_dict(r) for r in requirements_dicts]
+        requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get('installed_tool_dependencies', [])
         installed_tool_dependencies = map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
         return DependenciesDescription(

@@ -52,7 +52,7 @@ Upgrade
       % hg update latest_15.07
 
 
-See `our wiki <https://wiki.galaxyproject.org/Develop/SourceCode>`__ for additional details regarding the source code locations.
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
 Deprecation Notice
 ===========================================================

@@ -121,7 +121,9 @@
 #         destination: fail
 #         fail_message: Don't do that
 #         arguments:
-#           careful: true
+#           my_section:
+#             my_condition:
+#               careful: true
 #     default_destination: cluster_low
 # default_destination: cluster
 # verbose: False

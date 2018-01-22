@@ -1,5 +1,6 @@
-from ConfigParser import ConfigParser
 from sys import argv
+
+from six.moves.configparser import ConfigParser
 
 REPLACE_PROPERTIES = ["file_path", "database_connection", "new_file_path"]
 MAIN_SECTION = "app:main"
@@ -56,6 +57,7 @@ def get_synced_line(reports_line, universe_config):
 
 def get_universe_line(property_name, universe_config):
     return "%s=%s\n" % (property_name, universe_config.get(MAIN_SECTION, property_name))
+
 
 if __name__ == '__main__':
     sync()

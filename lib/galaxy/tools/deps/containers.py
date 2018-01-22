@@ -1,7 +1,6 @@
 import logging
 import os
 import string
-
 from abc import (
     ABCMeta,
     abstractmethod
@@ -10,16 +9,37 @@ from abc import (
 import six
 
 from galaxy.util import asbool
-
+from galaxy.util import in_directory
+from galaxy.util import plugin_config
+from .container_resolvers.explicit import ExplicitContainerResolver
+from .container_resolvers.mulled import (
+    BuildMulledDockerContainerResolver,
+    BuildMulledSingularityContainerResolver,
+    CachedMulledDockerContainerResolver,
+    CachedMulledSingularityContainerResolver,
+    MulledDockerContainerResolver,
+)
+from .requirements import ContainerDescription
+from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 from ..deps import docker_util
+from ..deps import singularity_util
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONTAINER_TYPE = "docker"
+DOCKER_CONTAINER_TYPE = "docker"
+SINGULARITY_CONTAINER_TYPE = "singularity"
+DEFAULT_CONTAINER_TYPE = DOCKER_CONTAINER_TYPE
+ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
 python << EOF
-import re, tarfile, json, subprocess
+from __future__ import print_function
+
+import json
+import re
+import subprocess
+import tarfile
+
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
@@ -34,7 +54,7 @@ for line in stdo.split("\\n"):
     if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
         found = True
 if not found:
-    print "Loading image"
+    print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
     subprocess.check_call(cmd, shell=True)
 EOF
@@ -45,9 +65,25 @@ class ContainerFinder(object):
 
     def __init__(self, app_info):
         self.app_info = app_info
-        self.container_registry = ContainerRegistry()
+        self.container_registry = ContainerRegistry(app_info)
+
+    def __enabled_container_types(self, destination_info):
+        return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
+
+    def find_best_container_description(self, enabled_container_types, tool_info):
+        """Regardless of destination properties - find best container for tool.
+
+        Given container types and container.ToolInfo description of the tool."""
+        container_description = self.container_registry.find_best_container_description(enabled_container_types, tool_info)
+        return container_description
 
     def find_container(self, tool_info, destination_info, job_info):
+        enabled_container_types = self.__enabled_container_types(destination_info)
+
+        # Short-cut everything else and just skip checks if no container type is enabled.
+        if not enabled_container_types:
+            return NULL_CONTAINER
+
         def __destination_container(container_description=None, container_id=None, container_type=None):
             if container_description:
                 container_id = container_description.identifier
@@ -57,11 +93,19 @@ class ContainerFinder(object):
                 container_type,
                 tool_info,
                 destination_info,
-                job_info
+                job_info,
+                container_description,
             )
             return container
 
-        # Is destination forcing Galaxy to use a particular container do it,
+        if "container_override" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
+        # If destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
         # do not trust the containers annotated in tools.
         for container_type in CONTAINER_CLASSES.keys():
@@ -72,26 +116,20 @@ class ContainerFinder(object):
                     return container
 
         # Otherwise lets see if we can find container for the tool.
-
-        # Exact matches first from explicitly listed containers in tools...
-        for container_description in tool_info.container_descriptions:
-            container = __destination_container(container_description)
-            if container:
-                return container
-
-        # Implement vague concept of looping through all containers
-        # matching requirements. Exact details need to be worked through
-        # but hopefully the idea that it sits below find_container somewhere
-        # external components to this module don't need to worry about it
-        # is good enough.
-        container_descriptions = self.container_registry.container_descriptions_for_requirements(tool_info.requirements)
-        for container_description in container_descriptions:
-            container = __destination_container(container_description)
-            if container:
-                return container
+        container_description = self.find_best_container_description(enabled_container_types, tool_info)
+        container = __destination_container(container_description)
+        if container:
+            return container
 
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
+        if "container" in destination_info:
+            container_description = ContainerDescription.from_dict(destination_info["container"][0])
+            if container_description:
+                container = __destination_container(container_description)
+                if container:
+                    return container
+
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)
             if container_id:
@@ -137,7 +175,7 @@ class ContainerFinder(object):
             return self.__build_container_id_from_parts(container_type, destination_info, mode="default")
         return None
 
-    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info):
+    def __destination_container(self, container_id, container_type, tool_info, destination_info, job_info, container_description=None):
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
             return NULL_CONTAINER
@@ -146,7 +184,7 @@ class ContainerFinder(object):
         # container type is - there should be more thought put into this.
         # Checking which are availalbe - settings policies for what can be
         # auto-fetched, etc....
-        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info)
+        return CONTAINER_CLASSES[container_type](container_id, self.app_info, tool_info, destination_info, job_info, container_description)
 
     def __container_type_enabled(self, container_type, destination_info):
         return asbool(destination_info.get("%s_enabled" % container_type, False))
@@ -158,14 +196,60 @@ class NullContainerFinder(object):
         return []
 
 
-class ContainerRegistry():
+class ContainerRegistry(object):
+    """Loop through enabled ContainerResolver plugins and find first match."""
 
-    def __init__(self):
-        pass
+    def __init__(self, app_info):
+        self.resolver_classes = self.__resolvers_dict()
+        self.enable_beta_mulled_containers = app_info.enable_beta_mulled_containers
+        self.app_info = app_info
+        self.container_resolvers = self.__build_container_resolvers(app_info)
 
-    def container_descriptions_for_requirements(self, requirements):
-        # Return lists of containers that would match requirements...
-        return []
+    def __build_container_resolvers(self, app_info):
+        conf_file = getattr(app_info, 'containers_resolvers_config_file', None)
+        if not conf_file:
+            return self.__default_containers_resolvers()
+        if not os.path.exists(conf_file):
+            log.debug("Unable to find config file '%s'", conf_file)
+            return self.__default_containers_resolvers()
+        plugin_source = plugin_config.plugin_source_from_path(conf_file)
+        return self.__parse_resolver_conf_xml(plugin_source)
+
+    def __parse_resolver_conf_xml(self, plugin_source):
+        extra_kwds = {}
+        return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
+
+    def __default_containers_resolvers(self):
+        default_resolvers = [
+            ExplicitContainerResolver(self.app_info),
+        ]
+        if self.enable_beta_mulled_containers:
+            default_resolvers.extend([
+                CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
+                MulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
+                BuildMulledDockerContainerResolver(self.app_info),
+                CachedMulledSingularityContainerResolver(self.app_info),
+                BuildMulledSingularityContainerResolver(self.app_info),
+            ])
+        return default_resolvers
+
+    def __resolvers_dict(self):
+        import galaxy.tools.deps.container_resolvers
+        return plugin_config.plugins_dict(galaxy.tools.deps.container_resolvers, 'resolver_type')
+
+    def find_best_container_description(self, enabled_container_types, tool_info):
+        """Yield best container description of supplied types matching tool info."""
+        for container_resolver in self.container_resolvers:
+            if hasattr(container_resolver, "container_type"):
+                if container_resolver.container_type not in enabled_container_types:
+                    continue
+            container_description = container_resolver.resolve(enabled_container_types, tool_info)
+            log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
+            if container_description:
+                assert container_description.type in enabled_container_types
+                return container_description
+
+        return None
 
 
 class AppInfo(object):
@@ -176,7 +260,11 @@ class AppInfo(object):
         default_file_path=None,
         outputs_to_working_directory=False,
         container_image_cache_path=None,
-        library_import_dir=None
+        library_import_dir=None,
+        enable_beta_mulled_containers=False,
+        containers_resolvers_config_file=None,
+        involucro_path=None,
+        involucro_auto_init=True,
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -184,6 +272,10 @@ class AppInfo(object):
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
         self.library_import_dir = library_import_dir
+        self.enable_beta_mulled_containers = enable_beta_mulled_containers
+        self.containers_resolvers_config_file = containers_resolvers_config_file
+        self.involucro_path = involucro_path
+        self.involucro_auto_init = involucro_auto_init
 
 
 class ToolInfo(object):
@@ -191,32 +283,45 @@ class ToolInfo(object):
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=[], requirements=[]):
+    def __init__(self, container_descriptions=[], requirements=[], requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"]):
         self.container_descriptions = container_descriptions
         self.requirements = requirements
-        self.env_pass_through = ["GALAXY_SLOTS"]
+        self.requires_galaxy_python_environment = requires_galaxy_python_environment
+        self.env_pass_through = env_pass_through
 
 
 class JobInfo(object):
 
-    def __init__(self, working_directory, tool_directory, job_directory, job_directory_type):
+    def __init__(
+        self, working_directory, tool_directory, job_directory, tmp_directory, job_directory_type
+    ):
         self.working_directory = working_directory
         self.job_directory = job_directory
         # Tool files may be remote staged - so this is unintuitively a property
         # of the job not of the tool.
         self.tool_directory = tool_directory
+        self.tmp_directory = tmp_directory
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
-class Container( object ):
-    __metaclass__ = ABCMeta
+@six.add_metaclass(ABCMeta)
+class Container(object):
 
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info):
+    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
         self.destination_info = destination_info
         self.job_info = job_info
+        self.container_description = container_description
+
+    @property
+    def resolve_dependencies(self):
+        return DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES if not self.container_description else self.container_description.resolve_dependencies
+
+    @property
+    def shell(self):
+        return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
     @abstractmethod
     def containerize_command(self, command):
@@ -227,7 +332,108 @@ class Container( object ):
         """
 
 
-class DockerContainer(Container):
+def preprocess_volumes(volumes_raw_str, container_type):
+    """Process Galaxy volume specification string to either Docker or Singularity specification.
+
+    Galaxy allows the mount try "default_ro" which translates to ro for Docker and
+    ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
+    parent directories with rw subdirectories).
+
+    >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
+    '/a/b:rw'
+    >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    '/a/b:ro,/a/b/c:rw'
+    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
+    '/a/b:ro,/a/b/c:rw'
+    >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    '/a/b:rw,/a/b/c:rw'
+    """
+
+    volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
+    volumes = []
+    rw_paths = []
+
+    for volume_raw_str in volumes_raw_strs:
+        volume_parts = volume_raw_str.split(":")
+        if len(volume_parts) > 2:
+            raise Exception("Unparsable volumes string in configuration [%s]" % volumes_raw_str)
+        if len(volume_parts) == 1:
+            volume_parts.append("rw")
+        volumes.append(volume_parts)
+        if volume_parts[1] == "rw":
+            rw_paths.append(volume_parts[0])
+
+    for volume in volumes:
+        path = volume[0]
+        how = volume[1]
+
+        if how == "default_ro":
+            how = "ro"
+            if container_type == SINGULARITY_CONTAINER_TYPE:
+                for rw_path in rw_paths:
+                    if in_directory(rw_path, path):
+                        how = "rw"
+
+        volume[1] = how
+
+    return ",".join([":".join(v) for v in volumes])
+
+
+class HasDockerLikeVolumes:
+    """Mixin to share functionality related to Docker volume handling.
+
+    Singularity seems to have a fairly compatible syntax for volume handling.
+    """
+
+    def _expand_volume_str(self, value):
+        if not value:
+            return value
+
+        template = string.Template(value)
+        variables = dict()
+
+        def add_var(name, value):
+            if value:
+                variables[name] = os.path.abspath(value)
+
+        add_var("working_directory", self.job_info.working_directory)
+        add_var("tmp_directory", self.job_info.tmp_directory)
+        add_var("job_directory", self.job_info.job_directory)
+        add_var("tool_directory", self.job_info.tool_directory)
+        add_var("galaxy_root", self.app_info.galaxy_root_dir)
+        add_var("default_file_path", self.app_info.default_file_path)
+        add_var("library_import_dir", self.app_info.library_import_dir)
+
+        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
+            # We have a Pulsar job directory, so everything needed (excluding index
+            # files) should be available in job_directory...
+            defaults = "$job_directory:default_ro,$tool_directory:default_ro,$job_directory/outputs:rw,$working_directory:rw"
+        else:
+            defaults = "$galaxy_root:default_ro,$tool_directory:default_ro"
+            if self.job_info.job_directory:
+                defaults += ",$job_directory:default_ro"
+            if self.job_info.tmp_directory is not None:
+                defaults += ",$tmp_directory:rw"
+            if self.app_info.outputs_to_working_directory:
+                # Should need default_file_path (which is of course an estimate given
+                # object stores anyway).
+                defaults += ",$working_directory:rw,$default_file_path:default_ro"
+            else:
+                defaults += ",$working_directory:rw,$default_file_path:rw"
+
+        if self.app_info.library_import_dir:
+            defaults += ",$library_import_dir:default_ro"
+
+        # Define $defaults that can easily be extended with external library and
+        # index data without deployer worrying about above details.
+        variables["defaults"] = string.Template(defaults).safe_substitute(variables)
+
+        return template.safe_substitute(variables)
+
+
+class DockerContainer(Container, HasDockerLikeVolumes):
+
+    container_type = DOCKER_CONTAINER_TYPE
 
     def containerize_command(self, command):
         def prop(name, default):
@@ -250,9 +456,15 @@ class DockerContainer(Container):
         if not working_directory:
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
-        volumes_raw = self.__expand_str(self.destination_info.get("docker_volumes", "$defaults"))
+        volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
-        volumes = docker_util.DockerVolume.volumes_from_str(volumes_raw)
+        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+        # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+        # with CWL. This is part of that spec and should make it easier to share containers between CWL
+        # and Galaxy.
+        if self.job_info.tmp_directory is not None:
+            volumes.append(docker_util.DockerVolume.volume_from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = dict(
@@ -306,48 +518,6 @@ class DockerContainer(Container):
         else:
             return getattr(self.app_info, name)
 
-    def __expand_str(self, value):
-        if not value:
-            return value
-
-        template = string.Template(value)
-        variables = dict()
-
-        def add_var(name, value):
-            if value:
-                variables[name] = os.path.abspath(value)
-
-        add_var("working_directory", self.job_info.working_directory)
-        add_var("job_directory", self.job_info.job_directory)
-        add_var("tool_directory", self.job_info.tool_directory)
-        add_var("galaxy_root", self.app_info.galaxy_root_dir)
-        add_var("default_file_path", self.app_info.default_file_path)
-        add_var("library_import_dir", self.app_info.library_import_dir)
-
-        if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
-            # We have a Pulsar job directory, so everything needed (excluding index
-            # files) should be available in job_directory...
-            defaults = "$job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw"
-        else:
-            defaults = "$galaxy_root:ro,$tool_directory:ro"
-            if self.job_info.job_directory:
-                defaults += ",$job_directory:ro"
-            if self.app_info.outputs_to_working_directory:
-                # Should need default_file_path (which is a course estimate given
-                # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:ro"
-            else:
-                defaults += ",$working_directory:rw,$default_file_path:rw"
-
-        if self.app_info.library_import_dir:
-            defaults += ",$library_import_dir:ro"
-
-        # Define $defaults that can easily be extended with external library and
-        # index data without deployer worrying about above details.
-        variables["defaults"] = string.Template(defaults).safe_substitute(variables)
-
-        return template.safe_substitute(variables)
-
 
 def docker_cache_path(cache_directory, container_id):
     file_container_id = container_id.replace("/", "_slash_")
@@ -355,8 +525,55 @@ def docker_cache_path(cache_directory, container_id):
     return os.path.join(cache_directory, cache_file_name)
 
 
+class SingularityContainer(Container, HasDockerLikeVolumes):
+
+    container_type = SINGULARITY_CONTAINER_TYPE
+
+    def containerize_command(self, command):
+        def prop(name, default):
+            destination_name = "singularity_%s" % name
+            return self.destination_info.get(destination_name, default)
+
+        env = []
+        for pass_through_var in self.tool_info.env_pass_through:
+            env.append((pass_through_var, "$%s" % pass_through_var))
+
+        # Allow destinations to explicitly set environment variables just for
+        # docker container. Better approach is to set for destination and then
+        # pass through only what tool needs however. (See todo in ToolInfo.)
+        for key, value in six.iteritems(self.destination_info):
+            if key.startswith("singularity_env_"):
+                real_key = key[len("singularity_env_"):]
+                env.append((real_key, value))
+
+        working_directory = self.job_info.working_directory
+        if not working_directory:
+            raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
+
+        volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
+        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
+        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+
+        singularity_target_kwds = dict(
+            singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
+            sudo=asbool(prop("sudo", singularity_util.DEFAULT_SUDO)),
+            sudo_cmd=prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
+        )
+        run_command = singularity_util.build_singularity_run_command(
+            command,
+            self.container_id,
+            volumes=volumes,
+            env=env,
+            working_directory=working_directory,
+            run_extra_arguments=prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            **singularity_target_kwds
+        )
+        return run_command
+
+
 CONTAINER_CLASSES = dict(
     docker=DockerContainer,
+    singularity=SingularityContainer,
 )
 
 
@@ -365,8 +582,9 @@ class NullContainer(object):
     def __init__(self):
         pass
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
+    __nonzero__ = __bool__
 
 
 NULL_CONTAINER = NullContainer()

@@ -1,10 +1,10 @@
 import os
+import subprocess
 from platform import system
 from time import sleep
-from subprocess import Popen
 
 try:
-    from psutil import Process, NoSuchProcess
+    from psutil import NoSuchProcess, Process
 except ImportError:
     """ Don't make psutil a strict requirement, but use if available. """
     Process = None
@@ -41,8 +41,8 @@ def _stock_kill_pid(pid):
 
 def __kill_windows(pid):
     try:
-        Popen("taskkill /F /T /PID %i" % pid, shell=True)
-    except Exception:
+        subprocess.check_call(['taskkill', '/F', '/T', '/PID', pid])
+    except subprocess.CalledProcessError:
         pass
 
 

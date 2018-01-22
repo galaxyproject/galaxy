@@ -1,17 +1,12 @@
-import imp
 import os
 import tarfile
-
 from shutil import rmtree
 from tempfile import mkdtemp
 
-from galaxy.exceptions import MalformedContents
 from galaxy import model
+from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
-
-test_utils = imp.load_source( 'test_utils',
-    os.path.join( os.path.dirname( __file__), '../unittest_utils/utility.py' ) )
-from galaxy_mock import MockApp
+from ..unittest_utils.galaxy_mock import MockApp
 
 
 # good enough for the very specific tests we're writing as of now...

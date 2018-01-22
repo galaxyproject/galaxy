@@ -54,15 +54,17 @@
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
         'libs/require',
+        'bundled/extended.bundled'
     )}
 
     <script type="text/javascript">
-        // configure require
+        // configure require for base panels
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
         window.Galaxy = window.Galaxy || {};
         window.Galaxy.root = '${h.url_for( "/" )}';
-        define( 'jquery', [], function(){ return jQuery; })
+        window.jQuery = window.jquery = window.$;
+        define( 'jquery', [], function(){ return window.$; })
         // TODO: use one system
 
         // shims and paths
@@ -97,13 +99,13 @@
 
     %if self.has_left_panel:
         var lp = new panels.LeftPanel({ el: '#left' });
-        force_left_panel = function( x ) { lp.force_panel( x ) };
+        window.force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
         var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-        force_right_panel = function( x ) { rp.force_panel( x ) };
+        window.force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
@@ -166,11 +168,13 @@
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        %if app.config.brand:
-            <title>${self.title()} / ${app.config.brand}</title>
-        %else:
-            <title>${self.title()}</title>
-        %endif
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            | ${self.title()}
+        </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ${self.stylesheets()}

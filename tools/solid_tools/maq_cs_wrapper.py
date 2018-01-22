@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # Guruprasad Ananda
 # MAQ mapper for SOLiD colourspace-reads
+from __future__ import print_function
 
 import os
 import subprocess
@@ -8,8 +9,8 @@ import sys
 import tempfile
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -101,7 +102,7 @@ def __main__():
             cmdpileup = "maq pileup -m %s -q %s %s %s > %s" % (max_mismatch, min_mapqual, ref_bfa.name, tmpcsmap.name, tmppileup.name)
             os.system(cmdpileup)
             tmppileup.seek(0)
-            print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
+            print("#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count", file=out_f2)
             for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
@@ -127,8 +128,8 @@ def __main__():
                         else:
                             c += 1
                     except ValueError as we:
-                        print >>sys.stderr, we
-                print >> out_f2, "%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c)
+                        print(we, file=sys.stderr)
+                print("%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c), file=out_f2)
         except Exception as er2:
             stop_err("Encountered error while mapping: %s" % (str(er2)))
 
@@ -140,7 +141,7 @@ def __main__():
             os.system(cmd1)
             os.system('gunzip -c %s >> %s' % (tmpf.name, tmpfastq.name))
             tmpf.close()
-        except:
+        except Exception:
             stop_err("Error converting data to fastq format.")
 
         # Make a temp directory where the split fastq files will be stored
@@ -177,7 +178,7 @@ def __main__():
             cmdpileup = "maq pileup -m %s -q %s %s %s > %s" % (max_mismatch, min_mapqual, ref_bfa.name, tmpcsmap.name, tmppileup.name)
             os.system(cmdpileup)
             tmppileup.seek(0)
-            print >> out_f2, "#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count"
+            print("#chr\tposition\tref_nt\tcoverage\tSNP_count\tA_count\tT_count\tG_count\tC_count", file=out_f2)
             for line in open(tmppileup.name):
                 elems = line.strip().split()
                 ref_nt = elems[2].capitalize()
@@ -202,9 +203,9 @@ def __main__():
                             g += 1
                         else:
                             c += 1
-                    except:
+                    except Exception:
                         pass
-                print >> out_f2, "%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c)
+                print("%s\t%s\t%s\t%s\t%s\t%s" % ("\t".join(elems[:4]), coverage - ref_nt_count, a, t, g, c), file=out_f2)
         except Exception as er2:
             stop_err("Encountered error while mapping: %s" % (str(er2)))
 
@@ -245,7 +246,7 @@ def __main__():
             t = int(elems[6])
             g = int(elems[7])
             c = int(elems[8])
-        except:
+        except Exception:
             continue
         fcov.write("%s\t%s\n" % (pos, cov))
         try:
@@ -266,6 +267,7 @@ def __main__():
     fout_t.seek(0)
     fout_c.seek(0)
     os.system("cat %s %s %s %s %s | cat > %s" % (fcov.name, fout_a.name, fout_t.name, fout_g.name, fout_c.name, out_f3name))
+
 
 if __name__ == "__main__":
     __main__()

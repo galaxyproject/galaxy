@@ -1,5 +1,5 @@
-tool_shed.dependencies package
-==============================
+tool\_shed\.dependencies package
+================================
 
 .. automodule:: tool_shed.dependencies
     :members:
@@ -17,8 +17,8 @@ Subpackages
 Submodules
 ----------
 
-tool_shed.dependencies.attribute_handlers module
-------------------------------------------------
+tool\_shed\.dependencies\.attribute\_handlers module
+----------------------------------------------------
 
 .. automodule:: tool_shed.dependencies.attribute_handlers
     :members:

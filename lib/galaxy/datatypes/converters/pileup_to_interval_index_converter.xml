@@ -1,15 +1,15 @@
 <tool id="CONVERTER_pileup_to_interval_index_0" name="Convert Pileup to Interval Index" version="1.0.0" hidden="true">
-<!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <command interpreter="python">pileup_to_interval_index_converter.py $input $output
-  </command>
-  <inputs>
-    <page>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>
+        python '$__tool_directory__/pileup_to_interval_index_converter.py'
+        '$input' '$output'
+    </command>
+    <inputs>
         <param format="pileup" name="input" type="data" label="Choose Pileup file"/>
-    </page>
-   </inputs>
-  <outputs>
-    <data format="interval_index" name="output"/>
-  </outputs>
-  <help>
-  </help>
+    </inputs>
+    <outputs>
+        <data format="interval_index" name="output"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

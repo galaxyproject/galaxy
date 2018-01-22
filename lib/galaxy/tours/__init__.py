@@ -1,14 +1,14 @@
 """
 This module manages loading/etc of Galaxy interactive tours.
 """
-
-import os
-import yaml
 import logging
+import os
+
+import yaml
 
 from galaxy import util
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def tour_loader(contents_dict):
@@ -27,15 +27,15 @@ def tour_loader(contents_dict):
 
 
 class ToursRegistry(object):
-
     def __init__(self, tour_directories):
-        self.tour_directories = util.config_directories_from_setting( tour_directories )
+        self.tour_directories = util.config_directories_from_setting(tour_directories)
         self.load_tours()
 
     def tours_by_id_with_description(self):
         return [{'id': k,
                  'description': self.tours[k].get('description', None),
-                 'name': self.tours[k].get('name', None)}
+                 'name': self.tours[k].get('name', None),
+                 'tags': self.tours[k].get('tags', None)}
                 for k in self.tours.keys()]
 
     def load_tour(self, tour_id):
@@ -68,13 +68,15 @@ class ToursRegistry(object):
         tour_id = os.path.splitext(filename)[0]
         try:
             with open(tour_path) as handle:
-                conf = yaml.load(handle)
+                conf = yaml.safe_load(handle)
                 tour = tour_loader(conf)
                 self.tours[tour_id] = tour_loader(conf)
                 log.info("Loaded tour '%s'" % tour_id)
                 return tour
         except IOError:
-            log.exception("Tour '%s' could not be loaded, error reading file." % tour_id)
+            log.exception("Tour '%s' could not be loaded, error reading file.", tour_id)
         except yaml.error.YAMLError:
-            log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax." % tour_id)
+            log.exception("Tour '%s' could not be loaded, error within file.  Please check your yaml syntax.", tour_id)
+        except TypeError:
+            log.exception("Tour '%s' could not be loaded, error within file. Possibly spacing related. Please check your yaml syntax.", tour_id)
         return None

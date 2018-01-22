@@ -10,27 +10,106 @@ MY_UPSTREAM:=origin
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
+CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
-GRUNT_DOCKER_NAME:=galaxy/client-builder:16.01
-GRUNT_EXEC?=node_modules/grunt-cli/bin/grunt
+DOCS_DIR=doc
+DOC_SOURCE_DIR=$(DOCS_DIR)/source
+SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
+OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
+SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
+CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
+YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
-	@echo "This makefile is primarily used for building Galaxy's JS client. A sensible all target is not yet implemented."
+	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
 
-docs: ## generate Sphinx HTML documentation, including API docs
+docs: ## Generate HTML documentation.
+# Run following commands to setup the Python portion of the requirements:
+#   $ ./scripts/common_startup.sh
+#   $ . .venv/bin/activate
+#   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+# You also need to install pandoc separately.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
+setup-venv:
+	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
+
+list-dependency-updates: setup-venv
+	$(IN_VENV) pip list --outdated --format=columns
+
+docs-slides-ready:
+	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
+	java -jar plantuml.jar -c $(DOC_SOURCE_DIR)/slideshow/architecture/images/plantuml_options.txt -tsvg $(SLIDESHOW_DIR)/architecture/images/ *.plantuml.txt
+	$(IN_VENV) python scripts/slideshow/build_slideshow.py 'Galaxy Architecture' $(SLIDESHOW_DIR)/architecture/galaxy_architecture.md
+
+docs-slides-export: docs-slides-ready
+	$(SLIDESHOW_TO_PDF) $(SLIDESHOW_DIR)/galaxy_architecture/galaxy_architecture.html
+
 _open-docs:
-	open doc/_build/html/index.html || xdg-open doc/_build/html/index.html
+	$(OPEN_RESOURCE) $(DOCS_DIR)/_build/html/index.html
 
 open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in browser
 
 open-project: ## open project on github
-	open $(PROJECT_URL) || xdg-open $(PROJECT_URL)
+	$(OPEN_RESOURCE) $(PROJECT_URL)
 
 lint: ## check style using tox and flake8 for Python 2 and Python 3
 	$(IN_VENV) tox -e py27-lint && tox -e py34-lint
+
+uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
+	$(CONFIG_MANAGE) build_uwsgi_yaml
+
+tool-shed-config-validate: ## validate tool shed YAML configuration file
+	$(CONFIG_MANAGE) validate tool_shed
+
+tool-shed-config-lint: ## lint tool shed YAML configuration file
+	$(CONFIG_MANAGE) lint tool_shed
+
+tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dry run)
+	$(CONFIG_MANAGE) convert tool_shed --dry-run
+
+tool-shed-config-convert: ## convert old style tool shed ini to yaml
+	$(CONFIG_MANAGE) convert tool_shed
+
+tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
+	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
+
+reports-config-validate: ## validate reports YAML configuration file
+	$(CONFIG_MANAGE) validate reports
+
+reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry run)
+	$(CONFIG_MANAGE) convert reports --dry-run
+
+reports-config-convert: ## convert old style reports ini to yaml
+	$(CONFIG_MANAGE) convert reports
+
+reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
+	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
+
+reports-config-lint: ## lint reports YAML configuration file
+	$(CONFIG_MANAGE) lint reports
+
+reports-config-rebuild-rst: ## Rebuild sample reports RST docs
+	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
+
+config-validate: ## validate galaxy YAML configuration file
+	$(CONFIG_MANAGE) validate galaxy
+
+config-convert-dry-run: ## convert old style galaxy ini to yaml (dry run)
+	$(CONFIG_MANAGE) convert galaxy --dry-run
+
+config-convert: ## convert old style galaxy ini to yaml
+	$(CONFIG_MANAGE) convert galaxy
+
+config-rebuild-sample: ## Rebuild sample galaxy yaml file from schema
+	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
+
+config-lint: ## lint galaxy YAML configuration file
+	$(CONFIG_MANAGE) lint galaxy
+
+config-rebuild-rst: ## Rebuild sample galaxy RST docs
+	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
@@ -60,40 +139,46 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-npm-deps: ## Install NodeJS dependencies.
-	cd client && npm install
+update-dependencies:  ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh
 
-grunt: npm-deps ## Calls out to Grunt to build client
-	cd client && $(GRUNT_EXEC)
+update-and-commit-dependencies:  ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -c
 
-style: npm-deps ## Calls the style task of Grunt
-	cd client && $(GRUNT_EXEC) style
+node-deps: ## Install NodeJS dependencies.
+ifndef YARN
+	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	false;
+else
+	cd client && yarn install --check-files
+endif
+	
 
-client-install-libs: npm-deps ## Fetch updated client dependencies using bower.
-	cd client && $(GRUNT_EXEC) install-libs
+client: node-deps ## Rebuild client-side artifacts for local development.
+	cd client && yarn run build
+	@echo $(CLIENT_COMMIT_WARNING)
 
-client: grunt style ## Rebuild all client-side artifacts
+client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
+	cd client && yarn run build-production
 
-grunt-docker-image: ## Build docker image for running grunt
-	docker build -t ${GRUNT_DOCKER_NAME} client
+client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment, and include sourcemaps to aid in debugging efforts.
+	cd client && yarn run build-production-maps
 
-grunt-docker: grunt-docker-image ## Run grunt inside docker
-	docker run -it -v `pwd`:/data ${GRUNT_DOCKER_NAME}
+client-format: node-deps ## Reformat client code
+	cd client && yarn run prettier
 
-clean-grunt-docker-image: ## Remove grunt docker image
-	docker rmi ${GRUNT_DOCKER_NAME}
+client-watch: node-deps ## A useful target for parallel development building.
+	cd client && yarn run watch
+	@echo $(CLIENT_COMMIT_WARNING)
 
-grunt-watch-style: npm-deps ## Execute watching style builder for dev purposes
-	cd client && $(GRUNT_EXEC) watch-style
+client-test: client ## Run qunit tests via Karma
+	cd client && yarn run test
 
-grunt-watch-develop: npm-deps ## Execute watching grunt builder for dev purposes (unpacked, allows debugger statements)
-	cd client && $(GRUNT_EXEC) watch --develop
+client-test-watch: client ## Watch and run qunit tests on changes via Karma
+	cd client && yarn run test-watch
 
-webpack-watch: npm-deps ## Execute watching webpack for dev purposes
-	cd client && ./node_modules/webpack/bin/webpack.js --watch	
-
-client-develop: grunt-watch-style grunt-watch-develop webpack-watch  ## A useful target for parallel development building.
-	@echo "Remember to rerun `make client` before committing!"
+charts: node-deps ## Rebuild charts
+	cd client && yarn run build-charts
 
 
 # Release Targets
@@ -125,8 +210,6 @@ release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git push $(MY_UPSTREAM) version-$(RELEASE_CURR):version-$(RELEASE_CURR)
 	git push $(MY_UPSTREAM) version-$(RELEASE_NEXT).dev:version-$(RELEASE_NEXT).dev
 	git checkout dev
-	git branch -d version-$(RELEASE_CURR)
-	git branch -d version-$(RELEASE_NEXT).dev
 	# TODO: Use hub to automate these PR creations or push directly.
 	@echo "Open a PR from version-$(RELEASE_CURR) of your fork to release_$(RELEASE_CURR)"
 	@echo "Open a PR from version-$(RELEASE_NEXT).dev of your fork to dev"
