@@ -1050,6 +1050,11 @@ galaxy:
   # in their directory.
   #user_library_import_dir: null
 
+  # If user_library_import_dir is set, this option will auto create a
+  # library import directory for every user (based on their email) upon
+  # login.
+  #user_library_import_dir_auto_creation: false
+
   # For security reasons, users may not import any files that actually
   # lie outside of their `user_library_import_dir` (e.g. using symbolic
   # links). A list of directories can be allowed by setting the

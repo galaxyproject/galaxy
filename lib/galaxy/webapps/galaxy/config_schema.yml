@@ -1629,6 +1629,14 @@ mapping:
           must contain sub-directories named the same as the non-admin user's Galaxy
           login ( email ).  The non-admin user is restricted to uploading files or
           sub-directories of files contained in their directory.
+
+      user_library_import_dir_auto_creation:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If user_library_import_dir is set, this option will auto create a library
+          import directory for every user (based on their email) upon login.
          
       user_library_import_symlink_whitelist:
         type: str
