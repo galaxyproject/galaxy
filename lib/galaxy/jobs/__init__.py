@@ -1561,7 +1561,7 @@ class JobWrapper(HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return map(os.path.basename, map(str, self.get_output_fnames()))
+        return list(map(os.path.basename, map(str, self.get_output_fnames())))
 
     def get_output_fnames(self):
         if self.output_paths is None:
