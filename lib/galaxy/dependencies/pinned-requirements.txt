@@ -27,7 +27,6 @@ docutils==0.14
 repoze.lru==0.6
 Routes==2.4.1
 WebOb==1.4.1
-WebHelpers==1.3
 Mako==1.0.2
 pytz==2017.3
 Babel==2.5.1

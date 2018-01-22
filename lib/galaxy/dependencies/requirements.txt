@@ -24,7 +24,6 @@ docutils
 repoze.lru
 Routes
 WebOb
-WebHelpers
 Mako
 pytz
 Babel
