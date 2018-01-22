@@ -4,6 +4,40 @@ import Utils from "utils/utils";
 /** Time to wait before refreshing to check if job has completed */
 var WAITTIME = 1000;
 
+/** build job dictionary */
+var requestCharts = function(chart, module) {
+    var settings_string = "";
+    var columns_string = "";
+    var group_index = 0;
+    for (var key in chart.settings.attributes) {
+        var settings_value = chart.settings.get(key);
+        _.each([[" ", "&#32;"], [",", "&#44;"], [":", "&#58;"]], function(pair) {
+            settings_value = settings_value.replace(new RegExp(pair[0], "g"), pair[1]);
+        });
+        settings_string += key + ":" + settings_value + ", ";
+    }
+    settings_string = settings_string.substring(0, settings_string.length - 2);
+    chart.groups.each(function(group) {
+        group_index++;
+        _.each(group.get("__data_columns"), function(data_columns, name) {
+            columns_string += name + "_" + group_index + ":" + (parseInt(group.get(name)) + 1) + ", ";
+        });
+    });
+    columns_string = columns_string.substring(0, columns_string.length - 2);
+    return {
+        tool_id: "charts",
+        inputs: {
+            input: {
+                id: chart.get("dataset_id"),
+                src: "hda"
+            },
+            module: module,
+            columns: columns_string,
+            settings: settings_string
+        }
+    };
+}
+
 /** Submit job request to charts tool */
 var request = function(chart, parameters, success, error) {
     chart.state("wait", "Requesting job results...");
@@ -113,4 +147,4 @@ var refreshHdas = function() {
     Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
 };
 
-export default { request: request };
+export default { request: request, requestCharts: requestCharts };

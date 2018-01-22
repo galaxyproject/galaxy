@@ -3,7 +3,8 @@ import * as d3 from "d3";
 import * as nv from "nvd3";
 import "../node_modules/nvd3/build/nv.d3.css";
 
-var Utilities = window.bundleEntries.chartUtilities.Helpers;
+var Series = window.bundleEntries.chartUtilities.Series;
+var Datasets = window.bundleEntries.chartUtilities.Datasets;
 
 var CommonWrapper = Backbone.View.extend({
     initialize: function(options) {
@@ -12,7 +13,7 @@ var CommonWrapper = Backbone.View.extend({
         options.render = function(canvas_id, groups) {
             return self.render(canvas_id, groups);
         };
-        Utilities.panelHelper(options);
+        Datasets.requestPanels(options);
     },
     render: function(canvas_id, groups) {
         var self = this;
@@ -48,7 +49,7 @@ var CommonWrapper = Backbone.View.extend({
                         if (d3chart.clipEdge) {
                             d3chart.clipEdge(true);
                         }
-                        Utilities.addZoom({
+                        Series.addZoom({
                             xAxis: d3chart.xAxis,
                             yAxis: d3chart.yAxis,
                             yDomain: d3chart.yDomain,
@@ -70,9 +71,9 @@ var CommonWrapper = Backbone.View.extend({
 
     /** Format axes ticks */
     _makeAxes: function(d3chart, groups, settings) {
-        var categories = Utilities.makeCategories(groups, ["x", "y"]);
+        var categories = Series.makeCategories(groups, ["x", "y"]);
         function makeTickFormat(id) {
-            Utilities.makeTickFormat({
+            Series.makeTickFormat({
                 categories: categories.array[id],
                 type: settings.get(id + "_axis_type|type"),
                 precision: settings.get(id + "_axis_type|precision"),

@@ -1,6 +1,50 @@
 /** This class handles, formats and caches datasets. */
 import Utils from "utils/utils";
 
+/** Assists in assigning the viewport panels */
+var requestPanels = function(options) {
+    var self = this;
+    var process = options.process;
+    var chart = options.chart;
+    var render = options.render;
+    var targets = options.targets;
+    var dataset_id = options.dataset_id || options.chart.get("dataset_id");
+    var dataset_groups = options.dataset_groups || options.chart.groups;
+    request({
+        chart: chart,
+        dataset_id: dataset_id,
+        dataset_groups: dataset_groups,
+        success: function(result) {
+            try {
+                if (targets.length == result.length) {
+                    var valid = true;
+                    for (var group_index in result) {
+                        var group = result[group_index];
+                        if (!render(targets[group_index], [group])) {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    if (valid) {
+                        chart.state("ok", "Multi-panel chart drawn.");
+                    }
+                } else if (targets.length == 1) {
+                    if (render(targets[0], result)) {
+                        chart.state("ok", "Chart drawn.");
+                    }
+                } else {
+                    chart.state("failed", "Invalid panel count.");
+                }
+                process.resolve();
+            } catch (err) {
+                console.debug("FAILED: tabular-utilities::panelHelper() - " + err);
+                chart.state("failed", err);
+                process.reject();
+            }
+        }
+    });
+}
+
 /** Fills request dictionary with data from cache/response */
 var _cache = {};
 var request = function(options) {
@@ -124,4 +168,4 @@ var _block_id = function(dataset_id, column) {
     return dataset_id + "_" + "_" + column;
 };
 
-export default { request: request };
+export default { request: request, requestPanels: requestPanels };
