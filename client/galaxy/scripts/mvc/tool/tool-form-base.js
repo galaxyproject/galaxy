@@ -268,6 +268,12 @@ define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view
         _templateHelp: function( options ) {
             var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
             $tmpl.find( 'a' ).attr( 'target', '_blank' );
+            $tmpl.find("img").each( function() {
+                var img_src = $(this).attr("src");
+                if (img_src.indexOf("admin_toolshed") !== -1){
+                    $(this).attr("src", Galaxy.root + img_src);
+                }
+            });
             return $tmpl;
         },
 
