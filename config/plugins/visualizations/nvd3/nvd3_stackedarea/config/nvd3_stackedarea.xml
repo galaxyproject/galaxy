@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Line with focus (NVD3)" regular="True">
+<visualization name="Stacked area (NVD3)" regular="True">
     <macros>
         <import>../../nvd3_bar/config/nvd3_shared.xml</import>
     </macros>
-    <description>Renders a line chart with focus using NVD3 hosted at http://www.nvd3.org.</description>
+    <description>Renders a stacked area using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="static/nvd3bar.js"></entry_point>
+    <entry_point entry_point_type="chart" src="../nvd3_bar/static/nvd3.js" css="../nvd3_bar/static/nvd3.css" func="nvd3_stackedarea"/>
     <specs>
         <expand macro="specs"/>
-        <zoomable>native</zoomable>
+        <use_panels>no</use_panels>
     </specs>
     <groups>
         <expand macro="groups"/>
