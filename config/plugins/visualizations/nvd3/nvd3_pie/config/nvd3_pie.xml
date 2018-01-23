@@ -12,18 +12,26 @@
         <use_panels>yes</use_panels>
     </specs>
     <groups>
-        <expand macro="groups"/>
-        <label>
+        <input>
+            <name>key</name>
+            <label>Provide a label</label>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>label</name>
             <label>Labels</label>
             <type>data_column</type>
             <is_label>true</is_label>
             <is_auto>true</is_auto>
-        </label>
-        <y>
+        </input>
+        <input>
+            <name>y</name>
             <label>Values</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
-        </y>
+        </input>
     </groups>
     <settings>
         <donut_ratio>
