@@ -1596,6 +1596,11 @@ mapper(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
+        primaryjoin=(
+            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id) &
+            (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id) &
+            not_(model.StoredWorkflow.table.c.deleted)
+        ),
         backref="user",
         cascade="all, delete-orphan",
         collection_class=ordering_list('order_index')),
