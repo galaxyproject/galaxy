@@ -850,70 +850,69 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** Set up any view plugins */
     setUpBehaviors: function() {
-        var multipanel = this;
-        multipanel._moreOptionsPopover();
+        this._moreOptionsPopover();
 
         // input to search histories
-        multipanel.$("#search-histories").searchInput({
+        this.$("#search-histories").searchInput({
             name: "search-histories",
             placeholder: _l("search histories"),
 
-            onfirstsearch: function(searchFor) {
-                multipanel.$("#search-histories").searchInput("toggle-loading");
-                multipanel.renderInfo(_l("loading all histories for search"));
-                multipanel.collection.fetchAll().done(() => {
-                    multipanel.$("#search-histories").searchInput("toggle-loading");
-                    multipanel.renderInfo("");
+            onfirstsearch: searchFor => {
+                this.$("#search-histories").searchInput("toggle-loading");
+                this.renderInfo(_l("loading all histories for search"));
+                this.collection.fetchAll().done(() => {
+                    this.$("#search-histories").searchInput("toggle-loading");
+                    this.renderInfo("");
                 });
             },
-            onsearch: function(searchFor) {
-                multipanel.historySearch = searchFor;
-                multipanel.filters = [
-                    function() {
-                        return this.model.matchesAll(multipanel.historySearch);
+            onsearch: searchFor => {
+                this.historySearch = searchFor;
+                this.filters = [
+                    () => {
+                        return this.model.matchesAll(this.historySearch);
                     }
                 ];
-                multipanel.renderColumns(0);
+                this.renderColumns(0);
             },
-            onclear: function(searchFor) {
-                multipanel.historySearch = null;
+            onclear: searchFor => {
+                this.historySearch = null;
                 //TODO: remove specifically not just reset
-                multipanel.filters = [];
-                multipanel.renderColumns(0);
+                this.filters = [];
+                this.renderColumns(0);
             }
         });
 
         // input to search datasets
-        multipanel.$("#search-datasets").searchInput({
+        this.$("#search-datasets").searchInput({
             name: "search-datasets",
             placeholder: _l("search all datasets"),
 
-            onfirstsearch: function(searchFor) {
-                multipanel.hdaQueue.clear();
-                multipanel.$("#search-datasets").searchInput("toggle-loading");
-                multipanel.datasetSearch = searchFor;
-                multipanel.sortedFilteredColumns().forEach(column => {
+            onfirstsearch: searchFor => {
+                this.hdaQueue.clear();
+                this.$("#search-datasets").searchInput("toggle-loading");
+                this.datasetSearch = searchFor;
+                this.sortedFilteredColumns().forEach(column => {
                     column.panel.searchItems(searchFor);
                     // load details for them that need
-                    multipanel.queueHdaFetchDetails(column);
+                    this.queueHdaFetchDetails(column);
                 });
-                multipanel.hdaQueue.progress(progress => {
-                    multipanel.renderInfo([_l("searching"), progress.curr + 1, _l("of"), progress.total].join(" "));
+                this.hdaQueue.progress(progress => {
+                    this.renderInfo([_l("searching"), progress.curr + 1, _l("of"), progress.total].join(" "));
                 });
-                multipanel.hdaQueue.deferred.done(() => {
-                    multipanel.renderInfo("");
-                    multipanel.$("#search-datasets").searchInput("toggle-loading");
+                this.hdaQueue.deferred.done(() => {
+                    this.renderInfo("");
+                    this.$("#search-datasets").searchInput("toggle-loading");
                 });
             },
-            onsearch: function(searchFor) {
-                multipanel.datasetSearch = searchFor;
-                multipanel.sortedFilteredColumns().forEach(column => {
+            onsearch: searchFor => {
+                this.datasetSearch = searchFor;
+                this.sortedFilteredColumns().forEach(column => {
                     column.panel.searchItems(searchFor);
                 });
             },
-            onclear: function(searchFor) {
-                multipanel.datasetSearch = null;
-                multipanel.sortedFilteredColumns().forEach(column => {
+            onclear: searchFor => {
+                this.datasetSearch = null;
+                this.sortedFilteredColumns().forEach(column => {
                     column.panel.clearSearch();
                 });
             }
@@ -921,15 +920,15 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
         // resize first (fixed position) column on page resize
         $(window).resize(() => {
-            multipanel._recalcFirstColumnHeight();
+            this._recalcFirstColumnHeight();
         });
 
         // when scrolling - check for histories now in view: they will fire 'in-view' and queueHdaLoading if necc.
         //TODO:?? might be able to simplify and not use pub-sub
-        var debouncedInView = _.debounce(function _debouncedInner() {
-            var viewport = multipanel._viewport();
-            multipanel.checkColumnsInView(viewport);
-            multipanel.checkForEndOfScroll(viewport);
+        var debouncedInView = _.debounce(() => {
+            var viewport = this._viewport();
+            this.checkColumnsInView(viewport);
+            this.checkForEndOfScroll(viewport);
         }, 100);
         this.$(".middle")
             .parent()
