@@ -148,6 +148,11 @@ class VisualizationsRegistry(object):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
                     yield plugin_path
+                if os.path.isdir(plugin_path):
+                    for plugin_subdir in sorted(os.listdir(plugin_path)):
+                        plugin_subpath = os.path.join(plugin_path, plugin_subdir)
+                        if self._is_plugin(plugin_subpath):
+                            yield plugin_subpath
 
     # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     # TODO: add template helpers specific to the plugins
