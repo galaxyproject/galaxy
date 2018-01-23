@@ -3,7 +3,10 @@
 <%def name="stylesheets()">
     ${h.css('jquery-ui/smoothness/jquery-ui')}
     ${h.css('base')}
-    <link rel="stylesheet" href="${script_attributes.get("css")}">
+    <%css = script_attributes.get("css") %>
+    %if css is not None:
+        <link rel="stylesheet" href="${css}">
+    %endif
 </%def>
 <%def name="javascripts()">
     <script type="text/javascript">
@@ -23,13 +26,17 @@
     <script type="text/javascript">
         $(function() {
             var config = ${h.dumps(config)};
+            var func = "${script_attributes.get("func")}";
+            if (!bundleEntries[func]) {
+                alert("Entry function '" + func + "' not found.");
+            }
             var app = bundleEntries.chart({
                 visualization_id: ${h.dumps(visualization_id)} || undefined,
                 visualization_name: ${h.dumps(visualization_name)},
                 visualization_plugin: ${h.dumps(visualization_plugin)},
                 dataset_id: config.dataset_id,
                 chart_dict: config.chart_dict,
-                chart_func: bundleEntries["${script_attributes.get("func")}"]
+                chart_func: bundleEntries[func]
             });
             $('body').append(app.$el);
         });
