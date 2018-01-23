@@ -199,7 +199,7 @@ else:
                 %else:
                     <% deactivate_uninstall_button_text = "Uninstall" %>
                     ##hack to mimic check box
-                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
+                    <input type="hidden" name="remove_from_disk" value="true"/>
                 %endif
                 <input type="submit" name="deactivate_or_uninstall_repository_button" value="${deactivate_uninstall_button_text|h}"/>
             </div>
