@@ -16,6 +16,7 @@ export default Backbone.View.extend({
                 this.dataset = dataset;
                 this.chart = new Chart({}, options);
                 this.chart.plugin = options.visualization_plugin;
+                this.chart.plugin.specs = this.chart.plugin.specs || {};
                 this.chart_func = options.chart_func;
                 this.deferred = new Deferred();
                 this.viewer = new Viewer(this);
