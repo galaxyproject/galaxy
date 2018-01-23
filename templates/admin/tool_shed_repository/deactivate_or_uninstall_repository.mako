@@ -121,7 +121,7 @@ else:
                     </div>
                     <div style="clear: both"></div>
                     <br/>
-                    <%                        
+                    <%
                         irm = trans.app.installed_repository_manager
                         repository_tup = irm.get_repository_tuple_for_installed_repository_manager( repository )
 
@@ -172,7 +172,7 @@ else:
                                         owner = containing_repository.owner
                                     %>
                                     <li>
-                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision 
+                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision
                                         <b>${changeset_revision | h}</b> of repository <b>${repository_name | h}</b> owned by <b>${owner | h}</b>
                                     </li>
                                 %endfor
