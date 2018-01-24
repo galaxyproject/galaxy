@@ -55,6 +55,7 @@
   "devDependencies": {
     "babel-core": "^6.24.0",
     "babel-loader": "^7.1.1",
+    "babel-plugin-transform-vue-template": "^0.3.1",
     "babel-preset-env": "^1.6.1",
     "concurrently": "^3.5.1",
     "css-loader": "^0.28.7",
@@ -91,7 +92,7 @@
     "qunitjs": "^2.4.1",
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
-    "vue-template-compiler": "^2.5.9",
+    "vue-template-compiler": "^2.5.13",
     "webpack": "^3.10.0"
   }
 }
