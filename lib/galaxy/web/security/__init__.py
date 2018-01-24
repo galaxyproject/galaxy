@@ -1,3 +1,4 @@
+import codecs
 import collections
 import logging
 
@@ -5,7 +6,10 @@ from Crypto.Cipher import Blowfish
 from Crypto.Random import get_random_bytes
 
 import galaxy.exceptions
-from galaxy.util import smart_str
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +32,12 @@ class SecurityHelper(object):
         if obj_id is None:
             raise galaxy.exceptions.MalformedId("Attempted to encode None id")
         id_cipher = self.__id_cipher(kind)
-        # Convert to string
-        s = str(obj_id)
+        # Convert to bytes
+        s = smart_str(obj_id)
         # Pad to a multiple of 8 with leading "!"
-        s = ("!" * (8 - len(s) % 8)) + s
+        s = (b"!" * (8 - len(s) % 8)) + s
         # Encrypt
-        return id_cipher.encrypt(s).encode('hex')
+        return codecs.encode(id_cipher.encrypt(s), 'hex')
 
     def encode_dict_ids(self, a_dict, kind=None, skip_startswith=None):
         """
@@ -77,22 +81,24 @@ class SecurityHelper(object):
 
     def decode_id(self, obj_id, kind=None):
         id_cipher = self.__id_cipher(kind)
-        return int(id_cipher.decrypt(obj_id.decode('hex')).lstrip("!"))
+        return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
 
     def encode_guid(self, session_key):
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!"
-        s = ("!" * (8 - len(session_key) % 8)) + session_key
+        session_key = smart_str(session_key)
+        s = (b"!" * (8 - len(session_key) % 8)) + session_key
         # Encrypt
-        return self.id_cipher.encrypt(s).encode('hex')
+        return codecs.encode(self.id_cipher.encrypt(s), 'hex')
 
     def decode_guid(self, session_key):
         # Session keys are strings
-        return self.id_cipher.decrypt(session_key.decode('hex')).lstrip("!")
+        decoded_session_key = codecs.decode(session_key, 'hex')
+        return unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip('!')
 
     def get_new_guid(self):
         # Generate a unique, high entropy 128 bit random number
-        return get_random_bytes(16).encode('hex')
+        return unicodify(codecs.encode(get_random_bytes(16), 'hex'))
 
     def __id_cipher(self, kind):
         if not kind:
