@@ -1,11 +1,8 @@
 import collections
 import logging
-import os
-import os.path
 
 from Crypto.Cipher import Blowfish
-from Crypto.Util import number
-from Crypto.Util.randpool import RandomPool
+from Crypto.Random import get_random_bytes
 
 import galaxy.exceptions
 from galaxy.util import smart_str
@@ -15,29 +12,6 @@ log = logging.getLogger(__name__)
 MAXIMUM_ID_SECRET_BITS = 448
 MAXIMUM_ID_SECRET_LENGTH = MAXIMUM_ID_SECRET_BITS / 8
 KIND_TOO_LONG_MESSAGE = "Galaxy coding error, keep encryption 'kinds' smaller to utilize more bites of randomness from id_secret values."
-
-
-if os.path.exists("/dev/urandom"):
-    # We have urandom, use it as the source of random data
-    random_fd = os.open("/dev/urandom", os.O_RDONLY)
-
-    def get_random_bytes(nbytes):
-        value = os.read(random_fd, nbytes)
-        # Normally we should get as much as we need
-        if len(value) == nbytes:
-            return value.encode("hex")
-        # If we don't, keep reading (this is slow and should never happen)
-        while len(value) < nbytes:
-            value += os.read(random_fd, nbytes - len(value))
-        return value.encode("hex")
-else:
-    def get_random_bytes(nbytes):
-        nbits = nbytes * 8
-        random_pool = RandomPool(1064)
-        while random_pool.entropy < nbits:
-            random_pool.add_event()
-        random_pool.stir()
-        return str(number.getRandomNumber(nbits, random_pool.get_bytes))
 
 
 class SecurityHelper(object):
@@ -118,7 +92,7 @@ class SecurityHelper(object):
 
     def get_new_guid(self):
         # Generate a unique, high entropy 128 bit random number
-        return get_random_bytes(16)
+        return get_random_bytes(16).encode('hex')
 
     def __id_cipher(self, kind):
         if not kind:
