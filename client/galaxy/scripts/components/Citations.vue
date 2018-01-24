@@ -3,7 +3,7 @@
         <div class="toolFormTitle">
             Citations
             <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-xs citations-to-bibtex" title="Show all in BibTeX format.">
-                <i class="fa fa-pencil-square-o"></i>
+                <times foo="bar"></times>
                 Show BibTeX
             </button>
             <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-xs citations-to-formatted" title="Return to formatted citation list.">
@@ -31,6 +31,16 @@ import axios from "axios";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";
 import { stringifyLaTeX } from "latex-parser";
+
+const Times = {
+    template: `<i class="fa fa-times">{{ foo }}</i>`,
+    props: {
+        foo: {
+            type: String,
+            required: true
+        },
+    }
+}
 
 export default {
     props: {
@@ -186,6 +196,9 @@ export default {
         toggleViewRender: function() {
             this.viewRender = !this.viewRender;
         }
+    },
+    components: {
+        Times,
     }
 };
 </script>
