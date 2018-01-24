@@ -1,5 +1,4 @@
 import logging
-import sets
 
 from markupsafe import escape
 from six import string_types
@@ -743,7 +742,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             all_roles = trans.user.all_roles()
             current_actions = history.default_permissions
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
-                in_roles = sets.Set()
+                in_roles = set()
                 for a in current_actions:
                     if a.action == action.action:
                         in_roles.add(a.role)
