@@ -21,18 +21,6 @@
     </xml>
     <xml name="groups">
         <input>
-            <label>Pick a series color</label>
-            <name>color</name>
-            <type>color</type>
-        </input>
-        <input>
-            <label>Data point labels</label>
-            <name>tooltip</name>
-            <type>data_column</type>
-            <is_label>true</is_label>
-            <is_auto>true</is_auto>
-        </input>
-        <input>
             <label>Provide a label</label>
             <name>key</name>
             <type>text</type>
