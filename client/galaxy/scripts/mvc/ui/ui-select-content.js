@@ -127,6 +127,7 @@ var View = Backbone.View.extend({
                 pagelimit: 100,
                 statustimer: 1000
             }).set(options);
+        this.displayMissingValue = false,
         this.setElement($("<div/>").addClass("ui-select-content"));
         this.button_product = new Ui.RadioButton.View({
             value: "false",
@@ -372,6 +373,19 @@ var View = Backbone.View.extend({
                 self.history[`${item.id}_${src}`] = item;
             });
         });
+        if (this.displayMissingValue) {
+            var new_value = this.model.get("value");
+            _.each(new_value.values, value => {
+                select_options[value.src].push({
+                    hid: 1000,
+                    keep: true,
+                    label: "Dropped Item",
+                    value: value.id,
+                    tags: [],
+                });
+                self.history[`${value.id}_${value.src}`] = {src: value.src, id: value.id};
+            });
+        }
         _.each(this.config, (c, i) => {
             select_options[c.src] && self.fields[i].add(select_options[c.src], (a, b) => b.hid - a.hid);
         });
@@ -389,14 +403,27 @@ var View = Backbone.View.extend({
             // sniff first suitable field type from config list
             var src = new_value.values[0].src;
             var multiple = new_value.values.length > 1;
+            let fieldFound = false;
             for (var i = 0; i < this.config.length; i++) {
                 var field = this.fields[i];
                 var c = this.config[i];
                 if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                     this.model.set("current", i);
-                    field.value(list);
+                    let result = field.value(list);
+                    result = $.isArray(result) ? result : [result];
+                    const valueSet = _.isEqual(result, list);
+                    if (valueSet) {
+                        fieldFound = true;
+                    }
                     break;
                 }
+            }
+            if (!fieldFound) {
+                this.displayMissingValue = true;
+                this._changeData();
+                this._changeValue();
+            } else {
+                this.displayMissingValue = false;
             }
         } else {
             _.each(this.fields, field => {
@@ -414,19 +441,22 @@ var View = Backbone.View.extend({
             var field = this.fields[current];
             var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
-            var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
+            // Following line doesn't work for nested elements, should dispatch on model_class maybe?
+            var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
             var new_value = { id: new_id, src: new_src };
-            if (data && _.findWhere(data[new_src], new_value)) {
+            if (data) {
                 if (config.src == new_src) {
                     var current_value = field.value();
                     if (current_value && config.multiple) {
                         if (current_value.indexOf(new_id) == -1) {
                             current_value.push(new_id);
                         }
+                        field.value(current_value);
                     } else {
                         current_value = new_id;
+                        this.model.set("value", { values: [new_value] });
                     }
-                    field.value(current_value);
+
                 } else {
                     this.model.set("value", { values: [new_value] });
                     this.model.trigger("change:value");
