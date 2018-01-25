@@ -9,6 +9,8 @@ done
 # Conda Python is in use, do not use virtualenv
 if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
     CONDA_ALREADY_INSTALLED=1
+elif python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
+    CONDA_ALREADY_INSTALLED=1
 else
     CONDA_ALREADY_INSTALLED=0
 fi

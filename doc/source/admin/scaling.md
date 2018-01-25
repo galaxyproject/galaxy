@@ -510,7 +510,7 @@ If using the **uWSGI + Webless** scenario, you'll need to addtionally define job
 
 ```ini
 [program:handler]
-command         = python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%(process_num)s --pid-file=/srv/galaxy/var/handler%(process_num)s.pid --log-file=/srv/galaxy/log/handler%(process_num)s.log
+command         = /srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%(process_num)s --pid-file=/srv/galaxy/var/handler%(process_num)s.pid --log-file=/srv/galaxy/log/handler%(process_num)s.log
 directory       = /srv/galaxy/server
 process_name    = handler%(process_num)s
 numprocs        = 3
@@ -519,6 +519,7 @@ autostart       = true
 autorestart     = true
 startsecs       = 15
 user            = galaxy
+environment     = VIRTUAL_ENV="/srv/galaxy/venv",PATH="/srv/galaxy/venv/bin:%(ENV_PATH)s"
 ```
 
 This is similar to the "web" definition above, however, you'll notice that we use `%(process_num)s`. That's a variable
