@@ -410,5 +410,12 @@
                 </cases>
             </cases>
         </input>
+        <input>
+            <name>show_legend</name>
+            <label>Show legend</label>
+            <help>Would you like to add a legend?</help>
+            <type>boolean</type>
+            <value>true</value>
+        </input>
     </xml>
 </macros>
