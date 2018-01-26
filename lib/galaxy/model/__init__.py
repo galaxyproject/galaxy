@@ -2455,7 +2455,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None):
+    def copy(self, parent_id=None, copy_tags=None):
         """
         Create a copy of this HDA.
         """
@@ -2474,7 +2474,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         copied_from_history_dataset_association=self)
         # update init non-keywords as well
         hda.purged = self.purged
-
+        hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         object_session(self).flush()
         hda.set_size()
@@ -2485,6 +2485,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             hda.set_peek()
         object_session(self).flush()
         return hda
+
+    def copy_tags_to(self, copy_tags=None):
+        if copy_tags is not None:
+            for _, tag in copy_tags.items():
+                copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
+                self.tags.append(copied_tag)
 
     def copy_attributes(self, new_dataset):
         new_dataset.hid = self.hid
