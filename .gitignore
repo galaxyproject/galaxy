@@ -4,6 +4,7 @@ eggs
 scripts/scramble/build
 scripts/scramble/lib
 scripts/scramble/archives
+static/scripts
 
 # Python virtualenv
 .venv
