@@ -108,7 +108,7 @@ def config_exception(e, file):
     return Exception(message)
 
 
-class JobConfiguration(object, ConfiguresHandlers):
+class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
@@ -223,7 +223,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         except AttributeError:
             base_server_name = self.app.config.get('base_server_name', None)
         if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
+                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
             # Shortcut for compatibility with existing job confs that use the default handlers block,
             # there are no defined handlers, or there's only one handler and it's this server
             self.__set_default_job_handler()
@@ -672,7 +672,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class HasResourceParameters:
+class HasResourceParameters(object):
 
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
@@ -695,7 +695,7 @@ class HasResourceParameters:
         return resource_params
 
 
-class JobWrapper(object, HasResourceParameters):
+class JobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -1561,7 +1561,7 @@ class JobWrapper(object, HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return map(os.path.basename, map(str, self.get_output_fnames()))
+        return list(map(os.path.basename, map(str, self.get_output_fnames())))
 
     def get_output_fnames(self):
         if self.output_paths is None:

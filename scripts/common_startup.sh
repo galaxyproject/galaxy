@@ -118,7 +118,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
             # Ensure Python is a supported version before creating .venv
             python ./scripts/check_python.py || exit 1
             if command -v virtualenv >/dev/null; then
-                virtualenv -p python2.7 "$GALAXY_VIRTUAL_ENV"
+                virtualenv -p $(command -v python) "$GALAXY_VIRTUAL_ENV"
             else
                 vvers=13.1.2
                 vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -183,7 +183,7 @@ fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
     pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
 fi
 

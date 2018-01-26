@@ -1151,7 +1151,8 @@ galaxy:
   # set a key to be used by the algorithm that encodes and decodes these
   # values.  It can be any string up to 448 bits long. One simple way to
   # generate a value for this is with the shell command:   python -c
-  # 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
+  # 'from __future__ import print_function; import time;
+  # print(time.time())' | md5sum | cut -f 1 -d ' '
   #id_secret: USING THE DEFAULT IS NOT SECURE!
 
   # User authentication can be delegated to an upstream proxy server

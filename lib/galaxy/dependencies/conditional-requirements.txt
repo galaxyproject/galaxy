@@ -1,5 +1,5 @@
 # These dependencies are only required when certain config options are set
-psycopg2==2.6.1
+psycopg2==2.7.3
 WebError==0.10.3
 Pygments==2.2.0
 python-openid
