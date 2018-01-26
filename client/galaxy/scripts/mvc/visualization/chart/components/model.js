@@ -1,5 +1,5 @@
 import Utils from "utils/utils";
-import Visualization from "mvc/visualization/visualization-model";
+import { Visualization } from "mvc/visualization/visualization-model";
 export default Backbone.Model.extend({
     defaults: {
         title: "",
