@@ -38,7 +38,7 @@ var CommonWrapper = Backbone.View.extend({
                     d3chart.options({ showControls: false });
                 }
                 d3chart.xAxis.showMaxMin(false);
-                d3chart.yAxis.showMaxMin(chart.definition.showmaxmin);
+                d3chart.yAxis.showMaxMin(false);
                 d3chart.tooltip.contentGenerator(function(context) {
                     var data = context.data || context.point;
                     return "<h3>" + (data.tooltip || data.key || data.y) + "</h3>";
