@@ -19,9 +19,8 @@ def build_engine(url, engine_options, database_query_profiling_proxy=False, trac
     else:
         proxy = None
     if slow_query_log_threshold:
-        @event.listens_for(Engine, "before_cursor_execute")
-        def before_cursor_execute(conn, cursor, statement,
-                                  parameters, context, executemany):
+        @event.listens_for(Engine, "before_execute")
+        def before_execute(conn, clauseelement, multiparams, params):
             conn.info.setdefault('query_start_time', []).append(time.time())
 
         @event.listens_for(Engine, "after_cursor_execute")
