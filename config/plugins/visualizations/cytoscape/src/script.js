@@ -157,7 +157,7 @@ function run_traversal_type( cytoscape, root_id, type ) {
 };
 
 _.extend(window.bundleEntries || {}, {
-    func: function(options) {
+    load: function(options) {
         var self = this,
         chart    = options.chart,
         dataset  = options.dataset,

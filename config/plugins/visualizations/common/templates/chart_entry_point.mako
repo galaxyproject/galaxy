@@ -26,9 +26,9 @@
     <script type="text/javascript">
         $(function() {
             var config = ${h.dumps(config)};
-            var func = "${script_attributes.get("func")}";
-            if (!bundleEntries[func]) {
-                alert("Entry function '" + func + "' not found.");
+            var load = "${script_attributes.get("load")}";
+            if (!bundleEntries[load]) {
+                alert("Load function '" + load + "' not found.");
             }
             var app = bundleEntries.chart({
                 visualization_id: ${h.dumps(visualization_id)} || undefined,
@@ -36,7 +36,7 @@
                 visualization_plugin: ${h.dumps(visualization_plugin)},
                 dataset_id: config.dataset_id,
                 chart_dict: config.chart_dict,
-                chart_func: bundleEntries[func]
+                chart_load: bundleEntries[load]
             });
             $('body').append(app.$el);
         });

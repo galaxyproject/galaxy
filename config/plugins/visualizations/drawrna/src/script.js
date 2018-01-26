@@ -1,6 +1,6 @@
 import DrawRNA from "./drawrnajs/drawrna";
 _.extend(window.bundleEntries || {}, {
-    func: function(options) {
+    load: function(options) {
         var chart = options.chart;
         var dataset = options.dataset;
         $.ajax({

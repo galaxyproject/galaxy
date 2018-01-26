@@ -95,6 +95,6 @@ export default Backbone.View.extend({
         var n_panels = chart.settings.get("__use_panels") == "true" ? chart.groups.length : 1;
         this._createContainer(chart.plugin.specs.tag, n_panels);
         chart.state("wait", "Please wait...");
-        this.app.chart_func({ process: process, chart: chart, dataset: this.app.dataset, targets: this.targets });
+        this.app.chart_load({ process: process, chart: chart, dataset: this.app.dataset, targets: this.targets });
     }
 });
