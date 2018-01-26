@@ -10,9 +10,12 @@ from distutils.version import LooseVersion
 from sys import platform as _platform
 
 import six
+from six.moves import shlex_quote
 
-from ..deps import commands
-from ..deps import installable
+from . import (
+    commands,
+    installable
+)
 
 log = logging.getLogger(__name__)
 
@@ -198,31 +201,35 @@ class CondaContext(installable.InstallableContext):
                         self.conda_prefix, self.conda_exec)
             return False
 
-    def command(self, operation, args):
-        if isinstance(args, list):
-            args = " ".join(args)
-        conda_prefix = self.conda_exec
-        if self.debug:
-            conda_prefix += " --debug"
-        return "%s %s %s" % (conda_prefix, operation, args)
-
     def exec_command(self, operation, args):
-        command = self.command(operation, args)
+        """
+        Execute the requested command.
+
+        Return the process exit code (i.e. 0 in case of success).
+        """
+        cmd = [self.conda_exec]
+        if self.debug:
+            cmd.append("--debug")
+        cmd.append(operation)
+        cmd.extend(args)
         env = {}
-        condarc_override = self.condarc_override
-        if condarc_override:
-            env["CONDARC"] = condarc_override
-        log.debug("Executing command: %s", command)
+        if self.condarc_override:
+            env["CONDARC"] = self.condarc_override
+        cmd_string = ' '.join(map(shlex_quote, cmd))
+        log.debug("Executing command: %s", cmd_string)
         conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
         try:
-            return self.shell_exec(command, env=env)
-        except commands.CommandLineException as e:
-            log.warning(e)
-            return e.returncode
+            return self.shell_exec(cmd, env=env)
+        except Exception:
+            log.exception("Failed to execute command: %s", cmd_string)
+            return 1
         finally:
             shutil.rmtree(conda_exec_home, ignore_errors=True)
 
     def exec_create(self, args, allow_local=True):
+        """
+        Return the process exit code (i.e. 0 in case of success).
+        """
         create_base_args = [
             "-y"
         ]
@@ -233,7 +240,11 @@ class CondaContext(installable.InstallableContext):
         return self.exec_command("create", create_base_args)
 
     def exec_remove(self, args):
-        """Remove a conda environment using conda env remove -y --name `args`."""
+        """
+        Remove a conda environment using conda env remove -y --name `args`.
+
+        Return the process exit code (i.e. 0 in case of success).
+        """
         remove_base_args = [
             "remove",
             "-y",
@@ -243,11 +254,14 @@ class CondaContext(installable.InstallableContext):
         return self.exec_command("env", remove_base_args)
 
     def exec_install(self, args, allow_local=True):
+        """
+        Return the process exit code (i.e. 0 in case of success).
+        """
         install_base_args = [
             "-y"
         ]
         if allow_local and self.use_local:
-            install_base_args.extend(["--use-local"])
+            install_base_args.append("--use-local")
         install_base_args.extend(self._override_channels_args)
         install_base_args.extend(args)
         return self.exec_command("install", install_base_args)
@@ -255,6 +269,8 @@ class CondaContext(installable.InstallableContext):
     def exec_clean(self, args=[], quiet=False):
         """
         Clean up after conda installation.
+
+        Return the process exit code (i.e. 0 in case of success).
         """
         clean_base_args = [
             "--tarballs",
@@ -266,6 +282,9 @@ class CondaContext(installable.InstallableContext):
         return self.exec_command("clean", clean_args)
 
     def export_list(self, name, path):
+        """
+        Return the process exit code (i.e. 0 in case of success).
+        """
         return self.exec_command("list", [
             "--name", name,
             "--export", ">", path
@@ -392,24 +411,34 @@ def hash_conda_packages(conda_packages, conda_target=None):
 def install_conda(conda_context, force_conda_build=False):
     f, script_path = tempfile.mkstemp(suffix=".sh", prefix="conda_install")
     os.close(f)
-    download_cmd = " ".join(commands.download_command(conda_link(), to=script_path, quote_url=True))
-    install_cmd = "bash '%s' -b -p '%s'" % (script_path, conda_context.conda_prefix)
+    download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
+    install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
         "conda=%s" % CONDA_VERSION,
     ]
     if force_conda_build or conda_context.use_local:
         package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
-    fix_version_cmd = "%s install -y -q %s " % (os.path.join(conda_context.conda_prefix, 'bin/conda'), " ".join(package_targets))
-    full_command = "%s && %s && %s" % (download_cmd, install_cmd, fix_version_cmd)
+    log.info("Installing conda, this may take several minutes.")
     try:
-        log.info("Installing Conda, this may take several minutes.")
-        return conda_context.shell_exec(full_command)
+        exit_code = conda_context.shell_exec(download_cmd)
+        if exit_code:
+            return exit_code
+        exit_code = conda_context.shell_exec(install_cmd)
+    except Exception:
+        log.exception('Failed to install conda')
+        return 1
     finally:
         if os.path.exists(script_path):
             os.remove(script_path)
+    if exit_code:
+        return exit_code
+    return conda_context.exec_install(package_targets, allow_local=False)
 
 
 def install_conda_targets(conda_targets, conda_context, env_name=None, allow_local=True):
+    """
+    Return the process exit code (i.e. 0 in case of success).
+    """
     if env_name is not None:
         create_args = [
             "--name", env_name,  # environment for package
@@ -422,7 +451,10 @@ def install_conda_targets(conda_targets, conda_context, env_name=None, allow_loc
 
 
 def install_conda_target(conda_target, conda_context, skip_environment=False):
-    """ Install specified target into a its own environment.
+    """
+    Install specified target into a its own environment.
+
+    Return the process exit code (i.e. 0 in case of success).
     """
     if not skip_environment:
         create_args = [
