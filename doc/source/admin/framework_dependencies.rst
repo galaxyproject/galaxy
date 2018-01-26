@@ -136,7 +136,7 @@ incompatibilities with new versions). By default, the release branches of Galaxy
 3. Pinning furthers Galaxy's goal of reproducibility as differing dependency versions could result in non-reproducible
    behavior.
 
-If you would like to install unpinned versions of Galaxy's dependencies, Install dependencies using the `unpinned
+If you would like to install unpinned versions of Galaxy's dependencies, install dependencies using the `unpinned
 requirements file`_, and then instruct Galaxy to start without attempting to fetch wheels:
 
 .. code-block:: console
@@ -149,7 +149,6 @@ You may be able to save yourself some compiling by adding the argument ``--index
 https://wheels.galaxyproject.org/simple/`` to ``pip install``, but it is possible to install all of Galaxy's
 dependencies directly from PyPI_.
 
-.. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
 .. _PyPI: https://pypi.org
 
@@ -207,14 +206,12 @@ Conda
 
 `Conda`_ and `virtualenv`_ are incompatible. However, Conda provides its own environment separation functionality in the
 form of `Conda environments`_.  Starting Galaxy with Conda Python will cause ``--skip-venv`` to be implicitly set, and
-the currently active Conda environment will be used to install Galaxy framework dependencies instaead.
+the currently active Conda environment will be used to install Galaxy framework dependencies instead.
 
 .. caution::
 
     Be sure to create and activate a Conda environment for Galaxy prior to installing packages and/or starting Galaxy or
     else they will be installed in the Conda root environment.
-
-Begin by setting 
 
 Because Conda package names typically match PyPI package names, you can install Conda versions of what dependencies are
 available from conda-forge_ and Bioconda_ using a script provided with Galaxy:
@@ -345,7 +342,7 @@ uWSGI
 ^^^^^
 
 ``run.sh`` should automatically set ``--virtualenv`` on uWSGI's command line. However, you can override this using the
-``virutalenv`` option in the ``uwsgi`` section of ``galaxy.yml`` as described in the `Managing dependencies manually`_
+``virtualenv`` option in the ``uwsgi`` section of ``galaxy.yml`` as described in the `Managing dependencies manually`_
 section.
 
 Adding additional Galaxy dependencies
@@ -390,6 +387,7 @@ steps 1-3 locally.
 .. _pipenv: http://pipenv.readthedocs.io/
 .. _Starforge:
 .. _Galaxy Starforge: https://github.com/galaxyproject/starforge/
+.. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
 .. _Galaxy Committers group: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst#committers
 .. _Jenkins: https://jenkins.galaxyproject.org/
