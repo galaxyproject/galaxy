@@ -9,7 +9,7 @@ _.extend(window.bundleEntries || {}, {
             dataset_id      : chart.get( 'dataset_id' ),
             dataset_groups  : chart.groups,
             success         : function( groups ) {
-                var colors = d3.scale.category20();
+                var colors = d3.scaleOrdinal(d3.schemeCategory20);
                 var error = null;
                 _.each( groups, function( group, group_index ) {
                     try {
