@@ -50,7 +50,7 @@ var View = Backbone.View.extend({
             title_default: "Suggested plugins",
             title_list: "List of available plugins",
             collection: this.vis_array,
-            ondblclick: function(id) {
+            onclick: function(id) {
                 var vis_type = self.vis_index[id];
                 $("#galaxy_main").attr("src", vis_type.visualization.href);
             }

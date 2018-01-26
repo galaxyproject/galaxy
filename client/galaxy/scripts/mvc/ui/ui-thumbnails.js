@@ -93,6 +93,9 @@ var View = Backbone.View.extend({
                 .closest(".ui-thumbnails-item")
                 .attr("value")
         );
+        if (this.model.get("onclick")) {
+            this.model.get("onclick")(this.value());
+        }
     },
 
     /** Add double click handler */
