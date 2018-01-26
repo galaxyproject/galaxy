@@ -25,7 +25,11 @@ export default Backbone.View.extend({
                     tooltip: "Render Visualization",
                     title: "Visualize",
                     onclick: () => {
-                        this._drawChart();
+                        this.chart.set({
+                            date: Utils.time()
+                        });
+                        this.app.go("viewer");
+                        this.chart.trigger("redraw");
                     }
                 }),
                 back: new Ui.ButtonIcon({
@@ -33,8 +37,8 @@ export default Backbone.View.extend({
                     tooltip: "Return to Viewer",
                     title: "Cancel",
                     onclick: () => {
+                        this.chart.load(this.chart_backup);
                         this.app.go("viewer");
-                        this.chart.load();
                     }
                 })
             }
@@ -77,22 +81,18 @@ export default Backbone.View.extend({
         // set elements
         this.portlet.append(this.message.$el);
         this.portlet.append(this.tabs.$el.addClass("ui-margin-top-large"));
-        this.portlet.hideOperation("back");
         this.setElement(this.portlet.$el);
 
         // chart events
         this.listenTo(this.chart, "change:title", chart => {
             this._refreshTitle();
         });
-        this.listenTo(this.chart, "redraw", chart => {
-            this.portlet.showOperation("back");
-        });
-        this.chart.reset();
     },
 
     /** Show editor */
     show: function() {
         this.$el.show();
+        this.chart_backup = this.chart.serialize();
     },
 
     /** Hide editor */
@@ -105,43 +105,5 @@ export default Backbone.View.extend({
         var title = this.chart.get("title");
         this.portlet.title(title);
         this.title.value(title);
-    },
-
-    /** Draw chart data */
-    _drawChart: function() {
-        this.chart.set({
-            title: this.title.value(),
-            date: Utils.time()
-        });
-        if (this.chart.groups.length === 0) {
-            this.message.update({
-                message: "Please specify data options before rendering the visualization.",
-                persistent: false
-            });
-            this.tabs.show("groups");
-            return;
-        }
-        var valid = true;
-        this.chart.groups.each(group => {
-            if (valid) {
-                _.each(group.get("__data_columns"), (data_columns, name) => {
-                    if (group.attributes[name] === null) {
-                        this.message.update({
-                            status: "danger",
-                            message: "This visualization type requires column types not found in your tabular file.",
-                            persistent: false
-                        });
-                        this.tabs.show("groups");
-                        valid = false;
-                    }
-                });
-            }
-        });
-        if (valid) {
-            this.app.go("viewer");
-            this.app.deferred.execute(() => {
-                this.chart.trigger("redraw");
-            });
-        }
     }
 });

@@ -85,7 +85,7 @@ export default Backbone.View.extend({
                 edit_button: new Ui.ButtonIcon({
                     icon: "fa-edit",
                     tooltip: "Customize this Visualization",
-                    title: "Editor",
+                    title: "Edit",
                     onclick: function() {
                         self._wait(self.chart, function() {
                             self.app.go("editor");
