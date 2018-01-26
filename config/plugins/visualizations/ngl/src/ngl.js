@@ -1,6 +1,6 @@
 import * as ngl from "./viewer";
 _.extend(window.bundleEntries || {}, {
-    ngl_load: function(options) {
+    load: function(options) {
         var dataset = options.dataset,
             settings = options.chart.settings,
             stage = new ngl.Stage(options.targets[0], {backgroundColor: settings.get('backcolor')}),

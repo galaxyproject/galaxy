@@ -3,7 +3,7 @@ import * as d3 from "d3";
 window.d3 = d3;
 var Datasets = window.bundleEntries.chartUtilities.Datasets;
 _.extend(window.bundleEntries || {}, {
-    func: function(options) {
+    load: function(options) {
         var self = this;
         var separator = '_';
         function _combinations( current, remaining, results ) {

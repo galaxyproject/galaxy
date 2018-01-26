@@ -1,6 +1,6 @@
 import * as pv from "bio-pv";
 _.extend(window.bundleEntries || {}, {
-    pv_load: function(options) {
+    load: function(options) {
         var settings = options.chart.settings;
         var viewer = pv.Viewer(document.getElementById(options.targets[0]), {
             quality: settings.get('quality'),
