@@ -5,9 +5,9 @@ import logging
 import os
 import re
 import shutil
+import sys
 import tempfile
 from distutils.version import LooseVersion
-from sys import platform as _platform
 
 import six
 from six.moves import shlex_quote
@@ -23,23 +23,26 @@ log = logging.getLogger(__name__)
 # break shell commands we are building.
 SHELL_UNSAFE_PATTERN = re.compile(r"[\s\"']")
 
-IS_OS_X = _platform == "darwin"
+IS_OS_X = sys.platform == "darwin"
 
 # BSD 3-clause
 CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "4.3.24"
-CONDA_BUILD_VERSION = "2.1.17"
+CONDA_VERSION = "4.3.33"
+CONDA_BUILD_VERSION = "2.1.18"
 USE_LOCAL_DEFAULT = False
 
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-MacOSX-x86_64.sh"
     else:
-        url = "https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh"
+        if sys.maxsize > 2**32:
+            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86_64.sh"
+        else:
+            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86.sh"
     return url
 
 
