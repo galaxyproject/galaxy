@@ -6,7 +6,7 @@
     </macros>
     <description>Processes tabular data using R and renders a box plot using jqPlot hosted at http://www.jqplot.com.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" func="jqplot_box"/>
+    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" load="jqplot_box"/>
     <specs>
         <expand macro="specs"/>
     </specs>

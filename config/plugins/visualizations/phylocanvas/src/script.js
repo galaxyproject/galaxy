@@ -1,6 +1,6 @@
 import * as Phylocanvas from "phylocanvas";
 _.extend(window.bundleEntries || {}, {
-    func: function(options) {
+    load: function(options) {
         var chart = options.chart;
         var dataset = options.dataset;
         var settings = options.chart.settings;
