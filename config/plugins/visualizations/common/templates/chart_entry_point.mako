@@ -28,17 +28,21 @@
             var config = ${h.dumps(config)};
             var load = "${script_attributes.get("load")}";
             if (!bundleEntries[load]) {
-                alert("Load function '" + load + "' not found.");
+                load = "load";
             }
-            var app = bundleEntries.chart({
-                visualization_id: ${h.dumps(visualization_id)} || undefined,
-                visualization_name: ${h.dumps(visualization_name)},
-                visualization_plugin: ${h.dumps(visualization_plugin)},
-                dataset_id: config.dataset_id,
-                chart_dict: config.chart_dict,
-                chart_load: bundleEntries[load]
-            });
-            $('body').append(app.$el);
+            if (!bundleEntries[load]) {
+                alert("Load function '" + load + "' not found.");
+            } else {
+                var app = bundleEntries.chart({
+                    visualization_id: ${h.dumps(visualization_id)} || undefined,
+                    visualization_name: ${h.dumps(visualization_name)},
+                    visualization_plugin: ${h.dumps(visualization_plugin)},
+                    dataset_id: config.dataset_id,
+                    chart_dict: config.chart_dict,
+                    chart_load: bundleEntries[load]
+                });
+                $('body').append(app.$el);
+            }
         });
     </script>
 </%def>

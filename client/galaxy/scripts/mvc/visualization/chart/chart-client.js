@@ -23,9 +23,9 @@ export default Backbone.View.extend({
                 this.editor = new Editor(this);
                 this.$el.append(this.viewer.$el);
                 this.$el.append(this.editor.$el);
+                this.go("viewer");
                 this.chart.load();
                 this.chart.trigger("redraw");
-                this.go("viewer");
             })
             .fail(response => {
                 let message = response.responseJSON && response.responseJSON.err_msg;
