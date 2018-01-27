@@ -16,6 +16,7 @@ export default Backbone.Model.extend({
         this.groups = new Backbone.Collection();
         this.settings = new Backbone.Model();
         this.visualization_id = viz_options.visualization_id;
+        this.visualization_name = viz_options.visualization_name;
         this.dataset_id = viz_options.dataset_id;
         this.chart_dict = viz_options.chart_dict;
         console.debug("model::initialize() - Initialized with configuration:");
@@ -58,7 +59,7 @@ export default Backbone.Model.extend({
         this.chart_dict = this.serialize();
         var viz = new Visualization({
             id: this.visualization_id || undefined,
-            type: "charts",
+            type: this.visualization_name,
             title: this.get("title") || "",
             config: {
                 dataset_id: this.dataset_id,
