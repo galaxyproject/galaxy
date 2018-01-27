@@ -5,6 +5,6 @@
         <import>heatmap_shared.xml</import>
     </macros>
     <description>Renders a heatmap from matrix data provided in 3-column format (x, y, observation).</description>
-    <entry_point entry_point_type="chart" src="../heatmap_default/static/script.js" func="heatmap_default"/>
+    <entry_point entry_point_type="chart" src="../heatmap_default/static/script.js" load="heatmap_default"/>
     <expand macro="shared"/>
 </visualization>
