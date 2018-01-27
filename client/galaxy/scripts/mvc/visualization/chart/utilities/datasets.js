@@ -80,7 +80,8 @@ var request = function(options) {
             indeces: column_list.toString()
         },
         success: function(response) {
-            var results = new Array(column_list.length);
+            var column_length = column_list.length;
+            var results = new Array(column_length);
             for (var i = 0; i < results.length; i++) {
                 results[i] = [];
             }
@@ -88,7 +89,7 @@ var request = function(options) {
                 var row = response.data[i];
                 for (var j in row) {
                     var v = row[j];
-                    if (v !== undefined && v != 2147483647) {
+                    if (v !== undefined && v != 2147483647 && j < column_length) {
                         results[j].push(v);
                     }
                 }
