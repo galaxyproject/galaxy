@@ -37,7 +37,6 @@ docutils
 repoze.lru
 Routes
 WebOb
-#WebHelpers
 Mako
 pytz
 Babel
@@ -66,7 +65,7 @@ nose
 svgwrite
 
 # Fabric and dependencies
-Fabric
+Fabric3
 
 # We still pin these dependencies because of modifications to the upstream packages
 

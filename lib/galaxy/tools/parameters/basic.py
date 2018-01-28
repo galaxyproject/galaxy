@@ -65,7 +65,7 @@ def parse_dynamic_options(param, input_source):
     return None
 
 
-class ToolParameter(object, Dictifiable):
+class ToolParameter(Dictifiable):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists

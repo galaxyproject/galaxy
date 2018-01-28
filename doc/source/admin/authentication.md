@@ -33,8 +33,8 @@ of documentation on configuring these plugins.
 [OpenID](https://en.wikipedia.org/wiki/OpenID) is becoming less popular and probably shouldn't be used the primary mechanism
 for authentication in Galaxy but it is an available option.
 
-Enabling OpenID requires you to edit Galaxy's configuration file and set `enable_openid` to `True`. This file is
-likely located in `config/galaxy.ini` and can be created by copying Galaxy's sample `config/galaxy.ini.sample`.
+Enabling OpenID requires you to edit Galaxy's configuration file and set `enable_openid` to `true`. This file is
+likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
 
 Enabling this option enables OpenID and causes the OpenID form to be displayed on the login screen.
 
@@ -55,8 +55,8 @@ and the "external" flag should itself prohibit the traditional mechanism being u
 user returns to Galaxy and is not already logged in, the details of the user are retrieved according to the identity
 information supplied by the Web server.
 
-Enabling remote user authentication requires you to edit Galaxy's configuration file and set `use_remote_user` to `True`.
-This file is likely located in `config/galaxy.ini` and can be created by copying Galaxy's sample `config/galaxy.ini.sample`.
+Enabling remote user authentication requires you to edit Galaxy's configuration file and set `use_remote_user` to `true`.
+This file is likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
 
 Additional Galaxy configuration options related to remote user authentication are documented in Galaxy's sample 
 configuration file. The options ``remote_user_maildomain``, ``remote_user_header``, and ``normalize_remote_user_email`` can
@@ -75,29 +75,30 @@ How to set up this config is presented here.
 
 ### Account activation feature
 
-In the Galaxy config file **config/galaxy.ini** there is the user activation setting that you have to turn on.
+In the Galaxy config file **config/galaxy.yml** there is the user activation setting that you have to turn on.
 
-```
-user_activation_on = True
+```yaml
+user_activation_on: true
 ```
 
 
 There is also the option for tracking jobs in database that is required to be turned on for the account activation to be effective. By default it is off.
 
-```
-track_jobs_in_database = True
+```yaml
+track_jobs_in_database: true
 ```
 
 
 After you turn on both of these every user that will try to register after this configuration file takes effect will have the verification email sent to the email address provided. Unless the Grace period (see below) is set, the user won't be able to login before the verification happens.
 
 Furthermore in order for this to work correctly smtp server and admin email should be set:
-```
-#smtp_server = some.server.edu:587
-#smtp_username = example_username
-#smtp_password = example_passsword
-#activation_email = activation-noreply@example.com
-#error_email_to = admin@example.com
+
+```yaml
+smtp_server: some.server.edu:587
+smtp_username: example_username
+smtp_password: example_passsword
+activation_email: activation-noreply@example.com
+error_email_to: admin@example.com
 ```
 
 Smtp server takes care of the email sending and the activation_email email is used as the *From* address in the verification email. Furthermore the error_email_to is being shown to the user if the Galaxy detects its own misconfiguration.

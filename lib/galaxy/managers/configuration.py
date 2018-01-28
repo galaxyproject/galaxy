@@ -22,7 +22,7 @@ class ConfigSerializer(base.ModelSerializer):
         super(ConfigSerializer, self).__init__(app)
 
         self.default_view = 'all'
-        self.add_view('all', self.serializers.keys())
+        self.add_view('all', list(self.serializers.keys()))
 
     def default_serializer(self, config, key):
         return getattr(config, key, None)

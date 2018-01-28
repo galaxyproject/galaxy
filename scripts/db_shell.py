@@ -30,13 +30,18 @@ from sqlalchemy.sql import label  # noqa
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
+from galaxy.datatypes.registry import Registry
 from galaxy.model import *  # noqa
+from galaxy.model import set_datatypes_registry  # More expclicit than `*` import
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
 
 if sys.version_info > (3,):
     long = int
 
+registry = Registry()
+registry.load_datatypes()
+set_datatypes_registry(registry)
 db_url = get_config(sys.argv)['db_url']
 sa_session = init('/tmp/', db_url).context
 

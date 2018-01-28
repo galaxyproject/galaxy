@@ -17,7 +17,7 @@ from galaxy.web.framework.helpers import to_unicode
 log = logging.getLogger(__name__)
 
 
-class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
+class JobImportHistoryArchiveWrapper(UsesAnnotations):
     """
         Class provides support for performing jobs that import a history from
         an archive.
@@ -285,7 +285,7 @@ class JobImportHistoryArchiveWrapper(object, UsesAnnotations):
                 raise
 
 
-class JobExportHistoryArchiveWrapper(object, UsesAnnotations):
+class JobExportHistoryArchiveWrapper(UsesAnnotations):
     """
     Class provides support for performing jobs that export a history to an
     archive.

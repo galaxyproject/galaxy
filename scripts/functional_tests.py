@@ -71,6 +71,8 @@ class FrameworkToolsGalaxyTestDriver(DefaultGalaxyTestDriver):
     """Galaxy-style nose TestDriver for testing framework Galaxy tools."""
 
     framework_tool_and_types = True
+    conda_auto_init = True
+    conda_auto_install = True
 
 
 class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
