@@ -113,7 +113,7 @@ var Collection = Backbone.Collection.extend({
                         var webhook = model.toJSON();
                         if (webhook.activate) {
                             var obj = {
-                                id: webhook.name,
+                                id: webhook.id,
                                 icon: webhook.config.icon,
                                 url: webhook.config.url,
                                 tooltip: webhook.config.tooltip,
