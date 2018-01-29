@@ -270,7 +270,7 @@ class VisualizationsRegistry(object):
             # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
             param_data = data_source['to_params']
             response = visualization.to_dict()
-            response['href'] =  self.get_visualization_url(trans, target_object, visualization, param_data),
+            response['href'] =  self.get_visualization_url(trans, target_object, visualization, param_data)
             return response
         return None
 
