@@ -313,6 +313,10 @@ window.app = function app(options, bootstrapped) {
 
     // render and start the router
     $(() => {
+        options.config = _.extend(options.config, {
+            hide_panels: Galaxy.params.hide_panels,
+            hide_masthead: Galaxy.params.hide_masthead
+        });
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,
