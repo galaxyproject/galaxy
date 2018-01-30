@@ -932,7 +932,7 @@ class ToolModule(WorkflowModule):
             step_outputs = dict(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
         progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
-
+        self._handle_mapped_over_post_job_actions(step, step_outputs, invocation.replacement_dict)
         if execution_tracker.execution_errors:
             message = "Failed to create one or more job(s) for workflow step."
             raise Exception(message)
@@ -971,6 +971,18 @@ class ToolModule(WorkflowModule):
         visit_input_values(tool.inputs, step.state.inputs, callback)
         return collections_to_match
 
+    def _effective_post_job_actions(self, step):
+        effective_post_job_actions = step.post_job_actions[:]
+        for key, value in self.runtime_post_job_actions.items():
+            effective_post_job_actions.append(self.__to_pja(key, value, None))
+        return effective_post_job_actions
+
+    def _handle_mapped_over_post_job_actions(self, step, step_outputs, replacement_dict):
+        effective_post_job_actions = self._effective_post_job_actions(step)
+        for pja in effective_post_job_actions:
+            if pja.action_type in ActionBox.immediate_actions:
+                ActionBox.execute_on_mapped_over(self.trans.app, self.trans.sa_session, pja, step_outputs, replacement_dict)
+
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.
         # PJA Parameter Replacement (only applies to immediate actions-- rename specifically, for now)
@@ -979,9 +991,7 @@ class ToolModule(WorkflowModule):
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
         flush_required = False
-        effective_post_job_actions = step.post_job_actions[:]
-        for key, value in self.runtime_post_job_actions.items():
-            effective_post_job_actions.append(self.__to_pja(key, value, None))
+        effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions:
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)

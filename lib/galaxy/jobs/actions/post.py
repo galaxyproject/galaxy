@@ -86,6 +86,20 @@ class RenameDatasetAction(DefaultJobAction):
     verbose_name = "Rename Dataset"
 
     @classmethod
+    def execute_on_mapped_over(cls, app, sa_session, action, step_outputs, replacement_dict):
+        # Prevent renaming a dataset to the empty string.
+        if action.action_arguments and action.action_arguments.get('newname', ''):
+            new_name = action.action_arguments['newname']
+
+            if replacement_dict:
+                for k, v in replacement_dict.items():
+                    new_name = new_name.replace("${%s}" % k, v)
+
+            for name, step_output in step_outputs.items():
+                if action.output_name == '' or name == action.output_name:
+                    step_output.name = new_name
+
+    @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         # Prevent renaming a dataset to the empty string.
         if action.action_arguments and action.action_arguments.get('newname', ''):
@@ -380,8 +394,13 @@ class ActionBox(object):
                       'ColumnSetAction', 'EmailAction',
                       'DeleteIntermediatesAction', 'TagDatasetAction',
                       'RemoveTagDatasetAction']
+    # Actions that can be applied ahead of the job execution while workflow is still
+    # being scheduled and jobs created.
     immediate_actions = ['ChangeDatatypeAction', 'RenameDatasetAction',
                          'TagDatasetAction', 'RemoveTagDatasetAction']
+    # Actions that will be applied to implicit mapped over collection outputs and not
+    # just individual outputs when steps include mapped over tools and implicit collection outputs.
+    mapped_over_output_actions = ['RenameDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
@@ -411,6 +430,11 @@ class ActionBox(object):
                 # Not pja stuff.
                 pass
         return npd
+
+    @classmethod
+    def execute_on_mapped_over(cls, app, sa_session, pja, step_outputs, replacement_dict=None):
+        if pja.action_type in ActionBox.actions:
+            ActionBox.actions[pja.action_type].execute_on_mapped_over(app, sa_session, pja, step_outputs, replacement_dict)
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

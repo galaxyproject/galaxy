@@ -2029,6 +2029,11 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
         name = content["name"]
         assert name == "my new name", name
+        assert content["history_content_type"] == "dataset"
+        content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+        name = content["name"]
+        assert content["history_content_type"] == "dataset_collection", content
+        assert name == "my new name", name
 
     @skip_without_tool("create_2")
     def test_run_rename_multiple_outputs(self):
