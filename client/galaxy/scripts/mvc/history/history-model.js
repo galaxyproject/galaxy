@@ -1,9 +1,13 @@
 import HISTORY_CONTENTS from "mvc/history/history-contents";
-import HISTORY_PREFS from "mvc/history/history-preferences";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
+
+/* global jQuery */
+/* global Galaxy */
 
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
@@ -161,7 +165,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             _fetchContentRelatedAttributes: function() {
                 var contentRelatedAttrs = ["size", "non_ready_jobs", "contents_active", "hid_counter"];
                 return this.fetch({
-                    data: $.param({
+                    data: jQuery.param({
                         keys: contentRelatedAttrs.join(",")
                     })
                 });
@@ -185,7 +189,9 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     var serverResponseDatetime;
                     try {
                         serverResponseDatetime = new Date(xhr.getResponseHeader("Date"));
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error(err);
+                    }
                     this.lastUpdateTime = serverResponseDatetime || new Date();
                     this.checkForUpdates(options);
                 });
@@ -277,11 +283,10 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             /** fetch this histories contents, adjusting options based on the stored history preferences */
             fetchContents: function(options) {
                 options = options || {};
-                var self = this;
 
                 // we're updating, reset the update time
-                self.lastUpdateTime = new Date();
-                return self.contents.fetchCurrentPage(options);
+                this.lastUpdateTime = new Date();
+                return this.contents.fetchCurrentPage(options);
             },
 
             /** save this history, _Mark_ing it as deleted (just a flag) */
@@ -438,7 +443,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     _buildFetchFilters: function(options) {
         var superFilters = _collectionSuper.prototype._buildFetchFilters.call(this, options) || {};
         var filters = {};
-        if (!this.includeDeleted) {
+        if (this.includeDeleted !== true) {
             filters.deleted = false;
             filters.purged = false;
         } else {
@@ -451,25 +456,24 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
 
     /** override to fetch current as well (as it may be outside the first 10, etc.) */
     fetchFirst: function(options) {
-        var self = this;
         // TODO: batch?
-        var xhr = $.when();
+        var xhr = jQuery.when();
         if (this.currentHistoryId) {
-            xhr = _collectionSuper.prototype.fetchFirst.call(self, {
+            xhr = _collectionSuper.prototype.fetchFirst.call(this, {
                 silent: true,
                 limit: 1,
                 filters: {
+                    "encoded_id-in": this.currentHistoryId,
                     // without these a deleted current history will return [] here and block the other xhr
-                    purged: "",
-                    deleted: "",
-                    "encoded_id-in": this.currentHistoryId
+                    deleted: null,
+                    purged: ""
                 }
             });
         }
         return xhr.then(() => {
             options = options || {};
             options.offset = 0;
-            return self.fetchMore(options);
+            return this.fetchMore(options);
         });
     },
 

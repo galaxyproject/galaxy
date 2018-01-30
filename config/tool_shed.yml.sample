@@ -2,16 +2,58 @@ uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (tool_shed will not be accessible over the network).  Use
-  # '0.0.0.0' to listen on all available network interfaces.
+  # ':9009' to listen on all available network interfaces.
   http: 127.0.0.1:9009
 
-  threads: 8
+  # Number of web server (worker) processes to fork after the
+  # application has loaded.
+  processes: 1
 
-  http-raw-body: True
+  # Number of threads for each web server process.
+  threads: 4
 
-  offload-threads: 8
+  # Number of threads for serving static content and handling internal
+  # routing requests.
+  offload-threads: 2
 
+  # Mapping to serve style content.
+  static-map: /static/style=static/style/blue
+
+  # Mapping to serve the remainder of the static content.
+  static-map: /static=static
+
+  # Enable the master process manager. Disabled by default for maximum
+  # compatibility with CTRL+C, but should be enabled for use with
+  # --daemon and/or production deployments.
+  master: false
+
+  # Path to the application's Python virtual environment.
+  virtualenv: .venv
+
+  # Path to the application's Python library.
+  pythonpath: lib
+
+  # The entry point which returns the web application (e.g. Galaxy,
+  # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
+
+  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
+  # (its default is to brutally reload workers)
+  die-on-term: true
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGINT (its default is to brutally kill workers)
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGTERM (its default is to brutally kill workers)
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+
+  # Feature necessary for proper mule signal handling
+  py-call-osafterfork: true
+
+  # Ensure application threads will run if `threads` is unset.
+  enable-threads: true
 
 tool_shed:
 
@@ -24,11 +66,11 @@ tool_shed:
   # string to specify an external database instead.  This string takes
   # many options which are explained in detail in the config file
   # documentation.
-  #database_connection: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
+  #database_connection: 'sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE'
 
   # Where the hgweb.config file is stored. The default is the Galaxy
   # installation directory.
-  #hgweb_config_dir: None
+  #hgweb_config_dir: null
 
   # Where tool shed repositories are stored.
   #file_path: database/community_files
@@ -54,7 +96,7 @@ tool_shed:
   # allow full text API searching over the repositories and tools within
   # the Tool Shed given that you specify the following two config
   # options.
-  #toolshed_search_on: True
+  #toolshed_search_on: true
 
   # -- Repository and Tool search Using the script located at
   # scripts/build_ts_whoosh_index.py you can generate search index and
@@ -95,7 +137,7 @@ tool_shed:
 
   # You can enter tracking code here to track visitor's behavior through
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
-  #ga_code: None
+  #ga_code: null
 
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
@@ -103,8 +145,9 @@ tool_shed:
   # decodes these values.  It can be any string.  If left unchanged,
   # anyone could construct a cookie that would grant them access to
   # others' sessions. One simple way to generate a value for this is
-  # with the shell command:   python -c 'import time; print time.time()'
-  # | md5sum | cut -f 1 -d ' '
+  # with the shell command:   python -c 'from __future__ import
+  # print_function; import time; print(time.time())' | md5sum | cut -f 1
+  # -d ' '
   #id_secret: changethisinproductiontoo
 
   # User authentication can be delegated to an upstream proxy server
@@ -112,7 +155,7 @@ tool_shed:
   # header in the request. Enabling remote user disables regular logins.
   # For more information, see:
   # https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
-  #use_remote_user: False
+  #use_remote_user: false
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
   # host may impersonate any other user by simply sending the
@@ -123,22 +166,25 @@ tool_shed:
   #remote_user_secret: changethisinproductiontoo
 
   # Configuration for debugging middleware
-  #debug: False
+  #debug: false
 
   # Check for WSGI compliance.
-  #use_lint: False
+  #use_lint: false
+
+  # Intercept print statements and show them on the returned page.
+  #use_printdebug: true
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: True
+  #use_interactive: true
 
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
   # users, groups, roles, libraries, and more.
-  #admin_users: None
+  #admin_users: null
 
   # Force everyone to log in (disable anonymous access)
-  #require_login: False
+  #require_login: false
 
   # For use by email messages sent from the tool shed
   #smtp_server: smtp.your_tool_shed_server
@@ -149,44 +195,44 @@ tool_shed:
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_username: None
+  #smtp_username: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_password: None
+  #smtp_password: null
 
   # If your SMTP server requires SSL from the beginning of the
   # connection
-  #smtp_ssl: False
+  #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: https://wiki.galaxyproject.org/Support
+  #support_url: 'https://wiki.galaxyproject.org/Support'
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)
-  #use_heartbeat: True
+  #use_heartbeat: true
 
   # Profiling middleware (cProfile based)
-  #use_profile: True
+  #use_profile: true
 
   # Enable creation of Galaxy flavor Docker Image
-  #enable_galaxy_flavor_docker_image: False
+  #enable_galaxy_flavor_docker_image: false
 
   # Show a message box under the masthead.
-  #message_box_visible: False
+  #message_box_visible: false
 
   # Show a message box under the masthead.
-  #message_box_content: None
+  #message_box_content: null
 
   # Show a message box under the masthead.
   #message_box_class: info
 
   # Serving static files (needed if running standalone)
-  #static_enabled: True
+  #static_enabled: true
 
   # Serving static files (needed if running standalone)
   #static_cache_time: 360

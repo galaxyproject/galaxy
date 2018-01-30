@@ -27,6 +27,9 @@ import LegacyGridView from "legacy/grid/grid-view";
 import * as run_stats from "reports/run_stats";
 import ToolshedGroups from "toolshed/toolshed.groups";
 
+/* global Galaxy */
+/* global $ */
+
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
     //here; remove when imports are all fixed.
@@ -155,7 +158,6 @@ export function multiHistoryEntry(options) {
         limitPerFetch: options.limit,
         currentHistoryId: options.current_history_id
     });
-
     let multipanel = new MultiPanel.MultiPanelColumns({
         el: $("#center").get(0),
         histories: histories

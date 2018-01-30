@@ -65,7 +65,7 @@ source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config.py
 	printf '.. code-block:: yaml\n\n' > $@
 	printf '    galaxy:\n' >> $@
 	printf '        logging:\n            ' >> $@
-	PYTHONPATH=../lib ../.venv/bin/python -c 'import yaml, galaxy.config; print "\n            ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=4, default_flow_style=False).splitlines())' >> $@
+	PYTHONPATH=../lib python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n            ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=4, default_flow_style=False).splitlines()))' >> $@
 
 # might also want to do
 # cd source/lib; hg revert; rm *.rst.orig;  or not.

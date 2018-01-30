@@ -485,7 +485,7 @@
     <datatype extension="ncbi" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexus" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexusnon" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="phylip" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" subclass="true" display_in_upload="true"/>
     <datatype extension="phylipnon" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="pir" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="staden" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -761,6 +761,7 @@
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
+    <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSangerGz"/>
