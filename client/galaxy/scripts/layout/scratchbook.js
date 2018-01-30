@@ -210,6 +210,7 @@ export default Backbone.View.extend({
 
     /** Add and display a new frame/window based on options. */
     add: function(options) {
+        options.url += (options.url.indexOf("?") == -1 ? "?" : "&");
         if (options.target == "_blank") {
             window.open(options.url);
         } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
@@ -218,12 +219,13 @@ export default Backbone.View.extend({
             var $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
-                    window.location = `${options.url + (options.url.indexOf("?") == -1 ? "?" : "&")}use_panels=True`;
+                    window.location = `${options.url}use_panels=True`;
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }
             } else window.location = options.url;
         } else {
+            options.url = `${options.url}hide_panels=true&hide_masthead=true`;
             this.frames.add(options);
         }
     }
