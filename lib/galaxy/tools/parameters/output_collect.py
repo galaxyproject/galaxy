@@ -164,6 +164,9 @@ def collect_dynamic_collections(
         else:
             collection = has_collection
 
+        # We are adding dynamic collections, which may be precreated, but their actually state is still new!
+        collection.populated_state = collection.populated_states.NEW
+
         try:
             collection_builder = collections_service.collection_builder_for(
                 collection

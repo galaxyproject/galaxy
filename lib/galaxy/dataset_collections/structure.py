@@ -177,19 +177,14 @@ def tool_output_to_structure(get_sliced_input_collection_type, tool_output, coll
     if not tool_output.collection:
         tree = leaf
     else:
-        collection_type_descriptions = collections_manager.collection_type_descriptions
         # Okay this is ToolCollectionOutputStructure not a Structure - different
         # concepts of structure.
-        if tool_output.dynamic_structure:
-            # Two cases collection_type_source and collection_type right?
-            tree = UnitializedTree(collection_type_descriptions.for_type_description("list"))  # list is obviously wrong...
+        structured_like = tool_output.structure.structured_like
+        if structured_like:
+            collection_type = get_sliced_input_collection_type(structured_like)
         else:
-            structured_like = tool_output.structure.structured_like
-            if structured_like:
-                collection_type = get_sliced_input_collection_type(structured_like)
-            else:
-                collection_type = tool_output.structure.collection_type
-            tree = UnitializedTree(collection_type)
+            collection_type = tool_output.structure.collection_type
+        tree = UnitializedTree(collection_type)
 
     return tree
 
