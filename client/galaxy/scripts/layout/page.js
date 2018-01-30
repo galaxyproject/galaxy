@@ -150,16 +150,16 @@ var View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return [
-            '<div id="everything">',
-            '<div id="background"/>',
-            '<div id="masthead"/>',
-            '<div id="messagebox"/>',
-            '<div id="inactivebox" class="panel-warning-message" />',
-            '<div id="left" />',
-            '<div id="center" />',
-            '<div id="right" />',
-            "</div>",
-            '<div id="dd-helper" />'
+            `<div id="everything">
+                <div id="background"/>
+                <div id="masthead"/>
+                <div id="messagebox"/>
+                <div id="inactivebox" class="panel-warning-message" />
+                <div id="left" />
+                <div id="center" />
+                <div id="right" />
+            </div>
+            <div id="dd-helper" />`
         ].join("");
     },
 
