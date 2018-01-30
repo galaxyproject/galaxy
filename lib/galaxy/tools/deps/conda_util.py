@@ -7,8 +7,8 @@ import re
 import shutil
 import sys
 import tempfile
-from distutils.version import LooseVersion
 
+import packaging.version
 import six
 from six.moves import shlex_quote
 
@@ -118,7 +118,7 @@ class CondaContext(installable.InstallableContext):
         conda_meta_path = self._conda_meta_path
         # Perhaps we should call "conda info --json" and parse it but for now we are going
         # to assume the default.
-        conda_version = LooseVersion(CONDA_VERSION)
+        conda_version = packaging.version.parse(CONDA_VERSION)
         conda_build_available = False
         miniconda_version = "3"
 
@@ -131,7 +131,7 @@ class CondaContext(installable.InstallableContext):
                 version = package_parts[-2]
                 # build = package_parts[-1]
                 if package == "conda":
-                    conda_version = LooseVersion(version)
+                    conda_version = packaging.version.parse(version)
                 if package == "python" and version.startswith("2"):
                     miniconda_version = "2"
                 if package == "conda-build":
@@ -495,7 +495,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     search_cmd.append(conda_target.package)
     res = commands.execute(search_cmd)
     hits = json.loads(res).get(conda_target.package, [])
-    hits = sorted(hits, key=lambda hit: LooseVersion(hit['version']), reverse=True)
+    hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
 
     if len(hits) == 0:
         return (None, None)
@@ -564,8 +564,8 @@ def build_isolated_environment(
         # Adjust fix if they fix Conda - xref
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
-        offline_works = (conda_context.conda_version < LooseVersion("4.3")) or \
-                        (conda_context.conda_version >= LooseVersion("4.4"))
+        offline_works = (conda_context.conda_version < packaging.version.parse("4.3")) or \
+                        (conda_context.conda_version >= packaging.version.parse("4.4"))
         if offline_works:
             create_args.extend(["--offline"])
         else:
