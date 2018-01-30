@@ -63,12 +63,16 @@ var View = Backbone.View.extend({
                 var panel_class = options[panel_class_name];
                 if (panel_class) {
                     var panel_instance = new panel_class(self, options);
+                    var panel_el = self.$(`#${panel_id}`);
                     self[panel_instance.toString()] = panel_instance;
                     self.panels[panel_id] = new Panel.SidePanel({
                         id: panel_id,
-                        el: self.$(`#${panel_id}`),
+                        el: panel_el,
                         view: panel_instance
                     });
+                    if (this.config.hide_masthead) {
+                        panel_el.css("top", 0);
+                    }
                 }
             });
         }
@@ -86,9 +90,11 @@ var View = Backbone.View.extend({
     render: function() {
         // TODO: Remove this line after select2 update
         $(".select2-hidden-accessible").remove();
-        !this.config.hide_panels && this.masthead.render();
-        this.renderMessageBox();
-        this.renderInactivityBox();
+        if (!this.config.hide_masthead) {
+            this.masthead.render();
+            this.renderMessageBox();
+            this.renderInactivityBox();
+        }
         this.renderPanels();
         this._checkCommunicationServerOnline();
         return this;
@@ -96,7 +102,7 @@ var View = Backbone.View.extend({
 
     /** Render message box */
     renderMessageBox: function() {
-        if (!this.config.hide_panels && this.config.message_box_visible) {
+        if (this.config.message_box_visible) {
             var content = this.config.message_box_content || "";
             var level = this.config.message_box_class || "info";
             this.$el.addClass("has-message-box");
@@ -114,7 +120,7 @@ var View = Backbone.View.extend({
 
     /** Render inactivity warning */
     renderInactivityBox: function() {
-        if (!this.config.hide_panels && this.config.show_inactivity_warning) {
+        if (this.config.show_inactivity_warning) {
             var content = this.config.inactivity_box_content || "";
             var verificationLink = $("<a/>")
                 .attr("href", `${Galaxy.root}user/resend_verification`)
