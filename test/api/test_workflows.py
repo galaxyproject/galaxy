@@ -2000,7 +2000,7 @@ test_data: {}
             assert okay_dataset["state"] == "ok"
 
     @skip_without_tool("cat")
-    def test_run_rename_collection_element(self):
+    def test_run_rename_on_mapped_over_dataset(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -2034,6 +2034,64 @@ test_data:
         name = content["name"]
         assert content["history_content_type"] == "dataset_collection", content
         assert name == "my new name", name
+
+    @skip_without_tool("cat")
+    def test_run_rename_based_on_inputs_on_mapped_over_dataset(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "#{input1} suffix"
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+        name = content["name"]
+        assert content["history_content_type"] == "dataset_collection", content
+        assert name == "the_dataset_list suffix", name
+
+    @skip_without_tool("collection_creates_pair")
+    def test_run_rename_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: input1
+    outputs:
+      paired_output:
+        rename: "my new name"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
+
+            assert details1["name"] == "my new name", details1
+            assert details1["history_content_type"] == "dataset_collection"
 
     @skip_without_tool("create_2")
     def test_run_rename_multiple_outputs(self):
