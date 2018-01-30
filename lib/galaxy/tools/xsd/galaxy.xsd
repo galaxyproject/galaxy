@@ -63,8 +63,8 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
-        </xs:element>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
+        <xs:element name="hidden" type="xs:boolean" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command"/>
