@@ -986,7 +986,7 @@ class ToolModule(WorkflowModule):
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.mapped_over_output_actions:
-                ActionBox.execute_on_mapped_over(self.trans.app, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
+                ActionBox.execute_on_mapped_over(self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.
