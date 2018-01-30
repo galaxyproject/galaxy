@@ -32,7 +32,9 @@ var View = Backbone.View.extend({
         var dataset = this.model.get("dataset");
         this.vis_index = {};
         this.vis_array = [];
-        _.each(dataset.visualizations, function(v, id) {
+        _.each(dataset.visualizations.sort(function(a, b) {
+            return a.html < b.html ? -1 : 1;
+        }), function(v, id) {
             var dict = {
                 id: id,
                 name: v.name,
