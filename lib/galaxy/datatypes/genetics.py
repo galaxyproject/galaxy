@@ -1104,6 +1104,37 @@ class AllegroLOD(LinkageStudies):
             return True
 
 
+class IdeasPre(Html):
+    """
+    This datatype defines the input format required by IDEAS:
+    https://academic.oup.com/nar/article/44/14/6721/2468150
+    The IDEAS preprocessor tool produces an output using this
+    format.  The extra_files_path of the primary input dataset
+    contains the following files and directories.
+    - chromosome_windows.txt (optional)
+    - chromosomes.bed (optional)
+    - IDEAS_input_config.txt
+    - tmp directory containing a number of compressed bed files.
+    """
+    MetadataElement(name="chrom_bed", desc="Bed file specifying window positions", default=None, readonly=True)
+    MetadataElement(name="chrom_windows", desc="Chromosome window positions", default=None, readonly=True)
+    MetadataElement(name="input_config", desc="IDEAS input config", default=None, readonly=True)
+
+    composite_type = 'auto_primary_file'
+    allow_datatype_change = False
+    file_ext = 'ideaspre'
+
+    def set_meta(self, dataset, **kwd):
+        Html.set_meta(self, dataset, **kwd)
+        for fname in os.listdir(dataset.extra_files_path):
+            if fname.startswith("chromosomes"):
+                dataset.metadata.chrom_bed = fname
+            elif fname.startswith("chromosome_windows"):
+                dataset.metadata.chrom_windows = fname
+            elif fname.startswith("IDEAS_input_config"):
+                dataset.metadata.input_config = fname
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])
