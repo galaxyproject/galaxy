@@ -307,12 +307,17 @@
             .ui-thumbnails-description-text {
                 word-wrap: break-word;
             }
-            :hover {
-                text-decoration: underline !important;
-            }
         }
         .ui-thumbnails-item:hover {
-            text-decoration: underline !important;
+            .ui-thumbnails-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-text {
+                text-decoration: underline;
+            }
         }
         .ui-thumbnail-current-highlight {
             border-color:#66afe9;
@@ -324,9 +329,6 @@
         .ui-thumbnails-item-float {
             float: left;
             height: 140px;
-            :hover {
-                text-decoration: underline !important;
-            }
         }
     }
 }
