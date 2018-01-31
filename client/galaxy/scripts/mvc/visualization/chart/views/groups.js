@@ -4,7 +4,6 @@ import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";
-import Description from "mvc/visualization/chart/views/description";
 var GroupView = Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
@@ -93,7 +92,6 @@ export default Backbone.View.extend({
                 self.chart.groups.add({ id: Utils.uid() });
             }
         });
-        this.description = new Description(this.app);
         this.message = new Ui.Message({
             message: "There are no data selection options for this visualization type.",
             persistent: true,
@@ -101,7 +99,6 @@ export default Backbone.View.extend({
         });
         this.setElement(
             $("<div/>")
-                .append(this.description.$el)
                 .append(this.repeat.$el.addClass("ui-margin-bottom"))
                 .append(this.message.$el.addClass("ui-margin-bottom"))
         );

@@ -23,7 +23,7 @@ export default Backbone.View.extend({
         this.$info = this.$(".info");
         this.$icon = this.$(".icon");
         this.$text = this.$(".text");
-        this._fullscreen(this.$el, 55);
+        this._fullscreen(this.$el, 20);
         this._createContainer("div");
         this.chart.on("redraw", function() {
             self.app.deferred.execute(function(process) {
@@ -55,16 +55,6 @@ export default Backbone.View.extend({
         });
     },
 
-    /** Show rendered chart */
-    show: function() {
-        this.$el.show();
-    },
-
-    /** Hide chart */
-    hide: function() {
-        this.$el.hide();
-    },
-
     /** Force resize to fullscreen */
     _fullscreen: function($el, margin) {
         $el.css("height", $(window).height() - margin);
@@ -84,7 +74,7 @@ export default Backbone.View.extend({
             var container_el = $("<div/>")
                 .addClass("charts-viewport-container")
                 .width(parseInt(100 / n) + "%")
-                .append($("<" + tag + ' class="charts-viewport-canvas" />').attr("id", container_id));
+                .append($("<" + tag + " class='charts-viewport-canvas' />").attr("id", container_id));
             this.$el.append(container_el);
             this.targets.push(container_id);
         }
