@@ -41,6 +41,7 @@ h5py==2.6.0
 html5lib==1.0.1
 idna==2.6
 ipaddress==1.0.19; python_version < '3.3'
+isa-rwval==0.10.3
 iso8601==0.1.12
 jmespath==0.9.3
 jsonpatch==1.23

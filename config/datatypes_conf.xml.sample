@@ -147,6 +147,11 @@
       <display file="rviewer/bed.xml" inherit="true"/>
       <display file="igv/interval_as_bed.xml" inherit="true"/>
     </datatype>
+
+    <!-- ISA data types -->
+    <datatype extension="isa-tab" type="galaxy.datatypes.isa:IsaTab" mimetype="application/isa-tools" display_in_upload="true" description="ISA-Tab data type." description_url="https://isa-tools.org"/>
+    <datatype extension="isa-json" type="galaxy.datatypes.isa:IsaJson" mimetype="application/isa-tools" display_in_upload="true" description="ISA-JSON data type." description_url="https://isa-tools.org"/>
+
     <datatype extension="picard_interval_list" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true">
       <converter file="picard_interval_list_to_bed6_converter.xml" target_datatype="bed6"/>
     </datatype>
@@ -809,6 +814,7 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.
