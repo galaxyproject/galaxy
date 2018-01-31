@@ -26,7 +26,7 @@
 }
 
 .charts-description-text {
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .charts-tooltip {
@@ -80,4 +80,13 @@
     width: 100%;
     min-height: 100px;
     height: inherit;
+}
+
+.charts-left {
+    .portlet-content {
+        padding: 0px;
+    }
+    .ui-table-section, .ui-portlet-panel .portlet-content {
+        padding-left: @ui-margin-horizontal;
+    }
 }

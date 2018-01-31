@@ -44,8 +44,8 @@ export default Backbone.View.extend({
 
     _template: function() {
         return `<div>
-                    <div class="charts-center" style="float: left; width: 70%;"/>
-                    <div class="charts-left" style="float: left; width: 30%;"/>
+                    <div class="charts-center" style="float: left; width: 70%; overflow: scroll;"/>
+                    <div class="charts-left" style="float: left; width: 30%; padding-left: 10px;"/>
                 <div>`;
     }
 });

@@ -41,12 +41,22 @@ export default Backbone.View.extend({
                 )
                 .append(new Settings(this.app).$el)
         });
+        if (this.chart.plugin.groups) {
+            this.tabs.add({
+                id: "groups",
+                title: "Select data",
+                icon: "fa-database",
+                tooltip: "Specify data options.",
+                $el: new Groups(this.app).$el
+            });
+        }
 
         // set elements
         this.setElement("<div/>");
+        //this.$el.append(this.message.$el);
         this.$el.append(this.description.$el);
-        this.$el.append(this.message.$el);
-        this.$el.append(this.tabs.$el.addClass("ui-margin-top-large"));
+        this.$el.append(this.tabs.$el);
+        this.message.update({persistent: true, message: 'hey'});
     },
 
     /** Show editor */
