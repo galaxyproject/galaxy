@@ -787,6 +787,22 @@ class ToolsTestCase(api.ApiTestCase):
         assert output1_content.startswith("chr1")
         assert output2_content.startswith("chr1")
 
+    @skip_without_tool("collection_creates_dynamic_list_of_pairs")
+    def test_map_over_with_discovered_output_collection_elements(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
+            inputs = {
+                "input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}
+            }
+            create = self._run('collection_creates_dynamic_list_of_pairs', history_id, inputs).json()
+            implicit_collections = create['implicit_collections']
+            self.assertEquals(len(implicit_collections), 1)
+            self.assertEquals(implicit_collections[0]['collection_type'], 'list:list:paired')
+            self.assertEquals(implicit_collections[0]['elements'][0]['object']['element_count'], None)
+            self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
+            hdca = self._get("histories/%s/contents/dataset_collections/%s" % (history_id, implicit_collections[0]['id'])).json()
+            self.assertEquals(hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['element_identifier'], 'forward')
+
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed"), "r").read()
         bed2_contents = open(self.get_filename("2.bed"), "r").read()

@@ -318,7 +318,7 @@
 :Description:
     conda channels to enable by default (http://conda.pydata.org/docs
     /custom-channels.html)
-:Default: ``iuc,bioconda,conda-forge,defaults,r``
+:Default: ``iuc,bioconda,conda-forge,defaults``
 :Type: str
 
 
@@ -3198,12 +3198,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    If (for example) you run on a cluster and your datasets (by
-    default, database/files/) are mounted read-only, this option will
-    override tool output paths to write outputs to the working
-    directory instead, and the job manager will move the outputs to
-    their proper place in the dataset directory on the Galaxy server
-    after the job completes.
+    This option will override tool output paths to write outputs to
+    the job working directory (instead of to the file_path) and the
+    job manager will move the outputs to their proper place in the
+    dataset directory on the Galaxy server after the job completes.
+    This is necessary (for example) if jobs run on a cluster and
+    datasets can not be created by the user running the jobs (e.g. if
+    the filesystem is mounted read-only or the jobs are run by a
+    different user than the galaxy user).
 :Default: ``false``
 :Type: bool
 
@@ -3263,8 +3265,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used to run the
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
 :Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
 :Type: str
@@ -3276,8 +3278,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used to kill
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
 :Default: ``sudo -E scripts/drmaa_external_killer.py``
 :Type: str
@@ -3289,8 +3291,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used transfer
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
 :Default: ``sudo -E scripts/external_chown_script.py``
@@ -3303,8 +3305,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) Galaxy can extract the user
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) Galaxy can extract the user
     name from the email address (actually the local-part before the @)
     or the username which are both stored in the Galaxy data base. The
     latter option is particularly useful for installations that get

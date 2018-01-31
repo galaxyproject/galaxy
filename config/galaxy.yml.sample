@@ -219,7 +219,7 @@ galaxy:
 
   # conda channels to enable by default (http://conda.pydata.org/docs
   # /custom-channels.html)
-  #conda_ensure_channels: 'iuc,bioconda,conda-forge,defaults,r'
+  #conda_ensure_channels: 'iuc,bioconda,conda-forge,defaults'
 
   # Set to True to instruct Galaxy to look for and install missing tool
   # dependencies before each job runs.
