@@ -28,6 +28,7 @@
   </outputs>
   <tests>
     <test>
+      <param name="file" value="simple_line.txt" />
       <param name="foo" value="bar" />
       <output_collection name="list_output" type="list:paired">
         <element name="samp1">
