@@ -145,9 +145,10 @@ class RenameDatasetAction(DefaultJobAction):
                 # Ditto for collections...
                 for input_assoc in job.input_dataset_collections:
                     if input_assoc.name == input_file_var:
-                        if input_assoc.dataset_collection:
-                            hdca = input_assoc.dataset_collection
-                            replacement = hdca.name
+                        # Either a HDCA or a DCE - only HDCA has a name.
+                        has_collection = input_assoc.dataset_collection
+                        if has_collection and hasattr(has_collection, "name"):
+                            replacement = has_collection.name
 
                 # In case name was None.
                 replacement = replacement or ''
