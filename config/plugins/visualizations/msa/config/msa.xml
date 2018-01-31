@@ -23,14 +23,14 @@
         </input>
         <input>
             <label>Show overview box</label>
-            <name>conserv</name>
+            <name>overviewbox</name>
             <help>Do you want to display the overview box below the sequence alignments?</help>
             <type>boolean</type>
             <value>true</value>
         </input>
         <input>
             <label>Show interactive menu</label>
-            <name>conserv</name>
+            <name>menu</name>
             <help>Do you want to show a menu for interactive configuration?</help>
             <type>boolean</type>
             <value>true</value>
