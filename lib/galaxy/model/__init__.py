@@ -2488,7 +2488,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
     def copy_tags_to(self, copy_tags=None):
         if copy_tags is not None:
-            for _, tag in copy_tags.items():
+            for tag in copy_tags.values():
                 copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
                 self.tags.append(copied_tag)
 

@@ -200,7 +200,7 @@ class DefaultToolAction(object):
                 preserved_tags[tag.value] = tag
 
         # grap tags from incoming HDCAs
-        for key, collection_pairs in inp_dataset_collections.items():
+        for collection_pairs in inp_dataset_collections.values():
             for collection, _ in collection_pairs:
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
