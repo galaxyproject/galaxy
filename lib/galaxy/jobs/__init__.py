@@ -422,8 +422,8 @@ class JobConfiguration(ConfiguresHandlers):
             key = param.get('id')
             if key in ["container", "container_override"]:
                 from galaxy.tools.deps import requirements
-                containers = map(requirements.container_from_element, list(param))
-                param_value = map(lambda c: c.to_dict(), containers)
+                containers = map(requirements.container_from_element, param.findall('container'))
+                param_value = list(map(lambda c: c.to_dict(), containers))
             else:
                 param_value = param.text
 
