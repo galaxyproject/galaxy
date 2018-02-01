@@ -24,24 +24,32 @@ export default Backbone.View.extend({
         this.viewer = new Viewer(this);
         this.editor = new Editor(this);
         this.buttons =[{
-            icon: "fa-caret-left",
-            tooltip: "Show Settings",
+            icon: "fa-angle-double-left",
+            tooltip: "Show",
             cls: "ui-button-icon charts-fullscreen-button",
             onclick: () => {
                 this.$el.removeClass("charts-fullscreen");
                 window.dispatchEvent(new Event("resize"));
             }
         },{
-            icon: "fa-caret-right",
-            tooltip: "Hide Settings",
+            icon: "fa-angle-double-right",
+            tooltip: "Hide",
             onclick: () => {
                 this.$el.addClass("charts-fullscreen");
                 window.dispatchEvent(new Event("resize"));
             }
         },{
             icon: "fa-line-chart",
-            tooltip: "Render Visualization",
-            title: "Visualize",
+            tooltip: "Visualize",
+            onclick: () => {
+                this.chart.set({
+                    date: Utils.time()
+                });
+                this.chart.trigger("redraw");
+            }
+        },{
+            icon: "fa-save",
+            tooltip: "Save",
             onclick: () => {
                 this.chart.set({
                     date: Utils.time()

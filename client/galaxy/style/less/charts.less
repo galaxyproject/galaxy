@@ -2,9 +2,19 @@
     .charts-buttons {
         float: right;
         margin: 5px 0px;
+        z-index: 1000;
         .ui-button-icon {
             display: block;
             margin-right: 5px;
+        }
+        .ui-button-icon {
+            background: white;
+            color: #666;
+            border-color: white;
+            .icon {
+                font-size: 1.2em;
+                line-height: 1.2em;
+            }
         }
         .ui-button-icon.charts-fullscreen-button {
             display: none;
@@ -65,7 +75,7 @@
 .charts-viewer .ui-message {
     position: absolute;
     width: calc(100% - 20px);
-    z-index: 100;
+    z-index: 1001;
 }
 
 .charts-description {
