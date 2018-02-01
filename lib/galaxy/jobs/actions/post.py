@@ -4,12 +4,12 @@ immediate_actions listed below.  Currently only used in workflows.
 """
 import datetime
 import socket
-# import subprocess
 
 from markupsafe import escape
 
-from galaxy.util import send_mail, docstring_trim
+from galaxy.util import send_mail
 from galaxy.util.logging import get_logger
+from galaxy.webapps.galaxy.api.dynamic_actions import get_dynamic_post_processing_actions
 
 log = get_logger(__name__)
 
@@ -243,43 +243,6 @@ class ColumnSetAction(DefaultJobAction):
         return "Set the following metadata values:<br/>" + "<br/>".join('%s : %s' % (escape(k), escape(v)) for k, v in pja.action_arguments.items())
 
 
-def get_dynamic_post_processing_actions(config_post_actions):
-    """ Extract information about all post processing actions from the galaxy.ini config file. """
-    actions = list()
-    for action_name in config_post_actions:
-        if ":" in action_name:
-            # Should be a submodule of actions (e.g. examples:microscope_control)
-            (module_name, class_name) = action_name.rsplit(":", 1)
-            module_name = 'galaxy.jobs.actions.dynamic.%s' % module_name.strip()
-            module = __import__(module_name, globals(),
-                                fromlist=['temp_module'])
-            class_object = getattr(module, class_name.strip())
-
-            print(class_object, module)
-
-        else:
-            # No module found it has to be explicitly imported.
-            module = __import__('galaxy.jobs.actions.dynamic',
-                                globals(), fromlist=['temp_module'])
-            class_object = getattr(globals(), action_name.strip())
-
-        doc_string = docstring_trim(class_object.__doc__)
-        split = doc_string.split('\n\n')
-        if split:
-            sdesc = split[0].strip()
-        else:
-            log.error(
-                'No description specified in the __doc__ string for %s.' % action_name)
-        if len(split) > 1:
-            description = split[1].strip()
-        else:
-            description = ''
-
-        actions.append(dict(actionpath=action_name,
-                            short_desc=sdesc, desc=description, cl=class_object))
-    return actions
-
-
 class DynamicAction(DefaultJobAction):
     name = "DynamicAction"
     verbose_name = "Advanced Action List"
@@ -298,44 +261,6 @@ class DynamicAction(DefaultJobAction):
                 dynamic_action = action_class(
                     dataset_assoc=dataset_assoc, app=app, job=job)
                 dynamic_action.run()
-
-    # @classmethod
-    # def get_config_form(cls, trans):
-    #     dynamic_actions = get_dynamic_post_processing_actions(
-    #         trans.app.config.dynamic_post_processing_actions)
-
-    #     print trans.user.__dict__
-    #     print trans.user
-    #     # Only actions with the correct privileges should be shown
-    #     dynamic_actions_filtered = list()
-    #     for dynamic_action in dynamic_actions:
-    #         action_class = dynamic_action['cl'](trans=trans)
-    #         if action_class.check_privileges():
-    #             dynamic_actions_filtered.append(dynamic_action)
-
-    #     if dynamic_actions_filtered:
-    #         action_list = ""
-    #         for dynamic_action in dynamic_actions_filtered:
-    #             # we need to remove the colons, othwerwise the selection is not saved
-    #             dynamic_action['actionpath'] = dynamic_action['actionpath'].replace(
-    #                 ':', '-')
-    #             action_list += """<option id='pja__"+pja.output_name+"__DynamicAction__process__%(actionpath)s' value='%(actionpath)s'>%(short_desc)s</option>""" % dynamic_action
-
-    #         form = """
-    #             p_str += "<label for='pja__"+pja.output_name+"__DynamicAction__process'>Choose an advanced action</label>\
-    #                 <select id='pja__"+pja.output_name+"__DynamicAction__process' name='pja__"+pja.output_name+"__DynamicAction__process'>\
-    #                 %s\
-    #                 </select>\";
-    #             if (pja.action_arguments !== undefined && pja.action_arguments.process !== undefined){
-    #                  p_str += "<scrip" + "t type='text/javascript'>$('#pja__" + pja.output_name + "__DynamicAction__process').val('" + pja.action_arguments.process + "');</scrip" + "t>";
-    #             }
-    #             """ % (action_list)
-    #     else:
-    #         form = """
-    #             p_str += "<label for='pja__"+pja.output_name+"__DynamicAction__process'>No dynamic options available.</label>\";
-    #             """
-
-    #     return get_form_template(cls.name, cls.verbose_name, form, "This will execute a post processing action.")
 
     @classmethod
     def get_short_str(cls, pja):
