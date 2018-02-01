@@ -52,7 +52,7 @@ export default Backbone.View.extend({
         }
 
         // set elements
-        this.setElement("<div/>");
+        this.setElement("<div class='charts-editor'/>");
         //this.$el.append(this.message.$el);
         this.$el.append(this.description.$el);
         this.$el.append(this.tabs.$el);
