@@ -875,9 +875,9 @@ def validate_config(obj, return_bool=False):
                                         if priority not in curr['default_destination']['priority']:
                                             error = ("No default for destination for priority  " +
                                                      str(priority) + " in tool " + str(tool))
-                                        if verbose:
-                                            log.debug(error)
-                                        valid_config = False
+                                            if verbose:
+                                                log.debug(error)
+                                            valid_config = False
 
                                     # if all_mandatory_classes_defined == True:
                                     for priority in curr['default_destination']['priority']:
