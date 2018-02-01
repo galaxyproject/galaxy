@@ -787,6 +787,12 @@ def validate_config(obj, return_bool=False):
                             if verbose:
                                 log.debug(error)
                             valid_config = False
+                            
+                    if len(priority_list) < 1:
+                        error = ("No valid default priorities found!")
+                        if verbose:
+                            log.debug(error)
+                        valid_config = False
 
                 else:
                     error = "No default priority destinations specified in config!"
@@ -820,9 +826,8 @@ def validate_config(obj, return_bool=False):
                             if curr['priority'] in ['low', 'med', 'high']: ### DO THINGS HERE (maybe)
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
-                                error = ("User '" + user + "', priority classification "
-                                    + "is not valid: Must be one of the values "
-                                    + "specified in the config.")
+                                error = ("User '" + user + "', priority '"
+                                    + str(curr['priority']) + "' is not valid")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -863,8 +868,7 @@ def validate_config(obj, return_bool=False):
                                 
                                 if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
                                     ####new code
-                                    ####May not be necessary check
-                                    all_mandatory_classes_defined = True
+                                    ###May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
                                             error = ("No default for priority classification "
@@ -872,7 +876,6 @@ def validate_config(obj, return_bool=False):
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
-                                            all_mandatory_classes_defined = False
                                             
                                    ## if all_mandatory_classes_defined == True:
                                     for priority in curr['default_destination']['priority']:
@@ -1246,9 +1249,17 @@ def map_tool_to_destination(
     # For each different rule for the tool that's running
     fail_message = None
 
-    # set default priority to med
-    default_priority = 'med' ###May need to find a better default
-    priority = default_priority
+    # set default priority to whatever the middle one is in the list
+    # The priorities won't necessarily be in order, but it can't be
+    # worse than choosing a random value (probably)
+    if len(priority_list) > 0:
+        default_priority = priority_list[len(priority_list) / 2]
+        priority = default_priority
+    else:
+        error = "No priorities found so no default priorty set!"
+        if verbose:
+            log.debug(error)
+        valid_config = False
 
     if config is not None:
         # get the users priority
@@ -1406,7 +1417,7 @@ def map_tool_to_destination(
 
     return destination
     
-### new method
+#### new method
 def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
     """
     returns A list of all destination IDs declared in the job configuration
@@ -1435,12 +1446,9 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
             valid_destinations.append(destination.get("id"))
             
         else:
-            ###Not sure what to do here, because we're technically
-            ###only validating the tool destination config, not
-            ###the job configuration
-            error = "ID for destination " + str(destination)
-            error += " cannot be parsed."
-            error += " Ignoring..."
+            error = "Destination ID '" + str(destination)
+            error += "' in job configuration file cannot be"
+            error += " parsed. Things may not work as expected!"
             log.debug(error)
         
     return valid_destinations
