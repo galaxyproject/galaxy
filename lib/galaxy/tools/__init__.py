@@ -440,7 +440,10 @@ class Tool(Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
-        self.job_search = JobSearch(app=self.app)
+        # The job search is only relevant in a galaxy context, and breaks
+        # loading tools into the toolshed for validation.
+        if self.app.name == 'galaxy':
+            self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
