@@ -675,6 +675,9 @@
     <datatype extension="allegro_ihaplo" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_descent" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_fparam" type="galaxy.datatypes.genetics:AllegroLOD" />
+    <!-- IDEAS datatypes -->
+    <datatype extension="ideaspre" type="galaxy.datatypes.genetics:IdeasPre" display_in_upload="true"/>
+    <!-- End IDEAS datatypes -->
   </registration>
   <sniffers>
     <!--
