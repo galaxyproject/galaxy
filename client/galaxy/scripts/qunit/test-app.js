@@ -1,4 +1,6 @@
 /** Creates a generic/global Galaxy environment, loads shared libraries and a fake server */
+/* global define */
+
 define(
     [
         "jquery",

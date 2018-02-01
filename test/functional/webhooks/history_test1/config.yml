@@ -1,5 +1,5 @@
-name: history_test1
+id: history_test1
 title: History Menu Webhook Item 1
-type: 
+type:
   - history-menu
 activate: true

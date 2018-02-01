@@ -1,4 +1,4 @@
-name: tool_list
+id: tool_list
 type:
   - masthead
 activate: true
@@ -13,7 +13,7 @@ function: >
     'be patient, this might take a moment.');
   }, 1);
 
-  $.getJSON(Galaxy.root + "api/webhooks/tool_list/get_data", function(data) {
+  $.getJSON(Galaxy.root + "api/webhooks/tool_list/data", function(data) {
     var popup = window.open('tool_list.html');
     var html = '<!DOCTYPE html><body><h2>' +
       'Create a Docker flavour of this instance:</h2>' +
