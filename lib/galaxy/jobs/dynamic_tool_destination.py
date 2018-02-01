@@ -404,7 +404,7 @@ class RuleValidator:
                     
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
-                            error = "Invalid priority classification: "
+                            error = "Invalid priority: "
                             error += str(priority)
                             if not return_bool:
                                 error += " Ignoring..."
@@ -413,8 +413,9 @@ class RuleValidator:
                             valid_rule = False
                             
                         elif not isinstance(rule["destination"]["priority"][priority], str):
-                            error = "No '" + str(priority)
-                            error += "'priority classification for rule " + str(counter)
+                            error = "Cannot parse tool destination '"
+                            error += str(rule["destination"]["priority"][priority])
+                            error += "' for rule " + str(counter)
                             error += " in '" + str(tool) + "'."
                             if not return_bool:
                                 error += " Ignoring..."
@@ -782,8 +783,8 @@ def validate_config(obj, return_bool=False):
                                 'default_destination']['priority'][priority]
                             
                         else:
-                            error = ("Invalid default priority classification '" +
-                                     str(priority_classification) + "' found in config!")
+                            error = ("Invalid default priority destination '" +
+                                     str(priority) + "' found in config!")
                             if verbose:
                                 log.debug(error)
                             valid_config = False
@@ -823,7 +824,7 @@ def validate_config(obj, return_bool=False):
                             if curr['priority'] in priority_list:
                                 new_config['users'][user]['priority'] = curr['priority']
                             """
-                            if curr['priority'] in ['low', 'med', 'high']: ### DO THINGS HERE (maybe)
+                            if curr['priority'] in ['low', 'med', 'high']: ###TODO: ask about user priorities
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
                                 error = ("User '" + user + "', priority '"
@@ -871,7 +872,7 @@ def validate_config(obj, return_bool=False):
                                     ###May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
-                                            error = ("No default for priority classification "
+                                            error = ("No default for destination for priority  "
                                                 + str(priority) + " in tool " + str(tool))
                                             if verbose:
                                                 log.debug(error)
@@ -887,14 +888,14 @@ def validate_config(obj, return_bool=False):
                                                 tool_has_default = True
                                             else:
                                                 error = ("No default '" + str(priority) +
-                                                         "' priority classification  for tool "
+                                                         "' priority destination  for tool "
                                                          + str(tool) + " in config!")
                                                 if verbose:
                                                     log.debug(error)
                                                 valid_config = False
                                                 
                                         else:
-                                            error = ("Invalid default priority classification '" +
+                                            error = ("Invalid default priority  '" +
                                                      str(priority) + "' for " + str(tool)
                                                      + " found in config!")
                                             if verbose:
