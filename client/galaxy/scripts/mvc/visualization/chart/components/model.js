@@ -105,9 +105,11 @@ export default Backbone.Model.extend({
             this.groups.reset();
             this.groups.add(d.groups);
             this.set("modified", false);
+            this.trigger("load");
             console.debug("model::load() - Loading chart model " + d.attributes.type + ".");
             return true;
         }
+        this.trigger("load");
         console.debug("model::load() - Visualization attributes unavailable.");
         return false;
     }

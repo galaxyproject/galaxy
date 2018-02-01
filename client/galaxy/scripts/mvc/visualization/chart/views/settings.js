@@ -8,7 +8,7 @@ export default Backbone.View.extend({
         var self = this;
         this.chart = app.chart;
         this.setElement("<div/>");
-        this.listenTo(this.chart, "change", function() {
+        this.listenTo(this.chart, "load", function() {
             self.render();
         });
     },
