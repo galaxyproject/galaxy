@@ -1,3 +1,62 @@
+.charts-client {
+    .charts-buttons {
+        float: right;
+        margin: 5px 0px;
+        .ui-button-icon {
+            display: block;
+            margin-right: 5px;
+        }
+        .ui-button-icon.charts-fullscreen-button {
+            display: none;
+        }
+    }
+    .charts-center {
+        float: left;
+        width: 70%;
+        overflow: hidden;
+        padding: 10px 5px 10px 10px;
+    }
+    .charts-right {
+        float: left;
+        width: 30%;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        .charts-editor {
+            display: block;
+            flex: 1;
+            overflow: auto;
+            padding: 10px 10px 10px 5px;
+            .portlet-content {
+                padding: 0px;
+            }
+            .ui-table-section, .ui-portlet-panel .portlet-content {
+                padding-left: 5px;
+            }
+        }
+    }
+}
+
+.charts-client.charts-fullscreen {
+    .charts-buttons {
+        position: absolute;
+        right: 0px;
+        .ui-button-icon {
+            display: none;
+        }
+        .ui-button-icon.charts-fullscreen-button {
+            display: block;
+        }
+    }
+    .charts-center {
+        width: 100%;
+    }
+    .charts-right {
+        display: none;
+    }
+}
+
 .charts-viewer {
     overflow: auto;
 }
@@ -80,32 +139,4 @@
     width: 100%;
     min-height: 100px;
     height: inherit;
-}
-
-.charts-center {
-    float: left;
-    width: 70%;
-    overflow: hidden;
-    padding: 10px 0px 10px 10px;
-}
-
-.charts-right {
-    float: left;
-    width: 30%;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    .charts-editor {
-        display: block;
-        flex: 1;
-        overflow: auto;
-        padding: 10px;
-        .portlet-content {
-            padding: 0px;
-        }
-        .ui-table-section, .ui-portlet-panel .portlet-content {
-            padding-left: 5px;
-        }
-    }
 }
