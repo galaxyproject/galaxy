@@ -506,7 +506,9 @@ must stay up for this long before we consider it OK. If the process crashes soon
 made to your local installation) supervisord will try again a couple of times to restart the process before giving up
 and marking it as failed. This is one of the many ways supervisord is much friendly for managing these sorts of tasks. 
 
-If using the **uWSGI + Webless** scenario, you'll need to addtionally define job handlers to start:
+If using the **uWSGI + Webless** scenario, you'll need to addtionally define job handlers to start. There's no simple
+way to activate a virtualenv when using supervisor, but you can simulate the effects by setting `$PATH` and
+`$VIRTUAL_ENV`:
 
 ```ini
 [program:handler]
