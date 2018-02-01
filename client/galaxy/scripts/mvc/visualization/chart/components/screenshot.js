@@ -4,7 +4,7 @@ function createPNG(options) {
     if (options.$el.find("svg").length > 0) {
         _svg2png(options);
     } else {
-        _canvas2png(options.$el.find(".charts-viewport-canvas"));
+        _canvas2png(options.$el.find(".charts-viewer-canvas"));
     }
 }
 
@@ -99,10 +99,10 @@ function createPDF(options) {
         svg: xml.string
     };
     var $el = $("body");
-    var form = $el.find("#viewport-form");
+    var form = $el.find("#viewer-form");
     if (form.length === 0) {
         form = $("<form>", {
-            id: "viewport-form",
+            id: "viewer-form",
             method: "post",
             action: "http://export.highcharts.com/",
             display: "none"

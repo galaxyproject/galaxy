@@ -14,17 +14,11 @@ export default Backbone.View.extend({
         this.app = app;
         this.chart = this.app.chart;
         this.description = new Description(this.app);
-        this.message = new Ui.Message({ cls: "ui-margin-bottom" });
-
-        // input field for chart title
         this.title = new Ui.Input({
-            placeholder: "Chart title",
             onchange: () => {
                 this.chart.set("title", this.title.value());
             }
         });
-
-        // create tabs
         this.tabs = new Tabs.View({});
         this.tabs.add({
             id: "settings",
@@ -50,23 +44,11 @@ export default Backbone.View.extend({
                 $el: new Groups(this.app).$el
             });
         }
-
-        // set elements
         this.setElement("<div class='charts-editor'/>");
-        //this.$el.append(this.message.$el);
         this.$el.append(this.description.$el);
         this.$el.append(this.tabs.$el);
-        this.message.update({persistent: true, message: 'hey'});
-    },
-
-    /** Show editor */
-    show: function() {
-        this.$el.show();
-        this.chart_backup = this.chart.serialize();
-    },
-
-    /** Hide editor */
-    hide: function() {
-        this.$el.hide();
+        this.listenTo(this.chart, "load", () => {
+            this.title.value(this.chart.get("title"));
+        });
     }
 });

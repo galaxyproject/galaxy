@@ -12,7 +12,7 @@ export default Backbone.View.extend({
         this.options = options;
         this.setElement(
             $("<div/>")
-                .addClass("charts-viewport")
+                .addClass("charts-viewer")
                 .append(
                     $("<div/>")
                         .addClass("info")
@@ -31,7 +31,7 @@ export default Backbone.View.extend({
             });
         });
         this.chart.on("set:state", function() {
-            var $container = self.$(".charts-viewport-container");
+            var $container = self.$(".charts-viewer-container");
             var $info = self.$info;
             var $icon = self.$icon;
             var $text = self.$text;
@@ -67,14 +67,14 @@ export default Backbone.View.extend({
     _createContainer: function(tag, n) {
         tag = tag || "div";
         n = n || 1;
-        this.$(".charts-viewport-container").remove();
+        this.$(".charts-viewer-container").remove();
         this.targets = [];
         for (var i = 0; i < n; i++) {
             var container_id = Utils.uid();
             var container_el = $("<div/>")
-                .addClass("charts-viewport-container")
+                .addClass("charts-viewer-container")
                 .width(parseInt(100 / n) + "%")
-                .append($("<" + tag + " class='charts-viewport-canvas' />").attr("id", container_id));
+                .append($("<" + tag + " class='charts-viewer-canvas' />").attr("id", container_id));
             this.$el.append(container_el);
             this.targets.push(container_id);
         }
