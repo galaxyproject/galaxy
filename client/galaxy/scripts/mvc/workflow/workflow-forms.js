@@ -319,6 +319,19 @@ function _makeSection(output_id, options) {
                     }
                 ],
                 help: "This action will set column assignments in the output dataset. Blank fields are ignored."
+            },
+            {
+                title: _l("Advanced Action List"),
+                type: "section",
+                flat: true,
+                inputs: [{
+                    action: "DynamicAction",
+                    pja_arg: "process",
+                    label: "Function to Execute",
+                    type: "text",
+                    value: "",
+                    ignore: ""
+                }]
             }
         ]
     };
