@@ -1,4 +1,4 @@
-name: xkcd
+id: xkcd
 type:
   - tool
   - workflow

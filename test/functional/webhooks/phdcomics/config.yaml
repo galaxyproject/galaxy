@@ -1,4 +1,4 @@
-name: phdcomics
+id: phdcomics
 type:
   - tool
   - workflow

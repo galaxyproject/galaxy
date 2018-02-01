@@ -2,6 +2,7 @@ import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
+
 var View = Backbone.View.extend({
     el: "body",
     className: "full-content",
@@ -61,11 +62,12 @@ var View = Backbone.View.extend({
         this.render();
 
         // start the router
-        this.router &&
+        if (this.router) {
             Backbone.history.start({
                 root: Galaxy.root,
                 pushState: true
             });
+        }
     },
 
     render: function() {
