@@ -1,7 +1,5 @@
 from __future__ import print_function
 
-__version__ = '1.0.0'
-
 from yaml import load
 
 import argparse
@@ -14,6 +12,8 @@ import re
 from functools import reduce
 from xml.etree import ElementTree as ET
 
+__version__ = '1.0.0'
+
 # log to galaxy's logger
 log = logging.getLogger(__name__)
 
@@ -21,10 +21,11 @@ log = logging.getLogger(__name__)
 verbose = True
 
 """
-list of all valid priorities, inferred from the global 
+list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
 priority_list = []
+
 
 class MalformedYMLException(Exception):
     pass
@@ -398,10 +399,10 @@ class RuleValidator:
                     valid_rule = False
             elif isinstance(rule["destination"], dict):
                 if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
-                    
+
                     #### new code
                     valid_destinations = get_valid_destinations_from_config()
-                    
+
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
                             error = "Invalid priority: "
@@ -411,7 +412,7 @@ class RuleValidator:
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
-                            
+
                         elif not isinstance(rule["destination"]["priority"][priority], str):
                             error = "Cannot parse tool destination '"
                             error += str(rule["destination"]["priority"][priority])
@@ -422,9 +423,9 @@ class RuleValidator:
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
-                            
+
                         elif rule["destination"]["priority"][priority] not in valid_destinations:
-                            error = "destination for '" + str(tool) + "', rule " 
+                            error = "destination for '" + str(tool) + "', rule "
                             error += str(counter) + ": '"
                             error += str(rule["destination"]["priority"][priority])
                             error += "' does not exist in job configuration."
@@ -433,7 +434,7 @@ class RuleValidator:
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
-                            
+
                     #### new code ends here
                 else:
                     error = "No destination specified for rule " + str(counter)
@@ -769,26 +770,26 @@ def validate_config(obj, return_bool=False):
             elif isinstance(obj['default_destination'], dict):
                 if ('priority' in obj['default_destination'] and
                         isinstance(obj['default_destination']['priority'], dict)):
-                    
+
                     ####My new code
-                    
+
                     for priority in obj['default_destination']['priority']:
-                            
+
                         if isinstance(obj['default_destination']['priority'][priority],
-                            str):
+                                      str):
                             if priority not in priority_list:
                                 priority_list.append(priority)
-                            
+
                             new_config['default']['priority'][priority] = obj[
                                 'default_destination']['priority'][priority]
-                            
+
                         else:
                             error = ("Invalid default priority destination '" +
                                      str(priority) + "' found in config!")
                             if verbose:
                                 log.debug(error)
                             valid_config = False
-                            
+
                     if len(priority_list) < 1:
                         error = ("No valid default priorities found!")
                         if verbose:
@@ -820,15 +821,15 @@ def validate_config(obj, return_bool=False):
                         if 'priority' in curr and isinstance(curr['priority'], str):
                             """
                             #### my new code
-                            
+
                             if curr['priority'] in priority_list:
                                 new_config['users'][user]['priority'] = curr['priority']
                             """
-                            if curr['priority'] in ['low', 'med', 'high']: ###TODO: ask about user priorities
+                            if curr['priority'] in ['low', 'med', 'high']:  ###TODO: ask about user priorities
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
-                                error = ("User '" + user + "', priority '"
-                                    + str(curr['priority']) + "' is not valid")
+                                error = ("User '" + user + "', priority '" +
+                                         str(curr['priority']) + "' is not valid")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -866,19 +867,19 @@ def validate_config(obj, return_bool=False):
                                 new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                 tool_has_default = True
                             elif isinstance(curr['default_destination'], dict):
-                                
+
                                 if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
                                     ####new code
                                     ###May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
-                                            error = ("No default for destination for priority  "
-                                                + str(priority) + " in tool " + str(tool))
-                                            if verbose:
-                                                log.debug(error)
-                                            valid_config = False
-                                            
-                                   ## if all_mandatory_classes_defined == True:
+                                            error = ("No default for destination for priority  " +
+                                                     str(priority) + " in tool " + str(tool))
+                                        if verbose:
+                                            log.debug(error)
+                                        valid_config = False
+
+                                    # if all_mandatory_classes_defined == True:
                                     for priority in curr['default_destination']['priority']:
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
@@ -888,16 +889,16 @@ def validate_config(obj, return_bool=False):
                                                 tool_has_default = True
                                             else:
                                                 error = ("No default '" + str(priority) +
-                                                         "' priority destination  for tool "
-                                                         + str(tool) + " in config!")
+                                                         "' priority destination  for tool " +
+                                                         str(tool) + " in config!")
                                                 if verbose:
                                                     log.debug(error)
                                                 valid_config = False
-                                                
+
                                         else:
                                             error = ("Invalid default priority  '" +
-                                                     str(priority) + "' for " + str(tool)
-                                                     + " found in config!")
+                                                     str(priority) + "' for " + str(tool) +
+                                                     " found in config!")
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
@@ -1336,7 +1337,7 @@ def map_tool_to_destination(
                                 matched = True
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
-                                    arg_dict = {arg : rule["arguments"][arg]}
+                                    arg_dict = {arg: rule["arguments"][arg]}
                                     arg_keys_list = []
                                     get_keys_from_dict(arg_dict, arg_keys_list)
                                     try:
@@ -1417,15 +1418,15 @@ def map_tool_to_destination(
             log.debug(output)
 
     return destination
-    
-#### new method
+
+
 def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
     """
     returns A list of all destination IDs declared in the job configuration
-    
+
     @type config_location: str
     @param config_location: The location of the job config file relative
-                to the galaxy root directory. Defaults to 
+                to the galaxy root directory. Defaults to
                 galaxy/config/job_conf.xml
 
     @rtype: list
@@ -1433,7 +1434,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
                 configuration file.
     """
     valid_destinations = []
-    
+
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
     config_directory = os.path.join(
@@ -1441,19 +1442,19 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
 
     job_conf_file = config_directory + config_location
     job_conf = ET.parse(job_conf_file)
-    
+
     for destination in job_conf.getroot().iter("destination"):
         if isinstance(destination.get("id"), str):
             valid_destinations.append(destination.get("id"))
-            
+
         else:
             error = "Destination ID '" + str(destination)
             error += "' in job configuration file cannot be"
             error += " parsed. Things may not work as expected!"
             log.debug(error)
-        
+
     return valid_destinations
-                    
+
 
 if __name__ == '__main__':
     """
