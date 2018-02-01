@@ -1264,7 +1264,7 @@ class ToolsTestCase(api.ApiTestCase):
         assert run_response.status_code >= 400
 
     @skip_without_tool("__FILTER_FROM_FILE__")
-    def test_map_over_collection_operation_tool(self):
+    def test_map_over_collection_structured_like(self):
         with self.dataset_populator.test_history() as history_id:
             hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -1287,6 +1287,19 @@ class ToolsTestCase(api.ApiTestCase):
             second_collection_level = first_collection_level['object']
             assert second_collection_level['collection_type'] == 'list'
             assert second_collection_level['elements'][0]['element_type'] == 'hda'
+
+    @skip_without_tool("collection_type_source")
+    def test_map_over_collection_type_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "input_collect": {'values': [dict(src="hdca", id=hdca_id)]},
+                "header": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
+            }
+            self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
+            assert collection_details['elements'][0]['object']['elements'][0]['element_type'] == 'hda'
 
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):
