@@ -12,6 +12,7 @@ import copy
 import collections
 import re
 from functools import reduce
+from xml.etree import ElementTree as ET
 
 # log to galaxy's logger
 log = logging.getLogger(__name__)
@@ -355,8 +356,8 @@ class RuleValidator:
         @param valid_rule: returns True if everything is valid. False if it encounters any
                        abnormalities in the config.
 
-        @type original_rule: dict
-        @param original_rule: contains the original received rule
+        @type rule: dict
+        @param rule: contains the original received rule
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is currently being
@@ -399,6 +400,8 @@ class RuleValidator:
                 if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
                     
                     #### new code
+                    valid_destinations = get_valid_destinations_from_config()
+                    
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
                             error = "Invalid priority classification: "
@@ -413,6 +416,17 @@ class RuleValidator:
                             error = "No '" + str(priority)
                             error += "'priority classification for rule " + str(counter)
                             error += " in '" + str(tool) + "'."
+                            if not return_bool:
+                                error += " Ignoring..."
+                            if verbose:
+                                log.debug(error)
+                            valid_rule = False
+                            
+                        elif rule["destination"]["priority"][priority] not in valid_destinations:
+                            error = "destination for '" + str(tool) + "', rule " 
+                            error += str(counter) + ": '"
+                            error += str(rule["destination"]["priority"][priority])
+                            error += "' does not exist in job configuration."
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -1391,7 +1405,46 @@ def map_tool_to_destination(
             log.debug(output)
 
     return destination
+    
+### new method
+def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
+    """
+    returns A list of all destination IDs declared in the job configuration
+    
+    @type config_location: str
+    @param config_location: The location of the job config file relative
+                to the galaxy root directory. Defaults to 
+                galaxy/config/job_conf.xml
 
+    @rtype: list
+    @return: A list of all of the destination IDs declared in the job
+                configuration file.
+    """
+    valid_destinations = []
+    
+    # os.path.realpath gets the path of DynamicToolDestination.py
+    # and then os.path.join is used to go back four directories
+    config_directory = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../../..')
+
+    job_conf_file = config_directory + config_location
+    job_conf = ET.parse(job_conf_file)
+    
+    for destination in job_conf.getroot().iter("destination"):
+        if isinstance(destination.get("id"), str):
+            valid_destinations.append(destination.get("id"))
+            
+        else:
+            ###Not sure what to do here, because we're technically
+            ###only validating the tool destination config, not
+            ###the job configuration
+            error = "ID for destination " + str(destination)
+            error += " cannot be parsed."
+            error += " Ignoring..."
+            log.debug(error)
+        
+    return valid_destinations
+                    
 
 if __name__ == '__main__':
     """
