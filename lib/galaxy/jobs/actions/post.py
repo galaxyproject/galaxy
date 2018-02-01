@@ -7,11 +7,47 @@ import socket
 
 from markupsafe import escape
 
-from galaxy.util import send_mail
+from galaxy.util import send_mail, docstring_trim
 from galaxy.util.logging import get_logger
-from galaxy.webapps.galaxy.api.dynamic_actions import get_dynamic_post_processing_actions
 
 log = get_logger(__name__)
+
+
+def get_dynamic_post_processing_actions(config_post_actions):
+    """ Extract information about all post processing actions from the galaxy.ini config file. """
+    actions = list()
+    for action_name in config_post_actions:
+        if ":" in action_name:
+            # Should be a submodule of actions (e.g. examples:microscope_control)
+            (module_name, class_name) = action_name.rsplit(":", 1)
+            module_name = 'galaxy.jobs.actions.dynamic.%s' % module_name.strip()
+            module = __import__(module_name, globals(),
+                                fromlist=['temp_module'])
+            class_object = getattr(module, class_name.strip())
+
+            print(class_object, module)
+
+        else:
+            # No module found it has to be explicitly imported.
+            module = __import__('galaxy.jobs.actions.dynamic',
+                                globals(), fromlist=['temp_module'])
+            class_object = getattr(globals(), action_name.strip())
+
+        doc_string = docstring_trim(class_object.__doc__)
+        split = doc_string.split('\n\n')
+        if split:
+            sdesc = split[0].strip()
+        else:
+            log.error(
+                'No description specified in the __doc__ string for %s.' % action_name)
+        if len(split) > 1:
+            description = split[1].strip()
+        else:
+            description = ''
+
+        actions.append(dict(actionpath=action_name,
+                            short_desc=sdesc, desc=description, cl=class_object))
+    return actions
 
 
 class DefaultJobAction(object):

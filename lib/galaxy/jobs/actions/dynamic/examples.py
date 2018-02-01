@@ -20,10 +20,7 @@ class notification_control():
         """
         Return True if the user is allowed to see and execute the run() function.
         """
-        if self.trans.user.email == 'test@test.io':
-            return True
-        else:
-            return False
+        return True
 
     def run(self):
         """
