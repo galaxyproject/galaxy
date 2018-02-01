@@ -1263,6 +1263,31 @@ class ToolsTestCase(api.ApiTestCase):
         # on server.
         assert run_response.status_code >= 400
 
+    @skip_without_tool("__FILTER_FROM_FILE__")
+    def test_map_over_collection_operation_tool(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "input": {'values': [dict(src="hdca", id=hdca_id)]},
+                "how|filter_source": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
+            }
+            self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            history_contents = self.dataset_populator._get_contents_request(history_id).json()
+            # We should have a final collection count of 3 (2 nested collections, plus the input collection)
+            new_collections = len([c for c in history_contents if c['history_content_type'] == 'dataset_collection']) - 1
+            assert new_collections == 2, "Expected to generate 4 new, filtered collections, but got %d collections" % new_collections
+            filtered_collection = history_contents[7]
+            assert filtered_collection['collection_type'] == 'list:list'
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_collection['hid'])
+            assert collection_details['element_count'] == 2
+            first_collection_level = collection_details['elements'][0]
+            assert first_collection_level['element_type'] == 'dataset_collection'
+            second_collection_level = first_collection_level['object']
+            assert second_collection_level['collection_type'] == 'list'
+            assert second_collection_level['elements'][0]['element_type'] == 'hda'
+
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):
         history_id = self.dataset_populator.new_history()
