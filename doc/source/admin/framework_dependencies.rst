@@ -9,7 +9,7 @@ compatible with the `Python packaging best practices`_. Thus, Galaxy's runtime s
 for package environment isolation, pip_ for installation, and wheel_ to provide pre-built versions of dependencies.
 
 In addition to framework dependencies, as of Galaxy 18.01, the client (UI) is no longer provided in its built format
-**in the development (``dev``) branch of the source repository**. The built client is still provided in
+**in the development (dev) branch of the source repository**. The built client is still provided in
 ``release_YY.MM`` branches and the ``master`` branch.
 
 .. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
@@ -54,8 +54,8 @@ Create a virtualenv
 
 Using a `virtualenv`_ in ``.venv`` under the Galaxy source tree is not required. More complicated Galaxy setups may
 choose to use a virtualenv external to the Galaxy source tree, which can be done either by not using ``run.sh`` directly
-(an example of this can be found under the `Scaling and Load Balancing` documentation) or using the ``--no-create-venv``
-option, explained in the `Options` section. It is also possible to force Galaxy to start without a virtualenv at all,
+(an example of this can be found under the :doc:`Scaling and Load Balancing <scaling>` documentation) or using the ``--no-create-venv``
+option, explained in the `Options`_ section. It is also possible to force Galaxy to start without a virtualenv at all,
 but you should not do this unless you know what you're doing.
 
 To manually create a virtualenv, you will first need to obtain virtualenv.  There are a variety of ways to do this:
@@ -119,39 +119,6 @@ this script yourself to set up Galaxy pip and the dependencies without creating 
 
 .. _common_startup.sh: https://github.com/galaxyproject/galaxy/blob/dev/scripts/common_startup.sh
 
-Installing unpinned dependencies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Galaxy's dependencies can be installed either "pinned" (they will be installed at exact versions specified for your
-Galaxy release) or "unpinned" (the latest versions of all dependencies will be installed unless there are known
-incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
-
-1. Using pinned versions insures that the prebuilt wheels on `wheels.galaxyproject.org`_ will be installed, and no
-   compilation will be necesseary.
-
-2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
-   pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
-   are released while the Galaxy release receives fewer updates.
-
-3. Pinning furthers Galaxy's goal of reproducibility as differing dependency versions could result in non-reproducible
-   behavior.
-
-If you would like to install unpinned versions of Galaxy's dependencies, install dependencies using the `unpinned
-requirements file`_, and then instruct Galaxy to start without attempting to fetch wheels:
-
-.. code-block:: console
-
-    (venv)$ pip install -r lib/galaxy/dependencies/requirements.txt
-    (venv)$ deactivate
-    $ sh run.sh --no-create-venv --skip-wheels
-
-You may be able to save yourself some compiling by adding the argument ``--index-url
-https://wheels.galaxyproject.org/simple/`` to ``pip install``, but it is possible to install all of Galaxy's
-dependencies directly from PyPI_.
-
-.. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
-.. _PyPI: https://pypi.org
-
 Dependency management complications
 -----------------------------------
 
@@ -184,7 +151,7 @@ If this is the case, you can instruct jobs to activate the virtualenv with an ``
 .. code-block:: xml
 
     <destination id="cluster" runner="drmaa">
-        <!-- ... other destination params -- >
+        <!-- ... other destination params -->
         <env file="/cluster/galaxy/venv/bin/activate" />
     </destination>
 
@@ -345,6 +312,47 @@ uWSGI
 ``virtualenv`` option in the ``uwsgi`` section of ``galaxy.yml`` as described in the `Managing dependencies manually`_
 section.
 
+Unpinned dependencies
+^^^^^^^^^^^^^^^^^^^^^
+
+.. danger::
+
+    Unpinned dependencies may be useful for development but should not be used in production. Please do not install
+    unpinned dependencies unless you know what you're doing. While the :doc:`Galaxy Committers </project/organization>`
+    will do their best to keep dependencies updated, they cannot provide support for problems arising from unpinned
+    dependencies.
+
+Galaxy's dependencies can be installed either "pinned" (they will be installed at exact versions specified for your
+Galaxy release) or "unpinned" (the latest versions of all dependencies will be installed unless there are known
+incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
+
+1. Using pinned versions insures that the prebuilt wheels on `wheels.galaxyproject.org`_ will be installed, and no
+   compilation will be necesseary.
+
+2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
+   pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
+   are released while the Galaxy release receives fewer updates.
+
+3. Pinning furthers Galaxy's goal of reproducibility as differing dependency versions could result in non-reproducible
+   behavior.
+
+If you would like to install unpinned versions of Galaxy's dependencies, install dependencies using the `unpinned
+requirements file`_, and then instruct Galaxy to start without attempting to fetch wheels:
+
+.. code-block:: console
+
+    (venv)$ pip install -r lib/galaxy/dependencies/requirements.txt
+    (venv)$ deactivate
+    $ sh run.sh --no-create-venv --skip-wheels
+
+You may be able to save yourself some compiling by adding the argument ``--index-url
+https://wheels.galaxyproject.org/simple/`` to ``pip install``, but it is possible to install all of Galaxy's
+dependencies directly from PyPI_.
+
+.. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
+.. _PyPI: https://pypi.org
+
+
 Adding additional Galaxy dependencies
 -------------------------------------
 
@@ -372,8 +380,8 @@ the following process to add new packages and have their wheels built:
 
 4. If the wheel build is successful, submit a pull request to `Starforge`_ with your changes to `wheels.yml`_.
 
-5. A `Galaxy Committers group`_ member will need to trigger an automated build of the wheel changes in your pull
-   request. Galaxy's Jenkins_ service will build these changes using Starforge.
+5. A :doc:`Galaxy Committers group </project/organization>` member will need to trigger an automated build of the wheel
+   changes in your pull request. Galaxy's Jenkins_ service will build these changes using Starforge.
 
 6. If the pull request is merged, submit a pull request to Galaxy modifying the files in `lib/galaxy/dependencies`_ as
    appropriate.
@@ -389,6 +397,5 @@ steps 1-3 locally.
 .. _Galaxy Starforge: https://github.com/galaxyproject/starforge/
 .. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
-.. _Galaxy Committers group: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst#committers
 .. _Jenkins: https://jenkins.galaxyproject.org/
 .. _lib/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/dependencies
