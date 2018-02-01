@@ -13,13 +13,17 @@ import collections
 import re
 from functools import reduce
 
-
 # log to galaxy's logger
 log = logging.getLogger(__name__)
 
 # does a lot more logging when set to true
 verbose = True
 
+"""
+list of all valid priorities, inferred from the global 
+default_desinations section of the config
+"""
+priority_list = []
 
 class MalformedYMLException(Exception):
     pass
@@ -393,34 +397,29 @@ class RuleValidator:
                     valid_rule = False
             elif isinstance(rule["destination"], dict):
                 if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
-                    if "med" not in rule["destination"]["priority"]:
-                        error = "No 'med' priority destination for rule " + str(counter)
-                        error += " in '" + str(tool) + "'."
-                        if not return_bool:
-                            error += " Ignoring..."
-                        if verbose:
-                            log.debug(error)
-                        valid_rule = False
-                    else:
-                        for priority in rule["destination"]["priority"]:
-                            if priority not in ["low", "med", "high"]:
-                                error = "Invalid priority destination '" + str(priority)
-                                error += "' for rule " + str(counter)
-                                error += " in '" + str(tool) + "'."
-                                if not return_bool:
-                                    error += " Ignoring..."
-                                if verbose:
-                                    log.debug(error)
-                                valid_rule = False
-                            elif not isinstance(rule["destination"]["priority"][priority], str):
-                                error = "No '" + str(priority)
-                                error += "'priority destination for rule " + str(counter)
-                                error += " in '" + str(tool) + "'."
-                                if not return_bool:
-                                    error += " Ignoring..."
-                                if verbose:
-                                    log.debug(error)
-                                valid_rule = False
+                    
+                    #### new code
+                    for priority in rule["destination"]["priority"]:
+                        if priority not in priority_list:
+                            error = "Invalid priority classification: "
+                            error += str(priority)
+                            if not return_bool:
+                                error += " Ignoring..."
+                            if verbose:
+                                log.debug(error)
+                            valid_rule = False
+                            
+                        elif not isinstance(rule["destination"]["priority"][priority], str):
+                            error = "No '" + str(priority)
+                            error += "'priority classification for rule " + str(counter)
+                            error += " in '" + str(tool) + "'."
+                            if not return_bool:
+                                error += " Ignoring..."
+                            if verbose:
+                                log.debug(error)
+                            valid_rule = False
+                            
+                    #### new code ends here
                 else:
                     error = "No destination specified for rule " + str(counter)
                     error += " in '" + str(tool) + "'."
@@ -755,32 +754,26 @@ def validate_config(obj, return_bool=False):
             elif isinstance(obj['default_destination'], dict):
                 if ('priority' in obj['default_destination'] and
                         isinstance(obj['default_destination']['priority'], dict)):
-                    if 'med' not in obj['default_destination']['priority']:
-                        error = "No default 'med' priority destination!"
-                        if verbose:
-                            log.debug(error)
-                        valid_config = False
-                    else:
-                        for priority in obj['default_destination']['priority']:
-                            if priority in ['low', 'med', 'high']:
-                                if isinstance(
-                                        obj['default_destination']['priority'][priority],
-                                        str):
-                                    new_config['default_destination']['priority'][
-                                        priority] = obj[
-                                            'default_destination']['priority'][priority]
-                                else:
-                                    error = ("No default '" + str(priority) +
-                                             "' priority destination in config!")
-                                    if verbose:
-                                        log.debug(error)
-                                    valid_config = False
-                            else:
-                                error = ("Invalid default priority destination '" +
-                                         str(priority) + "' found in config!")
-                                if verbose:
-                                    log.debug(error)
-                                valid_config = False
+                    
+                    ####My new code
+                    
+                    for priority in obj['default_destination']['priority']:
+                            
+                        if isinstance(obj['default_destination']['priority'][priority],
+                            str):
+                            if priority not in priority_list:
+                                priority_list.append(priority)
+                            
+                            new_config['default']['priority'][priority] = obj[
+                                'default_destination']['priority'][priority]
+                            
+                        else:
+                            error = ("Invalid default priority classification '" +
+                                     str(priority_classification) + "' found in config!")
+                            if verbose:
+                                log.debug(error)
+                            valid_config = False
+
                 else:
                     error = "No default priority destinations specified in config!"
                     if verbose:
@@ -804,11 +797,18 @@ def validate_config(obj, return_bool=False):
 
                     if isinstance(curr, dict):
                         if 'priority' in curr and isinstance(curr['priority'], str):
-                            if curr['priority'] in ['low', 'med', 'high']:
+                            """
+                            #### my new code
+                            
+                            if curr['priority'] in priority_list:
+                                new_config['users'][user]['priority'] = curr['priority']
+                            """
+                            if curr['priority'] in ['low', 'med', 'high']: ### DO THINGS HERE (maybe)
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
-                                error = ("User '" + user + "', priority is not valid!" +
-                                         " Must be either low, med, or high.")
+                                error = ("User '" + user + "', priority classification "
+                                    + "is not valid: Must be one of the values "
+                                    + "specified in the config.")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -846,37 +846,43 @@ def validate_config(obj, return_bool=False):
                                 new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                 tool_has_default = True
                             elif isinstance(curr['default_destination'], dict):
+                                
                                 if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
-                                    if ('med' not in curr['default_destination']['priority']):
-                                        error = "No default 'med' priority destination "
-                                        error += "for " + str(tool) + "!"
-                                        if verbose:
-                                            log.debug(error)
-                                        valid_config = False
-                                    else:
-                                        for priority in curr['default_destination']['priority']:
-                                            destination = curr['default_destination']['priority'][priority]
-                                            if priority in ['low', 'med', 'high']:
-                                                if isinstance(destination, str):
-                                                    new_config['tools'][tool]['default_destination']['priority'][priority] = destination
-                                                    tool_has_default = True
-                                                else:
-                                                    error = ("No default '" +
-                                                             str(priority) +
-                                                             "' priority destination " +
-                                                             "for " + str(tool) +
-                                                             " in config!")
-                                                    if verbose:
-                                                        log.debug(error)
-                                                    valid_config = False
+                                    ####new code
+                                    ####May not be necessary check
+                                    all_mandatory_classes_defined = True
+                                    for priority in priority_list:
+                                        if priority not in curr['default_destination']['priority']:
+                                            error = ("No default for priority classification "
+                                                + str(priority) + " in tool " + str(tool))
+                                            if verbose:
+                                                log.debug(error)
+                                            valid_config = False
+                                            all_mandatory_classes_defined = False
+                                            
+                                   ## if all_mandatory_classes_defined == True:
+                                    for priority in curr['default_destination']['priority']:
+                                        destination = curr['default_destination']['priority'][priority]
+                                        if priority in priority_list:
+                                            if isinstance(destination, str):
+                                                new_config['tools'][tool]['default_destination'][
+                                                    'priority'][priority] = destination
+                                                tool_has_default = True
                                             else:
-                                                error = ("Invalid default priority " +
-                                                         "destination '" + str(priority) +
-                                                         "' for " + str(tool) +
-                                                         "found in config!")
+                                                error = ("No default '" + str(priority) +
+                                                         "' priority classification  for tool "
+                                                         + str(tool) + " in config!")
                                                 if verbose:
                                                     log.debug(error)
                                                 valid_config = False
+                                                
+                                        else:
+                                            error = ("Invalid default priority classification '" +
+                                                     str(priority) + "' for " + str(tool)
+                                                     + " found in config!")
+                                            if verbose:
+                                                log.debug(error)
+                                            valid_config = False
                                 else:
                                     error = "No default priority destinations specified"
                                     error += " for " + str(tool) + " in config!"
@@ -1104,7 +1110,7 @@ def importer(test):
     global JobDestination
     global JobMappingException
     if test:
-        class JobDestionation(object):
+        class JobDestination(object):
             def __init__(self, *kwd):
                 self.id = kwd.get('id')
                 self.nativeSpec = kwd.get('params')['nativeSpecification']
@@ -1177,7 +1183,7 @@ def map_tool_to_destination(
                     records += 1
         except NameError:
             pass
-        # Loop through each input file and adds the size to the total
+        # Loops through each input file and adds the size to the total
         # or looks through db for records
         for da in inp_data:
             try:
@@ -1227,7 +1233,7 @@ def map_tool_to_destination(
     fail_message = None
 
     # set default priority to med
-    default_priority = 'med'
+    default_priority = 'med' ###May need to find a better default
     priority = default_priority
 
     if config is not None:
