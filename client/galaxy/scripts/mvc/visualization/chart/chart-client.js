@@ -4,7 +4,8 @@ import Modal from "mvc/ui/ui-modal";
 import Ui from "mvc/ui/ui-misc";
 import Chart from "mvc/visualization/chart/components/model";
 import Editor from "mvc/visualization/chart/views/editor";
-import Viewer from "mvc/visualization/chart/views/viewport";
+import Viewer from "mvc/visualization/chart/views/viewer";
+import Menu from "mvc/visualization/chart/views/menu";
 
 export default Backbone.View.extend({
     initialize: function(options) {
@@ -20,48 +21,15 @@ export default Backbone.View.extend({
         this.chart.plugin = options.visualization_plugin;
         this.chart.plugin.specs = this.chart.plugin.specs || {};
         this.chart_load = options.chart_load;
+        this.message = new Ui.Message();
         this.deferred = new Deferred();
         this.viewer = new Viewer(this);
         this.editor = new Editor(this);
-        this.buttons =[{
-            icon: "fa-angle-double-left",
-            tooltip: "Show",
-            cls: "ui-button-icon charts-fullscreen-button",
-            onclick: () => {
-                this.$el.removeClass("charts-fullscreen");
-                window.dispatchEvent(new Event("resize"));
-            }
-        },{
-            icon: "fa-angle-double-right",
-            tooltip: "Hide",
-            onclick: () => {
-                this.$el.addClass("charts-fullscreen");
-                window.dispatchEvent(new Event("resize"));
-            }
-        },{
-            icon: "fa-line-chart",
-            tooltip: "Visualize",
-            onclick: () => {
-                this.chart.set({
-                    date: Utils.time()
-                });
-                this.chart.trigger("redraw");
-            }
-        },{
-            icon: "fa-save",
-            tooltip: "Save",
-            onclick: () => {
-                this.chart.set({
-                    date: Utils.time()
-                });
-                this.chart.trigger("redraw");
-            }
-        }];
-        for(let b of this.buttons) {
-            this.$buttons.append((new Ui.ButtonIcon(b)).$el);
-        }
+        this.menu = new Menu(this);
         this.$center.append(this.viewer.$el);
-        this.$right.append(this.editor.$el);
+        this.$right.append(this.message.$el)
+                   .append(this.editor.$el);
+        this.$buttons.append(this.menu.$el);
         $.ajax({
             url: `${Galaxy.root}api/datasets/${options.dataset_id}`
         }).done(dataset => {
