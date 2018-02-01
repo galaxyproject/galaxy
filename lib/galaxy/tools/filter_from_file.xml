@@ -22,9 +22,9 @@
         </conditional>
     </inputs>
     <outputs>
-        <collection name="output_filtered" format_source="input" type_source="input" label="${on_string} (filtered)" >
+        <collection name="output_filtered" format_source="input" type_source="input" structured_like="input" label="${on_string} (filtered)" >
         </collection>
-        <collection name="output_discarded" format_source="input" type_source="input" label="${on_string} (discarded)" >
+        <collection name="output_discarded" format_source="input" type_source="input" structured_like="input" label="${on_string} (discarded)" >
         </collection>
     </outputs>
     <tests>
