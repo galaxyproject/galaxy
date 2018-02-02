@@ -1,5 +1,6 @@
 import DATASET_MODEL from "mvc/dataset/dataset-model";
 import BASE_MVC from "mvc/base-mvc";
+import Utils from "utils/utils";
 import _l from "utils/localization";
 
 //==============================================================================
@@ -280,16 +281,19 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 return parsed;
             },
 
-            /** save this dataset, _Mark_ing it as deleted (just a flag) */
-            delete: function(options) {
+            /** save this collection, _Mark_ing it as deleted (just a flag) */
+            delete: function(recursive, purge, options) {
+                recursive = recursive || false;
+                purge = purge || false;
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
-                return this.save({ deleted: true }, options);
+                options = Utils.merge(options, {"method": "delete"});
+                return this.save({ deleted: true, recursive: recursive, purge: purge }, options);
             },
-            /** save this dataset, _Mark_ing it as undeleted */
+            /** save this collection, _Mark_ing it as undeleted */
             undelete: function(options) {
-                if (!this.get("deleted") || this.get("purged")) {
+                if (!this.get("deleted")) {
                     return jQuery.when();
                 }
                 return this.save({ deleted: false }, options);
