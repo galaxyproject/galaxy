@@ -377,7 +377,7 @@ class RuleValidator:
         @return: validated rule and result of validation
         """
 
-        valid_destinations = get_valid_destinations_from_config()
+        valid_destinations = get_valid_destinations_from_config() ###TODO: find a place that I can declare this only once
 
         if "fail_message" in rule:
             if "destination" not in rule or rule['destination'] != "fail":
@@ -808,7 +808,7 @@ def validate_config(obj, return_bool=False):
 
                             if obj['default_destination']['priority'][priority] in valid_destinations:
                                 new_config['default_destination']['priority'][priority] = obj[
-                                    'default_destination']['priority'][priority]
+                                        'default_destination']['priority'][priority]
                             else:
                                 error = ("destination '" +
                                          obj['default_destination']['priority'][priority] +
