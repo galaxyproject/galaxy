@@ -1,5 +1,5 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import * as Backbone from "libs/backbone";
 import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";

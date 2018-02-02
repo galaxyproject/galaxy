@@ -3,7 +3,7 @@ import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import * as Backbone from "libs/backbone";
 
 /* global jQuery */
