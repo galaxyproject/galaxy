@@ -267,7 +267,7 @@ var DatasetListItemEdit = _super.extend(
                     .attr("href", url)
                     .append($("<span/>").addClass("fa fa-bar-chart-o"))
                     .on("click", function(e) {
-                        Galaxy.frame.add({ url: url });
+                        Galaxy.frame.add({ url: url, title: "Visualization" });
                         e.preventDefault();
                     });
             }
