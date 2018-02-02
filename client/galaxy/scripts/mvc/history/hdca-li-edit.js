@@ -34,11 +34,11 @@ var HDCAListItemEdit = _super.extend(
 
         _renderDeleteButton: function() {
             return $(`
-                <div class="delete-dropdown dropdown">
+                <div class="dropdown">
                     <a class="delete-btn icon-btn" title="${_l('Delete')}" data-toggle="dropdown">
                         <span class="fa fa-times"></span>
                     </a>
-                    <ul class="dropdown-menu pull-right" role="menu" aria-labelledby="dLabel">
+                    <ul class="dropdown-menu pull-right" role="menu">
                         <li>
                             <a href="" class="delete-collection">
                                 ${_l("Collection Only")}
