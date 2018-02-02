@@ -216,7 +216,7 @@ class ExecutionTracker(object):
             return subcollection_mapping_type
             # return self.collection_info.structure.sliced_input_collection_type(self.implicit_inputs[input_name])
         else:
-            return self.mapping_params.param_template[input_name].collection.collection_type
+            return self.example_params[input_name].collection.collection_type
 
     def _structure_for_output(self, trans, tool_output):
         structure = self.collection_info.structure
