@@ -90,16 +90,6 @@ export default Backbone.View.extend({
                     window.dispatchEvent(new Event("resize"));
                 }
             }),
-            new Ui.ButtonIcon({
-                icon: "fa-line-chart",
-                tooltip: "Visualize",
-                onclick: () => {
-                    app.chart.set({
-                        date: Utils.time()
-                    });
-                    app.chart.trigger("redraw");
-                }
-            }),
             this.export_button,
             new Ui.ButtonIcon({
                 icon: "fa-save",

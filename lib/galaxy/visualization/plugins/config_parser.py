@@ -406,10 +406,10 @@ class ListParser(list):
     def __init__(self, aList):
         for element in aList:
             if len(element) > 0:
-                if len(element) == 1 or element[0].tag != element[1].tag:
-                    self.append(DictParser(element))
-                elif element[0].tag == element[1].tag:
+                if element.tag == element[0].tag:
                     self.append(ListParser(element))
+                else:
+                    self.append(DictParser(element))
             elif element.text:
                 text = element.text.strip()
                 if text:
@@ -426,10 +426,10 @@ class DictParser(dict):
             self.update(dict(parent_element.items()))
         for element in parent_element:
             if len(element) > 0:
-                if len(element) == 1 or element[0].tag != element[1].tag:
-                    aDict = DictParser(element)
-                else:
+                if element.tag == element[0].tag:
                     aDict = ListParser(element)
+                else:
+                    aDict = DictParser(element)
                 if element.items():
                     aDict.update(dict(element.items()))
                 self.update({element.tag: aDict})
