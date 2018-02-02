@@ -2333,7 +2333,7 @@ class DatabaseOperationTool(Tool):
 class UnzipCollectionTool(DatabaseOperationTool):
     tool_type = 'unzip_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -2344,10 +2344,12 @@ class UnzipCollectionTool(DatabaseOperationTool):
 
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
-        forward, reverse = forward_o.copy(), reverse_o.copy()
+        forward, reverse = forward_o.copy(copy_tags=tags), reverse_o.copy(copy_tags=tags)
+
         # TODO: rename...
         history.add_dataset(forward, set_hid=True)
         history.add_dataset(reverse, set_hid=True)
+
         out_data["forward"] = forward
         out_data["reverse"] = reverse
 
@@ -2355,7 +2357,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
 class ZipCollectionTool(DatabaseOperationTool):
     tool_type = 'zip_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
@@ -2374,7 +2376,7 @@ class ZipCollectionTool(DatabaseOperationTool):
 class MergeCollectionTool(DatabaseOperationTool):
     tool_type = 'merge_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         input_lists = []
 
         for incoming_repeat in incoming["inputs"]:
@@ -2457,7 +2459,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
 
         assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
@@ -2494,7 +2496,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
 class FlattenTool(DatabaseOperationTool):
     tool_type = 'flatten_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = odict()
@@ -2519,7 +2521,7 @@ class FlattenTool(DatabaseOperationTool):
 class SortTool(DatabaseOperationTool):
     tool_type = 'sort_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
         new_elements = odict()
@@ -2557,7 +2559,7 @@ class SortTool(DatabaseOperationTool):
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = 'relabel_from_file'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
@@ -2606,7 +2608,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
 class FilterFromFileTool(DatabaseOperationTool):
     tool_type = 'filter_from_file'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
