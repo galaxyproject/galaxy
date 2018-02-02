@@ -27,7 +27,7 @@ var commonLibs = [
     "libs/bootstrap-tour",
     "vue",
     // mvc
-    "libs/underscore",
+    "underscore",
     "libs/backbone",
     "toastr",
     // all pages get these
@@ -55,8 +55,7 @@ let buildconfig = {
         alias: {
             //TODO: correct our imports and remove these rules
             // Backbone looks for these in the same root directory
-            jquery: path.join(libsBase, "jquery/jquery"),
-            underscore: path.join(libsBase, "underscore.js")
+            jquery: path.join(libsBase, "jquery/jquery")
         }
     },
     module: {

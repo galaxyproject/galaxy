@@ -1,5 +1,5 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import * as _ from "underscore";
+import * as Backbone from "backbone";
 import util_mod from "viz/trackster/util";
 
 /* global $ */

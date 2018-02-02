@@ -2,8 +2,8 @@
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import * as _ from "underscore";
+import * as Backbone from "backbone";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import IconButton from "mvc/ui/icon-button";

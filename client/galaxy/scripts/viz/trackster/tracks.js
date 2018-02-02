@@ -1,6 +1,6 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import * as _ from "underscore";
+import * as Backbone from "backbone";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";

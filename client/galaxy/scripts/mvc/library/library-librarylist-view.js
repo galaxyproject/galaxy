@@ -1,7 +1,7 @@
 import mod_toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
-import _ from "libs/underscore";
+import _ from "underscore";
 var LibraryListView = Backbone.View.extend({
     el: "#libraries_element",
 

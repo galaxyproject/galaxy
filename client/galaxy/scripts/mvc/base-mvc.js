@@ -1,4 +1,4 @@
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import * as Backbone from "libs/backbone";
 import addLogging from "utils/add-logging";
 import _l from "utils/localization";

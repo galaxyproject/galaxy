@@ -1,5 +1,5 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import * as d3 from "d3";
 import { event as currentEvent } from "d3";
 import visualization from "viz/visualization";

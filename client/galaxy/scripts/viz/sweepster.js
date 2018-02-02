@@ -4,7 +4,7 @@ import _l from "utils/localization";
  * genomic visualization.
  */
 
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import * as d3 from "libs/d3";
 import util from "viz/trackster/util";
 import visualization from "viz/visualization";
