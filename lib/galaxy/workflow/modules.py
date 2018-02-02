@@ -985,7 +985,7 @@ class ToolModule(WorkflowModule):
     def _handle_mapped_over_post_job_actions(self, step, step_inputs, step_outputs, replacement_dict):
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.immediate_actions:
+            if pja.action_type in ActionBox.mapped_over_output_actions:
                 ActionBox.execute_on_mapped_over(self.trans.app, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
