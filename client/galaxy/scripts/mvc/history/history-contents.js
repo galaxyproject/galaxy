@@ -5,11 +5,13 @@ import HISTORY_PREFS from "mvc/history/history-preferences";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
+import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
 
-var limitPerPageDefault = 500;
-try {
-    limitPerPageDefault = localStorage.getItem("historyContentsLimitPerPageDefault") || limitPerPageDefault;
-} catch (err) {}
+/* global Galaxy */
+/* global jQuery */
+
+const limitPerPageDefault = window.localStorage.getItem("historyContentsLimitPerPageDefault") || 500;
 
 //==============================================================================
 var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
