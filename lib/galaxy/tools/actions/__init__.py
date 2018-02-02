@@ -196,6 +196,9 @@ class DefaultToolAction(object):
         # grap tags from incoming HDAs
         preserved_tags = {}
         for data in inp_data.values():
+            if not data:
+                continue
+
             for tag in [t for t in data.tags if t.user_tname == 'name']:
                 preserved_tags[tag.value] = tag
 
