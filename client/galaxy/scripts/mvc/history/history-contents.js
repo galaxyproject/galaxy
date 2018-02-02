@@ -72,7 +72,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             if (historyContent.attributes.history_content_type === "dataset_collection") {
                 var jobSourceType = historyContent.attributes.job_source_type;
                 var jobSourceId = historyContent.attributes.job_source_id;
-                if (jobSourceType) {
+                if (jobSourceType && this.jobStateSummariesCollection) {
                     this.jobStateSummariesCollection.add({
                         id: jobSourceId,
                         model: jobSourceType,
