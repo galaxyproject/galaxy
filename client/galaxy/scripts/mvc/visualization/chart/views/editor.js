@@ -22,9 +22,8 @@ export default Backbone.View.extend({
         this.tabs = new Tabs.View({});
         this.tabs.add({
             id: "settings",
-            title: "Customize",
-            icon: "fa fa-bars",
-            tooltip: "Customize options.",
+            icon: "fa fa-gear",
+            tooltip: "Change settings.",
             $el: $("<div/>")
                 .append(new Ui.Label({ title: "Provide a title:" }).$el)
                 .append(this.title.$el)
@@ -38,9 +37,8 @@ export default Backbone.View.extend({
         if (this.chart.plugin.groups) {
             this.tabs.add({
                 id: "groups",
-                title: "Select data",
                 icon: "fa-database",
-                tooltip: "Specify data options.",
+                tooltip: "Select data.",
                 $el: new Groups(this.app).$el
             });
         }
