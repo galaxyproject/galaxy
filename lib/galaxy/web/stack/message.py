@@ -4,8 +4,8 @@ from __future__ import absolute_import
 
 import json
 import logging
-from types import MethodType
 
+import six
 
 log = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class ApplicationStackMessage(dict):
         This could also be implemented as a mixin class.
         """
         assert self.default_handler is not None, '%s has no default handler method, cannot bind' % self.__class__.__name__
-        setattr(obj, name, MethodType(self.default_handler, obj, obj.__class__))
+        setattr(obj, name, six.create_bound_method(self.default_handler, obj))
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
 

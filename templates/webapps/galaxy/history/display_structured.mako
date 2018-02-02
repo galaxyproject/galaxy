@@ -268,7 +268,7 @@ elif entity_name == "WorkflowInvocation":
             params_object = None
             try:
                 params_object = job.get_param_values( trans.app, ignore_errors=True )
-            except Exception, exc:
+            except Exception as exc:
                 pass
         %>
         <div class="header">
