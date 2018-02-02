@@ -518,7 +518,7 @@ class Snptest(Rgenetics):
     file_ext = "snptest"
 
 
-class IdeasPre(Rgenetics):
+class IdeasPre(Html):
     """
     This datatype defines the input format required by IDEAS:
     https://academic.oup.com/nar/article/44/14/6721/2468150
