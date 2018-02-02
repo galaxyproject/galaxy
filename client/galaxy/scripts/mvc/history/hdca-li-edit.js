@@ -51,7 +51,7 @@ var HDCAListItemEdit = _super.extend(
                         </li>
                         <li style="display: ${this.purgeAllowed ? 'inherit' : 'none'}">
                             <a href="" class="delete-collection-and-purge-datasets">
-                                ${_l("Permenantly Delete Datasets")}
+                                ${_l("Permanently Delete Datasets")}
                             </a>
                         </li>
                     </ul>
