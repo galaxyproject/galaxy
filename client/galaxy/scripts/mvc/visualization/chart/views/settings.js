@@ -39,6 +39,7 @@ export default Backbone.View.extend({
                 cls: "ui-portlet-plain",
                 onchange: function() {
                     self.chart.settings.set(self.form.data.create());
+                    self.chart.trigger("redraw");
                 }
             });
             this.chart.settings.set(this.form.data.create());
