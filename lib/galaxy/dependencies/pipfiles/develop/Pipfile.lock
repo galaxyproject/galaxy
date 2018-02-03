@@ -194,6 +194,7 @@
             "hashes": [
                 "sha256:5669a4cdbf4b3192716442e2224db45ecd1639e42f990739ddfa8f2ca3f7ba87"
             ],
+            "markers": "python_version < '3'",
             "version": "==0.5.1"
         },
         "pygments": {
@@ -303,6 +304,7 @@
             "hashes": [
                 "sha256:d2df51cc4eca5a6dec0a2af3817b236655558deff9542fc3d7653d16c8d5ba7e"
             ],
+            "markers": "python_version < '3'",
             "version": "==0.9.1"
         },
         "typing": {
