@@ -27,6 +27,7 @@ export default Backbone.View.extend({
         this._createContainer("div");
         this.chart.on("redraw", function() {
             self.app.deferred.execute(function(process) {
+                console.debug("viewer:redraw() - Redrawing...");
                 self._draw(process, self.chart);
             });
         });
