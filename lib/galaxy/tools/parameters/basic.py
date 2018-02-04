@@ -834,7 +834,7 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.legal_values
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values={}, require_legal_value=True):
         legal_values = self.get_legal_values(trans, other_values)
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
@@ -858,7 +858,7 @@ class SelectToolParameter(ToolParameter):
             return value
         if (not legal_values or value is None) and self.optional:
             return None
-        if not legal_values:
+        if not legal_values and require_legal_value:
             raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
             if not self.multiple:
@@ -877,7 +877,7 @@ class SelectToolParameter(ToolParameter):
                         return []
                     else:
                         raise ValueError("No option was selected for %s but input is not optional." % self.name)
-            if value not in legal_values:
+            if value not in legal_values and require_legal_value:
                 raise ValueError("An invalid option was selected for %s, %r, please verify." % (self.name, value))
             return value
 
@@ -1014,6 +1014,104 @@ class GenomeBuildParameter(SelectToolParameter):
             # Hack for unit tests, since we have no tool
             return util.read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
+
+
+class SelectTagParameter(SelectToolParameter):
+    """
+    Select set that is composed of a set of tags available for an input.
+    """
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
+        SelectToolParameter.__init__(self, tool, input_source)
+        self.tool = tool
+        self.tag_key = input_source.get("group", False)
+        self.optional = input_source.get("optional", False)
+        self.multiple = input_source.get("multiple", False)
+        self.accept_default = input_source.get_bool("accept_default", False)
+        if self.accept_default:
+            self.optional = True
+        self.data_ref = input_source.get("data_ref", None)
+        self.ref_input = None
+        # Legacy style default value specification...
+        self.default_value = input_source.get("default_value", None)
+        if self.default_value is None:
+            # Newer style... more in line with other parameters.
+            self.default_value = input_source.get("value", None)
+        self.is_dynamic = True
+
+    def from_json(self, value, trans, other_values={}):
+        """
+        Label convention prepends column number with a 'c', but tool uses the integer. This
+        removes the 'c' when entered into a workflow.
+        """
+        if self.multiple:
+            tag_list = set()
+            # split on newline and ,
+            if isinstance(value, list) or isinstance(value, string_types):
+                if not isinstance(value, list):
+                    value = value.split('\n')
+                for tag_str in value:
+                    for tag in str(tag_str).split(','):
+                        tag = tag.strip()
+                        if tag:
+                            tag_list.add(tag)
+            value = list(tag_list)
+        else:
+            if not value:
+                value = None
+        # We skip requiring legal values -- this is similar to optional, but allows only subset of datasets to be positive
+        # TODO: May not actually be required for (nested) collection input ?
+        return super(SelectTagParameter, self).from_json(value, trans, other_values, require_legal_value=False)
+
+    def get_tag_list(self, other_values):
+        """
+        Generate a select list containing the columns of the associated
+        dataset (if found).
+        """
+        # Get the value of the associated data reference (a dataset)
+        history_items = other_values.get(self.data_ref, None)
+        # Check if a dataset is selected
+        if not history_items:
+            return []
+        tags = set()
+        for history_item in util.listify(history_items):
+            if hasattr(history_item, 'dataset_instances'):
+                for dataset in history_item.dataset_instances:
+                    for tag in dataset.tags:
+                        if tag.user_tname == 'group':
+                            tags.add(tag.user_value)
+            else:
+                for tag in history_item.tags:
+                    if tag.user_tname == 'group':
+                        tags.add(tag.user_value)
+        return list(tags)
+
+    def get_options(self, trans, other_values):
+        """
+        Show tags
+        """
+        options = []
+        for tag in self.get_tag_list(other_values):
+            options.append(('Tags: ' + tag, tag, False))
+        return options
+
+    def get_initial_value(self, trans, other_values):
+        if self.default_value is not None:
+            return self.default_value
+        return SelectToolParameter.get_initial_value(self, trans, other_values)
+
+    def get_legal_values(self, trans, other_values):
+        if self.data_ref not in other_values:
+            raise ValueError("Value for associated data reference not found (data_ref).")
+        return set(self.get_tag_list(other_values))
+
+    def get_dependencies(self):
+        return [self.data_ref]
+
+    def to_dict(self, trans, other_values={}):
+        d = super(SelectTagParameter, self).to_dict(trans, other_values=other_values)
+        d['data_ref'] = self.data_ref
+        return d
 
 
 class ColumnListParameter(SelectToolParameter):
@@ -2103,6 +2201,7 @@ parameter_types = dict(
     genomebuild=GenomeBuildParameter,
     select=SelectToolParameter,
     color=ColorToolParameter,
+    select_tag=SelectTagParameter,
     data_column=ColumnListParameter,
     hidden=HiddenToolParameter,
     hidden_data=HiddenDataToolParameter,
