@@ -168,6 +168,7 @@ class MockDataset(object):
         self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
+        self.tags = []
 
 
 class MockTool(object):
