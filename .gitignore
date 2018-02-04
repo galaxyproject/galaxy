@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
