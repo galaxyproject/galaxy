@@ -24,13 +24,13 @@ verbose = True
 list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
-priority_list = []
+priority_list = set()
 
 """
 list of all valid destinations, retrieved from the
 job configuration file
 """
-valid_destinations = []
+valid_destinations = set()
 
 
 class MalformedYMLException(Exception):
@@ -785,6 +785,7 @@ def validate_config(obj, return_bool=False):
 
         if 'default_destination' in obj:
             if isinstance(obj['default_destination'], str):
+                priority_list.add(obj['default_destination'])
                 if obj['default_destination'] in valid_destinations:
                     new_config["default_destination"] = obj['default_destination']
                 else:
@@ -803,8 +804,7 @@ def validate_config(obj, return_bool=False):
 
                         if isinstance(obj['default_destination']['priority'][priority],
                                       str):
-                            if priority not in priority_list:
-                                priority_list.append(priority)
+                            priority_list.add(priority)
 
                             if obj['default_destination']['priority'][priority] in valid_destinations:
                                 new_config['default_destination']['priority'][priority] = obj[
@@ -1300,11 +1300,12 @@ def map_tool_to_destination(
     # For each different rule for the tool that's running
     fail_message = None
 
-    # set default priority to whatever the middle one is in the list
-    # The priorities won't necessarily be in order, but it can't be
-    # worse than choosing a random value (probably)
+    # assign default priority to the first element that comes out of the
+    # set. Definitely not the best way to pick fallback default
+    # destinations for tools, but there's not many other options without
+    # making default destinations a mandatory field for all tools
     if len(priority_list) > 0:
-        default_priority = priority_list[len(priority_list) / 2]
+        default_priority = next(iter(priority_list))
         priority = default_priority
     else:
         fail_message = ("No priorities declared in config file!" +
@@ -1455,7 +1456,7 @@ def map_tool_to_destination(
 
     if destination == "fail":
         if fail_message:
-            raise JobMappingException(fail_message)
+            raise JobMappingException(fail_message)  ###TODO: Should an exception occur when there are no default destinations?
         else:
             raise JobMappingException(matched_rule["fail_message"])
 
@@ -1484,7 +1485,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
     @return: A list of all of the destination IDs declared in the job
                 configuration file.
     """
-    valid_destinations = []
+    valid_destinations = set()
 
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
@@ -1496,7 +1497,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
 
     for destination in job_conf.getroot().iter("destination"):
         if isinstance(destination.get("id"), str):
-            valid_destinations.append(destination.get("id"))
+            valid_destinations.add(destination.get("id"))
 
         else:
             error = "Destination ID '" + str(destination)
