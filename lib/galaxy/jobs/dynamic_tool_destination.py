@@ -377,8 +377,6 @@ class RuleValidator:
         @return: validated rule and result of validation
         """
 
-        valid_destinations = get_valid_destinations_from_config() ###TODO: find a place that I can declare this only once
-
         if "fail_message" in rule:
             if "destination" not in rule or rule['destination'] != "fail":
                 error = "Found a fail_message for rule " + str(counter)
@@ -755,6 +753,7 @@ def validate_config(obj, return_bool=False):
     new_config = infinite_defaultdict()
 
     global verbose
+    global valid_destinations
     valid_destinations = get_valid_destinations_from_config()
     verbose = False
     valid_config = True
@@ -1306,7 +1305,7 @@ def map_tool_to_destination(
     # making default destinations a mandatory field for all tools
     if len(priority_list) > 0:
         default_priority = next(iter(priority_list))
-        priority = default_priority
+        priority = default_priority  ###FIXME: this is sometimes a value that isn't in the tool's default destinations field.
     else:
         fail_message = ("No priorities declared in config file!" +
                         "cannot map " + str(tool.old_id) + " to destination")
