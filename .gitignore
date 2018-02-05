@@ -124,9 +124,8 @@ tool-data/shared/jars/
 sprite-*.less
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
+static/scripts
 static/maps
-static/scripts/bundled/*.map
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
