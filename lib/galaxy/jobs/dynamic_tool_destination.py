@@ -30,7 +30,7 @@ priority_list = set()
 list of all valid destinations, retrieved from the
 job configuration file
 """
-valid_destinations = set()
+destination_list = set()
 
 
 class MalformedYMLException(Exception):
@@ -403,7 +403,7 @@ class RuleValidator:
                     if verbose:
                         log.debug(error)
                     valid_rule = False
-                elif rule["destination"] not in valid_destinations and rule["destination"] != "fail":
+                elif rule["destination"] not in destination_list and rule["destination"] != "fail":
                     error = "destination for '" + str(tool) + "', rule "
                     error += str(counter) + ": '"
                     error += str(rule["destination"])
@@ -421,8 +421,9 @@ class RuleValidator:
 
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
-                            error = "Invalid priority: "
-                            error += str(priority)
+                            error = "Invalid priority '"
+                            error += str(priority) + "' for rule "
+                            error += str(counter) + " in '" + str(tool) +"'."
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -440,7 +441,7 @@ class RuleValidator:
                                 log.debug(error)
                             valid_rule = False
 
-                        elif rule["destination"]["priority"][priority] not in valid_destinations:
+                        elif rule["destination"]["priority"][priority] not in destination_list:
                             error = "destination for '" + str(tool) + "', rule "
                             error += str(counter) + ": '"
                             error += str(rule["destination"]["priority"][priority])
@@ -746,6 +747,12 @@ def validate_config(obj, return_bool=False):
     @return: validated rule or result of validation (depending on return_bool)
     """
 
+    global priority_list
+    global destination_list
+
+    priority_list = set()
+    destination_list = get_destination_list_from_config()
+
     def infinite_defaultdict():
         return collections.defaultdict(infinite_defaultdict)
 
@@ -753,8 +760,6 @@ def validate_config(obj, return_bool=False):
     new_config = infinite_defaultdict()
 
     global verbose
-    global valid_destinations
-    valid_destinations = get_valid_destinations_from_config()
     verbose = False
     valid_config = True
     valid_rule = True
@@ -785,7 +790,7 @@ def validate_config(obj, return_bool=False):
         if 'default_destination' in obj:
             if isinstance(obj['default_destination'], str):
                 priority_list.add(obj['default_destination'])
-                if obj['default_destination'] in valid_destinations:
+                if obj['default_destination'] in destination_list:
                     new_config["default_destination"] = obj['default_destination']
                 else:
                     error = ("Invalid default destination '" +
@@ -805,7 +810,7 @@ def validate_config(obj, return_bool=False):
                                       str):
                             priority_list.add(priority)
 
-                            if obj['default_destination']['priority'][priority] in valid_destinations:
+                            if obj['default_destination']['priority'][priority] in destination_list:
                                 new_config['default_destination']['priority'][priority] = obj[
                                         'default_destination']['priority'][priority]
                             else:
@@ -852,17 +857,14 @@ def validate_config(obj, return_bool=False):
 
                     if isinstance(curr, dict):
                         if 'priority' in curr and isinstance(curr['priority'], str):
-                            """
                             #### my new code
 
                             if curr['priority'] in priority_list:
                                 new_config['users'][user]['priority'] = curr['priority']
-                            """
-                            if curr['priority'] in ['low', 'med', 'high']:  ### TODO: ask about user priorities
-                                new_config['users'][user]['priority'] = curr['priority']
                             else:
                                 error = ("User '" + user + "', priority '" +
-                                         str(curr['priority']) + "' is not valid")
+                                         str(curr['priority']) + "' is not defined " +
+                                         "in the global default_destination section")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -897,7 +899,7 @@ def validate_config(obj, return_bool=False):
                         # default_destination (not mandatory) and rules (mandatory)
                         if "default_destination" in curr:
                             if isinstance(curr['default_destination'], str):
-                                if curr['default_destination'] in valid_destinations:
+                                if curr['default_destination'] in destination_list:
                                     new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                     tool_has_default = True
                                 else:
@@ -925,7 +927,7 @@ def validate_config(obj, return_bool=False):
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
                                             if isinstance(destination, str):
-                                                if destination in valid_destinations:
+                                                if destination in destination_list:
                                                     new_config['tools'][tool]['default_destination'][
                                                         'priority'][priority] = destination
                                                     tool_has_default = True
@@ -1430,10 +1432,9 @@ def map_tool_to_destination(
                     else:
                         if priority in default_tool_destination['priority']:
                             destination = default_tool_destination['priority'][priority]
-                        elif default_priority in default_tool_destination['priority']:  ###TODO: There's likely a better way to do this, but we'd need to get a tool's priorities before setting default_priority
+                        elif default_priority in default_tool_destination['priority']:
                             destination = (default_tool_destination['priority'][default_priority])
-                        else:
-                            destination = (next(iter(default_tool_destination['priority'])))  ### worst case scenario we just take the (presumably) lowest priority.
+                        # else global default destination is used
             else:
                 if isinstance(matched_rule["destination"], str):
                     destination = matched_rule["destination"]
@@ -1442,8 +1443,7 @@ def map_tool_to_destination(
                         destination = matched_rule["destination"]["priority"][priority]
                     elif default_priority in matched_rule["destination"]["priority"]:  ###TODO: There's likely a better way to do this, but we'd need to get a tool's priorities before setting default_priority
                         destination = (matched_rule["destination"]["priority"][default_priority])
-                    else:
-                        destination = (next(iter(matched_rule["destination"]['priority'])))  ### worst case scenario we just take the (presumably) lowest priority.
+                    # else global default destination is used
 
         # if "default_destination" in config
         else:
@@ -1474,7 +1474,7 @@ def map_tool_to_destination(
     return destination
 
 
-def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
+def get_destination_list_from_config(config_location='/config/job_conf.xml'):
     """
     returns A list of all destination IDs declared in the job configuration
 
@@ -1487,7 +1487,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
     @return: A list of all of the destination IDs declared in the job
                 configuration file.
     """
-    valid_destinations = set()
+    global destination_list
 
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
@@ -1499,7 +1499,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
 
     for destination in job_conf.getroot().iter("destination"):
         if isinstance(destination.get("id"), str):
-            valid_destinations.add(destination.get("id"))
+            destination_list.add(destination.get("id"))
 
         else:
             error = "Destination ID '" + str(destination)
@@ -1507,7 +1507,7 @@ def get_valid_destinations_from_config(config_location='/config/job_conf.xml'):
             error += " parsed. Things may not work as expected!"
             log.debug(error)
 
-    return valid_destinations
+    return destination_list
 
 
 if __name__ == '__main__':

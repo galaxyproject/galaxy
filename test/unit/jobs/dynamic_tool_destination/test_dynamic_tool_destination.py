@@ -102,7 +102,8 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No global default destination specified in config!'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB')
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No priorities found so no default priorty set!')
         )
 
     @log_capture()
@@ -633,7 +634,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest144, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default 'med' priority destination!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -642,7 +642,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest145, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default priority destination 'mine' found in config!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -651,7 +650,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest146, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No 'med' priority destination for rule 1 in 'smalt'. Ignoring..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'low' for rule 1 in 'smalt'. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -660,7 +659,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest147, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority destination 'mine' for rule 1 in 'smalt'. Ignoring..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'mine' for rule 1 in 'smalt'. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -669,7 +668,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest148, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "User 'user@email.com', priority is not valid! Must be either low, med, or high."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "User 'user@email.com', priority 'mine' is not defined in the global default_destination section"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
