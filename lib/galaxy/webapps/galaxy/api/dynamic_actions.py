@@ -1,6 +1,6 @@
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
 from galaxy.jobs.actions.post import get_dynamic_post_processing_actions
+from galaxy.web.base.controller import BaseAPIController
 
 
 class DynamicActionsController(BaseAPIController):
