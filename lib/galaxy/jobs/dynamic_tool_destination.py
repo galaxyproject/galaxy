@@ -921,7 +921,6 @@ def validate_config(obj, return_bool=False):
                                                 log.debug(error)
                                             valid_config = False
 
-                                    ### if all_mandatory_classes_defined == True:
                                     for priority in curr['default_destination']['priority']:
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
@@ -1431,16 +1430,20 @@ def map_tool_to_destination(
                     else:
                         if priority in default_tool_destination['priority']:
                             destination = default_tool_destination['priority'][priority]
-                        else:
+                        elif default_priority in default_tool_destination['priority']:  ###TODO: There's likely a better way to do this, but we'd need to get a tool's priorities before setting default_priority
                             destination = (default_tool_destination['priority'][default_priority])
+                        else:
+                            destination = (next(iter(default_tool_destination['priority'])))  ### worst case scenario we just take the (presumably) lowest priority.
             else:
                 if isinstance(matched_rule["destination"], str):
                     destination = matched_rule["destination"]
                 else:
                     if priority in matched_rule["destination"]["priority"]:
                         destination = matched_rule["destination"]["priority"][priority]
-                    else:
+                    elif default_priority in matched_rule["destination"]["priority"]:  ###TODO: There's likely a better way to do this, but we'd need to get a tool's priorities before setting default_priority
                         destination = (matched_rule["destination"]["priority"][default_priority])
+                    else:
+                        destination = (next(iter(matched_rule["destination"]['priority'])))  ### worst case scenario we just take the (presumably) lowest priority.
 
         # if "default_destination" in config
         else:
