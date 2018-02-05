@@ -35,7 +35,7 @@ var HDCAListItemEdit = _super.extend(
         _renderDeleteButton: function() {
             return $(`
                 <div class="dropdown">
-                    <a class="delete-btn icon-btn" title="${_l('Delete')}" data-toggle="dropdown">
+                    <a class="delete-btn icon-btn" title="${_l("Delete")}" data-toggle="dropdown">
                         <span class="fa fa-times"></span>
                     </a>
                     <ul class="dropdown-menu pull-right" role="menu">
@@ -49,7 +49,7 @@ var HDCAListItemEdit = _super.extend(
                                 ${_l("Delete Datasets")}
                             </a>
                         </li>
-                        <li style="display: ${this.purgeAllowed ? 'inherit' : 'none'}">
+                        <li style="display: ${this.purgeAllowed ? "inherit" : "none"}">
                             <a href="" class="delete-collection-and-purge-datasets">
                                 ${_l("Permanently Delete Datasets")}
                             </a>
@@ -57,7 +57,6 @@ var HDCAListItemEdit = _super.extend(
                     </ul>
                 </div>`);
         },
-
 
         // ......................................................................... misc
         events: _.extend(_.clone(_super.prototype.events), {

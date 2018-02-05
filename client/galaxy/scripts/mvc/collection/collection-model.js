@@ -288,7 +288,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
-                options = Utils.merge(options, {"method": "delete"});
+                options = Utils.merge(options, { method: "delete" });
                 return this.save({ deleted: true, recursive: recursive, purge: purge }, options);
             },
             /** save this collection, _Mark_ing it as undeleted */
