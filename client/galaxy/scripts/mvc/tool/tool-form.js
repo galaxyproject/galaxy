@@ -138,10 +138,12 @@ var View = Backbone.View.extend({
         if (options.job_id && options.job_remap) {
             if (options.job_remap === "job_produced_collection_elements") {
                 var label = "Replace elements in collection ?";
-                var help = "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
+                var help =
+                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
             } else {
                 var label = "Resume dependencies from this job ?";
-                var help = "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+                var help =
+                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
             options.inputs.push({
                 label: label,
@@ -151,7 +153,7 @@ var View = Backbone.View.extend({
                 ignore: "__ignore__",
                 value: "__ignore__",
                 options: [["Yes", options.job_id], ["No", "__ignore__"]],
-                help: help,
+                help: help
             });
         }
 
