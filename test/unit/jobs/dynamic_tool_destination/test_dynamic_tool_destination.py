@@ -103,7 +103,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No priorities found so no default priorty set!')
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No priorities found so no default priorty set! Things may behave unexpectedly.')
         )
 
     @log_capture()
@@ -628,7 +628,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound! Setting lower_bound to 0!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
-
+    """
     @log_capture()
     def test_priority_default_destination_without_med_priority_destination(self, l):
         dt.parse_yaml(path=yt.ivYMLTest144, test=True)
@@ -644,9 +644,10 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
+      """
 
     @log_capture()
-    def test_tool_without_med_priority_destination(self, l):
+    def test_tool_without_low_default_destination(self, l):
         dt.parse_yaml(path=yt.ivYMLTest146, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -663,12 +664,42 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
+      #### New Tests
+
     @log_capture()
-    def test_users_with_invalid_priority(self, l):
-        dt.parse_yaml(path=yt.ivYMLTest148, test=True)
+    def test_not_all_priorities_in_tool(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest149, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "User 'user@email.com', priority 'mine' is not defined in the global default_destination section"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "no default for destination for priority 'lowish' in 'yuck'."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "no default for destination for priority 'higher' in 'yuck'."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_rule_destination_not_in_job_conf(self, l):  ### Also test when desination is just a string, not a priority?
+        dt.parse_yaml(path=yt.ivYMLTest150, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+        
+    @log_capture()
+    def test_tool_default_destination_not_in_job_conf(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest151, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "default destination for 'blah': 'not_true_destination' does not exist."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+        
+    @log_capture()
+    def test_default_destination_not_in_job_conf(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest152, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "destination 'no_such_dest' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 

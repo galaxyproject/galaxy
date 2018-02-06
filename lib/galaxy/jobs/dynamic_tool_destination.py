@@ -751,7 +751,7 @@ def validate_config(obj, return_bool=False):
     global destination_list
 
     priority_list = set()
-    destination_list = get_destination_list_from_config()
+    destination_list = get_destination_list_from_job_config()
 
     def infinite_defaultdict():
         return collections.defaultdict(infinite_defaultdict)
@@ -917,8 +917,8 @@ def validate_config(obj, return_bool=False):
                                     ### May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
-                                            error = ("No default for destination for priority  " +
-                                                     str(priority) + " in tool " + str(tool))
+                                            error = ("no default for destination for priority '" +
+                                                     str(priority) + "' in '" + str(tool)) + "'."
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
@@ -936,6 +936,9 @@ def validate_config(obj, return_bool=False):
                                                              str(tool) + "': '" +
                                                              str(destination) +
                                                              "' does not exist.")
+                                                    if verbose:
+                                                        log.debug(error)
+                                                    valid_config = False
                                             else:
                                                 error = ("No default '" + str(priority) +
                                                          "' priority destination  for tool " +
@@ -1309,8 +1312,10 @@ def map_tool_to_destination(
         priority = default_priority  ###FIXME: this is sometimes a value that isn't in the tool's default destinations field.
     else:
         fail_message = ("No priorities declared in config file!" +
-                        "cannot map " + str(tool.old_id) + " to destination")
-        error = "No priorities found so no default priorty set!"
+                        "cannot map " + str(tool.old_id) + " to destination" +
+                        "using priorities")
+        error = ("No priorities found so no default priorty set! " +
+                 "Things may behave unexpectedly.")
         if verbose:
             log.debug(error)
         valid_config = False
@@ -1441,7 +1446,7 @@ def map_tool_to_destination(
                 else:
                     if priority in matched_rule["destination"]["priority"]:
                         destination = matched_rule["destination"]["priority"][priority]
-                    elif default_priority in matched_rule["destination"]["priority"]:  ###TODO: There's likely a better way to do this, but we'd need to get a tool's priorities before setting default_priority
+                    elif default_priority in matched_rule["destination"]["priority"]:
                         destination = (matched_rule["destination"]["priority"][default_priority])
                     # else global default destination is used
 
@@ -1474,12 +1479,12 @@ def map_tool_to_destination(
     return destination
 
 
-def get_destination_list_from_config(config_location='/config/job_conf.xml'):
+def get_destination_list_from_job_config(job_config_location='/config/job_conf.xml'):
     """
     returns A list of all destination IDs declared in the job configuration
 
-    @type config_location: str
-    @param config_location: The location of the job config file relative
+    @type job_config_location: str
+    @param job_config_location: The location of the job config file relative
                 to the galaxy root directory. Defaults to
                 galaxy/config/job_conf.xml
 
@@ -1494,7 +1499,7 @@ def get_destination_list_from_config(config_location='/config/job_conf.xml'):
     config_directory = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../../..')
 
-    job_conf_file = config_directory + config_location
+    job_conf_file = config_directory + job_config_location
     job_conf = ET.parse(job_conf_file)
 
     for destination in job_conf.getroot().iter("destination"):

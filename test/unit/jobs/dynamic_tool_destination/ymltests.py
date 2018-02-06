@@ -945,3 +945,77 @@ ivYMLTest148 = '''
         priority: mine
     verbose: True
 '''
+
+#### New Tests
+
+# not all priorities in tool destinations
+ivYMLTest149 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+        lowish: waffles_low
+        high: waffles_default
+        higher: waffles_high
+    tools:
+      yuck:
+        default_destination:
+          priority:
+            med: waffles_default
+            high: waffles_high
+    verbose: True
+'''
+
+# rule destination not in job config
+ivYMLTest150 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+        high: waffles_default
+    tools:
+      blegh:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: fake_destination
+                high: waffles_default
+    verbose: True
+'''
+
+# tool default destination not in job config
+ivYMLTest151 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+        high: waffles_default
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: waffles_default
+                high: waffles_default
+        default_destination:
+          priority:
+            med: not_true_destination
+            high: waffles_default
+    verbose: True
+'''
+
+# default destination not in job config
+ivYMLTest152 = '''
+    default_destination:
+      priority:
+        med: no_such_dest
+    users:
+      user@email.com:
+        priority: med
+    verbose: True
+'''
