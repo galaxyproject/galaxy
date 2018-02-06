@@ -1,7 +1,6 @@
 <%def name="render_select( current_actions, action_key, action, roles )">
     <%
-        import sets
-        in_roles = sets.Set()
+        in_roles = set()
         for a in current_actions:
             if a.action == action.action:
                 in_roles.add( a.role )

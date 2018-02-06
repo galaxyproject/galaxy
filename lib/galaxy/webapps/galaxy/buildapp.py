@@ -609,29 +609,17 @@ def populate_api_routes(webapp, app):
     # ===== WEBHOOKS API =====
     # ========================
 
-    webapp.mapper.connect('get_all',
+    webapp.mapper.connect('get_all_webhooks',
                           '/api/webhooks',
                           controller='webhooks',
-                          action='get_all',
-                          conditions=dict(method=["GET"]))
+                          action='all_webhooks',
+                          conditions=dict(method=['GET']))
 
-    webapp.mapper.connect('get_random',
-                          '/api/webhooks/{webhook_type}',
+    webapp.mapper.connect('get_webhook_data',
+                          '/api/webhooks/{webhook_id}/data',
                           controller='webhooks',
-                          action='get_random',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_all_by_type',
-                          '/api/webhooks/{webhook_type}/all',
-                          controller='webhooks',
-                          action='get_all_by_type',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_data',
-                          '/api/webhooks/{webhook_name}/get_data',
-                          controller='webhooks',
-                          action='get_data',
-                          conditions=dict(method=["GET"]))
+                          action='webhook_data',
+                          conditions=dict(method=['GET']))
 
     # =======================
     # ===== LIBRARY API =====

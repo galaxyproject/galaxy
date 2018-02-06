@@ -11,7 +11,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from distutils.version import LooseVersion
+
+import packaging.version
 
 CHUNK_SIZE = 2 ** 20  # 1mb
 
@@ -87,8 +88,8 @@ def __main__():
     sorted_stderr_filename = os.path.join(tmp_dir, 'sorted.stderr')
     sorting_prefix = os.path.join(tmp_dir, 'sorted_bam')
     # samtools changed sort command arguments (starting from version 1.3)
-    samtools_version = LooseVersion(_get_samtools_version())
-    if samtools_version < LooseVersion('1.0'):
+    samtools_version = packaging.version.parse(_get_samtools_version())
+    if samtools_version < packaging.version.parse('1.0'):
         sort_args = ['-o', unsorted_bam_filename, sorting_prefix]
     else:
         sort_args = ['-T', sorting_prefix, unsorted_bam_filename]

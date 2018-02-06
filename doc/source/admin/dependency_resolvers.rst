@@ -92,7 +92,7 @@ installed packages. This resolver can be configured either to use the version st
 
 The Galaxy Packages dependency resolver takes a ``base_path`` argument that specifies the path under which
 it starts looking for the files it requires. The default value for this ``base_path`` is the
-``tool_dependency_dir`` configured in Galaxy's ``config/galaxy.ini``. Below the base path, the Galaxy Packages
+``tool_dependency_dir`` configured in Galaxy's ``config/galaxy.yml``. Below the base path, the Galaxy Packages
 resolver looks for directories named after tools, e.g. ``bedtools``. As mentioned before, this resolver
 works in versioned and versionless mode. The default mode is versioned, where the dependency resolver looks for a
 directory named after the dependency's version string. For example, if the Galaxy tool specifies that it
@@ -220,7 +220,7 @@ debug
 ensure_channels
     conda channels to enable by default. See
     http://conda.pydata.org/docs/custom-channels.html for more
-    information about channels. This defaults to ``iuc,bioconda,conda-forge,defaults,r``.
+    information about channels. This defaults to ``iuc,bioconda,conda-forge,defaults``.
     This order should be consistent with the `Bioconda prescribed order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml>`__
     if it includes ``bioconda``.
 

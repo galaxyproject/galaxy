@@ -3,7 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-# A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
 show_help() {

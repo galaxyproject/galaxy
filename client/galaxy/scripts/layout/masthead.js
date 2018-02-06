@@ -1,7 +1,7 @@
-import Utils from "utils/utils";
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
+
 /** Masthead **/
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -62,7 +62,9 @@ var View = Backbone.View.extend({
                 var text = "";
                 self.collection.each(model => {
                     var q = model.get("onbeforeunload") && model.get("onbeforeunload")();
-                    q && (text += `${q} `);
+                    if (q) {
+                        text += `${q} `;
+                    }
                 });
                 if (text !== "") {
                     return text;

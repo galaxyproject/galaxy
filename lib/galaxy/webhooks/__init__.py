@@ -12,11 +12,12 @@ log = logging.getLogger(__name__)
 
 
 class Webhook(object):
-    def __init__(self, w_name, w_type, w_activate, w_path):
-        self.name = w_name
-        self.type = w_type
-        self.activate = w_activate
-        self.path = w_path
+    def __init__(self, id, type, activate, weight, path):
+        self.id = id
+        self.type = type
+        self.activate = activate
+        self.weight = weight
+        self.path = path
         self.styles = ''
         self.script = ''
         self.helper = ''
@@ -24,12 +25,13 @@ class Webhook(object):
 
     def to_dict(self):
         return {
-            'name': self.name,
+            'id': self.id,
             'type': self.type,
             'activate': self.activate,
+            'weight': self.weight,
             'styles': self.styles,
             'script': self.script,
-            'config': self.config
+            'config': self.config,
         }
 
 
@@ -48,56 +50,57 @@ class WebhooksRegistry(object):
 
     def load_webhooks(self):
         for directory in self.webhooks_directories:
-            config_dir = os.path.join(directory, 'config')
+            config_file_path = None
+            for config_file in ['config.yml', 'config.yaml']:
+                path = os.path.join(directory, config_file)
+                if os.path.isfile(path):
+                    config_file_path = path
+                    break
 
-            if not os.path.exists(config_dir):
-                log.warning('directory not found: %s', config_dir)
-                continue
+            if config_file_path:
+                try:
+                    self.load_webhook_from_config(directory, config_file_path)
+                except Exception as e:
+                    log.exception(e)
 
-            config_dir_contents = os.listdir(config_dir)
-            # We are assuming that all yml/yaml files in a webhooks'
-            # config directory are webhook config files.
-            for config_file in config_dir_contents:
-                if config_file.endswith('.yml') or config_file.endswith('.yaml'):
-                    self.load_webhook_from_config(config_dir, config_file)
+    def load_webhook_from_config(self, webhook_dir, config_file_path):
+        with open(config_file_path) as file:
+            config = yaml.safe_load(file)
 
-    def load_webhook_from_config(self, config_dir, config_file):
+        weight = config.get('weight', 1)
+        if weight < 1:
+            raise ValueError('Webhook weight must be greater or equal 1.')
+
+        webhook = Webhook(
+            config.get('id'),
+            config.get('type'),
+            config.get('activate', False),
+            weight,
+            webhook_dir,
+        )
+
+        # Read styles into a string, assuming all styles are in a
+        # single file
         try:
-            with open(os.path.join(config_dir, config_file)) as file:
-                config = yaml.safe_load(file)
-                path = os.path.normpath(os.path.join(config_dir, '..'))
-                webhook = Webhook(
-                    config['name'],
-                    config['type'],
-                    config['activate'],
-                    path,
-                )
+            styles_file = os.path.join(webhook_dir, 'styles.css')
+            with open(styles_file, 'r') as file:
+                webhook.styles = file.read().replace('\n', '')
+        except IOError:
+            pass
 
-                # Read styles into a string, assuming all styles are in a
-                # single file
-                try:
-                    styles_file = os.path.join(path, 'static/styles.css')
-                    with open(styles_file, 'r') as file:
-                        webhook.styles = file.read().replace('\n', '')
-                except IOError:
-                    pass
+        # Read script into a string, assuming everything is in a
+        # single file
+        try:
+            script_file = os.path.join(webhook_dir, 'script.js')
+            with open(script_file, 'r') as file:
+                webhook.script = file.read()
+        except IOError:
+            pass
 
-                # Read script into a string, assuming everything is in a
-                # single file
-                try:
-                    script_file = os.path.join(path, 'static/script.js')
-                    with open(script_file, 'r') as file:
-                        webhook.script = file.read()
-                except IOError:
-                    pass
+        # Save helper function path if it exists
+        helper_path = os.path.join(webhook_dir, '__init__.py')
+        if os.path.isfile(helper_path):
+            webhook.helper = helper_path
 
-                # Save helper function path if it exists
-                helper_path = os.path.join(path, 'helper/__init__.py')
-                if os.path.isfile(helper_path):
-                    webhook.helper = helper_path
-
-                webhook.config = config
-                self.webhooks.append(webhook)
-
-        except Exception as e:
-            log.exception(e)
+        webhook.config = config
+        self.webhooks.append(webhook)

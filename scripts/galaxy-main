@@ -52,7 +52,7 @@ GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pa
 GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
 DEFAULT_INI_APP = "main"
 DEFAULT_CONFIG_SECTION = "galaxy"
-DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sample"]
+DEFAULT_INIS = ["config/galaxy.yml", "config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.yml.sample"]
 
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True

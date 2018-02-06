@@ -34,7 +34,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
                 <%- tour.name || tour.id %>
             </a>
-             - <%- tour.attributes.description || \"No description given.\" %>
+             - <%- tour.attributes.description || "No description given." %>
              <% _.each(tour.attributes.tags, function(tag) { %>
                 <span class="label label-primary sm-label-pad">
                     <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
@@ -82,6 +82,16 @@ var hooked_tour_from_data = data => {
                     .val(step.textinsert)
                     .trigger("change");
             };
+        }
+        if (step.path) {
+            // Galaxy does *not* support automagic path navigation right now in
+            // Tours -- too many ways to get your client 'stuck' in automatic
+            // navigation loops.  We can probably re-enable this as our client
+            // routing matures.
+            console.warn(
+                "This Galaxy Tour is attempting to use path navigation.  This is known to be unstable and can possibly get the Galaxy client 'stuck' in a tour, and at this time is not allowed."
+            );
+            delete step.path;
         }
     });
     return data;
