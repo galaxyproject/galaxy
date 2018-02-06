@@ -22,6 +22,7 @@ import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
+import ShareWorkflow from "components/ShareWorkflow.vue";
 import Vue from "vue";
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
@@ -58,6 +59,7 @@ window.app = function app(options, bootstrapped) {
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
+            "(/)workflows/share_workflow": "show_workflows_share",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)import(/)": "show_histories_import",
@@ -220,6 +222,13 @@ window.app = function app(options, bootstrapped) {
 
         show_import_workflow: function() {
             this.page.display(new Workflows.ImportWorkflowView());
+        },
+
+        show_workflows_share: function() {
+            var shareWorkflowInstance = Vue.extend(ShareWorkflow);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new shareWorkflowInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
         },
 
         show_custom_builds: function() {

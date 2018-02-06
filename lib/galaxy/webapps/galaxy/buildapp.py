@@ -130,6 +130,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import_workflow')
+    webapp.add_client_route('/workflows/share_workflow')
     webapp.add_client_route('/custom_builds')
 
     # ==== Done
