@@ -1063,3 +1063,38 @@ ivYMLTest155 = '''
     default_destination: no_such_dest
     verbose: True
 '''
+
+# tool rule destination priority doesn't exist
+ivYMLTest156 = '''
+    default_destination:
+      priority:
+        med: waffles_default
+    tools:
+      aTool:
+        default_destination:
+          priority:
+            med: waffles_low
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                notAPriority: waffles_default
+    verbose: True
+'''
+
+# tool default destination priority doesn't exist
+ivYMLTest157 = '''
+    default_destination:
+      priority:
+        med: waffles_default
+    tools:
+      aTool:
+        default_destination:
+          priority:
+            notAPriority: waffles_low
+            med: waffles_low
+    verbose: True
+'''

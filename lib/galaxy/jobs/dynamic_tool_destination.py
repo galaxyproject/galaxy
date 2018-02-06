@@ -421,7 +421,7 @@ class RuleValidator:
 
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
-                            error = "Invalid priority '"
+                            error = "invalid priority '"
                             error += str(priority) + "' for rule "
                             error += str(counter) + " in '" + str(tool) +"'."
                             if not return_bool:
@@ -941,7 +941,7 @@ def validate_config(obj, return_bool=False):
                                                         log.debug(error)
                                                     valid_config = False
                                             else:
-                                                error = ("No default '" + str(priority) +
+                                                error = ("no default '" + str(priority) +
                                                          "' priority destination  for tool " +
                                                          str(tool) + " in config!")
                                                 if verbose:
@@ -949,14 +949,14 @@ def validate_config(obj, return_bool=False):
                                                 valid_config = False
 
                                         else:
-                                            error = ("Invalid default priority  '" +
-                                                     str(priority) + "' for " + str(tool) +
-                                                     " found in config!")
+                                            error = ("invalid default destination priority '" +
+                                                     str(priority) + "' for '" + str(tool) +
+                                                     "'.")
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
                                 else:
-                                    error = "No default priority destinations specified"
+                                    error = "no default priority destinations specified"
                                     error += " for " + str(tool) + " in config!"
                                     if verbose:
                                         log.debug(error)
