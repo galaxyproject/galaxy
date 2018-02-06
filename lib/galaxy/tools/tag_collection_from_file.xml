@@ -8,8 +8,12 @@
             class="ModelOperationToolAction"/>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
-           <param type="data" name="tags" format="tabular" label="Add tags from this file" />
-        <param name="set_tags" type="boolean" label="Set tags instead of updating tags?" help="If you select yes existing tags will be removed, otherwise new tags and existing tags will be merged."/>
+        <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>
+        <param name="how" type="select" label="How should the tags be updated">
+            <option value="add">New tags will be added, existing tags will be kept</option>
+            <option value="set">New tags will be added, existing tags will be removed</option>
+            <option value="remove">The tags listed will be removed</option>
+        </param>
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (Tagged)" >
@@ -24,18 +28,19 @@
                 </collection>
             </param>
             <param name="tags" value="new_tags_1.txt" ftype="txt" />
+            <param name="how" value="add"/>
             <output_collection name="output" type="list">
                 <element name="forward">
-                  <assert_contents>
-                    <has_text_matching expression="^This is a line of text.\n$" />
-                  </assert_contents>
-                  <metadata name="tags" value="alias:r1,orientation:forward" />
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                    <metadata name="tags" value="alias:r1,orientation:forward" />
                 </element>
                 <element name="reverse">
-                  <assert_contents>
-                    <has_text_matching expression="^This is a different line of text.\n$" />
-                  </assert_contents>
-                  <metadata name="tags" value="alias:r2,orientation:reverse" />
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                    <metadata name="tags" value="alias:r2,orientation:reverse" />
                 </element>
             </output_collection>
         </test>
@@ -50,22 +55,23 @@
                     </element>
                 </collection>
             </param>
+            <param name="how" value="set"/>
             <param name="tags" value="new_tags_1.txt" ftype="txt" />
             <output_collection name="output" type="list:paired">
-              <element name="i1">
-                <element name="forward">
-                  <assert_contents>
-                    <has_text_matching expression="^This is a line of text.\n$" />
-                  </assert_contents>
-                  <metadata name="tags" value="alias:r1,orientation:forward" />
+                <element name="i1">
+                    <element name="forward">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a line of text.\n$" />
+                        </assert_contents>
+                        <metadata name="tags" value="alias:r1,orientation:forward" />
+                    </element>
+                    <element name="reverse">
+                        <assert_contents>
+                            <has_text_matching expression="^This is a different line of text.\n$" />
+                        </assert_contents>
+                        <metadata name="tags" value="alias:r2,orientation:reverse" />
+                    </element>
                 </element>
-                <element name="reverse">
-                  <assert_contents>
-                    <has_text_matching expression="^This is a different line of text.\n$" />
-                  </assert_contents>
-                  <metadata name="tags" value="alias:r2,orientation:reverse" />
-                </element>
-              </element>
             </output_collection>
         </test>
     </tests>

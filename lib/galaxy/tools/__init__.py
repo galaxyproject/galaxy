@@ -2611,7 +2611,7 @@ class TagFromFileTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
-        set_tags = incoming['set_tags']
+        how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
         new_elements = odict()
         tags_manager = GalaxyTagManager(trans.app.model.context)
@@ -2624,10 +2624,13 @@ class TagFromFileTool(DatabaseOperationTool):
                 history.add_dataset(copied_value, copied_value, set_hid=False)
                 new_tags = new_tags_dict.get(dce.element_identifier)
                 if new_tags:
-                    if not set_tags and dce.element_object.tags:
+                    if how in ('add', 'remove') and dce.element_object.tags:
                         # We need get the original tags and update them with the new tags
                         old_tags = set(tag for tag in tags_manager.get_tags_str(dce.element_object.tags).split(',') if tag)
-                        old_tags.update(set(new_tags))
+                        if how == 'add':
+                            old_tags.update(set(new_tags))
+                        elif how == 'remove':
+                            old_tags = old_tags - set(new_tags)
                         new_tags = old_tags
                     tags_manager.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags)
             else:
@@ -2638,10 +2641,13 @@ class TagFromFileTool(DatabaseOperationTool):
                     # don't set `visible` to `False` if you don't hide the original elements.
                     new_element.element_object.visible = False
                     new_tags = new_tags_dict.get(new_element.element_identifier)
-                    if not set_tags:
+                    if how in ('add', 'remove'):
                         old_tags = set(tag for tag in tags_manager.get_tags_str(old_element.element_object.tags).split(',') if tag)
                         if new_tags:
-                            old_tags.update(set(new_tags))
+                            if how == 'add':
+                                old_tags.update(set(new_tags))
+                            elif how == 'remove':
+                                old_tags = old_tags - set(new_tags)
                         new_tags = old_tags
                     tags_manager.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags)
             new_elements[dce.element_identifier] = copied_value
