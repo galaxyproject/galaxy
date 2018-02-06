@@ -115,13 +115,7 @@ def get_workflow_parameter_list(params, user_permissions):
 
 
 def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_params):
-    # TODO: Rework this to consume YAML mapper file, drop all parameter validation I think?
-
-    # TODO: Do we really want to remove all parameter validation? I have changed it to validate the yml against the
-    # workflow_resource_params so that we disallow selection when the yml is not correct since that file would be
-    # changed the most frequently and most prone to configuration errors.
-
-    # TODO: finish validation? Currently validating needed stuff except for 'options' in a 'select'
+    # TODO: Check that this validation is still working? is there a way to call this seperately? is that even needed?
     valid = True
     try:
         if 'default' not in by_group:

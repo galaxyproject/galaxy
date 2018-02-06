@@ -1253,10 +1253,6 @@ def map_tool_to_destination(
     elif job_params is not None:
         resource_params = json.loads(job_params)
         if 'priority' in resource_params:
-            # Should this really override workflow level priority? -John
-            # TODO: make a decision on what overwrites what. The reasoning behind having workflow > job is that a job
-            # parameter may exist on jobs in a workflow, and if the user runs the workflow with a parameter, they may
-            # not know that the job is overwriting their choice.
             if resource_params['priority'] is not None:
                 priority = resource_params['priority']
 
