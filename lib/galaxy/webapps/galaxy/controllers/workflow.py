@@ -314,6 +314,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("Share or export Galaxy workflows")
+    @web.json
     def sharing(self, trans, id, **kwargs):
         """ Handle workflow sharing. """
         session = trans.sa_session
@@ -355,9 +356,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
             if stored.importable and not stored.slug:
                 self._make_item_accessible(trans.sa_session, stored)
-
             session.flush()
-            return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
+            stored_workflow = stored.to_dict()
+            stored_workflow[ "id" ] = trans.security.encode_id(stored_workflow[ "id" ])
+            stored_workflow[ "user_name" ] = trans.get_user().username
+            stored_workflow[ "importable" ] = stored.importable
+            stored_workflow[ "url" ] = url_for(controller="workflow", action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True)
+            return {"workflow_item": stored_workflow}
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)
