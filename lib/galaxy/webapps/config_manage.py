@@ -50,13 +50,83 @@ App = namedtuple(
 
 UWSGI_OPTIONS = OrderedDict([
     ('http', {
-        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use '0.0.0.0' to listen on all available network interfaces.""",
+        'desc': """The address and port on which to listen.  By default, only listen to localhost ($app_name will not be accessible over the network).  Use ':$default_port' to listen on all available network interfaces.""",
         'default': '127.0.0.1:$default_port',
         'type': 'str',
     }),
-    ('threads', {
-        'default': 8,
+    ('processes', {
+        'desc': """Number of web server (worker) processes to fork after the application has loaded.""",
+        'default': '1',
         'type': 'int',
+    }),
+    ('threads', {
+        'desc': """Number of threads for each web server process.""",
+        'default': 4,
+        'type': 'int',
+    }),
+    ('offload-threads', {
+        'desc': """Number of threads for serving static content and handling internal routing requests.""",
+        'default': '2',
+        'type': 'int',
+    }),
+    ('static-map.1', {
+        'key': 'static-map',
+        'desc': """Mapping to serve style content.""",
+        'default': '/static/style=static/style/blue',
+        'type': 'str',
+    }),
+    ('static-map.2', {
+        'key': 'static-map',
+        'desc': """Mapping to serve the remainder of the static content.""",
+        'default': '/static=static',
+        'type': 'str',
+    }),
+    ('master', {
+        'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
+        'default': 'false',
+        'type': 'str',
+    }),
+    ('virtualenv', {
+        'desc': """Path to the application's Python virtual environment.""",
+        'default': '.venv',
+        'type': 'str',
+    }),
+    ('pythonpath', {
+        'desc': """Path to the application's Python library.""",
+        'default': 'lib',
+        'type': 'str',
+    }),
+    ('module', {
+        'desc': """The entry point which returns the web application (e.g. Galaxy, Reports, etc.) that you are loading.""",
+        'default': '$uwsgi_module',
+        'type': 'str',
+    }),
+    ('die-on-term', {
+        'desc': """Cause uWSGI to respect the traditional behavior of dying on SIGTERM (its default is to brutally reload workers)""",
+        'default': 'true',
+        'type': 'str',
+    }),
+    ('hook-master-start.1', {
+        'key': 'hook-master-start',
+        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGINT (its default is to brutally kill workers)""",
+        'default': 'unix_signal:2 gracefully_kill_them_all',
+        'type': 'str',
+    }),
+    ('hook-master-start.2', {
+        'key': 'hook-master-start',
+        'desc': """Cause uWSGI to gracefully reload workers and mules upon receipt of SIGTERM (its default is to brutally kill workers)""",
+        'default': 'unix_signal:15 gracefully_kill_them_all',
+        'type': 'str',
+    }),
+    ('py-call-osafterfork', {
+        'desc': """Feature necessary for proper mule signal handling""",
+        'default': 'true',
+        'type': 'str',
+    }),
+    ('enable-threads', {
+        'desc': """Ensure application threads will run if `threads` is unset.""",
+        'default': 'true',
+        'type': 'str',
     }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
@@ -73,16 +143,9 @@ UWSGI_OPTIONS = OrderedDict([
     # ('route-run', {
     #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
     # }),
-    ('http-raw-body', {
-        'default': 'True'
-    }),
-    ('offload-threads', {
-        'default': '8',
-    }),
-    ('module', {
-        'default': '$uwsgi_module',
-        'type': 'str',
-    })
+    # ('http-raw-body', {
+    #     'default': 'True'
+    # }),
 ])
 
 DROP_OPTION_VALUE = object()
@@ -95,6 +158,12 @@ class _OptionAction(object):
 
     def lint(self, args, app_desc, key, value):
         pass
+
+
+class _DeprecatedAction(_OptionAction):
+
+    def lint(self, args, app_desc, key, value):
+        print("Option [%s] has been deprecated, this will likely be dropped in future releases of Galaxy." % key)
 
 
 class _DeprecatedAndDroppedAction(_OptionAction):
@@ -119,7 +188,7 @@ class _PasteAppFactoryAction(_OptionAction):
             print("Problem - unknown paste app factory encountered [%s]" % value)
 
 
-class _ProductionNotReady(_OptionAction):
+class _ProductionUnsafe(_OptionAction):
 
     def __init__(self, unsafe_value):
         self.unsafe_value = unsafe_value
@@ -131,11 +200,33 @@ class _ProductionNotReady(_OptionAction):
             print(message)
 
 
+class _ProductionPerformance(_OptionAction):
+
+    def lint(self, args, app_desc, key, value):
+        template = "Problem - option [%s] should not be set to [%s] in production environments - it may cause performance issues or instability."
+        message = template % (key, value)
+        print(message)
+
+
 class _HandleFilterWithAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
         print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
         return DROP_OPTION_VALUE
+
+
+class _RenameAction(_OptionAction):
+
+    def __init__(self, new_name):
+        self.new_name = new_name
+
+    def converted(self, args, app_desc, key, value):
+        return (self.new_name, value)
+
+    def lint(self, args, app_desc, key, value):
+        template = "Problem - option [%s] has been renamed (possibly with slightly different behavior) to [%s]."
+        message = template % (key, self.new_name)
+        print(message)
 
 
 OPTION_ACTIONS = {
@@ -146,12 +237,33 @@ OPTION_ACTIONS = {
     'session_secret': _DeprecatedAndDroppedAction(),
     'paste.app_factory': _PasteAppFactoryAction(),
     'filter-with': _HandleFilterWithAction(),
-    'debug': _ProductionNotReady(True),
-    'serve_xss_vulnerable_mimetypes': _ProductionNotReady(True),
-    'use_printdebug': _ProductionNotReady(True),
-    'use_interactive': _ProductionNotReady(True),
-    'id_secret': _ProductionNotReady('USING THE DEFAULT IS NOT SECURE!'),
-    'master_api_key': _ProductionNotReady('changethis'),
+    'debug': _ProductionUnsafe(True),
+    'serve_xss_vulnerable_mimetypes': _ProductionUnsafe(True),
+    'use_printdebug': _ProductionUnsafe(True),
+    'use_interactive': _ProductionUnsafe(True),
+    'id_secret': _ProductionUnsafe('USING THE DEFAULT IS NOT SECURE!'),
+    'master_api_key': _ProductionUnsafe('changethis'),
+    'external_service_type_config_file': _DeprecatedAndDroppedAction(),
+    'external_service_type_path': _DeprecatedAndDroppedAction(),
+    'enable_sequencer_communication': _DeprecatedAndDroppedAction(),
+    'run_workflow_toolform_upgrade': _DeprecatedAndDroppedAction(),
+    # Next 4 were from library search which is no longer available.
+    'enable_lucene_library_search': _DeprecatedAndDroppedAction(),
+    'fulltext_max_size': _DeprecatedAndDroppedAction(),
+    'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
+    'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_legacy_sample_tracking_api': _DeprecatedAction(),
+    'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
+    'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),
+    'force_beta_workflow_scheduled_min_steps': _DeprecatedAction(),
+    'history_local_serial_workflow_scheduling': _ProductionPerformance(),
+    'allow_library_path_paste': _RenameAction("allow_path_paste"),
+    'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
+    'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
+    'single_user': _ProductionUnsafe(True),
+    'tool_submission_burst_threads': _ProductionPerformance(),
+    'tool_submission_burst_at': _ProductionPerformance(),
+    'toolform_upgrade': _DeprecatedAndDroppedAction(),
 }
 
 
@@ -214,6 +326,7 @@ class AppSchema(Schema):
         self.raw_schema = config_all
         app_schema = config_all["mapping"][app_name]
         super(AppSchema, self).__init__(app_schema["mapping"])
+        self.description = config_all.get("desc", None)
 
     def get_app_option(self, name):
         try:
@@ -283,6 +396,10 @@ def _to_rst(args, app_desc, heading_level="~"):
     schema = app_desc.schema
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
+        if default is True:
+            default = "true"
+        elif default is False:
+            default = "false"
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         _write_option_rst(args, rst, key, heading_level, option_value)
@@ -300,7 +417,11 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     rst.write("\n")
     type = option.get("type", None)
     default = option.get("default", "*null*")
-    rst.write(":Default: %s\n" % default)
+    if default is True:
+        default = "true"
+    elif default is False:
+        default = "false"
+    rst.write(":Default: ``%s``\n" % default)
     if type:
         rst.write(":Type: %s\n" % type)
     rst.write("\n\n")
@@ -397,15 +518,14 @@ def _lint(args, app_desc):
 
 def _validate(args, app_desc):
     path = _find_config(args, app_desc)
-    with open(path, "r") as f:
-        # Allow empty mapping (not allowed by pykawlify)
-        raw_config = _order_load_path(f)
-        if raw_config.get(app_desc.app_name, None) is None:
-            raw_config[app_desc.app_name] = {}
-            config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-            _ordered_dump(raw_config, config_p)
-            config_p.flush()
-            path = config_p.name
+    # Allow empty mapping (not allowed by pykawlify)
+    raw_config = _order_load_path(path)
+    if raw_config.get(app_desc.app_name, None) is None:
+        raw_config[app_desc.app_name] = {}
+        config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
+        _ordered_dump(raw_config, config_p)
+        config_p.flush()
+        path = config_p.name
 
     fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
     _ordered_dump(app_desc.schema.raw_schema, fp)
@@ -498,7 +618,12 @@ def _run_conversion(args, app_desc):
 
         if key in OPTION_ACTIONS:
             option_action = OPTION_ACTIONS.get(key)
-            value = option_action.converted(args, app_desc, key, value)
+            new_value = option_action.converted(args, app_desc, key, value)
+            if new_value:
+                if isinstance(new_value, tuple):
+                    key, value = new_value
+                else:
+                    value = new_value
 
         if value is DROP_OPTION_VALUE:
             continue
@@ -511,7 +636,7 @@ def _run_conversion(args, app_desc):
         app_dict[key] = option_value
 
     f = StringIO()
-    _write_section(args, f, "uwsgi", uwsgi_dict)
+    _write_section(args, f, "uwsgi", uwsgi_dict, uwsgi_hack=True)
     _write_section(args, f, app_desc.app_name, app_dict)
     destination = os.path.join(args.galaxy_root, app_desc.destination)
     _replace_file(args, f, app_desc, ini_config, destination)
@@ -549,7 +674,12 @@ def _build_sample_yaml(args, app_desc):
                 'uwsgi_module': app_desc.uwsgi_module,
             })
             value[field] = new_field_value
-    _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False)
+    description = getattr(schema, "description", None)
+    if description:
+        description = description.lstrip()
+        as_comment = "\n".join(["# %s" % l for l in description.split("\n")]) + "\n"
+        f.write(as_comment)
+    _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
     _write_to_file(args, f, destination)
@@ -579,26 +709,28 @@ def _order_load_path(path):
         return raw_config
 
 
-def _write_sample_section(args, f, section_header, schema, as_comment=True):
+def _write_sample_section(args, f, section_header, schema, as_comment=True, uwsgi_hack=False):
     _write_header(f, section_header)
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
-        _write_option(args, f, key, option_value, as_comment=as_comment)
+        # support uWSGI "dumb yaml parser" (unbit/uwsgi#863)
+        key = option.get('key', key)
+        _write_option(args, f, key, option_value, as_comment=as_comment, uwsgi_hack=uwsgi_hack)
 
 
-def _write_section(args, f, section_header, section_dict):
+def _write_section(args, f, section_header, section_dict, uwsgi_hack=False):
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
-        _write_option(args, f, key, option_value)
+        _write_option(args, f, key, option_value, uwsgi_hack=uwsgi_hack)
 
 
 def _write_header(f, section_header):
     f.write("%s:\n\n" % section_header)
 
 
-def _write_option(args, f, key, option_value, as_comment=False):
+def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
     option, value = _parse_option_value(option_value)
     desc = option["desc"]
     comment = ""
@@ -606,7 +738,10 @@ def _write_option(args, f, key, option_value, as_comment=False):
         comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
         comment += "\n"
     as_comment_str = "#" if as_comment else ""
-    key_val_str = yaml.dump({key: value}).lstrip("{").rstrip("\n}")
+    if uwsgi_hack:
+        key_val_str = "%s: %s" % (key, value)
+    else:
+        key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
     lines = "%s%s%s" % (comment, as_comment_str, key_val_str)
     lines_idented = "\n".join([("  %s" % l) for l in lines.split("\n")])
     f.write("%s\n\n" % lines_idented)
@@ -616,6 +751,10 @@ def _parse_option_value(option_value):
     if isinstance(option_value, OptionValue):
         option = option_value.option
         value = option_value.value
+        option = option_value.option
+        # Hack to get nicer YAML values during conversion
+        if option.get("type", "str") == "bool":
+            value = str(value).lower() == "true"
     else:
         value = option_value
         option = OPTION_DEFAULTS

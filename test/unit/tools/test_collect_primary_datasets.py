@@ -57,6 +57,31 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         # didn't result in a dbkey being set.
         assert created_hda_1.dbkey == "?"
 
+    def test_collect_multiple_recurse(self):
+        self._replace_output_collectors('''<output>
+            <discover_datasets pattern="__name__" directory="subdir1" recurse="true" ext="txt" />
+            <discover_datasets pattern="__name__" directory="subdir2" recurse="true" ext="txt" />
+        </output>''')
+        path1 = self._setup_extra_file(filename="test1", subdir="subdir1")
+        path2 = self._setup_extra_file(filename="test2", subdir="subdir2/nested1/")
+        path3 = self._setup_extra_file(filename="test3", subdir="subdir2")
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+        self.assertEquals(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+
+        # Test default order of collection.
+        assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
+
+        created_hda_1 = datasets[DEFAULT_TOOL_OUTPUT]["test1"]
+        self.app.object_store.assert_created_with_path(created_hda_1.dataset, path1)
+
+        created_hda_2 = datasets[DEFAULT_TOOL_OUTPUT]["test2"]
+        self.app.object_store.assert_created_with_path(created_hda_2.dataset, path2)
+
+        created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
+        self.app.object_store.assert_created_with_path(created_hda_3.dataset, path3)
+
     def test_collect_sorted_reverse(self):
         self._replace_output_collectors('''<output>
             <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />

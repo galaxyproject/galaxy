@@ -15,7 +15,7 @@ args="--ignore=D --select=D100,D201,D202,D206,D207,D208,D209,D211,D3,D403"
 
 if [ "$1" = "--include" ];
 then
-    flake8 $args `paste .ci/flake8_docstrings_include_list.txt`
+    flake8 $args $(paste -sd' ' .ci/flake8_docstrings_include_list.txt)
 else
-    flake8 $args --exclude `paste -sd, .ci/flake8_blacklist.txt` .
+    flake8 $args --exclude $(paste -sd, .ci/flake8_blacklist.txt) .
 fi

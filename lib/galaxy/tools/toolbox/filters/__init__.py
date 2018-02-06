@@ -73,7 +73,7 @@ class FilterFactory(object):
         else:
             # No module found, just load a function from this file or
             # one that has be explicitly imported.
-            function = getattr(globals(), filter_name.strip())
+            function = globals()[filter_name.strip()]
         return function
 
     def _import_filter(self, module_name, function_name):

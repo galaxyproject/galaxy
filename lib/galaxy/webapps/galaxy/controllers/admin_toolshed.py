@@ -238,7 +238,7 @@ class AdminToolshed(AdminGalaxy):
                         message += 'Attempting to uninstall tool dependencies resulted in errors: %s' % errors
                         status = max(status, statuses.index('error'))
         status = statuses[status]
-        remove_from_disk_check_box = CheckboxField('remove_from_disk', value=remove_from_disk_checked)
+        remove_from_disk_check_box = CheckboxField('remove_from_disk', value=True)
         return trans.fill_template('/admin/tool_shed_repository/deactivate_or_uninstall_repository.mako',
                                    repository=tool_shed_repositories,
                                    remove_from_disk_check_box=remove_from_disk_check_box,

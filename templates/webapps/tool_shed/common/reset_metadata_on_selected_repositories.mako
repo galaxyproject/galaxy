@@ -47,7 +47,7 @@
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                <input type="checkbox" id="checkAll" name="select_all_repositories_checkbox" value="true" onclick="checkAllRepositoryIdFields(1);"/><input type="hidden" name="select_all_repositories_checkbox" value="true"/><b>Select/unselect all repositories</b>
+                <input type="checkbox" id="checkAll" name="select_all_repositories_checkbox" value="true" onclick="checkAllRepositoryIdFields(1);"/><b>Select/unselect all repositories</b>
             </div>
             <div style="clear: both"></div>
             <div class="form-row">

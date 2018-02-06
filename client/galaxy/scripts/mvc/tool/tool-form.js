@@ -136,16 +136,24 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
+            if (options.job_remap === "job_produced_collection_elements") {
+                var label = "Replace elements in collection ?";
+                var help =
+                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
+            } else {
+                var label = "Resume dependencies from this job ?";
+                var help =
+                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+            }
             options.inputs.push({
-                label: "Resume dependencies from this job",
+                label: label,
                 name: "rerun_remap_job_id",
                 type: "select",
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
                 options: [["Yes", options.job_id], ["No", "__ignore__"]],
-                help:
-                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run."
+                help: help
             });
         }
 
@@ -219,7 +227,7 @@ var View = Backbone.View.extend({
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
                     var WebhookApp = new Webhooks.WebhookView({
-                        urlRoot: `${Galaxy.root}api/webhooks/tool`,
+                        type: "tool",
                         toolId: job_def.tool_id
                     });
                 }

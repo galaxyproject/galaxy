@@ -23,8 +23,8 @@ find test -iname '*pyc' -exec rm -rf {} \;
 pip install docker-compose
 
 # TODO: Let docker-compose pick these at random.
-export GALAXY_PORT=`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
-export SELENIUM_PORT=`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
+export GALAXY_PORT=`python -c 'from __future__ import print_function; import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
+export SELENIUM_PORT=`python -c 'from __future__ import print_function; import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
 
 export TARGET_ROOT=`pwd`
 export TARGET_PATH=/galaxy
