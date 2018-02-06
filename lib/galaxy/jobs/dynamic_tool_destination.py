@@ -793,8 +793,9 @@ def validate_config(obj, return_bool=False):
                 if obj['default_destination'] in destination_list:
                     new_config["default_destination"] = obj['default_destination']
                 else:
-                    error = ("Invalid default destination '" +
-                             obj['default_destination'] + "'.")
+                    error = ("default destination '" +
+                             obj['default_destination'] +
+                             "' does not appear in the job configuration.")
                     if verbose:
                         log.debug(error)
                     valid_config = False
@@ -814,7 +815,7 @@ def validate_config(obj, return_bool=False):
                                 new_config['default_destination']['priority'][priority] = obj[
                                         'default_destination']['priority'][priority]
                             else:
-                                error = ("destination '" +
+                                error = ("default destination '" +
                                          obj['default_destination']['priority'][priority] +
                                          "' does not appear in the job configuration.")
                                 if verbose:
@@ -934,8 +935,8 @@ def validate_config(obj, return_bool=False):
                                                 else:
                                                     error = ("default destination for '" +
                                                              str(tool) + "': '" +
-                                                             str(destination) +
-                                                             "' does not exist.")
+                                                             destination + "' does not appear " +
+                                                             "in the job configuration.")
                                                     if verbose:
                                                         log.debug(error)
                                                     valid_config = False

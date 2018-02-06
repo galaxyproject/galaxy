@@ -1019,3 +1019,47 @@ ivYMLTest152 = '''
         priority: med
     verbose: True
 '''
+
+# rule destination not in job config (without priority dict)
+ivYMLTest153 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+        high: waffles_default
+    tools:
+      blegh:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: fake_destination
+    verbose: True
+'''
+
+# tool default destination not in job config (without priority dict)
+ivYMLTest154 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+        high: waffles_default
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: waffles_default
+                high: waffles_default
+        default_destination: not_true_destination
+    verbose: True
+'''
+
+# default destination not in job config (without priority dict)
+ivYMLTest155 = '''
+    default_destination: no_such_dest
+    verbose: True
+'''
