@@ -262,7 +262,7 @@
 </%def>
 
 <%def name="render_header()">
-    <a href="${h.url_for(controller=self.controller, action="list" )}">Go back to ${self.item_class_plural_name} List</a>
+    <a href="${h.url_for('/workflows/list')}">Go back to ${self.item_class_plural_name} List</a>
 </%def>
 
 
