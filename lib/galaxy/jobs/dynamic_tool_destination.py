@@ -673,7 +673,7 @@ class RuleValidator:
         return valid_rule, rule
 
 
-def parse_yaml(path="/config/tool_destinations.yml", test=False, return_bool=False):
+def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml",  test=False, return_bool=False):
     """
     Get a yaml file from path and send it to validate_config for validation.
 
@@ -691,6 +691,10 @@ def parse_yaml(path="/config/tool_destinations.yml", test=False, return_bool=Fal
     @return: validated rule or result of validation (depending on return_bool)
 
     """
+
+    global destination_list
+    destination_list = get_destination_list_from_job_config(job_config_location=job_conf_path)
+    
     # Import file from path
     try:
         if test:
@@ -748,10 +752,7 @@ def validate_config(obj, return_bool=False):
     """
 
     global priority_list
-    global destination_list
-
     priority_list = set()
-    destination_list = get_destination_list_from_job_config()
 
     def infinite_defaultdict():
         return collections.defaultdict(infinite_defaultdict)
@@ -1534,7 +1535,12 @@ if __name__ == '__main__':
         '-c', '--check-config', dest='check_config', nargs='?',
         help='Use this option to validate tool_destinations.yml.' +
         ' Optionally, provide the path to the tool_destinations.yml' +
-        ' that you would like to check. Default: galaxy/config/tool_destinations.yml')
+        ' that you would like to check, and/or the path to the related' +
+        ' job_conf.xml. Default: galaxy/config/tool_destinations.yml and' +
+        ' galaxy/config/job_conf.xml')
+
+    parser.add_argument(
+        '-j', '--job-config', dest='job_config')
 
     parser.add_argument(
         '-V', '--version', action='version', version="%(prog)s " + __version__)
@@ -1546,11 +1552,18 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    if args.check_config:
-        valid_config = parse_yaml(path=args.check_config, return_bool=True)
+    if args.check_config and args.job_config:
+        valid_config = parse_yaml(path=args.check_config, job_conf_path=args.job_config, return_bool=True)
+
+    elif args.check_config:
+        valid_config = parse_yaml(path=args.check_config, job_conf_path="/config/job_conf.xml", return_bool=True)
+
+
+    elif args.job_config:
+        valid_config = parse_yaml(path="/config/tool_destinations.yml", job_conf_path=args.job_config, return_bool=True)
 
     else:
-        valid_config = parse_yaml(path="/config/tool_destinations.yml", return_bool=True)
+        valid_config = parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml", return_bool=True)
 
     if valid_config:
         print("Configuration is valid!")
