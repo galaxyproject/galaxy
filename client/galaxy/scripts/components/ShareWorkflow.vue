@@ -98,6 +98,22 @@
                 </div>
             </div>
         </div>
+        <div v-else>
+            <p>To make a workflow accessible via link or publish it, you must create a public username:</p>
+            <form :action="createPublicNameUrl" method="POST">
+                <div class="form-row">
+                    <label>Public Username:</label>
+                    <div class="form-row-input">
+                        <input type="text" name="username" size="40"/>
+                        <input type="hidden" name="share_wf" value="share_wf"/>
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <input class="action-button" type="submit" name="set_username" value="Set Username"/>
+                </div>
+           </form>
+        </div>
         <div class="export-wf">
             <hr/>
             <h3>Export</h3>
@@ -141,7 +157,6 @@
                 </div>
             </form>
             </div>
-
         </div>
     </div>
 </template>
@@ -171,7 +186,8 @@ export default {
             wfListUrl: Galaxy.root + 'workflows/list',
             shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id,
             createSVGUrl: Galaxy.root + 'workflow/gen_image?id=' + this.id,
-            createMyExperimentUrl: Galaxy.root + 'workflow/export_to_myexp?id=' + this.id
+            createMyExperimentUrl: Galaxy.root + 'workflow/export_to_myexp?id=' + this.id,
+            createPublicNameUrl: Galaxy.root + 'workflow/set_public_username?id=' + this.id
         }
     },
     created: function() {
