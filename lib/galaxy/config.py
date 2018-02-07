@@ -313,6 +313,7 @@ class Configuration(object):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_images"))
