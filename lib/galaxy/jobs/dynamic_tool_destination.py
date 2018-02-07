@@ -421,7 +421,7 @@ class RuleValidator:
                         if priority not in priority_list:
                             error = "Invalid priority '"
                             error += str(priority) + "' for rule "
-                            error += str(counter) + " in '" + str(tool) +"'."
+                            error += str(counter) + " in '" + str(tool) + "'."
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -691,7 +691,7 @@ def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_
 
     global destination_list
     destination_list = get_destination_list_from_job_config(job_config_location=job_conf_path)
-    
+
     # Import file from path
     try:
         if test:
@@ -1461,7 +1461,7 @@ def map_tool_to_destination(
 
     if destination == "fail":
         if fail_message:
-            raise JobMappingException(fail_message)  ###: Should an exception occur when there are no default destinations?
+            raise JobMappingException(fail_message)  ### Should an exception occur when there are no default destinations?
         else:
             raise JobMappingException(matched_rule["fail_message"])
 
@@ -1497,9 +1497,9 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
 
     if job_config_location == "/config/job_conf.xml":
         config_location = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../..')
+            os.path.dirname(os.path.realpath(__file__)), '../../..')
         job_config_location = config_location + job_config_location
-        
+
     job_conf = ET.parse(job_config_location)
 
     for destination in job_conf.getroot().iter("destination"):
@@ -1555,7 +1555,6 @@ if __name__ == '__main__':
 
     elif args.check_config:
         valid_config = parse_yaml(path=args.check_config, job_conf_path="/config/job_conf.xml", return_bool=True)
-
 
     elif args.job_config:
         valid_config = parse_yaml(path="/config/tool_destinations.yml", job_conf_path=args.job_config, return_bool=True)

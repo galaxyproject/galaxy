@@ -427,7 +427,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
-            "Missing a fail_message for rule 1 in 'spades'. Adding generic fail_message."),
+             "Missing a fail_message for rule 1 in 'spades'. Adding generic fail_message."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -437,7 +437,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
-            "No arguments found for rule 1 in 'spades' despite being of type arguments. Ignoring rule."),
+             "No arguments found for rule 1 in 'spades' despite being of type arguments. Ignoring rule."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -666,7 +666,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
-        
+
     @log_capture()
     def test_tool_default_destination_not_in_job_conf(self, l):
         dt.parse_yaml(path=yt.ivYMLTest151, job_conf_path=job_conf_path, test=True)
@@ -675,7 +675,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
-        
+
     @log_capture()
     def test_default_destination_not_in_job_conf(self, l):
         dt.parse_yaml(path=yt.ivYMLTest152, job_conf_path=job_conf_path, test=True)
@@ -693,7 +693,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
-        
+
     @log_capture()
     def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
         dt.parse_yaml(path=yt.ivYMLTest154, job_conf_path=job_conf_path, test=True)
@@ -702,7 +702,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
-        
+
     @log_capture()
     def test_default_destination_without_priority_not_in_job_conf(self, l):
         dt.parse_yaml(path=yt.ivYMLTest155, job_conf_path=job_conf_path, test=True)
