@@ -1195,7 +1195,7 @@ def importer(test):
 
 
 def map_tool_to_destination(
-        job, app, tool, user_email, test=False, path=None):
+        job, app, tool, user_email, test=False, path=None, job_conf_path=None):
     """
     Dynamically allocate resources
 
@@ -1219,12 +1219,14 @@ def map_tool_to_destination(
     num_input_datasets_rule_present = False
     records_rule_present = False
 
-    # Get configuration from tool_destinations.yml
+    # Get configuration from tool_destinations.yml and job_conf.xml
     if path is None:
         path = app.config.tool_destinations_config_file
+    if job_conf_path is None:
+        job_conf_path = app.config.job_config_file
 
     try:
-        config = parse_yaml(path)
+        config = parse_yaml(path, job_conf_path)
     except MalformedYMLException as e:
         raise JobMappingException(e)
 
@@ -1498,11 +1500,13 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
 
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
-    config_directory = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), '../../..')
 
-    job_conf_file = config_directory + job_config_location
-    job_conf = ET.parse(job_conf_file)
+    if job_config_location == "/config/job_conf.xml":
+        config_location = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../../..')
+        job_config_location = config_location + job_config_location
+        
+    job_conf = ET.parse(job_config_location)
 
     for destination in job_conf.getroot().iter("destination"):
         if isinstance(destination.get("id"), str):
