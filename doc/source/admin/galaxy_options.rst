@@ -1180,6 +1180,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_locale``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default localization for Galaxy UI.
+    Allowed values are listed at the end of client/galaxy/scripts/nls/locale.js.
+    With the default value (auto), the locale will be automatically adjusted to
+    the user's navigator language.
+    Users can override this settings in their user preferences if the localization
+    settings are enabled in user_preferences_extra_conf.yml
+:Default: ``auto``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3511,6 +3526,3 @@
     that should be always available.
 :Default: ``None``
 :Type: str
-
-
-
