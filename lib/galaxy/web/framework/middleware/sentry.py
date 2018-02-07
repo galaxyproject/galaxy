@@ -26,10 +26,11 @@ class Sentry(object):
     uncaught exceptions and send them to Sentry.
     """
 
-    def __init__(self, application, dsn):
+    def __init__(self, application, dsn, sloreq):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
         self.client = None
+        self.sloreq_threshold = sloreq
 
         def postfork_sentry_client():
             self.client = Client(dsn)
@@ -40,9 +41,9 @@ class Sentry(object):
         try:
             start_time = time.time()
             iterable = self.application(environ, start_response)
-            dt_millis = int((time.time() - start_time) * 1000)
-            if dt_millis > 100:  # TODO: Make configurable/togglable
-                self.handle_slow_request(environ, dt_millis)
+            dt = (time.time() - start_time)
+            if self.sloreq_threshold and dt > self.sloreq_threshold:
+                self.handle_slow_request(environ, dt)
         except Exception:
             self.handle_exception(environ)
             raise
@@ -80,9 +81,9 @@ class Sentry(object):
                     'env': dict(get_environ(environ)),
                 }
             },
-            # Galaxy: add request id from environment if available
             extra={
                 'request_id': environ.get('request_id', 'Unknown'),
+                'request_duration_millis': dt * 1000
             },
             tags={
                 'type': 'sloreq',
