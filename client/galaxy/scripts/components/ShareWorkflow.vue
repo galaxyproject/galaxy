@@ -119,7 +119,29 @@
                 <div v-else>
                     This workflow must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
                 </div>
-             </div>
+            </div>
+
+            <div class="sharing-section">
+                <a class="action-button" :href="createSVGUrl">Create image</a> of workflow in SVG format
+            </div>
+
+            <div class="sharing-section">
+                <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
+                <form :action="createMyExperimentUrl" method="POST">
+                <div class="form-row">
+                    <label>myExperiment username:</label>
+                    <input type="text" name="myexp_username" value="" size="25" placeholder="username" autocomplete="off"/>
+                </div>
+                <div class="form-row">
+                    <label>myExperiment password:</label>
+                    <input type="password" name="myexp_password" value="" size="25" placeholder="password" autocomplete="off"/>
+                </div>
+                <div class="form-row">
+                    <input type="submit" value="Export to myExperiment"/>
+                </div>
+            </form>
+            </div>
+
         </div>
     </div>
 </template>
@@ -147,7 +169,9 @@ export default {
             lastComp: "",
             publishedUrl: Galaxy.root + 'workflows/list_published',
             wfListUrl: Galaxy.root + 'workflows/list',
-            shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id
+            shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id,
+            createSVGUrl: Galaxy.root + 'workflow/gen_image?id=' + this.id,
+            createMyExperimentUrl: Galaxy.root + 'workflow/export_to_myexp?id=' + this.id
         }
     },
     created: function() {
