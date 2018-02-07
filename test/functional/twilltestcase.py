@@ -16,6 +16,7 @@ from six.moves.urllib.parse import urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
 from base.testcase import FunctionalTestCase  # noqa: I100,I202
+from galaxy.util import unicodify  # noqa: I201
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO()
@@ -65,7 +66,7 @@ class TwillTestCase(FunctionalTestCase):
 
     def check_page_for_string(self, patt):
         """Looks for 'patt' in the current browser page"""
-        page = self.last_page()
+        page = unicodify(self.last_page())
         if page.find(patt) == -1:
             fname = self.write_temp_file(page)
             errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % (patt, fname, page)
@@ -205,6 +206,10 @@ class TwillTestCase(FunctionalTestCase):
         return loads(self.last_page())
 
     def last_page(self):
+        """
+        Return the last visited page (usually HTML, but can binary data as
+        well).
+        """
         return tc.browser.get_html()
 
     def last_url(self):
