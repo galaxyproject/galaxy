@@ -1814,11 +1814,9 @@ test_data:
         self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def wait_for_invocation_and_jobs(self, history_id, workflow_id, invocation_id, assert_ok=True):
-        # Revert after https://github.com/galaxyproject/galaxy/issues/5146 is fixed.
-        # state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
-        # if assert_ok:
-        #    assert state == "scheduled", state
-        self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        state = self.workflow_populator.wait_for_invocation(workflow_id, invocation_id)
+        if assert_ok:
+            assert state == "scheduled", state
         time.sleep(.5)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.5)
@@ -2002,7 +2000,7 @@ test_data: {}
             assert okay_dataset["state"] == "ok"
 
     @skip_without_tool("cat")
-    def test_run_rename_collection_element(self):
+    def test_run_rename_on_mapped_over_collection(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs("""
 class: GalaxyWorkflow
@@ -2031,6 +2029,69 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
         name = content["name"]
         assert name == "my new name", name
+        assert content["history_content_type"] == "dataset"
+        content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+        name = content["name"]
+        assert content["history_content_type"] == "dataset_collection", content
+        assert name == "my new name", name
+
+    @skip_without_tool("cat")
+    def test_run_rename_based_on_inputs_on_mapped_over_collection(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "#{input1} suffix"
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+        content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+        name = content["name"]
+        assert content["history_content_type"] == "dataset_collection", content
+        assert name == "the_dataset_list suffix", name
+
+    @skip_without_tool("collection_creates_pair")
+    def test_run_rename_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: input1
+    outputs:
+      paired_output:
+        rename: "my new name"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
+
+            assert details1["name"] == "my new name", details1
+            assert details1["history_content_type"] == "dataset_collection"
 
     @skip_without_tool("create_2")
     def test_run_rename_multiple_outputs(self):
@@ -2221,6 +2282,169 @@ test_data:
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         name = content["name"]
         assert name == "the_dataset_pair suffix", name
+
+    @skip_without_tool("collection_creates_pair")
+    def test_run_hide_on_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: input1
+    outputs:
+      paired_output:
+        hide: true
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
+
+            assert details1["history_content_type"] == "dataset_collection"
+            assert not details1["visible"], details1
+
+    @skip_without_tool("cat")
+    def test_run_hide_on_mapped_over_collection(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        hide: true
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+
+        content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
+        assert content["history_content_type"] == "dataset"
+        assert content["visible"] is False
+
+        content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+        assert content["history_content_type"] == "dataset_collection", content
+        assert content["visible"] is False
+
+    @skip_without_tool("collection_creates_pair")
+    def test_run_add_tag_on_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: input1
+    outputs:
+      paired_output:
+        add_tags:
+            - "name:foo"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
+
+            assert details1["history_content_type"] == "dataset_collection"
+            assert details1["tags"][0] == "name:foo", details1
+
+    @skip_without_tool("collection_creates_pair")
+    def test_run_add_tag_on_mapped_over_collection(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        add_tags:
+            - "name:foo"
+test_data:
+  input1:
+    type: list
+    name: the_dataset_list
+    elements:
+      - identifier: el1
+        value: 1.fastq
+        type: File
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+
+            assert details1["history_content_type"] == "dataset_collection"
+            assert details1["tags"][0] == "name:foo", details1
+
+    @skip_without_tool("collection_creates_pair")
+    @skip_without_tool("cat")
+    def test_run_remove_tag_on_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        add_tags:
+          - "name:foo"
+  - tool_id: collection_creates_pair
+    state:
+      input1:
+        $link: first_cat#out_file1
+    outputs:
+      paired_output:
+        remove_tags:
+          - "name:foo"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+            details_dataset_with_tag = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+
+            assert details_dataset_with_tag["history_content_type"] == "dataset", details_dataset_with_tag
+            assert details_dataset_with_tag["tags"][0] == "name:foo", details_dataset_with_tag
+
+            details_collection_without_tag = self.dataset_populator.get_history_collection_details(history_id, hid=5, wait=True, assert_ok=True)
+            assert details_collection_without_tag["history_content_type"] == "dataset_collection", details_collection_without_tag
+            assert len(details_collection_without_tag["tags"]) == 0, details_collection_without_tag
 
     @skip_without_tool("cat1")
     def test_run_with_runtime_pja(self):

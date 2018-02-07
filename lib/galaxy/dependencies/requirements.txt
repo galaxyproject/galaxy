@@ -24,7 +24,6 @@ docutils
 repoze.lru
 Routes
 WebOb
-WebHelpers
 Mako
 pytz
 Babel
@@ -35,9 +34,11 @@ Parsley
 six
 Whoosh
 galaxy_sequence_utils
+h5py
+packaging
 
 # Cheetah and dependencies
-Cheetah
+Cheetah3
 Markdown
 
 # BioBlend and dependencies
@@ -65,6 +66,6 @@ svgwrite
 pyparsing
 
 # Fabric and dependencies
-Fabric
+Fabric3
 paramiko
 ecdsa

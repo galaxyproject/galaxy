@@ -188,10 +188,12 @@ class Configuration(object):
 
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
+        self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Galaxy OpenID settings
@@ -284,6 +286,7 @@ class Configuration(object):
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
+        self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
         self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
@@ -428,6 +431,7 @@ class Configuration(object):
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
+        self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
@@ -481,7 +485,7 @@ class Configuration(object):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+            involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
 
@@ -547,8 +551,9 @@ class Configuration(object):
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
-        # The application stack code may manipulate the server name
-        self.base_server_name = self.server_name
+        # The application stack code may manipulate the server name. It also needs to be accessible via the get() method
+        # for galaxy.util.facts()
+        self.config_dict['base_server_name'] = self.base_server_name = self.server_name
         # Store all configured server names for the message queue routing
         self.server_names = []
         for section in global_conf_parser.sections():
@@ -895,7 +900,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin:
+class ConfiguresGalaxyMixin(object):
     """ Shared code for configuring Galaxy-like app objects.
     """
 

@@ -518,15 +518,14 @@ def _lint(args, app_desc):
 
 def _validate(args, app_desc):
     path = _find_config(args, app_desc)
-    with open(path, "r") as f:
-        # Allow empty mapping (not allowed by pykawlify)
-        raw_config = _order_load_path(f)
-        if raw_config.get(app_desc.app_name, None) is None:
-            raw_config[app_desc.app_name] = {}
-            config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-            _ordered_dump(raw_config, config_p)
-            config_p.flush()
-            path = config_p.name
+    # Allow empty mapping (not allowed by pykawlify)
+    raw_config = _order_load_path(path)
+    if raw_config.get(app_desc.app_name, None) is None:
+        raw_config[app_desc.app_name] = {}
+        config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
+        _ordered_dump(raw_config, config_p)
+        config_p.flush()
+        path = config_p.name
 
     fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
     _ordered_dump(app_desc.schema.raw_schema, fp)

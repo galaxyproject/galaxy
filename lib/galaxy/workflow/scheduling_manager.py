@@ -20,7 +20,7 @@ EXCEPTION_MESSAGE_NO_DEFAULT_SCHEDULER = "Failed to defined workflow schedulers 
 EXCEPTION_MESSAGE_DUPLICATE_SCHEDULERS = "Failed to defined workflow schedulers - workflow scheduling plugin id '%s' duplicated."
 
 
-class WorkflowSchedulingManager(object, ConfiguresHandlers):
+class WorkflowSchedulingManager(ConfiguresHandlers):
     """ A workflow scheduling manager based loosely on pattern established by
     ``galaxy.manager.JobManager``. Only schedules workflows on handler
     processes.

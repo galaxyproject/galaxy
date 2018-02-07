@@ -624,22 +624,26 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
-    def delete(self, trans, history_id, id, purge=False, **kwd):
+    def delete(self, trans, history_id, id, purge=False, recursive=False, **kwd):
         """
         delete( self, trans, history_id, id, **kwd )
         * DELETE /api/histories/{history_id}/contents/{id}
-            delete the HDA with the given ``id``
+        * DELETE /api/histories/{history_id}/contents/{type}s/{id}
+            delete the history content with the given ``id`` and specified type (defaults to dataset)
         .. note:: Currently does not stop any active jobs for which this dataset is an output.
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
+        :type   recursive:  bool
+        :param  recursive:  if True, and deleted an HDCA also delete containing HDAs
         :type   purge:  bool
-        :param  purge:  if True, purge the HDA
+        :param  purge:  if True, purge the target HDA or child HDAs of the target HDCA
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the HDA
+                * recursive: if True, see above.
 
         .. note:: that payload optionally can be placed in the query string of the request.
             This allows clients that strip the request body to still purge the dataset.
@@ -654,7 +658,14 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if contents_type == "dataset":
             return self.__delete_dataset(trans, history_id, id, purge=purge, **kwd)
         elif contents_type == "dataset_collection":
-            trans.app.dataset_collections_service.delete(trans, "history", id)
+            purge = util.string_as_bool(purge)
+            recursive = util.string_as_bool(recursive)
+            if kwd.get('payload', None):
+                # payload takes priority
+                purge = util.string_as_bool(kwd['payload'].get('purge', purge))
+                recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
+
+            trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
             return {'id' : id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
