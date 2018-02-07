@@ -5,6 +5,9 @@ import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
+
+/* global $ */
+
 // TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
@@ -182,13 +185,16 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
     var global_locale = self.config.default_locale ? self.config.default_locale.toLowerCase() : false;
 
     var extra_user_preferences = {};
-    if (self.user && self.user.attributes.preferences && 'extra_user_preferences' in self.user.attributes.preferences) {
+    if (self.user && self.user.attributes.preferences && "extra_user_preferences" in self.user.attributes.preferences) {
         extra_user_preferences = JSON.parse(self.user.attributes.preferences.extra_user_preferences);
     }
 
-    var user_locale = 'localization|locale' in extra_user_preferences ? extra_user_preferences['localization|locale'].toLowerCase() : false;
+    var user_locale =
+        "localization|locale" in extra_user_preferences
+            ? extra_user_preferences["localization|locale"].toLowerCase()
+            : false;
 
-    if (user_locale == 'auto') {
+    if (user_locale == "auto") {
         user_locale = false;
     }
 
@@ -197,9 +203,9 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    locale = user_locale || global_locale || nav_locale;
+    let locale = user_locale || global_locale || nav_locale;
 
-    sessionStorage.setItem('currentLocale', locale);
+    sessionStorage.setItem("currentLocale", locale);
 };
 
 /** set up the current user as a Backbone model (mvc/user/user-model) */
