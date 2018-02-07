@@ -404,7 +404,7 @@ class RuleValidator:
                         log.debug(error)
                     valid_rule = False
                 elif rule["destination"] not in destination_list and rule["destination"] != "fail":
-                    error = "destination for '" + str(tool) + "', rule "
+                    error = "Destination for '" + str(tool) + "', rule "
                     error += str(counter) + ": '"
                     error += str(rule["destination"])
                     error += "' does not exist in job configuration."
@@ -421,7 +421,7 @@ class RuleValidator:
 
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
-                            error = "invalid priority '"
+                            error = "Invalid priority '"
                             error += str(priority) + "' for rule "
                             error += str(counter) + " in '" + str(tool) +"'."
                             if not return_bool:
@@ -442,7 +442,7 @@ class RuleValidator:
                             valid_rule = False
 
                         elif rule["destination"]["priority"][priority] not in destination_list:
-                            error = "destination for '" + str(tool) + "', rule "
+                            error = "Destination for '" + str(tool) + "', rule "
                             error += str(counter) + ": '"
                             error += str(rule["destination"]["priority"][priority])
                             error += "' does not exist in job configuration."
@@ -793,7 +793,7 @@ def validate_config(obj, return_bool=False):
                 if obj['default_destination'] in destination_list:
                     new_config["default_destination"] = obj['default_destination']
                 else:
-                    error = ("default destination '" +
+                    error = ("Default destination '" +
                              obj['default_destination'] +
                              "' does not appear in the job configuration.")
                     if verbose:
@@ -815,7 +815,7 @@ def validate_config(obj, return_bool=False):
                                 new_config['default_destination']['priority'][priority] = obj[
                                         'default_destination']['priority'][priority]
                             else:
-                                error = ("default destination '" +
+                                error = ("Default destination '" +
                                          obj['default_destination']['priority'][priority] +
                                          "' does not appear in the job configuration.")
                                 if verbose:
@@ -904,7 +904,7 @@ def validate_config(obj, return_bool=False):
                                     new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                     tool_has_default = True
                                 else:
-                                    error = ("default destination for '" +
+                                    error = ("Default destination for '" +
                                              str(tool) + "': '" +
                                              curr['default_destination'] +
                                              "' does not appear in the job configuration.")
@@ -918,7 +918,7 @@ def validate_config(obj, return_bool=False):
                                     ### May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
-                                            error = ("no default for destination for priority '" +
+                                            error = ("No default for destination for priority '" +
                                                      str(priority) + "' in '" + str(tool)) + "'."
                                             if verbose:
                                                 log.debug(error)
@@ -933,7 +933,7 @@ def validate_config(obj, return_bool=False):
                                                         'priority'][priority] = destination
                                                     tool_has_default = True
                                                 else:
-                                                    error = ("default destination for '" +
+                                                    error = ("Default destination for '" +
                                                              str(tool) + "': '" +
                                                              destination + "' does not appear " +
                                                              "in the job configuration.")
@@ -941,7 +941,7 @@ def validate_config(obj, return_bool=False):
                                                         log.debug(error)
                                                     valid_config = False
                                             else:
-                                                error = ("no default '" + str(priority) +
+                                                error = ("No default '" + str(priority) +
                                                          "' priority destination  for tool " +
                                                          str(tool) + " in config!")
                                                 if verbose:
@@ -949,14 +949,14 @@ def validate_config(obj, return_bool=False):
                                                 valid_config = False
 
                                         else:
-                                            error = ("invalid default destination priority '" +
+                                            error = ("Invalid default destination priority '" +
                                                      str(priority) + "' for '" + str(tool) +
                                                      "'.")
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
                                 else:
-                                    error = "no default priority destinations specified"
+                                    error = "No default priority destinations specified"
                                     error += " for " + str(tool) + " in config!"
                                     if verbose:
                                         log.debug(error)
