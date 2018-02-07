@@ -233,7 +233,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset.metadata)
-            self.groups = {tag.user_value for tag in dataset.tags if tag.user_tname == 'group'}
+            self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr(dataset_path, "false_path", None)
         self.false_extra_files_path = getattr(dataset_path, "false_extra_files_path", None)
@@ -400,8 +400,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.__element_instance_list = element_instance_list
 
     def get_datasets_for_group(self, group):
+        group = group.lower()
         if not self._dataset_elements_cache.get(group):
-            self._dataset_elements_cache[group] = [self._dataset_wrapper(e.element_object, self.dataset_paths, identifier=e.element_identifier, **self.kwargs) for e in self.collection.dataset_elements if any((t for t in e.dataset_instance.tags if t.user_tname == 'group' and t.value == group))]
+            self._dataset_elements_cache[group] = [self._dataset_wrapper(e.element_object, self.dataset_paths, identifier=e.element_identifier, **self.kwargs) for e in self.collection.dataset_elements if any((t for t in e.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group))]
         return self._dataset_elements_cache[group]
 
     def keys(self):
