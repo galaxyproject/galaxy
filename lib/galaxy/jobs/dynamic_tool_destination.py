@@ -417,8 +417,6 @@ class RuleValidator:
             elif isinstance(rule["destination"], dict):
                 if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
 
-                    #### new code
-
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
                             error = "Invalid priority '"
@@ -452,7 +450,6 @@ class RuleValidator:
                                 log.debug(error)
                             valid_rule = False
 
-                    #### new code ends here
                 else:
                     error = "No destination specified for rule " + str(counter)
                     error += " in '" + str(tool) + "'."
@@ -804,8 +801,6 @@ def validate_config(obj, return_bool=False):
                 if ('priority' in obj['default_destination'] and
                         isinstance(obj['default_destination']['priority'], dict)):
 
-                    #### My new code
-
                     for priority in obj['default_destination']['priority']:
 
                         if isinstance(obj['default_destination']['priority'][priority],
@@ -859,7 +854,6 @@ def validate_config(obj, return_bool=False):
 
                     if isinstance(curr, dict):
                         if 'priority' in curr and isinstance(curr['priority'], str):
-                            #### my new code
 
                             if curr['priority'] in priority_list:
                                 new_config['users'][user]['priority'] = curr['priority']
@@ -915,7 +909,7 @@ def validate_config(obj, return_bool=False):
                             elif isinstance(curr['default_destination'], dict):
 
                                 if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
-                                    #### new code
+
                                     ### May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
@@ -1467,7 +1461,7 @@ def map_tool_to_destination(
 
     if destination == "fail":
         if fail_message:
-            raise JobMappingException(fail_message)  ###TODO: Should an exception occur when there are no default destinations?
+            raise JobMappingException(fail_message)  ###: Should an exception occur when there are no default destinations?
         else:
             raise JobMappingException(matched_rule["fail_message"])
 

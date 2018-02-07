@@ -946,8 +946,6 @@ ivYMLTest148 = '''
     verbose: True
 '''
 
-#### New Tests
-
 # not all priorities in tool destinations
 ivYMLTest149 = '''
     default_destination:

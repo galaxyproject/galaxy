@@ -648,8 +648,6 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
-      #### New Tests
-
     @log_capture()
     def test_not_all_priorities_in_tool(self, l):
         dt.parse_yaml(path=yt.ivYMLTest149, job_conf_path=job_conf_path, test=True)
@@ -661,7 +659,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         )
 
     @log_capture()
-    def test_rule_destination_not_in_job_conf(self, l):  ### Also test when desination is just a string, not a priority?
+    def test_rule_destination_not_in_job_conf(self, l):
         dt.parse_yaml(path=yt.ivYMLTest150, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
