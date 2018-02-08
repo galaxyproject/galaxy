@@ -673,6 +673,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -700,6 +701,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -729,6 +731,24 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default destination priority 'notAPriority' for 'aTool'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
+
+    @log_capture()
+    def test_tool_default_destination_not_in_job_conf(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest158, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest159, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+          )
 
 # ================================Valid yaml files==============================
     @log_capture()
