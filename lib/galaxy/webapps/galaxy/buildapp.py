@@ -216,6 +216,11 @@ def populate_api_routes(webapp, app):
                            name_prefix='history_',
                            path_prefix='/api/histories/{history_id}',
                            parent_resources=dict(member_name='history', collection_name='histories'))
+    webapp.mapper.connect("history_contents_batch_update",
+                          "/api/histories/{history_id}/contents",
+                          controller="history_contents",
+                          action="update_batch",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_display",
                           "/api/histories/{history_id}/contents/{history_content_id}/display",
                           controller="datasets",

@@ -47,6 +47,13 @@ class HDAManager(datasets.DatasetAssociationManager,
         super(HDAManager, self).__init__(app)
         self.user_manager = users.UserManager(app)
 
+    def get_owned_ids(self, object_ids, history=None):
+        """Get owned IDs.
+        """
+        log.info("object_ids are %s" % object_ids)
+        filters = [self.model_class.id.in_(object_ids), self.model_class.history_id == history.id]
+        return self.list(filters=filters)
+
     # .... security and permissions
     def is_accessible(self, hda, user, **kwargs):
         """
