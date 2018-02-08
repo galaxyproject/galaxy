@@ -670,7 +670,7 @@ class RuleValidator:
         return valid_rule, rule
 
 
-def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml",  test=False, return_bool=False):
+def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml", test=False, return_bool=False):
     """
     Get a yaml file from path and send it to validate_config for validation.
 
@@ -791,9 +791,9 @@ def validate_config(obj, return_bool=False):
                 if obj['default_destination'] in destination_list:
                     new_config["default_destination"] = obj['default_destination']
                 else:
-                    error = ("Default destination '" +
-                             obj['default_destination'] +
-                             "' does not appear in the job configuration.")
+                    error = ("Default destination '"
+                      + obj['default_destination']
+                      + "' does not appear in the job configuration.")
                     if verbose:
                         log.debug(error)
                     valid_config = False
@@ -809,18 +809,18 @@ def validate_config(obj, return_bool=False):
 
                             if obj['default_destination']['priority'][priority] in destination_list:
                                 new_config['default_destination']['priority'][priority] = obj[
-                                        'default_destination']['priority'][priority]
+                                    'default_destination']['priority'][priority]
                             else:
-                                error = ("Default destination '" +
-                                         obj['default_destination']['priority'][priority] +
-                                         "' does not appear in the job configuration.")
+                                error = ("Default destination '"
+                                  + obj['default_destination']['priority'][priority]
+                                  + "' does not appear in the job configuration.")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
 
                         else:
-                            error = ("Invalid default priority destination '" +
-                                     str(priority) + "' found in config!")
+                            error = ("Invalid default priority destination '"
+                              + str(priority) + "' found in config!")
                             if verbose:
                                 log.debug(error)
                             valid_config = False
@@ -858,9 +858,9 @@ def validate_config(obj, return_bool=False):
                             if curr['priority'] in priority_list:
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
-                                error = ("User '" + user + "', priority '" +
-                                         str(curr['priority']) + "' is not defined " +
-                                         "in the global default_destination section")
+                                error = ("User '" + user + "', priority '"
+                                  + str(curr['priority']) + "' is not defined "
+                                  + "in the global default_destination section")
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -899,10 +899,10 @@ def validate_config(obj, return_bool=False):
                                     new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                     tool_has_default = True
                                 else:
-                                    error = ("Default destination for '" +
-                                             str(tool) + "': '" +
-                                             curr['default_destination'] +
-                                             "' does not appear in the job configuration.")
+                                    error = ("Default destination for '"
+                                             + str(tool) + "': '"
+                                             + curr['default_destination']
+                                             + "' does not appear in the job configuration.")
                                     if verbose:
                                         log.debug(error)
                                     valid_config = False
@@ -913,8 +913,8 @@ def validate_config(obj, return_bool=False):
                                     ### May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
                                         if priority not in curr['default_destination']['priority']:
-                                            error = ("No default for destination for priority '" +
-                                                     str(priority) + "' in '" + str(tool)) + "'."
+                                            error = ("No default for destination for priority '"
+                                                     + str(priority) + "' in '" + str(tool)) + "'."
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
@@ -928,25 +928,25 @@ def validate_config(obj, return_bool=False):
                                                         'priority'][priority] = destination
                                                     tool_has_default = True
                                                 else:
-                                                    error = ("Default destination for '" +
-                                                             str(tool) + "': '" +
-                                                             destination + "' does not appear " +
-                                                             "in the job configuration.")
+                                                    error = ("Default destination for '"
+                                                             + str(tool) + "': '"
+                                                             + destination + "' does not appear "
+                                                             + "in the job configuration.")
                                                     if verbose:
                                                         log.debug(error)
                                                     valid_config = False
                                             else:
-                                                error = ("No default '" + str(priority) +
-                                                         "' priority destination  for tool " +
-                                                         str(tool) + " in config!")
+                                                error = ("No default '" + str(priority)
+                                                         + "' priority destination  for tool "
+                                                         + str(tool) + " in config!")
                                                 if verbose:
                                                     log.debug(error)
                                                 valid_config = False
 
                                         else:
-                                            error = ("Invalid default destination priority '" +
-                                                     str(priority) + "' for '" + str(tool) +
-                                                     "'.")
+                                            error = ("Invalid default destination priority '"
+                                                     + str(priority) + "' for '" + str(tool)
+                                                     + "'.")
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
@@ -1307,16 +1307,15 @@ def map_tool_to_destination(
     # making default destinations a mandatory field for all tools
     if len(priority_list) > 0:
         default_priority = next(iter(priority_list))
-        priority = default_priority  ###FIXME: this is sometimes a value that isn't in the tool's default destinations field.
+        priority = default_priority  ###FIXME: this is sometimes a value that isn't in the tool's default destinations field
     else:
-        fail_message = ("No priorities declared in config file!" +
-                        "cannot map " + str(tool.old_id) + " to destination" +
-                        "using priorities")
-        error = ("No priorities found so no default priorty set! " +
-                 "Things may behave unexpectedly.")
+        fail_message = ("No priorities declared in config file!"
+                        + "cannot map " + str(tool.old_id) + " to destination"
+                        + "using priorities")
+        error = ("No priorities found so no default priorty set! "
+                 + "Things may behave unexpectedly.")
         if verbose:
             log.debug(error)
-        valid_config = False
 
     if config is not None:
         # get the users priority
@@ -1531,11 +1530,11 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '-c', '--check-config', dest='check_config', nargs='?',
-        help='Use this option to validate tool_destinations.yml.' +
-        ' Optionally, provide the path to the tool_destinations.yml' +
-        ' that you would like to check, and/or the path to the related' +
-        ' job_conf.xml. Default: galaxy/config/tool_destinations.yml and' +
-        ' galaxy/config/job_conf.xml')
+        help='Use this option to validate tool_destinations.yml.'
+             + ' Optionally, provide the path to the tool_destinations.yml'
+             + ' that you would like to check, and/or the path to the related'
+             + ' job_conf.xml. Default: galaxy/config/tool_destinations.yml and'
+             + ' galaxy/config/job_conf.xml')
 
     parser.add_argument(
         '-j', '--job-config', dest='job_config')
