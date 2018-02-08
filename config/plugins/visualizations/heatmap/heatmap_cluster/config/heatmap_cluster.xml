@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Clustered Heatmap" regular="True">
+<visualization name="Clustered Heatmap">
     <macros>
         <import>../../heatmap_default/config/heatmap_shared.xml</import>
     </macros>

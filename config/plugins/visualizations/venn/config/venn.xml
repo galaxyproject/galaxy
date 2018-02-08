@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Venn Diagram (Benfred)" regular="True">
+<visualization name="Venn Diagram (Benfred)">
     <description>A javascript library for laying out area proportional venn and euler diagrams hosted at https://github.com/benfred/venn.js.</description>
     <data_sources>
         <data_source>
