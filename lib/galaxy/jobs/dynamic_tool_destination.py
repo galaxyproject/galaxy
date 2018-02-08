@@ -54,25 +54,27 @@ def get_keys_from_dict(dl, keys_list):
 
 class RuleValidator:
     """
-    This class is the primary facility for validating configs. It's always called
-    in map_tool_to_destination and it's called for validating config directly through
-    DynamicToolDestination.py
+    This class is the primary facility for validating configs. It's always
+    called in map_tool_to_destination and it's called for validating config
+    directly through DynamicToolDestination.py
     """
 
     @classmethod
     def validate_rule(cls, rule_type, return_bool=False, *args, **kwargs):
         """
-        This function is responsible for passing each rule to its relevant function.
+        This function is responsible for passing each rule to its relevant
+        function.
 
         @type rule_type: str
         @param rule_type: the current rule's type
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on return_bool)
+        @return: validated rule or result of validation (depending on
+                 return_bool)
         """
         if rule_type == 'file_size':
             return cls.__validate_file_size_rule(return_bool, *args, **kwargs)
@@ -93,21 +95,22 @@ class RuleValidator:
         This function is responsible for validating 'file_size' rules.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on return_bool)
+        @return: validated rule or result of validation (depending on
+                 return_bool)
         """
 
         rule = copy.deepcopy(original_rule)
@@ -146,21 +149,22 @@ class RuleValidator:
         This function is responsible for validating 'num_input_datasets' rules.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on return_bool)
+        @return: validated rule or result of validation (depending on
+                 return_bool)
         """
 
         rule = copy.deepcopy(original_rule)
@@ -198,21 +202,22 @@ class RuleValidator:
         This function is responsible for validating 'records' rules.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on return_bool)
+        @return: validated rule or result of validation (depending on
+                 return_bool)
         """
 
         rule = copy.deepcopy(original_rule)
@@ -251,21 +256,22 @@ class RuleValidator:
         This is responsible for validating 'arguments' rules.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (depending on return_bool)
-        @return: validated rule or result of validation (depending on return_bool)
+        @return: validated rule or result of validation (depending on
+                return_bool)
         """
 
         rule = copy.deepcopy(original_rule)
@@ -304,19 +310,19 @@ class RuleValidator:
         This function is responsible for validating nice_value.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it encounters any
-                       abnormalities in the config.
+        @param valid_rule: returns True if everything is valid. False if it
+                           encounters any abnormalities in the config.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
@@ -356,19 +362,19 @@ class RuleValidator:
         This function is responsible for validating destination.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it encounters any
-                       abnormalities in the config.
+        @param valid_rule: returns True if everything is valid. False if it
+                           encounters any abnormalities in the config.
 
         @type rule: dict
         @param rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
@@ -483,19 +489,19 @@ class RuleValidator:
         This function is responsible for validating bounds.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it encounters any
-                       abnormalities in the config.
+        @param valid_rule: returns True if everything is valid. False if it
+                           encounters any abnormalities in the config.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
@@ -558,19 +564,19 @@ class RuleValidator:
         This function is responsible for validating arguments.
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it encounters any
-                       abnormalities in the config.
+        @param valid_rule: returns True if everything is valid. False if it
+                           encounters any abnormalities in the config.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
@@ -597,19 +603,19 @@ class RuleValidator:
         This function is responsible for validating users (if present).
 
         @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of the
-                              validation, and not the validated rule itself.
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
 
         @type valid_rule: bool
-        @param valid_rule: returns True if everything is valid. False if it encounters any
-                       abnormalities in the config.
+        @param valid_rule: returns True if everything is valid. False if it
+                           encounters any abnormalities in the config.
 
         @type original_rule: dict
         @param original_rule: contains the original received rule
 
         @type counter: int
-        @param counter: this counter is used to identify what rule # is currently being
-                        validated. Necessary for log output.
+        @param counter: this counter is used to identify what rule # is
+                        currently being validated. Necessary for log output.
 
         @type tool: str
         @param tool: the name of the current tool. Necessary for log output.
@@ -675,7 +681,10 @@ def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_
     Get a yaml file from path and send it to validate_config for validation.
 
     @type path: str
-    @param path: the path to the config file
+    @param path: the path to the tool destinations config file
+
+    @type job_conf_path: str
+    @param job_conf_path: the path to the job config file
 
     @type test: bool
     @param test: indicates whether to run in test mode or production mode
@@ -1202,6 +1211,9 @@ def map_tool_to_destination(
 
     @type path: str
     @param path: path to tool_destinations.yml
+
+    @type job_conf_path: str
+    @param job_conf_path: path to job_conf.xml
     """
     importer(test)
 
@@ -1516,12 +1528,13 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
 
 if __name__ == '__main__':
     """
-    This function is responsible for running the app if directly run through the
-    commandline. It offers the ability to specify a config through the commandline
-    for checking whether or not it is a valid config. It's to be run from within Galaxy,
-    assuming it is installed correctly within the proper directories in Galaxy, and it
-    looks for the config file in galaxy/config/. It can also be run with a path pointing
-    to a config file if not being run directly from inside Galaxy install directory.
+    This function is responsible for running the app if directly run through
+    the commandline. It offers the ability to specify a config through the
+    commandline for checking whether or not it is a valid config. It's to be
+    run from within Galaxy, assuming it is installed correctly within the
+    proper directories in Galaxy, and it looks for the config file in
+    galaxy/config/. It can also be run with a path pointing to a config file if
+    not being run directly from inside Galaxy install directory.
     """
     verbose = True
 
