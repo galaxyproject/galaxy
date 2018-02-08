@@ -345,8 +345,8 @@ class RuleValidator:
                 valid_rule = False
 
         else:
-            error = "No nice_value found for rule " + str(counter) + " in '" + str(tool)
-            error += "'."
+            error = "No nice_value found for rule " + str(counter) + " in '"
+            error += str(tool) + "'."
             if not return_bool:
                 error += " Setting nice_value to 0."
                 rule["nice_value"] = 0
@@ -409,7 +409,8 @@ class RuleValidator:
                     if verbose:
                         log.debug(error)
                     valid_rule = False
-                elif rule["destination"] not in destination_list and rule["destination"] != "fail":
+                elif (rule["destination"] not in destination_list
+                        and rule["destination"] != "fail"):
                     error = "Destination for '" + str(tool) + "', rule "
                     error += str(counter) + ": '"
                     error += str(rule["destination"])
@@ -421,7 +422,8 @@ class RuleValidator:
                     valid_rule = False
 
             elif isinstance(rule["destination"], dict):
-                if ("priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict)):
+                if ("priority" in rule["destination"]
+                        and isinstance(rule["destination"]["priority"], dict)):
 
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
@@ -519,8 +521,8 @@ class RuleValidator:
                 lower_bound = rule["lower_bound"]
 
             if lower_bound == "Infinity":
-                error = "Error: lower_bound is set to Infinity, but must be lower than "
-                error += "upper_bound!"
+                error = "Error: lower_bound is set to Infinity, but must be "
+                error += "lower than upper_bound!"
                 if not return_bool:
                     error += " Setting lower_bound to 0!"
                     lower_bound = 0
@@ -631,8 +633,8 @@ class RuleValidator:
                 for user in reversed(rule["users"]):
                     if not isinstance(user, str):
                         error = "Entry '" + str(user) + "' in users for rule "
-                        error += str(counter) + " in tool '" + str(tool) + "' is in an "
-                        error += "invalid format!"
+                        error += str(counter) + " in tool '" + str(tool)
+                        error += "' is in an " + "invalid format!"
                         if not return_bool:
                             error += " Ignoring entry."
                         if verbose:
@@ -642,9 +644,9 @@ class RuleValidator:
 
                     else:
                         if re.match(emailregex, user) is None:
-                            error = "Supplied email '" + str(user) + "' for rule "
-                            error += str(counter) + " in tool '" + str(tool) + "' is in "
-                            error += "an invalid format!"
+                            error = "Supplied email '" + str(user)
+                            error += "' for rule " + str(counter) + " in tool '"
+                            error += str(tool) + "' is in " + "an invalid format!"
                             if not return_bool:
                                 error += " Ignoring email."
                             if verbose:
@@ -676,7 +678,8 @@ class RuleValidator:
         return valid_rule, rule
 
 
-def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml", test=False, return_bool=False):
+def parse_yaml(path="/config/tool_destinations.yml",
+               job_conf_path="/config/job_conf.xml", test=False, return_bool=False):
     """
     Get a yaml file from path and send it to validate_config for validation.
 
@@ -699,7 +702,8 @@ def parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_
     """
 
     global destination_list
-    destination_list = get_destination_list_from_job_config(job_config_location=job_conf_path)
+    destination_list = get_destination_list_from_job_config(
+        job_config_location=job_conf_path)
 
     # Import file from path
     try:
@@ -917,7 +921,8 @@ def validate_config(obj, return_bool=False):
                                     valid_config = False
                             elif isinstance(curr['default_destination'], dict):
 
-                                if ('priority' in curr['default_destination'] and isinstance(curr['default_destination']['priority'], dict)):
+                                if ('priority' in curr['default_destination']
+                                        and isinstance(curr['default_destination']['priority'], dict)):
 
                                     ### May not be necessary check if something has all priorities specified as default
                                     for priority in priority_list:
@@ -1030,8 +1035,8 @@ def validate_config(obj, return_bool=False):
                         # if "rules" in curr and isinstance(curr['rules'], list):
                         elif not tool_has_default:
                             valid_config = False
-                            error = "Tool '" + str(tool) + "' does not have rules nor a"
-                            error += " default_destination!"
+                            error = "Tool '" + str(tool) + "' does not have"
+                            error += " rules nor a default_destination!"
                             if verbose:
                                 log.debug(error)
 
@@ -1420,7 +1425,8 @@ def map_tool_to_destination(
 
                             # if we matched a rule
                             if matched:
-                                if (matched_rule is None or rule["nice_value"] < matched_rule["nice_value"]):
+                                if (matched_rule is None or rule["nice_value"]
+                                        < matched_rule["nice_value"]):
                                     matched_rule = rule
                         # if user_authorized
                         else:
@@ -1563,16 +1569,20 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.check_config and args.job_config:
-        valid_config = parse_yaml(path=args.check_config, job_conf_path=args.job_config, return_bool=True)
+        valid_config = parse_yaml(path=args.check_config,
+                                  job_conf_path=args.job_config, return_bool=True)
 
     elif args.check_config:
-        valid_config = parse_yaml(path=args.check_config, job_conf_path="/config/job_conf.xml", return_bool=True)
+        valid_config = parse_yaml(path=args.check_config,
+                                  job_conf_path="/config/job_conf.xml", return_bool=True)
 
     elif args.job_config:
-        valid_config = parse_yaml(path="/config/tool_destinations.yml", job_conf_path=args.job_config, return_bool=True)
+        valid_config = parse_yaml(path="/config/tool_destinations.yml",
+                                  job_conf_path=args.job_config, return_bool=True)
 
     else:
-        valid_config = parse_yaml(path="/config/tool_destinations.yml", job_conf_path="/config/job_conf.xml", return_bool=True)
+        valid_config = parse_yaml(path="/config/tool_destinations.yml",
+                                  job_conf_path="/config/job_conf.xml", return_bool=True)
 
     if valid_config:
         print("Configuration is valid!")
