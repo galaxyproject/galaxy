@@ -612,6 +612,7 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
             raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
