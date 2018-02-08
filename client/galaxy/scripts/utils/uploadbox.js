@@ -8,6 +8,174 @@
     /**
         Posts file data to the API
     */
+    $.uploadchunk = config => {
+        // parse options
+        var cnf = $.extend(
+            {},
+            {
+                data: {},
+                success: function() {},
+                error: function() {},
+                progress: function() {},
+                chunksize: 256,
+                attempts: 5,
+                url: null,
+                error_default: "Please make sure the file is available.",
+                error_server: "Upload request failed.",
+                error_login: "Uploads require you to log in.",
+                error_file: "File not provied.",
+                error_attempt: "Maximum number of attempts reached."
+            },
+            config
+        );
+
+        // handle initial errors
+        if (cnf.data.error_message) {
+            cnf.error(cnf.data.error_message);
+            return;
+        }
+
+        // configure submission properties
+        var data = cnf.data;
+        var file = data.files && data.files[0] && data.files[0].file;
+        if (!file) {
+            cnf.error(cnf.error_file);
+            return;
+        }
+
+        function send(start, success, error) {
+            // build form data
+            var slicer = file.mozSlice || file.webkitSlice || file.slice;
+            var end = start + cnf.chunksize;
+            var form = new FormData();
+            form.append("start", start);
+            form.append("end", end);
+            form.append("file", slicer.bind(file)(start, end));
+            for (var key in data.payload) {
+                form.append(key, data.payload[key]);
+            }
+
+            window.console.log("Sourcing..." + start + "," + end + ".");
+            if (Math.random() > 0.30) {
+                success();
+            } else {
+                error();
+            }
+
+            /*/ make request
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", cnf.url, true);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Cache-Control", "no-cache");
+            xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+            xhr.onreadystatechange = () => {
+                // check for request completed, server connection closed
+                if (xhr.readyState == xhr.DONE) {
+                    // parse response
+                    var response = null;
+                    var extra_info = "";
+                    if (xhr.responseText) {
+                        try {
+                            response = jQuery.parseJSON(xhr.responseText);
+                            extra_info = response.err_msg;
+                        } catch (e) {
+                            response = xhr.responseText;
+                            extra_info = response;
+                        }
+                    }
+                    // pass any error to the error option
+                    if (xhr.status < 200 || xhr.status > 299) {
+                        var text = xhr.statusText;
+                        if (xhr.status == 403) {
+                            text = cnf.error_login;
+                        } else if (xhr.status == 0) {
+                            text = cnf.error_server;
+                        } else if (!text) {
+                            text = cnf.error_default;
+                        }
+                        error(`${text} (${xhr.status}). ${extra_info}`);
+                    } else {
+                        success(response);
+                    }
+                }
+            };
+
+            // state handler
+            var onreadystatechange = () => {
+                // check for request completed, server connection closed
+                if (xhr.readyState == xhr.DONE) {
+                    // parse response
+                    var response = null;
+                    var extra_info = "";
+                    if (xhr.responseText) {
+                        try {
+                            response = jQuery.parseJSON(xhr.responseText);
+                            extra_info = response.err_msg;
+                        } catch (e) {
+                            response = xhr.responseText;
+                            extra_info = response;
+                        }
+                    }
+                    // pass any error to the error option
+                    if (xhr.status < 200 || xhr.status > 299) {
+                        var text = xhr.statusText;
+                        if (xhr.status == 403) {
+                            text = cnf.error_login;
+                        } else if (xhr.status == 0) {
+                            text = cnf.error_server;
+                        } else if (!text) {
+                            text = cnf.error_default;
+                        }
+                        cnf.error(`${text} (${xhr.status}). ${extra_info}`);
+                    } else {
+                        cnf.success(response);
+                    }
+                }
+            };
+
+            // error handler
+            var onerrorhandler = e => {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                }
+            };
+
+            xhr.upload.addEventListener("progress", onerrorhandler, false);
+            xhr.send(formdata);
+            Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);*/
+        }
+
+        // chunk processing helper
+        var attempts = cnf.attempts;
+        function process(start) {
+            var start = start || 0;
+            var size = file.size;
+            if (start < size) {
+                send(start, () => {
+                    // send next chunk
+                    attempts = cnf.attempts;
+                    process(start + cnf.chunksize + 1);
+                }, () => {
+                    // retry or show error
+                    if (--attempts > 0) {
+                        window.console.log("Retrying...");
+                        process(start);
+                    } else {
+                        window.console.log(cnf.error_attempt);
+                        cnf.error(cnf.error_attempt);
+                    }
+                });
+            } else {
+                // submission complete show success
+                window.console.log("Success.");
+                cnf.success();
+            }
+        }
+
+        // initiate processing queue for chunks
+        process();
+    };
+
     $.uploadpost = config => {
         // parse options
         var cnf = $.extend(
@@ -200,6 +368,9 @@
         var uploadinput = $(this).uploadinput({
             multiple: true,
             onchange: function(files) {
+                _.each(files, file => {
+                    file.chunkmode = true;
+                });
                 add(files);
             },
             ondragover: options.ondragover,
@@ -264,7 +435,8 @@
             remove(index);
 
             // create and submit data
-            $.uploadpost({
+            var submitter = file.chunkmode ? $.uploadchunk : $.uploadpost;
+            submitter({
                 url: opts.url,
                 data: opts.initialize(index),
                 success: function(message) {
