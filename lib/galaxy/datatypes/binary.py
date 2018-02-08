@@ -304,7 +304,7 @@ class BamNative(Binary):
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
-            return super(Bam, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super(BamNative, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
             column_names = dataset.metadata.column_names
             if not column_names:
