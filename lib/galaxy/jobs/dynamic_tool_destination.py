@@ -800,7 +800,6 @@ def validate_config(obj, return_bool=False):
 
         if 'default_destination' in obj:
             if isinstance(obj['default_destination'], str):
-                priority_list.add(obj['default_destination'])
                 if obj['default_destination'] in destination_list:
                     new_config["default_destination"] = obj['default_destination']
                 else:
@@ -839,7 +838,7 @@ def validate_config(obj, return_bool=False):
                             valid_config = False
 
                     if len(priority_list) < 1:
-                        error = ("No valid default priorities found!")
+                        error = ("No valid priorities found!")
                         if verbose:
                             log.debug(error)
                         valid_config = False
@@ -849,11 +848,37 @@ def validate_config(obj, return_bool=False):
                     if verbose:
                         log.debug(error)
                     valid_config = False
+
+                if 'default_priority' in obj:
+                    if isinstance(obj['default_priority'], str):
+                        if obj['default_priority'] in priority_list:
+                            new_config['default_priority'] = obj['default_priority']
+                        else:
+                            error = ("Default priority '" + str(obj['default_priority'])
+                                     + "' is not a valid priority.")
+                            if verbose:
+                                log.debug(error)
+                    else:
+                        error = "default_priority in config is not valid."
+                        if verbose:
+                            log.debug(error)
+                        valid_config = False
+                else:
+                    error = "No default_priority section found in config."
+                    if 'med' in priority_list:
+                        error += " Setting 'med' as default priority."
+                        new_config['default_priority'] = 'med'
+                    else:
+                        error += " Things may not run as expected!"
+                        valid_config = False
+                    if verbose:
+                        log.debug(error)
             else:
                 error = "No global default destination specified in config!"
                 if verbose:
                     log.debug(error)
                 valid_config = False
+
         else:
             error = "No global default destination specified in config!"
             if verbose:
@@ -1322,20 +1347,27 @@ def map_tool_to_destination(
     # set. Definitely not the best way to pick fallback default
     # destinations for tools, but there's not many other options without
     # making default destinations a mandatory field for all tools
-    if len(priority_list) > 0:
-        default_priority = next(iter(priority_list))
-        priority = default_priority  ###FIXME: this is sometimes a value that isn't in the tool's default destinations field
-    else:
-        fail_message = ("No priorities declared in config file!"
-                        + "cannot map " + str(tool.old_id) + " to destination"
-                        + "using priorities")
-        error = ("No priorities found so no default priorty set! "
-                 + "Things may behave unexpectedly.")
-        if verbose:
-            log.debug(error)
 
     if config is not None:
-        # get the users priority
+
+        if "default_destination" in config:
+            if isinstance(config['default_destination'], dict):
+                # Default priority is only applicable when
+                # default_destination is a dict, rather than string.
+                if 'default_priority' in config:
+                    default_priority = config['default_priority']
+                    priority = default_priority
+
+                else:
+                    if len(priority_list) > 0:
+                        default_priority = next(iter(priority_list))
+                        priority = default_priority
+                        error = ("No default priority found, arbitrarily setting '"
+                                 + default_priority + "' as the default priority.")
+                        if verbose:
+                            log.debug(error)
+
+        # get the user's priority
         if "users" in config:
             if user_email in config["users"]:
                 priority = config["users"][user_email]["priority"]
@@ -1346,7 +1378,7 @@ def map_tool_to_destination(
             else:
                 if priority in config['default_destination']['priority']:
                     destination = config['default_destination']['priority'][priority]
-                else:
+                elif default_priority in config['default_destination']['priority']:
                     destination = (config['default_destination']['priority'][default_priority])
             config = config['tools']
             if str(tool.old_id) in config:

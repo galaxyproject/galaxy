@@ -272,6 +272,7 @@ vdictTest7_yml = {
             'med': 'waffles_default'
         }
     },
+    'default_priority':  'med',
     'users': {
         'user@example.com': {
             'priority': 'med'
@@ -1072,40 +1073,92 @@ ivYMLTest157 = '''
 
 # tool default destination not in job config
 ivYMLTest158 = '''
-     default_destination:
-       priority:
-         med: waffles_low
-     tools:
-       blah:
-         rules:
-           - rule_type: num_input_datasets
-             nice_value: 0
-             lower_bound: 0
-             upper_bound: Infinity
-             destination:
-               priority:
-                 med: waffles_default
-         default_destination:
-           priority:
-             med: not_true_destination
-     verbose: True
+    default_destination:
+      priority:
+        med: waffles_low
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: waffles_default
+        default_destination:
+          priority:
+            med: not_true_destination
+    verbose: True
 '''
 
 # tool default destination not in job config (without priority dict)
 ivYMLTest159 = '''
-     default_destination:
-       priority:
-         med: waffles_low
-     tools:
-       blah:
-         rules:
-           - rule_type: num_input_datasets
-             nice_value: 0
-             lower_bound: 0
-             upper_bound: Infinity
-             destination:
-               priority:
-                 med: waffles_default
-         default_destination: not_true_destination
-     verbose: True
- '''
+    default_destination:
+      priority:
+        med: waffles_low
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: waffles_default
+        default_destination: not_true_destination
+    verbose: True
+'''
+
+# ============================= unused tests ==================================
+
+# No valid priorities but the tool doesn't require one
+ivYMLTest160 = '''
+    default_destination: waffles_low
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: waffles_default
+        default_destination: waffles_high
+    verbose: True
+'''
+
+# No valid priorities and the tool rule requires them
+ivYMLTest161 = '''
+    default_destination: waffles_low
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: waffles_default
+        default_destination: waffles_high
+    verbose: True
+'''
+
+# No valid priorities and the tool default_destination requires them
+ivYMLTest161 = '''
+    default_destination: waffles_low
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority: waffles_default
+        default_destination:
+          priority:
+            med: waffles_default
+    verbose: True
+'''

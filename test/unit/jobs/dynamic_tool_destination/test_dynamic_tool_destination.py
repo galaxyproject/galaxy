@@ -104,7 +104,6 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'No priorities found so no default priorty set! Things may behave unexpectedly.')
         )
 
     @log_capture()
@@ -119,6 +118,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.empty'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
@@ -136,6 +136,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 0'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 0.00 B'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 0')
@@ -153,6 +154,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 293.00 B'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test1.full'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 293.00 B'),
@@ -174,6 +176,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total number of files: 1'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test' with 'Destination1'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test3.full'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total size: 3.23 KB'),
@@ -194,6 +197,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default_high'.")
@@ -211,6 +215,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'Destination6'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'Destination6_med'.")
         )
@@ -227,6 +232,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default_high'.")
         )
@@ -244,6 +250,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default_high'.")
@@ -263,6 +270,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 10'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_db' with 'Destination4'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.fasta'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 10'),
@@ -283,6 +291,7 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 6'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_db' with 'Destination4'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Loading file: input1' + script_dir + '/data/test.fasta'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Total amount of records: 6'),
@@ -635,6 +644,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest146, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'low' for rule 1 in 'smalt'. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -644,6 +654,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest147, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'mine' for rule 1 in 'smalt'. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -653,6 +664,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest149, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default for destination for priority 'lowish' in 'yuck'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default for destination for priority 'higher' in 'yuck'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
@@ -663,6 +675,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest150, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -672,6 +685,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest151, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
@@ -683,6 +697,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'no_such_dest' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -691,6 +706,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest153, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blegh', rule 1: 'fake_destination' does not exist in job configuration. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -700,6 +716,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest154, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
@@ -719,6 +736,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest156, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'notAPriority' for rule 1 in 'aTool'. Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -728,6 +746,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest157, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default destination priority 'notAPriority' for 'aTool'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -737,6 +756,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest158, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -746,6 +766,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest159, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
@@ -777,7 +798,9 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
         )
 
