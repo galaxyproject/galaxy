@@ -665,8 +665,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default for destination for priority 'lowish' in 'yuck'."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default for destination for priority 'higher' in 'yuck'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 

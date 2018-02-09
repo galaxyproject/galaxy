@@ -949,14 +949,15 @@ def validate_config(obj, return_bool=False):
                                 if ('priority' in curr['default_destination']
                                         and isinstance(curr['default_destination']['priority'], dict)):
 
-                                    ### May not be necessary check if something has all priorities specified as default
-                                    for priority in priority_list:
-                                        if priority not in curr['default_destination']['priority']:
-                                            error = ("No default for destination for priority '"
-                                                     + str(priority) + "' in '" + str(tool)) + "'."
-                                            if verbose:
-                                                log.debug(error)
-                                            valid_config = False
+                                    if new_config['default_priority'] not in curr['default_destination']['priority']:
+                                        error = ("Default priority '"
+                                                 + str(new_config['default_priority'])
+                                                 + "' does not appear in"
+                                                 + " default_destination for '"
+                                                 + str(tool) + "'.")
+                                        if verbose:
+                                            log.debug(error)
+                                        valid_config = False
 
                                     for priority in curr['default_destination']['priority']:
                                         destination = curr['default_destination']['priority'][priority]
@@ -1342,11 +1343,6 @@ def map_tool_to_destination(
 
     # For each different rule for the tool that's running
     fail_message = None
-
-    # assign default priority to the first element that comes out of the
-    # set. Definitely not the best way to pick fallback default
-    # destinations for tools, but there's not many other options without
-    # making default destinations a mandatory field for all tools
 
     if config is not None:
 
