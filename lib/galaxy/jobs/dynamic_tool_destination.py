@@ -949,16 +949,6 @@ def validate_config(obj, return_bool=False):
                                 if ('priority' in curr['default_destination']
                                         and isinstance(curr['default_destination']['priority'], dict)):
 
-                                    if new_config['default_priority'] not in curr['default_destination']['priority']:
-                                        error = ("Default priority '"
-                                                 + str(new_config['default_priority'])
-                                                 + "' does not appear in"
-                                                 + " default_destination for '"
-                                                 + str(tool) + "'.")
-                                        if verbose:
-                                            log.debug(error)
-                                        valid_config = False
-
                                     for priority in curr['default_destination']['priority']:
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
