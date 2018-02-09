@@ -1478,7 +1478,7 @@ def map_tool_to_destination(
 
     if destination == "fail":
         if fail_message:
-            raise JobMappingException(fail_message)  ### Should an exception occur when there are no default destinations?
+            raise JobMappingException(fail_message)  ### Should an exception occur when there are no default destinations? (maybe check for config[default_destination] size)
         else:
             raise JobMappingException(matched_rule["fail_message"])
 
