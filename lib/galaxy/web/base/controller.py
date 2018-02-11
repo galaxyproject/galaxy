@@ -1358,7 +1358,11 @@ class SharableMixin:
             return trans.fill_template('/sharing_base.mako', item=self.get_item(trans, id), message=message, status='error')
         user.username = username
         trans.sa_session.flush()
-        return self.sharing(trans, id, **kwargs)
+        if 'share_wf' in kwargs:
+            url = url_for('/') + 'workflows/share_workflow?id=' + id
+            trans.response.send_redirect(url)
+        else:
+            return self.sharing(trans, id, **kwargs)
 
     @web.expose
     @web.require_login("modify Galaxy items")

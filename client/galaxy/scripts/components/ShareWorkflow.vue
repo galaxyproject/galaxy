@@ -107,6 +107,22 @@
                 </social-sharing>
             </div>
         </div>
+        <div v-else>
+            <p>To make a workflow accessible via link or publish it, you must create a public username:</p>
+            <form :action="createPublicNameUrl" method="POST">
+                <div class="form-row">
+                    <label>Public Username:</label>
+                    <div class="form-row-input">
+                        <input type="text" name="username" size="40"/>
+                        <input type="hidden" name="share_wf" value="share_wf"/>
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <input class="action-button" type="submit" name="set_username" value="Set Username"/>
+                </div>
+           </form>
+        </div>
         <div class="export-wf">
             <hr/>
             <h3>Export</h3>
@@ -128,7 +144,28 @@
                 <div v-else>
                     This workflow must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
                 </div>
-             </div>
+            </div>
+
+            <div class="sharing-section">
+                <a class="action-button" :href="createSVGUrl">Create image</a> of workflow in SVG format
+            </div>
+
+            <div class="sharing-section">
+                <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
+                <form :action="createMyExperimentUrl" method="POST">
+                <div class="form-row">
+                    <label>myExperiment username:</label>
+                    <input type="text" name="myexp_username" value="" size="25" placeholder="username" autocomplete="off"/>
+                </div>
+                <div class="form-row">
+                    <label>myExperiment password:</label>
+                    <input type="password" name="myexp_password" value="" size="25" placeholder="password" autocomplete="off"/>
+                </div>
+                <div class="form-row">
+                    <input type="submit" value="Export to myExperiment"/>
+                </div>
+            </form>
+            </div>
         </div>
     </div>
 </template>
@@ -158,7 +195,10 @@ export default {
             lastComp: "",
             publishedUrl: Galaxy.root + 'workflows/list_published',
             wfListUrl: Galaxy.root + 'workflows/list',
-            shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id
+            shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id,
+            createSVGUrl: Galaxy.root + 'workflow/gen_image?id=' + this.id,
+            createMyExperimentUrl: Galaxy.root + 'workflow/export_to_myexp?id=' + this.id,
+            createPublicNameUrl: Galaxy.root + 'workflow/set_public_username?id=' + this.id
         }
     },
     created: function() {
