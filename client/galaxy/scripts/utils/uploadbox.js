@@ -35,7 +35,7 @@
             return;
         }
 
-        // configure submission properties
+        // submission properties
         var data = cnf.data;
         var file = data.files && data.files[0] && data.files[0].file;
         if (!file) {
@@ -43,9 +43,17 @@
             return;
         }
 
+        // submission helper
         function send(start, success, error) {
-            // build form data
+            // access slice caller
             var slicer = file.mozSlice || file.webkitSlice || file.slice;
+            if (!slicer) {
+                cnf.error("Browser does not support chunked uploads.");
+                return;
+            }
+
+            // build form data
+            var attempts = cnf.attempts;
             var end = start + cnf.chunksize;
             var form = new FormData();
             form.append("start", start);
@@ -54,8 +62,6 @@
             for (var key in data.payload) {
                 form.append(key, data.payload[key]);
             }
-
-            window.console.log("Sourcing..." + start + "," + end + ".");
             if (Math.random() > 0.30) {
                 success();
             } else {
@@ -146,7 +152,6 @@
         }
 
         // chunk processing helper
-        var attempts = cnf.attempts;
         function process(start) {
             var start = start || 0;
             var size = file.size;
@@ -158,16 +163,16 @@
                 }, () => {
                     // retry or show error
                     if (--attempts > 0) {
-                        window.console.log("Retrying...");
+                        console.debug("Retrying...");
                         process(start);
                     } else {
-                        window.console.log(cnf.error_attempt);
+                        console.debug(cnf.error_attempt);
                         cnf.error(cnf.error_attempt);
                     }
                 });
             } else {
                 // submission complete show success
-                window.console.log("Success.");
+                console.debug("Success.");
                 cnf.success();
             }
         }
