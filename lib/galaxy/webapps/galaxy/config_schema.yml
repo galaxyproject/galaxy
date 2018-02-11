@@ -896,6 +896,18 @@ mapping:
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
+         
+      default_locale:
+        type: str
+        default: auto
+        required: false
+        desc: |
+          Default localization for Galaxy UI.
+          Allowed values are listed at the end of client/galaxy/scripts/nls/locale.js.
+          With the default value (auto), the locale will be automatically adjusted to
+          the user's navigator language.
+          Users can override this settings in their user preferences if the localization
+          settings are enabled in user_preferences_extra_conf.yml
 
       galaxy_infrastructure_url:
         type: str

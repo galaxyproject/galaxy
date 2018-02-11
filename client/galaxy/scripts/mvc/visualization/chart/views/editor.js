@@ -2,7 +2,6 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
@@ -15,52 +14,17 @@ export default Backbone.View.extend({
         this.app = app;
         this.chart = this.app.chart;
         this.description = new Description(this.app);
-        this.message = new Ui.Message({ cls: "ui-margin-bottom" });
-        this.portlet = new Portlet.View({
-            icon: "fa-bar-chart-o",
-            title: "Editor",
-            operations: {
-                draw: new Ui.ButtonIcon({
-                    icon: "fa-line-chart",
-                    tooltip: "Render Visualization",
-                    title: "Visualize",
-                    onclick: () => {
-                        this.chart.set({
-                            date: Utils.time()
-                        });
-                        this.app.go("viewer");
-                        this.chart.trigger("redraw");
-                    }
-                }),
-                back: new Ui.ButtonIcon({
-                    icon: "fa-caret-left",
-                    tooltip: "Return to Viewer",
-                    title: "Cancel",
-                    onclick: () => {
-                        this.chart.load(this.chart_backup);
-                        this.app.go("viewer");
-                    }
-                })
-            }
-        });
-
-        // input field for chart title
         this.title = new Ui.Input({
-            placeholder: "Chart title",
             onchange: () => {
                 this.chart.set("title", this.title.value());
             }
         });
-
-        // create tabs
         this.tabs = new Tabs.View({});
         this.tabs.add({
             id: "settings",
-            title: "Customize",
-            icon: "fa fa-bars",
-            tooltip: "Start by selecting a visualization.",
+            icon: "fa fa-gear",
+            tooltip: "Change settings.",
             $el: $("<div/>")
-                .append(this.description.$el)
                 .append(new Ui.Label({ title: "Provide a title:" }).$el)
                 .append(this.title.$el)
                 .append(
@@ -70,40 +34,19 @@ export default Backbone.View.extend({
                 )
                 .append(new Settings(this.app).$el)
         });
-        this.tabs.add({
-            id: "groups",
-            title: "Select data",
-            icon: "fa-database",
-            tooltip: "Specify data options.",
-            $el: new Groups(this.app).$el
+        if (this.chart.plugin.groups) {
+            this.tabs.add({
+                id: "groups",
+                icon: "fa-database",
+                tooltip: "Select data.",
+                $el: new Groups(this.app).$el
+            });
+        }
+        this.setElement("<div class='charts-editor'/>");
+        this.$el.append(this.description.$el);
+        this.$el.append(this.tabs.$el);
+        this.listenTo(this.chart, "load", () => {
+            this.title.value(this.chart.get("title"));
         });
-
-        // set elements
-        this.portlet.append(this.message.$el);
-        this.portlet.append(this.tabs.$el.addClass("ui-margin-top-large"));
-        this.setElement(this.portlet.$el);
-
-        // chart events
-        this.listenTo(this.chart, "change:title", chart => {
-            this._refreshTitle();
-        });
-    },
-
-    /** Show editor */
-    show: function() {
-        this.$el.show();
-        this.chart_backup = this.chart.serialize();
-    },
-
-    /** Hide editor */
-    hide: function() {
-        this.$el.hide();
-    },
-
-    /** Refresh title handler */
-    _refreshTitle: function() {
-        var title = this.chart.get("title");
-        this.portlet.title(title);
-        this.title.value(title);
     }
 });

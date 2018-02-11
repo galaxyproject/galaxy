@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Heatmap" regular="True">
+<visualization name="Heatmap">
     <macros>
         <import>heatmap_shared.xml</import>
     </macros>

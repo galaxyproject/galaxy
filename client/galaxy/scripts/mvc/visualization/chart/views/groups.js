@@ -4,7 +4,6 @@ import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";
-import Description from "mvc/visualization/chart/views/description";
 var GroupView = Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
@@ -67,12 +66,13 @@ var GroupView = Backbone.View.extend({
                             cls: "ui-portlet-plain",
                             onchange: function() {
                                 self.group.set(self.form.data.create());
-                                self.chart.set("modified", true);
+                                self.chart.trigger("redraw");
                             }
                         });
                         self.group.set(self.form.data.create());
                         self.$el.empty().append(self.form.$el);
                         process.resolve();
+                        self.chart.trigger("redraw");
                     }
                 });
             });
@@ -93,26 +93,13 @@ export default Backbone.View.extend({
                 self.chart.groups.add({ id: Utils.uid() });
             }
         });
-        this.description = new Description(this.app);
-        this.message = new Ui.Message({
-            message: "There are no data selection options for this visualization type.",
-            persistent: true,
-            status: "info"
-        });
         this.setElement(
             $("<div/>")
-                .append(this.description.$el)
-                .append(this.repeat.$el.addClass("ui-margin-bottom"))
-                .append(this.message.$el.addClass("ui-margin-bottom"))
+                .append(this.repeat.$el)
         );
-        this.listenTo(this.chart, "change", function() {
-            self.render();
-        });
-        this.listenTo(this.chart.groups, "add remove reset", function() {
-            self.chart.set("modified", true);
-        });
         this.listenTo(this.chart.groups, "remove", function(group) {
             self.repeat.del(group.id);
+            self.chart.trigger("redraw");
         });
         this.listenTo(this.chart.groups, "reset", function() {
             self.repeat.delAll();
@@ -131,10 +118,8 @@ export default Backbone.View.extend({
     render: function() {
         if (_.size(this.chart.plugin.groups) > 0) {
             this.repeat.$el.show();
-            this.message.$el.hide();
         } else {
             this.repeat.$el.hide();
-            this.message.$el.show();
         }
     }
 });

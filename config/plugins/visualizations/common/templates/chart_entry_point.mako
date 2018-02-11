@@ -41,7 +41,9 @@
                     chart_dict: config.chart_dict,
                     chart_load: bundleEntries[load]
                 });
-                $('body').append(app.$el);
+                $('body').css("overflow", "hidden")
+                         .css("margin", 0)
+                         .append(app.$el);
             }
         });
     </script>

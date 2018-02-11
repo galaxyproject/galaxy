@@ -28,10 +28,10 @@ export default Backbone.View.extend({
                         </td>
                         <td>
                             <div class="charts-description-title ui-form-info"/>
-                            <div class="charts-description-text ui-form-info"/>
                         </td>
                     </tr>
                     </table>
+                    <div class="charts-description-text ui-form-info"/>
                 </div>`;
     }
 });
