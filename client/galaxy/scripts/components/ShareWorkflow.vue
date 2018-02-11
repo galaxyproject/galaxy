@@ -101,7 +101,7 @@
                 <social-sharing :url="url"
                       title="Link to a Galaxy workflow: "
                       hashtags="usegalaxy" inline-template>
-                    <div>
+                    <div class="share-link">
                         <network network="twitter"><i class="fa fa-fw fa-twitter"></i> Share on Twitter </network>
                     </div>
                 </social-sharing>
@@ -316,5 +316,9 @@ export default {
 
     .sharing-section {
         margin-top: 1em;
+    }
+    
+    .share-link {
+        cursor: pointer;
     }
 </style>
