@@ -97,6 +97,15 @@
                     <a class="action-button" :href="shareWfUrl"><span>Share with a user</span></a>
                 </div>
             </div>
+            <div class="sharing-section">
+                <social-sharing :url="url"
+                      title="Link to a Galaxy workflow: "
+                      hashtags="usegalaxy" inline-template>
+                    <div>
+                        <network network="twitter"><i class="fa fa-fw fa-twitter"></i> Share on Twitter </network>
+                    </div>
+                </social-sharing>
+            </div>
         </div>
         <div class="export-wf">
             <hr/>
@@ -125,9 +134,11 @@
 </template>
 <script>
 
+import Vue from "vue";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
 import * as mod_toastr from "libs/toastr";
+import SocialSharing from "libs/vue-social-sharing";
 
 export default {
     props: {
@@ -153,6 +164,7 @@ export default {
     created: function() {
         let url = Galaxy.root + 'workflow/sharing?id=' + this.id
         this.ajaxCall(url);
+        Vue.use(SocialSharing);
     },
     methods: {
         ajaxCall: function(url) {

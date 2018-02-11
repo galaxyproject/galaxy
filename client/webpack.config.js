@@ -26,6 +26,7 @@ var commonLibs = [
     "libs/bootstrap",
     "libs/bootstrap-tour",
     "vue",
+    "libs/vue-social-sharing",
     // mvc
     "libs/underscore",
     "libs/backbone",
