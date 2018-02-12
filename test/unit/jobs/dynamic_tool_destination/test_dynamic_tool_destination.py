@@ -771,10 +771,36 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
-        dt.parse_yaml(path=yt.ivYMLTest162, job_conf_path=job_conf_path, test=True)
+        dt.parse_yaml(path=yt.ivYMLTest163, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No global default destinations specified in config!"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_default_dest_is_string_no_priorities_used(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest160, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_default_dest_is_string_but_priorities_used_in_rule(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest161, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid priority 'med' for rule 1 in 'blah'. Ignoring..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_default_dest_is_string_but_priorities_used_in_tool_default_dest(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest162, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Invalid default destination priority 'med' for 'blah'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 

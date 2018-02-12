@@ -1076,8 +1076,9 @@ def validate_config(obj, return_bool=False):
 
         # quickly run through categories to detect unrecognized types
         for category in obj.keys():
-            if not (category == 'verbose' or category == 'tools' or
-                    category == 'default_destination' or category == 'users'):
+            if not (category == 'verbose' or category == 'tools'
+                    or category == 'default_destination' or category == 'users'
+                    or category == 'default_priority'):
                 error = "Unrecognized category '" + category
                 error += "' found in config file!"
                 if verbose:

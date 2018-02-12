@@ -1107,15 +1107,14 @@ ivYMLTest159 = '''
             destination:
               priority:
                 med: waffles_default
-        default_destination: not_true_destination
+        default_destination: waffles_default
     verbose: True
 '''
-
-# ============================= unused tests ==================================
 
 # No valid priorities but the tool doesn't require one
 ivYMLTest160 = '''
     default_destination: waffles_low
+    default_priority: med
     tools:
       blah:
         rules:
@@ -1146,7 +1145,7 @@ ivYMLTest161 = '''
 '''
 
 # No valid priorities and the tool default_destination requires them
-ivYMLTest161 = '''
+ivYMLTest162 = '''
     default_destination: waffles_low
     tools:
       blah:
@@ -1155,15 +1154,14 @@ ivYMLTest161 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: Infinity
-            destination:
-              priority: waffles_default
+            destination: waffles_default
         default_destination:
           priority:
             med: waffles_default
     verbose: True
 '''
 # Nothing in the priority dict
-ivYMLTest162 = '''
+ivYMLTest163 = '''
     default_destination:
       priority:
     verbose: True
