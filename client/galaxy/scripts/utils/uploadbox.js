@@ -58,7 +58,7 @@
             form.append("start", start);
             form.append("end", end);
             form.append("files_0|file_data", slicer.bind(file)(start, end), file.name);
-            for (var key in data.payload) {
+            for (let key in data.payload) {
                 form.append(key, data.payload[key]);
             }
 
@@ -174,13 +174,13 @@
 
         // construct form data
         var form = new FormData();
-        for (var key in data.payload) {
+        for (let key in data.payload) {
             form.append(key, data.payload[key]);
         }
 
         // add files to submission
         var sizes = 0;
-        for (var key in data.files) {
+        for (let key in data.files) {
             var d = data.files[key];
             form.append(d.name, d.file, d.file.name);
             sizes += d.file.size;
@@ -391,7 +391,7 @@
 
             // get an identifier from the queue
             var index = -1;
-            for (var key in queue) {
+            for (let key in queue) {
                 index = key;
                 break;
             }
