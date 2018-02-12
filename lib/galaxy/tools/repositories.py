@@ -44,10 +44,7 @@ class ValidationContext(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        try:
-            shutil.rmtree(self.temporary_path)
-        except Exception:
-            pass
+        shutil.rmtree(self.temporary_path)
 
     @staticmethod
     @contextmanager
