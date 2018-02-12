@@ -100,14 +100,14 @@
                 }
             };
 
-            // error handler
-            var onerrorhandler = e => {
+            // approximated progress handler, ignores payloads other than file
+            var onprogress = e => {
                 if (e.lengthComputable) {
-                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                    cnf.progress(Math.round(start + e.loaded * 100 / file.size));
                 }
             };
 
-            xhr.upload.addEventListener("progress", onerrorhandler, false);
+            xhr.upload.addEventListener("progress", onprogress, false);
             xhr.send(form);
             Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
         }
