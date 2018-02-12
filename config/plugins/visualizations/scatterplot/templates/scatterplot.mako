@@ -29,7 +29,7 @@ window.Galaxy = { root: '${ root }' };
 ${h.js( 'libs/jquery/jquery',
         'libs/underscore',
         'libs/d3')}
-${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.bundle.js' )}
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.js' )}
 
 <script type="text/javascript">
     function getModel(){
