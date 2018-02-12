@@ -5,7 +5,13 @@
               Workflow: {{ workflowItem.name }}
             </h2>
         </div>
-        <ul class="manage-table-actions back-wf-list">
+        <ul class="manage-table-actions">
+            <li>
+                <a class="action-button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
+            </li>
+            <li>
+                <a class="action-button" :href="createSVGUrl" title="Create image of workflow in SVG format">Create image</a>
+            </li>
             <li>
                 <a class='action-button' title='Back to workflows list' :href="wfListUrl"> Back to workflows list </a>
             </li>
@@ -98,12 +104,15 @@
                 </div>
             </div>
             <div class="sharing-section">
-                <social-sharing :url="url"
+                <social-sharing :url="workflowItem.url"
                       title="Link to a Galaxy workflow: "
                       hashtags="usegalaxy" inline-template>
                     <div class="share-link">
                         <network network="twitter"><i class="fa fa-fw fa-twitter"></i> Share on Twitter </network>
-                    </div>
+                        <network network="facebook"><i class="fa fa-fw fa-facebook"></i> Share on Facebook</network>
+                        <network network="googleplus"><i class="fa fa-fw fa-google-plus"></i> Share on Google+</network>
+                        <network network="linkedin"><i class="fa fa-fw fa-linkedin"></i> Share on LinkedIn</network>
+                    </div> 
                 </social-sharing>
             </div>
         </div>
@@ -127,13 +136,6 @@
             <hr/>
             <h3>Export</h3>
             <div class="sharing-section">
-                <a class="action-button" :href="createUsernameSlugUrl()">
-                    Download
-                </a>
-                workflow as a file so that it can be saved or imported into another Galaxy server.
-            </div>
-            
-            <div class="sharing-section">
                 <div v-if="workflowItem.importable">
                     Use this URL to import the workflow directly into another Galaxy server:
                     <div class="display-url">
@@ -145,11 +147,6 @@
                     This workflow must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
                 </div>
             </div>
-
-            <div class="sharing-section">
-                <a class="action-button" :href="createSVGUrl">Create image</a> of workflow in SVG format
-            </div>
-
             <div class="sharing-section">
                 <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
                 <form :action="createMyExperimentUrl" method="POST">
