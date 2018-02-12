@@ -30,7 +30,7 @@
 		        <span id="item-url-text" style="display: none">
 		            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
 		        </span>
-		        <a href="#" id="edit-identifier"><img src="/static/images/fugue/pencil.png"/></a>
+		        <a href="#" id="edit-identifier" title="Edit workflow url"><img src="/static/images/fugue/pencil.png"/></a>
 		    </blockquote>
 		    <div v-if="workflowItem.published">
 		        This workflow is publicly listed and searchable in Galaxy's
@@ -41,20 +41,20 @@
                     <form>
                         <div v-if="!workflowItem.published">
                             <input class="action-button submit-button" value='Disable Access to Workflow Link' name="disable_link_access"
-                                v-on:click="submit">
+                                v-on:click="submit" title="Disable Access to Workflow Link">
                             <div class="toolParamHelp">Disables workflow's link so that it is not accessible.</div>
                             <br />
-                            <input class="action-button submit-button" value="Publish Workflow" name="publish" v-on:click="submit">
+                            <input class="action-button submit-button" value="Publish Workflow" name="publish" v-on:click="submit" title="Publish Workflow">
                             <div class="toolParamHelp">Publishes the workflow to Galaxy's
                                <a :href="publishedUrl" target="_top">Published workflow</a> section, where it is publicly listed and searchable.
                             </div>
                         <br />
                         </div>
                         <div v-else>
-                            <input class="action-button submit-button" value='Unpublish Workflow' name="unpublish" v-on:click="submit">
+                            <input class="action-button submit-button" value='Unpublish Workflow' name="unpublish" v-on:click="submit" title="Unpublish Workflow">
                             <div class="toolParamHelp">Removes this workflow from Galaxy's <a :href="publishedUrl" target="_top">Published Workflow</a> section so that it is not publicly listed or searchable.</div>
                             <br />
-                            <input class="action-button submit-button" value='Disable Access to workflow via Link and Unpublish' name="disable_link_access_and_unpublish" v-on:click="submit">
+                            <input class="action-button submit-button" value='Disable Access and Unpublish' name="disable_link_access_and_unpublish" v-on:click="submit" title="Disable Access to workflow via Link and Unpublish">
                             <div class="toolParamHelp">Disables this workflow's link so that it is not accessible and removes it from Galaxy's
                                <a :href="publishedUrl" target='_top'>Published workflow</a>
                                section so that it is not publicly listed or searchable.
@@ -66,11 +66,11 @@
             <div v-else>
                 <p>This workflow is currently restricted so that only you and the users listed below can access it.</p>
                 <form>
-                    <input class="action-button submit-button" value="Make Workflow Accessible via Link" name="make_accessible_via_link" v-on:click="submit">
+                    <input class="action-button submit-button" value="Make Workflow Accessible via Link" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link">
                     <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the workflow.</div>
                     <br />
                     <input class="action-button submit-button" value="Make Workflow Accessible and Publish" name="make_accessible_and_publish" 
-                        v-on:click="submit">
+                        v-on:click="submit" title="Make Workflow Accessible and Publish"">
                     <div class="toolParamHelp">
                         Makes the workflow accessible via link (see above) and publishes it to Galaxy's
                         <a :href="publishedUrl" target='_top'>Published workflow </a> section, where it is publicly listed and searchable.
@@ -78,6 +78,7 @@
                 </form>
             </div>
             <div class="sharing-section">
+                <h5>Share workflow with users</h5>
                 <div v-if="workflowItem.users_shared_with && workflowItem.users_shared_with.length > 0">
                     <p>The following users will see this workflow in their workflow list and will be able to view, import, and run it.</p>
                     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
@@ -85,18 +86,18 @@
                             <th>Email</th>
                             <th></th>
                         </tr>
-                        <tr v-for="(item, index) in workflowItem.users_shared_with">
+                        <tr v-for="item in workflowItem.users_shared_with">
                             <td>
-                                <div class="menubutton popup" :id="index">{{item.user_email}}</div>
+                                <div>{{item.user_email}}</div>
                             </td>
                             <td>
-                                <div :popupmenu="index">
-                                <a class="action-button" :href="createUnshareUrl(item.user_id)">Unshare</a>
+                                <div>
+                                     <input class="action-button submit-button" value="Unshare" v-on:click="unshareWorkflow(item.user_id)" title="Unshare workflow with the user">
                                 </div>
                             </td>
                         </tr>
                     </table>
-                    <a class="action-button" :href="shareWfUrl"><span>Share with another user</span></a>
+                    <a class="action-button" :href="shareWfUrl" title="Share the workflow with a different user"><span>Share with another user</span></a>
                 </div>
                 <div v-else>
                     <p>You have not shared this workflow with any users yet.</p>
@@ -104,14 +105,17 @@
                 </div>
             </div>
             <div class="sharing-section">
-                <social-sharing :url="workflowItem.url"
-                      title="Link to a Galaxy workflow: "
-                      hashtags="usegalaxy" inline-template>
+                <h5>Share workflow on social media</h5>
+                <social-sharing :url="workflowUrl"
+                                title="Link to a Galaxy workflow: "
+                                quote="Galaxy workflow"
+                                hashtags="usegalaxy"
+                                inline-template>
                     <div class="share-link">
-                        <network network="twitter"><i class="fa fa-fw fa-twitter"></i> Share on Twitter </network>
-                        <network network="facebook"><i class="fa fa-fw fa-facebook"></i> Share on Facebook</network>
-                        <network network="googleplus"><i class="fa fa-fw fa-google-plus"></i> Share on Google+</network>
-                        <network network="linkedin"><i class="fa fa-fw fa-linkedin"></i> Share on LinkedIn</network>
+                        <network network="twitter" id="twitter" class="social-link"><i class="fa fa-fw fa-twitter"></i> Twitter </network>
+                        <network network="facebook" id="facebook" class="social-link"><i class="fa fa-fw fa-facebook"></i> Facebook </network>
+                        <network network="googleplus" id="googleplus" class="social-link"><i class="fa fa-fw fa-google-plus"></i> Google+ </network>
+                        <network network="linkedin" id="linkedin" class="social-link"><i class="fa fa-fw fa-linkedin"></i> LinkedIn </network>
                     </div> 
                 </social-sharing>
             </div>
@@ -186,7 +190,7 @@ export default {
             errormessage: null,
             workflowItem: {},
             shareStatus: "",
-            url: "",
+            workflowUrl: "",
             splitUrl: [],
             lastButOneComp: "",
             lastComp: "",
@@ -199,9 +203,8 @@ export default {
         }
     },
     created: function() {
-        let url = Galaxy.root + 'workflow/sharing?id=' + this.id
+        let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id
         this.ajaxCall(url);
-        Vue.use(SocialSharing);
     },
     methods: {
         ajaxCall: function(url) {
@@ -209,6 +212,7 @@ export default {
                 .get(url)
                 .then(response => {
                     this.updateView(response);
+                    Vue.use(SocialSharing);
                 })
                 .catch(e => {
                     this.showError(e);
@@ -219,13 +223,13 @@ export default {
         },
         updateView: function(response) {
             this.workflowItem = response.data.workflow_item;
-            this.url = this.workflowItem.url;
+            this.workflowUrl = this.workflowItem.url;
             if( this.workflowItem.importable === true ) {
                 this.shareStatus = "accessible via link";
                 if( this.workflowItem.published === true ) {
                     this.shareStatus += " and published";
                 }
-                this.splitUrl = this.url.split("/");
+                this.splitUrl = this.workflowUrl.split("/");
                 this.lastButOneComp = this.splitUrl.splice(0, this.splitUrl.length - 1);
                 this.lastButOneComp = this.lastButOneComp.join("/");
                 this.lastComp = this.splitUrl.splice(-1, 1);
@@ -259,10 +263,10 @@ export default {
             });
         },
         getUrl: function() {
-            return Galaxy.root + "workflow/sharing?id=" + this.id;
+            return Galaxy.root + "workflow/sharing_workflow?id=" + this.id;
         },
         submit: function(event) {
-            let url = Galaxy.root + 'workflow/sharing',
+            let url = Galaxy.root + 'workflow/sharing_workflow',
                 attr = event.target.name,
                 value = event.target.value;
             $.ajax({
@@ -277,8 +281,10 @@ export default {
                 this.showError(response);
             });
         },
-        createUnshareUrl: function(userId) {
-            return Galaxy.root + 'workflow/sharing?id=' + this.id + '&unshare_user=' + userId;
+        unshareWorkflow: function(userId) {
+            console.log(userId);
+            let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id + '&unshare_user=' + userId;
+            this.ajaxCall(url);
         },
         createUsernameSlugUrl: function() {
             return this.workflowItem.url + '/json-download';
@@ -295,7 +301,7 @@ export default {
     }
 
     .submit-button {
-        width: 30%;
+        width: 32%;
     }
     
     h3 {
@@ -304,6 +310,10 @@ export default {
     
     input.action-button {
         margin-left: 0;
+    }
+    
+    a.action-button {
+        margin-top: 0.5%;
     }
     
     .display-url {
@@ -317,5 +327,9 @@ export default {
     
     .share-link {
         cursor: pointer;
+    }
+    
+    .social-link {
+        margin-right: 0.5%;
     }
 </style>

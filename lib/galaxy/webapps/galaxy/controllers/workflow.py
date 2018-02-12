@@ -278,6 +278,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.require_login("use Galaxy workflows")
     def share(self, trans, id, email="", use_panels=False):
+        print "in share"
         msg = mtype = None
         # Load workflow from database
         stored = self.get_stored_workflow(trans, id)
@@ -304,7 +305,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 session.add(share)
                 session.flush()
                 trans.set_message("Workflow '%s' shared with user '%s'" % (escape(stored.name), escape(other.email)))
-                return trans.response.send_redirect(url_for('/') + 'workflows/share_workflow?id=' + id)
+                return trans.response.send_redirect(url_for(controller='workflow', action='sharing', id=id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -314,8 +315,14 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("Share or export Galaxy workflows")
-    @web.json
     def sharing(self, trans, id, **kwargs):
+        """ Redirect the sharing workflow """
+        return trans.response.send_redirect(url_for('/') + 'workflows/share_workflow?id=' + id)
+
+    @web.expose
+    @web.require_login("Share or export Galaxy workflows")
+    @web.json
+    def sharing_workflow(self, trans, id, **kwargs):
         """ Handle workflow sharing. """
         session = trans.sa_session
         if 'unshare_me' in kwargs:
