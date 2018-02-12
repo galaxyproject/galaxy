@@ -1162,3 +1162,9 @@ ivYMLTest161 = '''
             med: waffles_default
     verbose: True
 '''
+# Nothing in the priority dict
+ivYMLTest162 = '''
+    default_destination:
+      priority:
+    verbose: True
+'''

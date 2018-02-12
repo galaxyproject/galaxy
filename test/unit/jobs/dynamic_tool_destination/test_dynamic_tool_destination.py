@@ -769,6 +769,15 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
+    @log_capture()
+    def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest162, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No global default destinations specified in config!"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
 # ================================Valid yaml files==============================
     @log_capture()
     def test_parse_valid_yml(self, l):

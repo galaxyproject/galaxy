@@ -842,37 +842,37 @@ def validate_config(obj, return_bool=False):
                         if verbose:
                             log.debug(error)
                         valid_config = False
+                    else:
+                        if 'default_priority' in obj:
+                            if isinstance(obj['default_priority'], str):
+                                if obj['default_priority'] in priority_list:
+                                    new_config['default_priority'] = obj['default_priority']
+                                else:
+                                    error = ("Default priority '" + str(obj['default_priority'])
+                                             + "' is not a valid priority.")
+                                    if verbose:
+                                        log.debug(error)
+                            else:
+                                error = "default_priority in config is not valid."
+                                if verbose:
+                                    log.debug(error)
+                                valid_config = False
+                        else:
+                            error = "No default_priority section found in config."
+                            if 'med' in priority_list:
+                                error += " Setting 'med' as default priority."
+                                new_config['default_priority'] = 'med'
+                            else:
+                                error += " Things may not run as expected!"
+                                valid_config = False
+                            if verbose:
+                                log.debug(error)
 
                 else:
-                    error = "No default priority destinations specified in config!"
+                    error = "No global default destinations specified in config!"
                     if verbose:
                         log.debug(error)
                     valid_config = False
-
-                if 'default_priority' in obj:
-                    if isinstance(obj['default_priority'], str):
-                        if obj['default_priority'] in priority_list:
-                            new_config['default_priority'] = obj['default_priority']
-                        else:
-                            error = ("Default priority '" + str(obj['default_priority'])
-                                     + "' is not a valid priority.")
-                            if verbose:
-                                log.debug(error)
-                    else:
-                        error = "default_priority in config is not valid."
-                        if verbose:
-                            log.debug(error)
-                        valid_config = False
-                else:
-                    error = "No default_priority section found in config."
-                    if 'med' in priority_list:
-                        error += " Setting 'med' as default priority."
-                        new_config['default_priority'] = 'med'
-                    else:
-                        error += " Things may not run as expected!"
-                        valid_config = False
-                    if verbose:
-                        log.debug(error)
             else:
                 error = "No global default destination specified in config!"
                 if verbose:
