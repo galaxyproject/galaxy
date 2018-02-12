@@ -518,6 +518,73 @@ class Snptest(Rgenetics):
     file_ext = "snptest"
 
 
+class IdeasPre(Html):
+    """
+    This datatype defines the input format required by IDEAS:
+    https://academic.oup.com/nar/article/44/14/6721/2468150
+    The IDEAS preprocessor tool produces an output using this
+    format.  The extra_files_path of the primary input dataset
+    contains the following files and directories.
+    - chromosome_windows.txt (optional)
+    - chromosomes.bed (optional)
+    - IDEAS_input_config.txt
+    - compressed archived tmp directory containing a number of compressed bed files.
+    """
+
+    MetadataElement(name="base_name", desc="Base name for this dataset", default='IDEASData', readonly=True, set_in_upload=True)
+    MetadataElement(name="chrom_bed", desc="Bed file specifying window positions", default=None, readonly=True)
+    MetadataElement(name="chrom_windows", desc="Chromosome window positions", default=None, readonly=True)
+    MetadataElement(name="input_config", desc="IDEAS input config", default=None, readonly=True)
+    MetadataElement(name="tmp_archive", desc="Compressed archive of compressed bed files", default=None, readonly=True)
+
+    composite_type = 'auto_primary_file'
+    allow_datatype_change = False
+    file_ext = 'ideaspre'
+
+    def __init__(self, **kwd):
+        Html.__init__(self, **kwd)
+        self.add_composite_file('chromosome_windows.txt', description='Chromosome window positions', is_binary=False, optional=True)
+        self.add_composite_file('chromosomes.bed', description='Bed file specifying window positions', is_binary=False, optional=True)
+        self.add_composite_file('IDEAS_input_config.txt', description='IDEAS input config', is_binary=False)
+        self.add_composite_file('tmp.tar.gz', description='Compressed archive of compressed bed files', is_binary=True)
+
+    def set_meta(self, dataset, **kwd):
+        Html.set_meta(self, dataset, **kwd)
+        for fname in os.listdir(dataset.extra_files_path):
+            if fname.startswith("chromosomes"):
+                dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("chromosome_windows"):
+                dataset.metadata.chrom_windows = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("IDEAS_input_config"):
+                dataset.metadata.input_config = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("tmp"):
+                dataset.metadata.tmp_archive = os.path.join(dataset.extra_files_path, fname)
+        self.regenerate_primary_file(dataset)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head></head><body>']
+        rval.append('<h3>Files prepared for IDEAS</h3>')
+        rval.append('<ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            rval.append('<li><a href="%s>%s</a></li>' % (fn, fn))
+        rval.append('</ul></body></html>\n')
+        return "\n".join(rval)
+
+    def regenerate_primary_file(self, dataset):
+        # Cannot do this until we are setting metadata.
+        rval = ['<html><head></head><body>']
+        rval.append('<h3>Files prepared for IDEAS</h3>')
+        rval.append('<ul>')
+        for fname in os.listdir(dataset.extra_files_path):
+            fn = os.path.split(fname)[-1]
+            rval.append('<li><a href="%s">%s</a></li>' % (fn, fn))
+        rval.append('</ul></body></html>')
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join(rval))
+            f.write('\n')
+
+
 class Pheno(Tabular):
     """
     base class for pheno files

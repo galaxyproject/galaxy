@@ -107,12 +107,12 @@ class GalaxyInteractorApi(object):
         """Check dataset metadata.
 
         ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
-        and `dbkey` all map to the API description directly. Other metadata attributes
+        `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
         metadata = attributes.get('metadata', {}).copy()
         for key, value in metadata.copy().items():
-            if key not in ['name', 'info']:
+            if key not in ['name', 'info', 'tags']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
                 del metadata[key]

@@ -15,6 +15,7 @@
             'lims_doc_url'              : app.config.get("lims_doc_url", "https://usegalaxy.org/u/rkchak/p/sts"),
             'biostar_url'               : app.config.biostar_url,
             'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
+            'default_locale'            : app.config.get("default_locale",  "auto"),
             'support_url'               : app.config.get("support_url", "https://galaxyproject.org/support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/"),
             'mailing_lists'             : app.config.get("mailing_lists", "https://galaxyproject.org/mailing-lists"),

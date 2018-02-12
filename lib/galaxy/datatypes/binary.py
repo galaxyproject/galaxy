@@ -304,7 +304,7 @@ class BamNative(Binary):
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
-            return super(Bam, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super(BamNative, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
             column_names = dataset.metadata.column_names
             if not column_names:
@@ -487,6 +487,13 @@ class Bam(BamNative):
         """Generic samtools interface - all options available through settings."""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
+
+
+class ProBam(Bam):
+    """Class describing a BAM binary file - extended for proteomics data"""
+    edam_format = "format_3826"
+    edam_data = "data_0863"
+    file_ext = "probam"
 
 
 class CRAM(Binary):
