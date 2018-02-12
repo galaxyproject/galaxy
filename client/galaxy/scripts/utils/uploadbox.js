@@ -109,7 +109,8 @@
 
             xhr.upload.addEventListener("progress", onprogress, false);
             xhr.send(form);
-            Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
+            console.debug("uploadbox::uploadchunk() - Posting following data.");
+            console.debug(cnf);
         }
 
         // chunk processing helper
@@ -244,7 +245,8 @@
         );
 
         // send request
-        Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
+        console.debug("uploadbox::uploadpost() - Posting following data.");
+        console.debug(cnf);
         xhr.send(form);
     };
 
