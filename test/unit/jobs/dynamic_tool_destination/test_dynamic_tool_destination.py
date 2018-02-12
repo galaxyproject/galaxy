@@ -809,9 +809,12 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertTrue(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True, return_bool=True))
         self.assertEqual(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True), yt.vdictTest6_yml)
         self.assertTrue(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
         self.assertEqual(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True), yt.vdictTest7_yml)
+        self.assertTrue(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True))
+        self.assertEqual(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True), yt.vdictTest160_yml)
+        self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
+        self.assertEqual(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True), yt.vdictTest164_yml)
+        
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
@@ -829,6 +832,10 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
 # ================================Testing str_to_bytes==========================

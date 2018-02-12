@@ -312,15 +312,14 @@ vdictTest160_yml = {
     }
   },
   'default_destination': 'waffles_low',
-  'default_priority':  'med'
 }
 
 # No valid priorities but the tool doesn't require one
 vYMLTest164 = '''
     default_destination:
       priority:
-        good: waffles_low
-        fast: waffles_high
+        good: Destination1_med
+        fast: Destination1_high
     default_priority: good
     tools:
       blah:
@@ -365,11 +364,11 @@ vdictTest164_yml = {
     },
     'default_destination': {
       "priority": {
-        "good": "cluster_med_4",
-        "fast": "waffles_high"
+        "good": "Destination1_med",
+        "fast": "Destination1_high"
       }
     },
-    'default_priority':  'med'
+    'default_priority':  'good'
 }
 
 # =====================================================Invalid XML tests==========================================================
