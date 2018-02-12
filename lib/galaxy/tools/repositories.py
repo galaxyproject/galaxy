@@ -27,13 +27,15 @@ class ValidationContext(object):
         self.config = Bunch()
         self.config.tool_data_path = tool_data_path
         self.config.shed_tool_data_path = shed_tool_data_path
-        _, self.config.tool_data_table_config = tempfile.mkstemp()
-        _, self.config.shed_tool_data_table_config = tempfile.mkstemp()
+        tool_data_table_handle, self.config.tool_data_table_config = tempfile.mkstemp()
+        shed_tool_data_table_handle, self.config.shed_tool_data_table_config = tempfile.mkstemp()
         self.tool_data_tables = tool_data_tables
         self.datatypes_registry = registry or Registry()
         self.hgweb_config_manager = hgweb_config_manager
-        _, self.config.len_file_path = tempfile.mkstemp()
-        _, self.config.builds_file_path = tempfile.mkstemp()
+        len_file_handle, self.config.len_file_path = tempfile.mkstemp()
+        builds_file_handle, self.config.builds_file_path = tempfile.mkstemp()
+        for fh in [tool_data_table_handle, shed_tool_data_table_handle, len_file_handle, builds_file_handle]:
+            os.close(fh)
         self.genome_builds = GenomeBuilds(self)
 
     def __enter__(self):
