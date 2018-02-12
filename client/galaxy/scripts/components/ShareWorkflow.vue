@@ -183,6 +183,14 @@ export default {
         id: {
             type: String,
             required: true
+        },
+        status: {
+            type: String,
+            required: false
+        },
+        message: {
+            type: String,
+            required: false
         }
     },
     data() {
@@ -204,6 +212,9 @@ export default {
     },
     created: function() {
         let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id
+        if(this.message !== "" && this.status === "error") {
+            this.showError(this.message);
+        }
         this.ajaxCall(url);
     },
     methods: {
@@ -282,7 +293,6 @@ export default {
             });
         },
         unshareWorkflow: function(userId) {
-            console.log(userId);
             let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id + '&unshare_user=' + userId;
             this.ajaxCall(url);
         },

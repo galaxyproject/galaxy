@@ -487,7 +487,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         except Exception:
             status = 'error'
             message = 'Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.'
-            return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message)
+            url = url_for('/') + 'workflows/share_workflow?id=' + id + '&status=' + status + '&message=' + message
+            return trans.response.send_redirect(url)
         trans.response.set_content_type("image/svg+xml")
         s = STANDALONE_SVG_TEMPLATE % svg.tostring()
         return s.encode('utf-8')

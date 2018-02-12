@@ -228,7 +228,9 @@ window.app = function app(options, bootstrapped) {
             var shareWorkflowInstance = Vue.extend(ShareWorkflow);
             var vm = document.createElement("div");
             this.page.display(vm);
-            new shareWorkflowInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+            new shareWorkflowInstance({ propsData: { id: QueryStringParsing.get("id"),
+                status: QueryStringParsing.get("status"),
+                message: QueryStringParsing.get("message") } }).$mount(vm);
         },
 
         show_custom_builds: function() {
