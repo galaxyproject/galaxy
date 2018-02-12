@@ -17,7 +17,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 256,
+                chunksize: 1000000000,
                 attempts: 5,
                 url: null,
                 error_default: "Please make sure the file is available.",
@@ -53,22 +53,16 @@
             }
 
             // build form data
-            var attempts = cnf.attempts;
             var end = start + cnf.chunksize;
             var form = new FormData();
             form.append("start", start);
             form.append("end", end);
-            form.append("file", slicer.bind(file)(start, end));
+            form.append("files_0|file_data", slicer.bind(file)(start, end), file.name);
             for (var key in data.payload) {
                 form.append(key, data.payload[key]);
             }
-            if (Math.random() > 0.30) {
-                success();
-            } else {
-                error();
-            }
 
-            /*/ make request
+            // make request
             var xhr = new XMLHttpRequest();
             xhr.open("POST", cnf.url, true);
             xhr.setRequestHeader("Accept", "application/json");
@@ -106,39 +100,6 @@
                 }
             };
 
-            // state handler
-            var onreadystatechange = () => {
-                // check for request completed, server connection closed
-                if (xhr.readyState == xhr.DONE) {
-                    // parse response
-                    var response = null;
-                    var extra_info = "";
-                    if (xhr.responseText) {
-                        try {
-                            response = jQuery.parseJSON(xhr.responseText);
-                            extra_info = response.err_msg;
-                        } catch (e) {
-                            response = xhr.responseText;
-                            extra_info = response;
-                        }
-                    }
-                    // pass any error to the error option
-                    if (xhr.status < 200 || xhr.status > 299) {
-                        var text = xhr.statusText;
-                        if (xhr.status == 403) {
-                            text = cnf.error_login;
-                        } else if (xhr.status == 0) {
-                            text = cnf.error_server;
-                        } else if (!text) {
-                            text = cnf.error_default;
-                        }
-                        cnf.error(`${text} (${xhr.status}). ${extra_info}`);
-                    } else {
-                        cnf.success(response);
-                    }
-                }
-            };
-
             // error handler
             var onerrorhandler = e => {
                 if (e.lengthComputable) {
@@ -147,14 +108,16 @@
             };
 
             xhr.upload.addEventListener("progress", onerrorhandler, false);
-            xhr.send(formdata);
-            Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);*/
+            xhr.send(form);
+            Galaxy.emit.debug("uploadbox::uploadpost()", "Posting following data.", cnf);
         }
 
         // chunk processing helper
+        var attempts = cnf.attempts;
         function process(start) {
             var start = start || 0;
             var size = file.size;
+            console.debug("Submitting...");
             if (start < size) {
                 send(start, () => {
                     // send next chunk
