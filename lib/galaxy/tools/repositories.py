@@ -27,30 +27,27 @@ class ValidationContext(object):
         self.config = Bunch()
         self.config.tool_data_path = tool_data_path
         self.config.shed_tool_data_path = shed_tool_data_path
-        tool_data_table_handle, self.config.tool_data_table_config = tempfile.mkstemp()
-        shed_tool_data_table_handle, self.config.shed_tool_data_table_config = tempfile.mkstemp()
+        self.temporary_path = tempfile.mkdtemp(prefix='tool_validation_')
+        self.config.tool_data_table_config = os.path.join(self.temporary_path, 'tool_data_table_conf.xml')
+        self.config.shed_tool_data_table_config = os.path.join(self.temporary_path, 'shed_tool_data_table_conf.xml')
         self.tool_data_tables = tool_data_tables
         self.datatypes_registry = registry or Registry()
         self.hgweb_config_manager = hgweb_config_manager
-        len_file_handle, self.config.len_file_path = tempfile.mkstemp()
-        builds_file_handle, self.config.builds_file_path = tempfile.mkstemp()
-        for fh in [tool_data_table_handle, shed_tool_data_table_handle, len_file_handle, builds_file_handle]:
-            os.close(fh)
+        self.config.len_file_path = os.path.join(self.temporary_path, 'chromlen.txt')
+        # If the builds file path is set to None, tools/__init__.py will load the default.
+        # Otherwise it will attempt to load a nonexistent file and log an error. This does
+        # not appear to be an issue with the len_file_path config option.
+        self.config.builds_file_path = None
         self.genome_builds = GenomeBuilds(self)
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        cleanup_paths = {self.config.builds_file_path,
-                         self.config.len_file_path,
-                         self.config.tool_data_table_config,
-                         self.config.shed_tool_data_table_config}
-        for path in cleanup_paths:
-            try:
-                os.remove(path)
-            except Exception:
-                pass
+        try:
+            shutil.rmtree(self.temporary_path)
+        except Exception:
+            pass
 
     @staticmethod
     @contextmanager
