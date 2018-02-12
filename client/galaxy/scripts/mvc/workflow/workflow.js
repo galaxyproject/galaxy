@@ -148,7 +148,7 @@ const WorkflowItemView = Backbone.View.extend({
                 this.model.id
             }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
                 this.model.id
-            }" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
+            }" href="${Galaxy.root}workflow/sharing_workflow?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
         }
     }
 });

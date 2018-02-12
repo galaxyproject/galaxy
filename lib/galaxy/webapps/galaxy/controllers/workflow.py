@@ -195,7 +195,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         Render workflow main page (management of existing workflows)
         """
         # Take care of proxy prefix in url as well
-        redirect_url = url_for('/') + 'workflow'
+        redirect_url = url_for('/') + 'workflows/list'
         return trans.response.send_redirect(redirect_url)
 
     @web.expose
@@ -278,7 +278,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.require_login("use Galaxy workflows")
     def share(self, trans, id, email="", use_panels=False):
-        print "in share"
         msg = mtype = None
         # Load workflow from database
         stored = self.get_stored_workflow(trans, id)
