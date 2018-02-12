@@ -779,14 +779,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         )
 
     @log_capture()
-    def test_default_dest_is_string_no_priorities_used(self, l):
-        dt.parse_yaml(path=yt.ivYMLTest160, job_conf_path=job_conf_path, test=True)
-        l.check(
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
-        )
-
-    @log_capture()
     def test_default_dest_is_string_but_priorities_used_in_rule(self, l):
         dt.parse_yaml(path=yt.ivYMLTest161, job_conf_path=job_conf_path, test=True)
         l.check(
@@ -817,6 +809,8 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertTrue(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True, return_bool=True))
         self.assertEqual(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True), yt.vdictTest6_yml)
         self.assertTrue(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True, return_bool=True))
+        self.assertTrue(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True))
+        self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
         self.assertEqual(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True), yt.vdictTest7_yml)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),

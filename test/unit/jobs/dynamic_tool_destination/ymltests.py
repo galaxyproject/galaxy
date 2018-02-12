@@ -279,6 +279,99 @@ vdictTest7_yml = {
         }
     }
 }
+
+# No valid priorities but the tool doesn't require one
+vYMLTest160 = '''
+    default_destination: waffles_low
+    default_priority: med
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: waffles_default
+        default_destination: waffles_high
+    verbose: True
+'''
+
+vdictTest160_yml = {
+  "tools": {
+    "blah": {
+      "rules": [
+            {
+                "rule_type": "num_input_datasets",
+                "nice_value": 0,
+                "lower_bound": 0,
+                "upper_bound": "Infinity",
+                "destination": "waffles_default"
+            }
+                ],
+      "default_destination": "waffles_high"
+    }
+  },
+  'default_destination': 'waffles_low',
+  'default_priority':  'med'
+}
+
+# No valid priorities but the tool doesn't require one
+vYMLTest164 = '''
+    default_destination:
+      priority:
+        good: waffles_low
+        fast: waffles_high
+    default_priority: good
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                fast: lame_cluster
+        default_destination:
+          priority:
+            good: cluster_med_4
+            fast: waffles_high
+    verbose: True
+'''
+
+vdictTest164_yml = {
+  "tools": {
+    "blah": {
+        "rules": [
+            {
+                "rule_type": "num_input_datasets",
+                "nice_value": 0,
+                "lower_bound": 0,
+                "upper_bound": "Infinity",
+                "destination": {
+                  "priority": {
+                    "fast": "lame_cluster"
+                  }
+                }
+              }
+                  ],
+        "default_destination": {
+          "priority": {
+            "good": "cluster_med_4",
+            "fast": "waffles_high"
+          }
+        }
+      }
+    },
+    'default_destination': {
+      "priority": {
+        "good": "cluster_med_4",
+        "fast": "waffles_high"
+      }
+    },
+    'default_priority':  'med'
+}
+
 # =====================================================Invalid XML tests==========================================================
 
 # Empty file
@@ -1108,22 +1201,6 @@ ivYMLTest159 = '''
               priority:
                 med: waffles_default
         default_destination: waffles_default
-    verbose: True
-'''
-
-# No valid priorities but the tool doesn't require one
-ivYMLTest160 = '''
-    default_destination: waffles_low
-    default_priority: med
-    tools:
-      blah:
-        rules:
-          - rule_type: num_input_datasets
-            nice_value: 0
-            lower_bound: 0
-            upper_bound: Infinity
-            destination: waffles_default
-        default_destination: waffles_high
     verbose: True
 '''
 
