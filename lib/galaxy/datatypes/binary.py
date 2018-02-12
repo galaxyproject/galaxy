@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections import OrderedDict
 from json import dumps
 
 import h5py
@@ -234,7 +235,7 @@ class BamNative(Binary):
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
             dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
             dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
