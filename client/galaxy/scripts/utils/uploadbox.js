@@ -52,7 +52,6 @@
         };
         xhr.upload.addEventListener("progress", cnf.progress, false);
         xhr.send(cnf.form);
-        console.debug("uploadsubmit() - Submitting data...");
     }
 
     /**
