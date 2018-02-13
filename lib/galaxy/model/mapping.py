@@ -14,6 +14,7 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
+    func,
     Integer,
     MetaData,
     not_,
@@ -2115,7 +2116,12 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
         primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
-        lazy=False)
+        lazy=False),
+    step_count=column_property(
+        select([func.count(model.WorkflowStep.table.c.id)]).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
+        deferred=True
+    )
+
 ))
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
