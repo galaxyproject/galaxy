@@ -106,12 +106,6 @@ var CommonWrapper = Backbone.View.extend({
 
     /** Redraw */
     redraw: function() {
-        // get parameters
-        var chart = this.chart;
-        var data = this.data;
-        var self = this;
-        this.data = data;
-
         // get/reset container
         var container = $("#" + this.canvas_id);
         container.empty();
@@ -146,11 +140,11 @@ var CommonWrapper = Backbone.View.extend({
         this.boxHeight = Math.max(1, Math.floor(this.height / this.rowCount));
 
         // create group
-        var svg = (this.svg = d3
+        this.svg = d3
             .select("#" + this.canvas_id)
             .append("g")
             .attr("class", "heatmap")
-            .attr("transform", "translate(" + margin.left + "," + margin.top + ")"));
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         // build elements
         this._buildBoxes();
@@ -168,7 +162,6 @@ var CommonWrapper = Backbone.View.extend({
         var self = this;
         var height = this.height;
         var width = this.width;
-        var margin = this.options.margin;
         var svg = this.svg;
         var boxWidth = this.boxWidth;
         var boxHeight = this.boxHeight;
@@ -180,14 +173,14 @@ var CommonWrapper = Backbone.View.extend({
         }
 
         // set background color
-        var gBackground = svg
+        svg
             .append("rect")
             .attr("width", width)
             .attr("height", height)
             .attr("fill", this.options.background_color);
 
         // clip path
-        var clip = svg
+        svg
             .append("clipPath")
             .attr("id", "clip")
             .append("rect")
@@ -251,7 +244,6 @@ var CommonWrapper = Backbone.View.extend({
 
     /** Build x axis */
     _buildX: function() {
-        var self = this;
         var height = this.height;
         var width = this.width;
         var margin = this.options.margin;
@@ -280,7 +272,7 @@ var CommonWrapper = Backbone.View.extend({
             });
 
         // set background color
-        var gxAxisLabelBackground = svg
+        svg
             .append("rect")
             .attr("width", width)
             .attr("height", font_size + 3)
@@ -316,9 +308,7 @@ var CommonWrapper = Backbone.View.extend({
 
     /** Build y axis */
     _buildY: function() {
-        var self = this;
         var height = this.height;
-        var width = this.width;
         var margin = this.options.margin;
         var svg = this.svg;
         var font_size = this.options.style["font-size"];
@@ -340,7 +330,7 @@ var CommonWrapper = Backbone.View.extend({
             .attr("y", -boxHeight / 2);
 
         // set background color
-        var gyAxisLabelBackground = svg
+        svg
             .append("rect")
             .attr("width", font_size)
             .attr("height", height)
@@ -488,7 +478,6 @@ _.extend(window.bundleEntries || {}, {
             options.chart,
             Jobs.requestCharts(options.chart, "heatmap"),
             function(dataset) {
-                var index = 0;
                 var dataset_groups = new Backbone.Collection();
                 options.chart.groups.each(function(group, index) {
                     dataset_groups.add({
@@ -506,6 +495,7 @@ _.extend(window.bundleEntries || {}, {
                 options.dataset_id = dataset.id;
                 options.dataset_groups = dataset_groups;
                 options.render = function(canvas_id, groups) {
+                    /* Where does HeatMap come from? It isn't in any local scope here. */
                     new HeatMap({
                         chart: options.chart,
                         canvas_id: canvas_id,
