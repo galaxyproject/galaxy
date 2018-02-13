@@ -64,7 +64,7 @@ class Configuration(object):
 
     def check(self):
         # Check that required directories exist
-        for path in self.root, self.file_path, self.template_path:
+        for path in self.root, self.template_path:
             if not os.path.isdir(path):
                 raise ConfigurationError("Directory does not exist: %s" % path)
 

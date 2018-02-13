@@ -1,13 +1,13 @@
 import logging
 import os
-import threading
-import time
 from xml.etree import ElementTree
 
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.util import plugin_config
 from galaxy.util.handlers import ConfiguresHandlers
+from galaxy.util.monitors import Monitors
+from galaxy.web.stack.message import WorkflowSchedulingMessage
 
 log = logging.getLogger(__name__)
 
@@ -31,11 +31,16 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         self.__handlers_configured = False
         self.workflow_schedulers = {}
         self.active_workflow_schedulers = {}
+        # TODO: this should not hardcode the job handlers pool
+        self.__handler_pool = self.app.application_stack.pools.JOB_HANDLERS
+        # TODO: and we need a better way to indicate messaging should be used
+        self.__use_stack_messages = app.application_stack.has_pool(self.__handler_pool)
         # Passive workflow schedulers won't need to be monitored I guess.
 
         self.request_monitor = None
 
         self.handlers = {}
+        self._is_handler = None
 
         self.__plugin_classes = self.__plugins_dict()
         self.__init_schedulers()
@@ -45,9 +50,14 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
             self.__start_schedulers()
             if self.active_workflow_schedulers:
                 self.__start_request_monitor()
+            if self.__use_stack_messages:
+                WorkflowSchedulingMessage().bind_default_handler(self, '_handle_message')
+                self.app.application_stack.register_message_handler(
+                    self._handle_message,
+                    name=WorkflowSchedulingMessage.target)
         else:
-            # Process should not schedule workflows - do nothing.
-            pass
+            # Process should not schedule workflows but should check for any unassigned to handlers
+            self.__startup_recovery()
 
         # When assinging handlers to workflows being queued - use job_conf
         # if not explicit workflow scheduling handlers have be specified or
@@ -57,13 +67,36 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         else:
             self.__has_handlers = app.job_config
 
+    def __startup_recovery(self):
+        sa_session = self.app.model.context
+        if self.__use_stack_messages:
+            for workflow_invocation in model.WorkflowInvocation.poll_active_workflow_ids(
+                    sa_session,
+                    handler=None):
+                log.info("(%s) Handler unassigned at startup, queueing workflow invocation via stack messaging for pool"
+                         " [%s]", workflow_invocation.id, self.__handler_pool)
+                msg = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
+                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
+
+    def _handle_setup_msg(self, workflow_invocation_id=None):
+        sa_session = self.app.model.context
+        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
+        if workflow_invocation.handler is None:
+            workflow_invocation.handler = self.app.config.server_name
+            sa_session.add(workflow_invocation)
+            sa_session.flush()
+        else:
+            log.warning("(%s) Handler '%s' received setup message for workflow invocation but handler '%s' is"
+                        " already assigned, ignoring", workflow_invocation.id, self.app.config.server_name,
+                        workflow_invocation.handler)
+
     def _is_workflow_handler(self):
         # If we have explicitly configured handlers, check them.
         # Else just make sure we are a job handler.
         if self.__handlers_configured:
-            is_handler = self.is_handler(self.app.config.server_name)
+            is_handler = self.is_handler
         else:
-            is_handler = self.app.is_job_handler()
+            is_handler = self.app.is_job_handler
         return is_handler
 
     def _get_handler(self, history_id):
@@ -75,29 +108,45 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
         return self.__has_handlers.get_handler(None, index=random_index)
 
     def shutdown(self):
+        exception = None
         for workflow_scheduler in self.workflow_schedulers.values():
             try:
                 workflow_scheduler.shutdown()
-            except Exception:
+            except Exception as e:
+                exception = exception or e
                 log.exception(EXCEPTION_MESSAGE_SHUTDOWN)
         if self.request_monitor:
             try:
                 self.request_monitor.shutdown()
-            except Exception:
+            except Exception as e:
+                exception = exception or e
                 log.exception("Failed to shutdown workflow request monitor.")
+
+        if exception:
+            raise exception
 
     def queue(self, workflow_invocation, request_params):
         workflow_invocation.state = model.WorkflowInvocation.states.NEW
         scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         handler = self._get_handler(workflow_invocation.history.id)
-        log.info("Queueing workflow invocation for handler [%s]" % handler)
 
+        if handler is None and not self.__use_stack_messages:
+            raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
+
+        log.info("Queueing workflow invocation for handler [%s]", handler)
         workflow_invocation.scheduler = scheduler
         workflow_invocation.handler = handler
 
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
         sa_session.flush()
+
+        if handler is None and self.__use_stack_messages:
+            log.info("(%s) Queueing workflow invocation via stack messaging for pool [%s]",
+                     workflow_invocation.id, self.__handler_pool)
+            msg = WorkflowSchedulingMessage(task='setup', workflow_invocation_id=workflow_invocation.id)
+            self.app.application_stack.send_message(self.__handler_pool, msg)
+
         return workflow_invocation
 
     def __start_schedulers(self):
@@ -168,34 +217,32 @@ class WorkflowSchedulingManager(object, ConfiguresHandlers):
 
     def __start_request_monitor(self):
         self.request_monitor = WorkflowRequestMonitor(self.app, self)
+        self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
-class WorkflowRequestMonitor(object):
+class WorkflowRequestMonitor(Monitors, object):
 
     def __init__(self, app, workflow_scheduling_manager):
         self.app = app
-        self.active = True
         self.workflow_scheduling_manager = workflow_scheduling_manager
-        self.monitor_thread = threading.Thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor)
-        self.monitor_thread.setDaemon(True)
-        self.monitor_thread.start()
+        self._init_monitor_thread(name="WorkflowRequestMonitor.monitor_thread", target=self.__monitor, config=app.config)
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
-        while self.active:
+        while self.monitor_running:
             for workflow_scheduler_id, workflow_scheduler in to_monitor.items():
-                if not self.active:
+                if not self.monitor_running:
                     return
 
                 self.__schedule(workflow_scheduler_id, workflow_scheduler)
-                # TODO: wake if stopped
-                time.sleep(1)
+
+            self._monitor_sleep(1)
 
     def __schedule(self, workflow_scheduler_id, workflow_scheduler):
         invocation_ids = self.__active_invocation_ids(workflow_scheduler_id)
         for invocation_id in invocation_ids:
             self.__attempt_schedule(invocation_id, workflow_scheduler)
-            if not self.active:
+            if not self.monitor_running:
                 return
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
@@ -233,5 +280,8 @@ class WorkflowRequestMonitor(object):
             handler=handler,
         )
 
+    def start(self):
+        self.monitor_thread.start()
+
     def shutdown(self):
-        self.active = False
+        self.shutdown_monitor()

@@ -15,12 +15,11 @@ from six.moves.urllib.parse import quote_plus, urlencode
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
-from base.tool_shed_util import repository_installation_timeout
-from functional.twilltestcase import TwillTestCase
-from galaxy.web import security
+from base.tool_shed_util import repository_installation_timeout  # noqa: I100,I201
+from functional.twilltestcase import TwillTestCase  # noqa: I100
+from galaxy.web import security  # noqa: I201
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
-
 from . import common, test_db_util
 
 log = logging.getLogger(__name__)
@@ -339,21 +338,21 @@ class ShedTwillTestCase(TwillTestCase):
         invalid_username = False
         try:
             self.check_page_for_string("Created new user account")
-        except:
+        except Exception:
             try:
                 # May have created the account in a previous test run...
                 self.check_page_for_string("User with that email already exists")
                 previously_created = True
-            except:
+            except Exception:
                 try:
                     self.check_page_for_string('Public name is taken; please choose another')
                     username_taken = True
-                except:
+                except Exception:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
                         self.check_page_for_string('Public name must be at least 4 characters in length')
                         invalid_username = True
-                    except:
+                    except Exception:
                         pass
         return previously_created, username_taken, invalid_username
 
@@ -393,7 +392,7 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_all_workflows(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/workflow'
+        url = '/workflows/list'
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -740,7 +739,7 @@ class ShedTwillTestCase(TwillTestCase):
         lhs = "repos/%s/%s" % (repository.user.username, repository.name)
         try:
             return self.hgweb_config_manager.get_entry(lhs)
-        except:
+        except Exception:
             raise Exception("Entry for repository %s missing in hgweb config file %s." % (lhs, self.hgweb_config_manager.hgweb_config))
 
     def get_repository_changelog_tuples(self, repository):
@@ -921,7 +920,7 @@ class ShedTwillTestCase(TwillTestCase):
             repository_ids = re.sub('[^a-fA-F0-9,]+', '', repository_ids)
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
-            url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+            url = '/admin_toolshed/install_repositories?tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
                 (','.join(galaxy.util.listify(repository_ids)), encoded_kwd, reinstalling)
             self.visit_galaxy_url(url)
             return galaxy.util.listify(repository_ids)
@@ -1091,11 +1090,9 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
-        params = dict(operation='activate or reinstall', id=self.security.encode_id(installed_repository.id))
-        url = '/admin_toolshed/browse_repositories'
+        params = dict(id=self.security.encode_id(installed_repository.id))
+        url = '/admin_toolshed/restore_repository'
         self.visit_galaxy_url(url, params)
-        strings_displayed = [installed_repository.name, 'repository has been activated']
-        self.check_for_strings(strings_displayed, [])
 
     def reinstall_repository(self,
                              installed_repository,
@@ -1114,12 +1111,12 @@ class ShedTwillTestCase(TwillTestCase):
         params = dict(id=encoded_repository_id, no_changes=no_changes, new_tool_panel_section_label=new_tool_panel_section_label)
         doseq = False
         if install_repository_dependencies:
-            params['install_repository_dependencies'] = ['True', 'True']
+            params['install_repository_dependencies'] = True
             doseq = True
         else:
             params['install_repository_dependencies'] = False
         if install_tool_dependencies:
-            params['install_tool_dependencies'] = ['True', 'True']
+            params['install_tool_dependencies'] = True
             doseq = True
         else:
             params['install_tool_dependencies'] = False
@@ -1158,12 +1155,6 @@ class ShedTwillTestCase(TwillTestCase):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id(repository.id)
         self.visit_url(url)
         self.check_for_strings(['All repository metadata has been reset.'])
-
-    def repair_installed_repository(self, repository):
-        repository_id = self.security.encode_id(repository.id)
-        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
-        self.visit_galaxy_url(url)
-        self.submit_form('repair_repository', 'repair_repository_button')
 
     def review_repository(self, repository, review_contents_dict, user=None, changeset_revision=None):
         strings_displayed = []

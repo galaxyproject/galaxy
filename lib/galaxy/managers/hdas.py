@@ -4,20 +4,23 @@ Manager and Serializer for HDAs.
 HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
-
-import os
 import gettext
-
-from galaxy import model
-from galaxy import exceptions
-from galaxy import datatypes
-from galaxy.managers import datasets
-from galaxy.managers import secured
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-from galaxy.managers import users
-
 import logging
+import os
+
+from galaxy import (
+    datatypes,
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    annotatable,
+    datasets,
+    secured,
+    taggable,
+    users
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -370,10 +373,10 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing new-style display app urls.
         """
         display_apps = []
-        for display_app in hda.get_display_applications(trans).itervalues():
+        for display_app in hda.get_display_applications(trans).values():
 
             app_links = []
-            for link_app in display_app.links.itervalues():
+            for link_app in display_app.links.values():
                 app_links.append({
                     'target': link_app.url.get('target_frame', '_blank'),
                     'href': link_app.get_display_url(hda, trans),

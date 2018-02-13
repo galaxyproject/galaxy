@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import logging
-
 from os import listdir
 
 log = logging.getLogger(__name__)

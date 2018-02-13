@@ -10,7 +10,6 @@ import collections
 import errno
 import importlib
 import json
-import logging
 import os
 import random
 import re
@@ -22,17 +21,17 @@ import sys
 import tempfile
 import threading
 import time
-try:
-    import grp
-except ImportError:
-    # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None
-
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
 from xml.etree.ElementTree import ParseError
+
+try:
+    import grp
+except ImportError:
+    # For Pulsar on Windows (which does not use the function that uses grp)
+    grp = None
 
 from six import binary_type, iteritems, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
@@ -50,11 +49,12 @@ except ImportError:
     docutils_html4css1 = None
 
 from .inflection import English, Inflector
+from .logging import get_logger
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
 inflector = Inflector(English)
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 _lock = threading.RLock()
 
 CHUNK_SIZE = 65536  # 64k
@@ -68,6 +68,9 @@ DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+
+defaultdict = collections.defaultdict
 
 
 def remove_protocol_from_url(url):
@@ -308,11 +311,11 @@ def get_file_size(value, default=None):
     try:
         # try built-in
         return os.path.getsize(value)
-    except:
+    except Exception:
         try:
             # try built-in one name attribute
             return os.path.getsize(value.name)
-        except:
+        except Exception:
             try:
                 # try tell() of end of object
                 offset = value.tell()
@@ -320,7 +323,7 @@ def get_file_size(value, default=None):
                 rval = value.tell()
                 value.seek(offset)
                 return rval
-            except:
+            except Exception:
                 # return default value
                 return default
 
@@ -771,7 +774,7 @@ class Params(object):
 
 def rst_to_html(s, error=False):
     """Convert a blob of reStructuredText to HTML"""
-    log = logging.getLogger("docutils")
+    log = get_logger("docutils")
 
     if docutils_core is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
@@ -791,9 +794,9 @@ def rst_to_html(s, error=False):
                                   # number of sections in help content.
     }
 
-    return unicodify(docutils_core.publish_string(s,
-                      writer=docutils_html4css1.Writer(),
-                      settings_overrides=settings_overrides))
+    return unicodify(docutils_core.publish_string(
+        s, writer=docutils_html4css1.Writer(),
+        settings_overrides=settings_overrides))
 
 
 def xml_text(root, name=None):
@@ -812,6 +815,22 @@ def xml_text(root, name=None):
         return text.strip()
     # No luck, return empty string
     return ''
+
+
+def parse_resource_parameters(resource_param_file):
+    """Code shared between jobs and workflows for reading resource parameter configuration files.
+
+    TODO: Allow YAML in addition to XML.
+    """
+    resource_parameters = {}
+    if os.path.exists(resource_param_file):
+        resource_definitions = parse_xml(resource_param_file)
+        resource_definitions_root = resource_definitions.getroot()
+        for parameter_elem in resource_definitions_root.findall("param"):
+            name = parameter_elem.get("name")
+            resource_parameters[name] = parameter_elem
+
+    return resource_parameters
 
 
 # asbool implementation pulled from PasteDeploy
@@ -859,13 +878,25 @@ def string_as_bool_or_none(string):
 
 def listify(item, do_strip=False):
     """
-    Make a single item a single item list, or return a list if passed a
-    list.  Passing a None returns an empty list.
+    Make a single item a single item list.
+
+    If *item* is a string, it is split on comma (``,``) characters to produce the list. Optionally, if *do_strip* is
+    true, any extra whitespace around the split items is stripped.
+
+    If *item* is a list it is returned unchanged. If *item* is a tuple, it is converted to a list and returned. If
+    *item* evaluates to False, an empty list is returned.
+
+    :type  item:        object
+    :param item:        object to make a list from
+    :type  do_strip:    bool
+    :param do_strip:    strip whitespaces from around split items, if set to ``True``
+    :rtype:             list
+    :returns:           The input as a list
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
+    elif isinstance(item, list) or isinstance(item, tuple):
+        return list(item)
     elif isinstance(item, string_types) and item.count(','):
         if do_strip:
             return [token.strip() for token in item.split(',')]
@@ -895,8 +926,25 @@ def roundify(amount, sfs=2):
 
 
 def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
-    """
+    u"""
     Returns a unicode string or None.
+
+    >>> unicodify(None) is None
+    True
+    >>> unicodify('simple string') == u'simple string'
+    True
+    >>> unicodify(3) == u'3'
+    True
+    >>> unicodify(Exception('message')) == u'message'
+    True
+    >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), 'latin-1') == s
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    True
+    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
+    True
     """
     if value is None:
         return None
@@ -1028,7 +1076,7 @@ def read_dbnames(filename):
                 try:  # manual build (i.e. microbes)
                     int(fields[0])
                     man_builds.append((fields[1], fields[0]))
-                except:  # UCSC build
+                except Exception:  # UCSC build
                     db_base = fields[0].rstrip('0123456789')
                     if db_base not in ucsc_builds:
                         ucsc_builds[db_base] = []
@@ -1037,10 +1085,10 @@ def read_dbnames(filename):
                     build_rev = re.compile(r'\d+$')
                     try:
                         build_rev = int(build_rev.findall(fields[0])[0])
-                    except:
+                    except Exception:
                         build_rev = 0
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
-            except:
+            except Exception:
                 continue
         sort_names = sorted(name_to_db_base.keys())
         for name in sort_names:
@@ -1078,9 +1126,9 @@ def read_build_sites(filename, check_builds=True):
                 else:
                     site_dict = {'name': site_name, 'url': site}
                 build_sites.append(site_dict)
-            except:
+            except Exception:
                 continue
-    except:
+    except Exception:
         log.error("ERROR: Unable to read builds for site file %s", filename)
     return build_sites
 
@@ -1170,7 +1218,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             try:
                 desired_group = grp.getgrgid(gid)
                 current_group = grp.getgrgid(st.st_gid)
-            except:
+            except Exception:
                 desired_group = gid
                 current_group = st.st_gid
             log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
@@ -1226,7 +1274,7 @@ def nice_size(size):
         if size < 0:
             size = abs(size)
             prefix = '-'
-    except:
+    except Exception:
         return '??? bytes'
     for ind, word in enumerate(words):
         step = 1024 ** (ind + 1)
@@ -1245,7 +1293,7 @@ def size_to_bytes(size):
     # Assume input in bytes if we can convert directly to an int
     try:
         return int(size)
-    except:
+    except ValueError:
         pass
     # Otherwise it must have non-numeric characters
     size_re = re.compile('([\d\.]+)\s*([tgmk]b?|b|bytes?)$')

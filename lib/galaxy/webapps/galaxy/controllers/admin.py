@@ -2,28 +2,37 @@ import imp
 import logging
 import os
 from datetime import datetime, timedelta
-import six
 from string import punctuation as PUNCTUATION
-from sqlalchemy import and_, false, func, or_
+
+import six
+from sqlalchemy import and_, false, or_
 
 import galaxy.queue_worker
-from galaxy import util
-from galaxy import model
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.util import nice_size, sanitize_text, url_get
+from galaxy.tools import global_tool_errors
+from galaxy.util import (
+    nice_size,
+    sanitize_text,
+    url_get
+)
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
 from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
-from galaxy.tools import global_tool_errors
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import repository_util
+from tool_shed.util import (
+    common_util,
+    encoding_util,
+    repository_util
+)
 from tool_shed.util.web_util import escape
 
 
@@ -121,14 +130,18 @@ class UserListGrid(grids.Grid):
         grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
     ]
     operations = [
+        grids.GridOperation("Manage Information",
+                            condition=(lambda item: not item.deleted),
+                            allow_multiple=False,
+                            url_args=dict(controller="user", action="information", webapp="galaxy")),
         grids.GridOperation("Manage Roles and Groups",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=False,
-                            url_args=dict(action="forms/manage_roles_and_groups_for_user")),
+                            url_args=dict(action="form/manage_roles_and_groups_for_user")),
         grids.GridOperation("Reset Password",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=True,
-                            url_args=dict(action="forms/reset_user_password"),
+                            url_args=dict(action="form/reset_user_password"),
                             target="top"),
         grids.GridOperation("Recalculate Disk Usage",
                             condition=(lambda item: not item.deleted),
@@ -141,7 +154,6 @@ class UserListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def get_current_item(self, trans, **kwargs):
@@ -189,7 +201,7 @@ class RoleListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
+                   link=(lambda item: dict(action="form/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
                    model_class=model.Role,
                    attach_popup=True,
                    filterable="advanced",
@@ -208,7 +220,8 @@ class RoleListGrid(grids.Grid):
         UsersColumn("Users", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1], columns[2]],
@@ -216,12 +229,16 @@ class RoleListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new role", url_args=dict(action="forms/create_role"))
+        grids.GridAction("Add new role", url_args=dict(action="form/create_role"))
     ]
-    operations = [grids.GridOperation("Edit",
+    operations = [grids.GridOperation("Edit Name/Description",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_role")),
+                                      url_args=dict(action="form/rename_role")),
+                  grids.GridOperation("Edit Permissions",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="form/manage_users_and_groups_for_role", webapp="galaxy")),
                   grids.GridOperation("Delete",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=True),
@@ -237,7 +254,6 @@ class RoleListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -275,7 +291,7 @@ class GroupListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
+                   link=(lambda item: dict(action="form/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
                    model_class=model.Group,
                    attach_popup=True,
                    filterable="advanced"),
@@ -283,7 +299,8 @@ class GroupListGrid(grids.Grid):
         RolesColumn("Roles", attach_popup=False),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Last Updated", key="update_time", format=time_ago)
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0]],
@@ -291,12 +308,16 @@ class GroupListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new group", url_args=dict(action="forms/create_group"))
+        grids.GridAction("Add new group", url_args=dict(action="form/create_group"))
     ]
-    operations = [grids.GridOperation("Rename",
+    operations = [grids.GridOperation("Edit Name",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_group")),
+                                      url_args=dict(action="form/rename_group")),
+                  grids.GridOperation("Edit Permissions",
+                                      condition=(lambda item: not item.deleted),
+                                      allow_multiple=False,
+                                      url_args=dict(action="form/manage_users_and_roles_for_group", webapp="galaxy")),
                   grids.GridOperation("Delete",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=True),
@@ -312,7 +333,6 @@ class GroupListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -359,7 +379,7 @@ class QuotaListGrid(grids.Grid):
     columns = [
         NameColumn("Name",
                    key="name",
-                   link=(lambda item: dict(action="forms/edit_quota", id=item.id)),
+                   link=(lambda item: dict(action="form/edit_quota", id=item.id)),
                    model_class=model.Quota,
                    attach_popup=True,
                    filterable="advanced"),
@@ -384,28 +404,28 @@ class QuotaListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new quota", dict(action='forms/create_quota'))
+        grids.GridAction("Add new quota", dict(action="form/create_quota"))
     ]
     operations = [grids.GridOperation("Rename",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/rename_quota")),
+                                      url_args=dict(action="form/rename_quota")),
                   grids.GridOperation("Change amount",
                                       condition=(lambda item: not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/edit_quota")),
+                                      url_args=dict(action="form/edit_quota")),
                   grids.GridOperation("Manage users and groups",
                                       condition=(lambda item: not item.default and not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/manage_users_and_groups_for_quota")),
+                                      url_args=dict(action="form/manage_users_and_groups_for_quota")),
                   grids.GridOperation("Set as different type of default",
                                       condition=(lambda item: item.default),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/set_quota_default")),
+                                      url_args=dict(action="form/set_quota_default")),
                   grids.GridOperation("Set as default",
                                       condition=(lambda item: not item.default and not item.deleted),
                                       allow_multiple=False,
-                                      url_args=dict(action="forms/set_quota_default")),
+                                      url_args=dict(action="form/set_quota_default")),
                   grids.GridOperation("Unset as default",
                                       condition=(lambda item: item.default and not item.deleted),
                                       allow_multiple=False),
@@ -424,7 +444,6 @@ class QuotaListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -476,7 +495,6 @@ class ToolVersionListGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):
@@ -509,6 +527,32 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
+    def data_tables_list(self, trans, **kwd):
+        data = []
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        sorted_data_tables = sorted(
+            trans.app.tool_data_tables.get_tables().items()
+        )
+
+        for data_table_elem_name, data_table in sorted_data_tables:
+            for filename, file_dict in data_table.filenames.iteritems():
+                file_missing = ['file missing'] \
+                    if not file_dict.get('found') else []
+                data.append({
+                    'name': data_table.name,
+                    'filename': filename,
+                    'tool_data_path': file_dict.get('tool_data_path'),
+                    'errors': ', '.join(file_missing + [
+                        error for error in file_dict.get('errors', [])
+                    ]),
+                })
+
+        return {'data': data, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
     def users_list(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -536,7 +580,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd['dict_format'] = True
         return self.user_list_grid(trans, **kwd)
 
     @web.expose_api
@@ -547,13 +590,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if 'operation' in kwargs:
             id = kwargs.get('id')
             if not id:
-                return message_exception(trans, 'Invalid quota id (%s) received.' % str(id))
+                return self.message_exception(trans, 'Invalid quota id (%s) received.' % str(id))
             quotas = []
             for quota_id in util.listify(id):
                 try:
                     quotas.append(get_quota(trans, quota_id))
                 except MessageException as e:
-                    return message_exception(trans, str(e))
+                    return self.message_exception(trans, str(e))
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
@@ -569,7 +612,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status or 'done'
-        kwargs['dict_format'] = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -618,14 +660,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 quota, message = self._create_quota(util.Params(payload), decode_id=trans.security.decode_id)
                 return {'message': message}
             except ActionInputError as e:
-                return message_exception(trans, e.err_msg)
+                return self.message_exception(trans, e.err_msg)
 
     @web.expose_api
     @web.require_admin
     def rename_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No quota id received for renaming.')
+            return self.message_exception(trans, 'No quota id received for renaming.')
         quota = get_quota(trans, id)
         if trans.request.method == 'GET':
             return {
@@ -644,14 +686,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             try:
                 return {'message': self._rename_quota(quota, util.Params(payload))}
             except ActionInputError as e:
-                return message_exception(trans, e.err_msg)
+                return self.message_exception(trans, e.err_msg)
 
     @web.expose_api
     @web.require_admin
     def manage_users_and_groups_for_quota(self, trans, payload=None, **kwd):
         quota_id = kwd.get('id')
         if not quota_id:
-            return message_exception(trans, 'Invalid quota id (%s) received' % str(quota_id))
+            return self.message_exception(trans, 'Invalid quota id (%s) received' % str(quota_id))
         quota = get_quota(trans, quota_id)
         if trans.request.method == 'GET':
             in_users = []
@@ -680,14 +722,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             try:
                 return {'message': self._manage_users_and_groups_for_quota(quota, util.Params(payload), decode_id=trans.security.decode_id)}
             except ActionInputError as e:
-                return message_exception(trans, e.err_msg)
+                return self.message_exception(trans, e.err_msg)
 
     @web.expose_api
     @web.require_admin
     def edit_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No quota id received for renaming.')
+            return self.message_exception(trans, 'No quota id received for renaming.')
         quota = get_quota(trans, id)
         if trans.request.method == 'GET':
             return {
@@ -708,14 +750,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             try:
                 return {'message': self._edit_quota(quota, util.Params(payload))}
             except ActionInputError as e:
-                return message_exception(trans, e.err_msg)
+                return self.message_exception(trans, e.err_msg)
 
     @web.expose_api
     @web.require_admin
     def set_quota_default(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No quota id received for renaming.')
+            return self.message_exception(trans, 'No quota id received for renaming.')
         quota = get_quota(trans, id)
         if trans.request.method == 'GET':
             default_value = quota.default[0].type if quota.default else 'no'
@@ -736,7 +778,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             try:
                 return {'message': self._set_quota_default(quota, util.Params(payload))}
             except ActionInputError as e:
-                return message_exception(trans, e.err_msg)
+                return self.message_exception(trans, e.err_msg)
 
     @web.expose
     @web.require_admin
@@ -835,13 +877,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def view_tool_data_tables(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_data_tables_registry.mako', message=message, status=status)
-
-    @web.expose
-    @web.require_admin
     def display_applications(self, trans, **kwd):
         return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
 
@@ -876,52 +911,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    message=message,
                                    status=status)
 
-    @web.expose
-    @web.require_admin
-    def package_tool(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get('package_tool_button', False):
-            tool_id = params.get('tool_id', None)
-            try:
-                tool_tarball = trans.app.toolbox.package_tool(trans, tool_id)
-                trans.response.set_content_type('application/x-gzip')
-                download_file = open(tool_tarball)
-                os.unlink(tool_tarball)
-                tarball_path, filename = os.path.split(tool_tarball)
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.tgz"' % (tool_id)
-                return download_file
-            except Exception:
-                return trans.fill_template('/admin/package_tool.mako',
-                                           tool_id=tool_id,
-                                           toolbox=toolbox,
-                                           message=message,
-                                           status='error')
-
-    @web.expose
-    @web.require_admin
-    def reload_tool(self, trans, **kwd):
-        params = util.Params(kwd)
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        toolbox = self.app.toolbox
-        tool_id = None
-        if params.get('reload_tool_button', False):
-            tool_id = kwd.get('tool_id', None)
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': tool_id})
-            message, status = trans.app.toolbox.reload_tool_by_id(tool_id)
-        return trans.fill_template('/admin/reload_tool.mako',
-                                   tool_id=tool_id,
-                                   toolbox=toolbox,
-                                   message=message,
-                                   status=status)
-
     @web.expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
-        kwd['dict_format'] = True
         return self.tool_version_list_grid(trans, **kwd)
 
     @web.expose
@@ -942,7 +934,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_role(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_role(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -984,11 +975,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if not name or not description:
-                return message_exception(trans, 'Enter a valid name and a description.')
+                return self.message_exception(trans, 'Enter a valid name and a description.')
             elif trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
-                return message_exception(trans, 'Role names must be unique and a role with that name already exists, so choose another name.')
+                return self.message_exception(trans, 'Role names must be unique and a role with that name already exists, so choose another name.')
             elif None in in_users or None in in_groups:
-                return message_exception(trans, 'One or more invalid user/group id has been provided.')
+                return self.message_exception(trans, 'One or more invalid user/group id has been provided.')
             else:
                 # Create the role
                 role = trans.app.model.Role(name=name, description=description, type=trans.app.model.Role.types.ADMIN)
@@ -1004,7 +995,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if auto_create_checked:
                     # Check if role with same name already exists
                     if trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
-                        return message_exception(trans, 'A group with that name already exists, so choose another name or disable group creation.')
+                        return self.message_exception(trans, 'A group with that name already exists, so choose another name or disable group creation.')
                     # Create the group
                     group = trans.app.model.Group(name=name)
                     trans.sa_session.add(group)
@@ -1025,7 +1016,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def rename_role(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No role id received for renaming.')
+            return self.message_exception(trans, 'No role id received for renaming.')
         role = get_role(trans, id)
         if trans.request.method == 'GET':
             return {
@@ -1045,11 +1036,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             new_name = util.restore_text(payload.get('name'))
             new_description = util.restore_text(payload.get('description'))
             if not new_name:
-                return message_exception(trans, 'Enter a valid role name.')
+                return self.message_exception(trans, 'Enter a valid role name.')
             else:
                 existing_role = trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == new_name).first()
                 if existing_role and existing_role.id != role.id:
-                    return message_exception(trans, 'A role with that name already exists.')
+                    return self.message_exception(trans, 'A role with that name already exists.')
                 else:
                     if not (role.name == new_name and role.description == new_description):
                         role.name = new_name
@@ -1063,7 +1054,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def manage_users_and_groups_for_role(self, trans, payload=None, **kwd):
         role_id = kwd.get('id')
         if not role_id:
-            return message_exception(trans, 'Invalid role id (%s) received' % str(role_id))
+            return self.message_exception(trans, 'Invalid role id (%s) received' % str(role_id))
         role = get_role(trans, role_id)
         if trans.request.method == 'GET':
             in_users = []
@@ -1092,7 +1083,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if None in in_users or None in in_groups:
-                return message_exception(trans, 'One or more invalid user/group id has been provided.')
+                return self.message_exception(trans, 'One or more invalid user/group id has been provided.')
             for ura in role.users:
                 user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
                 if user not in in_users:
@@ -1178,7 +1169,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if 'operation' in kwargs:
             id = kwargs.get('id')
             if not id:
-                return message_exception(trans, 'Invalid group id (%s) received.' % str(id))
+                return self.message_exception(trans, 'Invalid group id (%s) received.' % str(id))
             ids = util.listify(id)
             operation = kwargs['operation'].lower().replace('+', ' ')
             if operation == 'delete':
@@ -1187,7 +1178,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_group(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_group(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1198,7 +1188,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def rename_group(self, trans, payload=None, **kwd):
         id = kwd.get('id')
         if not id:
-            return message_exception(trans, 'No group id received for renaming.')
+            return self.message_exception(trans, 'No group id received for renaming.')
         group = get_group(trans, id)
         if trans.request.method == 'GET':
             return {
@@ -1213,11 +1203,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             old_name = group.name
             new_name = util.restore_text(payload.get('name'))
             if not new_name:
-                return message_exception(trans, 'Enter a valid group name.')
+                return self.message_exception(trans, 'Enter a valid group name.')
             else:
                 existing_group = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == new_name).first()
                 if existing_group and existing_group.id != group.id:
-                    return message_exception(trans, 'A group with that name already exists.')
+                    return self.message_exception(trans, 'A group with that name already exists.')
                 else:
                     if not (group.name == new_name):
                         group.name = new_name
@@ -1230,7 +1220,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def manage_users_and_roles_for_group(self, trans, payload=None, **kwd):
         group_id = kwd.get('id')
         if not group_id:
-            return message_exception(trans, 'Invalid group id (%s) received' % str(group_id))
+            return self.message_exception(trans, 'Invalid group id (%s) received' % str(group_id))
         group = get_group(trans, group_id)
         if trans.request.method == 'GET':
             in_users = []
@@ -1259,7 +1249,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if None in in_users or None in in_roles:
-                return message_exception(trans, 'One or more invalid user/role id has been provided.')
+                return self.message_exception(trans, 'One or more invalid user/role id has been provided.')
             trans.app.security_agent.set_entity_group_associations(groups=[group], users=in_users, roles=in_roles)
             trans.sa_session.refresh(group)
             return {'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % (group.name, len(in_users), len(in_roles))}
@@ -1297,11 +1287,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_users = [trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_users'))]
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             if not name:
-                return message_exception(trans, 'Enter a valid name.')
+                return self.message_exception(trans, 'Enter a valid name.')
             elif trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name).first():
-                return message_exception(trans, 'Group names must be unique and a group with that name already exists, so choose another name.')
+                return self.message_exception(trans, 'Group names must be unique and a group with that name already exists, so choose another name.')
             elif None in in_users or None in in_roles:
-                return message_exception(trans, 'One or more invalid user/role id has been provided.')
+                return self.message_exception(trans, 'One or more invalid user/role id has been provided.')
             else:
                 # Create the role
                 group = trans.app.model.Group(name=name)
@@ -1317,7 +1307,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if auto_create_checked:
                     # Check if role with same name already exists
                     if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
-                        return message_exception(trans, 'A role with that name already exists, so choose another name or disable role creation.')
+                        return self.message_exception(trans, 'A role with that name already exists, so choose another name or disable role creation.')
                     # Create the role
                     role = trans.app.model.Role(name=name, description='Role for group %s' % name)
                     trans.sa_session.add(role)
@@ -1387,7 +1377,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if users:
             if trans.request.method == 'GET':
                 return {
-                    'message': 'Changes password(s) for: %s.' % ', '.join([user.email for user in users.itervalues()]),
+                    'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
                     'status' : 'info',
                     'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
                                 {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
@@ -1396,16 +1386,16 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 password = payload.get('password')
                 confirm = payload.get('confirm')
                 if len(password) < 6:
-                    return message_exception(trans, 'Use a password of at least 6 characters.')
+                    return self.message_exception(trans, 'Use a password of at least 6 characters.')
                 elif password != confirm:
-                    return message_exception(trans, 'Passwords do not match.')
-                for user in users.itervalues():
+                    return self.message_exception(trans, 'Passwords do not match.')
+                for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
                 return {'message': 'Passwords reset for %d user(s).' % len(users)}
         else:
-            return message_exception(trans, 'Please specify user ids.')
+            return self.message_exception(trans, 'Please specify user ids.')
 
     def _delete_user(self, trans, ids):
         message = 'Deleted %d users: ' % len(ids)
@@ -1496,21 +1486,12 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
 
-    @web.expose
-    @web.require_admin
-    def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
-        """Return autocomplete data for user emails"""
-        ac_data = ""
-        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(q.lower() + "%")):
-            ac_data = ac_data + user.email + "\n"
-        return ac_data
-
     @web.expose_api
     @web.require_admin
     def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
         user_id = kwd.get('id')
         if not user_id:
-            return message_exception(trans, 'Invalid user id (%s) received' % str(user_id))
+            return self.message_exception(trans, 'Invalid user id (%s) received' % str(user_id))
         user = get_user(trans, user_id)
         if trans.request.method == 'GET':
             in_roles = []
@@ -1542,7 +1523,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             in_roles = [trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_roles'))]
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(trans.security.decode_id(x)) for x in util.listify(payload.get('in_groups'))]
             if None in in_groups or None in in_roles:
-                return message_exception(trans, 'One or more invalid role/group id has been provided.')
+                return self.message_exception(trans, 'One or more invalid role/group id has been provided.')
 
             # make sure the user is not dis-associating himself from his private role
             private_role = trans.app.security_agent.get_private_user_role(user)
@@ -1713,11 +1694,6 @@ def build_select_input(name, label, options, value):
             'label'     : label,
             'options'   : options,
             'value'     : value}
-
-
-def message_exception(trans, message):
-    trans.response.status = 400
-    return {'err_msg': sanitize_text(message)}
 
 
 def get_user(trans, user_id):

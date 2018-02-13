@@ -1,13 +1,13 @@
 from unittest import TestCase
 from xml.etree.ElementTree import XML
 
-import tools_support
 from galaxy import model
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
+from ..tools_support import UsesApp
 
 
-class BaseParameterTestCase(TestCase, tools_support.UsesApp):
+class BaseParameterTestCase(TestCase, UsesApp):
 
     def setUp(self):
         self.setup_app()

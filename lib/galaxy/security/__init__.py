@@ -30,9 +30,7 @@ class RBACAgent:
         LIBRARY_ACCESS=Action("access library", "Restrict access to this library to only users having associated role", "restrict"),
         LIBRARY_ADD=Action("add library item", "Users having associated role can add library items to this library item", "grant"),
         LIBRARY_MODIFY=Action("modify library item", "Users having associated role can modify this library item", "grant"),
-        LIBRARY_MANAGE=Action("manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant"),
-        # Request type permissions
-        REQUEST_TYPE_ACCESS=Action("access request_type", "Restrict access to this request type to only users having associated role", "restrict")
+        LIBRARY_MANAGE=Action("manage library permissions", "Users having associated role can manage roles associated with permissions on this library item", "grant")
     )
 
     def get_action(self, name, default=None):
@@ -77,9 +75,6 @@ class RBACAgent:
         raise Exception("Unimplemented Method")
 
     def get_private_user_role(self, user):
-        raise Exception("Unimplemented Method")
-
-    def get_accessible_request_types(self, trans, user):
         raise Exception("Unimplemented Method")
 
     def user_set_default_permissions(self, user, permissions={}, history=False, dataset=False):
@@ -179,7 +174,7 @@ class GalaxyRBACAgent(RBACAgent):
         # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
         # only to provide stable sorting, but mainly to eliminate comparison of objects
         # (which can be expensive or prohibited) in case of equal attribute values.
-        intermed = map(None, (getattr(_, attr) for _ in seq), range(len(seq)), seq)
+        intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
         intermed.sort()
         return [_[-1] for _ in intermed]
 
@@ -885,7 +880,7 @@ class GalaxyRBACAgent(RBACAgent):
                 has_dataset_manage_permissions = True
                 break
         if not has_dataset_manage_permissions:
-            return "At least 1 role must be associated with the <b>manage permissions</b> permission on this dataset."
+            return "At least 1 role must be associated with manage permissions on this dataset."
         flush_needed = False
         # Delete all of the current permissions on the dataset
         if not new:
@@ -939,27 +934,6 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 permissions[action] = [item_permission.role]
         return permissions
-
-    def get_accessible_request_types(self, trans, user):
-        """Return all RequestTypes that the received user has permission to access."""
-        accessible_request_types = []
-        current_user_role_ids = [role.id for role in user.all_roles()]
-        request_type_access_action = self.permitted_actions.REQUEST_TYPE_ACCESS.action
-        restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(trans.model.RequestTypePermissions)
-            .filter(trans.model.RequestTypePermissions.table.c.action == request_type_access_action).distinct()]
-        accessible_restricted_request_type_ids = [rtp.request_type_id for rtp in trans.sa_session.query(trans.model.RequestTypePermissions)
-            .filter(and_(
-                trans.model.RequestTypePermissions.table.c.action == request_type_access_action,
-                trans.model.RequestTypePermissions.table.c.role_id.in_(current_user_role_ids)))]
-        # Filter to get libraries accessible by the current user.  Get both
-        # public libraries and restricted libraries accessible by the current user.
-        for request_type in trans.sa_session.query(trans.model.RequestType) \
-                                            .filter(and_(trans.model.RequestType.table.c.deleted == false(),
-                                                         (or_(not_(trans.model.RequestType.table.c.id.in_(restricted_request_type_ids)),
-                                                              trans.model.RequestType.table.c.id.in_(accessible_restricted_request_type_ids))))) \
-                                            .order_by(trans.app.model.RequestType.name):
-            accessible_request_types.append(request_type)
-        return accessible_request_types
 
     def copy_dataset_permissions(self, src, dst):
         if not isinstance(src, self.model.Dataset):
@@ -1475,37 +1449,6 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
-
-    def can_access_request_type(self, roles, request_type):
-        action = self.permitted_actions.REQUEST_TYPE_ACCESS
-        request_type_actions = []
-        for permission in request_type.actions:
-            if permission.action == action.action:
-                request_type_actions.append(permission)
-        if not request_type_actions:
-            return True
-        ret_val = False
-        for request_type_action in request_type_actions:
-            if request_type_action.role in roles:
-                ret_val = True
-                break
-        return ret_val
-
-    def set_request_type_permissions(self, request_type, permissions={}):
-        # Set new permissions on request_type, eliminating all current permissions
-        for role_assoc in request_type.actions:
-            self.sa_session.delete(role_assoc)
-        # Add the new permissions on request_type
-        permission_class = self.model.RequestTypePermissions
-        flush_needed = False
-        for action, roles in permissions.items():
-            if isinstance(action, Action):
-                action = action.action
-            for role_assoc in [permission_class(action, request_type, role) for role in roles]:
-                self.sa_session.add(role_assoc)
-                flush_needed = True
-        if flush_needed:
-            self.sa_session.flush()
 
 
 class HostAgent(RBACAgent):

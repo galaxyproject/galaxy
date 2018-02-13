@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-<%namespace name="grid_base" file="/grid_base.mako" import="*" />
+<%namespace name="grid_base" file="/legacy/grid_base.mako" import="*" />
 <%namespace name="grid_common" file="../common/grid_common.mako" import="*" />
 
 <%def name="insert()">

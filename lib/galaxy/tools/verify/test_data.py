@@ -4,7 +4,6 @@ import hashlib
 import os
 import re
 import subprocess
-
 from string import Template
 
 from galaxy.util import asbool

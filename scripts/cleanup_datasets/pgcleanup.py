@@ -776,6 +776,6 @@ if __name__ == '__main__':
         cleanup._run()
         if cleanup.disk_accounting_user_ids:
             cleanup._update_user_disk_usage()
-    except:
+    except Exception:
         log.exception('Caught exception in run sequence:')
     cleanup._shutdown()

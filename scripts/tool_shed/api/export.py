@@ -6,6 +6,7 @@ dependencies from the tool shed into a compressed archive.
 Here is a working example of how to use this script to export a repository from the tool shed.
 ./export.py --url http://testtoolshed.g2.bx.psu.edu --name chemicaltoolbox --owner bgruening --revision 4133dbf7ff4d --export_repository_dependencies True --download_dir /tmp
 """
+from __future__ import print_function
 
 import argparse
 import os
@@ -17,7 +18,7 @@ import requests
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 from tool_shed.util import basic_util
 
-from common import display, submit
+from common import display, submit  # noqa: I100
 
 CAPSULE_FILENAME = 'capsule'
 CAPSULE_WITH_DEPENDENCIES_FILENAME = 'capsule_with_dependencies'
@@ -85,7 +86,7 @@ def main(options):
         export_dict = submit(url, data, return_formatted=False)
         error_messages = export_dict['error_messages']
         if error_messages:
-            print "Error attempting to export revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner, ":\n", error_messages
+            print("Error attempting to export revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner, ":\n", error_messages)
         else:
             export_repository_dependencies = string_as_bool(options.export_repository_dependencies)
             repositories_archive_filename = \
@@ -104,10 +105,10 @@ def main(options):
                 for chunk in src.iter_content(chunk_size=CHUNK_SIZE):
                     if chunk:
                         dst.write(chunk)
-            print "Successfully exported revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner
-            print "to location ", file_path
+            print("Successfully exported revision ", options.changeset_revision, " of repository ", options.name, " owned by ", options.owner)
+            print("to location ", file_path)
     else:
-        print "Invalid tool_shed / name / owner ."
+        print("Invalid tool_shed / name / owner .")
 
 
 if __name__ == '__main__':

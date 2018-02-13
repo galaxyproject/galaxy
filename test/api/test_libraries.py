@@ -4,7 +4,6 @@ from base.populators import (
     DatasetPopulator,
     LibraryPopulator,
     TestsDatasets,
-    wait_on_state
 )
 
 
@@ -14,7 +13,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         super(LibrariesApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-        self.library_populator = LibraryPopulator(self)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_create(self):
         data = dict(name="CreateTestLibrary")
@@ -83,20 +82,15 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             create_response = self._post("folders/%s/contents" % folder_id, payload)
             self._assert_status_code_is(create_response, 403)
 
+    def test_show_private_dataset_permissions(self):
+        library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
+        with self._different_user():
+            response = self.library_populator.show_ldda(library["id"], library_dataset["id"])
+            # TODO: this should really be 403 and a proper JSON exception.
+            self._assert_status_code_is(response, 400)
+
     def test_create_dataset(self):
-        library = self.library_populator.new_private_library("ForCreateDatasets")
-        payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
-        create_response = self._post("libraries/%s/contents" % library["id"], payload, files=files)
-        self._assert_status_code_is(create_response, 200)
-        library_datasets = create_response.json()
-        assert len(library_datasets) == 1
-        library_dataset = library_datasets[0]
-
-        def show():
-            return self._get("libraries/%s/contents/%s" % (library["id"], library_dataset["id"]))
-
-        wait_on_state(show, assert_ok=True)
-        library_dataset = show().json()
+        library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         self._assert_has_keys(library_dataset, "peek", "data_type")
         assert library_dataset["peek"].find("create_test") >= 0
         assert library_dataset["file_ext"] == "txt", library_dataset["file_ext"]

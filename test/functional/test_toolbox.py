@@ -12,10 +12,9 @@ except ImportError:
 
 from base.instrument import register_job_data
 from base.interactor import build_interactor, RunToolException, stage_data_in_history
-from galaxy.tools import DataManagerTool
+from galaxy.tools import DataManagerTool  # noqa: I201
 from galaxy.tools.verify.asserts import verify_assertions
 from galaxy.util import bunch
-
 from .twilltestcase import TwillTestCase
 
 log = logging.getLogger(__name__)

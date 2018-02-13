@@ -1,8 +1,11 @@
 import json
 
-from requests import put, get
+from requests import (
+    get,
+    put
+)
 
-from base import api
+from base import api  # noqa: I100,I202
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 

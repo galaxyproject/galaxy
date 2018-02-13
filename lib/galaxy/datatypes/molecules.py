@@ -33,7 +33,7 @@ def count_special_lines(word, filename, invert=False):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -48,7 +48,7 @@ def count_lines(filename, non_empty=False):
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -61,12 +61,11 @@ class GenericMolFile(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -427,7 +426,7 @@ class OBFS(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
@@ -471,7 +470,7 @@ class PHAR(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "pharmacophore"
         else:
             dataset.peek = 'file does not exist'
@@ -524,7 +523,7 @@ class PDB(GenericMolFile):
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -575,7 +574,7 @@ class PDBQT(GenericMolFile):
         if not dataset.dataset.purged:
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -587,7 +586,7 @@ class grd(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "grids for docking"
         else:
             dataset.peek = 'file does not exist'
@@ -621,12 +620,11 @@ class InChI(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -666,12 +664,11 @@ class SMILES(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -702,7 +699,7 @@ class SMILES(Tabular):
                     # if we have atoms, we have a molecule
                     if not len(pybel.readstring('smi', smiles).atoms) > 0:
                         return False
-                except:
+                except Exception:
                     # if convert fails its not a smiles string
                     return False
             return True
@@ -727,12 +724,11 @@ class CML(GenericXml):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

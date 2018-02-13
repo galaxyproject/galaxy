@@ -25,7 +25,7 @@ require.config({
     baseUrl: app_root,
     paths: {
         "plugin" : app_root + "js/",
-        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
+        "galaxy.interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
     },
     urlArgs: "v=${app.server_starttime}",
 });

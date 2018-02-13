@@ -3,7 +3,6 @@ from __future__ import print_function
 
 import collections
 import hashlib
-
 from distutils.version import LooseVersion
 
 try:

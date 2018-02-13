@@ -1,7 +1,6 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import glob
 import json
 import logging
 import os
@@ -10,6 +9,7 @@ import tarfile
 import tempfile
 import threading
 from cgi import FieldStorage
+from collections import OrderedDict
 from datetime import datetime
 from distutils.version import LooseVersion
 from xml.etree import ElementTree
@@ -21,13 +21,13 @@ from six.moves.urllib.parse import unquote_plus
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
-
 from galaxy import (
     exceptions,
     model
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
+from galaxy.managers.jobs import JobSearch
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -86,8 +86,10 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
-
-from .execute import execute as execute_job
+from .execute import (
+    execute as execute_job,
+    MappingParameters,
+)
 from .loader import (
     imported_macro_paths,
     raw_tool_xml_tree,
@@ -309,11 +311,9 @@ class ToolBox(BaseGalaxyToolBox):
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options = []
-        refresh_on_change_values = []
         for tool in tools:
             options.insert(0, (tool.version, tool.id))
-            refresh_on_change_values.append(tool.id)
-        select_field = SelectField(name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values)
+        select_field = SelectField(name='tool_id')
         for option_tup in options:
             selected = set_selected and option_tup[1] == tool_id
             if selected:
@@ -341,7 +341,7 @@ class DefaultToolState(object):
         """
         self.inputs = {}
         context = ExpressionContext(self.inputs)
-        for input in tool.inputs.itervalues():
+        for input in tool.inputs.values():
             self.inputs[input.name] = input.get_initial_value(trans, context)
 
     def encode(self, tool, app, nested=False):
@@ -381,7 +381,7 @@ class Tool(object, Dictifiable):
     tool_type = 'default'
     requires_setting_metadata = True
     default_tool_action = DefaultToolAction
-    dict_collection_visible_keys = ('id', 'name', 'version', 'description', 'labels')
+    dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
     def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
@@ -440,6 +440,7 @@ class Tool(object, Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
+        self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
@@ -720,6 +721,8 @@ class Tool(object, Dictifiable):
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
+        # Record macro paths so we can reload a tool if any of its macro has changes
+        self._macro_paths = tool_source._macro_paths
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -793,7 +796,7 @@ class Tool(object, Dictifiable):
             if tests_source:
                 try:
                     self.__tests = parse_tests(self, tests_source)
-                except:
+                except Exception:
                     self.__tests = None
                     log.exception("Failed to parse tool tests")
             else:
@@ -938,9 +941,10 @@ class Tool(object, Dictifiable):
         for citation_elem in citations_elem:
             if citation_elem.tag != "citation":
                 pass
-            citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
-            if citation:
-                citations.append(citation)
+            if hasattr(self.app, 'citations_manager'):
+                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                if citation:
+                    citations.append(citation)
         return citations
 
     def parse_input_elem(self, page_source, enctypes, context=None):
@@ -1010,7 +1014,7 @@ class Tool(object, Dictifiable):
                         group.cases.append(case)
                         try:
                             possible_cases.remove(case.value)
-                        except:
+                        except Exception:
                             log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                         (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
@@ -1039,8 +1043,6 @@ class Tool(object, Dictifiable):
                 group.default_file_type = elem.get('default_file_type', group.default_file_type)
                 group.metadata_ref = elem.get('metadata_ref', group.metadata_ref)
                 rval[group.file_type_name].refresh_on_change = True
-                rval[group.file_type_name].refresh_on_change_values = \
-                    self.app.datatypes_registry.get_composite_extensions()
                 group_page_source = XmlPageSource(elem)
                 group.inputs = self.parse_input_elem(group_page_source, enctypes, context)
                 rval[group.name] = group
@@ -1130,8 +1132,8 @@ class Tool(object, Dictifiable):
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        output_encoding='utf-8', default_filters=['decode.utf8'],
                                        encoding_errors='replace')
-            except:
-                log.exception("error in help for tool %s", self.name)
+            except Exception:
+                log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
             if hasattr(tool_source, "root"):
@@ -1150,8 +1152,8 @@ class Tool(object, Dictifiable):
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
-                except:
-                    log.exception("error in multi-page help for tool %s", self.name)
+                except Exception:
+                    log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
         # Pad out help pages to match npages ... could this be done better?
         while len(self.__help_by_page) < self.npages:
             self.__help_by_page.append(self.__help)
@@ -1233,14 +1235,7 @@ class Tool(object, Dictifiable):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
-    def handle_input(self, trans, incoming, history=None):
-        """
-        Process incoming parameters for this tool from the dict `incoming`,
-        update the tool state (or create if none existed), and either return
-        to the form or execute the tool (only if 'execute' was clicked and
-        there were no errors).
-        """
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+    def expand_incoming(self, trans, incoming, request_context):
         rerun_remap_job_id = None
         if 'rerun_remap_job_id' in incoming:
             try:
@@ -1252,13 +1247,12 @@ class Tool(object, Dictifiable):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
-        if not expanded_incomings:
-            raise exceptions.MessageException('Tool execution failed, trying to run a tool over an empty collection.')
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
         if rerun_remap_job_id and len(expanded_incomings) > 1:
-            raise exceptions.MessageException('Failure executing tool (cannot create multiple jobs when remapping existing job).')
+            raise exceptions.MessageException(
+                'Failure executing tool (cannot create multiple jobs when remapping existing job).')
 
         # Process incoming data
         validation_timer = ExecutionTimer()
@@ -1286,29 +1280,68 @@ class Tool(object, Dictifiable):
             all_errors.append(errors)
             all_params.append(params)
         log.debug('Validated and populated state for tool request %s' % validation_timer)
+        return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def handle_input(self, trans, incoming, history=None, use_cached_job=False):
+        """
+        Process incoming parameters for this tool from the dict `incoming`,
+        update the tool state (or create if none existed), and either return
+        to the form or execute the tool (only if 'execute' was clicked and
+        there were no errors).
+        """
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history or trans.history)
+        all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(trans=trans, incoming=incoming, request_context=request_context)
         # If there were errors, we stay on the same page and display them
         if any(all_errors):
             err_data = {key: value for d in all_errors for (key, value) in d.items()}
             raise exceptions.MessageException(', '.join(msg for msg in err_data.values()), err_data=err_data)
         else:
-            execution_tracker = execute_job(trans, self, all_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info)
-            if execution_tracker.successful_jobs:
-                return dict(out_data=execution_tracker.output_datasets,
-                            num_jobs=len(execution_tracker.successful_jobs),
-                            job_errors=execution_tracker.execution_errors,
-                            jobs=execution_tracker.successful_jobs,
-                            output_collections=execution_tracker.output_collections,
-                            implicit_collections=execution_tracker.implicit_collections)
-            else:
+            mapping_params = MappingParameters(incoming, all_params)
+            completed_jobs = {}
+            for i, param in enumerate(all_params):
+                if use_cached_job:
+                    completed_jobs[i] = self.job_search.by_tool_input(
+                        trans=trans,
+                        tool_id=self.id,
+                        tool_version=self.version,
+                        param=param,
+                        param_dump=self.params_to_strings(param, self.app, nested=True),
+                        job_state=None,
+                    )
+                else:
+                    completed_jobs[i] = None
+            execution_tracker = execute_job(trans, self, mapping_params, history=request_context.history, rerun_remap_job_id=rerun_remap_job_id, collection_info=collection_info, completed_jobs=completed_jobs)
+            # Raise an exception if there were jobs to execute and none of them were submitted,
+            # if at least one is submitted or there are no jobs to execute - return aggregate
+            # information including per-job errors. Arguably we should just always return the
+            # aggregate information - we just haven't done that historically.
+            raise_execution_exception = not execution_tracker.successful_jobs and len(all_params) > 0
+
+            if raise_execution_exception:
                 raise exceptions.MessageException(execution_tracker.execution_errors[0])
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, params, history, mapping_over_collection, execution_cache=None):
+            return dict(out_data=execution_tracker.output_datasets,
+                        num_jobs=len(execution_tracker.successful_jobs),
+                        job_errors=execution_tracker.execution_errors,
+                        jobs=execution_tracker.successful_jobs,
+                        output_collections=execution_tracker.output_collections,
+                        implicit_collections=execution_tracker.implicit_collections)
+
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
         """
         try:
-            job, out_data = self.execute(trans, incoming=params, history=history, rerun_remap_job_id=rerun_remap_job_id, mapping_over_collection=mapping_over_collection, execution_cache=execution_cache)
+            job, out_data = self.execute(
+                trans,
+                incoming=execution_slice.param_combination,
+                history=history,
+                rerun_remap_job_id=rerun_remap_job_id,
+                execution_cache=execution_cache,
+                dataset_collection_elements=execution_slice.dataset_collection_elements,
+                completed_job=completed_job,
+            )
         except httpexceptions.HTTPFound as e:
             # if it's a paste redirect exception, pass it up the stack
             raise e
@@ -1359,7 +1392,7 @@ class Tool(object, Dictifiable):
         for input_param in self.input_params:
             if isinstance(input_param, SelectToolParameter) and input_param.is_dynamic:
                 options = input_param.options
-                if options and options.missing_index_file and input_param not in params:
+                if options and options.tool_data_table and options.tool_data_table.missing_index_file and input_param not in params:
                     params.append(input_param)
         return params
 
@@ -1390,8 +1423,8 @@ class Tool(object, Dictifiable):
         """
         return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
 
-    def params_to_strings(self, params, app):
-        return params_to_strings(self.inputs, params, app)
+    def params_to_strings(self, params, app, nested=False):
+        return params_to_strings(self.inputs, params, app, nested)
 
     def params_from_strings(self, params, app, ignore_errors=False):
         return params_from_strings(self.inputs, params, app, ignore_errors)
@@ -1416,7 +1449,7 @@ class Tool(object, Dictifiable):
                         if not prefixed_name.startswith('__'):
                             messages[prefixed_name] = error if previous_value == value else '%s Using default: \'%s\'.' % (error, value)
                         parent[input.name] = value
-                    except:
+                    except Exception:
                         messages[prefixed_name] = 'Attempt to replace invalid value for \'%s\' failed.' % (prefixed_label)
                 else:
                     messages[prefixed_name] = error
@@ -1552,73 +1585,6 @@ class Tool(object, Dictifiable):
         Called when a job has failed
         """
         pass
-
-    def collect_child_datasets(self, output, job_working_directory):
-        """
-        Look for child dataset files, create HDA and attach to parent.
-        """
-        children = {}
-        # Loop through output file names, looking for generated children in
-        # form of 'child_parentId_designation_visibility_extension'
-        for name, outdata in output.items():
-            filenames = []
-            if 'new_file_path' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(self.app.config.new_file_path, "child_%i_*" % outdata.id)))
-            if 'job_working_directory' in self.app.config.collect_outputs_from:
-                filenames.extend(glob.glob(os.path.join(job_working_directory, "child_%i_*" % outdata.id)))
-            for filename in filenames:
-                if name not in children:
-                    children[name] = {}
-                fields = os.path.basename(filename).split("_")
-                designation = fields[2]
-                visible = fields[3].lower()
-                if visible == "visible":
-                    visible = True
-                else:
-                    visible = False
-                ext = fields[4].lower()
-                child_dataset = self.app.model.HistoryDatasetAssociation(extension=ext,
-                                                                         parent_id=outdata.id,
-                                                                         designation=designation,
-                                                                         visible=visible,
-                                                                         dbkey=outdata.dbkey,
-                                                                         create_dataset=True,
-                                                                         sa_session=self.sa_session)
-                self.app.security_agent.copy_dataset_permissions(outdata.dataset, child_dataset.dataset)
-                # Move data from temp location to dataset location
-                self.app.object_store.update_from_file(child_dataset.dataset, file_name=filename, create=True)
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                child_dataset.set_size()
-                child_dataset.name = "Secondary Dataset (%s)" % (designation)
-                child_dataset.init_meta()
-                child_dataset.set_meta()
-                child_dataset.set_peek()
-                # Associate new dataset with job
-                job = None
-                for assoc in outdata.creating_job_associations:
-                    job = assoc.job
-                    break
-                if job:
-                    assoc = self.app.model.JobToOutputDatasetAssociation('__new_child_file_%s|%s__' % (name, designation), child_dataset)
-                    assoc.job = job
-                    self.sa_session.add(assoc)
-                    self.sa_session.flush()
-                child_dataset.state = outdata.state
-                self.sa_session.add(child_dataset)
-                self.sa_session.flush()
-                # Add child to return dict
-                children[name][designation] = child_dataset
-                # Need to update all associated output hdas, i.e. history was
-                # shared with job running
-                for dataset in outdata.dataset.history_associations:
-                    if outdata == dataset:
-                        continue
-                    # Create new child dataset
-                    child_data = child_dataset.copy(parent_id=dataset.id)
-                    self.sa_session.add(child_data)
-                    self.sa_session.flush()
-        return children
 
     def collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
         """
@@ -1924,6 +1890,9 @@ class Tool(object, Dictifiable):
                 try:
                     if [hda.dependent_jobs for hda in [jtod.dataset for jtod in job.output_datasets] if hda.dependent_jobs]:
                         return True
+                    elif job.output_dataset_collection_instances:
+                        # We'll want to replace this item
+                        return 'job_produced_collection_elements'
                 except Exception as exception:
                     log.error(str(exception))
                     pass
@@ -2318,7 +2287,7 @@ class DatabaseOperationTool(Tool):
     def check_inputs_ready(self, input_datasets, input_dataset_collections):
         def check_dataset_instance(input_dataset):
             if input_dataset.is_pending:
-                raise ToolInputsNotReadyException()
+                raise ToolInputsNotReadyException("An input dataset is pending.")
 
             if self.require_dataset_ok:
                 if input_dataset.state != input_dataset.dataset.states.OK:
@@ -2330,7 +2299,7 @@ class DatabaseOperationTool(Tool):
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, is_mapped in input_dataset_collection_pairs:
                 if not input_dataset_collection.collection.populated:
-                    raise ToolInputsNotReadyException()
+                    raise ToolInputsNotReadyException("An input collection is not populated.")
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 
@@ -2532,14 +2501,28 @@ class SortTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history):
         hdca = incoming["input"]
-        sorttype = incoming["sort_type"]
+        sorttype = incoming["sort_type"]["sort_type"]
         new_elements = odict()
         elements = hdca.collection.elements
+        presort_elements = []
         if sorttype == 'alpha':
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == 'numeric':
             presort_elements = [(int(re.sub('[^0-9]', '', dce.element_identifier)), dce) for dce in elements]
-        sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if presort_elements:
+            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
+        if sorttype == 'file':
+            hda = incoming["sort_type"]["sort_file"]
+            if hda.metadata and hda.metadata.get('data_lines', 0) == len(elements):
+                old_elements_dict = OrderedDict()
+                for element in elements:
+                    old_elements_dict[element.element_identifier] = element
+                try:
+                    sorted_elements = [old_elements_dict[line.strip()] for line in open(hda.file_name)]
+                except KeyError:
+                    hdca_history_name = "%s: %s" % (hdca.hid, hdca.name)
+                    message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
+                    raise Exception(message)
 
         for dce in sorted_elements:
             dce_object = dce.element_object

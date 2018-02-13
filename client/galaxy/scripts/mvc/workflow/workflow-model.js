@@ -1,25 +1,22 @@
-define([
-    "mvc/base-mvc",
-], function( baseMVC ){
+import baseMVC from "mvc/base-mvc";
 /* global Backbone */
 // workflow model
 
-var logNamespace = 'workflow';
+var logNamespace = "workflow";
 //==============================================================================
 /** @class model for a single workflow.
  *  @name WorkflowItem
  *  @augments Backbone.Model
  */
-var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
-    _logNamespace : logNamespace,
+var WorkflowItem = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
+    _logNamespace: logNamespace,
 
-    urlRoot: Galaxy.root + 'api/workflows',
+    urlRoot: `${Galaxy.root}api/workflows`,
 
-    toJSON: function(){
-    // need to overwrite this as endpoint expects the 'workflow' key in payload
-    return {workflow : this.attributes};
-    },
-
+    toJSON: function() {
+        // need to overwrite this as endpoint expects the 'workflow' key in payload
+        return { workflow: this.attributes };
+    }
 });
 
 //==============================================================================
@@ -29,16 +26,12 @@ var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
  */
 var WorkflowCollection = Backbone.Collection.extend({
     model: WorkflowItem,
-    url: Galaxy.root + 'api/workflows',
-
-  });
+    url: `${Galaxy.root}api/workflows`
+});
 
 //==============================================================================
 
-return {
+export default {
     WorkflowItem: WorkflowItem,
-    WorkflowCollection: WorkflowCollection,
+    WorkflowCollection: WorkflowCollection
 };
-
-
-});

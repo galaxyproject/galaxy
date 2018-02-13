@@ -1,6 +1,10 @@
 name: History Introduction
 description: A detailed introduction to the Galaxy History
 title_default: "Galaxy History Introduction"
+tags:
+  - "core"
+  - "history"
+
 steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 

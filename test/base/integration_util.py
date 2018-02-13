@@ -4,7 +4,8 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
-from unittest import TestCase
+import os
+from unittest import skip, TestCase
 
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
@@ -12,8 +13,20 @@ from .driver_util import GalaxyTestDriver
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 
 
+def skip_if_jenkins(cls):
+
+    if os.environ.get("BUILD_NUMBER", ""):
+        return skip
+
+    return cls
+
+
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
+
+    prefer_template_database = True
+    # Subclasses can override this to force uwsgi for tests.
+    require_uwsgi = False
 
     @classmethod
     def setUpClass(cls):
@@ -66,6 +79,13 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         This method will be passed the keyword argument pairs used to call
         Galaxy Config object and can modify the Galaxy instance created for
         the test as needed.
+        """
+
+    @classmethod
+    def handle_uwsgi_cli_command(cls, command):
+        """Extension point sub subclasses to modify arguments used to launch uWSGI server.
+
+        Command will a list that can be modified.
         """
 
     def _run_tool_test(self, *args, **kwargs):

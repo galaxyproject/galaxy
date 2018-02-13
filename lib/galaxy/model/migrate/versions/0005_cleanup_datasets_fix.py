@@ -241,8 +241,8 @@ class DatasetInstance(object):
         """Saves the data on the disc"""
         self.datatype.set_raw_data(self, data)
 
-    def set_peek(self, is_multi_byte=False):
-        return self.datatype.set_peek(self, is_multi_byte=is_multi_byte)
+    def set_peek(self):
+        return self.datatype.set_peek(self)
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)
@@ -692,7 +692,7 @@ def __guess_dataset_by_filename(filename):
         if fields:
             if fields[-1].startswith('dataset_') and fields[-1].endswith('.dat'):  # dataset_%d.dat
                 return Dataset.get(int(fields[-1][len('dataset_'): -len('.dat')]))
-    except:
+    except Exception:
         pass  # some parsing error, we can't guess Dataset
     return None
 

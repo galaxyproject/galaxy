@@ -3,7 +3,6 @@ try:
 except ImportError:
     requests = None
 import yaml
-
 from six.moves.urllib.parse import quote
 
 from ..locations import (

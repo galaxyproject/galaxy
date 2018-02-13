@@ -1,16 +1,17 @@
 from __future__ import print_function
 
-from yaml import load
-
 import argparse
+import collections
+import copy
+import json
 import logging
 import os
-import sys
-import copy
-import collections
 import re
+import sys
 from functools import reduce
 from xml.etree import ElementTree as ET
+
+from yaml import load
 
 __version__ = '1.0.0'
 
@@ -1335,12 +1336,40 @@ def map_tool_to_destination(
     # For each different rule for the tool that's running
     fail_message = None
 
-    if config is not None:
+    if fail_message is not None:
+        destination = "fail"
+    elif config is not None:
 
+        # fetch priority information from workflow/job parameters
+        job_parameter_list = job.get_parameters()
+        workflow_params = None
+        job_params = None
+        if job_parameter_list is not None:
+            for param in job_parameter_list:
+                if param.name == "__workflow_resource_params__":
+                    workflow_params = param.value
+                if param.name == "__job_resource":
+                    job_params = param.value
+    
+        # Priority coming from workflow invocation takes precedence over job specific priorities
+        if workflow_params is not None:
+            resource_params = json.loads(workflow_params)
+            if 'priority' in resource_params:
+                # For by_group mapping, this priority has already been validated when the
+                # request was created.
+                if resource_params['priority'] is not None:
+                    priority = resource_params['priority']
+    
+        elif job_params is not None:
+            resource_params = json.loads(job_params)
+            if 'priority' in resource_params:
+                if resource_params['priority'] is not None:
+                    priority = resource_params['priority']
+
+        # Get the default priority from the config if necessary.
+        # If there isn't one, choose an arbitrary one as a fallback
         if "default_destination" in config:
             if isinstance(config['default_destination'], dict):
-                # Default priority is only applicable when
-                # default_destination is a dict, rather than string.
                 if 'default_priority' in config:
                     default_priority = config['default_priority']
                     priority = default_priority
@@ -1350,10 +1379,11 @@ def map_tool_to_destination(
                         default_priority = next(iter(priority_list))
                         priority = default_priority
                         error = ("No default priority found, arbitrarily setting '"
-                                 + default_priority + "' as the default priority.")
+                                 + default_priority + "' as the default priority."
+                                 + " Things may not work as expected!")
                         if verbose:
                             log.debug(error)
-
+        
         # get the user's priority
         if "users" in config:
             if user_email in config["users"]:
@@ -1490,7 +1520,8 @@ def map_tool_to_destination(
             fail_message = "Job '" + str(tool.old_id) + "' failed; "
             fail_message += "no global default destination specified in config!"
 
-    # if config is not None
+    # if fail_message is not None
+    # elif config is not None
     else:
         destination = "fail"
         fail_message = "No config file supplied!"
@@ -1504,7 +1535,7 @@ def map_tool_to_destination(
     if config is not None:
         if destination == "fail":
             output = "An error occurred: " + fail_message
-
+            log.debug(output)
         else:
             output = "Running '" + str(tool.old_id) + "' with '"
             output += destination + "'."

@@ -147,7 +147,7 @@ class TransferManager(object):
                 # restart the transfer if socket communication fails repeatedly.
                 try:
                     os.kill(tj.pid, 0)
-                except:
+                except Exception:
                     self.sa_session.refresh(tj)
                     if tj.state == tj.states.RUNNING:
                         log.error('Transfer job %s is marked as running but pid %s appears to be dead.' % (tj.id, tj.pid))

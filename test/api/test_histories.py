@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
-
 from requests import (
     get,
     post,
     put
 )
 
-from base import api
-
-from base.populators import DatasetPopulator, DatasetCollectionPopulator, wait_on
+from base import api  # noqa: I100,I202
+from base.populators import (  # noqa: I100
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+    wait_on
+)
 
 
 class HistoriesApiTestCase(api.ApiTestCase):

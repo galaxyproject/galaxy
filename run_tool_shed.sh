@@ -32,11 +32,10 @@ if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
         TOOL_SHED_CONFIG_FILE=config/tool_shed.ini
     elif [ -f config/tool_shed.yml ]; then
         TOOL_SHED_CONFIG_FILE=config/tool_shed.yml
-    else
-        TOOL_SHED_CONFIG_FILE=config/tool_shed.yml.sample
     fi
     export TOOL_SHED_CONFIG_FILE
 fi
 
-find_server $TOOL_SHED_CONFIG_FILE
-$run_server $server_args
+find_server ${TOOL_SHED_CONFIG_FILE:-none} tool_shed
+echo "executing: $run_server $server_args"
+eval $run_server $server_args

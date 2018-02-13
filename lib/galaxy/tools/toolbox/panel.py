@@ -5,7 +5,6 @@ from six import iteritems
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
-
 from .parser import ensure_tool_conf_item
 
 
@@ -50,7 +49,7 @@ class ToolSection(Dictifiable, HasPanelItems, object):
     group in the user interface.
     """
 
-    dict_collection_visible_keys = ('id', 'name', 'version')
+    dict_collection_visible_keys = ['id', 'name', 'version']
 
     def __init__(self, item=None):
         """ Build a ToolSection from an ElementTree element or a dictionary.
@@ -95,7 +94,7 @@ class ToolSectionLabel(Dictifiable, object):
     and sections in the user interface
     """
 
-    dict_collection_visible_keys = ('id', 'text', 'version')
+    dict_collection_visible_keys = ['id', 'text', 'version']
 
     def __init__(self, item):
         """ Build a ToolSectionLabel from an ElementTree element or a

@@ -3,7 +3,6 @@ import os.path
 import shutil
 import tempfile
 import unittest
-
 from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source
@@ -245,7 +244,8 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
-        assert len(regexes) == 2, regexes
+        # error:, exception: various memory exception...
+        assert len(regexes) > 2, regexes
 
     def test_sanitize_option(self):
         assert self._tool_source.parse_sanitize() is True

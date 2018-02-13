@@ -13,8 +13,7 @@ from galaxy.model import (
 )
 from galaxy.tools import evaluation
 from galaxy.util.bunch import Bunch
-
-from tools_support import UsesApp
+from ..tools_support import UsesApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"

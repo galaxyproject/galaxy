@@ -18,9 +18,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css(
-        "trackster"
-    )}
+    ${h.css("trackster")}
 
     ## Style changes needed for display.
     <style type="text/css">
@@ -53,56 +51,44 @@
     <div id="${trans.security.encode_id( visualization.id )}" class="unified-panel-body" style="overflow:none;top:0px;"></div>
 
     <script type="text/javascript">
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts') }",
-            shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone": { exports: "Backbone" },
-            },
-            urlArgs: 'v=${app.server_starttime}'
-        });
-        require( ["viz/trackster"], function(trackster) {
+        // FIXME: deliberate global required for now due to requireJS integration.
+        view = null;
 
-            // FIXME: deliberate global required for now due to requireJS integration.
-            view = null;
+        var ui = new (window.bundleEntries.Trackster.TracksterUI)( "${h.url_for('/')}" );
+        var container_element = $("#${trans.security.encode_id( visualization.id )}");
 
-            var ui = new (trackster.TracksterUI)( "${h.url_for('/')}" )
-                container_element = $("#${trans.security.encode_id( visualization.id )}");
+        $(function() {
+            var is_embedded = (container_element.parents(".item-content").length > 0);
 
-            $(function() {
-                var is_embedded = (container_element.parents(".item-content").length > 0);
+            // HTML setup.
+            if (is_embedded) {
+                container_element.css( { "position": "relative" } );
+            } else { // Viewing just one shared viz
+                $("#right-border").click(function() { view.resize_window(); });
+            }
 
-                // HTML setup.
-                if (is_embedded) {
-                    container_element.css( { "position": "relative" } );
-                } else { // Viewing just one shared viz
-                    $("#right-border").click(function() { view.resize_window(); });
-                }
+            // Create visualization.
+            var callback;
+            %if 'viewport' in config:
+                var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
+            %endif
+            view = ui.create_visualization( {
+                                            container: container_element,
+                                            name: "${config.get('title') | h}",
+                                            vis_id: "${config.get('vis_id')}",
+                                            dbkey: "${config.get('dbkey')}"
+                                         },
+                                         ${ h.dumps( config.get( 'viewport', dict() ) ) },
+                                         ${ h.dumps( config['tracks'] ) },
+                                         ${ h.dumps( config.get('bookmarks') ) }
+                                         );
 
-                // Create visualization.
-                var callback;
-                %if 'viewport' in config:
-                    var callback = function() { view.change_chrom( '${config['viewport']['chrom']}', ${config['viewport']['start']}, ${config['viewport']['end']} ); }
-                %endif
-                view = ui.create_visualization( {
-                                                container: container_element,
-                                                name: "${config.get('title') | h}",
-                                                vis_id: "${config.get('vis_id')}",
-                                                dbkey: "${config.get('dbkey')}"
-                                             },
-                                             ${ h.dumps( config.get( 'viewport', dict() ) ) },
-                                             ${ h.dumps( config['tracks'] ) },
-                                             ${ h.dumps( config.get('bookmarks') ) }
-                                             );
+            // Set up keyboard navigation.
+            ui.init_keyboard_nav(view);
 
-                // Set up keyboard navigation.
-                ui.init_keyboard_nav(view);
-
-                // HACK: set viewport height because it cannot be set automatically. Currently, max height for embedded
-                // elts is 25em, so use 20em.
-                view.viewport_container.height("20em");
-            });
-
+            // HACK: set viewport height because it cannot be set automatically. Currently, max height for embedded
+            // elts is 25em, so use 20em.
+            view.viewport_container.height("20em");
         });
 
     </script>

@@ -7,11 +7,11 @@ Used by both the API and bootstrapped data.
 # TODO: this is a bit of an odd duck. It uses the serializer structure from managers
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
-
-from galaxy.web.framework.base import server_starttime
-from galaxy.managers import base
-
 import logging
+
+from galaxy.managers import base
+from galaxy.web.framework.base import server_starttime
+
 log = logging.getLogger(__name__)
 
 

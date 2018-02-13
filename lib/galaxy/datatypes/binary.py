@@ -16,15 +16,15 @@ from json import dumps
 
 import h5py
 import pysam
+import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
-from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite, which
+from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
-
 
 log = logging.getLogger(__name__)
 
@@ -34,36 +34,16 @@ log = logging.getLogger(__name__)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
-    sniffable_binary_formats = []
-    unsniffable_binary_formats = []
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
-        Binary.sniffable_binary_formats.append({"type": data_type, "ext": ext.lower(), "class": type_class})
+        """Deprecated method."""
+        pass
 
     @staticmethod
     def register_unsniffable_binary_ext(ext):
-        Binary.unsniffable_binary_formats.append(ext.lower())
-
-    @staticmethod
-    def is_sniffable_binary(filename):
-        format_information = None
-        for format in Binary.sniffable_binary_formats:
-            format_instance = format["class"]()
-            try:
-                if format_instance.sniff(filename):
-                    format_information = (format["type"], format["ext"])
-                    break
-            except Exception:
-                # Sniffer raised exception, could be any number of
-                # reasons for this so there is not much to do besides
-                # trying next sniffer.
-                pass
-        return format_information
-
-    @staticmethod
-    def is_ext_unsniffable(ext):
-        return ext in Binary.unsniffable_binary_formats
+        """Deprecated method."""
+        pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -106,11 +86,8 @@ class Ab1(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary ab1 sequence file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("ab1")
 
 
 class Idat(Binary):
@@ -125,11 +102,8 @@ class Idat(Binary):
             if header == b'IDAT':
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("idat", "idat", Idat)
 
 
 class Cel(Binary):
@@ -157,11 +131,8 @@ class Cel(Binary):
             if header == b';\x01\x00\x00':
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("cel", "cel", Cel)
 
 
 class CompressedArchive(Binary):
@@ -183,11 +154,8 @@ class CompressedArchive(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("compressed_archive")
 
 
 class CompressedZipArchive(CompressedArchive):
@@ -208,11 +176,8 @@ class CompressedZipArchive(CompressedArchive):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Compressed zip file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("zip")
 
 
 class GenericAsn1Binary(Binary):
@@ -220,9 +185,6 @@ class GenericAsn1Binary(Binary):
     file_ext = "asn1-binary"
     edam_format = "format_1966"
     edam_data = "data_0849"
-
-
-Binary.register_unsniffable_binary_ext("asn1-binary")
 
 
 @dataproviders.decorators.has_dataproviders
@@ -245,187 +207,86 @@ class Bam(Binary):
     MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
     MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
 
-    def _get_samtools_version(self):
-        version = '0.0.0'
-        samtools_exec = which('samtools')
-        if not samtools_exec:
-            message = 'Attempting to use functionality requiring samtools, but it cannot be located on Galaxy\'s PATH.'
-            raise Exception(message)
-
-        p = subprocess.Popen(['samtools', '--version-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = p.communicate()
-        # --version-only is available
-        # Format is <version x.y.z>+htslib-<a.b.c>
-        if p.returncode == 0:
-            version = output.split('+')[0]
-            return version
-
-        output = subprocess.Popen(['samtools'], stderr=subprocess.PIPE, stdout=subprocess.PIPE).communicate()[1]
-        lines = output.split('\n')
-        for line in lines:
-            if line.lower().startswith('version'):
-                # Assuming line looks something like: version: 0.1.12a (r862)
-                version = line.split()[1]
-                break
-        return version
-
     @staticmethod
     def merge(split_files, output_file):
+        """
+        Merges BAM files
 
-        tmp_dir = tempfile.mkdtemp()
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_merge_stderr").name
-        command = ["samtools", "merge", "-f", output_file] + split_files
-        proc = subprocess.Popen(args=command, stderr=open(stderr_name, 'wb'))
-        exit_code = proc.wait()
-        # Did merge succeed?
-        stderr = open(stderr_name).read().strip()
-        if stderr:
-            if exit_code != 0:
-                shutil.rmtree(tmp_dir)  # clean up
-                raise Exception("Error merging BAM files: %s" % stderr)
-            else:
-                print(stderr)
-        os.unlink(stderr_name)
-        os.rmdir(tmp_dir)
-
-    def _is_coordinate_sorted(self, file_name):
-        """See if the input BAM file is sorted from the header information."""
-        output = subprocess.check_output(["samtools", "view", "-H", file_name])
-        return 'SO:coordinate' in output or 'SO:sorted' in output
+        :param split_files: List of bam file paths to merge
+        :param output_file: Write merged bam file to this location
+        """
+        pysam.merge('-O', 'BAM', output_file, *split_files)
 
     def dataset_content_needs_grooming(self, file_name):
-        """See if file_name is a sorted BAM file"""
-        version = self._get_samtools_version()
-        if version < '0.1.13':
-            return not self._is_coordinate_sorted(file_name)
-        else:
-            # Samtools version 0.1.13 or newer produces an error condition when attempting to index an
-            # unsorted bam file - see http://biostar.stackexchange.com/questions/5273/is-my-bam-file-sorted.
-            # So when using a newer version of samtools, we'll first check if the input BAM file is sorted
-            # from the header information.  If the header is present and sorted, we do nothing by returning False.
-            # If it's present and unsorted or if it's missing, we'll index the bam file to see if it produces the
-            # error.  If it does, sorting is needed so we return True (otherwise False).
-            #
-            # TODO: we're creating an index file here and throwing it away.  We then create it again when
-            # the set_meta() method below is called later in the job process.  We need to enhance this overall
-            # process so we don't create an index twice.  In order to make it worth the time to implement the
-            # upload tool / framework to allow setting metadata from directly within the tool itself, it should be
-            # done generically so that all tools will have the ability.  In testing, a 6.6 gb BAM file took 128
-            # seconds to index with samtools, and 45 minutes to sort, so indexing is relatively inexpensive.
-            if self._is_coordinate_sorted(file_name):
-                return False
-            index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
-            stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
-            proc = subprocess.Popen(['samtools', 'index', file_name, index_name], stderr=open(stderr_name, 'wb'))
-            proc.wait()
-            stderr = open(stderr_name).read().strip()
-            if stderr:
-                try:
-                    os.unlink(index_name)
-                except OSError:
-                    pass
-                try:
-                    os.unlink(stderr_name)
-                except OSError:
-                    pass
-                # Return True if unsorted error condition is found (find returns -1 if string is not found).
-                return stderr.find("[bam_index_core] the alignment is not sorted") != -1
-            try:
-                os.unlink(index_name)
-            except OSError:
-                pass
-            try:
-                os.unlink(stderr_name)
-            except OSError:
-                pass
-            return False
+        """
+        Check if file_name is a coordinate-sorted BAM file
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
+        try:
+            # If pysam fails to index a file it will write to stderr,
+            # and this causes the set_meta script to fail. So instead
+            # we start another process and discard stderr.
+            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            with open(os.devnull, 'w') as devnull:
+                subprocess.check_call(cmd, stderr=devnull, shell=False)
+            needs_sorting = False
+        except subprocess.CalledProcessError:
+            needs_sorting = True
+        try:
+            os.unlink(index_name)
+        except Exception:
+            pass
+        return needs_sorting
 
     def groom_dataset_content(self, file_name):
         """
-        Ensures that the Bam file contents are sorted.  This function is called
+        Ensures that the BAM file contents are sorted.  This function is called
         on an output dataset after the content is initially generated.
         """
-        # Use samtools to sort the Bam file
-        # $ samtools sort
-        # Usage: samtools sort [-on] [-m <maxMem>] <in.bam> <out.prefix>
-        # Sort alignments by leftmost coordinates. File <out.prefix>.bam will be created.
-        # This command may also create temporary files <out.prefix>.%d.bam when the
-        # whole alignment cannot be fitted into memory ( controlled by option -m ).
+        # Use pysam to sort the BAM file
+        # This command may also creates temporary files <out.prefix>.%d.bam when the
+        # whole alignment cannot fit into memory.
         # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
         if not self.dataset_content_needs_grooming(file_name):
             # Don't re-sort if already sorted
             return
         tmp_dir = tempfile.mkdtemp()
         tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        stderr_name = tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="bam_sort_stderr").name
-        samtools_created_sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix  # samtools accepts a prefix, not a filename, it always adds .bam to the prefix
-        proc = subprocess.Popen(['samtools', 'sort', file_name, tmp_sorted_dataset_file_name_prefix],
-                                cwd=tmp_dir, stderr=open(stderr_name, 'wb'))
-        exit_code = proc.wait()
-        # Did sort succeed?
-        stderr = open(stderr_name).read().strip()
-        if stderr:
-            if exit_code != 0:
-                shutil.rmtree(tmp_dir)  # clean up
-                raise Exception("Error Grooming BAM file contents: %s" % stderr)
-            else:
-                print(stderr)
+        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
+        slots = os.environ.get('GALAXY_SLOTS', 1)
+        try:
+            pysam.sort("-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
+        except Exception:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            raise
         # Move samtools_created_sorted_file_name to our output dataset location
-        shutil.move(samtools_created_sorted_file_name, file_name)
+        shutil.move(sorted_file_name, file_name)
         # Remove temp file and empty temporary directory
-        os.unlink(stderr_name)
         os.rmdir(tmp_dir)
 
     def init_meta(self, dataset, copy_from=None):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        """ Creates the index for the BAM file. """
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bam_index
         if not index_file:
             index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
-        # Create the Bam index
-        # $ samtools index
-        # Usage: samtools index <in.bam> [<out.index>]
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bam_index_stderr").name
-        command = ['samtools', 'index', dataset.file_name, index_file.file_name]
-        exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
-        # Did index succeed?
-        if exit_code == -6:
-            # SIGABRT, most likely samtools 1.0+ which does not accept the index name parameter.
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                           '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
-            os.symlink(dataset.file_name, dataset_symlink)
-            try:
-                command = ['samtools', 'index', dataset_symlink]
-                exit_code = subprocess.call(args=command, stderr=open(stderr_name, 'wb'))
-                shutil.move(dataset_symlink + '.bai', index_file.file_name)
-            except Exception as e:
-                open(stderr_name, 'ab+').write('Galaxy attempted to build the BAM index with samtools 1.0+ but failed: %s\n' % e)
-                exit_code = 1  # Make sure an exception raised by shutil.move() is re-raised below
-            finally:
-                os.unlink(dataset_symlink)
-        stderr = open(stderr_name).read().strip()
-        if stderr:
-            if exit_code != 0:
-                os.unlink(stderr_name)  # clean up
-                raise Exception("Error Setting BAM Metadata: %s" % stderr)
-            else:
-                print(stderr)
+        pysam.index(dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
-        # Remove temp file
-        os.unlink(stderr_name)
         # Now use pysam with BAI index to determine additional metadata
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
             dataset.metadata.bam_header = bam_file.header
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
-        except:
+            dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
+        except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
             pass
@@ -438,7 +299,7 @@ class Bam(Binary):
             if header == b'BAM\1':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -452,7 +313,7 @@ class Bam(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
 
     def to_archive(self, trans, dataset, name=""):
@@ -466,27 +327,35 @@ class Bam(Binary):
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
         index_file = dataset.metadata.bam_index
-        with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
-            ck_size = 300  # 300 lines
-            ck_data = ""
-            header_line_count = 0
-            if offset == 0:
-                ck_data = bamfile.text.replace('\t', ' ')
-                header_line_count = bamfile.text.count('\n')
-            else:
-                bamfile.seek(offset)
-            for line_number, alignment in enumerate(bamfile) :
-                # return only Header lines if 'header_line_count' exceeds 'ck_size'
-                # FIXME: Can be problematic if bam has million lines of header
-                offset = bamfile.tell()
-                if (line_number + header_line_count) > ck_size:
-                    break
-                else:
-                    bamline = alignment.tostring(bamfile)
-                    # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                    # Below code will remove spaces between each tag.
-                    bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
-                    ck_data = "%s\n%s" % (ck_data, bamline_modified)
+        if not offset == -1:
+            try:
+                with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
+                    ck_size = 300  # 300 lines
+                    ck_data = ""
+                    header_line_count = 0
+                    if offset == 0:
+                        ck_data = bamfile.text.replace('\t', ' ')
+                        header_line_count = bamfile.text.count('\n')
+                    else:
+                        bamfile.seek(offset)
+                    for line_number, alignment in enumerate(bamfile) :
+                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
+                        # FIXME: Can be problematic if bam has million lines of header
+                        offset = bamfile.tell()
+                        if (line_number + header_line_count) > ck_size:
+                            break
+                        else:
+                            bamline = alignment.tostring(bamfile)
+                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
+                            # Below code will remove spaces between each tag.
+                            bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
+                            ck_data = "%s\n%s" % (ck_data, bamline_modified)
+            except Exception as e:
+                offset = -1
+                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+        else:
+            ck_data = ''
+            offset = -1
         return dumps({'ck_data': util.unicodify(ck_data),
                       'offset': offset})
 
@@ -596,9 +465,6 @@ class Bam(Binary):
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
 
 
-Binary.register_sniffable_binary_format("bam", "bam", Bam)
-
-
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
@@ -628,24 +494,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset, index_file):
         try:
-            # @todo when pysam 1.2.1 or pysam 1.3.0 gets released and becomes
-            # a dependency of galaxy, use pysam.index(alignment, target_idx)
-            # This currently gives coredump in the current release but is
-            # fixed in the dev branch:
-            # xref: https://github.com/samtools/samtools/issues/199
-
-            dataset_symlink = os.path.join(os.path.dirname(index_file.file_name), '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
-            os.symlink(dataset.file_name, dataset_symlink)
-            pysam.index(dataset_symlink)
-
-            tmp_index = dataset_symlink + ".crai"
-            if os.path.isfile(tmp_index):
-                shutil.move(tmp_index, index_file.file_name)
-                return index_file.file_name
-            else:
-                os.unlink(dataset_symlink)
-                log.warning('%s, expected crai index not created for: %s', self, dataset.file_name)
-                return False
+            pysam.index(dataset.file_name, index_file.file_name)
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
             return False
@@ -664,31 +513,21 @@ class CRAM(Binary):
             if header == b"CRAM":
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format('cram', 'cram', CRAM)
 
 
 class BaseBcf(Binary):
     edam_format = "format_3020"
     edam_data = "data_3498"
-    file_ext = "bcf"
 
 
 class Bcf(BaseBcf):
     """
     Class describing a (BGZF-compressed) BCF file
 
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('1.bcf')
-    >>> Bcf().sniff(fname)
-    True
-    >>> fname = get_test_fname('1.bcf_uncompressed')
-    >>> Bcf().sniff(fname)
-    False
     """
+    file_ext = "bcf"
 
     MetadataElement(name="bcf_index", desc="BCF Index File", param=metadata.FileParameter, file_ext="csi", readonly=True, no_value=None, visible=False, optional=True)
 
@@ -700,7 +539,7 @@ class Bcf(BaseBcf):
             if header == b'BCF':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
@@ -710,29 +549,18 @@ class Bcf(BaseBcf):
         if not index_file:
             index_file = dataset.metadata.spec['bcf_index'].param.new_file(dataset=dataset)
         # Create the bcf index
-        # $ bcftools index
-        # Usage: bcftools index <in.bcf>
-
         dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
-
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
-        command = ['bcftools', 'index', dataset_symlink]
         try:
-            subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.csi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            pysam.bcftools.index(dataset_symlink)
+            shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
-            stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
+            raise Exception('Error setting BCF metadata: %s' % (str(e)))
         finally:
             # Remove temp file and symlink
-            os.remove(stderr_name)
             os.remove(dataset_symlink)
         dataset.metadata.bcf_index = index_file
-
-
-Binary.register_sniffable_binary_format("bcf", "bcf", Bcf)
 
 
 class BcfUncompressed(Bcf):
@@ -756,11 +584,8 @@ class BcfUncompressed(Bcf):
             if header == b'BCF':
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("bcf_uncompressed", "bcf_uncompressed", BcfUncompressed)
 
 
 class H5(Binary):
@@ -789,7 +614,7 @@ class H5(Binary):
             if header == self._magic:
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -803,7 +628,7 @@ class H5(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -886,12 +711,61 @@ class Biom2(H5):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Biom2 (HDF5) file (%s)" % (nice_size(dataset.get_size()))
 
 
-Binary.register_sniffable_binary_format("biom2", "biom2", Biom2)
-Binary.register_sniffable_binary_format("h5", "h5", H5)
+class Cool(H5):
+    """
+    Class describing the cool format (https://github.com/mirnylab/cooler)
+    """
+
+    file_ext = "cool"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'matrix.cool' )
+        >>> Cool().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'test.mz5' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'wiggle.wig' )
+        >>> Cool().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
+        >>> Cool().sniff( fname )
+        False
+        """
+
+        MAGIC = "HDF5::Cooler"
+        URL = "https://github.com/mirnylab/cooler"
+
+        if super(Cool, self).sniff(filename):
+            keys = ['chroms', 'bins', 'pixels', 'indexes']
+            with h5py.File(filename, 'r') as handle:
+                fmt = handle.attrs.get('format', None)
+                url = handle.attrs.get('format-url', None)
+                if fmt == MAGIC or url == URL:
+                    if not all(name in handle.keys() for name in keys):
+                        return False
+                    return True
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Cool (HDF5) file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
 class Scf(Binary):
@@ -911,11 +785,8 @@ class Scf(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary scf sequence file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_unsniffable_binary_ext("scf")
 
 
 class Sff(Binary):
@@ -932,7 +803,7 @@ class Sff(Binary):
             if header == b'.sff':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -946,11 +817,8 @@ class Sff(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary sff file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("sff", "sff", Sff)
 
 
 class BigWig(Binary):
@@ -961,6 +829,7 @@ class BigWig(Binary):
     """
     edam_format = "format_3006"
     edam_data = "data_3002"
+    file_ext = "bigwig"
     track_type = "LineTrack"
     data_sources = {"data_standalone": "bigwig"}
 
@@ -976,7 +845,7 @@ class BigWig(Binary):
         try:
             magic = self._unpack("I", open(filename, 'rb'))
             return magic[0] == self._magic
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -990,26 +859,21 @@ class BigWig(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary UCSC %s file (%s)" % (self._name, nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""
     edam_format = "format_3004"
     edam_data = "data_3002"
+    file_ext = "bigbed"
     data_sources = {"data_standalone": "bigbed"}
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-
-
-Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
 
 class TwoBit(Binary):
@@ -1035,16 +899,13 @@ class TwoBit(Binary):
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            return super(TwoBit, self).set_peek(dataset, is_multi_byte)
+            return super(TwoBit, self).set_peek(dataset)
 
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary TwoBit format nucleotide file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("twobit", "twobit", TwoBit)
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1097,7 +958,7 @@ class SQlite(Binary):
             if header == b'SQLite format 3\0':
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1108,7 +969,7 @@ class SQlite(Binary):
                 for table in dataset.metadata.tables:
                     try:
                         lines.append('%s [%s]' % (table, dataset.metadata.table_row_count[table]))
-                    except:
+                    except Exception:
                         continue
             dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
@@ -1119,7 +980,7 @@ class SQlite(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "SQLite Database (%s)" % (nice_size(dataset.get_size()))
 
     @dataproviders.decorators.dataprovider_factory('sqlite', dataproviders.dataset.SQliteDataProvider.settings)
@@ -1136,9 +997,6 @@ class SQlite(Binary):
     def sqlite_datadictprovider(self, dataset, **settings):
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.dataset.SQliteDataDictProvider(dataset_source, **settings)
-
-
-# Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
 
 class GeminiSQLite(SQlite):
@@ -1191,7 +1049,7 @@ class GeminiSQLite(SQlite):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
 
@@ -1265,16 +1123,8 @@ class IdpDB(SQlite):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("gemini.sqlite", "gemini.sqlite", GeminiSQLite)
-Binary.register_sniffable_binary_format("idpdb", "idpdb", IdpDB)
-Binary.register_sniffable_binary_format("mz.sqlite", "mz.sqlite", MzSQlite)
-# FIXME: We need to register specialized sqlite formats before sqlite, since register_sniffable_binary_format and is_sniffable_binary called in upload.py
-# ignores sniff order declared in datatypes_conf.xml
-Binary.register_sniffable_binary_format("sqlite", "sqlite", SQlite)
 
 
 class Xlsx(Binary):
@@ -1289,11 +1139,8 @@ class Xlsx(Binary):
                 if "[Content_Types].xml" in tempzip.namelist() and tempzip.read("[Content_Types].xml").find(b'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml') != -1:
                     return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("xlsx", "xlsx", Xlsx)
 
 
 class ExcelXls(Binary):
@@ -1320,11 +1167,8 @@ class ExcelXls(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Microsoft Excel XLS file (%s)" % (data.nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format("excel.xls", "excel.xls", ExcelXls)
 
 
 class Sra(Binary):
@@ -1341,7 +1185,7 @@ class Sra(Binary):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -1355,11 +1199,8 @@ class Sra(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return 'Binary sra file (%s)' % (nice_size(dataset.get_size()))
-
-
-Binary.register_sniffable_binary_format('sra', 'sra', Sra)
 
 
 class RData(Binary):
@@ -1376,11 +1217,8 @@ class RData(Binary):
             header = gzip.open(filename).read(7)
             if header == rdata_header:
                 return True
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format('RData', 'RData', RData)
 
 
 class OxliBinary(Binary):
@@ -1419,13 +1257,10 @@ class OxliCountGraph(OxliBinary):
     >>> OxliCountGraph().sniff( fname )
     True
     """
+    file_ext = 'oxlicg'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"01")
-
-
-Binary.register_sniffable_binary_format("oxli.countgraph", "oxlicg",
-                                        OxliCountGraph)
 
 
 class OxliNodeGraph(OxliBinary):
@@ -1447,13 +1282,10 @@ class OxliNodeGraph(OxliBinary):
     >>> OxliNodeGraph().sniff( fname )
     True
     """
+    file_ext = 'oxling'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"02")
-
-
-Binary.register_sniffable_binary_format("oxli.nodegraph", "oxling",
-                                        OxliNodeGraph)
 
 
 class OxliTagSet(OxliBinary):
@@ -1476,12 +1308,10 @@ class OxliTagSet(OxliBinary):
     >>> OxliTagSet().sniff( fname )
     True
     """
+    file_ext = 'oxlits'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"03")
-
-
-Binary.register_sniffable_binary_format("oxli.tagset", "oxlits", OxliTagSet)
 
 
 class OxliStopTags(OxliBinary):
@@ -1499,13 +1329,10 @@ class OxliStopTags(OxliBinary):
     >>> OxliStopTags().sniff( fname )
     True
     """
+    file_ext = 'oxlist'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"04")
-
-
-Binary.register_sniffable_binary_format("oxli.stoptags", "oxlist",
-                                        OxliStopTags)
 
 
 class OxliSubset(OxliBinary):
@@ -1528,12 +1355,10 @@ class OxliSubset(OxliBinary):
     >>> OxliSubset().sniff( fname )
     True
     """
+    file_ext = 'oxliss'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"05")
-
-
-Binary.register_sniffable_binary_format("oxli.subset", "oxliss", OxliSubset)
 
 
 class OxliGraphLabels(OxliBinary):
@@ -1557,13 +1382,60 @@ class OxliGraphLabels(OxliBinary):
     >>> OxliGraphLabels().sniff( fname )
     True
     """
+    file_ext = 'oxligl'
 
     def sniff(self, filename):
         return OxliBinary._sniff(filename, b"06")
 
 
-Binary.register_sniffable_binary_format("oxli.graphlabels", "oxligl",
-                                        OxliGraphLabels)
+class PostgresqlArchive(CompressedArchive):
+    """
+    Class describing a Postgresql database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
+    >>> PostgresqlArchive().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.fast5.tar' )
+    >>> PostgresqlArchive().sniff( fname )
+    False
+    """
+    MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
+                    readonly=True, visible=True, no_value=None)
+    file_ext = "postgresql"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(PostgresqlArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, 'r') as temptar:
+                    pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
+                    dataset.metadata.version = pg_version_file.read().strip()
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if filename and tarfile.is_tarfile(filename):
+            try:
+                with tarfile.open(filename, 'r') as temptar:
+                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or 'unknown')
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "PostgreSQL Archive (%s)" % (nice_size(dataset.get_size()))
 
 
 class Fast5Archive(CompressedArchive):
@@ -1616,7 +1488,7 @@ class Fast5Archive(CompressedArchive):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "FAST5 Archive (%s)" % (nice_size(dataset.get_size()))
 
 
@@ -1666,11 +1538,6 @@ class Fast5ArchiveBz2(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
-Binary.register_sniffable_binary_format("fast5_archive_bz2", "fast5.tar.bz2", Fast5ArchiveBz2)
-Binary.register_sniffable_binary_format("fast5_archive_gz", "fast5.tar.gz", Fast5ArchiveGz)
-Binary.register_sniffable_binary_format("fast5_archive", "fast5.tar", Fast5Archive)
-
-
 class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive """
     MetadataElement(name="searchgui_version", default='1.28.0', param=MetadataParameter, desc="SearchGui Version",
@@ -1718,11 +1585,8 @@ class SearchGuiArchive(CompressedArchive):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
-
-
-Binary.register_sniffable_binary_format("searchgui_archive", "searchgui_archive", SearchGuiArchive)
 
 
 class NetCDF(Binary):
@@ -1742,7 +1606,7 @@ class NetCDF(Binary):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Binary netCDF file (%s)" % (nice_size(dataset.get_size()))
 
     def sniff(self, filename):
@@ -1752,11 +1616,8 @@ class NetCDF(Binary):
             if header == b'CDF':
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("netcdf", "netcdf", NetCDF)
 
 
 class DMND(Binary):
@@ -1785,11 +1646,8 @@ class DMND(Binary):
             if header == self._magic:
                 return True
             return False
-        except:
+        except Exception:
             return False
-
-
-Binary.register_sniffable_binary_format("dmnd", "dmnd", DMND)
 
 
 class ICM(Binary):
@@ -1813,9 +1671,6 @@ class ICM(Binary):
             return True
 
         return False
-
-
-Binary.register_sniffable_binary_format("icm", "icm", ICM)
 
 
 if __name__ == '__main__':

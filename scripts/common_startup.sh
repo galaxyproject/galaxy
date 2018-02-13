@@ -18,6 +18,7 @@ FETCH_WHEELS=1
 CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
+SKIP_CLIENT_BUILD=0
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -28,6 +29,7 @@ for arg in "$@"; do
     [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
+    [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
 
 SAMPLES="
@@ -60,6 +62,32 @@ fi
 for rmfile in $RMFILES; do
     [ -f "$rmfile" ] && rm -f "$rmfile"
 done
+
+# Check client build state.
+if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+    gitbranch=$(git rev-parse --abbrev-ref HEAD)
+    if [ "$gitbranch" = "dev" ]; then
+        # We're on dev.  This branch (only, currently) doesn't have build
+        # artifacts.  We should probabably swap to a list of releases?
+        # Compare hash.
+        if [ -f static/client_build_hash.txt ]; then
+            githash=$(git rev-parse HEAD)
+            statichash=$(cat static/client_build_hash.txt)
+            if [ "$githash" = "$statichash" ]; then
+                SKIP_CLIENT_BUILD=1
+            fi
+        fi
+    else
+        # Not on dev.  We're not going to bug people about building.
+        SKIP_CLIENT_BUILD=1
+    fi
+    if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+        echo "The Galaxy client build is out of date.  Please run 'make client' or your choice of client build target (client-*)."
+        echo "If you're sure you'd like to skip this check, you can run galaxy with the --skip-client-build flag, though this is not recommended as the client and server code will potentially be out of sync."
+        echo "See ./client/README.md in the Galaxy repository for more information, including how to get help if you're having trouble."
+        exit 1
+    fi
+fi
 
 : ${GALAXY_CONFIG_FILE:=config/galaxy.ini}
 if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
@@ -135,17 +163,18 @@ fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
+: ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
     pip install 'pip>=8.1'
 fi
 
-if [ $FETCH_WHEELS -eq 1 ]; then
-    pip install -r requirements.txt --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
-    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))")
-    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+requirement_args="-r requirements.txt"
+if [ $DEV_WHEELS -eq 1 ]; then
+    requirement_args="$requirement_args -r ${GALAXY_DEV_REQUIREMENTS}"
 fi
 
-if [ $FETCH_WHEELS -eq 1 -a $DEV_WHEELS -eq 1 ]; then
-    dev_requirements='./lib/galaxy/dependencies/dev-requirements.txt'
-    [ -f $dev_requirements ] && pip install -r $dev_requirements --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+if [ $FETCH_WHEELS -eq 1 ]; then
+    pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
+    GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "import galaxy.dependencies; print '\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE'))")
+    [ -z "$GALAXY_CONDITIONAL_DEPENDENCIES" ] || echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
 fi
