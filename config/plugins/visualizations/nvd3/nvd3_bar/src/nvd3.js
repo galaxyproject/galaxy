@@ -1,11 +1,13 @@
 /** This is the common wrapper for nvd3 based visualizations. */
 import * as d3 from "d3";
 import * as nv from "nvd3";
-import * as $ from "jquery";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 
 import "../node_modules/nvd3/build/nv.d3.css";
+
+// TODO Disentangle jquery in the future
+/* global $ */
 
 var Series = window.bundleEntries.chartUtilities.Series;
 var Datasets = window.bundleEntries.chartUtilities.Datasets;
