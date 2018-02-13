@@ -71,10 +71,7 @@ QUnit.test("thumbnails", function(assert) {
             $(thumb.$(".ui-thumbnails-image")[options.index]).attr("src") == options.image_src,
             "Correct image source"
         );
-        assert.ok(
-            $(thumb.$(".ui-thumbnails-title")[options.index]).html() == options.title,
-            "Correct title with icon"
-        );
+        assert.ok($(thumb.$(".ui-thumbnails-title")[options.index]).html() == options.title, "Correct title with icon");
         assert.ok(
             $(thumb.$(".ui-thumbnails-description-text")[options.index]).html() == options.description,
             "Correct description"

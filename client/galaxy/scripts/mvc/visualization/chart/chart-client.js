@@ -10,10 +10,13 @@ import Menu from "mvc/visualization/chart/views/menu";
 export default Backbone.View.extend({
     initialize: function(options) {
         this.modal = (window.parent.Galaxy && window.parent.Galaxy.modal) || new Modal.View();
-        this.setElement($("<div/>").addClass("charts-client")
-                                   .append($("<div/>").addClass("charts-buttons"))
-                                   .append($("<div/>").addClass("charts-center"))
-                                   .append($("<div/>").addClass("charts-right")));
+        this.setElement(
+            $("<div/>")
+                .addClass("charts-client")
+                .append($("<div/>").addClass("charts-buttons"))
+                .append($("<div/>").addClass("charts-center"))
+                .append($("<div/>").addClass("charts-right"))
+        );
         this.$center = this.$(".charts-center");
         this.$right = this.$(".charts-right");
         this.$buttons = this.$(".charts-buttons");
@@ -27,18 +30,19 @@ export default Backbone.View.extend({
         this.editor = new Editor(this);
         this.menu = new Menu(this);
         this.$center.append(this.viewer.$el);
-        this.$right.append(this.message.$el)
-                   .append(this.editor.$el);
+        this.$right.append(this.message.$el).append(this.editor.$el);
         this.$buttons.append(this.menu.$el);
         $.ajax({
             url: `${Galaxy.root}api/datasets/${options.dataset_id}`
-        }).done(dataset => {
-            this.dataset = dataset;
-            this.chart.load();
-            this.chart.trigger("redraw");
-        }).fail(response => {
-            let message = response.responseJSON && response.responseJSON.err_msg;
-            this.errormessage = message || "Import failed for unkown reason.";
-        });
+        })
+            .done(dataset => {
+                this.dataset = dataset;
+                this.chart.load();
+                this.chart.trigger("redraw");
+            })
+            .fail(response => {
+                let message = response.responseJSON && response.responseJSON.err_msg;
+                this.errormessage = message || "Import failed for unkown reason.";
+            });
     }
 });

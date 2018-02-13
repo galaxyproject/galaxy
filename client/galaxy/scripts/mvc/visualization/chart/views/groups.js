@@ -93,10 +93,7 @@ export default Backbone.View.extend({
                 self.chart.groups.add({ id: Utils.uid() });
             }
         });
-        this.setElement(
-            $("<div/>")
-                .append(this.repeat.$el)
-        );
+        this.setElement($("<div/>").append(this.repeat.$el));
         this.listenTo(this.chart.groups, "remove", function(group) {
             self.repeat.del(group.id);
             self.chart.trigger("redraw");

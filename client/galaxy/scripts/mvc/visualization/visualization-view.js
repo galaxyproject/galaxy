@@ -32,22 +32,25 @@ var View = Backbone.View.extend({
         var dataset = this.model.get("dataset");
         this.vis_index = {};
         this.vis_array = [];
-        _.each(dataset.visualizations.sort(function(a, b) {
-            return a.html < b.html ? -1 : 1;
-        }), function(v, id) {
-            var dict = {
-                id: id,
-                name: v.name,
-                keywords: v.keywords || [],
-                title: v.html,
-                image_src: v.logo ? Galaxy.root + v.logo : null,
-                description: v.description || "No description available.",
-                regular: v.regular,
-                visualization: v
-            };
-            self.vis_index[dict.id] = dict;
-            self.vis_array.push(dict);
-        });
+        _.each(
+            dataset.visualizations.sort(function(a, b) {
+                return a.html < b.html ? -1 : 1;
+            }),
+            function(v, id) {
+                var dict = {
+                    id: id,
+                    name: v.name,
+                    keywords: v.keywords || [],
+                    title: v.html,
+                    image_src: v.logo ? Galaxy.root + v.logo : null,
+                    description: v.description || "No description available.",
+                    regular: v.regular,
+                    visualization: v
+                };
+                self.vis_index[dict.id] = dict;
+                self.vis_array.push(dict);
+            }
+        );
         this.types = new Thumbnails.View({
             title_default: "Suggested plugins",
             title_list: "List of available plugins",

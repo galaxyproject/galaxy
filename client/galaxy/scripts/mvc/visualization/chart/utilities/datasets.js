@@ -43,7 +43,7 @@ var requestPanels = function(options) {
             }
         }
     });
-}
+};
 
 /** Fills request dictionary with data from cache/response */
 var _cache = {};

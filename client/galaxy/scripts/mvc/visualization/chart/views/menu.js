@@ -6,7 +6,7 @@ import Utils from "utils/utils";
 export default Backbone.View.extend({
     initialize: function(app) {
         this.app = app;
-        this.model = new Backbone.Model({visible: true});
+        this.model = new Backbone.Model({ visible: true });
         this.export_button = new Ui.ButtonMenu({
             icon: "fa-camera",
             tooltip: "Export"
@@ -20,7 +20,7 @@ export default Backbone.View.extend({
                     Screenshot.createPNG({
                         $el: app.viewer.$el,
                         title: app.chart.get("title"),
-                        error: (err) => {
+                        error: err => {
                             app.message.update({ message: err, status: "danger" });
                         }
                     });
@@ -36,7 +36,7 @@ export default Backbone.View.extend({
                     Screenshot.createSVG({
                         $el: app.viewer.$el,
                         title: app.chart.get("title"),
-                        error: (err) => {
+                        error: err => {
                             app.message.update({ message: err, status: "danger" });
                         }
                     });
@@ -62,7 +62,7 @@ export default Backbone.View.extend({
                                 Screenshot.createPDF({
                                     $el: app.viewer.$el,
                                     title: app.chart.get("title"),
-                                    error: (err) => {
+                                    error: err => {
                                         app.message.update({ message: err, status: "danger" });
                                     }
                                 });
@@ -72,7 +72,7 @@ export default Backbone.View.extend({
                 });
             }
         });
-        this.buttons =[
+        this.buttons = [
             new Ui.ButtonIcon({
                 icon: "fa-angle-double-left",
                 tooltip: "Show",
@@ -97,8 +97,9 @@ export default Backbone.View.extend({
                 onclick: () => {
                     if (app.chart.get("title")) {
                         app.message.update({
-                            message:
-                                `Saving '${app.chart.get("title")}'. It will appear in the list of 'Saved Visualizations'.`,
+                            message: `Saving '${app.chart.get(
+                                "title"
+                            )}'. It will appear in the list of 'Saved Visualizations'.`,
                             status: "success"
                         });
                         app.chart.save({
@@ -119,7 +120,7 @@ export default Backbone.View.extend({
             })
         ];
         this.setElement("<div/>");
-        for(let b of this.buttons) {
+        for (let b of this.buttons) {
             this.$el.append(b.$el);
         }
         this.listenTo(this.model, "change", () => this.render());
@@ -128,10 +129,10 @@ export default Backbone.View.extend({
 
     render: function() {
         var visible = this.model.get("visible");
-        this.app.$el[ visible ? "removeClass" : "addClass"]("charts-fullscreen");
+        this.app.$el[visible ? "removeClass" : "addClass"]("charts-fullscreen");
         this.export_button.model.set("visible", visible);
         var exports = this.app.chart.plugin.specs.exports || [];
-        this.export_button.collection.each((model) => {
+        this.export_button.collection.each(model => {
             model.set("visible", exports.indexOf(model.get("key")) !== -1);
         });
     },

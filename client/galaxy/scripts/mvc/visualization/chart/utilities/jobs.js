@@ -36,7 +36,7 @@ var requestCharts = function(chart, module) {
             settings: settings_string
         }
     };
-}
+};
 
 /** Submit job request to charts tool */
 var request = function(chart, parameters, success, error) {
