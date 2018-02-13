@@ -11,7 +11,7 @@ mercurial==3.7.3; python_version < '3.0'
 pycrypto==2.6.1
 uWSGI==2.0.15
 # Flexible BAM index naming is new to core pysam
-pysam>=0.13
+pysam==0.14
 
 # Install python_lzo if you want to support indexed access to lzo-compressed
 # locally cached maf files via bx-python
