@@ -1369,7 +1369,7 @@ def map_tool_to_destination(
                     workflow_params = param.value
                 if param.name == "__job_resource":
                     job_params = param.value
-    
+
         # Priority coming from workflow invocation takes precedence over job specific priorities
         if workflow_params is not None:
             resource_params = json.loads(workflow_params)
@@ -1378,13 +1378,13 @@ def map_tool_to_destination(
                 # request was created.
                 if resource_params['priority'] is not None:
                     priority = resource_params['priority']
-    
+
         elif job_params is not None:
             resource_params = json.loads(job_params)
             if 'priority' in resource_params:
                 if resource_params['priority'] is not None:
                     priority = resource_params['priority']
-                    
+
         # get the user's priority
         if "users" in config:
             if user_email in config["users"]:

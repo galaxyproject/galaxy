@@ -272,7 +272,7 @@ vdictTest7_yml = {
             'med': 'waffles_default'
         }
     },
-    'default_priority':  'med',
+    'default_priority': 'med',
     'users': {
         'user@example.com': {
             'priority': 'med'
@@ -297,21 +297,21 @@ vYMLTest160 = '''
 '''
 
 vdictTest160_yml = {
-  "tools": {
-    "blah": {
-      "rules": [
-            {
-                "rule_type": "num_input_datasets",
-                "nice_value": 0,
-                "lower_bound": 0,
-                "upper_bound": "Infinity",
-                "destination": "waffles_default"
-            }
-                ],
-      "default_destination": "waffles_high"
-    }
-  },
-  'default_destination': 'waffles_low',
+    "tools": {
+        "blah": {
+            "rules": [
+                {
+                    "rule_type": "num_input_datasets",
+                    "nice_value": 0,
+                    "lower_bound": 0,
+                    "upper_bound": "Infinity",
+                    "destination": "waffles_default"
+                }
+            ],
+            "default_destination": "waffles_high"
+        }
+    },
+    'default_destination': 'waffles_low',
 }
 
 # No valid priorities but the tool doesn't require one
@@ -339,36 +339,36 @@ vYMLTest164 = '''
 '''
 
 vdictTest164_yml = {
-  "tools": {
-    "blah": {
-        "rules": [
-            {
-                "rule_type": "num_input_datasets",
-                "nice_value": 0,
-                "lower_bound": 0,
-                "upper_bound": "Infinity",
-                "destination": {
-                  "priority": {
-                    "fast": "lame_cluster"
-                  }
+    "tools": {
+        "blah": {
+            "rules": [
+                {
+                    "rule_type": "num_input_datasets",
+                    "nice_value": 0,
+                    "lower_bound": 0,
+                    "upper_bound": "Infinity",
+                    "destination": {
+                        "priority": {
+                            "fast": "lame_cluster"
+                        }
+                    }
                 }
-              }
-                  ],
-        "default_destination": {
-          "priority": {
-            "good": "cluster_med_4",
-            "fast": "waffles_high"
-          }
+            ],
+            "default_destination": {
+                "priority": {
+                    "good": "cluster_med_4",
+                    "fast": "waffles_high"
+                }
+            }
         }
-      }
     },
     'default_destination': {
-      "priority": {
-        "good": "Destination1_med",
-        "fast": "Destination1_high"
-      }
+        "priority": {
+            "good": "Destination1_med",
+            "fast": "Destination1_high"
+        }
     },
-    'default_priority':  'good'
+    'default_priority': 'good'
 }
 
 # =====================================================Invalid XML tests==========================================================

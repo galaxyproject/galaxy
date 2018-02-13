@@ -769,7 +769,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         )
 
     @log_capture()
-    def test_tool_default_destination_without_priority_not_in_job_conf(self, l):
+    def test_empty_priority_dict(self, l):
         dt.parse_yaml(path=yt.ivYMLTest163, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -813,7 +813,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         self.assertEqual(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True), yt.vdictTest160_yml)
         self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
         self.assertEqual(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True), yt.vdictTest164_yml)
-        
+
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
