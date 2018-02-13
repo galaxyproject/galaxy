@@ -572,6 +572,13 @@ class Bed(Interval):
             return False
 
 
+class ProBed(Bed):
+    """Tab delimited data in proBED format - adaptation of BED for proteomics data."""
+    edam_format = "format_3827"
+    file_ext = "probed"
+    column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts', 'ProteinAccession', 'PeptideSequence', 'Uniqueness', 'GenomeReferenceVersion', 'PsmScore', 'Fdr', 'Modifications', 'Charge', 'ExpMassToCharge', 'CalcMassToCharge', 'PsmRank', 'DatasetID', 'Uri']
+
+
 class BedStrict(Bed):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
     edam_format = "format_3584"
