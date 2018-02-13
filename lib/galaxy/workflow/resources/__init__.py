@@ -115,7 +115,6 @@ def get_workflow_parameter_list(params, user_permissions):
 
 
 def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_params):
-    # TODO: Check that this validation is still working? is there a way to call this seperately? is that even needed?
     valid = True
     try:
         if 'default' not in by_group:
@@ -138,7 +137,14 @@ def validate_by_group_workflow_parameters_mapper(by_group, workflow_resource_par
                     if 'options' not in attrib:
                         raise Exception("'workflow_resource_params_mapper' YAML file is malformed, "
                                         "'options' attribute not found in attribute of group '" + group + "'!")
-                    # TODO: add validation here for options?
+
+                    valid_options = []
+                    for param_option in workflow_resource_params[attrib['name']]:
+                        valid_options.append(param_option.attrib['value'])
+                    for option in attrib['options']:
+                        if option not in valid_options:
+                            raise Exception("'workflow_resource_params_mapper' YAML file is malformed, '" + option +
+                                            "' in 'options' of '" + attrib['name'] + "' not found in attribute of group '" + group + "'!")
                 else:
                     if attrib not in workflow_resource_params:
                         raise Exception("'workflow_resource_params_mapper' YAML file is malformed, attribute with name "
