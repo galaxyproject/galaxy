@@ -5,7 +5,7 @@ from markupsafe import escape
 from six import string_types
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import and_, false, func, null, true
-from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy.orm import eagerload, eagerload_all, undefer
 
 import galaxy.util
 from galaxy import exceptions
@@ -209,8 +209,20 @@ class HistoryAllPublishedGrid(grids.Grid):
     operations = []
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # TODO: Tags are still loaded one at a time, consider doing this all at once:
+        # - eagerload would keep everything in one query but would explode the number of rows and potentially
+        #   result in unneeded info transferred over the wire.
+        # - subqueryload("tags").subqueryload("tag") would probably be better under postgres but I'd
+        #   like some performance data against a big database first - might cause problems?
+
+        # - Pull down only username from associated User table since that is all that is used
+        #   (can be used during search). Need join in addition to the eagerload since it is used in
+        #   the .count() query which doesn't respect the eagerload options  (could eliminate this with #5523).
+        # - Undefer average_rating column to prevent loading individual ratings per-history.
+        # - Eager load annotations - this causes a left join which might be inefficient if there were
+        #   potentially many items per history (like if joining HDAs for instance) but there should only
+        #   be at most one so this is fine.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # A public history is published, has a slug, and is not deleted.
