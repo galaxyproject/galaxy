@@ -796,8 +796,8 @@ def validate_config(obj, return_bool=False):
     available_rule_types = ['file_size', 'num_input_datasets', 'records', 'arguments']
 
     if obj is not None:
-        # in obj, there should always be only 4 categories: tools, default_destination,
-        # users, and verbose
+        # in obj, there should always be only 5 categories: tools, default_destination,
+        # default_priority, users, and verbose
 
         if 'default_destination' in obj:
             if isinstance(obj['default_destination'], str):
@@ -815,7 +815,6 @@ def validate_config(obj, return_bool=False):
                         isinstance(obj['default_destination']['priority'], dict)):
 
                     for priority in obj['default_destination']['priority']:
-
                         if isinstance(obj['default_destination']['priority'][priority],
                                       str):
                             priority_list.add(priority)
@@ -861,6 +860,8 @@ def validate_config(obj, return_bool=False):
                         else:
                             error = "No default_priority section found in config."
                             if 'med' in priority_list:
+                                # set 'med' as fallback default priority, so
+                                # old tool_destination.yml configs still work
                                 error += " Setting 'med' as default priority."
                                 new_config['default_priority'] = 'med'
                             else:
@@ -1569,6 +1570,7 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
 
     job_conf = ET.parse(job_config_location)
 
+    # Add all destination IDs from the job configuration xml file
     for destination in job_conf.getroot().iter("destination"):
         if isinstance(destination.get("id"), str):
             destination_list.add(destination.get("id"))
