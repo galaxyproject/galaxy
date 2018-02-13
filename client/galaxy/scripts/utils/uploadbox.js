@@ -20,9 +20,7 @@
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         xhr.onreadystatechange = () => {
-            // check for request completed, server connection closed
             if (xhr.readyState == xhr.DONE) {
-                // parse response
                 var response = null;
                 var extra_info = "";
                 if (xhr.responseText) {
@@ -34,7 +32,6 @@
                         extra_info = response;
                     }
                 }
-                // pass any error to the error option
                 if (xhr.status < 200 || xhr.status > 299) {
                     var text = xhr.statusText;
                     if (xhr.status == 403) {
@@ -83,11 +80,13 @@
 
         // submission properties
         var data = cnf.data;
-        var file = data.files && data.files[0] && data.files[0].file;
-        if (!file) {
+        var file_data = data.files && data.files[0];
+        if (!file_data) {
             cnf.error(cnf.error_file);
             return;
         }
+        var file = file_data.file;
+        var attempts = cnf.attempts;
 
         // submission helper
         function send(start, success, error) {
@@ -103,7 +102,7 @@
             var form = new FormData();
             form.append("start", start);
             form.append("end", end);
-            form.append("files_0|file_data", slicer.bind(file)(start, end), file.name);
+            form.append(file_data.name, slicer.bind(file)(start, end), file.name);
             for (let key in data.payload) {
                 form.append(key, data.payload[key]);
             }
@@ -111,7 +110,7 @@
             // approximated progress handler, ignores payloads other than file
             var progress = e => {
                 if (e.lengthComputable) {
-                    cnf.progress(Math.round(start + e.loaded * 100 / file.size));
+                    cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
                 }
             };
             uploadsubmit({
@@ -124,7 +123,6 @@
         }
 
         // chunk processing helper
-        var attempts = cnf.attempts;
         function process(start) {
             var start = start || 0;
             var size = file.size;
