@@ -249,10 +249,6 @@ _.extend(window.bundleEntries || {}, {
         options.type = "lineWithFocusChart";
         return new CommonWrapper(options);
     },
-    nvd3_line: function(options) {
-        options.type = "lineChart";
-        return new CommonWrapper(options);
-    },
     nvd3_pie: function(options) {
         return new PieWrapper(options);
     },
