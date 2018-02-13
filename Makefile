@@ -17,7 +17,6 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
 YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
@@ -148,7 +147,6 @@ endif
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
-	@echo $(CLIENT_COMMIT_WARNING)
 
 client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
 	cd client && yarn run build-production
@@ -161,7 +159,6 @@ client-format: node-deps ## Reformat client code
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
-	@echo $(CLIENT_COMMIT_WARNING)
 
 client-test: client ## Run qunit tests via Karma
 	cd client && yarn run test
