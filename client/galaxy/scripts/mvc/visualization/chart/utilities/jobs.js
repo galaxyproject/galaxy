@@ -1,8 +1,11 @@
 /** This class handles job submissions to the Galaxy API. */
+import * as _ from "underscore";
 import Utils from "utils/utils";
 
+/* global Galaxy */
+
 /** Time to wait before refreshing to check if job has completed */
-var WAITTIME = 1000;
+const WAITTIME = 1000;
 
 /** build job dictionary */
 var requestCharts = function(chart, module) {
@@ -46,21 +49,20 @@ var request = function(chart, parameters, success, error) {
         chart.set("modified", false);
     }
     var dataset_id_job = chart.get("dataset_id_job");
-    if (dataset_id_job != "") {
+    if (dataset_id_job !== "") {
         wait(chart, success, error);
     } else {
-        var chart_id = chart.id;
-        var chart_type = chart.get("type");
-        var chart_definition = chart.definition;
         chart.state("wait", "Sending job request...");
         Utils.request({
             type: "POST",
             url: Galaxy.root + "api/tools",
             data: parameters,
             success: function(response) {
-                if (!response.outputs || response.outputs.length == 0) {
+                if (!response.outputs || response.outputs.length === 0) {
                     chart.state("failed", "Job submission failed. No response.");
-                    error && error();
+                    if (error) {
+                        error();
+                    }
                 } else {
                     refreshHdas();
                     var job = response.outputs[0];
@@ -85,7 +87,9 @@ var request = function(chart, parameters, success, error) {
                         "' tool. Please make sure it is installed. " +
                         message
                 );
-                error && error();
+                if (error) {
+                    error();
+                }
             }
         });
     }
@@ -93,9 +97,8 @@ var request = function(chart, parameters, success, error) {
 
 /* Remove previous data when re-running jobs */
 var cleanup = function(chart) {
-    var self = this;
     var previous = chart.get("dataset_id_job");
-    if (previous != "") {
+    if (previous !== "") {
         Utils.request({
             type: "PUT",
             url: Galaxy.root + "api/histories/none/contents/" + previous,
@@ -110,7 +113,6 @@ var cleanup = function(chart) {
 
 /** Request job details */
 var wait = function(chart, success, error) {
-    var self = this;
     Utils.request({
         type: "GET",
         url: Galaxy.root + "api/datasets/" + chart.get("dataset_id_job"),
@@ -120,12 +122,16 @@ var wait = function(chart, success, error) {
             switch (dataset.state) {
                 case "ok":
                     chart.state("wait", "Job completed successfully...");
-                    success && success(dataset);
+                    if (success) {
+                        success(dataset);
+                    }
                     ready = true;
                     break;
                 case "error":
                     chart.state("failed", "Job has failed. Please check the history for details.");
-                    error && error(dataset);
+                    if (error) {
+                        error(dataset);
+                    }
                     ready = true;
                     break;
                 case "running":
@@ -134,17 +140,20 @@ var wait = function(chart, success, error) {
                         "Your job is running. You may close the browser window. The job will continue in the background."
                     );
             }
-            !ready &&
-                setTimeout(function() {
+            if (!ready) {
+                window.setTimeout(function() {
                     wait(chart, success, error);
                 }, WAITTIME);
+            }
         }
     });
 };
 
 /** Refresh history panel */
 var refreshHdas = function() {
-    Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
+    if (Galaxy && Galaxy.currHistoryPanel) {
+        Galaxy.currHistoryPanel.refreshContents();
+    }
 };
 
 export default { request: request, requestCharts: requestCharts };
