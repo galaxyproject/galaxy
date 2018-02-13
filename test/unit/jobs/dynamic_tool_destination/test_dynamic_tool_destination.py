@@ -763,7 +763,6 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest159, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'not_true_destination' does not appear in the job configuration."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )

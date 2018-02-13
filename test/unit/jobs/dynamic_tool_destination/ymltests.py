@@ -1186,9 +1186,7 @@ ivYMLTest158 = '''
 
 # tool default destination not in job config (without priority dict)
 ivYMLTest159 = '''
-    default_destination:
-      priority:
-        med: waffles_low
+    default_destination: waffles_low
     tools:
       blah:
         rules:
@@ -1196,10 +1194,8 @@ ivYMLTest159 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: Infinity
-            destination:
-              priority:
-                med: waffles_default
-        default_destination: waffles_default
+            destination: waffles_default
+        default_destination: not_true_destination
     verbose: True
 '''
 
