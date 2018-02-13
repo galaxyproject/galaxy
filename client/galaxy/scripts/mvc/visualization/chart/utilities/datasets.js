@@ -1,9 +1,11 @@
 /** This class handles, formats and caches datasets. */
 import Utils from "utils/utils";
+import * as _ from "underscore";
+
+/* global Galaxy */
 
 /** Assists in assigning the viewport panels */
 var requestPanels = function(options) {
-    var self = this;
     var process = options.process;
     var chart = options.chart;
     var render = options.render;
@@ -67,7 +69,7 @@ var request = function(options) {
             }
         });
     });
-    if (column_list.length == 0) {
+    if (column_list.length === 0) {
         _fillFromCache(options);
         return;
     }
@@ -82,12 +84,12 @@ var request = function(options) {
         success: function(response) {
             var column_length = column_list.length;
             var results = new Array(column_length);
-            for (var i = 0; i < results.length; i++) {
+            for (let i = 0; i < results.length; i++) {
                 results[i] = [];
             }
-            for (var i in response.data) {
+            for (let i in response.data) {
                 var row = response.data[i];
-                for (var j in row) {
+                for (let j in row) {
                     var v = row[j];
                     if (v !== undefined && v != 2147483647 && j < column_length) {
                         results[j].push(v);
@@ -95,7 +97,7 @@ var request = function(options) {
                 }
             }
             console.debug("tabular-datasets::_fetch() - Fetching complete.");
-            for (var i in results) {
+            for (let i in results) {
                 var column = column_list[i];
                 var block_id = _block_id(dataset_id, column);
                 _cache[block_id] = results[i];
@@ -121,13 +123,13 @@ var _fillFromCache = function(options) {
             }
         });
     });
-    if (limit == 0) {
+    if (limit === 0) {
         console.debug("tabular-datasets::_fillFromCache() - No data available.");
     }
     var results = [];
     groups.each(function(group, group_index) {
         var dict = Utils.merge({ key: group_index + ":" + group.get("key"), values: [] }, group.attributes);
-        for (var j = 0; j < limit; j++) {
+        for (let j = 0; j < limit; j++) {
             dict.values[j] = { x: parseInt(j) };
         }
         results.push(dict);
@@ -138,19 +140,19 @@ var _fillFromCache = function(options) {
             var column = group.get(column_name);
             switch (column) {
                 case "auto":
-                    for (var j = 0; j < limit; j++) {
+                    for (let j = 0; j < limit; j++) {
                         values[j][column_name] = parseInt(j);
                     }
                     break;
                 case "zero":
-                    for (var j = 0; j < limit; j++) {
+                    for (let j = 0; j < limit; j++) {
                         values[j][column_name] = 0;
                     }
                     break;
                 default:
                     var block_id = _block_id(dataset_id, column);
                     var column_data = _cache[block_id];
-                    for (var j = 0; j < limit; j++) {
+                    for (let j = 0; j < limit; j++) {
                         var value = values[j];
                         var v = column_data[j];
                         if (isNaN(v) && !column_def.is_label) {
