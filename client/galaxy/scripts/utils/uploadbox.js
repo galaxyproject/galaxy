@@ -63,7 +63,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 1000000000,
+                chunksize: 100000000000,
                 attempts: 5,
                 url: null,
                 error_file: "File not provied.",
@@ -127,26 +127,27 @@
             var start = start || 0;
             var size = file.size;
             console.debug("Submitting...");
-            if (start < size) {
-                send(start, () => {
+            send(start, response => {
+                let new_start = start + cnf.chunksize + 1;
+                if (new_start < size) {
                     // send next chunk
                     attempts = cnf.attempts;
-                    process(start + cnf.chunksize + 1);
-                }, () => {
-                    // retry or show error
-                    if (--attempts > 0) {
-                        console.debug("Retrying...");
-                        process(start);
-                    } else {
-                        console.debug(cnf.error_attempt);
-                        cnf.error(cnf.error_attempt);
-                    }
-                });
-            } else {
-                // submission complete show success
-                console.debug("Success.");
-                cnf.success();
-            }
+                    process(new_start);
+                } else {
+                    // submission complete show success
+                    console.debug("Success.");
+                    cnf.success(response);
+                }
+            }, response => {
+                // retry or show error
+                if (--attempts > 0) {
+                    console.debug("Retrying...");
+                    process(start);
+                } else {
+                    console.debug(cnf.error_attempt);
+                    cnf.error(cnf.error_attempt);
+                }
+            });
         }
 
         // initiate processing queue for chunks
