@@ -1340,6 +1340,24 @@ def map_tool_to_destination(
         destination = "fail"
     elif config is not None:
 
+        # Get the default priority from the config if necessary.
+        # If there isn't one, choose an arbitrary one as a fallback
+        if "default_destination" in config:
+            if isinstance(config['default_destination'], dict):
+                if 'default_priority' in config:
+                    default_priority = config['default_priority']
+                    priority = default_priority
+
+                else:
+                    if len(priority_list) > 0:
+                        default_priority = next(iter(priority_list))
+                        priority = default_priority
+                        error = ("No default priority found, arbitrarily setting '"
+                                 + default_priority + "' as the default priority."
+                                 + " Things may not work as expected!")
+                        if verbose:
+                            log.debug(error)
+
         # fetch priority information from workflow/job parameters
         job_parameter_list = job.get_parameters()
         workflow_params = None
@@ -1365,25 +1383,7 @@ def map_tool_to_destination(
             if 'priority' in resource_params:
                 if resource_params['priority'] is not None:
                     priority = resource_params['priority']
-
-        # Get the default priority from the config if necessary.
-        # If there isn't one, choose an arbitrary one as a fallback
-        if "default_destination" in config:
-            if isinstance(config['default_destination'], dict):
-                if 'default_priority' in config:
-                    default_priority = config['default_priority']
-                    priority = default_priority
-
-                else:
-                    if len(priority_list) > 0:
-                        default_priority = next(iter(priority_list))
-                        priority = default_priority
-                        error = ("No default priority found, arbitrarily setting '"
-                                 + default_priority + "' as the default priority."
-                                 + " Things may not work as expected!")
-                        if verbose:
-                            log.debug(error)
-        
+                    
         # get the user's priority
         if "users" in config:
             if user_email in config["users"]:
