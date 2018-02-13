@@ -176,7 +176,7 @@ import Vue from "vue";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
 import * as mod_toastr from "libs/toastr";
-import SocialSharing from "libs/vue-social-sharing";
+import SocialSharing from "vue-social-sharing";
 
 export default {
     props: {
