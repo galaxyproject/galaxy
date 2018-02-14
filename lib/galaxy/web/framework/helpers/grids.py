@@ -573,7 +573,12 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
     """ Column that displays community ratings for an item. """
 
     def get_value(self, trans, grid, item):
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        if not hasattr(item, "average_rating"):
+            # No prefetched column property, generate it on the fly.
+            ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        else:
+            ave_item_rating = item.average_rating
+            num_ratings = 2  # just used for pluralization
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
