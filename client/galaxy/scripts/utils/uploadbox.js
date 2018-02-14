@@ -63,7 +63,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 10,
+                chunksize: 1,
                 attempts: 5,
                 url: null,
                 error_file: "File not provied.",
@@ -123,9 +123,9 @@
         function process(start) {
             var start = start || 0;
             var size = file.size;
-            console.debug("Submitting...");
+            console.debug("Submitting chunk at " + start + " bytes...");
             send(start, response => {
-                let new_start = start + cnf.chunksize + 1;
+                var new_start = start + cnf.chunksize;
                 if (new_start < size) {
                     // send next chunk
                     attempts = cnf.attempts;
