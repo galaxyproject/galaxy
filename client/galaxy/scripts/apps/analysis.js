@@ -21,6 +21,7 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Visualization from "mvc/visualization/visualization-view";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
 
@@ -52,6 +53,8 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
+            "(/)visualizations/dataset_id=(:dataset_id)": "show_visualizations_selector",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import_workflow": "show_import_workflow",
             "(/)workflows/run(/)": "show_run",
@@ -109,6 +112,14 @@ window.app = function app(options, bootstrapped) {
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "visualizations/list"
+                })
+            );
+        },
+
+        show_visualizations_selector: function(dataset_id) {
+            this.page.display(
+                new Visualization.View({
+                    dataset_id: dataset_id
                 })
             );
         },
@@ -302,6 +313,10 @@ window.app = function app(options, bootstrapped) {
 
     // render and start the router
     $(() => {
+        options.config = _.extend(options.config, {
+            hide_panels: Galaxy.params.hide_panels,
+            hide_masthead: Galaxy.params.hide_masthead
+        });
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,
