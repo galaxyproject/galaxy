@@ -822,13 +822,17 @@ class StateColumn(GridColumn):
 class SharingStatusColumn(GridColumn):
     """ Grid column to indicate sharing status. """
 
+    def __init__(self, *args, **kwargs):
+        self.use_shared_with_count = kwargs.pop("use_shared_with_count", False)
+        super(SharingStatusColumn, self).__init__(*args, **kwargs)
+
     def get_value(self, trans, grid, item):
         # Delete items cannot be shared.
         if item.deleted:
             return ""
         # Build a list of sharing for this item.
         sharing_statuses = []
-        if item.users_shared_with:
+        if self._is_shared(item):
             sharing_statuses.append("Shared")
         if item.importable:
             sharing_statuses.append("Accessible")
@@ -836,8 +840,16 @@ class SharingStatusColumn(GridColumn):
             sharing_statuses.append("Published")
         return ", ".join(sharing_statuses)
 
+    def _is_shared(self, item):
+        if self.use_shared_with_count:
+            # optimization to skip join for users_shared_with and loading in that data.
+            return item.users_shared_with_count > 0
+
+        return item.users_shared_with
+
     def get_link(self, trans, grid, item):
-        if not item.deleted and (item.users_shared_with or item.importable or item.published):
+        is_shared = self._is_shared(item)
+        if not item.deleted and (is_shared or item.importable or item.published):
             return dict(operation="share or publish", id=item.id)
         return None
 
