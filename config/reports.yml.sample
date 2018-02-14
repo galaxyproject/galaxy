@@ -11,6 +11,9 @@ uwsgi:
 
   offload-threads: 8
 
+  static-map: /static/style=static/style/blue
+  static-map: /static=static
+
   module: galaxy.webapps.reports.buildapp:uwsgi_app()
 
 reports:
