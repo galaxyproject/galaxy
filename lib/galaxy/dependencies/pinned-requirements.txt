@@ -5,7 +5,7 @@ numpy==1.9.2
 bx-python==0.7.3
 MarkupSafe==1.0
 PyYAML==3.12
-SQLAlchemy==1.0.15
+SQLAlchemy==1.2.2
 sqlalchemy-utils==0.32.19
 mercurial==3.7.3; python_version < '3.0'
 pycrypto==2.6.1
