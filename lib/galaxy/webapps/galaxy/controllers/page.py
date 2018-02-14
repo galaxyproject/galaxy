@@ -2,6 +2,7 @@ from json import loads
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, false, true
+from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import managers, model, util, web
 from galaxy.model.item_attrs import UsesItemRatings
@@ -82,8 +83,8 @@ class PageAllPublishedGrid(grids.Grid):
     )
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
