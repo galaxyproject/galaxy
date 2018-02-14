@@ -63,7 +63,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 100000000000,
+                chunksize: 10,
                 attempts: 5,
                 url: null,
                 error_file: "File not provied.",
@@ -72,14 +72,12 @@
             config
         );
 
-        // handle initial errors
-        if (cnf.data.error_message) {
-            cnf.error(cnf.data.error_message);
+        // initial validation
+        var data = cnf.data;
+        if (data.error_message) {
+            cnf.error(data.error_message);
             return;
         }
-
-        // submission properties
-        var data = cnf.data;
         var file_data = data.files && data.files[0];
         if (!file_data) {
             cnf.error(cnf.error_file);
@@ -108,17 +106,16 @@
             }
 
             // approximated progress handler, ignores payloads other than file
-            var progress = e => {
-                if (e.lengthComputable) {
-                    cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
-                }
-            };
             uploadsubmit({
                 url: cnf.url,
                 form: form,
                 success: success,
                 error: error,
-                progress: progress
+                progress: e => {
+                    if (e.lengthComputable) {
+                        cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
+                    }
+                }
             });
         }
 
@@ -197,18 +194,17 @@
             return;
         }
 
-        // prepare upload progress
-        var progress = e => {
-            if (e.lengthComputable) {
-                cnf.progress(Math.round(e.loaded * 100 / e.total));
-            }
-        }
+        // submit request
         uploadsubmit({
             url: cnf.url,
             form: form,
             success: cnf.success,
             error: cnf.error,
-            progress: progress
+            progress: e => {
+                if (e.lengthComputable) {
+                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                }
+            }
         });
     };
 
