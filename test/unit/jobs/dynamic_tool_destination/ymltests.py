@@ -1238,3 +1238,18 @@ ivYMLTest163 = '''
       priority:
     verbose: True
 '''
+
+# Typo in str default destination
+ivYMLTest164 = '''
+    default_destination: waffles-kow
+    verbose: True
+'''
+
+# Typo in dict default destination
+ivYMLTest165 = '''
+    default_destination:
+      priority:
+        pr: waffles_kow
+    default_priority: pr
+    verbose: True
+'''
