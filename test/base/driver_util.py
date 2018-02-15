@@ -1,7 +1,6 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import fcntl
-import json
 import logging
 import os
 import random
@@ -37,7 +36,6 @@ from .api_util import get_master_api_key, get_user_api_key
 from .instrument import StructuredTestDataPlugin
 from .nose_util import run
 from .test_logging import logging_config_file
-from .tool_shed_util import parse_tool_panel_config
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"
@@ -476,19 +474,6 @@ def cleanup_directory(tempdir):
 def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
     """Modify Galaxy app's toolbox for migrated or installed tool tests."""
     # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
-    galaxy_tool_shed_test_file = os.path.join(tmpdir, 'shed_tools_dict')
-    shed_tools_dict = {}
-    if testing_migrated_tools:
-        has_test_data, shed_tools_dict = parse_tool_panel_config(MIGRATED_TOOL_PANEL_CONFIG, shed_tools_dict)
-    elif testing_installed_tools:
-        for shed_tool_config in INSTALLED_TOOL_PANEL_CONFIGS:
-            has_test_data, shed_tools_dict = parse_tool_panel_config(shed_tool_config, shed_tools_dict)
-    # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
-    with open(galaxy_tool_shed_test_file, 'w') as shed_tools_file:
-        shed_tools_file.write(json.dumps(shed_tools_dict))
-    if not os.path.isabs(galaxy_tool_shed_test_file):
-        galaxy_tool_shed_test_file = os.path.join(galaxy_root, galaxy_tool_shed_test_file)
-    os.environ['GALAXY_TOOL_SHED_TEST_FILE'] = galaxy_tool_shed_test_file
     if testing_installed_tools:
         # TODO: Do this without modifying app - that is a pretty violation
         # of Galaxy's abstraction - we shouldn't require app at all let alone
