@@ -4,8 +4,7 @@ import os.path
 import shutil
 import tempfile
 
-from base.interactor import stage_data_in_history
-
+from galaxy.tools.verify.interactor import stage_data_in_history
 from .test_toolbox import ToolTestCase
 
 log = logging.getLogger(__name__)
