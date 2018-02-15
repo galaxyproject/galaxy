@@ -100,6 +100,19 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @expose_api
     @web.require_admin
+    def test_data_path(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data_path
+        """
+        # TODO: eliminate copy and paste with above code.
+        if 'payload' in kwd:
+            kwd = kwd.get('payload')
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+        return tool.test_data_path(kwd.get("filename"))
+
+    @expose_api
+    @web.require_admin
     def reload(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}/reload

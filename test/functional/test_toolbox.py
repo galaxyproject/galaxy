@@ -36,7 +36,7 @@ class ToolTestCase(TwillTestCase):
         """
         Run through a tool test case.
         """
-        shed_tool_id = self.shed_tool_id
+        tool_id = self.tool_id
 
         self._handle_test_def_errors(testdef)
 
@@ -44,7 +44,7 @@ class ToolTestCase(TwillTestCase):
 
         test_history = galaxy_interactor.new_history()
 
-        stage_data_in_history(galaxy_interactor, testdef.test_data(), test_history, shed_tool_id)
+        stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
 
         # Once data is ready, run the tool and check the outputs - record API
         # input, job info, tool run exception, as well as exceptions related to
@@ -75,7 +75,7 @@ class ToolTestCase(TwillTestCase):
                 self.assertTrue(data_list or data_collection_list)
 
                 try:
-                    job_stdio = self._verify_outputs(testdef, test_history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor)
+                    job_stdio = self._verify_outputs(testdef, test_history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor)
                 except JobOutputsError as e:
                     job_stdio = e.job_stdio
                     job_output_exceptions = e.output_exceptions
@@ -108,7 +108,7 @@ class ToolTestCase(TwillTestCase):
             else:
                 raise Exception("Test parse failure")
 
-    def _verify_outputs(self, testdef, history, jobs, shed_tool_id, data_list, data_collection_list, galaxy_interactor):
+    def _verify_outputs(self, testdef, history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor):
         assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
         job = jobs[0]
 
@@ -173,7 +173,7 @@ class ToolTestCase(TwillTestCase):
                     output_data = data_list[len(data_list) - len(testdef.outputs) + output_index]
             self.assertTrue(output_data is not None)
             try:
-                galaxy_interactor.verify_output(history, jobs, output_data, output_testdef=output_testdef, shed_tool_id=shed_tool_id, maxseconds=maxseconds)
+                galaxy_interactor.verify_output(history, jobs, output_data, output_testdef=output_testdef, tool_id=tool_id, maxseconds=maxseconds)
             except Exception as e:
                 register_exception(e)
 
@@ -244,7 +244,7 @@ class ToolTestCase(TwillTestCase):
                                 hda_id=hda["id"],
                                 outfile=element_outfile,
                                 attributes=element_attrib,
-                                shed_tool_id=shed_tool_id
+                                tool_id=tool_id
                             )
                         if element_type == "dataset_collection":
                             elements = element["object"]["elements"]
@@ -302,7 +302,7 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
             # We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase
             continue
         if tool.tests:
-            shed_tool_id = None if not testing_shed_tools else tool.id
+            tool_id = tool.id
             # Create a new subclass of ToolTestCase, dynamically adding methods
             # named test_tool_XXX that run each test defined in the tool config.
             name = "TestForTool_" + tool.id.replace(' ', '_')
@@ -321,7 +321,7 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
                 test_method = make_test_method(testdef)
                 test_method.__doc__ = "%s ( %s ) > %s" % (tool.name, tool.id, testdef.name)
                 namespace[test_function_name] = test_method
-                namespace['shed_tool_id'] = shed_tool_id
+                namespace['tool_id'] = tool_id
                 namespace['master_api_key'] = master_api_key
                 namespace['user_api_key'] = user_api_key
             # The new.classobj function returns a new class object, with name name, derived

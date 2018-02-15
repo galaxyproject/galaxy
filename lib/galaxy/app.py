@@ -24,6 +24,7 @@ from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.deps.views import DependencyResolversView
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tools.verify import test_data
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
@@ -94,6 +95,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
+        self.test_data_resolver = test_data.TestDataResolver()
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)

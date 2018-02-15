@@ -35,18 +35,18 @@ def build_interactor(test_case, type="api"):
     return interactor_class(test_case)
 
 
-def stage_data_in_history(galaxy_interactor, all_test_data, history, shed_tool_id=None):
+def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
     # Upload any needed files
     upload_waits = []
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, shed_tool_id))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, shed_tool_id)
+            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id)
             upload_wait()
 
 
@@ -59,14 +59,14 @@ class GalaxyInteractorApi(object):
         self.api_key = self.__get_user_key(functional_test_case.user_api_key, functional_test_case.master_api_key, test_user=test_user)
         self.uploads = {}
 
-    def verify_output(self, history_id, jobs, output_data, output_testdef, shed_tool_id, maxseconds):
+    def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifys dataset is 'ok' in here.
-        self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, shed_tool_id=shed_tool_id)
+        self.verify_output_dataset(history_id=history_id, hda_id=hid, outfile=outfile, attributes=attributes, tool_id=tool_id)
 
         primary_datasets = attributes.get('primary_datasets', {})
         if primary_datasets:
@@ -86,20 +86,21 @@ class GalaxyInteractorApi(object):
                 raise Exception(msg_template % msg_args)
 
             primary_hda_id = primary_output["dataset"]["id"]
-            self.verify_output_dataset(history_id, primary_hda_id, primary_outfile, primary_attributes, shed_tool_id=shed_tool_id)
+            self.verify_output_dataset(history_id, primary_hda_id, primary_outfile, primary_attributes, tool_id=tool_id)
 
     def wait_for_jobs(self, history_id, jobs, maxseconds):
         for job in jobs:
             self.wait_for_job(job['id'], history_id, maxseconds)
 
-    def verify_output_dataset(self, history_id, hda_id, outfile, attributes, shed_tool_id):
+    def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id):
         fetcher = self.__dataset_fetcher(history_id)
+        test_data_path_builder = self.__test_data_path_builder(tool_id)
         self.functional_test_case.verify_hid(
             outfile,
             hda_id=hda_id,
             attributes=attributes,
             dataset_fetcher=fetcher,
-            shed_tool_id=shed_tool_id
+            test_data_path_builder=test_data_path_builder,
         )
         self._verify_metadata(history_id, hda_id, attributes)
 
@@ -169,6 +170,9 @@ class GalaxyInteractorApi(object):
         history_json = self._post("histories", {"name": "test_history"}).json()
         return history_json['id']
 
+    def test_data_path(self, tool_id, filename):
+        return self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename)).json()
+
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
         # or simple id as comes out of workflow API.
@@ -178,7 +182,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, shed_tool_id, async=True):
+    def stage_data_async(self, test_data, history_id, tool_id, async=True):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -191,14 +195,14 @@ class GalaxyInteractorApi(object):
         if composite_data:
             files = {}
             for i, composite_file in enumerate(composite_data):
-                file_name = self.functional_test_case.get_filename(composite_file.get('value'), shed_tool_id=shed_tool_id)
+                file_name = self.test_data_path(tool_id, composite_file.get("value"))
                 files["files_%s|file_data" % i] = open(file_name, 'rb')
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
                 })
             name = test_data['name']
         else:
-            file_name = self.functional_test_case.get_filename(fname, shed_tool_id=shed_tool_id)
+            file_name = self.test_data_path(tool_id, fname)
             name = test_data.get('name', None)
             if not name:
                 name = os.path.basename(file_name)
@@ -207,6 +211,8 @@ class GalaxyInteractorApi(object):
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
             })
+            # TODO: Option to upload by path since we are getting the paths from Galaxy now it makes more
+            # sense to move this there.
             files = {
                 "files_0|file_data": open(file_name, 'rb')
             }
@@ -448,6 +454,9 @@ class GalaxyInteractorApi(object):
             return user_key
         test_user = self.ensure_user_with_email(test_user)
         return self._post("users/%s/api_key" % test_user['id'], key=admin_key).json()
+
+    def __test_data_path_builder(self, tool_id):
+        return lambda filename: self.test_data_path(tool_id, filename)
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
