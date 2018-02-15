@@ -929,7 +929,7 @@ class GalaxyTestDriver(TestDriver):
         testdef = tool.tests[index]
         test_case_cls = functional.test_toolbox.ToolTestCase
         test_case = test_case_cls(methodName="setUp")  # NO-OP
-        test_case.shed_tool_id = None
+        test_case.tool_id = None
         test_case.master_api_key = get_master_api_key()
         test_case.user_api_key = get_user_api_key()
         test_case.setUp()

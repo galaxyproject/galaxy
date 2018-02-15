@@ -57,12 +57,8 @@ class FunctionalTestCase(unittest.TestCase):
         if cls._test_driver:
             cls._test_driver.tear_down()
 
-    def get_filename(self, filename, shed_tool_id=None):
-        # For tool tests override get_filename to point at an installed tool if shed_tool_id is set.
-        if shed_tool_id and getattr(self, "shed_tools_dict", None):
-            file_dir = self.shed_tools_dict[shed_tool_id]
-            if file_dir:
-                return os.path.abspath(os.path.join(file_dir, filename))
+    def get_filename(self, filename):
+        # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)
 
     # TODO: Make this more generic, shouldn't be related to tool stuff I guess.
@@ -90,14 +86,11 @@ class FunctionalTestCase(unittest.TestCase):
             raise AssertionError(message)
 
     # TODO: Move verify_xxx into GalaxyInteractor or some relevant mixin.
-    def verify_hid(self, filename, hda_id, attributes, shed_tool_id, hid="", dataset_fetcher=None):
+    def verify_hid(self, filename, hda_id, attributes, test_data_path_builder, hid="", dataset_fetcher=None):
         assert dataset_fetcher is not None
 
-        def get_filename(test_filename):
-            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
-
         def verify_extra_files(extra_files):
-            self._verify_extra_files_content(extra_files, hda_id, shed_tool_id=shed_tool_id, dataset_fetcher=dataset_fetcher)
+            self._verify_extra_files_content(extra_files, hda_id, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder)
 
         data = dataset_fetcher(hda_id)
         item_label = "History item %s" % hid
@@ -106,16 +99,13 @@ class FunctionalTestCase(unittest.TestCase):
             data,
             attributes=attributes,
             filename=filename,
-            get_filename=get_filename,
+            get_filename=test_data_path_builder,
             keep_outputs_dir=self.keepOutdir,
             verify_extra_files=verify_extra_files,
         )
 
-    def _verify_composite_datatype_file_content(self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, shed_tool_id=None):
+    def _verify_composite_datatype_file_content(self, file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, test_data_path_builder=None):
         assert dataset_fetcher is not None
-
-        def get_filename(test_filename):
-            return self.get_filename(test_filename, shed_tool_id=shed_tool_id)
 
         data = dataset_fetcher(hda_id, base_name)
         item_label = "History item %s" % hda_id
@@ -125,7 +115,7 @@ class FunctionalTestCase(unittest.TestCase):
                 data,
                 attributes=attributes,
                 filename=file_name,
-                get_filename=get_filename,
+                get_filename=test_data_path_builder,
                 keep_outputs_dir=self.keepOutdir,
             )
         except AssertionError as err:
@@ -133,15 +123,15 @@ class FunctionalTestCase(unittest.TestCase):
             errmsg += str(err)
             raise AssertionError(errmsg)
 
-    def _verify_extra_files_content(self, extra_files, hda_id, dataset_fetcher, shed_tool_id=None):
+    def _verify_extra_files_content(self, extra_files, hda_id, dataset_fetcher, test_data_path_builder):
         files_list = []
         for extra_type, extra_value, extra_name, extra_attributes in extra_files:
             if extra_type == 'file':
                 files_list.append((extra_name, extra_value, extra_attributes))
             elif extra_type == 'directory':
-                for filename in os.listdir(self.get_filename(extra_value, shed_tool_id=shed_tool_id)):
+                for filename in os.listdir(test_data_path_builder(extra_value)):
                     files_list.append((filename, os.path.join(extra_value, filename), extra_attributes))
             else:
                 raise ValueError('unknown extra_files type: %s' % extra_type)
         for filename, filepath, attributes in files_list:
-            self._verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, shed_tool_id=shed_tool_id)
+            self._verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder)

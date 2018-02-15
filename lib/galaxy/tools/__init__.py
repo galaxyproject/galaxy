@@ -830,6 +830,35 @@ class Tool(Dictifiable):
             self.__tests_populated = True
         return self.__tests
 
+    def test_data_path(self, filename):
+        repository_dir = None
+
+        # If a tool shed tool, try to find where the repository was installed. Is there a cleaner way
+        # to do this @mvdbeek?
+        if hasattr(self, 'tool_shed') and self.tool_shed:
+            repository_dir = self.tool_dir
+            while True:
+                repository_dir_name = os.path.basename(repository_dir)
+                # Eventually we should find a directory named self.changeset_revision
+                # but just in case we don't (differences between self.installed_changeset and self.changeset_revision)
+                # check for repository name also.
+                if repository_dir_name == self.changeset_revision or repository_dir_name == self.repository_name:
+                    break
+
+                parent_repository_dir = os.path.dirname(repository_dir)
+                if repository_dir == parent_repository_dir:
+                    log.error("Problem finding repository dir for tool [%s]" % self.id)
+                    repository_dir = None
+
+        if repository_dir:
+            for root, dirs, files in os.walk(repository_dir):
+                if '.' in dirs:
+                    dirs.remove('.hg')
+                if 'test-data' in dirs:
+                    return os.path.abspath(os.path.join(root, 'test-data', filename))
+        else:
+            return self.app.test_data_resolver.get_filename(filename)
+
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
         # LEGACY: Remove in 17.XX
