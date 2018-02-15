@@ -17,6 +17,7 @@ from six import StringIO, text_type
 
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef
+from galaxy.tools.verify import verify_hid
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 
@@ -58,6 +59,7 @@ class GalaxyInteractorApi(object):
         self.master_api_key = functional_test_case.master_api_key
         self.api_key = self.__get_user_key(functional_test_case.user_api_key, functional_test_case.master_api_key, test_user=test_user)
         self.uploads = {}
+        self.keep_outputs_dir = functional_test_case.keepOutdir
 
     def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds):
         outfile = output_testdef.outfile
@@ -95,12 +97,13 @@ class GalaxyInteractorApi(object):
     def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id):
         fetcher = self.__dataset_fetcher(history_id)
         test_data_path_builder = self.__test_data_path_builder(tool_id)
-        self.functional_test_case.verify_hid(
+        verify_hid(
             outfile,
             hda_id=hda_id,
             attributes=attributes,
             dataset_fetcher=fetcher,
             test_data_path_builder=test_data_path_builder,
+            keep_outputs_dir=self.keep_outputs_dir
         )
         self._verify_metadata(history_id, hda_id, attributes)
 
