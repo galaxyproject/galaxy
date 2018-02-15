@@ -1,7 +1,7 @@
 <tool id="CONVERTER_interval_to_bigwig_0" name="Convert Genomic Intervals To Coverage" version="1.0.0">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package">ucsc-bedgraphtobigwig</requirement>
         <requirement type="package">bedtools</requirement>
     </requirements>
     <command>

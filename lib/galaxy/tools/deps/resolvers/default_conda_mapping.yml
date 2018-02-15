@@ -13,7 +13,7 @@
     unversioned: true
   to:
     name: ucsc_tools
-    version: 332
+    version: 357
 - from:
     name: bedtools
     unversioned: true
@@ -44,4 +44,46 @@
   to:
     name: bowtie
     version: 1.2.0
-  
+- from:
+    name: ucsc-bedgraphtobigwig
+    unversioned: true
+  to:
+    name: ucsc-bedgraphtobigwig
+    version: 357
+- from:
+    name: ucsc-bedtobigbed
+    unversioned: true
+  to:
+    name: ucsc-bedtobigbed
+    version: 357
+- from:
+    name: ucsc-fatotwobit
+    unversioned: true
+  to:
+    name: ucsc-fatotwobit
+    version: 357
+- from:
+    name: ucsc-liftover
+    unversioned: true
+  to:
+    name: ucsc-liftover
+    version: 357
+- from:
+    name: ucsc-nibfrag
+    unversioned: true
+  to:
+    name: ucsc-nibfrag
+    version: 357
+- from:
+    name: ucsc-twobittofa
+    unversioned: true
+  to:
+    name: ucsc-twobittofa
+    version: 357
+- from:
+    name: ucsc-wigtobigwig
+    unversioned: true
+  to:
+    name: ucsc-wigtobigwig
+    version: 357
+

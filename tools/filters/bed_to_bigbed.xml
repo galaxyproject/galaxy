@@ -10,7 +10,7 @@
     2&gt;&amp;1 || echo "Error running bedToBigBed." >&amp;2
   </command>
   <requirements>
-    <requirement type="package">ucsc_tools</requirement>
+    <requirement type="package">ucsc-bedtobigbed</requirement>
   </requirements>
   <inputs>
     <param format="bed" name="input1" type="data" label="Convert">
