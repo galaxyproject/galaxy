@@ -8,6 +8,7 @@ import logging
 import os
 import re
 import sys
+import numpy as np
 from functools import reduce
 from xml.etree import ElementTree as ET
 
@@ -32,6 +33,11 @@ list of all valid destinations, retrieved from the
 job configuration file
 """
 destination_list = set()
+"""
+The largest the edit distance can be for a word to be considered
+A correction for another word.
+"""
+max_edit_dist = set()
 
 
 class MalformedYMLException(Exception):
@@ -433,6 +439,11 @@ class RuleValidator:
                             error += str(counter) + " in '" + str(tool) + "'."
                             if not return_bool:
                                 error += " Ignoring..."
+                            else:
+                                suggestion = get_typo_correction(priority,
+                                    priority_list, max_edit_dist)
+                                if suggestion is not None:
+                                    error += " Did you mean '" + str(suggestion) + "'?"
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
@@ -1583,6 +1594,95 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
 
     return destination_list
 
+
+def get_edit_distance(source, target):
+    """
+    returns the edit distance (levenshtein distance) between two strings.
+    code from:
+    en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance
+
+    @type str1: str
+    @param str1: The first string
+
+    @type str2: str
+    @param str2: The second string
+
+    @rtype: int
+    @return: The edit distance between str1 and str2
+    """
+
+    if len(source) < len(target):
+        return get_edit_distance(target, source)
+
+    # So now we have len(source) >= len(target).
+    if len(target) == 0:
+        return len(source)
+
+    # We call tuple() to force strings to be used as sequences
+    # ('c', 'a', 't', 's') - numpy uses them as values by default.
+    source = np.array(tuple(source))
+    target = np.array(tuple(target))
+
+    # We use a dynamic programming algorithm, but with the
+    # added optimization that we only need the last two rows
+    # of the matrix.
+    previous_row = np.arange(target.size + 1)
+    for s in source:
+        # Insertion (target grows longer than source):
+        current_row = previous_row + 1
+
+        # Substitution or matching:
+        # Target and source items are aligned, and either
+        # are different (cost of 1), or are the same (cost of 0).
+        current_row[1:] = np.minimum(
+            current_row[1:],
+            np.add(previous_row[:-1], target != s))
+
+        # Deletion (target grows shorter than source):
+        current_row[1:] = np.minimum(
+            current_row[1:],
+            current_row[0:-1] + 1)
+
+        previous_row = current_row
+
+    return previous_row[-1]
+
+
+def get_typo_correction(typo_str, word_set, max_dist):
+    """
+    returns the string in a set that closest matches the
+    input string, as long as the edit distance between them
+    is equal to or smaller than a value. If it is not
+    smaller than or equal to the value, nothing is returned
+    instead.
+
+    @type typo_str: str
+    @param typo_str: The string to be compared
+
+    @type word_set: set of str
+    @param word_set: The set of strings to compare to
+
+    @type max_dist: int
+    @param max_dist: the largest allowed edit distance between
+                    the word and the result. If nothing is
+                    within this range, nothing is returned
+
+    @rtype: str or NoneType
+    @return: The closest matching string, or None, if no strings
+    being compared to are within max_dist edit distance.
+    """
+    # Start curr_best out as the largest
+    # edit distance we will tolerate plus one
+    curr_best = 4
+    suggestion = None
+
+    for valid_word in word_set:
+        edit_distance = get_edit_distance(typo_str, valid_word)
+        if edit_distance < curr_best:
+            suggestion = valid_word
+            curr_best = edit_distance
+
+    return suggestion
 
 if __name__ == '__main__':
     """
