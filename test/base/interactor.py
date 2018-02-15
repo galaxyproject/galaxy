@@ -29,6 +29,7 @@ log = getLogger(__name__)
 VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False))
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
+DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 
 def build_interactor(test_case, type="api"):
@@ -158,6 +159,29 @@ class GalaxyInteractorApi(object):
 
     def wait_for_job(self, job_id, history_id, maxseconds):
         self.functional_test_case.wait_for(lambda: not self.__job_ready(job_id, history_id), maxseconds=maxseconds)
+
+    def wait_for(self, func, **kwd):
+        sleep_amount = 0.2
+        slept = 0
+        walltime_exceeded = kwd.get("maxseconds", None)
+        if walltime_exceeded is None:
+            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+
+        exceeded = True
+        while slept <= walltime_exceeded:
+            result = func()
+            if result:
+                time.sleep(sleep_amount)
+                slept += sleep_amount
+                sleep_amount *= 2
+            else:
+                exceeded = False
+                break
+
+        if exceeded:
+            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+            log.info(message)
+            raise AssertionError(message)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
