@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import logging
 import os
-import time
 import unittest
 
 from galaxy.tools.verify.test_data import TestDataResolver
@@ -10,8 +9,6 @@ from galaxy.web import security
 from .driver_util import GalaxyTestDriver
 
 log = logging.getLogger(__name__)
-
-DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 
 class FunctionalTestCase(unittest.TestCase):
@@ -50,27 +47,3 @@ class FunctionalTestCase(unittest.TestCase):
     def get_filename(self, filename):
         # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)
-
-    # TODO: Make this more generic, shouldn't be related to tool stuff I guess.
-    def wait_for(self, func, **kwd):
-        sleep_amount = 0.2
-        slept = 0
-        walltime_exceeded = kwd.get("maxseconds", None)
-        if walltime_exceeded is None:
-            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
-
-        exceeded = True
-        while slept <= walltime_exceeded:
-            result = func()
-            if result:
-                time.sleep(sleep_amount)
-                slept += sleep_amount
-                sleep_amount *= 2
-            else:
-                exceeded = False
-                break
-
-        if exceeded:
-            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
-            log.info(message)
-            raise AssertionError(message)
