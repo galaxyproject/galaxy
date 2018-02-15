@@ -4,7 +4,6 @@ import logging
 import os
 import time
 import unittest
-from json import loads
 
 from galaxy.tools.verify import verify
 from galaxy.tools.verify.test_data import TestDataResolver
@@ -27,14 +26,6 @@ class FunctionalTestCase(unittest.TestCase):
         default_url = "http://%s:%s" % (self.host, self.port)
         self.url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
         self.test_data_resolver = TestDataResolver()
-        tool_shed_test_file = os.environ.get('GALAXY_TOOL_SHED_TEST_FILE', None)
-        if tool_shed_test_file:
-            f = open(tool_shed_test_file, 'r')
-            text = f.read()
-            f.close()
-            self.shed_tools_dict = loads(text)
-        else:
-            self.shed_tools_dict = {}
         self.keepOutdir = os.environ.get('GALAXY_TEST_SAVE', '')
         if self.keepOutdir > '':
             try:
