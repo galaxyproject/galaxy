@@ -37,7 +37,7 @@ destination_list = set()
 The largest the edit distance can be for a word to be considered
 A correction for another word.
 """
-max_edit_dist = 3
+max_edit_dist = 2
 
 
 class MalformedYMLException(Exception):
