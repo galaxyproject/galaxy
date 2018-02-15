@@ -4,8 +4,6 @@ import logging
 
 import six
 
-from .type_description import map_over_collection_type
-
 log = logging.getLogger(__name__)
 
 
