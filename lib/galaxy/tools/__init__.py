@@ -26,7 +26,6 @@ from galaxy import (
     model
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
-from galaxy.managers import histories
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.queue_worker import send_control_task
@@ -36,7 +35,6 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
-    views
 )
 from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
@@ -439,12 +437,18 @@ class Tool(Dictifiable):
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
-        self.history_manager = histories.HistoryManager(app)
-        self._view = views.DependencyResolversView(app)
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    @property
+    def history_manager(self):
+        return self.app.history_manager
+
+    @property
+    def _view(self):
+        return self.app.dependency_resolvers_view
 
     @property
     def version_object(self):
