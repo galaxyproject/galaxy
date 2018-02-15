@@ -32,17 +32,17 @@ var HistoryGridView = GridView.extend({
                         for (let state of ["ok", "running", "queued", "new", "error"]) {
                             const stateCount = contentsStates[state];
                             if (stateCount) {
-                                stateHtml += `<div class="count-box state-color-${state}">${stateCount}</div> `;
+                                stateHtml += `<div class="count-box state-color-${state}" title="Datasets in ${state} state">${stateCount}</div> `;
                             }
                         }
                         const contentsActive = req["contents_active"];
                         const deleted = contentsActive["deleted"];
                         if (deleted) {
-                            stateHtml += `<div class="count-box state-color-deleted" title="Number of datasets that are deleted.">${deleted}</div> `;
+                            stateHtml += `<div class="count-box state-color-deleted" title="Deleted datasets">${deleted}</div> `;
                         }
                         const hidden = contentsActive["hidden"];
                         if (hidden) {
-                            stateHtml += `<div class="count-box state-color-hidden" title="Number of datasets that are marked as hidden.">${hidden}</div> `;
+                            stateHtml += `<div class="count-box state-color-hidden" title="Hidden datasets">${hidden}</div> `;
                         }
                         $(`.delayed-value-datasets_by_state[data-history-id='${historyId}']`).html(stateHtml);
                         $(`.delayed-value-disk_size[data-history-id='${historyId}']`).html(req["nice_size"]);
