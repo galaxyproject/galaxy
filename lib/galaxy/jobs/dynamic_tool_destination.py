@@ -37,7 +37,7 @@ destination_list = set()
 The largest the edit distance can be for a word to be considered
 A correction for another word.
 """
-max_edit_dist = set()
+max_edit_dist = 3
 
 
 class MalformedYMLException(Exception):
@@ -1708,7 +1708,7 @@ def get_typo_correction(typo_str, word_set, max_dist):
     """
     # Start curr_best out as the largest
     # edit distance we will tolerate plus one
-    curr_best = 4
+    curr_best = max_dist + 1
     suggestion = None
 
     for valid_word in word_set:
