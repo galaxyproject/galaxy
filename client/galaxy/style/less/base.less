@@ -1177,8 +1177,15 @@ ul.manage-table-actions li {
 }
 
 .state-color-deleted {
-    border-color: @state-deleted-border;
-    background: @state-deleted-bg;
+    border-color: darken(@state-default-border, 30%);
+    border-style: dotted;
+    background: darken(@state-default-bg, 30%);
+}
+
+.state-color-hidden {
+    border-color: @state-default-border;
+    border-style: dotted;
+    background: @state-default-bg;
 }
 
 .state-fg-new {
@@ -1797,7 +1804,7 @@ div.toolTitleNoSection
     display: none;
 }
 
-// communication channel bootstrap modal 
+// communication channel bootstrap modal
 .chat-modal {
     overflow: hidden;
 }
@@ -1812,7 +1819,7 @@ div.toolTitleNoSection
 }
 
 .close-modal {
-    float: right; 
+    float: right;
     cursor: pointer;
 }
 
