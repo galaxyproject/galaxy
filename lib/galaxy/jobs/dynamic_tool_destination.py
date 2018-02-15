@@ -422,6 +422,10 @@ class RuleValidator:
                     error += str(counter) + ": '"
                     error += str(rule["destination"])
                     error += "' does not exist in job configuration."
+                    suggestion = get_typo_correction(rule['destination'],
+                        destination_list, max_edit_dist)
+                    if suggestion is not None:
+                        error += " Did you mean '" + str(suggestion) + "'?"
                     if not return_bool:
                         error += " Ignoring..."
                     if verbose:
@@ -437,13 +441,12 @@ class RuleValidator:
                             error = "Invalid priority '"
                             error += str(priority) + "' for rule "
                             error += str(counter) + " in '" + str(tool) + "'."
+                            suggestion = get_typo_correction(priority,
+                                priority_list, max_edit_dist)
+                            if suggestion is not None:
+                                error += " Did you mean '" + str(suggestion) + "'?"
                             if not return_bool:
                                 error += " Ignoring..."
-                            else:
-                                suggestion = get_typo_correction(priority,
-                                    priority_list, max_edit_dist)
-                                if suggestion is not None:
-                                    error += " Did you mean '" + str(suggestion) + "'?"
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
@@ -464,6 +467,10 @@ class RuleValidator:
                             error += str(counter) + ": '"
                             error += str(rule["destination"]["priority"][priority])
                             error += "' does not exist in job configuration."
+                            suggestion = get_typo_correction(rule["destination"]["priority"][priority],
+                                destination_list, max_edit_dist)
+                            if suggestion is not None:
+                                error += " Did you mean '" + str(suggestion) + "'?"
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -818,6 +825,10 @@ def validate_config(obj, return_bool=False):
                     error = ("Default destination '"
                       + obj['default_destination']
                       + "' does not appear in the job configuration.")
+                    suggestion = get_typo_correction(obj['default_destination'],
+                        destination_list, max_edit_dist)
+                    if suggestion is not None:
+                        error += " Did you mean '" + str(suggestion) + "'?"
                     if verbose:
                         log.debug(error)
                     valid_config = False
@@ -837,6 +848,10 @@ def validate_config(obj, return_bool=False):
                                 error = ("Default destination '"
                                   + obj['default_destination']['priority'][priority]
                                   + "' does not appear in the job configuration.")
+                                suggestion = get_typo_correction(obj['default_destination']['priority'][priority],
+                                    destination_list, max_edit_dist)
+                                if suggestion is not None:
+                                    error += " Did you mean '" + str(suggestion) + "'?"
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -861,6 +876,10 @@ def validate_config(obj, return_bool=False):
                                 else:
                                     error = ("Default priority '" + str(obj['default_priority'])
                                              + "' is not a valid priority.")
+                                    suggestion = get_typo_correction(obj['default_priority'],
+                                        priority_list, max_edit_dist)
+                                    if suggestion is not None:
+                                        error += " Did you mean '" + str(suggestion) + "'?"
                                     if verbose:
                                         log.debug(error)
                             else:
@@ -912,6 +931,10 @@ def validate_config(obj, return_bool=False):
                                 error = ("User '" + user + "', priority '"
                                   + str(curr['priority']) + "' is not defined "
                                   + "in the global default_destination section")
+                                suggestion = get_typo_correction(curr['priority'],
+                                    priority_list, max_edit_dist)
+                                if suggestion is not None:
+                                    error += " Did you mean '" + str(suggestion) + "'?"
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
@@ -954,6 +977,10 @@ def validate_config(obj, return_bool=False):
                                              + str(tool) + "': '"
                                              + curr['default_destination']
                                              + "' does not appear in the job configuration.")
+                                    suggestion = get_typo_correction(curr['default_destination'],
+                                        destination_list, max_edit_dist)
+                                    if suggestion is not None:
+                                        error += " Did you mean '" + str(suggestion) + "'?"
                                     if verbose:
                                         log.debug(error)
                                     valid_config = False
@@ -975,6 +1002,10 @@ def validate_config(obj, return_bool=False):
                                                              + str(tool) + "': '"
                                                              + destination + "' does not appear "
                                                              + "in the job configuration.")
+                                                    suggestion = get_typo_correction(destination,
+                                                        destination_list, max_edit_dist)
+                                                    if suggestion is not None:
+                                                        error += " Did you mean '" + str(suggestion) + "'?"
                                                     if verbose:
                                                         log.debug(error)
                                                     valid_config = False
@@ -990,6 +1021,10 @@ def validate_config(obj, return_bool=False):
                                             error = ("Invalid default destination priority '"
                                                      + str(priority) + "' for '" + str(tool)
                                                      + "'.")
+                                            suggestion = get_typo_correction(priority,
+                                                priority_list, max_edit_dist)
+                                            if suggestion is not None:
+                                                error += " Did you mean '" + str(suggestion) + "'?"
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
