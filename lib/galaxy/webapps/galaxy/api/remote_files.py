@@ -148,3 +148,8 @@ class RemoteFilesAPIController(BaseAPIController):
             raise exceptions.ConfigDoesNotAllowException('The given directory does not exist.')
         userdir_jstree = jstree.JSTree(jstree_paths)
         return userdir_jstree
+
+    @expose_api
+    def upload(self, trans, **kwd):
+        print kwd
+        return {}

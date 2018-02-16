@@ -14,11 +14,15 @@
             error_server: "Upload request failed.",
             error_login: "Uploads require you to log in."
         }, config);
+        console.debug(cnf);
         var xhr = new XMLHttpRequest();
         xhr.open("POST", cnf.url, true);
-        xhr.setRequestHeader("Accept", "application/json");
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+        xhr.setRequestHeader("X-Content-Range", "bytes " + cnf.content_range);
+        xhr.setRequestHeader("Session-ID", cnf.session_id);
+        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.setRequestHeader("Content-Disposition", 'attachment; filename="big.TXT"');
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
                 var response = null;
@@ -63,7 +67,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 1,
+                chunksize: 2,
                 attempts: 5,
                 url: null,
                 error_file: "File not provied.",
@@ -96,21 +100,16 @@
             }
 
             // build form data
-            var end = start + cnf.chunksize;
-            var form = new FormData();
-            form.append("start", start);
-            form.append("end", end);
-            form.append(file_data.name, slicer.bind(file)(start, end), file.name);
-            for (let key in data.payload) {
-                form.append(key, data.payload[key]);
-            }
-
+            var end = Math.min(start + cnf.chunksize, file.size);
+            var file_chunk = slicer.bind(file)(start, end);
             // approximated progress handler, ignores payloads other than file
             uploadsubmit({
-                url: cnf.url,
-                form: form,
+                url: "/_upload_chunk",
+                file: file_chunk,
+                session_id: 1111215056,
+                content_range: start + "-" + (end - 1) + "/" + file.size,
                 success: success,
-                error: error,
+                error: success,
                 progress: e => {
                     if (e.lengthComputable) {
                         cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
