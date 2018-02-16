@@ -1687,9 +1687,9 @@ def get_typo_correction(typo_str, word_set, max_dist):
     """
     returns the string in a set that closest matches the
     input string, as long as the edit distance between them
-    is equal to or smaller than a value. If it is not
-    smaller than or equal to the value, nothing is returned
-    instead.
+    is equal to or smaller than a value, or the words are
+    the same when case is not considered. If there are no
+    appropriate matches, nothing is returned instead.
 
     @type typo_str: str
     @param typo_str: The string to be compared
@@ -1707,18 +1707,25 @@ def get_typo_correction(typo_str, word_set, max_dist):
     being compared to are within max_dist edit distance.
     """
 
-    ## Also check by making it lowercase? along with the word set, and if there's a match that's the one we want to suggest?
-    
     # Start curr_best out as the largest
     # edit distance we will tolerate plus one
     curr_best = max_dist + 1
     suggestion = None
 
     for valid_word in word_set:
-        edit_distance = get_edit_distance(typo_str, valid_word)
-        if edit_distance < curr_best:
-            suggestion = valid_word
-            curr_best = edit_distance
+        # If we've already found a best match,
+        # don't bother checking anything else.
+        if curr_best > 0:
+            if typo_str.lower() == valid_word.lower():
+                # if something matches when case insensitive,
+                # it is automatically set as the best
+                suggestion = valid_word
+                curr_best = 0
+            else:
+                edit_distance = get_edit_distance(typo_str, valid_word)
+                if edit_distance < curr_best:
+                    suggestion = valid_word
+                    curr_best = edit_distance
 
     return suggestion
 

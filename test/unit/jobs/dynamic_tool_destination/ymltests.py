@@ -1328,3 +1328,12 @@ ivYMLTest169 = '''
             med: waffles_default
     verbose: True
 '''
+
+# Typo in str tool rule destination
+ivYMLTest170 = '''
+    default_destination:
+      priority:
+        med: destinationf
+    default_priority: med
+    verbose: True
+'''

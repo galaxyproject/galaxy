@@ -848,6 +848,15 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
+    @log_capture()
+    def test_typo_in_case(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest170, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'destinationf' does not appear in the job configuration. Did you mean 'DestinationF'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
 # ================================Valid yaml files==============================
     @log_capture()
     def test_parse_valid_yml(self, l):
