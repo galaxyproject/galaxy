@@ -1706,6 +1706,9 @@ def get_typo_correction(typo_str, word_set, max_dist):
     @return: The closest matching string, or None, if no strings
     being compared to are within max_dist edit distance.
     """
+
+    ## Also check by making it lowercase? along with the word set, and if there's a match that's the one we want to suggest?
+    
     # Start curr_best out as the largest
     # edit distance we will tolerate plus one
     curr_best = max_dist + 1

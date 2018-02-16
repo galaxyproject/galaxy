@@ -799,7 +799,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest164, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles-Low' does not appear in the job configuration. Did you mean 'waffles_low'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles-kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -809,6 +809,42 @@ class TestDynamicToolDestination(unittest.TestCase):
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles_kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_typo_in_dict_tool_default_dest(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest166, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'waffles_defaut' does not appear in the job configuration. Did you mean 'waffles_default'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_typo_in_str_tool_default_dest(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest167, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'Destination_3_med' does not appear in the job configuration. Did you mean 'Destination3_med'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_typo_in_str_tool_rule_dest(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest168, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blah', rule 1: 'thig' does not exist in job configuration. Did you mean 'things'? Ignoring..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+
+    @log_capture()
+    def test_typo_in_dict_tool_rule_dest(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest169, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Destination for 'blah', rule 1: 'even_lamerr_cluster' does not exist in job configuration. Did you mean 'even_lamer_cluster'? Ignoring..."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 

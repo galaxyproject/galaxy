@@ -1253,3 +1253,78 @@ ivYMLTest165 = '''
     default_priority: pr
     verbose: True
 '''
+
+# Typo in dict tool default destination
+ivYMLTest166 = '''
+    default_destination:
+      priority:
+        med: waffles_low
+    default_priority: med
+    tools:
+      blah:
+        default_destination:
+          priority:
+            med: waffles_defaut
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: DestinationF
+    verbose: True
+'''
+
+# Typo in str tool default destination
+ivYMLTest167 = '''
+    default_destination: waffles_low
+    default_priority: waffles_low
+    tools:
+      blah:
+        default_destination: Destination_3_med
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: DestinationF
+    verbose: True
+'''
+
+# Typo in dict tool rule destination
+ivYMLTest168 = '''
+    default_destination:
+      priority:
+        med: waffles_default
+    default_priority: med
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination:
+              priority:
+                med: thig
+    verbose: True
+'''
+
+# Typo in str tool rule destination
+ivYMLTest169 = '''
+    default_destination:
+      priority:
+        med: waffles_default
+    default_priority: med
+    tools:
+      blah:
+        rules:
+          - rule_type: num_input_datasets
+            nice_value: 0
+            lower_bound: 0
+            upper_bound: Infinity
+            destination: even_lamerr_cluster
+        default_destination:
+          priority:
+            med: waffles_default
+    verbose: True
+'''
