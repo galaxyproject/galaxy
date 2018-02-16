@@ -287,7 +287,7 @@ class GalaxyInteractorApi(object):
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
-        submit_response = self.__submit_tool(history_id, tool_id=testdef.tool.id, tool_input=inputs_tree)
+        submit_response = self.__submit_tool(history_id, tool_id=testdef.tool_id, tool_input=inputs_tree)
         submit_response_object = submit_response.json()
         try:
             return Bunch(
