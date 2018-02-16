@@ -311,11 +311,13 @@ class Alignment(data.Text):
             return None
         raise NotImplementedError("Can't split generic alignment files")
 
+
 class FastaGz(Sequence, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1929"
     file_ext = "fasta.gz"
     compressed = True
+
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTA format"""
         if not SNIFF_COMPRESSED_FASTAS:
@@ -323,6 +325,7 @@ class FastaGz(Sequence, Binary):
         if not is_gzip(filename):
             return False
         return Sequence.sniff(self, filename)
+        
 
 class Fasta(Sequence):
     """Class representing a FASTA sequence"""
