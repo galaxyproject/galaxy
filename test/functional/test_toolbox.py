@@ -45,7 +45,10 @@ class ToolTestCase(TwillTestCase):
         # If the test generation had an error, raise
         if testdef.error:
             if testdef.exception:
-                raise testdef.exception
+                if isinstance(testdef.exception, Exception):
+                    raise testdef.exception
+                else:
+                    raise Exception(testdef.exception)
             else:
                 raise Exception("Test parse failure")
 

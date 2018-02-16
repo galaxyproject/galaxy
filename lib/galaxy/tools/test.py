@@ -28,14 +28,48 @@ def parse_tests(tool, tests_source):
     Build ToolTestBuilder objects for each "<test>" elements and
     return default interactor (if any).
     """
-    default_interactor = os.environ.get('GALAXY_TEST_DEFAULT_INTERACTOR', DEFAULT_INTERACTOR)
-    tests_dict = tests_source.parse_tests_to_dict()
-    tests_default_interactor = tests_dict.get('interactor', default_interactor)
+    raw_tests_dict = tests_source.parse_tests_to_dict()
     tests = []
-    for i, test_dict in enumerate(tests_dict.get('tests', [])):
-        test = ToolTestBuilder(tool, test_dict, i, default_interactor=tests_default_interactor)
+    for i, raw_test_dict in enumerate(raw_tests_dict.get('tests', [])):
+        test = builder_from_tool_object(tool, i, raw_test_dict)
         tests.append(test)
     return tests
+
+
+def builder_from_tool_object(tool, test_index, raw_test_dict):
+    required_files = []
+
+    num_outputs = raw_test_dict.get('expect_num_outputs', None)
+    if num_outputs:
+        num_outputs = int(num_outputs)
+
+    try:
+        processed_test_dict = {
+            "inputs": _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files),
+            "outputs": raw_test_dict["outputs"],
+            "output_collections": raw_test_dict["output_collections"],
+            "num_outputs": num_outputs,
+            "command_line": raw_test_dict.get("command", None),
+            "stdout": raw_test_dict.get("stdout", None),
+            "stderr": raw_test_dict.get("stderr", None),
+            "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
+            "expect_failure": raw_test_dict.get("expect_failure", False),
+            "md5": raw_test_dict.get("md5", None),
+            "required_files": required_files,
+            "tool_id": tool.id,
+            "test_index": test_index,
+            "error": False,
+        }
+    except Exception as e:
+        processed_test_dict = {
+            "tool_id": tool.id,
+            "test_index": test_index,
+            "inputs": {},
+            "error": True,
+            "exception": str(e),
+        }
+
+    return ToolTestBuilder(processed_test_dict)
 
 
 class ToolTestBuilder(object):
@@ -45,25 +79,31 @@ class ToolTestBuilder(object):
     doing dynamic tests in this way allows better integration)
     """
 
-    def __init__(self, tool, test_dict, i, default_interactor):
-        name = test_dict.get('name', 'Test-%d' % (i + 1))
-        maxseconds = test_dict.get('maxseconds', DEFAULT_MAX_SECS)
+    def __init__(self, processed_test_dict):
+        test_index = processed_test_dict["test_index"]
+        name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
+        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_MAX_SECS)
         if maxseconds is not None:
             maxseconds = int(maxseconds)
 
-        self.tool = tool
+        self.tool_id = processed_test_dict["tool_id"]
         self.name = name
         self.maxseconds = maxseconds
-        self.required_files = []
-        self.inputs = {}
-        self.outputs = []
-        # By default do not making assertions on number of outputs - but to
-        # test filtering allow explicitly state number of outputs.
-        self.num_outputs = None
-        self.error = False
-        self.exception = None
+        self.required_files = processed_test_dict.get("required_files", [])
+        self.inputs = processed_test_dict.get("inputs", {})
+        self.outputs = processed_test_dict.get("outputs", [])
+        self.num_outputs = processed_test_dict.get("num_outputs", 0)
 
-        self.__handle_test_dict(test_dict, i, default_interactor)
+        self.error = processed_test_dict.get("error", False)
+        self.exception = processed_test_dict.get("exception", None)
+
+        self.output_collections = processed_test_dict.get("output_collections", None)
+        self.command_line = processed_test_dict.get("command", None)
+        self.stdout = processed_test_dict.get("stdout", None)
+        self.stderr = processed_test_dict.get("stderr", None)
+        self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
+        self.expect_failure = processed_test_dict.get("expect_failure", False)
+        self.md5 = processed_test_dict.get("md5", None)
 
     def test_data(self):
         """
@@ -71,164 +111,96 @@ class ToolTestBuilder(object):
         """
         return test_data_iter(self.required_files)
 
-    def __matching_case_for_value(self, cond, declared_value):
-        test_param = cond.test_param
-        if isinstance(test_param, galaxy.tools.parameters.basic.BooleanToolParameter):
-            if declared_value is None:
-                # No explicit value for param in test case, determine from default
-                query_value = test_param.checked
-            else:
-                query_value = _process_bool_param_value(test_param, declared_value)
+    def to_dict(self):
+        return {
+            "inputs": self.inputs,
+            "outputs": self.outputs,
+            "output_collections": self.output_collections,
+            "num_outputs": self.num_outputs,
+            "command_line": self.command_line,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "expect_exit_code": self.expect_exit_code,
+            "expect_failure": self.expect_failure,
+            "md5": self.md5,
+            "name": self.name,
+            "test_index": self.test_index,
+            "tool_id": self.tool_id,
+        }
 
-            def matches_declared_value(case_value):
-                return _process_bool_param_value(test_param, case_value) == query_value
-        elif isinstance(test_param, galaxy.tools.parameters.basic.SelectToolParameter):
-            if declared_value is not None:
-                # Test case supplied explicit value to check against.
 
-                def matches_declared_value(case_value):
-                    return case_value == declared_value
-            elif test_param.static_options:
-                # No explicit value in test case, not much to do if options are dynamic but
-                # if static options are available can find the one specified as default or
-                # fallback on top most option (like GUI).
-                for (name, value, selected) in test_param.static_options:
-                    if selected:
-                        default_option = name
-                else:
-                    first_option = test_param.static_options[0]
-                    first_option_value = first_option[1]
-                    default_option = first_option_value
-
-                def matches_declared_value(case_value):
-                    return case_value == default_option
-            else:
-                # No explicit value for this param and cannot determine a
-                # default - give up. Previously this would just result in a key
-                # error exception.
-                msg = "Failed to find test parameter value specification required for conditional %s" % cond.name
-                raise Exception(msg)
-
-        # Check the tool's defined cases against predicate to determine
-        # selected or default.
-        for i, case in enumerate(cond.cases):
-            if matches_declared_value(case.value):
-                return case
-        else:
-            msg_template = "%s - Failed to find case matching value (%s) for test parameter specification for conditional %s. Remainder of test behavior is unspecified."
-            msg = msg_template % (self.tool.id, declared_value, cond.name)
-            log.info(msg)
-
-    def __split_if_str(self, value):
-        split = isinstance(value, string_types)
-        if split:
-            value = value.split(",")
-        return value
-
-    def __handle_test_dict(self, test_dict, i, default_interactor):
-        try:
-            # Mechanism test code uses for interacting with Galaxy instance,
-            # until 'api' is the default switch this to API to use its new
-            # features. Once 'api' is the default set to 'twill' to use legacy
-            # features or workarounds.
-            self.interactor = test_dict.get('interactor', default_interactor)
-
-            self.inputs = self.__process_raw_inputs(self.tool.inputs, test_dict["inputs"])
-            self.outputs = test_dict["outputs"]
-            self.output_collections = test_dict["output_collections"]
-            num_outputs = test_dict.get('expect_num_outputs', None)
-            if num_outputs:
-                num_outputs = int(num_outputs)
-            self.num_outputs = num_outputs
-            self.command_line = test_dict.get("command", None)
-            self.stdout = test_dict.get("stdout", None)
-            self.stderr = test_dict.get("stderr", None)
-            self.expect_exit_code = test_dict.get("expect_exit_code", None)
-            self.expect_failure = test_dict.get("expect_failure", False)
-            self.md5 = test_dict.get("md5", None)
-        except Exception as e:
-            self.inputs = {}
-            self.error = True
-            self.exception = e
-
-    def __process_raw_inputs(self, tool_inputs, raw_inputs, parent_context=None):
-        """
-        Recursively expand flat list of inputs into "tree" form of flat list
-        (| using to nest to new levels) structure and expand dataset
-        information as proceeding to populate self.required_files.
-        """
-        parent_context = parent_context or RootParamContext()
-        expanded_inputs = {}
-        for key, value in tool_inputs.items():
-            if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
-                cond_context = ParamContext(name=value.name, parent_context=parent_context)
-                case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
-                raw_input = case_context.extract_value(raw_inputs)
-                case_value = raw_input[1] if raw_input else None
-                case = self.__matching_case_for_value(value, case_value)
-                if case:
-                    for input_name, input_value in case.inputs.items():
-                        case_inputs = self.__process_raw_inputs({input_name: input_value}, raw_inputs, parent_context=cond_context)
-                        expanded_inputs.update(case_inputs)
-                    if not value.type == "text":
-                        expanded_case_value = self.__split_if_str(case.value)
-                    if case_value is not None:
-                        # A bit tricky here - we are growing inputs with value
-                        # that may be implicit (i.e. not defined by user just
-                        # a default defined in tool). So we do not want to grow
-                        # expanded_inputs and risk repeat block viewing this
-                        # as a new instance with value defined and hence enter
-                        # an infinite loop - hence the "case_value is not None"
-                        # check.
-                        processed_value = _process_simple_value(value.test_param, expanded_case_value)
-                        expanded_inputs[case_context.for_state()] = processed_value
-            elif isinstance(value, galaxy.tools.parameters.grouping.Section):
-                context = ParamContext(name=value.name, parent_context=parent_context)
+def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_context=None):
+    """
+    Recursively expand flat list of inputs into "tree" form of flat list
+    (| using to nest to new levels) structure and expand dataset
+    information as proceeding to populate self.required_files.
+    """
+    parent_context = parent_context or RootParamContext()
+    expanded_inputs = {}
+    for key, value in tool_inputs.items():
+        if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
+            cond_context = ParamContext(name=value.name, parent_context=parent_context)
+            case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
+            raw_input = case_context.extract_value(raw_inputs)
+            case_value = raw_input[1] if raw_input else None
+            case = _matching_case_for_value(tool, value, case_value)
+            if case:
+                for input_name, input_value in case.inputs.items():
+                    case_inputs = _process_raw_inputs(tool, {input_name: input_value}, raw_inputs, required_files, parent_context=cond_context)
+                    expanded_inputs.update(case_inputs)
+                if not value.type == "text":
+                    expanded_case_value = _split_if_str(case.value)
+                if case_value is not None:
+                    # A bit tricky here - we are growing inputs with value
+                    # that may be implicit (i.e. not defined by user just
+                    # a default defined in tool). So we do not want to grow
+                    # expanded_inputs and risk repeat block viewing this
+                    # as a new instance with value defined and hence enter
+                    # an infinite loop - hence the "case_value is not None"
+                    # check.
+                    processed_value = _process_simple_value(value.test_param, expanded_case_value)
+                    expanded_inputs[case_context.for_state()] = processed_value
+        elif isinstance(value, galaxy.tools.parameters.grouping.Section):
+            context = ParamContext(name=value.name, parent_context=parent_context)
+            for r_name, r_value in value.inputs.items():
+                expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, parent_context=context)
+                if expanded_input:
+                    expanded_inputs.update(expanded_input)
+        elif isinstance(value, galaxy.tools.parameters.grouping.Repeat):
+            repeat_index = 0
+            while True:
+                context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
+                updated = False
                 for r_name, r_value in value.inputs.items():
-                    expanded_input = self.__process_raw_inputs({context.for_state(): r_value}, raw_inputs, parent_context=context)
+                    expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, parent_context=context)
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
-            elif isinstance(value, galaxy.tools.parameters.grouping.Repeat):
-                repeat_index = 0
-                while True:
-                    context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
-                    updated = False
-                    for r_name, r_value in value.inputs.items():
-                        expanded_input = self.__process_raw_inputs({context.for_state(): r_value}, raw_inputs, parent_context=context)
-                        if expanded_input:
-                            expanded_inputs.update(expanded_input)
-                            updated = True
-                    if not updated:
-                        break
-                    repeat_index += 1
-            else:
-                context = ParamContext(name=value.name, parent_context=parent_context)
-                raw_input = context.extract_value(raw_inputs)
-                if raw_input:
-                    (name, param_value, param_extra) = raw_input
-                    if not value.type == "text":
-                        param_value = self.__split_if_str(param_value)
-                    if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
-                        if not isinstance(param_value, list):
-                            param_value = [param_value]
-                        map(lambda v: self.__add_uploaded_dataset(context.for_state(), v, param_extra, value), param_value)
-                        processed_value = param_value
-                    elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
-                        assert 'collection' in param_extra
-                        collection_def = param_extra['collection']
-                        for (name, value, extra) in collection_def.collect_inputs():
-                            require_file(name, value, extra, self.required_files)
-                        processed_value = collection_def
-                    else:
-                        processed_value = _process_simple_value(value, param_value)
-                    expanded_inputs[context.for_state()] = processed_value
-        return expanded_inputs
-
-    def __add_uploaded_dataset(self, name, value, extra, input_parameter):
-        if value is None:
-            assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
-            return value
-        return require_file(name, value, extra, self.required_files)
+                        updated = True
+                if not updated:
+                    break
+                repeat_index += 1
+        else:
+            context = ParamContext(name=value.name, parent_context=parent_context)
+            raw_input = context.extract_value(raw_inputs)
+            if raw_input:
+                (name, param_value, param_extra) = raw_input
+                if not value.type == "text":
+                    param_value = _split_if_str(param_value)
+                if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
+                    if not isinstance(param_value, list):
+                        param_value = [param_value]
+                    map(lambda v: _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files), param_value)
+                    processed_value = param_value
+                elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
+                    assert 'collection' in param_extra
+                    collection_def = param_extra['collection']
+                    for (name, value, extra) in collection_def.collect_inputs():
+                        require_file(name, value, extra, required_files)
+                    processed_value = collection_def
+                else:
+                    processed_value = _process_simple_value(value, param_value)
+                expanded_inputs[context.for_state()] = processed_value
+    return expanded_inputs
 
 
 def _process_simple_value(param, param_value):
@@ -264,6 +236,69 @@ def _process_simple_value(param, param_value):
     else:
         processed_value = param_value
     return processed_value
+
+
+def _matching_case_for_value(tool, cond, declared_value):
+    test_param = cond.test_param
+    if isinstance(test_param, galaxy.tools.parameters.basic.BooleanToolParameter):
+        if declared_value is None:
+            # No explicit value for param in test case, determine from default
+            query_value = test_param.checked
+        else:
+            query_value = _process_bool_param_value(test_param, declared_value)
+
+        def matches_declared_value(case_value):
+            return _process_bool_param_value(test_param, case_value) == query_value
+    elif isinstance(test_param, galaxy.tools.parameters.basic.SelectToolParameter):
+        if declared_value is not None:
+            # Test case supplied explicit value to check against.
+
+            def matches_declared_value(case_value):
+                return case_value == declared_value
+        elif test_param.static_options:
+            # No explicit value in test case, not much to do if options are dynamic but
+            # if static options are available can find the one specified as default or
+            # fallback on top most option (like GUI).
+            for (name, value, selected) in test_param.static_options:
+                if selected:
+                    default_option = name
+            else:
+                first_option = test_param.static_options[0]
+                first_option_value = first_option[1]
+                default_option = first_option_value
+
+            def matches_declared_value(case_value):
+                return case_value == default_option
+        else:
+            # No explicit value for this param and cannot determine a
+            # default - give up. Previously this would just result in a key
+            # error exception.
+            msg = "Failed to find test parameter value specification required for conditional %s" % cond.name
+            raise Exception(msg)
+
+    # Check the tool's defined cases against predicate to determine
+    # selected or default.
+    for i, case in enumerate(cond.cases):
+        if matches_declared_value(case.value):
+            return case
+    else:
+        msg_template = "%s - Failed to find case matching value (%s) for test parameter specification for conditional %s. Remainder of test behavior is unspecified."
+        msg = msg_template % (tool.id, declared_value, cond.name)
+        log.info(msg)
+
+
+def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
+    if value is None:
+        assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
+        return value
+    return require_file(name, value, extra, required_files)
+
+
+def _split_if_str(value):
+    split = isinstance(value, string_types)
+    if split:
+        value = value.split(",")
+    return value
 
 
 def _process_bool_param_value(param, param_value):
