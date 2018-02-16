@@ -357,21 +357,74 @@ class ToolStdioExitCode(object):
 
 
 class TestCollectionDef(object):
-    # TODO: do not require XML directly here.
 
-    def __init__(self, elem, parse_param_elem):
-        self.elements = []
+    def __init__(self, attrib, name, collection_type, elements):
+        self.attrib = attrib
+        self.collection_type = collection_type
+        self.elements = elements
+        self.name = name
+
+    @staticmethod
+    def from_xml(elem, parse_param_elem):
+        elements = []
         attrib = dict(elem.attrib)
-        self.collection_type = attrib["type"]
-        self.name = attrib.get("name", "Unnamed Collection")
+        collection_type = attrib["type"]
+        name = attrib.get("name", "Unnamed Collection")
         for element in elem.findall("element"):
             element_attrib = dict(element.attrib)
             element_identifier = element_attrib["name"]
             nested_collection_elem = element.find("collection")
             if nested_collection_elem is not None:
-                self.elements.append((element_identifier, TestCollectionDef(nested_collection_elem, parse_param_elem)))
+                elements.append((element_identifier, TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)))
             else:
-                self.elements.append((element_identifier, parse_param_elem(element)))
+                elements.append((element_identifier, parse_param_elem(element)))
+
+        return TestCollectionDef(
+            attrib=attrib,
+            collection_type=collection_type,
+            elements=elements,
+            name=name,
+        )
+
+    def to_dict(self):
+        def element_to_dict(element_pair):
+            element_identifier, element_def = element_pair
+            if isinstance(element_def, TestCollectionDef):
+                element_def = element_def.to_dict()
+            return {
+                "element_identifier": element_identifier,
+                "element_def": element_def,
+            }
+
+        return {
+            "model_class": "TestCollectionDef",
+            "attrib": self.attrib,
+            "collection_type": self.collection_type,
+            "elements": map(element_to_dict, self.elements or []),
+            "name": self.name,
+        }
+
+    @staticmethod
+    def from_dict(as_dict):
+        assert as_dict["model_class"] == "TestCollectionDef"
+
+        def element_from_dict(element_dict):
+            if "element_def" not in element_dict:
+                raise Exception("Invalid element_dict %s" % element_dict)
+            element_def = element_dict["element_def"]
+            # TODO: stop using tuples and use dicts internally to eliminate this check
+            if not isinstance(element_def, dict):
+                pass
+            elif element_def.get("model_class", None) == "TestCollectionDef":
+                element_def = TestCollectionDef.from_dict(element_def)
+            return (element_dict["element_identifier"], element_def)
+
+        return TestCollectionDef(
+            attrib=as_dict["attrib"],
+            name=as_dict["name"],
+            elements=map(element_from_dict, as_dict["elements"] or []),
+            collection_type=as_dict["collection_type"],
+        )
 
     def collect_inputs(self):
         inputs = []
@@ -393,3 +446,18 @@ class TestCollectionOutputDef(object):
         self.count = int(count) if count is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
+
+    @staticmethod
+    def from_dict(as_dict):
+        return TestCollectionOutputDef(
+            name=as_dict["name"],
+            attrib=as_dict["attrib"],
+            element_tests=as_dict["element_tests"],
+        )
+
+    def to_dict(self):
+        return dict(
+            name=self.name,
+            attrib=self.attrib,
+            element_tests=self.element_tests
+        )

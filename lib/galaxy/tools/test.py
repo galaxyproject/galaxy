@@ -6,6 +6,7 @@ from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
+from galaxy.tools.verify.interactor import ToolTestDescription
 from galaxy.util import string_as_bool
 
 try:
@@ -15,11 +16,6 @@ except ImportError:
         return x
 
 log = logging.getLogger(__name__)
-
-DEFAULT_FTYPE = 'auto'
-DEFAULT_DBKEY = 'hg17'
-DEFAULT_INTERACTOR = "api"  # Default mechanism test code uses for interacting with Galaxy instance.
-DEFAULT_MAX_SECS = None
 
 
 @nottest
@@ -31,12 +27,12 @@ def parse_tests(tool, tests_source):
     raw_tests_dict = tests_source.parse_tests_to_dict()
     tests = []
     for i, raw_test_dict in enumerate(raw_tests_dict.get('tests', [])):
-        test = builder_from_tool_object(tool, i, raw_test_dict)
+        test = description_from_tool_object(tool, i, raw_test_dict)
         tests.append(test)
     return tests
 
 
-def builder_from_tool_object(tool, test_index, raw_test_dict):
+def description_from_tool_object(tool, test_index, raw_test_dict):
     required_files = []
 
     num_outputs = raw_test_dict.get('expect_num_outputs', None)
@@ -69,64 +65,7 @@ def builder_from_tool_object(tool, test_index, raw_test_dict):
             "exception": str(e),
         }
 
-    return ToolTestBuilder(processed_test_dict)
-
-
-class ToolTestBuilder(object):
-    """
-    Encapsulates information about a tool test, and allows creation of a
-    dynamic TestCase class (the unittest framework is very class oriented,
-    doing dynamic tests in this way allows better integration)
-    """
-
-    def __init__(self, processed_test_dict):
-        test_index = processed_test_dict["test_index"]
-        name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
-        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_MAX_SECS)
-        if maxseconds is not None:
-            maxseconds = int(maxseconds)
-
-        self.tool_id = processed_test_dict["tool_id"]
-        self.name = name
-        self.maxseconds = maxseconds
-        self.required_files = processed_test_dict.get("required_files", [])
-        self.inputs = processed_test_dict.get("inputs", {})
-        self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = processed_test_dict.get("num_outputs", 0)
-
-        self.error = processed_test_dict.get("error", False)
-        self.exception = processed_test_dict.get("exception", None)
-
-        self.output_collections = processed_test_dict.get("output_collections", None)
-        self.command_line = processed_test_dict.get("command", None)
-        self.stdout = processed_test_dict.get("stdout", None)
-        self.stderr = processed_test_dict.get("stderr", None)
-        self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
-        self.expect_failure = processed_test_dict.get("expect_failure", False)
-        self.md5 = processed_test_dict.get("md5", None)
-
-    def test_data(self):
-        """
-        Iterator over metadata representing the required files for upload.
-        """
-        return test_data_iter(self.required_files)
-
-    def to_dict(self):
-        return {
-            "inputs": self.inputs,
-            "outputs": self.outputs,
-            "output_collections": self.output_collections,
-            "num_outputs": self.num_outputs,
-            "command_line": self.command_line,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-            "expect_exit_code": self.expect_exit_code,
-            "expect_failure": self.expect_failure,
-            "md5": self.md5,
-            "name": self.name,
-            "test_index": self.test_index,
-            "tool_id": self.tool_id,
-        }
+    return ToolTestDescription(processed_test_dict)
 
 
 def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_context=None):
@@ -314,30 +253,6 @@ def _process_bool_param_value(param, param_value):
     else:
         processed_value = string_as_bool(param_value)
     return [processed_value] if was_list else processed_value
-
-
-@nottest
-def test_data_iter(required_files):
-    for fname, extra in required_files:
-        data_dict = dict(
-            fname=fname,
-            metadata=extra.get('metadata', []),
-            composite_data=extra.get('composite_data', []),
-            ftype=extra.get('ftype', DEFAULT_FTYPE),
-            dbkey=extra.get('dbkey', DEFAULT_DBKEY),
-        )
-        edit_attributes = extra.get('edit_attributes', [])
-
-        # currently only renaming is supported
-        for edit_att in edit_attributes:
-            if edit_att.get('type', None) == 'name':
-                new_name = edit_att.get('value', None)
-                assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
-                data_dict['name'] = new_name
-            else:
-                raise Exception('edit_attributes type (%s) is unimplemented' % edit_att.get('type', None))
-
-        yield data_dict
 
 
 def require_file(name, value, extra, required_files):
