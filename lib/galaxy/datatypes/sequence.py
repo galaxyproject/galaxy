@@ -39,6 +39,7 @@ if sys.version_info > (3,):
 log = logging.getLogger(__name__)
 
 SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
+SNIFF_COMPRESSED_FASTAS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTA_SNIFFING", "0") == "1"
 
 
 class SequenceSplitLocations(data.Text):
@@ -310,6 +311,18 @@ class Alignment(data.Text):
             return None
         raise NotImplementedError("Can't split generic alignment files")
 
+class FastaGz(Sequence, Binary):
+    """Class representing a generic compressed FASTQ sequence"""
+    edam_format = "format_1929"
+    file_ext = "fasta.gz"
+    compressed = True
+    def sniff(self, filename):
+        """Determines whether the file is in gzip-compressed FASTA format"""
+        if not SNIFF_COMPRESSED_FASTAS:
+            return False
+        if not is_gzip(filename):
+            return False
+        return Sequence.sniff(self, filename)
 
 class Fasta(Sequence):
     """Class representing a FASTA sequence"""
