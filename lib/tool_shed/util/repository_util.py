@@ -396,7 +396,7 @@ def get_installed_tool_shed_repository(app, id):
         return_list = False
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
-    repository_ids = [app.security.decode_id(i)for i in id]
+    repository_ids = [app.security.decode_id(i) for i in id]
     rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
     if return_list:
         return rval

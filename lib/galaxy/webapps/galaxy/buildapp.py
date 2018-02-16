@@ -108,9 +108,10 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
     webapp.add_client_route('/openids/list')
+    webapp.add_client_route('/visualizations/dataset_id={dataset_id}')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
-    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
@@ -609,29 +610,17 @@ def populate_api_routes(webapp, app):
     # ===== WEBHOOKS API =====
     # ========================
 
-    webapp.mapper.connect('get_all',
+    webapp.mapper.connect('get_all_webhooks',
                           '/api/webhooks',
                           controller='webhooks',
-                          action='get_all',
-                          conditions=dict(method=["GET"]))
+                          action='all_webhooks',
+                          conditions=dict(method=['GET']))
 
-    webapp.mapper.connect('get_random',
-                          '/api/webhooks/{webhook_type}',
+    webapp.mapper.connect('get_webhook_data',
+                          '/api/webhooks/{webhook_id}/data',
                           controller='webhooks',
-                          action='get_random',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_all_by_type',
-                          '/api/webhooks/{webhook_type}/all',
-                          controller='webhooks',
-                          action='get_all_by_type',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_data',
-                          '/api/webhooks/{webhook_name}/get_data',
-                          controller='webhooks',
-                          action='get_data',
-                          conditions=dict(method=["GET"]))
+                          action='webhook_data',
+                          conditions=dict(method=['GET']))
 
     # =======================
     # ===== LIBRARY API =====
@@ -1007,9 +996,10 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # If sentry logging is enabled, log here before propogating up to
     # the error middleware
     sentry_dsn = conf.get('sentry_dsn', None)
+    sentry_sloreq = float(conf.get('sentry_sloreq_threshold', 0))
     if sentry_dsn:
         from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn,))
+        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn, sentry_sloreq))
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance

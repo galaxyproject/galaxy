@@ -551,8 +551,9 @@ class Configuration(object):
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
-        # The application stack code may manipulate the server name
-        self.base_server_name = self.server_name
+        # The application stack code may manipulate the server name. It also needs to be accessible via the get() method
+        # for galaxy.util.facts()
+        self.config_dict['base_server_name'] = self.base_server_name = self.server_name
         # Store all configured server names for the message queue routing
         self.server_names = []
         for section in global_conf_parser.sections():
@@ -601,6 +602,7 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
             raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")

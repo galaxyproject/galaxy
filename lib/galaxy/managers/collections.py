@@ -215,10 +215,20 @@ class DatasetCollectionManager(object):
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
         return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
 
-    def delete(self, trans, instance_type, id):
+    def delete(self, trans, instance_type, id, recursive=False, purge=False):
         dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
+
+        if recursive:
+            for dataset in dataset_collection_instance.collection.dataset_instances:
+                self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
+                if not dataset.deleted:
+                    dataset.deleted = True
+
+                if purge and not dataset.purged:
+                    self.hda_manager.purge(dataset)
+
         trans.sa_session.flush()
 
     def update(self, trans, instance_type, id, payload):

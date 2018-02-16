@@ -52,7 +52,7 @@ class DependencyResolversView(object):
         kwds = {'install': False,
                 'return_null': True,
                 'installed_tool_dependencies': installed_tool_dependencies}
-        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds)[0] for tool, requirements in tool_requirements_d.items()}
+        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
     def uninstall_dependencies(self, index=None, **payload):
@@ -101,7 +101,7 @@ class DependencyResolversView(object):
         return list(removed_environments)
 
     def install_dependencies(self, requirements):
-        return self._dependency_manager.requirements_to_dependencies(requirements, **{'install': True})
+        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
 
     def install_dependency(self, index=None, **payload):
         """

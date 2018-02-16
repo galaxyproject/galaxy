@@ -34,6 +34,8 @@ Parsley
 six
 Whoosh
 galaxy_sequence_utils
+h5py
+packaging
 
 # Cheetah and dependencies
 Cheetah3
@@ -50,7 +52,7 @@ kombu
 
 # Pulsar requirements
 psutil
-pulsar-galaxy-lib>=0.7.0.dev4
+pulsar-galaxy-lib>=0.8.3
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate

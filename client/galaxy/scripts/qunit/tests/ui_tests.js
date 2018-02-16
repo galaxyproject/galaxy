@@ -68,15 +68,12 @@ QUnit.test("thumbnails", function(assert) {
         assert.ok(thumb.$(".tab-pane").length == options.ntabs, "Two tabs found.");
         assert.ok(thumb.$(".ui-thumbnails-item").length == options.nitems, "Thumbnail item.");
         assert.ok(
-            $(thumb.$(".ui-thumbnails-image")[options.index || 0]).attr("src") == options.image_src,
+            $(thumb.$(".ui-thumbnails-image")[options.index]).attr("src") == options.image_src,
             "Correct image source"
         );
+        assert.ok($(thumb.$(".ui-thumbnails-title")[options.index]).html() == options.title, "Correct title with icon");
         assert.ok(
-            $(thumb.$(".ui-thumbnails-title")[options.index || 0]).html() == options.title,
-            "Correct title with icon"
-        );
-        assert.ok(
-            $(thumb.$(".ui-thumbnails-description-text")[options.index || 0]).html() == options.description,
+            $(thumb.$(".ui-thumbnails-description-text")[options.index]).html() == options.description,
             "Correct description"
         );
     };
@@ -86,7 +83,7 @@ QUnit.test("thumbnails", function(assert) {
         collection: [
             {
                 id: "id",
-                keywords: "default",
+                regular: true,
                 title: "title",
                 title_icon: "title_icon",
                 image_src: "image_src",
@@ -97,6 +94,7 @@ QUnit.test("thumbnails", function(assert) {
     var model = thumb.model;
     $("body").prepend(thumb.$el);
     _test({
+        index: 0,
         ntabs: 2,
         nitems: 2,
         image_src: "image_src",
@@ -105,7 +103,7 @@ QUnit.test("thumbnails", function(assert) {
     });
     thumb.collection.add({
         id: "id_a",
-        keywords: "default_a",
+        regular: true,
         title: "title_a",
         title_icon: "title_icon_a",
         image_src: "image_src_a",

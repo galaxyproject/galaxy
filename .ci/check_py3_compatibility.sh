@@ -7,15 +7,16 @@ else
 fi
 
 export ACK_OPTIONS=" --type python \
---ignore-dir=.git/ \
---ignore-dir=.tox/ \
---ignore-dir=.venv/ \
---ignore-dir=client/node_modules/ \
---ignore-dir=database/ \
---ignore-dir=doc/build/ \
---ignore-dir=eggs/ \
---ignore-dir=static/maps/ \
---ignore-dir=static/scripts/"
+--ignore-dir=.git \
+--ignore-dir=.tox \
+--ignore-dir=.venv \
+--ignore-dir=.venv3 \
+--ignore-dir=client/node_modules \
+--ignore-dir=database \
+--ignore-dir=doc/build \
+--ignore-dir=eggs \
+--ignore-dir=static/maps \
+--ignore-dir=static/scripts"
 
 PYTHON2_ONLY_MODULES="__builtin__ _winreg BaseHTTPServer CGIHTTPServer \
 ConfigParser Cookie cookielib copy_reg cPickle cStringIO Dialog dummy_thread \

@@ -9,6 +9,8 @@ done
 # Conda Python is in use, do not use virtualenv
 if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' ; then
     CONDA_ALREADY_INSTALLED=1
+elif python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
+    CONDA_ALREADY_INSTALLED=1
 else
     CONDA_ALREADY_INSTALLED=0
 fi
@@ -76,7 +78,7 @@ for rmfile in $RMFILES; do
 done
 
 # Determine branch (if using git)
-if command -v git >/dev/null; then
+if command -v git >/dev/null && [ -d .git ]; then
     GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
     case $GIT_BRANCH in
         release_*|master)
@@ -91,7 +93,7 @@ if command -v git >/dev/null; then
     esac
 else
     GIT_BRANCH=0
-    SKIP_CLIENT_BUILD=1
+    DEV_WHEELS=1
 fi
 
 : ${GALAXY_CONFIG_FILE:=config/galaxy.yml}
@@ -118,7 +120,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
             # Ensure Python is a supported version before creating .venv
             python ./scripts/check_python.py || exit 1
             if command -v virtualenv >/dev/null; then
-                virtualenv -p $(command -v python) "$GALAXY_VIRTUAL_ENV"
+                virtualenv -p "$(command -v python)" "$GALAXY_VIRTUAL_ENV"
             else
                 vvers=13.1.2
                 vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -190,13 +192,19 @@ fi
 # Check client build state.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     if [ -f static/client_build_hash.txt ]; then
-        # Compare hash.
-        githash=$(git rev-parse HEAD)
-        statichash=$(cat static/client_build_hash.txt)
-        if [ "$githash" = "$statichash" ]; then
+        # If git is not used and static/client_build_hash.txt is present, next
+        # client rebuilds must be done manually by the admin
+        if [ "$GIT_BRANCH" = "0" ]; then
             SKIP_CLIENT_BUILD=1
         else
-            echo "The Galaxy client is out of date and will be built now."
+            # Compare hash.
+            githash=$(git rev-parse HEAD)
+            statichash=$(cat static/client_build_hash.txt)
+            if [ "$githash" = "$statichash" ]; then
+                SKIP_CLIENT_BUILD=1
+            else
+                echo "The Galaxy client is out of date and will be built now."
+            fi
         fi
     else
         echo "The Galaxy client has not yet been built and will be built now."
@@ -207,11 +215,11 @@ fi
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv `command -v node`; then
+        if ! in_venv "$(command -v node)"; then
             echo "Installing node into $VIRTUAL_ENV with nodeenv."
             nodeenv -p
         fi
-        if ! in_venv `command -v yarn`; then
+        if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
         fi

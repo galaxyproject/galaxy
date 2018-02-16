@@ -2210,7 +2210,7 @@ sanitizer to prevent Galaxy from escaping the result.
 ```xml
 <param name="feature_color" type="color" label="Default feature color" value="#ff00ff">
   <sanitizer>
-    <valid initial="string.letters,string.digits">
+    <valid initial="string.ascii_letters,string.digits">
       <add value="#" />
     </valid>
   </sanitizer>
@@ -3227,17 +3227,28 @@ replace the basic parameter sanitization with custom directives. This tag set is
 contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
 ``<mapping>`` tags.
 
+### Character presets
+
+The following presets can be used when specifying the valid characters: the
+[constants from the ``string`` Python3 module](https://docs.python.org/3/library/string.html#string-constants),
+plus ``default`` (equal to ``string.ascii_letters + string.digits + " -=_.()/+*^,:?!"``)
+and ``none`` (empty set).
+The ``string.letters``, ``string.lowercase`` and ``string.uppercase`` Python2
+constants are accepted for backward compatibility, but are aliased to the
+corresponding not locale-dependent constant (i.e. ``string.ascii_letters``,
+``string.ascii_lowercase`` and ``string.ascii_uppercase`` respectively).
+
 ### Examples
 
-This example replaces the invalid character default of ``X`` with the empty
-string (so invalid characters are effectively dropped instead of replaced with
-``X``) and indicates the only valid characters for this input are ASCII letters,
-ASCII digits, and ``_``.
+This example specifies to use the empty string as the invalid character (instead
+of the default ``X``, so invalid characters are effectively dropped instead of
+replaced with ``X``) and indicates that the only valid characters for this input
+are ASCII letters, digits, and ``_``.
 
 ```
 <param name="mystring" type="text" label="Say something interesting">
     <sanitizer invalid_char="">
-        <valid initial="string.letters,string.digits"><add value="_" /> </valid>
+        <valid initial="string.ascii_letters,string.digits"><add value="_" /> </valid>
     </sanitizer>
 </param>
 ```
@@ -3269,7 +3280,7 @@ input is sanitized at all (the default is ``true``).</xs:documentation>
     <xs:attribute name="invalid_char" type="xs:string" default="X">
       <xs:annotation>
         <xs:documentation xml:lang="en">The attribute specifies the character
-used as a replacement for invalid characters.</xs:documentation>
+used as a replacement for invalid characters (the default is ``X``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3291,7 +3302,8 @@ Contains ``<add>`` and ``<remove>`` tags.]]></xs:documentation>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This describes the initial characters to
-allow as valid, the default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:documentation>
+allow as valid, specified as a character preset (as defined above). The default
+is the ``default`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3299,11 +3311,11 @@ allow as valid, the default is ``string.letters + string.digits + " -=_.()/+*^,:
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to add individual
 characters or preset lists of characters. Character must not be allowed as a
-valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Add target characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3321,7 +3333,7 @@ Preset lists include default and none as well as those available from string.* (
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Remove characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3345,7 +3357,7 @@ Preset lists include default and none as well as those available from string.* (
     </xs:sequence>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
+        <xs:documentation xml:lang="en">Initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

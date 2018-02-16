@@ -10,7 +10,7 @@ import requests
 from markupsafe import escape
 from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
 
 from galaxy import (
@@ -138,8 +138,10 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
     ]
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching stored_workflow.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        # In addition to that - be sure to lazyload the latest_workflow - it isn't needed and it causes all
+        # of its steps to be eagerly loaded.
+        return trans.sa_session.query(self.model_class).join("user").options(lazyload("latest_workflow"), eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # A public workflow is published, has a slug, and is not deleted.

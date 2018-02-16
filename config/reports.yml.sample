@@ -2,16 +2,58 @@ uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (reports will not be accessible over the network).  Use
-  # '0.0.0.0' to listen on all available network interfaces.
+  # ':9001' to listen on all available network interfaces.
   http: 127.0.0.1:9001
 
-  threads: 8
+  # Number of web server (worker) processes to fork after the
+  # application has loaded.
+  processes: 1
 
-  http-raw-body: True
+  # Number of threads for each web server process.
+  threads: 4
 
-  offload-threads: 8
+  # Number of threads for serving static content and handling internal
+  # routing requests.
+  offload-threads: 2
 
+  # Mapping to serve style content.
+  static-map: /static/style=static/style/blue
+
+  # Mapping to serve the remainder of the static content.
+  static-map: /static=static
+
+  # Enable the master process manager. Disabled by default for maximum
+  # compatibility with CTRL+C, but should be enabled for use with
+  # --daemon and/or production deployments.
+  master: false
+
+  # Path to the application's Python virtual environment.
+  virtualenv: .venv
+
+  # Path to the application's Python library.
+  pythonpath: lib
+
+  # The entry point which returns the web application (e.g. Galaxy,
+  # Reports, etc.) that you are loading.
   module: galaxy.webapps.reports.buildapp:uwsgi_app()
+
+  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
+  # (its default is to brutally reload workers)
+  die-on-term: true
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGINT (its default is to brutally kill workers)
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGTERM (its default is to brutally kill workers)
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+
+  # Feature necessary for proper mule signal handling
+  py-call-osafterfork: true
+
+  # Ensure application threads will run if `threads` is unset.
+  enable-threads: true
 
 reports:
 
@@ -25,7 +67,7 @@ reports:
   # path as the prefix in the filter above.  This value becomes the
   # "path" attribute set in the cookie so the cookies from each instance
   # will not clobber each other.
-  #cookie_path: None
+  #cookie_path: null
 
   # Verbosity of console log messages.  Acceptable values can be found
   # here: https://docs.python.org/2/library/logging.html#logging-levels
@@ -35,7 +77,7 @@ reports:
   # Galaxy instances, so sqlite (and the default value below) is not
   # supported. An SQLAlchemy connection string should be used specify an
   # external database.
-  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
+  #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
 
   # Where dataset files are saved Temporary storage for additional
   # datasets, this should be shared through the cluster
@@ -50,20 +92,20 @@ reports:
   #template_cache_path: database/compiled_templates/reports
 
   # Configuration for debugging middleware
-  #debug: False
+  #debug: false
 
   # Check for WSGI compliance.
-  #use_lint: False
+  #use_lint: false
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: True
+  #use_interactive: true
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk space rapidly!)
-  #use_heartbeat: True
+  #use_heartbeat: true
 
   # Profiling middleware (cProfile based)
-  #use_profile: True
+  #use_profile: true
 
   # Mail
   #smtp_server: yourserver@yourfacility.edu
