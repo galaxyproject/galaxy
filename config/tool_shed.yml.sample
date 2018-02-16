@@ -11,6 +11,9 @@ uwsgi:
 
   offload-threads: 8
 
+  static-map: /static/style=static/style/blue
+  static-map: /static=static
+
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
 
 tool_shed:
