@@ -325,7 +325,7 @@ class FastaGz(Sequence, Binary):
         if not is_gzip(filename):
             return False
         return Sequence.sniff(self, filename)
-        
+
 
 class Fasta(Sequence):
     """Class representing a FASTA sequence"""
