@@ -9,13 +9,18 @@ from json import dumps
 from logging import getLogger
 
 try:
+    from nose.tools import nottest
+except ImportError:
+    def nottest(x):
+        return x
+try:
     import requests
 except ImportError:
     requests = None
 from six import StringIO, text_type
 
 from galaxy import util
-from galaxy.tools.parser.interface import TestCollectionDef
+from galaxy.tools.parser.interface import TestCollectionDef, TestCollectionOutputDef
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from .asserts import verify_assertions
@@ -30,6 +35,10 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
+
+DEFAULT_FTYPE = 'auto'
+DEFAULT_DBKEY = 'hg17'
+DEFAULT_MAX_SECS = None
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
@@ -66,6 +75,16 @@ class GalaxyInteractorApi(object):
             return user_key
         test_user = self.ensure_user_with_email(test_user)
         return self._post("users/%s/api_key" % test_user['id'], key=admin_key).json()
+
+    def get_tools(self):
+        response = self._get("tools?in_panel=false")
+        assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
+        return response.json()
+
+    def get_tool_tests(self, tool_id):
+        response = self._get("tools/%s/test_data" % tool_id)
+        assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
+        return response.json()
 
     def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds):
         outfile = output_testdef.outfile
@@ -202,6 +221,7 @@ class GalaxyInteractorApi(object):
         history_json = self._post("histories", {"name": "test_history"}).json()
         return history_json['id']
 
+    @nottest
     def test_data_path(self, tool_id, filename):
         return self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename)).json()
 
@@ -220,14 +240,17 @@ class GalaxyInteractorApi(object):
             "file_type": test_data['ftype'],
             "dbkey": test_data['dbkey'],
         }
-        for elem in test_data.get('metadata', []):
-            tool_input["files_metadata|%s" % elem.get('name')] = elem.get('value')
+        metadata = test_data.get("metadata", {})
+        if not hasattr(metadata, "items"):
+            raise Exception("Invalid metadata description found for input [%s] - [%s]" % (fname, metadata))
+        for name, value in test_data.get('metadata', {}).items():
+            tool_input["files_metadata|%s" % name] = value
 
         composite_data = test_data['composite_data']
         if composite_data:
             files = {}
-            for i, composite_file in enumerate(composite_data):
-                file_name = self.test_data_path(tool_id, composite_file.get("value"))
+            for i, file_name in enumerate(composite_data):
+                file_name = self.test_data_path(tool_id, file_name)
                 files["files_%s|file_data" % i] = open(file_name, 'rb')
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
@@ -830,3 +853,102 @@ class JobOutputsError(AssertionError):
         super(JobOutputsError, self).__init__(big_message)
         self.job_stdio = job_stdio
         self.output_exceptions = output_exceptions
+
+
+class ToolTestDescription(object):
+    """
+    Encapsulates information about a tool test, and allows creation of a
+    dynamic TestCase class (the unittest framework is very class oriented,
+    doing dynamic tests in this way allows better integration)
+    """
+
+    def __init__(self, processed_test_dict):
+        test_index = processed_test_dict["test_index"]
+        name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
+        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_MAX_SECS)
+        if maxseconds is not None:
+            maxseconds = int(maxseconds)
+
+        self.test_index = test_index
+        self.tool_id = processed_test_dict["tool_id"]
+        self.name = name
+        self.maxseconds = maxseconds
+        self.required_files = processed_test_dict.get("required_files", [])
+
+        inputs = processed_test_dict.get("inputs", {})
+        loaded_inputs = {}
+        for key, value in inputs.items():
+            if isinstance(value, dict) and value.get("model_class"):
+                loaded_inputs[key] = TestCollectionDef.from_dict(value)
+            else:
+                loaded_inputs[key] = value
+
+        self.inputs = loaded_inputs
+        self.outputs = processed_test_dict.get("outputs", [])
+        self.num_outputs = processed_test_dict.get("num_outputs", 0)
+
+        self.error = processed_test_dict.get("error", False)
+        self.exception = processed_test_dict.get("exception", None)
+
+        self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
+        self.command_line = processed_test_dict.get("command", None)
+        self.stdout = processed_test_dict.get("stdout", None)
+        self.stderr = processed_test_dict.get("stderr", None)
+        self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
+        self.expect_failure = processed_test_dict.get("expect_failure", False)
+        self.md5 = processed_test_dict.get("md5", None)
+
+    def test_data(self):
+        """
+        Iterator over metadata representing the required files for upload.
+        """
+        return test_data_iter(self.required_files)
+
+    def to_dict(self):
+        inputs_dict = {}
+        for key, value in self.inputs.items():
+            if hasattr(value, "to_dict"):
+                inputs_dict[key] = value.to_dict()
+            else:
+                inputs_dict[key] = value
+
+        return {
+            "inputs": inputs_dict,
+            "outputs": self.outputs,
+            "output_collections": map(lambda o: o.to_dict(), self.output_collections),
+            "num_outputs": self.num_outputs,
+            "command_line": self.command_line,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "expect_exit_code": self.expect_exit_code,
+            "expect_failure": self.expect_failure,
+            "md5": self.md5,
+            "name": self.name,
+            "test_index": self.test_index,
+            "tool_id": self.tool_id,
+            "required_files": self.required_files,
+        }
+
+
+@nottest
+def test_data_iter(required_files):
+    for fname, extra in required_files:
+        data_dict = dict(
+            fname=fname,
+            metadata=extra.get('metadata', {}),
+            composite_data=extra.get('composite_data', []),
+            ftype=extra.get('ftype', DEFAULT_FTYPE),
+            dbkey=extra.get('dbkey', DEFAULT_DBKEY),
+        )
+        edit_attributes = extra.get('edit_attributes', [])
+
+        # currently only renaming is supported
+        for edit_att in edit_attributes:
+            if edit_att.get('type', None) == 'name':
+                new_name = edit_att.get('value', None)
+                assert new_name, 'You must supply the new dataset name as the value tag of the edit_attributes tag'
+                data_dict['name'] = new_name
+            else:
+                raise Exception('edit_attributes type (%s) is unimplemented' % edit_att.get('type', None))
+
+        yield data_dict

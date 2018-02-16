@@ -6,7 +6,7 @@ import unittest
 
 from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.web import security
-from .driver_util import GalaxyTestDriver
+from .driver_util import GalaxyTestDriver, setup_keep_outdir, target_url_parts
 
 log = logging.getLogger(__name__)
 
@@ -17,17 +17,9 @@ class FunctionalTestCase(unittest.TestCase):
         # Security helper
         self.security = security.SecurityHelper(id_secret='changethisinproductiontoo')
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)
-        self.host = os.environ.get('GALAXY_TEST_HOST')
-        self.port = os.environ.get('GALAXY_TEST_PORT')
-        default_url = "http://%s:%s" % (self.host, self.port)
-        self.url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
+        self.host, self.port, self.url = target_url_parts()
         self.test_data_resolver = TestDataResolver()
-        self.keepOutdir = os.environ.get('GALAXY_TEST_SAVE', '')
-        if self.keepOutdir > '':
-            try:
-                os.makedirs(self.keepOutdir)
-            except Exception:
-                pass
+        self.keepOutdir = setup_keep_outdir()
 
     @classmethod
     def setUpClass(cls):

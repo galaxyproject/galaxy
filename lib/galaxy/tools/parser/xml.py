@@ -391,8 +391,6 @@ class XmlToolSource(ToolSource):
             for i, test_elem in enumerate(tests_elem.findall("test")):
                 tests.append(_test_elem_to_dict(test_elem, i))
 
-            _copy_to_dict_if_present(tests_elem, rval, ["interactor"])
-
         return rval
 
     def parse_profile(self):
@@ -431,7 +429,7 @@ def __parse_output_elems(test_elem):
     outputs = []
     for output_elem in test_elem.findall("output"):
         name, file, attributes = __parse_output_elem(output_elem)
-        outputs.append((name, file, attributes))
+        outputs.append([name, file, attributes])
     return outputs
 
 
@@ -464,7 +462,7 @@ def __parse_output_collection_elem(output_collection_elem):
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
     element_tests = __parse_element_tests(output_collection_elem)
-    return TestCollectionOutputDef(name, attrib, element_tests)
+    return TestCollectionOutputDef(name, attrib, element_tests).to_dict()
 
 
 def __parse_element_tests(parent_element):
@@ -641,33 +639,32 @@ def __parse_param_elem(param_elem, i=0):
         value = attrib['value']
     else:
         value = None
-    attrib['children'] = param_elem
-    if attrib['children'] is not None:
+    children_elem = param_elem
+    if children_elem is not None:
         # At this time, we can assume having children only
         # occurs on DataToolParameter test items but this could
         # change and would cause the below parsing to change
         # based upon differences in children items
-        attrib['metadata'] = []
+        attrib['metadata'] = {}
         attrib['composite_data'] = []
         attrib['edit_attributes'] = []
         # Composite datasets need to be renamed uniquely
         composite_data_name = None
-        for child in attrib['children']:
+        for child in children_elem:
             if child.tag == 'composite_data':
-                attrib['composite_data'].append(child)
+                file_name = child.get("value")
+                attrib['composite_data'].append(file_name)
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
                     # fresh history.
                     composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
                         % (i, uuid.uuid1().hex)
             elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
-            elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
+                attrib['metadata'][child.get("name")] = child.get("value")
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append(child)
             elif child.tag == 'collection':
-                attrib['collection'] = TestCollectionDef(child, __parse_param_elem)
+                attrib['collection'] = TestCollectionDef.from_xml(child, __parse_param_elem)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations

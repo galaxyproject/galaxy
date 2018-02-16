@@ -6,10 +6,13 @@ from six.moves.urllib.parse import unquote_plus
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.util.json import safe_dumps
+from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 
@@ -110,6 +113,27 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         return tool.test_data_path(kwd.get("filename"))
+
+    @expose_api_raw_anonymous_and_sessionless
+    def test_data(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data
+        """
+        # TODO: eliminate copy and paste with above code.
+        if 'payload' in kwd:
+            kwd = kwd.get('payload')
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+
+        # Encode in this method to handle odict objects in tool representation.
+        def json_encodeify(obj):
+            if isinstance(obj, odict):
+                return dict(obj)
+            else:
+                return obj
+
+        result = [t.to_dict() for t in tool.tests]
+        return safe_dumps(result, default=json_encodeify)
 
     @expose_api
     @web.require_admin

@@ -28,6 +28,7 @@ from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
+from galaxy.tools.verify.interactor import GalaxyInteractorApi, ToolTestDescription, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -908,23 +909,41 @@ class GalaxyTestDriver(TestDriver):
         return functional.test_toolbox
 
     def run_tool_test(self, tool_id, index=0, resource_parameters={}):
-        import functional.test_toolbox
-        functional.test_toolbox.toolbox = self.app.toolbox
-        tool = self.app.toolbox.get_tool(tool_id)
-        testdef = tool.tests[index]
-        test_case_cls = functional.test_toolbox.ToolTestCase
-        test_case = test_case_cls(methodName="setUp")  # NO-OP
-        test_case.tool_id = tool_id
-        test_case.master_api_key = get_master_api_key()
-        test_case.user_api_key = get_user_api_key()
-        test_case.setUp()
-        test_case.do_it(testdef, resource_parameters=resource_parameters)
+        host, port, url = target_url_parts()
+        galaxy_interactor_kwds = {
+            "galaxy_url": url,
+            "master_api_key": get_master_api_key(),
+            "api_key": get_user_api_key(),
+            "keep_outputs_dir": None,
+        }
+        galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
+        tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id)
+        testdef = ToolTestDescription(tool_test_dicts[index])
+        verify_tool(testdef, tool_id, galaxy_interactor, resource_parameters=resource_parameters)
 
 
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
     test_driver = test_driver_class()
     sys.exit(test_driver.run())
+
+
+def setup_keep_outdir():
+    keep_outdir = os.environ.get('GALAXY_TEST_SAVE', '')
+    if keep_outdir > '':
+        try:
+            os.makedirs(keep_outdir)
+        except Exception:
+            pass
+    return keep_outdir
+
+
+def target_url_parts():
+    host = os.environ.get('GALAXY_TEST_HOST')
+    port = os.environ.get('GALAXY_TEST_PORT')
+    default_url = "http://%s:%s" % (host, port)
+    url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
+    return host, port, url
 
 
 __all__ = (
@@ -937,7 +956,9 @@ __all__ = (
     "database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
+    "setup_keep_outdir",
     "setup_galaxy_config",
+    "target_url_parts",
     "TestDriver",
     "wait_for_http_server",
 )
