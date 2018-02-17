@@ -92,18 +92,14 @@
         var attempts = cnf.attempts;
         var session_id = `${cnf.session_id}${new Date().valueOf()}${file.size}`;
 
-        // submission helper
+        // submits a chunk
         function send(start, success, error) {
-            // access slice caller
             var slicer = file.mozSlice || file.webkitSlice || file.slice;
             if (!slicer) {
                 cnf.error("Browser does not support chunked uploads.");
                 return;
             }
-
-            // build form data
             var end = Math.min(start + cnf.chunksize, file.size);
-            // approximated progress handler, ignores payloads other than file
             _uploadrequest({
                 url: "/_upload_chunk",
                 data: slicer.bind(file)(start, end),
