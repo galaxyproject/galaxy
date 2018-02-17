@@ -22,8 +22,8 @@
         if (cnf.session_id && cnf.content_range) {
             xhr.setRequestHeader("Session-ID", cnf.session_id);
             xhr.setRequestHeader("Content-Type", "application/octet-stream");
+            xhr.setRequestHeader("Content-Disposition", "attachment; filename='chunk'");
             xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
-            xhr.setRequestHeader("Content-Disposition", `attachment; filename="chunk"`);
         } else {
             xhr.setRequestHeader("Accept", "application/json");
         }
@@ -68,7 +68,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 2,
+                chunksize: 1,
                 attempts: 5,
                 url: null,
                 error_file: "File not provied.",
@@ -90,55 +90,47 @@
         }
         var file = file_data.file;
         var attempts = cnf.attempts;
-        var session_id = `${cnf.session_id}${new Date().valueOf()}${file.size}`;
+        var session_id = `${cnf.session_id}-${new Date().valueOf()}-${file.size}`;
 
-        // submits a chunk
-        function send(start, success, error) {
+        // chunk processing helper
+        function process(start) {
+            start = start || 0;
             var slicer = file.mozSlice || file.webkitSlice || file.slice;
             if (!slicer) {
                 cnf.error("Browser does not support chunked uploads.");
                 return;
             }
             var end = Math.min(start + cnf.chunksize, file.size);
+            var size = file.size;
+            console.debug(`Submitting chunk at ${start} bytes...`);
             _uploadrequest({
                 url: "/_upload_chunk",
                 data: slicer.bind(file)(start, end),
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,
-                success: success,
-                error: error,
+                success: response => {
+                    var new_start = start + cnf.chunksize;
+                    if (new_start < size ) {
+                        attempts = cnf.attempts;
+                        process(new_start);
+                    } else {
+                        console.debug("Success.");
+                        cnf.success(response);
+                    }
+                },
+                error: response => {
+                    if (--attempts > 0) {
+                        console.debug("Retrying...");
+                        process(start);
+                    } else {
+                        console.debug(cnf.error_attempt);
+                        cnf.error(cnf.error_attempt);
+                    }
+                },
                 progress: e => {
                     if (e.lengthComputable) {
                         cnf.progress(Math.round((start + e.loaded) * 100 / file.size));
                     }
-                }
-            });
-        }
-
-        // chunk processing helper
-        function process(start) {
-            var start = start || 0;
-            var size = file.size;
-            console.debug("Submitting chunk at " + start + " bytes...");
-            send(start, response => {
-                var new_start = start + cnf.chunksize;
-                if (new_start < size) {
-                    // send next chunk
-                    attempts = cnf.attempts;
-                    process(new_start);
-                } else {
-                    // submission complete show success
-                    console.debug("Success.");
-                    cnf.success(response);
-                }
-            }, response => {
-                // retry or show error
-                if (--attempts > 0) {
-                    console.debug("Retrying...");
-                    process(start);
-                } else {
-                    console.debug(cnf.error_attempt);
-                    cnf.error(cnf.error_attempt);
                 }
             });
         }
