@@ -40,6 +40,14 @@
                     }
                     cnf.error(`${text} (${xhr.status})`);
                 } else {
+                    var response = null;
+                    if (xhr.responseText) {
+                        try {
+                            response = jQuery.parseJSON(xhr.responseText);
+                        } catch (e) {
+                            response = xhr.responseText;
+                        }
+                    }
                     cnf.success(response);
                 }
             }
