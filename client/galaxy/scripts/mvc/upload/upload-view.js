@@ -9,7 +9,6 @@ import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 export default Backbone.View.extend({
     options: {
-        nginx_upload_path: "",
         ftp_upload_site: "n/a",
         default_genome: "?",
         default_extension: "auto",

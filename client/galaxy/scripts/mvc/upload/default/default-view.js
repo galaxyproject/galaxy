@@ -363,7 +363,8 @@ export default Backbone.View.extend({
             this._uploadFtp();
 
             // queue remaining files
-            this.uploadbox.start();
+            var session_id = this.app.options.nginx_upload_store && Galaxy.user.id;
+            this.uploadbox.start(session_id);
             this.render();
         }
     },

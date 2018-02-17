@@ -22,20 +22,9 @@
         xhr.setRequestHeader("Session-ID", cnf.session_id);
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
         xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
-        xhr.setRequestHeader("Content-Disposition", `attachment; filename="${cnf.file.name}"`);
+        xhr.setRequestHeader("Content-Disposition", `attachment; filename="chunk"`);
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
-                var response = null;
-                var extra_info = "";
-                if (xhr.responseText) {
-                    try {
-                        response = jQuery.parseJSON(xhr.responseText);
-                        extra_info = response.err_msg;
-                    } catch (e) {
-                        response = xhr.responseText;
-                        extra_info = response;
-                    }
-                }
                 if (xhr.status < 200 || xhr.status > 299) {
                     var text = xhr.statusText;
                     if (xhr.status == 403) {
@@ -45,7 +34,7 @@
                     } else if (!text) {
                         text = cnf.error_default;
                     }
-                    cnf.error(`${text} (${xhr.status}). ${extra_info}`);
+                    cnf.error(`${text} (${xhr.status})`);
                 } else {
                     cnf.success(response);
                 }
@@ -89,7 +78,7 @@
         }
         var file = file_data.file;
         var attempts = cnf.attempts;
-        var session_id = 1111215056;
+        var session_id = `${cnf.session_id}-${new Date().valueOf()}-${file.size}`;
 
         // submission helper
         function send(start, success, error) {
@@ -285,6 +274,9 @@
         // file queue
         var queue = {};
 
+        // request session identifier
+        var session_id = null;
+
         // queue index/length counter
         var queue_index = 0;
         var queue_length = 0;
@@ -364,10 +356,14 @@
             remove(index);
 
             // create and submit data
-            var submitter = file.chunkmode ? $.uploadchunk : $.uploadpost;
+            var submitter = $.uploadpost;
+            if (file.chunkmode && session_id) {
+                submitter = $.uploadchunk;
+            }
             submitter({
                 url: opts.url,
                 data: opts.initialize(index),
+                session_id: session_id,
                 success: function(message) {
                     opts.success(index, message);
                     process();
@@ -399,7 +395,8 @@
         }
 
         // initiate upload process
-        function start() {
+        function start(identifier) {
+            session_id = identifier;
             if (!queue_running) {
                 queue_running = true;
                 process();
