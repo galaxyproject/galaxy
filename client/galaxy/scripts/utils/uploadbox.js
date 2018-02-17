@@ -19,10 +19,10 @@
         xhr.open("POST", cnf.url, true);
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        xhr.setRequestHeader("X-Content-Range", "bytes " + cnf.content_range);
+        xhr.setRequestHeader("X-Content-Range", `bytes ${cnf.content_range}`);
         xhr.setRequestHeader("Session-ID", cnf.session_id);
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
-        xhr.setRequestHeader("Content-Disposition", 'attachment; filename="big.TXT"');
+        xhr.setRequestHeader("Content-Disposition", `attachment; filename="${cnf.file.name}"`);
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
                 var response = null;
@@ -52,7 +52,7 @@
             }
         };
         xhr.upload.addEventListener("progress", cnf.progress, false);
-        xhr.send(cnf.form);
+        xhr.send(cnf.chunk);
     }
 
     /**
@@ -89,6 +89,7 @@
         }
         var file = file_data.file;
         var attempts = cnf.attempts;
+        var session_id = 1111215056;
 
         // submission helper
         function send(start, success, error) {
@@ -101,18 +102,19 @@
 
             // build form data
             var end = Math.min(start + cnf.chunksize, file.size);
-            var file_chunk = slicer.bind(file)(start, end);
+            var chunk = slicer.bind(file)(start, end);
             // approximated progress handler, ignores payloads other than file
             uploadsubmit({
                 url: "/_upload_chunk",
-                file: file_chunk,
+                file: file,
+                chunk: chunk,
                 session_id: 1111215056,
                 content_range: start + "-" + (end - 1) + "/" + file.size,
                 success: success,
                 error: success,
                 progress: e => {
                     if (e.lengthComputable) {
-                        cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
+                        cnf.progress(Math.round((start + e.loaded) * 100 / file.size));
                     }
                 }
             });
