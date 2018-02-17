@@ -6,9 +6,9 @@
     jQuery.event.props.push("dataTransfer");
 
     /**
-        Post helper, sends multiform data to the API
+        xhr request helper
     */
-    var uploadsubmit = config => {
+    var _uploadrequest = config => {
         var cnf = $.extend({
             error_default: "Please make sure the file is available.",
             error_server: "Upload request failed.",
@@ -19,10 +19,14 @@
         xhr.open("POST", cnf.url, true);
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        xhr.setRequestHeader("Session-ID", cnf.session_id);
-        xhr.setRequestHeader("Content-Type", "application/octet-stream");
-        xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
-        xhr.setRequestHeader("Content-Disposition", `attachment; filename="chunk"`);
+        if (cnf.session_id && cnf.content_range) {
+            xhr.setRequestHeader("Session-ID", cnf.session_id);
+            xhr.setRequestHeader("Content-Type", "application/octet-stream");
+            xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
+            xhr.setRequestHeader("Content-Disposition", `attachment; filename="chunk"`);
+        } else {
+            xhr.setRequestHeader("Accept", "application/json");
+        }
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
                 if (xhr.status < 200 || xhr.status > 299) {
@@ -41,7 +45,7 @@
             }
         };
         xhr.upload.addEventListener("progress", cnf.progress, false);
-        xhr.send(cnf.chunk);
+        xhr.send(cnf.data);
     }
 
     /**
@@ -78,7 +82,7 @@
         }
         var file = file_data.file;
         var attempts = cnf.attempts;
-        var session_id = `${cnf.session_id}-${new Date().valueOf()}-${file.size}`;
+        var session_id = `${cnf.session_id}${new Date().valueOf()}${file.size}`;
 
         // submission helper
         function send(start, success, error) {
@@ -91,12 +95,10 @@
 
             // build form data
             var end = Math.min(start + cnf.chunksize, file.size);
-            var chunk = slicer.bind(file)(start, end);
             // approximated progress handler, ignores payloads other than file
-            uploadsubmit({
+            _uploadrequest({
                 url: "/_upload_chunk",
-                file: file,
-                chunk: chunk,
+                data: slicer.bind(file)(start, end),
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,
                 success: success,
@@ -185,9 +187,9 @@
         }
 
         // submit request
-        uploadsubmit({
+        _uploadrequest({
             url: cnf.url,
-            form: form,
+            data: form,
             success: cnf.success,
             error: cnf.error,
             progress: e => {
