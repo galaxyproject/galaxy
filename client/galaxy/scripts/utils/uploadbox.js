@@ -19,9 +19,9 @@
         xhr.open("POST", cnf.url, true);
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        xhr.setRequestHeader("X-Content-Range", `bytes ${cnf.content_range}`);
         xhr.setRequestHeader("Session-ID", cnf.session_id);
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
         xhr.setRequestHeader("Content-Disposition", `attachment; filename="${cnf.file.name}"`);
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
