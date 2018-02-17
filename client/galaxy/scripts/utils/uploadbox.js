@@ -108,10 +108,10 @@
                 url: "/_upload_chunk",
                 file: file,
                 chunk: chunk,
-                session_id: 1111215056,
-                content_range: start + "-" + (end - 1) + "/" + file.size,
+                session_id: session_id,
+                content_range: `${start}-${end-1}/${file.size}`,
                 success: success,
-                error: success,
+                error: error,
                 progress: e => {
                     if (e.lengthComputable) {
                         cnf.progress(Math.round((start + e.loaded) * 100 / file.size));
