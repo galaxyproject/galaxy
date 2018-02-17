@@ -452,37 +452,37 @@ export default Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            '<div class="upload-view-default">' +
-            '<div class="upload-top">' +
-            '<h6 class="upload-top-info"/>' +
-            "</div>" +
-            '<div class="upload-box">' +
-            '<div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div>' +
-            '<table class="upload-table ui-table-striped" style="display: none;">' +
-            "<thead>" +
-            "<tr>" +
-            "<th>Name</th>" +
-            "<th>Size</th>" +
-            "<th>Type</th>" +
-            "<th>Genome</th>" +
-            "<th>Settings</th>" +
-            "<th>Status</th>" +
-            "<th/>" +
-            "</tr>" +
-            "</thead>" +
-            "<tbody/>" +
-            "</table>" +
-            "</div>" +
-            '<div class="upload-footer">' +
-            '<span class="upload-footer-title">Type (set all):</span>' +
-            '<span class="upload-footer-extension"/>' +
-            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-            '<span class="upload-footer-title">Genome (set all):</span>' +
-            '<span class="upload-footer-genome"/>' +
-            "</div>" +
-            '<div class="upload-buttons"/>' +
-            "</div>"
-        );
+        return  `<div class="upload-view-default">
+                    <div class="upload-top">
+                        <h6 class="upload-top-info"/>
+                    </div>
+                    <div class="upload-box">
+                        <div class="upload-helper">
+                            <i class="fa fa-files-o"/>Drop files here
+                        </div>
+                        <table class="upload-table ui-table-striped" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th>Type</th>
+                                    <th>Genome</th>
+                                    <th>Settings</th>
+                                    <th>Status</th>
+                                    <th/>
+                                </tr>
+                            </thead>
+                            <tbody/>
+                        </table>
+                    </div>
+                    <div class="upload-footer">
+                        <span class="upload-footer-title">Type (set all):</span>
+                        <span class="upload-footer-extension"/>
+                        <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
+                        <span class="upload-footer-title">Genome (set all):</span>
+                        <span class="upload-footer-genome"/>
+                    </div>
+                    <div class="upload-buttons"/>
+                </div>`;
     }
 });
