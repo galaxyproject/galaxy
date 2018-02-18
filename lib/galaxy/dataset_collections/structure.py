@@ -4,8 +4,6 @@ import logging
 
 import six
 
-from .type_description import map_over_collection_type
-
 log = logging.getLogger(__name__)
 
 
@@ -126,30 +124,6 @@ class Tree(BaseTree):
 
     def __len__(self):
         return sum([len(c[1]) for c in self.children])
-
-    def element_identifiers_for_outputs(self, trans, outputs):
-        element_identifiers = []
-        elements_collection_type = None
-        for identifier, child in self.children:
-            if isinstance(child, Tree):
-                child_identifiers = child.element_identifiers_for_outputs(trans, outputs[0:len(child)])
-                child_identifiers["name"] = identifier
-                element_identifiers.append(child_identifiers)
-                elements_collection_type = child_identifiers["collection_type"]
-            else:
-                output_object = outputs[0]
-                element_identifiers.append(dict(name=identifier, __object__=output_object))
-                if hasattr(output_object, "collection_type"):
-                    elements_collection_type = output_object.collection_type
-
-            outputs = outputs[len(child):]
-
-        collection_type = map_over_collection_type(self.collection_type_description.rank_collection_type(), elements_collection_type)
-        return dict(
-            src="new_collection",
-            collection_type=collection_type,
-            element_identifiers=element_identifiers,
-        )
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:

@@ -234,11 +234,6 @@ class ExecutionTracker(object):
 
         return structure
 
-    def _element_identifiers_for_output(self, trans, tool_output, outputs):
-        output_structure = self._structure_for_output(trans, tool_output)
-        element_identifiers = output_structure.element_identifiers_for_outputs(trans, outputs)
-        return element_identifiers
-
     def _mapped_output_structure(self, trans, tool_output):
         collections_manager = trans.app.dataset_collections_service
         output_structure = tool_output_to_structure(self.sliced_input_collection_structure, tool_output, collections_manager)

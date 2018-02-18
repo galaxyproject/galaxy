@@ -187,7 +187,8 @@ class RenameDatasetAction(DefaultJobAction):
         #  Lookp through inputs find one with "to_be_replaced" input
         #  variable name, and get the replacement name
         for input_assoc in job.input_datasets:
-            input_names[input_assoc.name] = input_assoc.dataset.name
+            if input_assoc.dataset:
+                input_names[input_assoc.name] = input_assoc.dataset.name
 
         # Ditto for collections...
         for input_assoc in job.input_dataset_collections:

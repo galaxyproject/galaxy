@@ -28,6 +28,7 @@ from galaxy import (
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
 from galaxy.managers.jobs import JobSearch
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -2599,6 +2600,65 @@ class RelabelFromFileTool(DatabaseOperationTool):
         for key in new_elements.keys():
             if not re.match("^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class TagFromFileTool(DatabaseOperationTool):
+    tool_type = 'tag_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        how = incoming['how']
+        new_tags_dataset_assoc = incoming["tags"]
+        new_elements = odict()
+        tags_manager = GalaxyTagManager(trans.app.model.context)
+
+        def add_copied_value_to_new_elements(new_tags_dict, dce):
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_value = dce.element_object.copy()
+                # copy should never be visible, since part of a collection
+                copied_value.visble = False
+                history.add_dataset(copied_value, copied_value, set_hid=False)
+                new_tags = new_tags_dict.get(dce.element_identifier)
+                if new_tags:
+                    if how in ('add', 'remove') and dce.element_object.tags:
+                        # We need get the original tags and update them with the new tags
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(dce.element_object.tags).split(',') if tag)
+                        if how == 'add':
+                            old_tags.update(set(new_tags))
+                        elif how == 'remove':
+                            old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags)
+            else:
+                # We have a collection, and we copy the elements so that we don't manipulate the original tags
+                copied_value = dce.element_object.copy(element_destination=history)
+                for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
+                    # TODO: This should be eliminated, but collections created by the collection builder
+                    # don't set `visible` to `False` if you don't hide the original elements.
+                    new_element.element_object.visible = False
+                    new_tags = new_tags_dict.get(new_element.element_identifier)
+                    if how in ('add', 'remove'):
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(old_element.element_object.tags).split(',') if tag)
+                        if new_tags:
+                            if how == 'add':
+                                old_tags.update(set(new_tags))
+                            elif how == 'remove':
+                                old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags)
+            new_elements[dce.element_identifier] = copied_value
+
+        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags = open(new_tags_path, "r").readlines(1024 * 1000000)
+        # We have a tabular file, where the first column is an existing element identifier,
+        # and the remaining columns represent new tags.
+        source_new_tags = (line.strip().split('\t') for line in new_tags)
+        new_tags_dict = {item[0]: item[1:] for item in source_new_tags}
+        for i, dce in enumerate(hdca.collection.elements):
+            add_copied_value_to_new_elements(new_tags_dict, dce)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
