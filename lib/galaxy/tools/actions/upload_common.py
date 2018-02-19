@@ -124,7 +124,7 @@ def persist_uploads(params, trans):
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
+                upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
                     StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
                 )
@@ -176,7 +176,7 @@ def get_precreated_datasets(trans, params, data_obj, controller='root'):
     for id in async_datasets:
         try:
             data = trans.sa_session.query(data_obj).get(int(id))
-        except:
+        except Exception:
             log.exception('Unable to load precreated dataset (%s) sent in upload form' % id)
             continue
         if data_obj is trans.app.model.HistoryDatasetAssociation:
@@ -448,7 +448,7 @@ def create_paramfile(trans, uploaded_datasets):
                         auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
                         purge_source=purge_source,
                         space_to_tab=uploaded_dataset.space_to_tab,
-                        in_place=trans.app.config.external_chown_script is None,
+                        run_as_real_user=trans.app.config.external_chown_script is not None,
                         check_content=trans.app.config.check_upload_content,
                         path=uploaded_dataset.path)
             # TODO: This will have to change when we start bundling inputs.
@@ -516,7 +516,7 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
     trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_queue.put(job.id, job.tool_id)
+    trans.app.job_manager.job_queue.put(job.id, job.tool_id)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = odict()
     for i, v in enumerate(data_list):

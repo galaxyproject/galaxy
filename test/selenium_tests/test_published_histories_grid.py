@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -9,10 +7,6 @@ from .framework import (
 
 class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(HistoryGridTestCase, self).setUp()
-        self.home()
-
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -21,18 +15,12 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_search_standard(self):
         self.navigate_to_published_histories_page()
-
-        input_selector = '#input-free-text-search-filter'
-        search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(self.history1_name)
-        self.send_enter(search_input)
-
+        self.screenshot("histories_published_grid")
+        self.published_grid_search_for(self.history1_name)
         self.assert_grid_histories_are([self.history1_name])
 
         self.unset_filter('free-text-search', self.history1_name)
-        search_input = self.wait_for_selector(input_selector)
-        search_input.send_keys(self.history4_name)
-        self.send_enter(search_input)
+        self.published_grid_search_for(self.history4_name)
 
         self.assert_grid_histories_are(['No Items'])
 
@@ -49,6 +37,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         # Search by name
         self.set_filter(name_filter_selector, self.history1_name)
+        self.screenshot("histories_published_grid_advanced")
         self.assert_grid_histories_are([self.history1_name])
         self.unset_filter('name', self.history1_name)
 
@@ -100,15 +89,22 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if tags is None:
             raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
 
-        tag_button_selector = '.tag-area > .tag-button:first-child > .tag-name'
-        tag_button = tags.find_element_by_css_selector(tag_button_selector)
-        self.assertEqual(tag_button.text, self.history1_tags[0])
+        tag_button_selector = '.tag-area > .tag-button > .tag-name'
+        tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
+        tag_button_text = None
+        target_tag_button_text = self.history1_tags[0]
+        for tag_button in tag_buttons:
+            tag_button_text = tag_button.text
+            if tag_button_text == target_tag_button_text:
+                break
+
+        self.assertEqual(tag_button_text, target_tag_button_text)
         tag_button.click()
 
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
 
     def get_histories(self, sleep=False):
-        time.sleep(1.5)
+        self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector('#grid-table-body')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -155,28 +151,26 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def unset_filter(self, filter_key, filter_value):
         close_link_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
-        close_link = self.wait_for_selector_clickable(close_link_selector)
-        close_link.click()
-        time.sleep(.5)
+        self.wait_for_and_click_selector(close_link_selector)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def set_annotation(self, annotation):
-        anno_icon_selector = self.test_data['historyPanel']['selectors']['history']['annoIcon']
-        anno_area_selector = self.test_data['historyPanel']['selectors']['history']['annoArea']
+        self.ensure_annotation_area_displayed()
 
-        if not self.selector_is_displayed(anno_area_selector):
-            self.wait_for_and_click_selector(anno_icon_selector)
+        self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_editable_text)
 
-        anno_area_selector += ' .annotation'
-        self.wait_for_and_click_selector(anno_area_selector)
+        annon_area_editable = self.wait_for_and_click(self.navigation.history_panel.selectors.annotation_edit)
+        anno_done_button = self.wait_for_clickable(self.navigation.history_panel.selectors.annotation_done)
 
-        area_editable_selector = anno_area_selector + ' textarea'
-        done_button_selector = anno_area_selector + ' button'
-        annon_area_editable = self.wait_for_selector_clickable(area_editable_selector)
-        anno_done_button = self.wait_for_selector_clickable(done_button_selector)
-
-        annon_area_editable.click()
         annon_area_editable.send_keys(annotation)
         anno_done_button.click()
+
+    def ensure_annotation_area_displayed(self):
+        annotation_area_selector = self.navigation.history_panel.selectors.annotation_area
+        annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
+
+        if not self.is_displayed(annotation_area_selector):
+            self.wait_for_and_click(annotation_icon_selector)
 
     def setup_shared_state(self):
         tag1 = self._get_random_name(len=5)
@@ -213,22 +207,15 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def create_history(self, name):
         self.home()
-        self.click_history_option('Create New')
-        self.history_panel_rename(name)
+        self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
         with self.main_panel():
-            selector = 'input[name="make_accessible_and_publish"]'
-            publish_button = self.wait_for_selector_clickable(selector)
-            publish_button.click()
-
+            self.wait_for_and_click_selector('input[name="make_accessible_and_publish"]')
             self.wait_for_selector_clickable('input[name="disable_link_access_and_unpublish"]')
 
     def navigate_to_published_histories_page(self):
         self.home()
-        self.click_masthead_user()  # Open masthead menu
-        self.click_label(
-            self.navigation_data['labels']['masthead']['menus']['libraries'])
-        selector = 'a[href="/histories/list_published"]'
-        self.wait_for_and_click_selector(selector)
+        self.click_masthead_shared_data()
+        self.components.masthead.published_histories.wait_for_and_click()

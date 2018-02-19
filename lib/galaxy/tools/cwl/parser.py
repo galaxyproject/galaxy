@@ -15,12 +15,10 @@ import six
 from galaxy.util import safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
-
 from .cwltool_deps import (
     ensure_cwltool_available,
     process,
 )
-
 from .schema import non_strict_schema_loader, schema_loader
 
 log = logging.getLogger(__name__)

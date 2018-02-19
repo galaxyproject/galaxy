@@ -10,7 +10,7 @@ import os
 import random
 import shutil
 import threading
-
+import time
 from xml.etree import ElementTree
 
 try:
@@ -22,11 +22,13 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     force_symlink,
-    safe_makedirs,
-    safe_relpath,
     umask_fix_perms,
 )
 from galaxy.util.odict import odict
+from galaxy.util.path import (
+    safe_makedirs,
+    safe_relpath,
+)
 from galaxy.util.sleeper import Sleeper
 
 NO_SESSION_ERROR_MESSAGE = "Attempted to 'create' object store entity in configuration with no database session present."
@@ -357,7 +359,7 @@ class DiskObjectStore(ObjectStore):
 
     def empty(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by checking file size on disk."""
-        return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
+        return self.size(obj, **kwargs) == 0
 
     def size(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by return file size on disk.
@@ -366,7 +368,14 @@ class DiskObjectStore(ObjectStore):
         """
         if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                filepath = self.get_filename(obj, **kwargs)
+                for _ in range(0, 2):
+                    size = os.path.getsize(filepath)
+                    if size != 0:
+                        break
+                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+                    time.sleep(0.01)
+                return size
             except OSError:
                 return 0
         else:
@@ -722,6 +731,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 's3':
         from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'cloud':
+        from .cloud import Cloud
+        return Cloud(config=config, config_xml=config_xml)
     elif store == 'swift':
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)

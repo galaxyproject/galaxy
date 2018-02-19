@@ -39,3 +39,27 @@ preferences:
               label: Maximum number of search results
               type: text
               required: False
+
+    use_cached_job:
+      description: Do you want to be able to re-use previously run jobs ?
+      inputs:
+        - name: use_cached_job_checkbox
+          label: Do you want to be able to re-use  equivalent jobs ?
+          type: boolean
+          checked: false
+          value: false
+          help: If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.
+
+    localization:
+        description: Localization
+        inputs:
+            - name: locale
+              label: Prefered language
+              type: select
+              required: False
+              options:
+                  - [Navigator default, auto]
+                  - [Chinese, zh]
+                  - [English, en]
+                  - [French, fr]
+                  - [Japanese, ja]

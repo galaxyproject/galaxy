@@ -1,19 +1,24 @@
 import logging
-import operator
 import os
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta
+)
+
+from mercurial import (
+    hg,
+    ui
+)
+
+import tool_shed.repository_types.util as rt_util
 from galaxy import util
 from galaxy.model.orm.now import now
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
-from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.dictifiable import Dictifiable
-import tool_shed.repository_types.util as rt_util
+from galaxy.util.hash_util import new_secure_hash
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import metadata_util
-
-from mercurial import hg
-from mercurial import ui
 
 log = logging.getLogger(__name__)
 
@@ -22,9 +27,9 @@ class APIKeys(object):
     pass
 
 
-class User(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'username')
-    dict_element_visible_keys = ('id', 'username')
+class User(Dictifiable):
+    dict_collection_visible_keys = ['id', 'username']
+    dict_element_visible_keys = ['id', 'username']
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -74,18 +79,18 @@ class PasswordResetToken(object):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name')
+class Group(Dictifiable):
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name']
 
     def __init__(self, name=None):
         self.name = name
         self.deleted = False
 
 
-class Role(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name')
-    dict_element_visible_keys = ('id', 'name', 'description', 'type')
+class Role(Dictifiable):
+    dict_collection_visible_keys = ['id', 'name']
+    dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
     types = Bunch(PRIVATE='private',
                   SYSTEM='system',
@@ -158,11 +163,11 @@ class GalaxySession(object):
         self.last_action = last_action or datetime.now()
 
 
-class Repository(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
-                                    'times_downloaded', 'deprecated')
-    dict_element_visible_keys = ('id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                 'deleted', 'times_downloaded', 'deprecated')
+class Repository(Dictifiable):
+    dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
+                                    'times_downloaded', 'deprecated']
+    dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
+                                 'deleted', 'times_downloaded', 'deprecated']
     file_states = Bunch(NORMAL='n',
                         NEEDS_MERGING='m',
                         MARKED_FOR_REMOVAL='r',
@@ -303,13 +308,13 @@ class Repository(object, Dictifiable):
         return rval
 
 
-class RepositoryMetadata(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+class RepositoryMetadata(Dictifiable):
+    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows')
-    dict_element_visible_keys = ('id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows']
+    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                  'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies')
+                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
 
     def __init__(self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
                  downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
@@ -346,9 +351,9 @@ class RepositoryMetadata(object, Dictifiable):
         return []
 
 
-class RepositoryReview(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted')
-    dict_element_visible_keys = ('id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted')
+class RepositoryReview(Dictifiable):
+    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
+    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
 
     def __init__(self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False):
@@ -359,9 +364,9 @@ class RepositoryReview(object, Dictifiable):
         self.deleted = deleted
 
 
-class ComponentReview(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted')
-    dict_element_visible_keys = ('id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted')
+class ComponentReview(Dictifiable):
+    dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
+    dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
 
     def __init__(self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False):
@@ -401,9 +406,9 @@ class RepositoryRatingAssociation(ItemRatingAssociation):
         self.repository = repository
 
 
-class Category(object, Dictifiable):
-    dict_collection_visible_keys = ('id', 'name', 'description', 'deleted')
-    dict_element_visible_keys = ('id', 'name', 'description', 'deleted')
+class Category(Dictifiable):
+    dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 
     def __init__(self, name=None, description=None, deleted=False):
         self.name = name
@@ -506,6 +511,6 @@ def sort_by_attr(seq, attr):
     # (seq[i].attr, i, seq[i]) and sort it. The second item of tuple is needed not
     # only to provide stable sorting, but mainly to eliminate comparison of objects
     # (which can be expensive or prohibited) in case of equal attribute values.
-    intermed = map(None, map(getattr, seq, (attr, ) * len(seq)), xrange(len(seq)), seq)
+    intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
-    return map(operator.getitem, intermed, (-1, ) * len(intermed))
+    return [_[-1] for _ in intermed]

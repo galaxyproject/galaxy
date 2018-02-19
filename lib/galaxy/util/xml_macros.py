@@ -1,5 +1,4 @@
 import os
-
 from copy import deepcopy
 from xml.etree import ElementInclude, ElementTree
 
@@ -7,14 +6,16 @@ from xml.etree import ElementInclude, ElementTree
 REQUIRED_PARAMETER = object()
 
 
-def load(path):
+def load_with_references(path):
+    """Load XML documentation from file system and preprocesses XML macros.
+
+    Return the XML representation of the expanded tree and paths to
+    referenced files that were imported (macros).
     """
-    Loads tool from file system and preprocesses tool macros.
-    """
-    tree = raw_tool_xml_tree(path)
+    tree = raw_xml_tree(path)
     root = tree.getroot()
 
-    _import_macros(root, path)
+    macro_paths = _import_macros(root, path)
 
     # Collect tokens
     tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
@@ -23,6 +24,11 @@ def load(path):
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
 
+    return tree, macro_paths
+
+
+def load(path):
+    tree, _ = load_with_references(path)
     return tree
 
 
@@ -38,8 +44,8 @@ def template_macro_params(root):
     return param_dict
 
 
-def raw_tool_xml_tree(path):
-    """ Load raw (no macro expansion) tree representation of tool represented
+def raw_xml_tree(path):
+    """ Load raw (no macro expansion) tree representation of XML represented
     at the specified path.
     """
     tree = _parse_xml(path)
@@ -52,11 +58,12 @@ def imported_macro_paths(root):
 
 
 def _import_macros(root, path):
-    tool_dir = os.path.dirname(path)
+    xml_base_dir = os.path.dirname(path)
     macros_el = _macros_el(root)
     if macros_el is not None:
-        macro_els = _load_macros(macros_el, tool_dir)
+        macro_els, macro_paths = _load_macros(macros_el, xml_base_dir)
         _xml_set_children(macros_el, macro_els)
+        return macro_paths
 
 
 def _macros_el(root):
@@ -162,16 +169,17 @@ def _expand_yield_statements(macro_def, expand_el):
         replace_yield = False
 
 
-def _load_macros(macros_el, tool_dir):
+def _load_macros(macros_el, xml_base_dir):
     macros = []
     # Import macros from external files.
-    macros.extend(_load_imported_macros(macros_el, tool_dir))
+    imported_macros, macro_paths = _load_imported_macros(macros_el, xml_base_dir)
+    macros.extend(imported_macros)
     # Load all directly defined macros.
-    macros.extend(_load_embedded_macros(macros_el, tool_dir))
-    return macros
+    macros.extend(_load_embedded_macros(macros_el, xml_base_dir))
+    return macros, macro_paths
 
 
-def _load_embedded_macros(macros_el, tool_dir):
+def _load_embedded_macros(macros_el, xml_base_dir):
     macros = []
 
     macro_els = []
@@ -198,16 +206,19 @@ def _load_embedded_macros(macros_el, tool_dir):
     return macros
 
 
-def _load_imported_macros(macros_el, tool_dir):
+def _load_imported_macros(macros_el, xml_base_dir):
     macros = []
+    macro_paths = []
 
     for tool_relative_import_path in _imported_macro_paths_from_el(macros_el):
         import_path = \
-            os.path.join(tool_dir, tool_relative_import_path)
-        file_macros = _load_macro_file(import_path, tool_dir)
+            os.path.join(xml_base_dir, tool_relative_import_path)
+        macro_paths.append(import_path)
+        file_macros, current_macro_paths = _load_macro_file(import_path, xml_base_dir)
         macros.extend(file_macros)
+        macro_paths.extend(current_macro_paths)
 
-    return macros
+    return macros, macro_paths
 
 
 def _imported_macro_paths_from_el(macros_el):
@@ -217,16 +228,14 @@ def _imported_macro_paths_from_el(macros_el):
         macro_import_els = macros_el.findall("import")
     for macro_import_el in macro_import_els:
         raw_import_path = macro_import_el.text
-        tool_relative_import_path = \
-            os.path.basename(raw_import_path)  # Sanitize this
-        imported_macro_paths.append(tool_relative_import_path)
+        imported_macro_paths.append(raw_import_path)
     return imported_macro_paths
 
 
-def _load_macro_file(path, tool_dir):
+def _load_macro_file(path, xml_base_dir):
     tree = _parse_xml(path)
     root = tree.getroot()
-    return _load_macros(root, tool_dir)
+    return _load_macros(root, xml_base_dir)
 
 
 def _xml_set_children(element, new_children):
@@ -290,3 +299,12 @@ def _parse_xml(fname):
     root = tree.getroot()
     ElementInclude.include(root)
     return tree
+
+
+__all__ = (
+    "imported_macro_paths",
+    "load",
+    "load_with_references",
+    "raw_xml_tree",
+    "template_macro_params",
+)

@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
         try:
             i = Index("ix_stored_workflow_slug", StoredWorkflow_table.c.slug, mysql_length=200)
             i.create()
-        except:
+        except Exception:
             # Mysql doesn't have a named index, but alter should work
             StoredWorkflow_table.c.slug.alter(unique=False)
 

@@ -354,7 +354,7 @@ class RepositoryDependencyInstallManager(object):
                             for components_list in val:
                                 try:
                                     only_if_compiling_contained_td = components_list[5]
-                                except:
+                                except IndexError:
                                     only_if_compiling_contained_td = 'False'
                                 # Skip listing a repository dependency if it is required only to compile a tool dependency
                                 # defined for the dependent repository (see above comment).

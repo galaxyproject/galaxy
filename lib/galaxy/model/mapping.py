@@ -14,6 +14,7 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
+    func,
     Integer,
     MetaData,
     not_,
@@ -29,8 +30,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
+from sqlalchemy.orm import backref, class_mapper, column_property, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
@@ -142,10 +144,25 @@ model.HistoryDatasetAssociation.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("visible", Boolean),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("version", Integer, default=1, nullable=True, index=True),
     Column("hid", Integer),
     Column("purged", Boolean, index=True, default=False),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
+
+
+model.HistoryDatasetAssociationHistory.table = Table(
+    "history_dataset_association_history", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("update_time", DateTime, default=now),
+    Column("version", Integer),
+    Column("name", TrimmedString(255)),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", MetadataType(), key="_metadata"),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+)
+
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -464,6 +481,7 @@ model.Job.table = Table(
     Column("tool_version", TEXT, default="1.0.0"),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
+    Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
     Column("param_filename", String(1024)),
@@ -504,6 +522,7 @@ model.JobToInputDatasetAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("dataset_version", Integer),
     Column("name", String(255)))
 
 model.JobToOutputDatasetAssociation.table = Table(
@@ -556,6 +575,20 @@ model.ImplicitlyCreatedDatasetCollectionInput.table = Table(
     Column("input_dataset_collection_id", Integer,
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("name", Unicode(255)))
+
+model.ImplicitCollectionJobs.table = Table(
+    "implicit_collection_jobs", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("populated_state", TrimmedString(64), default='new', nullable=False),
+)
+
+model.ImplicitCollectionJobsJobAssociation.table = Table(
+    "implicit_collection_jobs_job_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
+    Column("order_index", Integer, nullable=False),
+)
 
 model.JobExternalOutputMetadata.table = Table(
     "job_external_output_metadata", metadata,
@@ -702,6 +735,7 @@ model.DatasetCollection.table = Table(
     Column("collection_type", Unicode(255), nullable=False),
     Column("populated_state", TrimmedString(64), default='ok', nullable=False),
     Column("populated_state_message", TEXT),
+    Column("element_count", Integer, nullable=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now))
 
@@ -716,7 +750,10 @@ model.HistoryDatasetCollectionAssociation.table = Table(
     Column("deleted", Boolean, default=False),
     Column("copied_from_history_dataset_collection_association_id", Integer,
         ForeignKey("history_dataset_collection_association.id"), nullable=True),
-    Column("implicit_output_name", Unicode(255), nullable=True))
+    Column("implicit_output_name", Unicode(255), nullable=True),
+    Column("job_id", ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
+)
 
 model.LibraryDatasetCollectionAssociation.table = Table(
     "library_dataset_collection_association", metadata,
@@ -901,8 +938,45 @@ model.WorkflowInvocationStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("state", TrimmedString(64), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True),
     Column("action", JSONType, nullable=True))
+
+model.WorkflowInvocationOutputDatasetAssociation.table = Table(
+    "workflow_invocation_output_dataset_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+)
+
+model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
+    "workflow_invocation_output_dataset_collection_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+)
+
+model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
+    "workflow_invocation_step_output_dataset_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
+    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("output_name", String(255), nullable=True),
+)
+
+model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
+    "workflow_invocation_step_output_dataset_collection_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("output_name", String(255), nullable=True),
+)
 
 model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
@@ -958,45 +1032,6 @@ model.FormDefinition.table = Table(
     Column("type", TrimmedString(255), index=True),
     Column("layout", JSONType()))
 
-model.ExternalService.table = Table(
-    "external_service", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("description", TEXT),
-    Column("external_service_type_id", TrimmedString(255), nullable=False),
-    Column("version", TrimmedString(255)),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestType.table = Table(
-    "request_type", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("request_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("sample_form_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestTypeExternalServiceAssociation.table = Table(
-    "request_type_external_service_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-    Column("external_service_id", Integer, ForeignKey("external_service.id"), index=True))
-
-model.RequestTypePermissions.table = Table(
-    "request_type_permissions", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("action", TEXT),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), nullable=True, index=True),
-    Column("role_id", Integer, ForeignKey("role.id"), index=True))
-
 model.FormValues.table = Table(
     "form_values", metadata,
     Column("id", Integer, primary_key=True),
@@ -1004,97 +1039,6 @@ model.FormValues.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
     Column("content", JSONType()))
-
-model.Request.table = Table(
-    "request", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("notification", JSONType()),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False))
-
-model.RequestEvent.table = Table(
-    "request_event", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("state", TrimmedString(255), index=True),
-    Column("comment", TEXT))
-
-model.Sample.table = Table(
-    "sample", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("request_id", Integer, ForeignKey("request.id"), index=True),
-    Column("bar_code", TrimmedString(255), index=True),
-    Column("library_id", Integer, ForeignKey("library.id"), index=True),
-    Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("workflow", JSONType, nullable=True),
-    Column("history_id", Integer, ForeignKey("history.id"), nullable=True))
-
-model.SampleState.table = Table(
-    "sample_state", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("desc", TEXT),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True))
-
-model.SampleEvent.table = Table(
-    "sample_event", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-    Column("sample_state_id", Integer, ForeignKey("sample_state.id"), index=True),
-    Column("comment", TEXT))
-
-model.SampleDataset.table = Table(
-    "sample_dataset", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-    Column("name", TrimmedString(255), nullable=False),
-    Column("file_path", TEXT),
-    Column("status", TrimmedString(255), nullable=False),
-    Column("error_msg", TEXT),
-    Column("size", TrimmedString(255)),
-    Column("external_service_id", Integer, ForeignKey("external_service.id"), index=True))
-
-model.Run.table = Table(
-    "run", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, default=now, onupdate=now),
-    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
-    Column("deleted", Boolean, index=True, default=False),
-    Column("subindex", TrimmedString(255), index=True))
-
-model.RequestTypeRunAssociation.table = Table(
-    "request_type_run_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("request_type_id", Integer, ForeignKey("request_type.id"), index=True, nullable=False),
-    Column("run_id", Integer, ForeignKey("run.id"), index=True, nullable=False))
-
-model.SampleRunAssociation.table = Table(
-    "sample_run_association", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("sample_id", Integer, ForeignKey("sample.id"), index=True, nullable=False),
-    Column("run_id", Integer, ForeignKey("run.id"), index=True, nullable=False))
 
 model.Page.table = Table(
     "page", metadata,
@@ -1440,78 +1384,9 @@ def simple_mapping(model, **kwds):
     mapper(model, model.table, properties=kwds)
 
 
-mapper(model.Sample, model.Sample.table, properties=dict(
-    events=relation(model.SampleEvent,
-        backref="sample",
-        order_by=desc(model.SampleEvent.table.c.update_time)),
-    datasets=relation(model.SampleDataset,
-        backref="sample",
-        order_by=desc(model.SampleDataset.table.c.update_time)),
-    values=relation(model.FormValues,
-        primaryjoin=(model.Sample.table.c.form_values_id == model.FormValues.table.c.id)),
-    request=relation(model.Request,
-        primaryjoin=(model.Sample.table.c.request_id == model.Request.table.c.id)),
-    folder=relation(model.LibraryFolder,
-        primaryjoin=(model.Sample.table.c.folder_id == model.LibraryFolder.table.c.id)),
-    library=relation(model.Library,
-        primaryjoin=(model.Sample.table.c.library_id == model.Library.table.c.id)),
-    history=relation(model.History,
-        primaryjoin=(model.Sample.table.c.history_id == model.History.table.c.id)),
-))
-
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
         primaryjoin=(model.FormValues.table.c.form_definition_id == model.FormDefinition.table.c.id))
-))
-
-mapper(model.Request, model.Request.table, properties=dict(
-    values=relation(model.FormValues,
-        primaryjoin=(model.Request.table.c.form_values_id == model.FormValues.table.c.id)),
-    type=relation(model.RequestType,
-        primaryjoin=(model.Request.table.c.request_type_id == model.RequestType.table.c.id)),
-    user=relation(model.User,
-        primaryjoin=(model.Request.table.c.user_id == model.User.table.c.id),
-        backref="requests"),
-    samples=relation(model.Sample,
-        primaryjoin=(model.Request.table.c.id == model.Sample.table.c.request_id),
-        order_by=asc(model.Sample.table.c.id)),
-    events=relation(model.RequestEvent,
-        backref="request",
-        order_by=desc(model.RequestEvent.table.c.update_time))
-))
-
-mapper(model.RequestEvent, model.RequestEvent.table, properties=None)
-
-mapper(model.ExternalService, model.ExternalService.table, properties=dict(
-    form_definition=relation(model.FormDefinition,
-        primaryjoin=(model.ExternalService.table.c.form_definition_id == model.FormDefinition.table.c.id)),
-    form_values=relation(model.FormValues,
-        primaryjoin=(model.ExternalService.table.c.form_values_id == model.FormValues.table.c.id))
-))
-
-mapper(model.RequestType, model.RequestType.table, properties=dict(
-    states=relation(model.SampleState,
-        backref="request_type",
-        primaryjoin=(model.RequestType.table.c.id == model.SampleState.table.c.request_type_id),
-        order_by=asc(model.SampleState.table.c.update_time)),
-    request_form=relation(model.FormDefinition,
-        primaryjoin=(model.RequestType.table.c.request_form_id == model.FormDefinition.table.c.id)),
-    sample_form=relation(model.FormDefinition,
-        primaryjoin=(model.RequestType.table.c.sample_form_id == model.FormDefinition.table.c.id)),
-))
-
-mapper(model.RequestTypeExternalServiceAssociation, model.RequestTypeExternalServiceAssociation.table, properties=dict(
-    request_type=relation(model.RequestType,
-        primaryjoin=((model.RequestTypeExternalServiceAssociation.table.c.request_type_id == model.RequestType.table.c.id)),
-        backref="external_service_associations"),
-    external_service=relation(model.ExternalService,
-        primaryjoin=(model.RequestTypeExternalServiceAssociation.table.c.external_service_id == model.ExternalService.table.c.id))
-))
-
-
-mapper(model.RequestTypePermissions, model.RequestTypePermissions.table, properties=dict(
-    request_type=relation(model.RequestType, backref="actions"),
-    role=relation(model.Role, backref="request_type_actions")
 ))
 
 mapper(model.FormDefinition, model.FormDefinition.table, properties=dict(
@@ -1527,36 +1402,6 @@ mapper(model.FormDefinitionCurrent, model.FormDefinitionCurrent.table, propertie
     latest_form=relation(model.FormDefinition,
         post_update=True,
         primaryjoin=(model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id))
-))
-
-mapper(model.SampleEvent, model.SampleEvent.table, properties=dict(
-    state=relation(model.SampleState,
-        primaryjoin=(model.SampleEvent.table.c.sample_state_id == model.SampleState.table.c.id)),
-))
-
-mapper(model.SampleState, model.SampleState.table, properties=None)
-
-mapper(model.SampleDataset, model.SampleDataset.table, properties=dict(
-    external_service=relation(model.ExternalService,
-        primaryjoin=(model.SampleDataset.table.c.external_service_id == model.ExternalService.table.c.id))
-))
-
-
-mapper(model.SampleRunAssociation, model.SampleRunAssociation.table, properties=dict(
-    sample=relation(model.Sample, backref="runs", order_by=desc(model.Run.table.c.update_time)),
-    run=relation(model.Run, backref="samples", order_by=asc(model.Sample.table.c.id))
-))
-
-mapper(model.RequestTypeRunAssociation, model.RequestTypeRunAssociation.table, properties=dict(
-    request_type=relation(model.RequestType, backref="run"),
-    run=relation(model.Run, backref="request_type")
-))
-
-mapper(model.Run, model.Run.table, properties=dict(
-    template=relation(model.FormDefinition,
-        primaryjoin=(model.Run.table.c.form_definition_id == model.FormDefinition.table.c.id)),
-    info=relation(model.FormValues,
-        primaryjoin=(model.Run.table.c.form_values_id == model.FormValues.table.c.id))
 ))
 
 mapper(model.UserAddress, model.UserAddress.table, properties=dict(
@@ -1605,18 +1450,6 @@ simple_mapping(model.HistoryDatasetAssociation,
     implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
                      model.HistoryDatasetAssociation.table.c.id)),
-    children=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(model.HistoryDatasetAssociation.table.c.parent_id ==
-                      model.HistoryDatasetAssociation.table.c.id),
-        backref=backref("parent",
-            primaryjoin=(model.HistoryDatasetAssociation.table.c.parent_id ==
-                         model.HistoryDatasetAssociation.table.c.id),
-            remote_side=[model.HistoryDatasetAssociation.table.c.id], uselist=False)),
-    visible_children=relation(model.HistoryDatasetAssociation,
-        primaryjoin=(
-            (model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id) &
-            (model.HistoryDatasetAssociation.table.c.visible == true())),
-        remote_side=[model.HistoryDatasetAssociation.table.c.id]),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
         order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
         backref='history_tag_associations'),
@@ -1659,6 +1492,8 @@ simple_mapping(model.Dataset,
         order_by=model.DatasetTagAssociation.table.c.id,
         backref='datasets')
 )
+
+mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
@@ -1735,7 +1570,11 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="histories")
+        backref="histories"),
+    average_rating=column_property(
+        select([func.avg(model.HistoryRatingAssociation.table.c.rating)]).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -1762,6 +1601,11 @@ mapper(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
+        primaryjoin=(
+            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id) &
+            (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id) &
+            not_(model.StoredWorkflow.table.c.deleted)
+        ),
         backref="user",
         cascade="all, delete-orphan",
         collection_class=ordering_list('order_index')),
@@ -1987,19 +1831,6 @@ mapper(model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssoci
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id ==
                      model.LibraryDatasetDatasetAssociation.table.c.id)),
-    children=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.parent_id ==
-                      model.LibraryDatasetDatasetAssociation.table.c.id),
-        backref=backref("parent",
-            primaryjoin=(model.LibraryDatasetDatasetAssociation.table.c.parent_id ==
-                         model.LibraryDatasetDatasetAssociation.table.c.id),
-            remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id])),
-    visible_children=relation(model.LibraryDatasetDatasetAssociation,
-        primaryjoin=(
-            (model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id) &
-            (model.LibraryDatasetDatasetAssociation.table.c.visible == true())
-        ),
-        remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id]),
     tags=relation(model.LibraryDatasetDatasetAssociationTagAssociation,
                   order_by=model.LibraryDatasetDatasetAssociationTagAssociation.table.c.id,
                   backref='history_tag_associations'),
@@ -2091,6 +1922,31 @@ simple_mapping(model.ImplicitlyCreatedDatasetCollectionInput,
     ),
 )
 
+simple_mapping(model.ImplicitCollectionJobs)
+
+# simple_mapping(
+#     model.ImplicitCollectionJobsHistoryDatasetCollectionAssociation,
+#     history_dataset_collection_associations=relation(
+#         model.HistoryDatasetCollectionAssociation,
+#         backref=backref("implicit_collection_jobs_association", uselist=False),
+#         uselist=True,
+#     ),
+# )
+
+simple_mapping(
+    model.ImplicitCollectionJobsJobAssociation,
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("jobs", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("implicit_collection_jobs_association", uselist=False),
+        uselist=False,
+    ),
+)
+
 mapper(model.JobParameter, model.JobParameter.table)
 
 mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, properties=dict(
@@ -2137,7 +1993,22 @@ mapper(model.Job, model.Job.table, properties=dict(
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),
+    input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    any_output_dataset_deleted=column_property(
+        exists([model.HistoryDatasetAssociation],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                    model.HistoryDatasetAssociation.table.c.deleted == true())
+               )
+    ),
+    any_output_dataset_collection_instances_deleted=column_property(
+        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+               )
+    ),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
@@ -2180,6 +2051,16 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
         primaryjoin=((model.HistoryDatasetCollectionAssociation.table.c.id ==
                       model.ImplicitlyCreatedDatasetCollectionInput.table.c.dataset_collection_id)),
         backref="dataset_collection",
+    ),
+    implicit_collection_jobs=relation(
+        model.ImplicitCollectionJobs,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
+    ),
+    job=relation(
+        model.Job,
+        backref=backref("history_dataset_collection_associations", uselist=True),
+        uselist=False,
     ),
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
@@ -2239,7 +2120,12 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
         primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
-        lazy=False)
+        lazy=False),
+    step_count=column_property(
+        select([func.count(model.WorkflowStep.table.c.id)]).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
+        deferred=True
+    )
+
 ))
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
@@ -2302,7 +2188,11 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         backref="stored_workflows"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflows")
+        backref="stored_workflows"),
+    average_rating=column_property(
+        select([func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)]).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2334,7 +2224,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
         uselist=True,
     ),
     steps=relation(model.WorkflowInvocationStep,
-        backref='workflow_invocation'),
+        backref="workflow_invocation"),
     workflow=relation(model.Workflow)
 ))
 
@@ -2347,12 +2237,11 @@ mapper(model.WorkflowInvocationToSubworkflowInvocationAssociation, model.Workflo
     workflow_step=relation(model.WorkflowStep),
 ))
 
-mapper(model.WorkflowInvocationStep, model.WorkflowInvocationStep.table, properties=dict(
+simple_mapping(model.WorkflowInvocationStep,
     workflow_step=relation(model.WorkflowStep),
-    job=relation(model.Job,
-        backref=backref('workflow_invocation_step',
-            uselist=False))
-))
+    job=relation(model.Job, backref=backref('workflow_invocation_step', uselist=False), uselist=False),
+    implicit_collection_jobs=relation(model.ImplicitCollectionJobs, backref=backref('workflow_invocation_step', uselist=False), uselist=False),)
+
 
 simple_mapping(model.WorkflowRequestInputParameter,
     workflow_invocation=relation(model.WorkflowInvocation))
@@ -2382,6 +2271,39 @@ mapper(model.MetadataFile, model.MetadataFile.table, properties=dict(
     library_dataset=relation(model.LibraryDatasetDatasetAssociation)
 ))
 
+
+simple_mapping(
+    model.WorkflowInvocationOutputDatasetAssociation,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_datasets"),
+    workflow_step=relation(model.WorkflowStep),
+    dataset=relation(model.HistoryDatasetAssociation),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationOutputDatasetCollectionAssociation,
+    workflow_invocation=relation(model.WorkflowInvocation, backref="output_dataset_collections"),
+    workflow_step=relation(model.WorkflowStep),
+    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
+    workflow_output=relation(model.WorkflowOutput),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationStepOutputDatasetAssociation,
+    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_datasets"),
+    dataset=relation(model.HistoryDatasetAssociation),
+)
+
+
+simple_mapping(
+    model.WorkflowInvocationStepOutputDatasetCollectionAssociation,
+    workflow_invocation_step=relation(model.WorkflowInvocationStep, backref="output_dataset_collections"),
+    dataset_collection=relation(model.HistoryDatasetCollectionAssociation),
+)
+
+
 mapper(model.PageRevision, model.PageRevision.table)
 
 mapper(model.Page, model.Page.table, properties=dict(
@@ -2402,7 +2324,11 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
-        backref="pages")
+        backref="pages"),
+    average_rating=column_property(
+        select([func.avg(model.PageRatingAssociation.table.c.rating)]).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2434,7 +2360,11 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualizations")
+        backref="visualizations"),
+    average_rating=column_property(
+        select([func.avg(model.VisualizationRatingAssociation.table.c.rating)]).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2558,7 +2488,7 @@ def db_next_hid(self, n=1):
         table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         trans.commit()
         return next_hid
-    except:
+    except Exception:
         trans.rollback()
         raise
 
@@ -2577,10 +2507,12 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update
 
 
-def init(file_path, url, engine_options={}, create_tables=False, map_install_models=False,
+def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
         slow_query_log_threshold=0):
     """Connect mappings to the database"""
+    if engine_options is None:
+        engine_options = {}
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
     # Connect dataset to object store

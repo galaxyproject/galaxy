@@ -143,7 +143,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             # stripping the - comes later (in parse_destination_params)
             for i, opt in enumerate(opts):
                 opts[i] = '-' + opt
-        except:
+        except Exception:
             opts = []
         for opt in opts:
             param, value = opt.split(None, 1)
@@ -168,7 +168,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     arg = PBS_ARGMAP[arg]
                 arg = arg.lstrip('-')
                 args[arg] = value
-            except:
+            except Exception:
                 log.warning('Unrecognized long argument in destination params: %s' % arg)
         return self.__args_to_attrs(args)
 
@@ -371,7 +371,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     self.check_single_job(pbs_server_name, job_id)
                     log.warning("(%s/%s) PBS job was not in state check list, but was found with individual state check" % (galaxy_job_id, job_id))
                     new_watched.append(pbs_job_state)
-                except:
+                except Exception:
                     errno, text = pbs.error()
                     if errno == 15001:
                         # 15001 == job not in queue
@@ -525,7 +525,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             pbs.pbs_deljob(c, job_id, '')
             log.debug("%s Removed from PBS queue before job completion"
                       % job_tag)
-        except:
+        except Exception:
             e = traceback.format_exc()
             log.debug("%s Unable to stop job: %s" % (job_tag, e))
         finally:

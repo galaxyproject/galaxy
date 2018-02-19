@@ -10,16 +10,16 @@ Returns:
     "api_key": "baa4d6e3a156d3033f05736255f195f9"
 }
 """
-
+import logging
 from base64 import b64decode
-from urllib import unquote
 
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.managers import api_keys
+from six.moves.urllib.parse import unquote
+
 from galaxy import exceptions
+from galaxy.managers import api_keys
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -82,7 +82,7 @@ class AuthenticationController(BaseAPIController):
         if len(split) == 1:
             try:
                 email, password = b64decode(split[0]).split(':')
-            except:
+            except Exception:
                 raise exceptions.ActionInputError()
 
         # If there are only two elements, check the first and ensure it says
@@ -92,7 +92,7 @@ class AuthenticationController(BaseAPIController):
             if split[0].strip().lower() == 'basic':
                 try:
                     email, password = b64decode(split[1]).split(':')
-                except:
+                except Exception:
                     raise exceptions.ActionInputError()
             else:
                 raise exceptions.ActionInputError()

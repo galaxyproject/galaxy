@@ -4,9 +4,11 @@ import string
 import tempfile
 
 from base import integration_util
-from base.populators import DatasetPopulator
+from base.populators import DatasetPopulator, DEFAULT_TIMEOUT
 from nose.plugins.skip import SkipTest
 
+# Needs a longer timeout because of the conda_auto_install.
+DATA_MANAGER_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TOOL_SHEDS_CONF = os.path.join(SCRIPT_DIRECTORY, "tool_sheds_conf.xml")
@@ -37,8 +39,8 @@ FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {"dbkey_source|dbkey_source_selector": "ne
                                        "dbkey_source|dbkey_name": "NC_001617.1",
                                        "sequence_name": "NC_001617.1",
                                        "sequence_id": "NC_001617.1",
-                                       "reference_source|reference_source_selector": "ncbi",
-                                       "reference_source|requested_identifier": "NC_001617.1",
+                                       "reference_source|reference_source_selector": "url",
+                                       "reference_source|user_url": "https://raw.githubusercontent.com/galaxyproject/galaxy-test-data/master/NC_001617.1.fasta",
                                        "sorting|sort_selector": "as_is"}
 SAM_FASTA_ID = "toolshed.g2.bx.psu.edu/repos/devteam/data_manager_sam_fasta_index_builder/sam_fasta_index_builder/0.0.2"
 SAM_FASTA_INPUT = {"all_fasta_source": "NC_001617.1", "sequence_name": "", "sequence_id": ""}
@@ -98,12 +100,12 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
                                                                inputs=FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT,
                                                                history_id=history_id,
                                                                assert_ok=False)
-                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=DATA_MANAGER_JOB_TIMEOUT)
                 run_response = self.dataset_populator.run_tool(tool_id=SAM_FASTA_ID,
                                                                inputs=SAM_FASTA_INPUT,
                                                                history_id=history_id,
                                                                assert_ok=False)
-                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response)
+                self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=DATA_MANAGER_JOB_TIMEOUT)
 
     def create_local_user(self):
         """Creates a local user and returns the user id."""

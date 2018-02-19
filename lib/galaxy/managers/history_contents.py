@@ -2,25 +2,34 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
-
-from sqlalchemy import literal
-from sqlalchemy import sql
-from sqlalchemy import asc, desc
-from sqlalchemy import true, false
-from sqlalchemy import func
-from sqlalchemy.orm import eagerload
-from sqlalchemy.orm import undefer
-
-from galaxy import model
-from galaxy import exceptions as glx_exceptions
-
-from galaxy.managers import base
-from galaxy.managers import deletable
-from galaxy.managers import containers
-from galaxy.managers import hdas
-from galaxy.managers import hdcas
-
 import logging
+
+from sqlalchemy import (
+    asc,
+    desc,
+    false,
+    func,
+    literal,
+    sql,
+    true
+)
+from sqlalchemy.orm import (
+    eagerload,
+    undefer
+)
+
+from galaxy import (
+    exceptions as glx_exceptions,
+    model
+)
+from galaxy.managers import (
+    base,
+    containers,
+    deletable,
+    hdas,
+    hdcas
+)
+
 log = logging.getLogger(__name__)
 
 

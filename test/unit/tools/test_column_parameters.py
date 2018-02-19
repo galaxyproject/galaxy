@@ -1,12 +1,10 @@
 """ Tests for tool parameters, more tests exist in test_data_parameters.py and
 test_select_parameters.py.
 """
-
 from galaxy import model
 from galaxy.util import bunch
-from tools_support import datatypes_registry
-
 from .test_parameter_parsing import BaseParameterTestCase
+from ..tools_support import datatypes_registry
 
 
 class DataColumnParameterTestCase(BaseParameterTestCase):

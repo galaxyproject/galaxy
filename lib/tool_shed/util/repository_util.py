@@ -11,27 +11,12 @@ import tool_shed.dependencies.repository
 import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
-from galaxy.web.form_builder import build_select_field
 from tool_shed.util import basic_util, common_util, encoding_util, hg_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile("^[a-z0-9\_]+$")
-
-
-def build_allow_push_select_field(trans, current_push_list, selected_value='none'):
-    options = []
-    for user in trans.sa_session.query(trans.model.User):
-        if user.username not in current_push_list:
-            options.append(user)
-    return build_select_field(trans,
-                              objs=options,
-                              label_attr='username',
-                              select_field_name='allow_push',
-                              selected_value=selected_value,
-                              refresh_on_change=False,
-                              multiple=True)
 
 
 def change_repository_name_in_hgrc_file(hgrc_file, new_name):
@@ -411,7 +396,7 @@ def get_installed_tool_shed_repository(app, id):
         return_list = False
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
-    repository_ids = [app.security.decode_id(i)for i in id]
+    repository_ids = [app.security.decode_id(i) for i in id]
     rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
     if return_list:
         return rval

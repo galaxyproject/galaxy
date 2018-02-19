@@ -212,6 +212,7 @@
     color: @base-text-color;
     background: @side-panel-bg;
     padding: 10px;
+    min-height:100%;
     .ui-side-section-title {
         font-weight: bold;
     }
@@ -293,6 +294,13 @@
                 width: 100px;
                 height: 86px;
             }
+            .ui-thumbnails-icon {
+                width: 100px;
+                height: 86px;
+                font-size: 4em;
+                padding: 20px 26px;
+                color: lighten(#25537b, 10%);
+            }
             .ui-thumbnails-description-title {
                 font-weight: bold;
             }
@@ -300,7 +308,18 @@
                 word-wrap: break-word;
             }
         }
-        .ui-thumbnail-current {
+        .ui-thumbnails-item:hover {
+            .ui-thumbnails-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-text {
+                text-decoration: underline;
+            }
+        }
+        .ui-thumbnail-current-highlight {
             border-color:#66afe9;
             background-color:#EEEEFF;
             outline:0;
@@ -506,7 +525,7 @@
     position: relative;
     clear: both;
     width: auto;
-    height: 100%;
+    height: auto;
     .portlet-header {
         background: @form-heading-bg;
         border-bottom: solid @form-border 1px;
@@ -549,8 +568,11 @@
             width       : 100%;
         }
         .portlet-buttons {
-            margin-top: @ui-margin-vertical;
-            margin-bottom: @ui-margin-vertical;
+            margin-top: @ui-margin-vertical-large;
+            margin-bottom: @ui-margin-vertical-large;
+            > .btn {
+                margin-right: 5px;
+            }
         }
     }
     .portlet-content.nopadding, .portlet-body.nopadding {
@@ -992,6 +1014,13 @@
     &:extend(.ui-dragover);
     border: 2px solid @state-success-bg;
     background: lighten(@state-success-bg, 10%) !important;
+}
+
+.ui-limitloader {
+    padding: 10px;
+    float: left;
+    font-weight: bold;
+    display: none;
 }
 
 // global select2 adjustments

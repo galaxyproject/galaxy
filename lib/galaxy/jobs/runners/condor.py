@@ -105,7 +105,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         )
         try:
             self.write_executable_script(executable, script)
-        except:
+        except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception("(%s) failure preparing job script" % galaxy_id_tag)
             return

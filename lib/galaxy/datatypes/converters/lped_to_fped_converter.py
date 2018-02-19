@@ -41,17 +41,17 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
     outfpath = os.path.join(outfilepath, outf)  # where to write the fbat format file to
     try:
         mf = open(inmap, 'r')
-    except:
+    except Exception:
         sys.stderr.write('%s cannot open inmap file %s - do you have permission?\n' % (prog, inmap))
         sys.exit(1)
     try:
         rsl = [x.split()[1] for x in mf]
-    except:
+    except Exception:
         sys.stderr.write('## cannot parse %s' % inmap)
         sys.exit(1)
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass  # already exists
     head = ' '.join(rsl)  # list of rs numbers
     # TODO add anno to rs but fbat will prolly barf?
@@ -64,7 +64,7 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
             lrow = row.split()
             try:
                 [int(x) for x in lrow[10:50]]  # look for non numeric codes
-            except:
+            except Exception:
                 dorecode = 1
         if dorecode:
             lrow = row.strip().split()
@@ -94,7 +94,7 @@ def main():
     outfilepath = sys.argv[3]
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass
     rgConv(inpedfilepath, outhtmlname, outfilepath)
     flist = os.listdir(outfilepath)

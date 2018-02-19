@@ -2,7 +2,6 @@ import string
 import unittest
 from xml.etree.ElementTree import XML
 
-import tools_support
 from galaxy import model
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -10,6 +9,7 @@ from galaxy.tools.actions import (
     on_text_for_names
 )
 from galaxy.tools.parser.output_objects import ToolOutput
+from .. import tools_support
 
 TEST_HANDLER_NAME = "test_handler_1"
 

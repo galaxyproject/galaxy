@@ -21,14 +21,12 @@
             editor_base_path = "${h.url_for('/static/wymeditor')}/",
             iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
             save_url = "${h.url_for(controller='page', action='save' )}";
+
+        $(function(){
+            bundleEntries.pages()
+        });
+
     </script>
-    ${h.js(
-        "libs/jquery/jquery.form",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.wymeditor",
-        "libs/jquery/jquery.autocomplete",
-        "galaxy.pages"
-    )}
 </%def>
 
 <%def name="stylesheets()">

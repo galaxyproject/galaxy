@@ -6,7 +6,6 @@ import logging
 import operator
 import os
 import re
-
 from collections import namedtuple
 
 from galaxy import util
@@ -31,6 +30,9 @@ class NullToolProvidedMetadata(object):
 
     def get_new_dataset_meta_by_basename(self, output_name, basename):
         return {}
+
+    def has_failed_outputs(self):
+        return False
 
 
 class LegacyToolProvidedMetadata(object):
@@ -74,6 +76,14 @@ class LegacyToolProvidedMetadata(object):
         log.warning("Called get_new_datasets with legacy tool metadata provider - that is unimplemented.")
         return []
 
+    def has_failed_outputs(self):
+        found_failed = False
+        for meta in self.tool_provided_job_metadata:
+            if meta.get("failed", False):
+                found_failed = True
+
+        return found_failed
+
 
 class ToolProvidedMetadata(object):
 
@@ -112,6 +122,14 @@ class ToolProvidedMetadata(object):
                 extra_kwds.update(element)
                 yield extra_kwds
 
+    def has_failed_outputs(self):
+        found_failed = False
+        for meta in self.tool_provided_job_metadata.values():
+            if meta.get("failed", False):
+                found_failed = True
+
+        return found_failed
+
 
 def collect_dynamic_collections(
     tool,
@@ -145,6 +163,9 @@ def collect_dynamic_collections(
             collection = has_collection.collection
         else:
             collection = has_collection
+
+        # We are adding dynamic collections, which may be precreated, but their actually state is still new!
+        collection.populated_state = collection.populated_states.NEW
 
         try:
             collection_builder = collections_service.collection_builder_for(
@@ -456,43 +477,54 @@ def discover_files(output_name, tool_provided_metadata, extra_file_collectors, j
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1
         extra_file_collector = extra_file_collectors[0]
-        target_directory = discover_target_directory(extra_file_collector, job_working_directory)
+        target_directory = discover_target_directory(extra_file_collector.directory, job_working_directory)
         for dataset in tool_provided_metadata.get_new_datasets(output_name):
             filename = dataset["filename"]
             path = os.path.join(target_directory, filename)
             yield DiscoveredFile(path, extra_file_collector, JsonCollectedDatasetMatch(dataset, extra_file_collector, filename, path=path))
     else:
-        for (match, collector) in walk_over_extra_files(extra_file_collectors, job_working_directory, matchable):
+        for (match, collector) in walk_over_file_collectors(extra_file_collectors, job_working_directory, matchable):
             yield DiscoveredFile(match.path, collector, match)
 
 
-def discover_target_directory(extra_file_collector, job_working_directory):
-    directory = job_working_directory
-    if extra_file_collector.directory:
-        directory = os.path.join(directory, extra_file_collector.directory)
+def discover_target_directory(dir_name, job_working_directory):
+    if dir_name:
+        directory = os.path.join(job_working_directory, dir_name)
         if not util.in_directory(directory, job_working_directory):
             raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
-    return directory
+        return directory
+    else:
+        return job_working_directory
 
 
-def walk_over_extra_files(extra_file_collectors, job_working_directory, matchable):
-
+def walk_over_file_collectors(extra_file_collectors, job_working_directory, matchable):
     for extra_file_collector in extra_file_collectors:
         assert extra_file_collector.discover_via == "pattern"
-        matches = []
-        directory = discover_target_directory(extra_file_collector, job_working_directory)
-        if not os.path.isdir(directory):
-            continue
-        for filename in os.listdir(directory):
-            path = os.path.join(directory, filename)
-            if not os.path.isfile(path):
-                continue
+        for match in walk_over_extra_files(extra_file_collector.directory, extra_file_collector, job_working_directory, matchable):
+            yield match, extra_file_collector
+
+
+def walk_over_extra_files(target_dir, extra_file_collector, job_working_directory, matchable):
+    """
+    Walks through all files in a given directory, and returns all files that
+    match the given collector's match criteria. If the collector has the
+    recurse flag enabled, will also recursively descend into child folders.
+    """
+    matches = []
+    directory = discover_target_directory(target_dir, job_working_directory)
+    for filename in os.listdir(directory):
+        path = os.path.join(directory, filename)
+        if os.path.isdir(path) and extra_file_collector.recurse:
+            # The current directory is already validated, so use that as the next job_working_directory when recursing
+            for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                yield match
+        else:
             match = extra_file_collector.match(matchable, filename, path=path)
             if match:
                 matches.append(match)
 
-        for match in extra_file_collector.sort(matches):
-            yield match, extra_file_collector
+    for match in extra_file_collector.sort(matches):
+        yield match
 
 
 def dataset_collector(dataset_collection_description):
@@ -533,6 +565,7 @@ class DatasetCollector(object):
         self.default_visible = dataset_collection_description.default_visible
         self.directory = dataset_collection_description.directory
         self.assign_primary_output = dataset_collection_description.assign_primary_output
+        self.recurse = dataset_collection_description.recurse
 
     def _pattern_for_dataset(self, dataset_instance=None):
         token_replacement = r'\d+'

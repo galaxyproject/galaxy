@@ -1,1 +1,0 @@
-{"version":3,"file":"group-model.js","sources":["../../../src/mvc/groups/group-model.js"],"names":["define","Group","Backbone","Model","extend","urlRoot","Groups","Collection","url","model"],"mappings":"AAAAA,UAAW,WAKP,GAAIC,GAAQC,SAASC,MAAMC,QACzBC,QAAS,gBAGPC,EAASJ,SAASK,WAAWH,QAC/BI,IAAK,cAELC,MAAOR,GAIb,QACIA,MAAOA,EACPK,OAAQA"}

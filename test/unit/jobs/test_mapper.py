@@ -10,7 +10,6 @@ from galaxy.jobs.mapper import (
     JobRunnerMapper,
 )
 from galaxy.util import bunch
-
 from . import test_rules
 
 WORKFLOW_UUID = uuid.uuid1().hex
@@ -130,7 +129,7 @@ class MockJobConfig(object):
         return DYNAMICALLY_GENERATED_DESTINATION
 
 
-class MockJobWrapper(object, HasResourceParameters):
+class MockJobWrapper(HasResourceParameters):
 
     def __init__(self, tool_job_destination):
         self.tool = MockTool(tool_job_destination)

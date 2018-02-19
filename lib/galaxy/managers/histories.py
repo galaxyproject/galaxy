@@ -4,19 +4,24 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
-
-from sqlalchemy import desc, asc
-
-from galaxy import model
-from galaxy import exceptions as glx_exceptions
-from galaxy.managers import sharable
-from galaxy.managers import deletable
-from galaxy.managers import hdas
-# from galaxy.managers import hdcas
-from galaxy.managers import history_contents
-
-
 import logging
+
+from sqlalchemy import (
+    asc,
+    desc
+)
+
+from galaxy import (
+    exceptions as glx_exceptions,
+    model
+)
+from galaxy.managers import (
+    deletable,
+    hdas,
+    history_contents,
+    sharable
+)
+
 log = logging.getLogger(__name__)
 
 

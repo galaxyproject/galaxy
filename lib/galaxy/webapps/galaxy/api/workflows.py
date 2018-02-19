@@ -7,6 +7,7 @@ import logging
 
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
+from sqlalchemy.orm import eagerload
 
 from galaxy import (
     exceptions,
@@ -31,7 +32,6 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 
 log = logging.getLogger(__name__)
@@ -126,7 +126,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         user = trans.get_user()
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+                eagerload("latest_workflow").undefer("step_count").lazyload("steps")).filter(
                 filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
                 desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
 
@@ -134,15 +135,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
-            item['number_of_steps'] = len(wf.latest_workflow.steps)
+            item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf.id:
                     item['show_in_tool_panel'] = True
                     break
             rval.append(item)
-        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(
-                user=trans.user).join('stored_workflow').filter(
+        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).options(
+                eagerload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).filter_by(user=trans.user).filter(
                 trans.app.model.StoredWorkflow.deleted == false()).order_by(
                 desc(trans.app.model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
@@ -150,7 +151,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
-            item['number_of_steps'] = len(wf_sa.stored_workflow.latest_workflow.steps)
+            item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf_sa.id:
@@ -166,8 +167,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 workflow_details = self.workflow_contents_manager.workflow_to_dict(trans, self.__get_stored_workflow(trans, value['id']), style='instance')
                 if 'steps' in workflow_details:
                     for step in workflow_details['steps']:
-                        tool_id = workflow_details['steps'][step]['tool_id']
-                        if tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
+                        tool_id = workflow_details['steps'][step].get('tool_id')
+                        if tool_id and tool_id not in tool_ids and self.app.toolbox.is_missing_shed_tool(tool_id):
                             tool_ids.append(tool_id)
                 if len(tool_ids) > 0:
                     value['missing_tools'] = tool_ids
@@ -256,6 +257,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
         :type   allow_tool_state_corrections:  bool
+
+        :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
+                                             and will copy the outputs of the previously executed step.
         """
         ways_to_create = set([
             'workflow_id',
@@ -337,10 +341,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         rval = {}
         rval['history'] = trans.security.encode_id(history.id)
         rval['outputs'] = []
-        for step in workflow.steps:
-            if step.type == 'tool' or step.type is None:
-                for v in outputs[step.id].values():
-                    rval['outputs'].append(trans.security.encode_id(v.id))
+        if outputs:
+            # Newer outputs don't necessarily fill outputs (?)
+            for step in workflow.steps:
+                if step.type == 'tool' or step.type is None:
+                    for v in outputs[step.id].values():
+                        rval['outputs'].append(trans.security.encode_id(v.id))
 
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in
@@ -600,7 +606,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_shared_workflow(self, trans, workflow_id, payload, **kwd):
         try:
             stored_workflow = self.get_stored_workflow(trans, workflow_id, check_ownership=False)
-        except:
+        except Exception:
             raise exceptions.ObjectNotFound("Malformed workflow id ( %s ) specified." % workflow_id)
         if stored_workflow.importable is False:
             raise exceptions.ItemAccessibilityException('The owner of this workflow has disabled imports via this link.')

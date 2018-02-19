@@ -11,7 +11,6 @@ import glob
 import multiprocessing
 import os
 import subprocess
-
 from multiprocessing.pool import IMapIterator
 
 try:

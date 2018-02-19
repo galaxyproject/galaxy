@@ -1,6 +1,8 @@
 """
 Adds the tool_rating_association table, enabling tools to be rated along with review comments.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -29,14 +31,14 @@ ToolRatingAssociation_table = Table("tool_rating_association", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:
         ToolRatingAssociation_table.create()
-    except Exception as e:
-        log.debug("Creating tool_rating_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating tool_rating_association table failed.")
 
 
 def downgrade(migrate_engine):
@@ -45,5 +47,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         ToolRatingAssociation_table.drop()
-    except Exception as e:
-        log.debug("Dropping tool_rating_association table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping tool_rating_association table failed.")

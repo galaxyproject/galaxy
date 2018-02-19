@@ -5,11 +5,11 @@ Pages are markup created and saved by users that can contain Galaxy objects
 (such as datasets) and are often used to describe or present an analysis
 from within Galaxy.
 """
+import logging
 
 from galaxy import model
 from galaxy.managers import sharable
 
-import logging
 log = logging.getLogger(__name__)
 
 

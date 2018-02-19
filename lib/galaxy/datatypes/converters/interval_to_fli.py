@@ -48,7 +48,7 @@ def main():
                 try:
                     float(val)
                     continue
-                except:
+                except ValueError:
                     convert_gff_coords_to_bed(feature)
                     # Value is not a number, so it can be indexed.
                     if val not in name_loc_dict:

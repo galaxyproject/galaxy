@@ -3,7 +3,7 @@ from __future__ import print_function
 
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -28,7 +28,7 @@ def __main__():
                 # Replace any spaces in the name with underscores so UCSC will not complain
                 name = elems[2].replace(" ", "_")
                 out.write("%s\t%s\t%s\t%s\t0\t%s\n" % (elems[0], start, elems[4], name, strand))
-            except:
+            except Exception:
                 skipped_lines += 1
                 if not first_skipped_line:
                     first_skipped_line = i + 1

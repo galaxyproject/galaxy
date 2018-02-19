@@ -1,10 +1,27 @@
 import os
-
 from shutil import rmtree
+from string import Template
 from tempfile import mkdtemp
 
 from galaxy.tools.loader import load_tool, template_macro_params
 from galaxy.util import parse_xml
+
+
+SIMPLE_TOOL_WITH_MACRO = """<tool id="tool_with_macro" name="macro_annotation" version="@WRAPPER_VERSION@">
+    <expand macro="inputs" />
+    <macros>
+        <import>external.xml</import>
+    </macros>
+</tool>"""
+
+SIMPLE_MACRO = Template("""
+<macros>
+    <token name="@WRAPPER_VERSION@">$tool_version</token>
+    <macro name="inputs">
+        <inputs/>
+    </macro>
+</macros>
+""")
 
 
 def test_loader():
@@ -23,11 +40,11 @@ def test_loader():
             open(os.path.join(self.temp_directory, name), "w").write(contents)
 
         def load(self, name="tool.xml", preprocess=True):
+            path = os.path.join(self.temp_directory, name)
             if preprocess:
-                loader = load_tool
+                return load_tool(path)
             else:
-                loader = parse_xml
-            return loader(os.path.join(self.temp_directory, name))
+                return parse_xml(path)
 
     # Test simple macro replacement.
     with TestToolDirectory() as tool_dir:
@@ -47,20 +64,9 @@ def test_loader():
 
     # Test importing macros from external files
     with TestToolDirectory() as tool_dir:
-        tool_dir.write('''
-<tool>
-    <expand macro="inputs" />
-    <macros>
-        <import>external.xml</import>
-    </macros>
-</tool>''')
+        tool_dir.write(SIMPLE_TOOL_WITH_MACRO)
 
-        tool_dir.write('''
-<macros>
-    <macro name="inputs">
-        <inputs />
-    </macro>
-</macros>''', name="external.xml")
+        tool_dir.write(SIMPLE_MACRO.substitute(tool_version="2.0"), name="external.xml")
         xml = tool_dir.load(preprocess=False)
         assert xml.find("inputs") is None
         xml = tool_dir.load(preprocess=True)

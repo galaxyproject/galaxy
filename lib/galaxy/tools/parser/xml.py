@@ -3,13 +3,11 @@ import re
 import sys
 import traceback
 import uuid
-
 from math import isinf
 
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
-
 from .interface import (
     InputSource,
     PageSource,
@@ -40,10 +38,11 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
-    def __init__(self, xml_tree, source_path=None):
+    def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
         self._source_path = source_path
+        self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
 
     def parse_version(self):
@@ -127,13 +126,35 @@ class XmlToolSource(ToolSource):
             )
         return environment_variables
 
-    def parse_interpreter(self):
+    def parse_home_target(self):
+        target = "job_home" if self.parse_profile() >= "18.01" else "shared_home"
         command_el = self._command_el
-        interpreter = (command_el is not None) and command_el.get("interpreter", None)
-        if not self.legacy_defaults:
-            log.warning("Deprecated interpeter attribute on command element is now ignored.")
-            interpreter = None
+        command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
+        if command_legacy is not None:
+            target = "shared_home" if string_as_bool(command_legacy) else "job_home"
+        return target
 
+    def parse_tmp_target(self):
+        # Default to not touching TMPDIR et. al. but if job_tmp is set
+        # in job_conf then do. This is a very conservative approach that shouldn't
+        # break or modify any configurations by default.
+        return "job_tmp_if_explicit"
+
+    def parse_docker_env_pass_through(self):
+        if self.parse_profile() < "18.01":
+            return ["GALAXY_SLOTS"]
+        else:
+            # Pass home, etc...
+            return super(XmlToolSource, self).parse_docker_env_pass_through()
+
+    def parse_interpreter(self):
+        interpreter = None
+        command_el = self._command_el
+        if command_el is not None:
+            interpreter = command_el.get("interpreter", None)
+        if interpreter and not self.legacy_defaults:
+            log.warning("Deprecated interpreter attribute on command element is now ignored.")
+            interpreter = None
         return interpreter
 
     def parse_version_command(self):
@@ -327,9 +348,15 @@ class XmlToolSource(ToolSource):
         detect_errors = None
         if command_el is not None:
             detect_errors = command_el.get("detect_errors")
+
         if detect_errors and detect_errors != "default":
             if detect_errors == "exit_code":
-                return error_on_exit_code()
+                oom_exit_code = None
+                if command_el is not None:
+                    oom_exit_code = command_el.get("oom_exit_code", None)
+                if oom_exit_code is not None:
+                    int(oom_exit_code)
+                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:
@@ -725,7 +752,7 @@ class StdioParser(object):
                 else:
                     try:
                         exit_code.range_start = int(code_range)
-                    except:
+                    except Exception:
                         log.error(code_range)
                         log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
                         continue
@@ -830,6 +857,8 @@ class StdioParser(object):
                     return_level = StdioErrorLevel.LOG
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
+                elif (re.search("fatal_oom", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.FATAL_OOM
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:

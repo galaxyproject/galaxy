@@ -4,18 +4,21 @@ import os
 import tempfile
 
 from galaxy.tools import (
+    create_tool_from_source,
+    get_tool_source,
     parameters,
     Tool
 )
+from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import dynamic_options
-
-from tool_shed.tools import data_table_manager
-
-from tool_shed.util import basic_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
-from tool_shed.util import xml_util
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
+from tool_shed.util import (
+    basic_util,
+    hg_util,
+    repository_util,
+    tool_util,
+    xml_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ class ToolValidator(object):
 
     def __init__(self, app):
         self.app = app
-        self.tdtm = data_table_manager.ToolDataTableManager(self.app)
+        self.stdtm = ShedToolDataTableManager(self.app)
 
     def can_use_tool_config_disk_file(self, repository, repo, file_path, changeset_revision):
         """
@@ -45,7 +48,7 @@ class ToolValidator(object):
         can_use_disk_file = filecmp.cmp(file_path, latest_version_of_file)
         try:
             os.unlink(latest_version_of_file)
-        except:
+        except Exception:
             pass
         return can_use_disk_file
 
@@ -55,7 +58,6 @@ class ToolValidator(object):
         generated using external data files to make sure the files exist.
         """
         invalid_files_and_errors_tups = []
-        correction_msg = ''
         for input_param in tool.input_params:
             if isinstance(input_param, parameters.basic.SelectToolParameter) and input_param.is_dynamic:
                 # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml,
@@ -67,7 +69,7 @@ class ToolValidator(object):
                         sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample', repo_dir)
                         if sample_tool_data_table_conf:
                             error, correction_msg = \
-                                self.tdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
+                                self.stdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
                                                                                   persist=False)
                             if error:
                                 invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
@@ -78,9 +80,9 @@ class ToolValidator(object):
                             invalid_tup = (tool_config_name, correction_msg)
                             if invalid_tup not in invalid_files_and_errors_tups:
                                 invalid_files_and_errors_tups.append(invalid_tup)
-                    if options.index_file or options.missing_index_file:
+                    if options.index_file or options.tool_data_table and options.tool_data_table.missing_index_file:
                         # Make sure the repository contains the required xxx.loc.sample file.
-                        index_file = options.index_file or options.missing_index_file
+                        index_file = options.index_file or options.tool_data_table.missing_index_file
                         index_file_name = basic_util.strip_path(index_file)
                         sample_found = False
                         for sample_file in sample_files:
@@ -200,11 +202,12 @@ class ToolValidator(object):
         """
         message = ''
         sample_files = self.copy_disk_sample_files_to_dir(repo_files_dir, work_dir)
+        tool_data_table_config = None
         if sample_files:
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
-                error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
+                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                    persist=False)
         tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
@@ -219,12 +222,11 @@ class ToolValidator(object):
         # intended to help handle sample files that are in the manifest, but have been deleted from disk.
         sample_files, deleted_sample_files = self.get_list_of_copied_sample_files(repo, ctx, dir=work_dir)
         if sample_files:
-            self.app.config.tool_data_path = work_dir
             if 'tool_data_table_conf.xml.sample' in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 if tool_data_table_config:
-                    error, message = self.tdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
+                    error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
                                                                                        persist=False)
                     if error:
                         log.debug(message)
@@ -242,13 +244,9 @@ class ToolValidator(object):
         the received valid changeset revision and the first changeset revision in the repository,
         searching backwards.
         """
-        original_tool_data_path = self.app.config.tool_data_path
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
         repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_files_dir, create=False)
-        message = ''
-        tool = None
-        can_use_disk_file = False
         tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
         can_use_disk_file = self.can_use_tool_config_disk_file(repository,
@@ -256,7 +254,6 @@ class ToolValidator(object):
                                                                tool_config_filepath,
                                                                changeset_revision)
         if can_use_disk_file:
-            self.app.config.tool_data_path = work_dir
             tool, valid, message, sample_files = \
                 self.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
                                                                  repository_id,
@@ -284,14 +281,18 @@ class ToolValidator(object):
                                                                        tool_config_filename,
                                                                        work_dir)
         basic_util.remove_dir(work_dir)
-        self.app.config.tool_data_path = original_tool_data_path
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.tdtm.reset_tool_data_tables()
+        self.stdtm.reset_tool_data_tables()
         return repository, tool, message
 
     def load_tool_from_config(self, repository_id, full_path):
+        tool_source = get_tool_source(
+            full_path,
+            enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
+            tool_location_fetcher=ToolLocationFetcher(),
+        )
         try:
-            tool = self.app.toolbox.load_tool(full_path, repository_id=repository_id, allow_code_files=False, use_cached=False)
+            tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id, allow_code_files=False)
             valid = True
             error_message = None
         except KeyError as e:
@@ -325,10 +326,10 @@ class ToolValidator(object):
             for tmp_code_file in tmp_code_files:
                 try:
                     os.unlink(tmp_code_file)
-                except:
+                except Exception:
                     pass
             try:
                 os.unlink(tmp_tool_config)
-            except:
+            except Exception:
                 pass
         return tool, message

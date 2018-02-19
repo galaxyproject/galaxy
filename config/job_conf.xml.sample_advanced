@@ -248,6 +248,31 @@
                  a requirement of the other.
 
                  -->
+            <!-- <param id="requests_cpu">500m</param> -->
+            <!-- <param id="requests_memory">500Mi</param> -->
+            <!-- <param id="limits_cpu">2</param> -->
+            <!-- <param id="limits_memory">2Gi</param> -->
+            <!-- Kubernetes resource Requests and Limits
+                 Parameters above (requests_* and limits_*) set default minimal (requests) and
+                 maximal (limits) CPU and memory resources to be allocated to all containers in
+                 Kubernetes jobs by default.
+
+                 Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
+                 Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
+                 expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
+                 people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
+                 decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
+                 For this reason, the form 100m might be preferred.
+
+                 You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
+                 P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
+                 For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
+                 will make the jobs fail as Kubernetes won't recognize the assignment.
+
+                 For more details on the Kubernetes resources management, see:
+                 https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+                 -->
+
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker
@@ -516,6 +541,23 @@
                clusters. These don't need to be available on the Galaxy server
                itself.
           -->
+        </destination>
+        <!-- Following three destinations demonstrate setting up per-job temp directory handling.
+             In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
+             destinations.
+             The first simply tells Galaxy to create a temp directory in the job directory, the
+             other forms can be used to issue shell commands before the job runs on the worker node to
+             allocate a temp directory. In these other cases, Galaxy will not clean up these
+             directories so either use directories managed by the job resource manager or setup
+             tooling to clean old temp directories up outside of Galaxy. -->
+        <destination id="clean_tmp_by_job" runner="drmma">
+          <param id="tmp_dir">True</param>
+        </destination>
+        <destination id="clean_tmp_drm" runner="drmma">
+          <param id="tmp_dir">"$DRM_SET_VARIABLES_FOR_THIS_JOB"</param>
+        </destination>
+        <destination id="clean_tmp_fast_scratch" runner="drmma">
+          <param id="tmp_dir">$(mktemp -d /mnt/scratch/fastest/gxyjobXXXXXXXXXXX)</param>
         </destination>
         <destination id="real_user_cluster" runner="drmaa">
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->

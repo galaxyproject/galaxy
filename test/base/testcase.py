@@ -9,7 +9,6 @@ from json import loads
 from galaxy.tools.verify import verify
 from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.web import security
-
 from .driver_util import GalaxyTestDriver
 
 log = logging.getLogger(__name__)
@@ -40,7 +39,7 @@ class FunctionalTestCase(unittest.TestCase):
         if self.keepOutdir > '':
             try:
                 os.makedirs(self.keepOutdir)
-            except:
+            except Exception:
                 pass
 
     @classmethod

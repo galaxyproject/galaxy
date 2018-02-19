@@ -12,7 +12,6 @@ from six import string_types
 from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
-
 from .base import BaseTestCase
 
 
@@ -180,7 +179,6 @@ class UserSerializerTestCase(BaseTestCase):
         self.assertIsInstance(serialized['nice_total_disk_usage'], string_types)
         self.assertIsInstance(serialized['quota_percent'], (type(None), float))
         self.assertIsInstance(serialized['tags_used'], list)
-        self.assertIsInstance(serialized['has_requests'], bool)
 
         self.log('serialized should jsonify well')
         self.assertIsJsonifyable(serialized)

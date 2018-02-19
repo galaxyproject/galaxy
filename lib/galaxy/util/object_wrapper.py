@@ -9,6 +9,19 @@ import logging
 import string
 import sys
 from numbers import Number
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
 
 try:
     from types import NoneType
@@ -44,20 +57,6 @@ except ImportError:
     # so they are __WRAP_NO_SUBCLASS__.
     BufferType = SliceType
     DictProxyType = SliceType
-
-from types import (
-    BuiltinFunctionType,
-    BuiltinMethodType,
-    CodeType,
-    FrameType,
-    FunctionType,
-    GeneratorType,
-    GetSetDescriptorType,
-    MemberDescriptorType,
-    MethodType,
-    ModuleType,
-    TracebackType,
-)
 
 from six.moves import (
     copyreg as copy_reg,
@@ -155,7 +154,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         try:
             wrapped_class_name = value.__name__
             wrapped_class = value
-        except:
+        except Exception:
             wrapped_class_name = value.__class__.__name__
             wrapped_class = value.__class__
         value_mod = inspect.getmodule(value)

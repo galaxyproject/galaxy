@@ -30,9 +30,7 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-
 from galaxy.util.image_util import check_image_type
-
 from . import data
 
 if sys.version_info > (3,):
@@ -63,7 +61,7 @@ class SequenceSplitLocations(data.Text):
             try:
                 parsed_data = json.load(open(dataset.file_name))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+                dataset.peek = data.get_file_peek(dataset.file_name)
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception:
                 dataset.peek = 'Not FQTOC file'
@@ -81,7 +79,7 @@ class SequenceSplitLocations(data.Text):
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
                         return False
                 return True
-            except:
+            except Exception:
                 pass
         return False
 
@@ -114,7 +112,7 @@ class Sequence(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
                 dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
             else:
@@ -376,7 +374,7 @@ class Fasta(Sequence):
                     else:
                         break  # we found a non-empty line, but it's not a fasta header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -543,7 +541,7 @@ class csFasta(Sequence):
                     else:
                         break  # we found a non-empty line, but it's not a header
             fh.close()
-        except:
+        except Exception:
             pass
         return False
 
@@ -634,7 +632,7 @@ class BaseFastq (Sequence):
                     return False
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
@@ -736,7 +734,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz (BaseFastq, Binary):
+class FastqGz(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -744,6 +742,8 @@ class FastqGz (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_gzip(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -759,11 +759,6 @@ class FastqSolexaGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqIlluminaGz(FastqGz):
@@ -785,6 +780,8 @@ class FastqBz2 (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_bz2(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -794,11 +791,6 @@ class FastqSangerBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSolexaBz2(FastqBz2):
@@ -863,7 +855,7 @@ class Maf(Alignment):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.blocks:
                 dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
             else:
@@ -930,7 +922,7 @@ class Maf(Alignment):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -968,7 +960,7 @@ class MafCustomTrack(data.Text):
                 dataset.metadata.vp_chromosome = chrom
                 dataset.metadata.vp_start = forward_strand_start
                 dataset.metadata.vp_end = forward_strand_end
-        except:
+        except Exception:
             pass
 
 
@@ -1019,7 +1011,7 @@ class Axt(data.Text):
                     return False
                 try:
                     map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
-                except:
+                except Exception:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False
@@ -1060,7 +1052,7 @@ class Lav(data.Text):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -1205,7 +1197,7 @@ class Genbank(data.Text):
         try:
             with open(filename, 'r') as handle:
                 return 'LOCUS ' == handle.read(6)
-        except:
+        except Exception:
             pass
 
         return False
@@ -1236,7 +1228,7 @@ class MemePsp(Sequence):
             for item in l.split():
                 try:
                     float(item)
-                except:
+                except ValueError:
                     return False
             return True
         try:
@@ -1269,7 +1261,7 @@ class MemePsp(Sequence):
                         # We found a non-empty line,
                         # but it's not a psp id width.
                         return False
-        except:
+        except Exception:
             return False
         # We've reached EOF in less than 100 lines.
         return True

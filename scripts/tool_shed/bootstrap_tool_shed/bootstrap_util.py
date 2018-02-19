@@ -1,12 +1,14 @@
 #!/usr/bin/python
+from __future__ import print_function
+
 import optparse
-import ConfigParser
 import os
 import sys
 
-sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
-
+from six.moves.configparser import ConfigParser
 from sqlalchemy.exc import OperationalError, ProgrammingError
+
+sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'lib'))
 
 import galaxy.webapps.tool_shed.model.mapping as tool_shed_model
 from tool_shed.util import xml_util
@@ -48,7 +50,7 @@ def check_db(config_parser):
         pass
 
     if config_parser.has_option('app:main', 'hgweb_config_dir'):
-        hgweb_config_parser = ConfigParser.ConfigParser()
+        hgweb_config_parser = ConfigParser()
         hgweb_dir = config_parser.get('app:main', 'hgweb_config_dir')
         hgweb_config_file = os.path.join(hgweb_dir, 'hgweb.config')
         if not os.path.exists(hgweb_config_file):
@@ -75,7 +77,7 @@ def admin_user_info():
     email = None
     password = None
     if tree is None:
-        print "The XML file ", user_info_config, " seems to be invalid, using defaults."
+        print("The XML file ", user_info_config, " seems to be invalid, using defaults.")
         email = 'admin@test.org'
         password = 'testuser'
         username = 'admin'
@@ -97,12 +99,12 @@ def get_local_tool_shed_url(config_parser):
         if config_parser.has_option('server:main', 'port'):
             port = config_parser.get('server:main', 'port')
     host = '127.0.0.1'
-    print 'http://%s:%s' % (host, port)
+    print('http://%s:%s' % (host, port))
     return 0
 
 
 def main(args):
-    config_parser = ConfigParser.ConfigParser()
+    config_parser = ConfigParser()
 
     if os.path.exists(args.config):
         config_parser.read(args.config)
@@ -113,7 +115,7 @@ def main(args):
         return check_db(config_parser)
     elif args.method == 'admin_user_info':
         (username, email, password) = admin_user_info()
-        print '%s__SEP__%s__SEP__%s' % (username, email, password)
+        print('%s__SEP__%s__SEP__%s' % (username, email, password))
         return 0
     elif args.method == 'get_url':
         return get_local_tool_shed_url(config_parser)
@@ -122,7 +124,7 @@ def main(args):
 
 
 parser = optparse.OptionParser()
-parser.add_option('-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample')
+parser.add_option('-c', '--config_file', dest='config', action='store', default='config/tool_shed.yml.sample')
 parser.add_option('-e', '--execute', dest='method', action='store', default='check_db')
 (args, options) = parser.parse_args()
 

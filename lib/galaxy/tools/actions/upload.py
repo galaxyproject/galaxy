@@ -2,7 +2,6 @@ import logging
 
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
-
 from . import ToolAction
 
 log = logging.getLogger(__name__)

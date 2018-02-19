@@ -15,7 +15,8 @@ from six import string_types, StringIO
 from six.moves.urllib.parse import urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
-from base.testcase import FunctionalTestCase
+from base.testcase import FunctionalTestCase  # noqa: I100,I202
+from galaxy.util import unicodify  # noqa: I201
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
 buffer = StringIO()
@@ -43,13 +44,13 @@ class TwillTestCase(FunctionalTestCase):
 
     def check_history_for_exact_string(self, string, show_deleted=False):
         """Looks for exact match to 'string' in history page"""
+        params = dict()
         if show_deleted:
-            self.visit_url("/history?show_deleted=True")
-        else:
-            self.visit_url("/history")
+            params['show_deleted'] = True
+        self.visit_url("/history", params=params)
         try:
             tc.find(string)
-        except:
+        except Exception:
             fname = self.write_temp_file(tc.browser.get_html())
             errmsg = "no match to '%s'\npage content written to '%s'" % (string, fname)
             raise AssertionError(errmsg)
@@ -65,7 +66,7 @@ class TwillTestCase(FunctionalTestCase):
 
     def check_page_for_string(self, patt):
         """Looks for 'patt' in the current browser page"""
-        page = self.last_page()
+        page = unicodify(self.last_page())
         if page.find(patt) == -1:
             fname = self.write_temp_file(page)
             errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % (patt, fname, page)
@@ -108,21 +109,21 @@ class TwillTestCase(FunctionalTestCase):
         invalid_username = False
         try:
             self.check_page_for_string("Created new user account")
-        except:
+        except Exception:
             try:
                 # May have created the account in a previous test run...
                 self.check_page_for_string("User with that email already exists")
                 previously_created = True
-            except:
+            except Exception:
                 try:
                     self.check_page_for_string('Public name is taken; please choose another')
                     username_taken = True
-                except:
+                except Exception:
                     try:
                         # Note that we're only checking if the usr name is >< 4 chars here...
                         self.check_page_for_string('Public name must be at least 4 characters in length')
                         invalid_username = True
-                    except:
+                    except Exception:
                         pass
         return previously_created, username_taken, invalid_username
 
@@ -184,7 +185,11 @@ class TwillTestCase(FunctionalTestCase):
 
     def history_as_xml_tree(self, show_deleted=False):
         """Returns a parsed xml object of a history"""
-        self.visit_url('/history?as_xml=True&show_deleted=%s' % show_deleted)
+        params = {
+            'as_xml': True,
+            'show_deleted': show_deleted
+        }
+        self.visit_url('/history', params=params)
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
@@ -201,6 +206,10 @@ class TwillTestCase(FunctionalTestCase):
         return loads(self.last_page())
 
     def last_page(self):
+        """
+        Return the last visited page (usually HTML, but can binary data as
+        well).
+        """
         return tc.browser.get_html()
 
     def last_url(self):
@@ -217,7 +226,10 @@ class TwillTestCase(FunctionalTestCase):
             # The acount has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
-            self.visit_url("/user/login?use_panels=False")
+            params = {
+                'use_panels': False
+            }
+            self.visit_url('/user/login', params=params)
             self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
 
     def logout(self):
@@ -227,10 +239,10 @@ class TwillTestCase(FunctionalTestCase):
 
     def new_history(self, name=None):
         """Creates a new, empty history"""
+        params = dict()
         if name:
-            self.visit_url("%s/history_new?name=%s" % (self.url, name))
-        else:
-            self.visit_url("%s/history_new" % self.url)
+            params['name'] = name
+        self.visit_url("%s/history_new" % self.url, params=params)
         self.check_page_for_string('New history created')
         assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
 
@@ -244,7 +256,7 @@ class TwillTestCase(FunctionalTestCase):
         formcontrols = self.get_form_controls(f)
         try:
             control = f.find_control(name=control_name)
-        except:
+        except Exception:
             log.debug('\n'.join(formcontrols))
             # This assumes we always want the first control of the given name, which may not be ideal...
             control = f.find_control(name=control_name, nr=0)

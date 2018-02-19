@@ -60,7 +60,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
     def __str__(self):
         try:
             return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
-        except:
+        except Exception:
             # Most likely None, which lacks __module__.
             return str(self.obj)
 
@@ -212,7 +212,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def get(self, key, default=None):
             try:
                 return getattr(self, key)
-            except:
+            except Exception:
                 return default
 
         def items(self):
@@ -223,7 +223,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             try:
                 # TODO: allow this to work when working with grouping
                 ext = tool.inputs[name].extensions[0]
-            except:
+            except Exception:
                 ext = 'data'
             self.dataset = wrap_with_safe_string(NoneDataset(datatypes_registry=datatypes_registry, ext=ext), no_wrap_classes=ToolParameterValueWrapper)
         else:

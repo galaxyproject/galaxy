@@ -1,15 +1,15 @@
 """
 API operations allowing clients to manage tool dependencies.
 """
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import require_admin
-from galaxy.web.base.controller import BaseAPIController
+import logging
 
 from galaxy.tools.deps import views
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    require_admin
+)
+from galaxy.web.base.controller import BaseAPIController
 
-
-import logging
 log = logging.getLogger(__name__)
 
 

@@ -5,7 +5,6 @@ import mock
 from galaxy import model
 from galaxy.util import bunch
 from galaxy.workflow import modules
-
 from .workflow_support import MockTrans, yaml_to_model
 
 

@@ -6,7 +6,13 @@ import time
 from json import dumps
 from logging import getLogger
 
-from requests import delete, get, patch, post
+from requests import (
+    delete,
+    get,
+    patch,
+    post,
+    put,
+)
 from six import StringIO, text_type
 
 from galaxy import util
@@ -101,12 +107,12 @@ class GalaxyInteractorApi(object):
         """Check dataset metadata.
 
         ftype on output maps to `file_ext` on the hda's API description, `name`, `info`,
-        and `dbkey` all map to the API description directly. Other metadata attributes
+        `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
         metadata = attributes.get('metadata', {}).copy()
         for key, value in metadata.copy().items():
-            if key not in ['name', 'info']:
+            if key not in ['name', 'info', 'tags']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
                 del metadata[key]
@@ -478,6 +484,17 @@ class GalaxyInteractorApi(object):
         else:
             params = {}
         return patch("%s/%s" % (self.api_url, path), params=params, data=data)
+
+    def _put(self, path, data={}, key=None, admin=False, anon=False):
+        if not anon:
+            if not key:
+                key = self.api_key if not admin else self.master_api_key
+            params = dict(key=key)
+            data = data.copy()
+            data['key'] = key
+        else:
+            params = {}
+        return put("%s/%s" % (self.api_url, path), params=params, data=data)
 
     def _get(self, path, data={}, key=None, admin=False, anon=False):
         if not anon:

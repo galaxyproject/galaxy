@@ -18,6 +18,7 @@ from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
+from galaxy.web.stack import ApplicationStack
 
 
 # =============================================================================
@@ -74,7 +75,8 @@ class MockApp(object):
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
         self.genome_builds = GenomeBuilds(self)
-        self.job_queue = NoopQueue()
+        self.job_manager = Bunch(job_queue=NoopQueue())
+        self.application_stack = ApplicationStack()
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -199,7 +201,6 @@ class MockDir(object):
 
     def create_root(self, structure_dict, where=None):
         self.root_path = tempfile.mkdtemp(dir=where)
-        # print 'created root:', self.root_path
         self.create_structure(self.root_path, structure_dict)
 
     def create_structure(self, current_path, structure_dict):
@@ -210,17 +211,14 @@ class MockDir(object):
             # if it's a dict, create a dir here named k and recurse into it
             if isinstance(v, dict):
                 subdir_path = os.path.join(current_path, k)
-                # print 'subdir:', subdir_path
                 os.mkdir(subdir_path)
                 self.create_structure(subdir_path, v)
 
     def create_file(self, path, contents):
-        # print 'file:', path
         with open(path, 'w') as newfile:
             newfile.write(contents)
 
     def remove(self):
-        # print 'removing:', self.root_path
         shutil.rmtree(self.root_path)
 
 
