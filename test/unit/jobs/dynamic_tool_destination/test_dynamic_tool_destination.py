@@ -10,7 +10,7 @@ from galaxy.jobs.mapper import JobMappingException
 from . import mockGalaxy as mg
 from . import ymltests as yt
 
-theApp = mg.App("waffles_default", "test_spec")
+theApp = mg.App("cluster_default", "test_spec")
 script_dir = os.path.dirname(__file__)
 
 # ======================Jobs====================================
@@ -186,20 +186,20 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_default_tool(self, l):
         job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'waffles_default')
+        self.assertEquals(job, 'cluster_default')
         priority_job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'waffles_default_high')
+        self.assertEquals(priority_job, 'cluster_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default'."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'cluster_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'test_tooldefault' not specified in config. Using default destination."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'waffles_default_high'.")
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_tooldefault' with 'cluster_default_high'.")
         )
 
     @log_capture()
@@ -222,37 +222,37 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_arguments_arg_not_found(self, l):
         job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'waffles_default')
+        self.assertEquals(job, 'cluster_default')
         priority_job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'waffles_default_high')
+        self.assertEquals(priority_job, 'cluster_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default'."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'cluster_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'waffles_default_high'.")
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_arguments' with 'cluster_default_high'.")
         )
 
     @log_capture()
     def test_tool_not_found(self, l):
         job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'waffles_default')
+        self.assertEquals(job, 'cluster_default')
         priority_job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'waffles_default_high')
+        self.assertEquals(priority_job, 'cluster_default_high')
 
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default'."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'cluster_default'."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No default_priority section found in config. Setting 'med' as default priority."),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'unregistered' not specified in config. Using default destination."),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'waffles_default_high'.")
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'unregistered' with 'cluster_default_high'.")
         )
 
     @log_capture()
@@ -799,7 +799,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest164, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles-kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'cluster-kow' does not appear in the job configuration. Did you mean 'cluster_low'?"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -808,7 +808,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest165, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'waffles_kow' does not appear in the job configuration. Did you mean 'waffles_low'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'cluster_kow' does not appear in the job configuration. Did you mean 'cluster_low'?"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 
@@ -817,7 +817,7 @@ class TestDynamicToolDestination(unittest.TestCase):
         dt.parse_yaml(path=yt.ivYMLTest166, job_conf_path=job_conf_path, test=True)
         l.check(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
-            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'waffles_defaut' does not appear in the job configuration. Did you mean 'waffles_default'?"),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'cluster_defaut' does not appear in the job configuration. Did you mean 'cluster_default'?"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
 

@@ -31,16 +31,16 @@
         <destination id="Destination5" runner="local"/>
         <destination id="Destination6_med" runner="local"/>
         <destination id="Destination6" runner="local"/>
-        <destination id="waffles_default_high" runner="local"/>
-        <destination id="waffles_default_med" runner="local"/>
-        <destination id="waffles_default_low" runner="local"/>
-        <destination id="waffles_high" runner="local"/>
-        <destination id="waffles_low" runner="local"/>
-        <destination id="waffles_low_4" runner="local"/>
+        <destination id="cluster_default_high" runner="local"/>
+        <destination id="cluster_default_med" runner="local"/>
+        <destination id="cluster_default_low" runner="local"/>
+        <destination id="cluster_high" runner="local"/>
+        <destination id="cluster_low" runner="local"/>
+        <destination id="cluster_low_4" runner="local"/>
         <destination id="cluster_high_32" runner="local"/>
         <destination id="cluster_low_4" runner="local"/>
         <destination id="cluster_med_4" runner="local"/>
-        <destination id="waffles_default" runner="local"/>
+        <destination id="cluster_default" runner="local"/>
         <destination id="DestinationF" runner="local"/>
         <destination id="lame_cluster" runner="local"/>
         <destination id="even_lamer_cluster" runner="local"/>

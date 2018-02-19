@@ -9,7 +9,7 @@ vYMLTest1 = """
             lower_bound: 0
             upper_bound: 100000000
             destination: things
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
@@ -27,14 +27,14 @@ vdictTest1_yml = {
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Multiple jobs, multiple rules
 vYMLTest2 = '''
     tools:
       spades:
-        default_destination: waffles_default
+        default_destination: cluster_default
       smalt:
         rules:
           - rule_type: file_size
@@ -49,14 +49,14 @@ vYMLTest2 = '''
             upper_bound: Infinity
             fail_message: Too few reads for smalt to work
             destination: fail
-    default_destination: waffles_low
+    default_destination: cluster_low
     verbose: True
 '''
 
 vdictTest2_yml = {
     "tools": {
         "spades": {
-            "default_destination": "waffles_default"
+            "default_destination": "cluster_default"
         },
         "smalt": {
             "rules": [
@@ -78,7 +78,7 @@ vdictTest2_yml = {
             ]
         }
     },
-    'default_destination': "waffles_low"
+    'default_destination': "cluster_low"
 }
 
 # Rule with extra attribute
@@ -93,7 +93,7 @@ vYMLTest3 = '''
             upper_bound: 100000000
             fail_message: Whats hax
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -113,7 +113,7 @@ vdictTest3_yml = {
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Arguments type
@@ -127,7 +127,7 @@ vYMLTest4 = """
               careful: true
             fail_message: Failure
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
@@ -147,7 +147,7 @@ vdictTest4_yml = {
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Records type
@@ -159,8 +159,8 @@ vYMLTest5 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: 100000000
-            destination: waffles_low_4
-    default_destination: waffles_default
+            destination: cluster_low_4
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -173,19 +173,19 @@ vdictTest5_yml = {
                     'nice_value': 0,
                     "lower_bound": 0,
                     "upper_bound": 100000000,
-                    "destination": "waffles_low_4"
+                    "destination": "cluster_low_4"
                 }
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Num_input_datasets type
 vYMLTest6 = '''
     tools:
       spades:
-        default_destination: waffles_default
+        default_destination: cluster_default
       smalt:
         rules:
           - rule_type: num_input_datasets
@@ -198,14 +198,14 @@ vYMLTest6 = '''
             lower_bound: 200
             upper_bound: Infinity
             destination: cluster_high_32
-    default_destination: waffles_low
+    default_destination: cluster_low
     verbose: True
 '''
 
 vdictTest6_yml = {
     "tools": {
         "spades": {
-            "default_destination": "waffles_default"
+            "default_destination": "cluster_default"
         },
         "smalt": {
             "rules": [
@@ -225,7 +225,7 @@ vdictTest6_yml = {
             ]
         }
     },
-    'default_destination': "waffles_low"
+    'default_destination': "cluster_low"
 }
 
 # One job, one rule, and priority destinations
@@ -242,7 +242,7 @@ vYMLTest7 = """
                 med: things
     default_destination:
       priority:
-        med: waffles_default
+        med: cluster_default
     users:
       user@example.com:
         priority: med
@@ -269,7 +269,7 @@ vdictTest7_yml = {
     },
     'default_destination': {
         'priority': {
-            'med': 'waffles_default'
+            'med': 'cluster_default'
         }
     },
     'default_priority': 'med',
@@ -282,7 +282,7 @@ vdictTest7_yml = {
 
 # No valid priorities but the tool doesn't require one
 vYMLTest160 = '''
-    default_destination: waffles_low
+    default_destination: cluster_low
     default_priority: med
     tools:
       blah:
@@ -291,8 +291,8 @@ vYMLTest160 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: Infinity
-            destination: waffles_default
-        default_destination: waffles_high
+            destination: cluster_default
+        default_destination: cluster_high
     verbose: True
 '''
 
@@ -305,13 +305,13 @@ vdictTest160_yml = {
                     "nice_value": 0,
                     "lower_bound": 0,
                     "upper_bound": "Infinity",
-                    "destination": "waffles_default"
+                    "destination": "cluster_default"
                 }
             ],
-            "default_destination": "waffles_high"
+            "default_destination": "cluster_high"
         }
     },
-    'default_destination': 'waffles_low',
+    'default_destination': 'cluster_low',
 }
 
 # No valid priorities but the tool doesn't require one
@@ -334,7 +334,7 @@ vYMLTest164 = '''
         default_destination:
           priority:
             good: cluster_med_4
-            fast: waffles_high
+            fast: cluster_high
     verbose: True
 '''
 
@@ -357,7 +357,7 @@ vdictTest164_yml = {
             "default_destination": {
                 "priority": {
                     "good": "cluster_med_4",
-                    "fast": "waffles_high"
+                    "fast": "cluster_high"
                 }
             }
         }
@@ -385,12 +385,12 @@ ivYMLTest3 = '''
           upper_bound: 100
           lower_bound: 0
           destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
 iv3dict = {
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Rule missing type
@@ -403,7 +403,7 @@ ivYMLTest4 = '''
             upper_bound: 0
             fail_message: No type...
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -417,7 +417,7 @@ ivYMLTest51 = '''
             upper_bound: 0
             fail_message: No type...
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -431,7 +431,7 @@ ivYMLTest52 = '''
             lower_bound: 0
             fail_message: No type...
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -445,12 +445,12 @@ ivYMLTest53 = '''
             lower_bound: 0
             upper_bound: 0
             fail_message: No type...
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
 ivDict53 = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -480,7 +480,7 @@ ivYMLTest6 = '''
             upper_bound: 0
             fail_message: No type...
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -491,7 +491,7 @@ ivYMLTest7 = '''
 '''
 
 ivDict = {
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Invalid category
@@ -509,7 +509,7 @@ ivYMLTest91 = '''
             lower_bound: 0
             upper_bound: 0
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -528,7 +528,7 @@ iv91dict = {
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Tool default fail no destination
@@ -540,9 +540,9 @@ ivYMLTest11 = '''
             nice_value: -21
             lower_bound: 1 KB
             upper_bound: Infinity
-            destination: waffles_low
-        default_destination: waffles_low
-    default_destination: waffles_default
+            destination: cluster_low
+        default_destination: cluster_low
+    default_destination: cluster_default
     verbose: True
 '''
 
@@ -556,7 +556,7 @@ ivYMLTest12 = """
             arguments:
               careful: true
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
@@ -576,7 +576,7 @@ iv12dict = {
             ]
         }
     },
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Arguments fail no arguments
@@ -588,12 +588,12 @@ ivYMLTest131 = """
             nice_value: 0
             fail_message: Something went wrong
             destination: fail
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv131dict = {
-    'default_destination': "waffles_default"
+    'default_destination': "cluster_default"
 }
 
 # Arguments fail no destination
@@ -606,12 +606,12 @@ ivYMLTest132 = """
             fail_message: Something went wrong
             arguments:
               careful: true
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv132dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -643,8 +643,8 @@ ivYMLTest133 = '''
             nice_value: 0
             lower_bound: 100000000
             upper_bound: Infinity
-            destination: waffles_low_4
-    default_destination: waffles_low
+            destination: cluster_low_4
+    default_destination: cluster_low
     verbose: True
 '''
 
@@ -664,12 +664,12 @@ iv133dict = {
                     'nice_value': 0,
                     "lower_bound": 100000000,
                     "upper_bound": "Infinity",
-                    "destination": "waffles_low_4"
+                    "destination": "cluster_low_4"
                 }
             ]
         }
     },
-    'default_destination': "waffles_low"
+    'default_destination': "cluster_low"
 }
 
 # No destination and no fail_message
@@ -681,12 +681,12 @@ ivYMLTest134 = """
             upper_bound: 10000
             lower_bound: 0
             nice_value: 0
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv134dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -710,13 +710,13 @@ ivYMLTest135 = """
             upper_bound: 100
             lower_bound: 200
             nice_value: 0
-            destination: waffles_low_4
-    default_destination: waffles_default
+            destination: cluster_low_4
+    default_destination: cluster_default
     verbose: True
 """
 
 iv135dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -725,7 +725,7 @@ iv135dict = {
                     'upper_bound': 200,
                     'lower_bound': 100,
                     'nice_value': 0,
-                    'destination': 'waffles_low_4'
+                    'destination': 'cluster_low_4'
                 }
             ]
         }
@@ -738,12 +738,12 @@ ivYMLTest136 = """
       spades:
         rules:
 
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv136dict = {
-    'default_destination': 'waffles_default'
+    'default_destination': 'cluster_default'
 }
 
 # Tool is blank; no tool-specific default destination, no rules category
@@ -751,12 +751,12 @@ ivYMLTest137 = """
     tools:
       spades:
 
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv137dict = {
-    'default_destination': 'waffles_default'
+    'default_destination': 'cluster_default'
 }
 
 # Tool specifies authorized users with an invalid entry
@@ -768,17 +768,17 @@ ivYMLTest138 = """
             upper_bound: 200
             lower_bound: 100
             nice_value: 0
-            destination: waffles_low_4
+            destination: cluster_low_4
             users:
               - validuser@email.com
               - invaliduser.email@com
               - 123
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv138dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -787,7 +787,7 @@ iv138dict = {
                     'upper_bound': 200,
                     'lower_bound': 100,
                     'nice_value': 0,
-                    'destination': 'waffles_low_4',
+                    'destination': 'cluster_low_4',
                     'users': [
                         'validuser@email.com'
                     ]
@@ -806,19 +806,19 @@ ivYMLTest139 = """
             upper_bound: 600
             lower_bound: 200
             nice_value: 0
-            destination: waffles_high
+            destination: cluster_high
           - rule_type: file_size
             upper_bound: 199
             lower_bound: 100
             nice_value: 0
-            destination: waffles_low_4
+            destination: cluster_low_4
             users:
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv139dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -827,7 +827,7 @@ iv139dict = {
                     'upper_bound': 600,
                     'lower_bound': 200,
                     'nice_value': 0,
-                    'destination': 'waffles_high'
+                    'destination': 'cluster_high'
                 }
             ]
         }
@@ -843,21 +843,21 @@ ivYMLTest140 = """
             upper_bound: 600
             lower_bound: 200
             nice_value: 0
-            destination: waffles_high
+            destination: cluster_high
           - rule_type: file_size
             upper_bound: 199
             lower_bound: 100
             nice_value: 0
-            destination: waffles_low_4
+            destination: cluster_low_4
             users:
                 - invalid.user1@com
                 - invalid.user2@com
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv140dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -866,7 +866,7 @@ iv140dict = {
                     'upper_bound': 600,
                     'lower_bound': 200,
                     'nice_value': 0,
-                    'destination': 'waffles_high'
+                    'destination': 'cluster_high'
                 }
             ]
         }
@@ -882,21 +882,21 @@ ivYMLTest141 = """
             upper_bound: 600
             lower_bound: 200
             nice_value: 0
-            destination: waffles_high
+            destination: cluster_high
           - rule_type: file_size
             upper_bound: 199
             lower_bound: 100
             nice_value: 0
-            destination: waffles_low_4
+            destination: cluster_low_4
             users:
                 -
                 -
-    default_destination: waffles_default
+    default_destination: cluster_default
     verbose: True
 """
 
 iv141dict = {
-    'default_destination': 'waffles_default',
+    'default_destination': 'cluster_default',
     'tools': {
         'spades': {
             'rules': [
@@ -905,7 +905,7 @@ iv141dict = {
                     'upper_bound': 600,
                     'lower_bound': 200,
                     'nice_value': 0,
-                    'destination': 'waffles_high'
+                    'destination': 'cluster_high'
                 }
             ]
         }
@@ -922,12 +922,12 @@ ivYMLTest142 = '''
             lower_bound: Infinity
             upper_bound: 200
             destination: cluster_low_4
-    default_destination: waffles_low
+    default_destination: cluster_low
     verbose: True
 '''
 
 iv142dict = {
-    'default_destination': 'waffles_low',
+    'default_destination': 'cluster_low',
     'tools': {
         'smalt': {
             'rules': [
@@ -953,12 +953,12 @@ ivYMLTest143 = '''
             lower_bound: Infinity
             upper_bound: Infinity
             destination: cluster_low_4
-    default_destination: waffles_low
+    default_destination: cluster_low
     verbose: True
 '''
 
 iv143dict = {
-    'default_destination': 'waffles_low',
+    'default_destination': 'cluster_low',
     'tools': {
         'smalt': {
             'rules': [
@@ -978,7 +978,7 @@ iv143dict = {
 ivYMLTest144 = '''
     default_destination:
       priority:
-        low: waffles_low
+        low: cluster_low
     verbose: True
 '''
 
@@ -986,8 +986,8 @@ ivYMLTest144 = '''
 ivYMLTest145 = '''
     default_destination:
       priority:
-        med: waffles_low
-        mine: waffles_low
+        med: cluster_low
+        mine: cluster_low
     verbose: True
 '''
 
@@ -1005,7 +1005,7 @@ ivYMLTest146 = '''
                 low: cluster_low_4
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     verbose: True
 '''
 
@@ -1024,7 +1024,7 @@ ivYMLTest147 = '''
                 mine: cluster_low_4
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     verbose: True
 '''
 
@@ -1032,7 +1032,7 @@ ivYMLTest147 = '''
 ivYMLTest148 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     users:
       user@email.com:
         priority: mine
@@ -1043,16 +1043,16 @@ ivYMLTest148 = '''
 ivYMLTest149 = '''
     default_destination:
       priority:
-        med: waffles_low
-        lowish: waffles_low
-        high: waffles_default
-        higher: waffles_high
+        med: cluster_low
+        lowish: cluster_low
+        high: cluster_default
+        higher: cluster_high
     tools:
       yuck:
         default_destination:
           priority:
-            med: waffles_default
-            high: waffles_high
+            med: cluster_default
+            high: cluster_high
     verbose: True
 '''
 
@@ -1060,7 +1060,7 @@ ivYMLTest149 = '''
 ivYMLTest150 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     tools:
       blegh:
         rules:
@@ -1078,7 +1078,7 @@ ivYMLTest150 = '''
 ivYMLTest151 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     tools:
       blah:
         default_destination:
@@ -1099,7 +1099,7 @@ ivYMLTest152 = '''
 ivYMLTest153 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     tools:
       blegh:
         rules:
@@ -1115,7 +1115,7 @@ ivYMLTest153 = '''
 ivYMLTest154 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     tools:
       blah:
         default_destination: not_true_destination
@@ -1132,12 +1132,12 @@ ivYMLTest155 = '''
 ivYMLTest156 = '''
     default_destination:
       priority:
-        med: waffles_default
+        med: cluster_default
     tools:
       aTool:
         default_destination:
           priority:
-            med: waffles_low
+            med: cluster_low
         rules:
           - rule_type: num_input_datasets
             nice_value: 0
@@ -1145,7 +1145,7 @@ ivYMLTest156 = '''
             upper_bound: Infinity
             destination:
               priority:
-                notAPriority: waffles_default
+                notAPriority: cluster_default
     verbose: True
 '''
 
@@ -1153,13 +1153,13 @@ ivYMLTest156 = '''
 ivYMLTest157 = '''
     default_destination:
       priority:
-        med: waffles_default
+        med: cluster_default
     tools:
       aTool:
         default_destination:
           priority:
-            notAPriority: waffles_low
-            med: waffles_low
+            notAPriority: cluster_low
+            med: cluster_low
     verbose: True
 '''
 
@@ -1167,7 +1167,7 @@ ivYMLTest157 = '''
 ivYMLTest158 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     tools:
       blah:
         rules:
@@ -1177,7 +1177,7 @@ ivYMLTest158 = '''
             upper_bound: Infinity
             destination:
               priority:
-                med: waffles_default
+                med: cluster_default
         default_destination:
           priority:
             med: not_true_destination
@@ -1186,7 +1186,7 @@ ivYMLTest158 = '''
 
 # tool default destination not in job config (without priority dict)
 ivYMLTest159 = '''
-    default_destination: waffles_low
+    default_destination: cluster_low
     tools:
       blah:
         rules:
@@ -1194,14 +1194,14 @@ ivYMLTest159 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: Infinity
-            destination: waffles_default
+            destination: cluster_default
         default_destination: not_true_destination
     verbose: True
 '''
 
 # No valid priorities and the tool rule requires them
 ivYMLTest161 = '''
-    default_destination: waffles_low
+    default_destination: cluster_low
     tools:
       blah:
         rules:
@@ -1211,14 +1211,14 @@ ivYMLTest161 = '''
             upper_bound: Infinity
             destination:
               priority:
-                med: waffles_default
-        default_destination: waffles_high
+                med: cluster_default
+        default_destination: cluster_high
     verbose: True
 '''
 
 # No valid priorities and the tool default_destination requires them
 ivYMLTest162 = '''
-    default_destination: waffles_low
+    default_destination: cluster_low
     tools:
       blah:
         rules:
@@ -1226,10 +1226,10 @@ ivYMLTest162 = '''
             nice_value: 0
             lower_bound: 0
             upper_bound: Infinity
-            destination: waffles_default
+            destination: cluster_default
         default_destination:
           priority:
-            med: waffles_default
+            med: cluster_default
     verbose: True
 '''
 # Nothing in the priority dict
@@ -1241,7 +1241,7 @@ ivYMLTest163 = '''
 
 # Typo in str default destination
 ivYMLTest164 = '''
-    default_destination: waffles-kow
+    default_destination: cluster-kow
     verbose: True
 '''
 
@@ -1249,7 +1249,7 @@ ivYMLTest164 = '''
 ivYMLTest165 = '''
     default_destination:
       priority:
-        pr: waffles_kow
+        pr: cluster_kow
     default_priority: pr
     verbose: True
 '''
@@ -1258,13 +1258,13 @@ ivYMLTest165 = '''
 ivYMLTest166 = '''
     default_destination:
       priority:
-        med: waffles_low
+        med: cluster_low
     default_priority: med
     tools:
       blah:
         default_destination:
           priority:
-            med: waffles_defaut
+            med: cluster_defaut
         rules:
           - rule_type: num_input_datasets
             nice_value: 0
@@ -1276,8 +1276,8 @@ ivYMLTest166 = '''
 
 # Typo in str tool default destination
 ivYMLTest167 = '''
-    default_destination: waffles_low
-    default_priority: waffles_low
+    default_destination: cluster_low
+    default_priority: cluster_low
     tools:
       blah:
         default_destination: Destination_3_med
@@ -1294,7 +1294,7 @@ ivYMLTest167 = '''
 ivYMLTest168 = '''
     default_destination:
       priority:
-        med: waffles_default
+        med: cluster_default
     default_priority: med
     tools:
       blah:
@@ -1313,7 +1313,7 @@ ivYMLTest168 = '''
 ivYMLTest169 = '''
     default_destination:
       priority:
-        med: waffles_default
+        med: cluster_default
     default_priority: med
     tools:
       blah:
@@ -1325,7 +1325,7 @@ ivYMLTest169 = '''
             destination: even_lamerr_cluster
         default_destination:
           priority:
-            med: waffles_default
+            med: cluster_default
     verbose: True
 '''
 
