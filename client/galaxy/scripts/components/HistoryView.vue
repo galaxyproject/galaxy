@@ -17,6 +17,11 @@
                 <button id="toggle-hidden" class="btn btn-default">Include hidden</button>
             </div>
         </div>
+        <div v-for="error in errorMessages">
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        </div>
         <div :id="'history-' + historyHistory['id']" class="history-panel unified-panel-body" style="overflow: auto;"></div>
     </div>
 </template>
@@ -38,7 +43,9 @@ export default {
     data() {
         return {
             historyData: {},
-            historyHistory: {}
+            historyHistory: {},
+            // TODO: Pick a standard messaging convention and use a child component for it here.
+            errorMessages: []
         };
     },
     created: function() {
@@ -53,15 +60,19 @@ export default {
                     callBack(response);
                 })
                 .catch(e => {
-                    this.showError(e);
+                    this.showError(
+                        "Error fetching histories -- reload the page to retry this request.  Please contact an administrator if the problem persists.",
+                        e
+                    );
                 });
         },
         updateHistoryView: function(response) {
             this.historyData = response.data;
             this.historyHistory = response.data.history;
         },
-        showError: function(errorMsg) {
-            console.error(errorMsg);
+        showError: function(errorMsg, verbose) {
+            console.error(verbose);
+            this.errorMessages.push(errorMsg);
         },
         makeHistoryView: function(history) {
             $(function() {

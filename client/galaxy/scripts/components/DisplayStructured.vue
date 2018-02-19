@@ -1,5 +1,12 @@
 <template>
-    <div v-html="historyTemplate">
+    <div>
+        <div v-for="error in errorMessages">
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+        </div>
+        <div v-html="historyTemplate">
+        </div>
     </div>
 </template>
 
@@ -18,7 +25,9 @@ export default {
     data() {
         return {
             historyTemplate: "",
-            historyJSON: {}
+            historyJSON: {},
+            // TODO: Error message standardization -- use bootstrap-vue component or the like.
+            errorMessages: []
         };
     },
     created: function() {
@@ -40,6 +49,9 @@ export default {
                 })
                 .catch(e => {
                     console.error(e);
+                    this.errorMessages.push(
+                        "Error fetching history data -- reload the page to retry this request.  Please contact an administrator if the problem persists."
+                    );
                 });
         },
         _updateHistoryData: function(response) {
