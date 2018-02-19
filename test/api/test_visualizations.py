@@ -78,7 +78,7 @@ class VisualizationsApiTestCase(api.ApiTestCase):
         create_payload = {
             "title": title,
             "slug": slug,
-            "type": 'test',
+            "type": 'example',
             "dbkey": 'hg17',
             "annotation": 'this is a test of the emergency visualization system',
             "config": config,

@@ -3,8 +3,8 @@ import logging
 from markupsafe import escape
 from six import string_types
 from six.moves.urllib.parse import unquote_plus
-from sqlalchemy import and_, false, func, null, true
-from sqlalchemy.orm import eagerload, eagerload_all
+from sqlalchemy import and_, false, null, true
+from sqlalchemy.orm import eagerload, eagerload_all, undefer
 
 import galaxy.util
 from galaxy import exceptions
@@ -15,7 +15,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings
 )
-from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
+from galaxy.util import listify, Params, parse_int, sanitize_text
 from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
@@ -44,28 +44,13 @@ class NameColumn(grids.TextColumn):
 class HistoryListGrid(grids.Grid):
 
     # Custom column types
-    class DatasetsByStateColumn(grids.GridColumn):
+    class DelayedValueColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):
-            # States to show in column.
-            states_to_show = ('ok', 'running', 'queued', 'new', 'error')
+            return '<div class="delayed-value-%s" data-history-id="%s"><span class="fa fa-spinner fa-spin"></span></div>' % (self.key, trans.security.encode_id(history.id))
 
-            # Get dataset counts for each state in a state-count dictionary.
-            state_counts = dict((state, count) for state, count in
-                                trans.sa_session.query(model.Dataset.state, func.count(model.Dataset.state))
-                                .join(model.HistoryDatasetAssociation)
-                                .group_by(model.Dataset.state)
-                                .filter(model.HistoryDatasetAssociation.history_id == history.id,
-                                        model.HistoryDatasetAssociation.visible == true(),
-                                        model.HistoryDatasetAssociation.deleted == false(),
-                                        model.Dataset.state.in_(states_to_show)))
-
-            # Create HTML.
-            rval = ''
-            for state in states_to_show:
-                count = state_counts.get(state)
-                if count:
-                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
-            return rval
+    class ItemCountColumn(grids.GridColumn):
+        def get_value(self, trans, grid, history):
+            return str(history.hid_counter - 1)
 
     class HistoryListNameColumn(NameColumn):
         def get_link(self, trans, grid, history):
@@ -91,17 +76,24 @@ class HistoryListGrid(grids.Grid):
                 query = query.order_by(self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc())
             return query
 
+    def build_initial_query(self, trans, **kwargs):
+        # Override to preload sharing information used when fetching data for grid.
+        query = super(HistoryListGrid, self).build_initial_query(trans, **kwargs)
+        query = query.options(undefer("users_shared_with_count"))
+        return query
+
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn("Name", key="name", attach_popup=True, filterable="advanced"),
-        DatasetsByStateColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
+        ItemCountColumn("Items", key="item_count", sortable=False),
+        DelayedValueColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation,
                                    filterable="advanced", grid_name="HistoryListGrid"),
-        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
-        grids.GridColumn("Size on Disk", key="disk_size", format=nice_size, sortable=False),
+        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False, use_shared_with_count=True),
+        DelayedValueColumn("Size on Disk", key="disk_size", sortable=False),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         DeletedColumn("Status", key="deleted", filterable="advanced")
@@ -109,7 +101,7 @@ class HistoryListGrid(grids.Grid):
     columns.append(
         grids.MulticolFilterColumn(
             "search history names and tags",
-            cols_to_filter=[columns[0], columns[2]],
+            cols_to_filter=[columns[0], columns[3]],
             key="free-text-search", visible=False, filterable="standard")
     )
     operations = [
@@ -209,8 +201,20 @@ class HistoryAllPublishedGrid(grids.Grid):
     operations = []
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # TODO: Tags are still loaded one at a time, consider doing this all at once:
+        # - eagerload would keep everything in one query but would explode the number of rows and potentially
+        #   result in unneeded info transferred over the wire.
+        # - subqueryload("tags").subqueryload("tag") would probably be better under postgres but I'd
+        #   like some performance data against a big database first - might cause problems?
+
+        # - Pull down only username from associated User table since that is all that is used
+        #   (can be used during search). Need join in addition to the eagerload since it is used in
+        #   the .count() query which doesn't respect the eagerload options  (could eliminate this with #5523).
+        # - Undefer average_rating column to prevent loading individual ratings per-history.
+        # - Eager load annotations - this causes a left join which might be inefficient if there were
+        #   potentially many items per history (like if joining HDAs for instance) but there should only
+        #   be at most one so this is fine.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # A public history is published, has a slug, and is not deleted.

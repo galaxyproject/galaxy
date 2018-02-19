@@ -20,6 +20,7 @@
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="bam_native_to_bam_converter.xml" target_datatype="bam"/>
     </datatype>
+    <datatype extension="probam" type="galaxy.datatypes.binary:ProBam" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
         <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
     </datatype>
@@ -40,6 +41,7 @@
     <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6" display_in_upload="true">
     </datatype>
     <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" display_in_upload="true"/>
+    <datatype extension="probed" type="galaxy.datatypes.interval:ProBed" display_in_upload="true"/>
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
@@ -675,6 +677,9 @@
     <datatype extension="allegro_ihaplo" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_descent" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_fparam" type="galaxy.datatypes.genetics:AllegroLOD" />
+    <!-- IDEAS datatypes -->
+    <datatype extension="ideaspre" type="galaxy.datatypes.genetics:IdeasPre" display_in_upload="true"/>
+    <!-- End IDEAS datatypes -->
   </registration>
   <sniffers>
     <!--

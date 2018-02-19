@@ -573,7 +573,12 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
     """ Column that displays community ratings for an item. """
 
     def get_value(self, trans, grid, item):
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        if not hasattr(item, "average_rating"):
+            # No prefetched column property, generate it on the fly.
+            ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        else:
+            ave_item_rating = item.average_rating
+            num_ratings = 2  # just used for pluralization
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
@@ -817,13 +822,17 @@ class StateColumn(GridColumn):
 class SharingStatusColumn(GridColumn):
     """ Grid column to indicate sharing status. """
 
+    def __init__(self, *args, **kwargs):
+        self.use_shared_with_count = kwargs.pop("use_shared_with_count", False)
+        super(SharingStatusColumn, self).__init__(*args, **kwargs)
+
     def get_value(self, trans, grid, item):
         # Delete items cannot be shared.
         if item.deleted:
             return ""
         # Build a list of sharing for this item.
         sharing_statuses = []
-        if item.users_shared_with:
+        if self._is_shared(item):
             sharing_statuses.append("Shared")
         if item.importable:
             sharing_statuses.append("Accessible")
@@ -831,8 +840,16 @@ class SharingStatusColumn(GridColumn):
             sharing_statuses.append("Published")
         return ", ".join(sharing_statuses)
 
+    def _is_shared(self, item):
+        if self.use_shared_with_count:
+            # optimization to skip join for users_shared_with and loading in that data.
+            return item.users_shared_with_count > 0
+
+        return item.users_shared_with
+
     def get_link(self, trans, grid, item):
-        if not item.deleted and (item.users_shared_with or item.importable or item.published):
+        is_shared = self._is_shared(item)
+        if not item.deleted and (is_shared or item.importable or item.published):
             return dict(operation="share or publish", id=item.id)
         return None
 

@@ -37,7 +37,7 @@ class SecurityHelper(object):
         # Pad to a multiple of 8 with leading "!"
         s = (b"!" * (8 - len(s) % 8)) + s
         # Encrypt
-        return codecs.encode(id_cipher.encrypt(s), 'hex')
+        return unicodify(codecs.encode(id_cipher.encrypt(s), 'hex'))
 
     def encode_dict_ids(self, a_dict, kind=None, skip_startswith=None):
         """
