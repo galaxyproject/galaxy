@@ -9,51 +9,51 @@
  */
 
 // Core variables and mixins
-$import "variables.scss";
-$import "mixins.scss";
+@import "variables.scss";
+@import "mixins.scss";
 
 // Reset
-$import "normalize.scss";
-$import "print.scss";
+@import "normalize.scss";
+@import "print.scss";
 
 // Core CSS
-$import "scaffolding.scss";
-$import "type.scss";
-$import "code.scss";
-$import "grid.scss";
-$import "tables.scss";
-$import "forms.scss";
-$import "buttons.scss";
+@import "scaffolding.scss";
+@import "type.scss";
+@import "code.scss";
+@import "grid.scss";
+@import "tables.scss";
+@import "forms.scss";
+@import "buttons.scss";
 
 // Components
-$import "component-animations.scss";
-$import "glyphicons.scss";
-$import "dropdowns.scss";
-$import "button-groups.scss";
-$import "input-groups.scss";
-$import "navs.scss";
-$import "navbar.scss";
-$import "breadcrumbs.scss";
-$import "pagination.scss";
-$import "pager.scss";
-$import "labels.scss";
-$import "badges.scss";
-$import "jumbotron.scss";
-$import "thumbnails.scss";
-$import "alerts.scss";
-$import "progress-bars.scss";
-$import "media.scss";
-$import "list-group.scss";
-$import "panels.scss";
-$import "wells.scss";
-$import "close.scss";
+@import "component-animations.scss";
+@import "glyphicons.scss";
+@import "dropdowns.scss";
+@import "button-groups.scss";
+@import "input-groups.scss";
+@import "navs.scss";
+@import "navbar.scss";
+@import "breadcrumbs.scss";
+@import "pagination.scss";
+@import "pager.scss";
+@import "labels.scss";
+@import "badges.scss";
+@import "jumbotron.scss";
+@import "thumbnails.scss";
+@import "alerts.scss";
+@import "progress-bars.scss";
+@import "media.scss";
+@import "list-group.scss";
+@import "panels.scss";
+@import "wells.scss";
+@import "close.scss";
 
 // Components w/ JavaScript
-$import "modals.scss";
-$import "tooltip.scss";
-$import "popovers.scss";
-$import "carousel.scss";
+@import "modals.scss";
+@import "tooltip.scss";
+@import "popovers.scss";
+@import "carousel.scss";
 
 // Utility classes
-$import "utilities.scss";
-$import "responsive-utilities.scss";
+@import "utilities.scss";
+@import "responsive-utilities.scss";

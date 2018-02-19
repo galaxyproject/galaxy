@@ -33,8 +33,8 @@ $state-running-bg: #FFFFCC;
 // $state-deleted-bg: #3399FF;
 
 // Theme, expects tmp-site-config.scss written by grunt
-$import "tmp-site-config.scss";
-$import "theme/blue.scss";
+@import "tmp-site-config.scss";
+@import "theme/blue.scss";
 
 // Theme: plain
-//$import "theme/plain.scss";
+//@import "theme/plain.scss";

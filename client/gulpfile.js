@@ -11,6 +11,7 @@ var beautify = require("gulp-beautify");
 var gulpif = require("gulp-if");
 var cached = require("gulp-cached");
 var plumber = require("gulp-plumber");
+var sass = require("gulp-sass");
 
 var paths = {
     node_modules: "./node_modules",
@@ -19,6 +20,15 @@ var paths = {
         "!galaxy/scripts/qunit/**/*",
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
+    ],
+    style: [
+        "galaxy/style/scss/base.scss",
+        "galaxy/style/scss/autocomplete_tagging.scss",
+        "galaxy/style/scss/embed_item.scss",
+        "galaxy/style/scss/library.scss",
+        "galaxy/style/scss/trackster.scss",
+        "galaxy/style/scss/circster.scss",
+        "galaxy/style/scss/reports.scss"
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -84,6 +94,13 @@ gulp.task("libs", function() {
         .src(paths.libs)
         .pipe(uglify())
         .pipe(gulp.dest("../static/scripts/libs/"));
+});
+
+gulp.task("style", function() {
+    return gulp
+        .src(paths.style)
+        .pipe(sass().on("error", sass.logError))
+        .pipe(gulp.dest("../static/style/blue/"));
 });
 
 gulp.task("clean", function() {

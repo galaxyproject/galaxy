@@ -1,37 +1,37 @@
 // bootstrap.scss modified for Galaxy
-$import "bootstrap.scss";
+@import "bootstrap.scss";
 
 // Galaxy specific variables
-$import "galaxy_variables.scss";
+@import "galaxy_variables.scss";
 
 // Galaxy Report Webapp
-$import "reports";
+@import "reports";
 
 $white: #fff;
 $black: #000;
 
-$import "fontawesome/font-awesome.scss";
+@import "fontawesome/font-awesome.scss";
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
     @extend fa;
 }
 
-$import "select2.scss";
+@import "select2.scss";
  /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
      min-width: 256px;
 }
 
 // galaxy sub-components
-$import "frame.scss";
-$import "upload.scss";
-$import "ui.scss";
-$import "library.scss";
-$import "toastr.scss";
-$import "jstree.scss";
-$import "tour.scss";
-$import "flex.scss";
-$import "charts.scss";
+@import "frame.scss";
+@import "upload.scss";
+@import "ui.scss";
+@import "library.scss";
+@import "toastr.scss";
+@import "jstree.scss";
+@import "tour.scss";
+@import "flex.scss";
+@import "charts.scss";
 
 // Mixins
 .unselectable {
@@ -1521,20 +1521,20 @@ div.permissionContainer {
 }
 
 // ============================================================================ History
-$import "ui/icon-btn.scss";
-$import "list-item.scss";
-$import "dataset.scss";
-$import "history.scss";
-$import "collection.scss";
-$import "job.scss";
+@import "ui/icon-btn.scss";
+@import "list-item.scss";
+@import "dataset.scss";
+@import "history.scss";
+@import "collection.scss";
+@import "job.scss";
 
-$import "ui/paired-collection-creator.scss";
+@import "ui/paired-collection-creator.scss";
 
-$import "ui/search-input.scss";
-$import "ui/dataset-choice.scss";
-$import "ui/peek-column-selector.scss";
-$import "ui/pagination.scss";
-$import "ui/error-modal.scss";
+@import "ui/search-input.scss";
+@import "ui/dataset-choice.scss";
+@import "ui/peek-column-selector.scss";
+@import "ui/pagination.scss";
+@import "ui/error-modal.scss";
 
 
 // ==== Tool menu styles
@@ -1670,7 +1670,7 @@ div.toolTitleNoSection
     margin: 10px;
 }
 
-// $import "base_sprites";
+// @import "base_sprites";
 
 .text-and-autocomplete-select {
     // -sprite-group: fugue;
@@ -1707,7 +1707,7 @@ div.toolTitleNoSection
 
 // ==== General Sprites ====
 
-$import "sprite-fugue.scss";
+@import "sprite-fugue.scss";
 
 .icon-button.tag {
     @include sprite($tag-label);
