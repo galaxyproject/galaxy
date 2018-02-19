@@ -9,7 +9,6 @@ module.exports = function(grunt) {
 
     var _ = grunt.util._,
         fmt = _.sprintf,
-        theme = grunt.option("theme", "blue"),
         styleDistPath = "../static/style/blue",
         imagesPath = "../static/images",
         stylePath = "./galaxy/style/scss",
@@ -61,14 +60,6 @@ module.exports = function(grunt) {
         }
     });
 
-    // remove tmp files
-    grunt.config("clean", {
-        options: {
-            force: true
-        },
-        clean: [fmt("%s/tmp-site-config.less", stylePath)]
-    });
-
     // -------------------------------------------------------------------------- watch & rebuild less files
     // use 'grunt watch-style' (from a new tab in your terminal) to have grunt re-copy changed files automatically
     //
@@ -79,7 +70,7 @@ module.exports = function(grunt) {
             watch: {
                 // watch for changes in the src dir
                 files: [stylePath + "/**"],
-                tasks: ["sprite", "less-site-config", "less", "clean"],
+                tasks: ["sprite", "less"],
                 options: {
                     spawn: false
                 }
@@ -89,14 +80,8 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks("grunt-contrib-less");
     grunt.loadNpmTasks("grunt-spritesmith");
-    grunt.loadNpmTasks("grunt-contrib-clean");
     grunt.loadNpmTasks("grunt-contrib-watch");
 
-    // Write theme variable for less
-    grunt.registerTask("less-site-config", "Write site configuration for less", function() {
-        grunt.file.write(fmt("%s/tmp-site-config.less", stylePath), fmt("@theme-name: %s;", theme));
-    });
-
     grunt.registerTask("watch-style", ["watch"]);
-    grunt.registerTask("style", ["sprite", "less-site-config", "less", "clean"]);
+    grunt.registerTask("style", ["sprite", "less"]);
 };
