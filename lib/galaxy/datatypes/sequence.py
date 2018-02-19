@@ -313,7 +313,7 @@ class Alignment(data.Text):
 
 
 class FastaGz(Sequence, Binary):
-    """Class representing a generic compressed FASTQ sequence"""
+    """Class representing a generic compressed FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta.gz"
     compressed = True
