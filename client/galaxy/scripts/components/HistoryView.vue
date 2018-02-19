@@ -22,7 +22,6 @@
 </template>
 
 <script>
-
 import axios from "axios";
 import * as mod_toastr from "libs/toastr";
 import Vue from "vue";
@@ -43,8 +42,8 @@ export default {
         };
     },
     created: function() {
-       let url = Galaxy.root + 'history/view/' + this.id;
-       this.ajaxCall(url, this.updateHistoryView);
+        let url = Galaxy.root + "history/view/" + this.id;
+        this.ajaxCall(url, this.updateHistoryView);
     },
     methods: {
         ajaxCall: function(url, callBack) {
@@ -65,32 +64,32 @@ export default {
             mod_toastr.error(errorMsg);
         },
         makeHistoryView: function(history) {
-            $(function(){
+            $(function() {
                 let options = {
-                    hasMasthead: history.use_panels ? 'true': 'false',
-                    userIsOwner: history.user_is_owner ? 'true': 'false',
-                    isCurrent: history.history_is_current ? 'true': 'false',
+                    hasMasthead: history.use_panels ? "true" : "false",
+                    userIsOwner: history.user_is_owner ? "true" : "false",
+                    isCurrent: history.history_is_current ? "true" : "false",
                     historyJSON: history.history,
                     showDeletedJson: history.show_deleted,
                     showHiddenJson: history.show_hidden,
-                    initialModeDeleted: history.show_deleted ? 'showing_deleted': 'not_showing_deleted',
-                    initialModeHidden: history.show_hidden ? 'showing_hidden': 'not_showing_hidden',
-                    allowUserDatasetPurge: history.allow_user_dataset_purge ? 'true': 'false'
+                    initialModeDeleted: history.show_deleted ? "showing_deleted" : "not_showing_deleted",
+                    initialModeHidden: history.show_hidden ? "showing_hidden" : "not_showing_hidden",
+                    allowUserDatasetPurge: history.allow_user_dataset_purge ? "true" : "false"
                 };
-                options.viewToUse = options.userIsOwner ?
-                    ({ location: 'mvc/history/history-view-edit',  className: 'HistoryViewEdit' }):
-                    ({ location: 'mvc/history/history-view',       className: 'HistoryView' });
+                options.viewToUse = options.userIsOwner
+                    ? { location: "mvc/history/history-view-edit", className: "HistoryViewEdit" }
+                    : { location: "mvc/history/history-view", className: "HistoryView" };
                 window.bundleEntries.history(options);
             });
         },
         showStructure: function() {
             let displayStructureInstance = Vue.extend(DisplayStructure),
-                mountView = document.createElement( "div" );
-            Galaxy.page.center.display( mountView );
-            new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") }}).$mount(mountView);
+                mountView = document.createElement("div");
+            Galaxy.page.center.display(mountView);
+            new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(mountView);
         },
         switchHistory: function() {
-            let url = Galaxy.root + 'history/switch_to_history?hist_id=' + this.historyHistory['id'];
+            let url = Galaxy.root + "history/switch_to_history?hist_id=" + this.historyHistory["id"];
             this.ajaxCall(url, this.reloadPage);
         },
         reloadPage: function() {
@@ -100,16 +99,14 @@ export default {
     updated: function() {
         this.makeHistoryView(this.historyData);
     }
-}
-
+};
 </script>
 
 <style>
-
 #history-view-controls {
     flex: 0 0 44px;
     background-color: white;
-    border-bottom: 1px solid #DDD;
+    border-bottom: 1px solid #ddd;
     width: 100%;
     padding: 8px;
 }
@@ -122,6 +119,4 @@ export default {
 a.btn {
     text-decoration: none;
 }
-
 </style>
-

@@ -6,11 +6,9 @@
 </template>
 
 <script>
-
 import axios from "axios";
 import * as mod_toastr from "libs/toastr";
 import "apps/extended.js";
-
 
 export default {
     props: {
@@ -28,11 +26,10 @@ export default {
     created: function() {
         let historyId = this.id,
             url = "";
-        if( historyId !== undefined && historyId !== "" && historyId !== null) {
-            url = Galaxy.root + 'history/display_structured?id=' + historyId;   
-        }
-        else {
-            url = Galaxy.root + 'history/display_structured';
+        if (historyId !== undefined && historyId !== "" && historyId !== null) {
+            url = Galaxy.root + "history/display_structured?id=" + historyId;
+        } else {
+            url = Galaxy.root + "history/display_structured";
         }
         this.ajaxCall(url);
     },
@@ -49,8 +46,8 @@ export default {
         },
         _updateHistoryData: function(response) {
             let historyItems = response.data;
-            this.historyTemplate = historyItems.template;    
-            this.historyJSON = historyItems.history_json;    
+            this.historyTemplate = historyItems.template;
+            this.historyJSON = historyItems.history_json;
         },
         showError: function(errorMsg) {
             mod_toastr.error(errorMsg);
@@ -58,20 +55,23 @@ export default {
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
                 return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
-                    model           : new window.bundleEntries.HDAModel.HistoryDatasetAssociation(hda),
-                    el              : $('#hda-' + hda.id),
-                    linkTarget      : 'galaxy_main',
-                    purgeAllowed    : Galaxy.config.allow_user_dataset_purge,
-                    logger          : Galaxy.logger
+                    model: new window.bundleEntries.HDAModel.HistoryDatasetAssociation(hda),
+                    el: $("#hda-" + hda.id),
+                    linkTarget: "galaxy_main",
+                    purgeAllowed: Galaxy.config.allow_user_dataset_purge,
+                    logger: Galaxy.logger
                 }).render(0);
             });
             // toggle the body section of each item in the structure
-            $(function(){
+            $(function() {
                 $(".workflow, .tool").each((index, element) => {
                     let body = $(element).children(".body");
-                    $(element).children(".header").click(e => {
-                        body.toggle();
-                    }).addClass("clickable");
+                    $(element)
+                        .children(".header")
+                        .click(e => {
+                            body.toggle();
+                        })
+                        .addClass("clickable");
                 });
             });
         }
@@ -79,12 +79,10 @@ export default {
     updated: function() {
         this.makeHistoryView(this.historyJSON);
     }
-}    
-
+};
 </script>
 
 <style>
-
 .bold {
     font-weight: bold;
 }
@@ -126,25 +124,25 @@ div.toolForm {
     margin-bottom: 1%;
 }
 .toolForm > .header {
-    background-color: #EBD9B2;
+    background-color: #ebd9b2;
     padding: 5px 10px;
 }
 .workflow div.toolForm:not(:first-child) .header {
-    border-top: 1px solid #D6B161;
+    border-top: 1px solid #d6b161;
 }
 div.toolFormTitle {
     padding: 0px 0px 4px 0px;
     margin: 0px 0px 4px 0px;
     border: 0px;
     background-color: transparent;
-    border-bottom: 1px solid #D6B161;
+    border-bottom: 1px solid #d6b161;
 }
 /* down from EBD9B2 --> 90743A */
 .toolFormTitle > .light {
-    color: #90743A;
+    color: #90743a;
 }
 .toolForm em {
-    color: #90743A;
+    color: #90743a;
 }
 
 .job-inputs {
@@ -154,10 +152,10 @@ div.toolFormTitle {
 .job-inputs td:nth-child(1) {
     text-align: right;
     font-weight: lighter;
-    color: #90743A;
+    color: #90743a;
 }
 .job-inputs td:nth-child(1):after {
-    content: ':'
+    content: ":";
 }
 .job-inputs td:nth-child(2) {
     padding-left: 4px;
@@ -178,7 +176,8 @@ div.toolFormTitle {
     border-bottom: 1px solid lightgrey;
     padding: 5px;
 }
-.copied-from .header .bold, .copied-from .header a {
+.copied-from .header .bold,
+.copied-from .header a {
     color: #888;
 }
 
@@ -190,12 +189,10 @@ div.toolFormTitle {
     border-bottom-width: 0px;
 }
 .dataset.hda:first-child {
-    border-top: 1px solid #D6B161;
+    border-top: 1px solid #d6b161;
 }
 .dataset.hda .dataset-title-bar {
     padding-top: 8px;
     padding-left: 10px;
 }
-
 </style>
-
