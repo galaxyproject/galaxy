@@ -23,7 +23,6 @@
 
 <script>
 import axios from "axios";
-import * as mod_toastr from "libs/toastr";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -61,7 +60,7 @@ export default {
             this.historyHistory = response.data.history;
         },
         showError: function(errorMsg) {
-            mod_toastr.error(errorMsg);
+            console.error(errorMsg);
         },
         makeHistoryView: function(history) {
             $(function() {
