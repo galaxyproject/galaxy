@@ -7,8 +7,8 @@
 
 <script>
 import axios from "axios";
-import * as mod_toastr from "libs/toastr";
-import "apps/extended.js";
+import HDAModel from "mvc/history/hda-model";
+import HDAListItemEdit from "mvc/history/hda-li-edit";
 
 export default {
     props: {
@@ -41,7 +41,7 @@ export default {
                     this._updateHistoryData(response);
                 })
                 .catch(e => {
-                    this.showError(e);
+                    console.error(e);
                 });
         },
         _updateHistoryData: function(response) {
@@ -49,13 +49,10 @@ export default {
             this.historyTemplate = historyItems.template;
             this.historyJSON = historyItems.history_json;
         },
-        showError: function(errorMsg) {
-            mod_toastr.error(errorMsg);
-        },
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
-                return new window.bundleEntries.HDAListItemEdit.HDAListItemEdit({
-                    model: new window.bundleEntries.HDAModel.HistoryDatasetAssociation(hda),
+                return new HDAListItemEdit.HDAListItemEdit({
+                    model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),
                     linkTarget: "galaxy_main",
                     purgeAllowed: Galaxy.config.allow_user_dataset_purge,
