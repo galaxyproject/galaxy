@@ -26,6 +26,7 @@ import axios from "axios";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import QueryStringParsing from "utils/query-string-parsing";
+import HistoryView from "mvc/history/history-view";
 
 export default {
     props: {
@@ -78,7 +79,7 @@ export default {
                 options.viewToUse = options.userIsOwner
                     ? { location: "mvc/history/history-view-edit", className: "HistoryViewEdit" }
                     : { location: "mvc/history/history-view", className: "HistoryView" };
-                window.bundleEntries.history(options);
+                HistoryView.historyEntry(options);
             });
         },
         showStructure: function() {
