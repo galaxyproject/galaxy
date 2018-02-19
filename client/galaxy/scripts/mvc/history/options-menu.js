@@ -1,10 +1,11 @@
+import * as _ from "underscore";
+import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
-import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
 import Webhooks from "mvc/webhooks";
-import Vue from "vue";
-import DisplayStructure from "components/DisplayStructured.vue";
+
+/* global $ */
+/* global Galaxy */
 
 // ============================================================================
 var menu = [
@@ -51,10 +52,9 @@ var menu = [
         html: _l("Show Structure"),
         anon: true,
         func: function() {
-            let displayStructureInstance = Vue.extend(DisplayStructure),
-                mountView = document.createElement("div");
-            Galaxy.page.center.display(mountView);
-            new displayStructureInstance({ propsData: { id: "" }}).$mount(mountView);
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/show_structure`);
+            }
         }
     },
     {
@@ -227,6 +227,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
         if (menuOption.confirm) {
             menuOption.func = () => {
                 if (confirm(menuOption.confirm)) {
+                    /* galaxy_main is a global here: TODO: Fix it! */
                     galaxy_main.location = menuOption.href;
                 }
             };
