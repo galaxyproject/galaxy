@@ -1,11 +1,15 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
+import logging
 import os
 import subprocess
 import sys as _sys
 
+import six
 from six.moves import shlex_quote
 
 from galaxy.util import which
+
+log = logging.getLogger(__name__)
 
 STDOUT_INDICATOR = "-"
 
@@ -50,9 +54,10 @@ def shell_process(cmds, env=None, **kwds):
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds = dict(
-        shell=True,
-    )
+    popen_kwds = dict()
+    if isinstance(cmds, six.string_types):
+        log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
+        popen_kwds['shell'] = True
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
         popen_kwds["stdout"] = subprocess.PIPE
     if kwds.get("stderr", None) is None and redirecting_io(sys=sys):
@@ -109,13 +114,13 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
     if which("wget"):
         download_cmd = ["wget", "-q"]
         if to == STDOUT_INDICATOR:
-            download_cmd += ["-O", STDOUT_INDICATOR, url]
+            download_cmd.extend(["-O", STDOUT_INDICATOR, url])
         else:
-            download_cmd += ["--recursive", "-O", to, url]
+            download_cmd.extend(["--recursive", "-O", to, url])
     else:
         download_cmd = ["curl", "-L", url]
         if to != STDOUT_INDICATOR:
-            download_cmd += ["-o", to]
+            download_cmd.extend(["-o", to])
     return download_cmd
 
 

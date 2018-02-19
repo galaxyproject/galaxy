@@ -17,7 +17,6 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
 YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
@@ -72,9 +71,6 @@ tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dr
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
 	$(CONFIG_MANAGE) convert tool_shed
 
-tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
-	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
-
 reports-config-validate: ## validate reports YAML configuration file
 	$(CONFIG_MANAGE) validate reports
 
@@ -84,14 +80,27 @@ reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry ru
 reports-config-convert: ## convert old style reports ini to yaml
 	$(CONFIG_MANAGE) convert reports
 
-reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
-	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
-
 reports-config-lint: ## lint reports YAML configuration file
 	$(CONFIG_MANAGE) lint reports
 
-reports-config-rebuild-rst: ## Rebuild sample reports RST docs
+config-validate: ## validate galaxy YAML configuration file
+	$(CONFIG_MANAGE) validate galaxy
+
+config-convert-dry-run: ## convert old style galaxy ini to yaml (dry run)
+	$(CONFIG_MANAGE) convert galaxy --dry-run
+
+config-convert: ## convert old style galaxy ini to yaml
+	$(CONFIG_MANAGE) convert galaxy
+
+config-rebuild: ## Rebuild all sample YAML and RST files from config schema
+	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
+	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
+	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
 	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
+	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
+
+config-lint: ## lint galaxy YAML configuration file
+	$(CONFIG_MANAGE) lint galaxy
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
@@ -138,7 +147,6 @@ endif
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
-	@echo $(CLIENT_COMMIT_WARNING)
 
 client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
 	cd client && yarn run build-production
@@ -151,7 +159,6 @@ client-format: node-deps ## Reformat client code
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
-	@echo $(CLIENT_COMMIT_WARNING)
 
 client-test: client ## Run qunit tests via Karma
 	cd client && yarn run test

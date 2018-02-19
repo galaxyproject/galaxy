@@ -542,6 +542,23 @@
                itself.
           -->
         </destination>
+        <!-- Following three destinations demonstrate setting up per-job temp directory handling.
+             In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
+             destinations.
+             The first simply tells Galaxy to create a temp directory in the job directory, the
+             other forms can be used to issue shell commands before the job runs on the worker node to
+             allocate a temp directory. In these other cases, Galaxy will not clean up these
+             directories so either use directories managed by the job resource manager or setup
+             tooling to clean old temp directories up outside of Galaxy. -->
+        <destination id="clean_tmp_by_job" runner="drmma">
+          <param id="tmp_dir">True</param>
+        </destination>
+        <destination id="clean_tmp_drm" runner="drmma">
+          <param id="tmp_dir">"$DRM_SET_VARIABLES_FOR_THIS_JOB"</param>
+        </destination>
+        <destination id="clean_tmp_fast_scratch" runner="drmma">
+          <param id="tmp_dir">$(mktemp -d /mnt/scratch/fastest/gxyjobXXXXXXXXXXX)</param>
+        </destination>
         <destination id="real_user_cluster" runner="drmaa">
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
         </destination>

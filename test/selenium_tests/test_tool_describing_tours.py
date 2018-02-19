@@ -72,9 +72,9 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
 
     def _ensure_tdt_available(self):
         """ Skip a test if the webhook TDT doesn't appear. """
-        response = self.api_get('webhooks/tool-menu/all', raw=True)
+        response = self.api_get('webhooks', raw=True)
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        webhooks = [x['name'] for x in data]
+        webhooks = [x['id'] for x in data]
         if 'tour_generator' not in webhooks:
             raise unittest.SkipTest('Skipping test, webhook "Tool-Describing-Tours" doesn\'t appear to be configured.')

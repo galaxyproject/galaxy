@@ -25,6 +25,8 @@ window.make_popup_menus = Popupmenu.make_popup_menus;
 import init_tag_click_function from "ui/autocom_tagging";
 window.init_tag_click_function = init_tag_click_function;
 import Tours from "mvc/tours";
+import Webhooks from "mvc/webhooks";
+import Utils from "utils/utils";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -176,21 +178,19 @@ $(document).ready(() => {
     Tours.activeGalaxyTourRunner();
 
     function onloadWebhooks() {
-        // Wait until Galaxy.config is loaded.
-        if (Galaxy.config) {
+        if (Galaxy.root !== undefined) {
             if (Galaxy.config.enable_webhooks) {
                 // Load all webhooks with the type 'onload'
-                $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
-                    _.each(webhooks, webhook => {
-                        if (webhook.activate && webhook.script) {
-                            $("<script/>", { type: "text/javascript" })
-                                .text(webhook.script)
-                                .appendTo("head");
-                            $("<style/>", { type: "text/css" })
-                                .text(webhook.styles)
-                                .appendTo("head");
-                        }
-                    });
+                Webhooks.load({
+                    type: "onload",
+                    callback: function(webhooks) {
+                        webhooks.each(model => {
+                            var webhook = model.toJSON();
+                            if (webhook.activate && webhook.script) {
+                                Utils.appendScriptStyle(webhook);
+                            }
+                        });
+                    }
                 });
             }
         } else {

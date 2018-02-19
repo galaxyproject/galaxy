@@ -292,7 +292,7 @@ class ToolValidator(object):
             tool_location_fetcher=ToolLocationFetcher(),
         )
         try:
-            tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id)
+            tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id, allow_code_files=False)
             valid = True
             error_message = None
         except KeyError as e:

@@ -31,7 +31,7 @@ DOCKER_SCRIPT_DIR=/etc/galaxy/manual
 GALAXY_PORT=${GALAXY_PORT:-"any_free"}
 if [ "$GALAXY_PORT" == "any_free" ];
 then
-    GALAXY_PORT=`python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
+    GALAXY_PORT=`python -c 'from __future__ import print_function; import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
 fi
 
 GALAXY_URL=${GALAXY_URL:-http://localhost:${GALAXY_PORT}}

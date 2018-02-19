@@ -24,7 +24,6 @@ docutils
 repoze.lru
 Routes
 WebOb
-WebHelpers
 Mako
 pytz
 Babel
@@ -35,9 +34,11 @@ Parsley
 six
 Whoosh
 galaxy_sequence_utils
+h5py
+packaging
 
 # Cheetah and dependencies
-Cheetah
+Cheetah3
 Markdown
 
 # BioBlend and dependencies
@@ -51,7 +52,7 @@ kombu
 
 # Pulsar requirements
 psutil
-pulsar-galaxy-lib>=0.7.0.dev4
+pulsar-galaxy-lib>=0.8.3
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate
@@ -65,6 +66,6 @@ svgwrite
 pyparsing
 
 # Fabric and dependencies
-Fabric
+Fabric3
 paramiko
 ecdsa

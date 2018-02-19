@@ -31,6 +31,7 @@
 @import "jstree.less";
 @import "tour.less";
 @import "flex.less";
+@import "charts.less";
 
 // Mixins
 .unselectable {
@@ -1885,6 +1886,19 @@ div.toolTitleNoSection
 .hidden_description_layer.dragover {
   visibility: visible;
   opacity: 1;
+}
+
+/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
+.tags-display {
+    .list-item .vertical-spacing;
+    .select2-container {
+        max-height: 80px;
+        overflow: auto;
+        min-width: 0px;
+        .select2-choices {
+            border-radius: 3px;
+        }
+    }
 }
 
 /* For Vue */

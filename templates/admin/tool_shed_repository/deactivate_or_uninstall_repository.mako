@@ -121,7 +121,7 @@ else:
                     </div>
                     <div style="clear: both"></div>
                     <br/>
-                    <%                        
+                    <%
                         irm = trans.app.installed_repository_manager
                         repository_tup = irm.get_repository_tuple_for_installed_repository_manager( repository )
 
@@ -172,7 +172,7 @@ else:
                                         owner = containing_repository.owner
                                     %>
                                     <li>
-                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision 
+                                        Version <b>${version | h}</b> of ${type | h} <b>${name | h}</b> contained in revision
                                         <b>${changeset_revision | h}</b> of repository <b>${repository_name | h}</b> owned by <b>${owner | h}</b>
                                     </li>
                                 %endfor
@@ -199,7 +199,7 @@ else:
                 %else:
                     <% deactivate_uninstall_button_text = "Uninstall" %>
                     ##hack to mimic check box
-                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
+                    <input type="hidden" name="remove_from_disk" value="true"/>
                 %endif
                 <input type="submit" name="deactivate_or_uninstall_repository_button" value="${deactivate_uninstall_button_text|h}"/>
             </div>

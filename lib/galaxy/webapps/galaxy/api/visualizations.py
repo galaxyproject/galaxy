@@ -63,15 +63,12 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         """
         # TODO: revisions should be a contents/nested controller like viz/xxx/r/xxx)?
         # the important thing is the config
-        rval = {}
         # TODO:?? /api/visualizations/registry -> json of registry.listings?
-
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         dictionary = trans.security.encode_dict_ids(self.get_visualization_dict(visualization))
         dictionary['url'] = web.url_for(controller='visualization',
                                         action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)
         dictionary['annotation'] = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
-
         # need to encode ids in revisions as well
         encoded_revisions = []
         for revision in dictionary['revisions']:
@@ -79,9 +76,10 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             encoded_revisions.append(trans.security.encode_id(revision))
         dictionary['revisions'] = encoded_revisions
         dictionary['latest_revision'] = trans.security.encode_dict_ids(dictionary['latest_revision'])
-
-        rval = dictionary
-        return rval
+        if trans.app.visualizations_registry:
+            visualization = trans.app.visualizations_registry.get_plugin(dictionary['type'])
+            dictionary['plugin'] = visualization.to_dict()
+        return dictionary
 
     @expose_api
     def create(self, trans, payload, **kwargs):
