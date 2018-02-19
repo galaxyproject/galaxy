@@ -265,6 +265,7 @@ report_file="run_functional_tests.html"
 xunit_report_file=""
 structured_data_report_file=""
 with_framework_test_tools_arg=""
+skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
 then
@@ -348,6 +349,7 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
+          skip_client_build=""
           selenium_test=1;
           if [ $# -gt 1 ]; then
               selenium_script=$2
@@ -549,7 +551,7 @@ if [ -z "$skip_common_startup" ]; then
             GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip --dev-wheels || exit 1
+    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
 fi
 
 GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
