@@ -1,5 +1,5 @@
 <template>
-    <div v-cloak>
+    <div id="structured-history-view">
         <div id="history-view-controls" class="clear"> 
             <div class="pull-left">
                 <span v-if="historyHistory['purged'] == false" >

@@ -1,7 +1,5 @@
 <template>
-    <div v-cloak>
-        <div v-html="historyTemplate">
-        </div>
+    <div v-html="historyTemplate">
     </div>
 </template>
 
