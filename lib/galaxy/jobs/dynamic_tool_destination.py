@@ -1619,26 +1619,26 @@ def get_destination_list_from_job_config(job_config_location):
         local_path = re.compile('^/config/.+$')
         if local_path.match(job_config_location):
             job_config_location = config_location + job_config_location
-        else:  # Pick one of the default ones
-            message = "* No job config specified, "
-            if os.path.isfile(config_location + "/config/job_conf.xml"):
-                job_config_location = config_location + "/config/job_conf.xml"
-                message += "using 'config/job_conf.xml'. *"
+    else:  # Pick one of the default ones
+        message = "* No job config specified, "
+        if os.path.isfile(config_location + "/config/job_conf.xml"):
+            job_config_location = config_location + "/config/job_conf.xml"
+            message += "using 'config/job_conf.xml'. *"
 
-            elif os.path.isfile(config_location +
-                    "/config/job_conf.xml.sample_advanced"):
-                job_config_location = (config_location
-                    + "/config/job_conf.xml.sample_advanced")
-                message += "using 'config/job_conf.xml.sample_advanced'. *"
+        elif os.path.isfile(config_location +
+                "/config/job_conf.xml.sample_advanced"):
+            job_config_location = (config_location
+                + "/config/job_conf.xml.sample_advanced")
+            message += "using 'config/job_conf.xml.sample_advanced'. *"
 
-            elif os.path.isfile(config_location +
-                    "/config/job_conf.xml.sample_basic"):
-                job_config_location = (config_location
-                    + "/config/job_conf.xml.sample_basic")
-                message += "using 'config/job_conf.xml.sample_basic'. *"
-            else:
-                message += ("and no default job configs in 'config/'. "
-                    + "Expect lots of failures. *")
+        elif os.path.isfile(config_location +
+                "/config/job_conf.xml.sample_basic"):
+            job_config_location = (config_location
+                + "/config/job_conf.xml.sample_basic")
+            message += "using 'config/job_conf.xml.sample_basic'. *"
+        else:
+            message += ("and no default job configs in 'config/'. "
+                + "Expect lots of failures. *")
 
         if verbose:
             log.debug(message)
