@@ -1,10 +1,10 @@
-// ------------------------------------ prefix function
-@include vendor-prefix-property($property; $value){
-    -webkit-${property}: $value;
-       // -moz-${property}: $value;
-        -ms-${property}: $value;
-         // -o-${property}: $value;
-            ${property}: $value;
+// ------------------------------------ prefix mixin
+@mixin vendor-prefix-property($property, $value){
+    #{"-webkit-" + $property}: $value;
+    // -moz-${property}: $value;
+    #{"-ms-" + $property}: $value;
+    // -o-${property}: $value;
+    #{property}: $value;
 }
 
 // ------------------------------------ containers

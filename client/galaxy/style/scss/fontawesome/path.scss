@@ -1,7 +1,7 @@
 /* FONT PATH
  * -------------------------- */
 
-$font-face {
+@font-face {
   font-family: 'FontAwesome';
   src: url('${fa-font-path}/fontawesome-webfont.eot?v=${fa-version}');
   src: url('${fa-font-path}/fontawesome-webfont@mixin eot?#iefix&v=${fa-version}') format('embedded-opentype'),

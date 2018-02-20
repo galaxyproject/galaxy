@@ -1,11 +1,12 @@
 @import "sprite-history-states.scss";
 @import "sprite-history-buttons.scss";
+@import "fontawesome/variables.scss";
 
 
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
 .state-icon {
-    @extend fa-icon;
+    @extend .fa-icon;
     display: inline-block;
     margin-right: 4px;
     vertical-align: middle;
@@ -24,27 +25,28 @@
     -o-animation: spin 2s infinite linear;
     animation: spin 2s infinite linear;
 
-    $-moz-keyframes spin {
+    @-moz-keyframes spin {
         0% { -moz-transform: rotate(0deg); }
         100% { -moz-transform: rotate(359deg); }
     }
-    $-webkit-keyframes spin {
+    @-webkit-keyframes spin {
         0% { -webkit-transform: rotate(0deg); }
         100% { -webkit-transform: rotate(359deg); }
     }
-    $-o-keyframes spin {
+    @-o-keyframes spin {
         0% { -o-transform: rotate(0deg); }
         100% { -o-transform: rotate(359deg); }
     }
-    $-ms-keyframes spin {
+    @-ms-keyframes spin {
         0% { -ms-transform: rotate(0deg); }
         100% { -ms-transform: rotate(359deg); }
     }
-    $keyframes spin {
+    @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(359deg); }
     }
     &:before {
+        // TODO: dannon fixme, fontawesome upgrade.
         content: $fa-var-spinner;
     }
 }
@@ -59,23 +61,23 @@
         -o-animation: eclipse 2s infinite linear;
         animation: eclipse 2s infinite linear;
 
-        $-moz-keyframes eclipse {
+        @-moz-keyframes eclipse {
             0% { -moz-transform: translate(0px,16px); }
             100% { -moz-transform: translate(0px,-16px); }
         }
-        $-webkit-keyframes eclipse {
+        @-webkit-keyframes eclipse {
             0% { -webkit-transform: translate(0px,16px); }
             100% { -webkit-transform: translate(0px,-16px); }
         }
-        $-o-keyframes eclipse {
+        @-o-keyframes eclipse {
             0% { -o-transform: translate(0px,16px); }
             100% { -o-transform: translate(0px,-16px); }
         }
-        $-ms-keyframes eclipse {
+        @-ms-keyframes eclipse {
             0% { -ms-transform: translate(0px,16px); }
             100% { -ms-transform: translate(0px,-16px); }
         }
-        $keyframes eclipse {
+        @keyframes eclipse {
             0% { transform: translate(0px,16px); }
             100% { transform: translate(0px,-16px); }
         }
@@ -190,7 +192,7 @@
   animation: blinker 500ms linear infinite;
 }
 
-$keyframes blinker {
+@keyframes blinker {
   50% { opacity: 0; }
 }
 
@@ -211,28 +213,28 @@ $keyframes blinker {
             }
             .datatype .value:after {
                 content: ',';
-                .list-item @extend help-text;
+                @extend .list-item.help-text;
                 margin-right: 4px;
             }
             .dbkey:after {
                 content: ' ';
                 display: block;
-                .list-item @extend vertical-spacing;
+                @extend .list-item.vertical-spacing;
             }
             .info {
-                .list-item @extend info-section;
+                @extend .list-item.info-section;
                 overflow: auto;
                 .value {
                     white-space: pre-line;
                 }
             }
             .job-error-text {
-                .list-item @extend info-section;
+                @extend .list-item.info-section;
                 overflow: auto;
                 white-space: pre;
             }
             // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
-            .list-item @extend vertical-spacing;
+            @extend .list-item.vertical-spacing;
         }
 
         .actions {
@@ -245,21 +247,21 @@ $keyframes blinker {
             }
 
             .left {
-                @include icon-btn-group();
+                @extend .icon-btn-group;
                 float: left;
                 .icon-btn {
                     margin-right: $icon-btn-margin;
                 }
             }
             .right {
-                @include icon-btn-group();
+                @extend .icon-btn-group;
                 float: right;
                 .icon-btn {
                     margin-left: $icon-btn-margin;
                 }
             }
             &:not(:last-child) {
-                .list-item @extend vertical-spacing;
+                @extend .list-item.vertical-spacing;
             }
         }
 
@@ -269,9 +271,9 @@ $keyframes blinker {
         }
         .annotation-display {
             display: none;
-            .list-item @extend vertical-spacing;
+            @extend .list-item.vertical-spacing;
             .annotation {
-                .list-item @extend info-section;
+                @extend .list-item.info-section;
                 //white-space: pre-line;
                 white-space: pre-wrap;
                 overflow: auto;
@@ -296,7 +298,7 @@ $keyframes blinker {
 
         .display-applications {
             .display-application:last-child {
-                .list-item @extend vertical-spacing;
+                @extend .list-item.vertical-spacing;
             }
         }
 
@@ -309,7 +311,7 @@ $keyframes blinker {
         }
 
         .dataset-peek {
-            .list-item @extend vertical-spacing;
+            @extend .list-item.vertical-spacing;
             width: 100%;
             margin: 0px;
             border-radius: 3px;

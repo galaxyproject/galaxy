@@ -39,8 +39,18 @@ $panel-bg-color: #DFE5F9;
 
 // Derived variables used below
 
+@function luma($color){
+
+  $r: red($color);
+  $g: green($color);
+  $b: blue($color);
+
+  @return 0.299 * $r + 0.587 * $g + 0.114 * $b;
+
+}
+
 $sat:   saturation($base-color);
-$luma:  luminance($base-color);
+$luma:  luma($base-color);
 $light: lightness($base-color);
 $tone:  desaturate($base-color,100%);
 
@@ -65,32 +75,31 @@ $gray-lighter:           lighten(black, 93.5%); // #eee
 
 // Brand colors
 // -------------------------
-
 $brand-primary:         hsl(
                             hue($bs-primary),
                             (saturation($bs-info) + $sat + 20)/2,
-                            $luma - 10
+                            $light - 10
                         );
 
 $brand-info:            hsl(
                             hue($bs-info),
                             (saturation($bs-info) + $sat + 20)/2,
-                            $luma
+                            $light
                         );
 $brand-success:         hsl(
                             hue($bs-success),
                             (saturation($bs-success) + $sat + 20)/2,
-                            (luminance($bs-success) + $luma - 20)/2
+                            (luma($bs-success) + $luma - 20)/2
                         );
 $brand-warning:         hsl(
                             hue($bs-warning),
                             (saturation($bs-warning) + $sat + 20)/2,
-                            (luminance($bs-warning) + $luma - 20)/2
+                            (luma($bs-warning) + $luma - 20)/2
                         );
 $brand-danger:          hsl(
                             hue($bs-danger),
                             (saturation($bs-danger) + $sat + 20)/2,
-                            (luminance($bs-danger) + $luma + 10)/2
+                            (luma($bs-danger) + $luma + 10)/2
                         );
 
 // Scaffolding

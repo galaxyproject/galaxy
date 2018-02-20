@@ -58,7 +58,7 @@
         overflow-x      : hidden;
         -ms-overflow-style: none;
         .upload-helper {
-            &:extend( h3 );
+            @extend h3;
             padding: 120px;
             color: $btn-default-border;
             i {
@@ -91,7 +91,7 @@
                 width: 380px;
                 word-wrap: break-word;
                 font-size : $font-size-small;
-                float: left;            
+                float: left;
             }
             .upload-size {
                 width: 60px;
@@ -130,7 +130,7 @@
                         overflow: auto;
                     }
                     .upload-text-info {
-                        &:extend(@include text-primary);
+                        @extend .text-primary;
                         font-size : $font-size-small;
                     }
                 }
@@ -170,17 +170,17 @@
         }
     }
     .upload-icon {
-        &:extend(@include ui-icon);
+        @extend .ui-icon;
     }
     .upload-icon-button {
-        &:extend(@include ui-icon-button);
+        @extend .ui-icon-button;
         position: relative;
         top: 1px;
     }
 }
 
 .upload-view-composite {
-    &:extend(@include upload-view-default all);
+    @extend .upload-view-default;
     .upload-box {
         .upload-row {
             .upload-title {
@@ -224,7 +224,9 @@
         }
     }
     .upload-ftp-row:hover {
-        &:extend(.grid @include current);
+        // DBTODO: Not right.  Pick the exact style.
+        @extend .grid;
+        @extend .current;
     }
     th {
         padding: 5px !important;
@@ -235,7 +237,7 @@
 }
 
 .upload-ftp {
-    &:extend(@include upload-ftp-base all);
+    @extend .upload-ftp-base;
     height: 250px;
     width: 500px;
     overflow-y: auto;
@@ -255,7 +257,7 @@
 }
 
 .upload-ftp-full {
-    &:extend(@include upload-ftp-base all);
+    @extend .upload-ftp-base;
     .upload-ftp-content {
         line-height: 2.0em !important;
     }

@@ -25,16 +25,17 @@
         &:not(:empty) {
             padding-top: 4px;
         }
-        [class$:messagesmall] {
-            margin: $spacing-top $spacing-right ( $spacing-bottom - 4 ) $spacing-left;
-            font-size: 90%;
-            &:first-child {
-                margin-top: 0px;
-            }
-            &:last-child {
-                margin-bottom: 0px;
-            }
-        }
+        // TODO: FIXME
+        // [class$:messagesmall] {
+        //     margin: $spacing-top $spacing-right ( $spacing-bottom - 4 ) $spacing-left;
+        //     font-size: 90%;
+        //     &:first-child {
+        //         margin-top: 0px;
+        //     }
+        //     &:last-child {
+        //         margin-bottom: 0px;
+        //     }
+        // }
     }
 
     .help-text {
@@ -96,7 +97,7 @@
     }
 
     .primary-actions {
-        @include icon-btn-group();
+        @extend .icon-btn-group;
         float: right;
         margin: $spacing-top $spacing-right 0;
         .icon-btn {
@@ -107,10 +108,10 @@
     .details {
         display: none;
         padding: 0px $spacing-right $spacing-bottom $spacing-left;
-
-        & > [class$:messagesmall] {
-            margin: 0px 0px 8px 0px;
-        }
+        //TODO: FIXME
+        //& > [class$:messagesmall] {
+        //    margin: 0px 0px 8px 0px;
+        //}
 
         label {
             margin: 0px;
@@ -169,7 +170,7 @@
         }
 
         .actions {
-            @include icon-btn-group();
+            @extend .icon-btn-group;
             float: right;
             .icon-btn {
                 margin-left: $icon-btn-margin;
@@ -177,13 +178,14 @@
         }
         .messages {
             @include clearfix();
-            [class$:message],
-            [class$:messagesmall] {
-                margin: 0px;
-                &:not(:last-child) {
-                    margin-bottom: 8px;
-                }
-            }
+            // TODO: Another fixme for Dannon.
+            // [class$:message],
+            // [class$:messagesmall] {
+            //     margin: 0px;
+            //     &:not(:last-child) {
+            //         margin-bottom: 8px;
+            //     }
+            // }
         }
         .list-actions {
             display: none;
