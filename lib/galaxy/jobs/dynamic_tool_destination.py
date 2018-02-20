@@ -1613,48 +1613,49 @@ def get_destination_list_from_job_config(job_config_location):
     # and then os.path.join is used to go back four directories
 
     config_location = os.path.join(
-              os.path.dirname(os.path.realpath(__file__)), '../../..')
+        os.path.dirname(os.path.realpath(__file__)), '../../..')
 
     if job_config_location:
-      local_path = re.compile('^/config/.+$')
-      if  local_path.match(job_config_location):
-          job_config_location = config_location + job_config_location
-    else: # Pick one of the default ones
-      message = "* No job config specified, "
-      if os.path.isfile(config_location + "/config/job_conf.xml"):
-        job_config_location = config_location + "/config/job_conf.xml"
-        message += "using 'config/job_conf.xml'. *"
-          
-      elif os.path.isfile(config_location +
-          "/config/job_conf.xml.sample_advanced"):
-        job_config_location = (config_location
-          + "/config/job_conf.xml.sample_advanced")
-        message += "using 'config/job_conf.xml.sample_advanced'. *"
-          
-      elif os.path.isfile(config_location +
-          "/config/job_conf.xml.sample_basic"):
-        job_config_location = (config_location
-          + "/config/job_conf.xml.sample_basic")
-        message += "using 'config/job_conf.xml.sample_basic'. *"
-      else:
-        message += "and no default job configs in 'config/'. Failing... *"
-        
-      if verbose:
-        log.debug(message)
-      
+        local_path = re.compile('^/config/.+$')
+        if local_path.match(job_config_location):
+            job_config_location = config_location + job_config_location
+        else:  # Pick one of the default ones
+            message = "* No job config specified, "
+            if os.path.isfile(config_location + "/config/job_conf.xml"):
+                job_config_location = config_location + "/config/job_conf.xml"
+                message += "using 'config/job_conf.xml'. *"
 
-    job_conf = ET.parse(job_config_location)
+            elif os.path.isfile(config_location +
+                    "/config/job_conf.xml.sample_advanced"):
+                job_config_location = (config_location
+                    + "/config/job_conf.xml.sample_advanced")
+                message += "using 'config/job_conf.xml.sample_advanced'. *"
 
-    # Add all destination IDs from the job configuration xml file
-    for destination in job_conf.getroot().iter("destination"):
-        if isinstance(destination.get("id"), str):
-            destination_list.add(destination.get("id"))
+            elif os.path.isfile(config_location +
+                    "/config/job_conf.xml.sample_basic"):
+                job_config_location = (config_location
+                    + "/config/job_conf.xml.sample_basic")
+                message += "using 'config/job_conf.xml.sample_basic'. *"
+            else:
+                message += ("and no default job configs in 'config/'. "
+                    + "Expect lots of failures. *")
 
-        else:
-            error = "Destination ID '" + str(destination)
-            error += "' in job configuration file cannot be"
-            error += " parsed. Things may not work as expected!"
-            log.debug(error)
+        if verbose:
+            log.debug(message)
+
+    if job_config_location:
+        job_conf = ET.parse(job_config_location)
+
+        # Add all destination IDs from the job configuration xml file
+        for destination in job_conf.getroot().iter("destination"):
+            if isinstance(destination.get("id"), str):
+                destination_list.add(destination.get("id"))
+
+            else:
+                error = "Destination ID '" + str(destination)
+                error += "' in job configuration file cannot be"
+                error += " parsed. Things may not work as expected!"
+                log.debug(error)
 
     return destination_list
 
@@ -1795,9 +1796,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.job_config:
-      job_conf = args.job_config
+        job_conf = args.job_config
     else:
-      job_conf = None
+        job_conf = None
 
     if args.check_config:
         valid_config = parse_yaml(path=args.check_config,
