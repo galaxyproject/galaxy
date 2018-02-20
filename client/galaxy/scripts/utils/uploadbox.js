@@ -12,7 +12,8 @@
         var cnf = $.extend({
             error_default: "Please make sure the file is available.",
             error_server: "Upload request failed.",
-            error_login: "Uploads require you to log in."
+            error_login: "Uploads require you to log in.",
+            error_retry: "Waiting for server to resume...",
         }, config);
         console.debug(cnf);
         var xhr = new XMLHttpRequest();
@@ -29,7 +30,9 @@
         }
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
-                if (xhr.status < 200 || xhr.status > 299) {
+                if (([502, 0]).indexOf(xhr.status) !== -1 && cnf.warning) {
+                    cnf.warning(cnf.error_retry);
+                } else if (xhr.status < 200 || xhr.status > 299) {
                     var text = xhr.statusText;
                     if (xhr.status == 403) {
                         text = cnf.error_login;
@@ -69,7 +72,7 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunksize: 1048576 * 50,
+                chunksize: 1,//1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
@@ -138,15 +141,19 @@
                         });
                     }
                 },
-                error: upload_response => {
+                warning: (upload_response) => {
                     if (--attempts > 0) {
                         console.debug("Retrying last chunk...");
-                        cnf.warning("Waiting for server to resume...");
+                        cnf.warning(upload_response);
                         setTimeout(() => process(start), cnf.timeout);
                     } else {
                         console.debug(cnf.error_attempt);
                         cnf.error(cnf.error_attempt);
                     }
+                },
+                error: upload_response => {
+                    console.debug(upload_response);
+                    cnf.error(upload_response);
                 },
                 progress: e => {
                     if (e.lengthComputable) {
