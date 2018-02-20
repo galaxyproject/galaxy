@@ -28,7 +28,7 @@ from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, ToolTestDescription, verify_tool
+from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -917,9 +917,12 @@ class GalaxyTestDriver(TestDriver):
             "keep_outputs_dir": None,
         }
         galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
-        tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id)
-        testdef = ToolTestDescription(tool_test_dicts[index])
-        verify_tool(testdef, tool_id, galaxy_interactor, resource_parameters=resource_parameters)
+        verify_tool(
+            tool_id=tool_id,
+            test_index=index,
+            galaxy_interactor=galaxy_interactor,
+            resource_parameters=resource_parameters
+        )
 
 
 def drive_test(test_driver_class):

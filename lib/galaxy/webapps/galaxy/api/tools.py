@@ -105,7 +105,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @web.require_admin
     def test_data_path(self, trans, id, **kwd):
         """
-        GET /api/tools/{tool_id}/test_data_path
+        GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
         """
         # TODO: eliminate copy and paste with above code.
         if 'payload' in kwd:
@@ -114,10 +114,40 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         return tool.test_data_path(kwd.get("filename"))
 
+    @expose_api_anonymous_and_sessionless
+    def tests_summary(self, trans, **kwd):
+        """
+        GET /api/tools/tests_summary
+
+        Fetch summary information for each tool and version combination with tool tests
+        defined. This summary information currently includes tool name and a count of
+        the tests.
+
+        Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
+        """
+        test_counts_by_tool = {}
+        for id, tool in self.app.toolbox.tools():
+            tests = tool.tests
+            if tests:
+                if tool.id not in test_counts_by_tool:
+                    test_counts_by_tool[tool.id] = {}
+                available_versions = test_counts_by_tool[tool.id]
+                available_versions[tool.version] = {
+                    "tool_name": tool.name,
+                    "count": len(tests),
+                }
+        return test_counts_by_tool
+
     @expose_api_raw_anonymous_and_sessionless
     def test_data(self, trans, id, **kwd):
         """
-        GET /api/tools/{tool_id}/test_data
+        GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
+
+        This API endpoint is unstable and experimental. In particular the format of the
+        response has not been entirely nailed down (it exposes too many Galaxy
+        internals/Pythonisms in a rough way). If this endpoint is being used from outside
+        of scripts shipped with Galaxy let us know and please be prepared for the response
+        from this API to change its format in some ways.
         """
         # TODO: eliminate copy and paste with above code.
         if 'payload' in kwd:

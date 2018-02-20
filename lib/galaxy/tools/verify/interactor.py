@@ -76,13 +76,21 @@ class GalaxyInteractorApi(object):
         test_user = self.ensure_user_with_email(test_user)
         return self._post("users/%s/api_key" % test_user['id'], key=admin_key).json()
 
-    def get_tools(self):
-        response = self._get("tools?in_panel=false")
-        assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
+    # def get_tools(self):
+    #    response = self._get("tools?in_panel=false")
+    #    assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
+    #    return response.json()
+
+    def get_tests_summary(self):
+        response = self._get("tools/tests_summary")
+        assert response.status_code == 200, "Non 200 response from tool tests available API. [%s]" % response.content
         return response.json()
 
-    def get_tool_tests(self, tool_id):
-        response = self._get("tools/%s/test_data" % tool_id)
+    def get_tool_tests(self, tool_id, tool_version=None):
+        url = "tools/%s/test_data" % tool_id
+        if tool_version is not None:
+            url += "?tool_version=%s" % tool_version
+        response = self._get(url)
         assert response.status_code == 200, "Non 200 response from tool test API. [%s]" % response.content
         return response.json()
 
@@ -625,7 +633,13 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder, keep_outputs_dir=keep_outputs_dir)
 
 
-def verify_tool(testdef, tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None):
+def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None, test_index=0, tool_version=None):
+    tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dict = tool_test_dicts[test_index]
+    testdef = ToolTestDescription(tool_test_dict)
+
+    _handle_def_errors(testdef)
+
     test_history = galaxy_interactor.new_history()
 
     stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
@@ -681,6 +695,18 @@ def verify_tool(testdef, tool_id, galaxy_interactor, resource_parameters={}, reg
             register_job_data(job_data)
 
     galaxy_interactor.delete_history(test_history)
+
+
+def _handle_def_errors(testdef):
+    # If the test generation had an error, raise
+    if testdef.error:
+        if testdef.exception:
+            if isinstance(testdef.exception, Exception):
+                raise testdef.exception
+            else:
+                raise Exception(testdef.exception)
+        else:
+            raise Exception("Test parse failure")
 
 
 def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor):
