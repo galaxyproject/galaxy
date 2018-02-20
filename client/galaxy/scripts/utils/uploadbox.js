@@ -59,7 +59,7 @@
     /**
         Posts chunked files to the API.
     */
-    $.uploadchunk = config => {
+    $.uploadchunk = function(config) {
         // parse options
         var cnf = $.extend(
             {},
@@ -163,14 +163,14 @@
     /**
         Posts multiple files without chunking to the API.
     */
-    $.uploadpost = config => {
+    $.uploadpost = function(config) {
         var cnf = $.extend(
             {},
             {
                 data: {},
-                success: function() {},
-                error: function() {},
-                progress: function() {},
+                success: () => {},
+                error: () => {},
+                progress: () => {},
                 url: null,
                 maxfilesize: 1048576 * 2048,
                 error_filesize: "File exceeds 2GB. Please use a FTP client."
@@ -226,9 +226,9 @@
         var opts = $.extend(
             {},
             {
-                ondragover: function() {},
-                ondragleave: function() {},
-                onchange: function() {},
+                ondragover: () => {},
+                ondragleave: () => {},
+                onchange: () => {},
                 multiple: false
             },
             options
@@ -237,7 +237,7 @@
         // append hidden upload field
         var $input = $(`<input type="file" style="display: none" ${(opts.multiple && "multiple") || ""}/>`);
         el.append(
-            $input.change(function(e) {
+            $input.change(e => {
                 opts.onchange(e.target.files);
                 $(this).val("");
             })
@@ -262,7 +262,7 @@
 
         // exports
         return {
-            dialog: function() {
+            dialog: () => {
                 $input.trigger("click");
             }
         };
@@ -276,17 +276,17 @@
         var opts = $.extend(
             {},
             {
-                dragover: function() {},
-                dragleave: function() {},
-                announce: function(d) {},
-                initialize: function(d) {},
-                progress: function(d, m) {},
-                success: function(d, m) {},
-                warning: function(d, m) {},
-                error: function(d, m) {
+                dragover: () => {},
+                dragleave: () => {},
+                announce: d => {},
+                initialize: d => {},
+                progress: (d, m) => {},
+                success: (d, m) => {},
+                warning: (d, m) => {},
+                error: (d, m) => {
                     alert(m);
                 },
-                complete: function() {}
+                complete: () => {}
             },
             options
         );
@@ -308,7 +308,7 @@
         // element
         var uploadinput = $(this).uploadinput({
             multiple: true,
-            onchange: function(files) {
+            onchange: files => {
                 _.each(files, file => {
                     file.chunkmode = true;
                 });
