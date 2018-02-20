@@ -14,7 +14,7 @@ from xml.etree import ElementTree as ET
 
 from yaml import load
 
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 # log to galaxy's logger
 log = logging.getLogger(__name__)
@@ -1591,14 +1591,17 @@ def map_tool_to_destination(
     return destination
 
 
-def get_destination_list_from_job_config(job_config_location='/config/job_conf.xml'):
+def get_destination_list_from_job_config(job_config_location):
     """
     returns A list of all destination IDs declared in the job configuration
 
     @type job_config_location: str
     @param job_config_location: The location of the job config file relative
-                to the galaxy root directory. Defaults to
-                galaxy/config/job_conf.xml
+                to the galaxy root directory. If NoneType, defaults to
+                galaxy/config/job_conf.xml,
+                galaxy/config/job_conf.xml.sample_advanced, or
+                galaxy/config/job_conf.xml.sample_basic
+                (first one that exists)
 
     @rtype: list
     @return: A list of all of the destination IDs declared in the job
@@ -1609,10 +1612,36 @@ def get_destination_list_from_job_config(job_config_location='/config/job_conf.x
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
 
-    if job_config_location == "/config/job_conf.xml":
-        config_location = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), '../../..')
-        job_config_location = config_location + job_config_location
+    config_location = os.path.join(
+              os.path.dirname(os.path.realpath(__file__)), '../../..')
+
+    if job_config_location:
+      local_path = re.compile('^/config/.+$')
+      if  local_path.match(job_config_location):
+          job_config_location = config_location + job_config_location
+    else: # Pick one of the default ones
+      message = "* No job config specified, "
+      if os.path.isfile(config_location + "/config/job_conf.xml"):
+        job_config_location = config_location + "/config/job_conf.xml"
+        message += "using 'config/job_conf.xml'. *"
+          
+      elif os.path.isfile(config_location +
+          "/config/job_conf.xml.sample_advanced"):
+        job_config_location = (config_location
+          + "/config/job_conf.xml.sample_advanced")
+        message += "using 'config/job_conf.xml.sample_advanced'. *"
+          
+      elif os.path.isfile(config_location +
+          "/config/job_conf.xml.sample_basic"):
+        job_config_location = (config_location
+          + "/config/job_conf.xml.sample_basic")
+        message += "using 'config/job_conf.xml.sample_basic'. *"
+      else:
+        message += "and no default job configs in 'config/'. Failing... *"
+        
+      if verbose:
+        log.debug(message)
+      
 
     job_conf = ET.parse(job_config_location)
 
@@ -1765,21 +1794,17 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    if args.check_config and args.job_config:
+    if args.job_config:
+      job_conf = args.job_config
+    else:
+      job_conf = None
+
+    if args.check_config:
         valid_config = parse_yaml(path=args.check_config,
-                                  job_conf_path=args.job_config, return_bool=True)
-
-    elif args.check_config:
-        valid_config = parse_yaml(path=args.check_config,
-                                  job_conf_path="/config/job_conf.xml", return_bool=True)
-
-    elif args.job_config:
-        valid_config = parse_yaml(path="/config/tool_destinations.yml",
-                                  job_conf_path=args.job_config, return_bool=True)
-
+                                  job_conf_path=job_conf, return_bool=True)
     else:
         valid_config = parse_yaml(path="/config/tool_destinations.yml",
-                                  job_conf_path="/config/job_conf.xml", return_bool=True)
+                                  job_conf_path=job_conf, return_bool=True)
 
     if valid_config:
         print("Configuration is valid!")
