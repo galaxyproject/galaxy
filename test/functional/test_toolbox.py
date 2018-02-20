@@ -11,7 +11,7 @@ except ImportError:
 
 from base.driver_util import setup_keep_outdir, target_url_parts
 from galaxy.tools import DataManagerTool  # noqa: I201
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, ToolTestDescription, verify_tool  # noqa: I201
+from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool  # noqa: I201
 from .twilltestcase import TwillTestCase
 
 log = logging.getLogger(__name__)
@@ -29,28 +29,15 @@ class ToolTestCase(TwillTestCase):
     subclass DataManagerToolTestCase requires the use of Twill still.
     """
 
-    def do_it(self, testdef, resource_parameters={}):
+    def do_it(self, tool_id=None, tool_version=None, test_index=0, resource_parameters={}):
         """
         Run through a tool test case.
         """
-        tool_id = self.tool_id
+        if tool_id is None:
+            tool_id = self.tool_id
+        assert tool_id
 
-        self._handle_test_def_errors(testdef)
-
-        galaxy_interactor = self.galaxy_interactor
-
-        verify_tool(testdef, tool_id, galaxy_interactor, resource_parameters=resource_parameters)
-
-    def _handle_test_def_errors(self, testdef):
-        # If the test generation had an error, raise
-        if testdef.error:
-            if testdef.exception:
-                if isinstance(testdef.exception, Exception):
-                    raise testdef.exception
-                else:
-                    raise Exception(testdef.exception)
-            else:
-                raise Exception("Test parse failure")
+        verify_tool(tool_id, self.galaxy_interactor, resource_parameters=resource_parameters, test_index=test_index, tool_version=tool_version)
 
 
 @nottest
@@ -80,44 +67,38 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
         if key.startswith('TestForTool_'):
             del G[key]
 
-    # if app:
-    #    tool_ids = app.toolbox.tools_by_id.keys()
-    # else:
+    tests_summary = galaxy_interactor.get_tests_summary()
+    for tool_id, tool_summary in tests_summary.items():
+        # Create a new subclass of ToolTestCase, dynamically adding methods
+        # named test_tool_XXX that run each test defined in the tool config.
+        name = "TestForTool_" + tool_id.replace(' ', '_')
+        baseclasses = (ToolTestCase, )
+        namespace = dict()
 
-    tools = galaxy_interactor.get_tools()
-    for tool in tools:
-        if tool.get("form_style", None) != "regular":
-            # We do not test certain types of tools (e.g. Data Manager tools) as part of ToolTestCase
-            continue
-        tool_id = tool["id"]
-        if not tool_id:
-            continue
-        tool_name = tool["name"]
-        tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id)
-        if tool_test_dicts:
-            # Create a new subclass of ToolTestCase, dynamically adding methods
-            # named test_tool_XXX that run each test defined in the tool config.
-            name = "TestForTool_" + tool_id.replace(' ', '_')
-            baseclasses = (ToolTestCase, )
-            namespace = dict()
-            for j, tool_test_dict in enumerate(tool_test_dicts):
-                testdef = ToolTestDescription(tool_test_dict)
-                test_function_name = 'test_tool_%06d' % j
+        all_versions_test_count = 0
 
-                def make_test_method(td):
+        for tool_version, version_summary in tool_summary.items():
+            count = version_summary["count"]
+            for i in range(count):
+                test_function_name = 'test_tool_%06d' % all_versions_test_count
+
+                def make_test_method(tool_version, test_index):
                     def test_tool(self):
-                        self.do_it(td)
+                        self.do_it(tool_version=tool_version, test_index=test_index)
                     test_tool.__name__ = test_function_name
 
                     return test_tool
 
-                test_method = make_test_method(testdef)
-                test_method.__doc__ = "%s ( %s ) > %s" % (tool_name, tool_id, testdef.name)
+                test_method = make_test_method(tool_version, i)
+                test_method.__doc__ = "( %s ) > Test-%d" % (tool_id, all_versions_test_count + 1)
                 namespace[test_function_name] = test_method
                 namespace['tool_id'] = tool_id
                 namespace["galaxy_interactor"] = galaxy_interactor
                 namespace['master_api_key'] = master_api_key
                 namespace['user_api_key'] = user_api_key
+
+                all_versions_test_count += 1
+
             # The new.classobj function returns a new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = new.classobj(str(name), baseclasses, namespace)
