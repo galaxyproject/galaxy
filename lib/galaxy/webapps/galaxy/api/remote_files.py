@@ -151,5 +151,5 @@ class RemoteFilesAPIController(BaseAPIController):
 
     @expose_api
     def upload(self, trans, **kwd):
-        print kwd
+        print(kwd)
         return {}
