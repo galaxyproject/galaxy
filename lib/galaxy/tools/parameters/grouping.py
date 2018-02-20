@@ -328,6 +328,7 @@ class UploadDataset(Group):
                 return file_name
             try:
                 # Use the existing file
+                print data_file
                 if not dataset_name and 'filename' in data_file:
                     dataset_name = get_file_name(data_file['filename'])
                 return Bunch(type='file', path=data_file['local_filename'], name=dataset_name, purge_source=purge)
@@ -602,6 +603,8 @@ class UploadDataset(Group):
             return [dataset]
         else:
             rval = []
+            print "HERE"
+            print context
             for i, file_contexts in enumerate(context[self.name]):
                 datasets = get_filenames(file_contexts)
                 for dataset in datasets:

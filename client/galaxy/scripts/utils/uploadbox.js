@@ -71,8 +71,10 @@
                 chunksize: 1,
                 attempts: 5,
                 url: null,
+                storage: "",
                 error_file: "File not provied.",
-                error_attempt: "Maximum number of attempts reached."
+                error_attempt: "Maximum number of attempts reached.",
+                error_tool: "Tool submission failed."
             },
             config
         );
@@ -90,7 +92,8 @@
         }
         var file = file_data.file;
         var attempts = cnf.attempts;
-        var session_id = `${cnf.session_id}-${new Date().valueOf()}-${file.size}`;
+        var session_id = `${cnf.session.id}-${new Date().valueOf()}-${file.size}`;
+        var session_path = cnf.session.path;
 
         // chunk processing helper
         function process(start) {
@@ -108,17 +111,33 @@
                 data: slicer.bind(file)(start, end),
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,
-                success: response => {
+                success: upload_response => {
                     var new_start = start + cnf.chunksize;
                     if (new_start < size ) {
                         attempts = cnf.attempts;
                         process(new_start);
                     } else {
-                        console.debug("Success.");
-                        cnf.success(response);
+                        console.debug("Upload completed.");
+                        data.payload.inputs = JSON.parse(data.payload.inputs);
+                        data.payload.inputs["files_0|file_data"] = {
+                            "path": `${session_path}/${session_id}`,
+                            "name": file.name
+                        };
+                        data.payload.inputs = JSON.stringify(data.payload.inputs);
+                        $.ajax({
+                            url: Galaxy.root + "api/tools",
+                            method: "POST",
+                            data: data.payload,
+                            success: (tool_response) => {
+                                cnf.success(tool_response);
+                            },
+                            error: (tool_response) => {
+                                cnf.error(tool_response || cnf.error_tool);
+                            }
+                        });
                     }
                 },
-                error: response => {
+                error: upload_response => {
                     if (--attempts > 0) {
                         console.debug("Retrying...");
                         process(start);
@@ -272,8 +291,8 @@
         // file queue
         var queue = {};
 
-        // request session identifier
-        var session_id = null;
+        // session options
+        var session = null;
 
         // queue index/length counter
         var queue_index = 0;
@@ -355,13 +374,13 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (file.chunkmode && session_id) {
+            if (file.chunkmode && session) {
                 submitter = $.uploadchunk;
             }
             submitter({
                 url: opts.url,
                 data: opts.initialize(index),
-                session_id: session_id,
+                session: session,
                 success: function(message) {
                     opts.success(index, message);
                     process();
@@ -393,8 +412,8 @@
         }
 
         // initiate upload process
-        function start(identifier) {
-            session_id = identifier;
+        function start(_session) {
+            session = _session;
             if (!queue_running) {
                 queue_running = true;
                 process();
