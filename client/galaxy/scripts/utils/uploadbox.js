@@ -69,7 +69,7 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunksize: 1, //1048576 * 50,
+                chunksize: 1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
@@ -140,7 +140,7 @@
                 },
                 error: upload_response => {
                     if (--attempts > 0) {
-                        console.debug("Retrying...");
+                        console.debug("Retrying last chunk...");
                         cnf.warning("Waiting for server to resume...");
                         setTimeout(() => process(start), cnf.timeout);
                     } else {
