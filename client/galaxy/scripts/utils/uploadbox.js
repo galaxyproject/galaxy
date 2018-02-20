@@ -65,13 +65,14 @@
             {},
             {
                 data: {},
-                success: function() {},
-                error: function() {},
-                progress: function() {},
+                success: () => {},
+                error: () => {},
+                warning: () => {},
+                progress: () => {},
                 chunksize: 1048576 * 50,
-                attempts: 5,
+                attempts: 70000,
+                timeout: 5000,
                 url: null,
-                storage: "",
                 error_file: "File not provied.",
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed."
@@ -107,7 +108,7 @@
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
             _uploadrequest({
-                url: "/_upload_chunk",
+                url: "/_uplod_chunk",
                 data: slicer.bind(file)(start, end),
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,
@@ -140,7 +141,8 @@
                 error: upload_response => {
                     if (--attempts > 0) {
                         console.debug("Retrying...");
-                        process(start);
+                        cnf.warning("Waiting for server to resume...");
+                        setTimeout(() => process(start), cnf.timeout);
                     } else {
                         console.debug(cnf.error_attempt);
                         cnf.error(cnf.error_attempt);
@@ -280,6 +282,7 @@
                 initialize: function(d) {},
                 progress: function(d, m) {},
                 success: function(d, m) {},
+                warning: function(d, m) {},
                 error: function(d, m) {
                     alert(m);
                 },
@@ -381,15 +384,18 @@
                 url: opts.url,
                 data: opts.initialize(index),
                 session: session,
-                success: function(message) {
+                success: message => {
                     opts.success(index, message);
                     process();
                 },
-                error: function(message) {
+                warning: message => {
+                    opts.warning(index, message);
+                },
+                error: message => {
                     opts.error(index, message);
                     process();
                 },
-                progress: function(percentage) {
+                progress: percentage => {
                     opts.progress(index, percentage);
                 }
             });

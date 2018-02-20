@@ -120,6 +120,9 @@ export default Backbone.View.extend({
             error: function(index, message) {
                 self._eventError(index, message);
             },
+            warning: function(index, message) {
+                self._eventWarning(index, message);
+            },
             complete: function() {
                 self._eventComplete();
             },
@@ -261,6 +264,12 @@ export default Backbone.View.extend({
         this.counter.success++;
         this.render();
         Galaxy.currHistoryPanel.refreshContents();
+    },
+
+    /** Warning */
+    _eventWarning: function(index, message) {
+        var it = this.collection.get(index);
+        it.set({ status: "warning", info: message });
     },
 
     /** Error */
