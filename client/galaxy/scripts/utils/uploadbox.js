@@ -69,7 +69,7 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunksize: 1048576 * 50,
+                chunksize: 1, //1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
@@ -108,7 +108,7 @@
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
             _uploadrequest({
-                url: "/_uplod_chunk",
+                url: "/_upload_chunk",
                 data: slicer.bind(file)(start, end),
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,

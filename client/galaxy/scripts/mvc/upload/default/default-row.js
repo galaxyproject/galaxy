@@ -214,15 +214,15 @@ export default Backbone.View.extend({
             this.select_genome.disable();
             this.select_extension.disable();
         }
+        this.$info_progress.show();
+        this.$el.removeClass().addClass("upload-row");
         if (status == "success") {
             this.$el.addClass("success");
             this.$percentage.html("100%");
-        }
-        else if (status == "error") {
+        } else if (status == "error") {
             this.$el.addClass("danger");
             this.$info_progress.hide();
-        }
-        else if (status == "warning") {
+        } else if (status == "warning") {
             this.$el.addClass("warning");
             this.$info_progress.hide();
         }
