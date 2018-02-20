@@ -29,6 +29,8 @@ class TestDataResolver(object):
 
     def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
         file_dirs = environ.get(env_var, None)
+        if file_dirs is None:
+            file_dirs = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
         if file_dirs:
             self.resolvers = [build_resolver(u, environ) for u in LIST_SEP.split(file_dirs)]
         else:
