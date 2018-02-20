@@ -68,7 +68,7 @@
                 success: function() {},
                 error: function() {},
                 progress: function() {},
-                chunksize: 1,
+                chunksize: 1048576 * 50,
                 attempts: 5,
                 url: null,
                 storage: "",
@@ -170,7 +170,7 @@
                 error: function() {},
                 progress: function() {},
                 url: null,
-                maxfilesize: 2048,
+                maxfilesize: 1048576 * 2048,
                 error_filesize: "File exceeds 2GB. Please use a FTP client."
             },
             config
@@ -196,7 +196,7 @@
         }
 
         // check file size, unless it's an ftp file
-        if (sizes > 1048576 * cnf.maxfilesize) {
+        if (sizes > cnf.maxfilesize) {
             cnf.error(cnf.error_filesize);
             return;
         }
@@ -374,7 +374,7 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (file.chunkmode && session) {
+            if (file.chunkmode && session.id && session.path) {
                 submitter = $.uploadchunk;
             }
             submitter({
