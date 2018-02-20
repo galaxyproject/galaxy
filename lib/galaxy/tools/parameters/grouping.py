@@ -602,8 +602,6 @@ class UploadDataset(Group):
             return [dataset]
         else:
             rval = []
-            print "HERE"
-            print context
             for i, file_contexts in enumerate(context[self.name]):
                 datasets = get_filenames(file_contexts)
                 for dataset in datasets:
