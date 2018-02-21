@@ -7,6 +7,8 @@ import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
+import LoadingIndicator from "ui/loading-indicator";
+
 // grid view
 export default Backbone.View.extend({
     // model
@@ -28,9 +30,8 @@ export default Backbone.View.extend({
             self.add_filter_condition("tags", tag);
         };
 
-        // set element
-        this.setElement("<div/>");
         if (grid_config.url_base && !grid_config.items) {
+            LoadingIndicator.markViewAsLoading(this);
             var url_data = grid_config.url_data || {};
             _.each(grid_config.filters, (v, k) => {
                 url_data[`f-${k}`] = v;
@@ -44,6 +45,8 @@ export default Backbone.View.extend({
                 }
             });
         } else {
+            // set element
+            this.setElement("<div>");
             this.init_grid(grid_config);
         }
 
