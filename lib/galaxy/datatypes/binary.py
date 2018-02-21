@@ -279,7 +279,7 @@ class BamNative(Binary):
                         header_line_count = bamfile.text.count('\n')
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile) :
+                    for line_number, alignment in enumerate(bamfile):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
                         offset = bamfile.tell()
@@ -291,9 +291,14 @@ class BamNative(Binary):
                             # Below code will remove spaces between each tag.
                             bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
                             ck_data = "%s\n%s" % (ck_data, bamline_modified)
+                    else:
+                        # Nothing to enumerate; we've either offset to the end
+                        # of the bamfile, or there is no data. (possible with
+                        # header-only bams)
+                        offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+                ck_data = "Could not display BAM file, error was:\n%s" % e
         else:
             ck_data = ''
             offset = -1
@@ -941,7 +946,7 @@ class SQlite(Binary):
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
             rslt = c.execute(tables_query).fetchall()
-            for table, sql in rslt:
+            for table, _ in rslt:
                 tables.append(table)
                 try:
                     col_query = 'SELECT * FROM %s LIMIT 0' % table
