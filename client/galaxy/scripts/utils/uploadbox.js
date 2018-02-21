@@ -20,13 +20,10 @@
         xhr.open("POST", cnf.url, true);
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+        xhr.setRequestHeader("Accept", "application/json");
         if (cnf.session_id && cnf.content_range) {
             xhr.setRequestHeader("Session-ID", cnf.session_id);
-            xhr.setRequestHeader("Content-Type", "application/octet-stream");
-            xhr.setRequestHeader("Content-Disposition", "attachment; filename='chunk'");
-            xhr.setRequestHeader("Content-Range", `bytes ${cnf.content_range}`);
-        } else {
-            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Range", `${cnf.content_range}`);
         }
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
@@ -57,7 +54,7 @@
         };
         xhr.upload.addEventListener("progress", cnf.progress, false);
         xhr.send(cnf.data);
-    }
+    };
 
     /**
         Posts chunked files to the API.
@@ -110,9 +107,11 @@
             var end = Math.min(start + cnf.chunksize, file.size);
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
+            var form = new FormData();
+            form.append("file", slicer.bind(file)(start, end));
             _uploadrequest({
-                url: "/_upload_chunk",
-                data: slicer.bind(file)(start, end),
+                url: Galaxy.root + "api/uploads",
+                data: form,
                 session_id: session_id,
                 content_range: `${start}-${end-1}/${file.size}`,
                 success: upload_response => {
@@ -157,7 +156,7 @@
                 },
                 progress: e => {
                     if (e.lengthComputable) {
-                        cnf.progress(Math.round((start + e.loaded) * 100 / file.size));
+                        cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
                     }
                 }
             });

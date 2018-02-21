@@ -1,10 +1,9 @@
 """
 API operations for uploaded files in storage.
 """
-import hashlib
 import logging
 import os
-import time
+import re
 
 from galaxy import exceptions
 from galaxy.web import expose_api_anonymous
@@ -20,21 +19,30 @@ class UploadsAPIController(BaseAPIController):
         raise exceptions.NotImplemented("Listing uploads is not implemented.")
 
     @expose_api_anonymous
-    def create(self, trans, **kwd):
+    def create(self, trans, payload, **kwd):
         """
-        GET /api/remote_files/
-
-        Displays remote files.
-
-        :param  target:      target to load available datasets from, defaults to ftp
-            possible values: ftp, userdir, importdir
-        :type   target:      str
-
-        :param  format:      requested format of data, defaults to flat
-            possible values: flat, jstree, ajax
-
-        :returns:   list of available files
-        :rtype:     list
+        POST /api/uploads/
         """
-        print(kwd)
-        return {}
+        headers = trans.request.headers.environ
+        content_range = headers["HTTP_CONTENT_RANGE"]
+        session_id = headers["HTTP_SESSION_ID"]
+        if content_range:
+            m = re.search("(\d+)-(\d+)\/(\d+)", content_range)
+            if m is None or len(m.groups()) != 3:
+                raise exceptions.MessageException("Requires content range header [START-END/TOTAL].");
+            start = int(m.group(1))
+            end = int(m.group(2))
+            total = int(m.group(3))
+        if session_id is None:
+            raise exceptions.MessageException("Requires a session id.");
+        target_file = "%s/%s" % (trans.app.config.nginx_upload_store, session_id)
+        target_size = 0
+        if os.path.exists(target_file):
+            target_size = os.path.getsize(target_file)
+        if start != target_size:
+            raise exceptions.MessageException("Chunk missing. Abort.");
+        source = payload.get("file")
+        with open(target_file, "a") as f:
+            f.write(source.file.read())
+        f.close()
+        return {"message": "Chunk successfully saved."}
