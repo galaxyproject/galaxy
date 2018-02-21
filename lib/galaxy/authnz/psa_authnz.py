@@ -119,6 +119,8 @@ class PSAAuthnz(IdentityProvider):
     def _load_backend(self, strategy, redirect_uri):
         backends = self._get_helper('AUTHENTICATION_BACKENDS')
         backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
+        backend.EXTRA_DATA.append('id_token')
+        backend.EXTRA_DATA.append('refresh_token')
         return backend(strategy, redirect_uri)
 
     def _login_user(self, backend, user, social_user):
