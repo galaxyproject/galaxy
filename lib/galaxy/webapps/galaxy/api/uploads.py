@@ -44,5 +44,6 @@ class UploadsAPIController(BaseAPIController):
         source = payload.get("file")
         with open(target_file, "a") as f:
             f.write(source.file.read())
-        f.close()
+            f.close()
+        source.file.close()
         return {"message": "Chunk successfully saved."}

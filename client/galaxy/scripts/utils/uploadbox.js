@@ -69,7 +69,7 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunksize: 1,//1048576 * 50,
+                chunksize: 1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
