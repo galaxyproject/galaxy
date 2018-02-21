@@ -22,6 +22,7 @@ These options include:
 import os
 import re
 import shutil
+import tempfile
 
 from base import integration_util
 from base.api_util import (
@@ -450,12 +451,24 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        library_import_dir = os.path.join(cls._test_driver.galaxy_test_tmp_dir, "library_import_dir")
+        config["library_import_dir"] = library_import_dir
+        cls.dir_to_import = 'library'
+        full_dir_path = os.path.join(library_import_dir, cls.dir_to_import)
+        os.makedirs(full_dir_path)
+        cls.file_content = "create_test"
+        with tempfile.NamedTemporaryFile(dir=full_dir_path, delete=False) as fh:
+            fh.write(cls.file_content)
+            cls.file_to_import = fh.name
+
     def test_valid_server_dir_uploads_okay(self):
-        library = self.library_populator.new_private_library("serverdirupload")
-        # upload $GALAXY_ROOT/test-data/library
-        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_directory", server_dir="library")
-        response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
-        assert response.status_code == 200, response.json()
+        self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=self.dir_to_import)
+        # Check the file is still there and was not modified
+        with open(self.file_to_import) as fh:
+            read_content = fh.read()
+        assert read_content == self.file_content
 
 
 class ServerDirectoryRestrictedToAdminsUsageTestCase(BaseUploadContentConfigurationTestCase):
