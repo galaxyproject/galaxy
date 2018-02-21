@@ -298,7 +298,7 @@ class BamNative(Binary):
                         offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+                ck_data = "Could not display BAM file, error was:\n%s" % str(e)
         else:
             ck_data = ''
             offset = -1
@@ -946,7 +946,7 @@ class SQlite(Binary):
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
             rslt = c.execute(tables_query).fetchall()
-            for table, sql in rslt:
+            for table, _ in rslt:
                 tables.append(table)
                 try:
                     col_query = 'SELECT * FROM %s LIMIT 0' % table
