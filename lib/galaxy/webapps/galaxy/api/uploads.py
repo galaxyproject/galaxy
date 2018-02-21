@@ -34,13 +34,13 @@ class UploadsAPIController(BaseAPIController):
             end = int(m.group(2))
             total = int(m.group(3))
         if session_id is None:
-            raise exceptions.MessageException("Requires a session id.");
+            raise exceptions.MessageException("Requires a session id.")
         target_file = "%s/%s" % (trans.app.config.nginx_upload_store, session_id)
         target_size = 0
         if os.path.exists(target_file):
             target_size = os.path.getsize(target_file)
         if start != target_size:
-            raise exceptions.MessageException("Chunk missing. Abort.");
+            raise exceptions.MessageException("Chunk missing. Abort.")
         source = payload.get("file")
         with open(target_file, "a") as f:
             f.write(source.file.read())
