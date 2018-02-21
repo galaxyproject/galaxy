@@ -1757,9 +1757,9 @@ class JobWrapper(object, HasResourceParameters):
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             if p.returncode != 0:
-                logging.error('external script failed.')
-                logging.error('stdout was: %s' %stdout)
-                logging.error('stderr was: %s' %stderr)
+                log.error('external script failed.')
+                log.error('stdout was: %s' % stdout)
+                log.error('stderr was: %s' % stderr)
             assert p.returncode == 0
 
     def change_ownership_for_run(self):
