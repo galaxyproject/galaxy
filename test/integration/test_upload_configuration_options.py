@@ -235,7 +235,11 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
         content = self.dataset_populator.get_history_dataset_content(self.history_id, dataset=dataset)
         assert content == content, content
 
-    def _write_ftp_file(self, dir_path, content, filename="test"):
+    def _get_user_ftp_path(self):
+        return os.path.join(self.ftp_dir(), TEST_USER)
+
+    def _write_ftp_file(self, content, filename="test"):
+        dir_path = self._get_user_ftp_path()
         self._ensure_directory(dir_path)
         path = os.path.join(dir_path, filename)
         with open(path, "w") as f:
@@ -251,8 +255,7 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
 
     def test_ftp_upload(self):
         content = "hello world\n"
-        dir_path = self._get_user_ftp_path()
-        ftp_path = self._write_ftp_file(dir_path, content)
+        ftp_path = self._write_ftp_file(content)
         ftp_files = self.dataset_populator.get_remote_files()
         assert len(ftp_files) == 1, ftp_files
         assert ftp_files[0]["path"] == "test"
@@ -264,9 +267,6 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
         )
         self._check_content(dataset, content)
         assert not os.path.exists(ftp_path)
-
-    def _get_user_ftp_path(self):
-        return os.path.join(self.ftp_dir(), TEST_USER)
 
 
 class ExplicitEmailAsIdentifierFtpUploadConfigurationTestCase(SimpleFtpUploadConfigurationTestCase):
@@ -305,8 +305,7 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
 
     def test_ftp_uploads_not_purged(self):
         content = "hello world\n"
-        dir_path = os.path.join(self.ftp_dir(), TEST_USER)
-        ftp_path = self._write_ftp_file(dir_path, content)
+        ftp_path = self._write_ftp_file(content)
         ftp_files = self.dataset_populator.get_remote_files()
         assert len(ftp_files) == 1
         assert ftp_files[0]["path"] == "test"
@@ -428,7 +427,7 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         shutil.copyfile(input_path, os.path.join(target_dir, test_data_path))
 
     def _write_user_ftp_file(self, path, content):
-        return self._write_ftp_file(os.path.join(self.ftp_dir(), TEST_USER), content, filename=path)
+        return self._write_ftp_file(content, filename=path)
 
 
 class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
