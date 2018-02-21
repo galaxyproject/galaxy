@@ -21,10 +21,6 @@
         xhr.setRequestHeader("Cache-Control", "no-cache");
         xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
         xhr.setRequestHeader("Accept", "application/json");
-        if (cnf.session_id && cnf.content_range) {
-            xhr.setRequestHeader("Session-ID", cnf.session_id);
-            xhr.setRequestHeader("Content-Range", `${cnf.content_range}`);
-        }
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
                 if (([502, 0]).indexOf(xhr.status) !== -1 && cnf.warning) {
@@ -108,12 +104,12 @@
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
             var form = new FormData();
-            form.append("file", slicer.bind(file)(start, end));
+            form.append("session_id", session_id);
+            form.append("session_start", start);
+            form.append("session_chunk", slicer.bind(file)(start, end));
             _uploadrequest({
                 url: Galaxy.root + "api/uploads",
                 data: form,
-                session_id: session_id,
-                content_range: `${start}-${end-1}/${file.size}`,
                 success: upload_response => {
                     var new_start = start + cnf.chunksize;
                     if (new_start < size ) {
