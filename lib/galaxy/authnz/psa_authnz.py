@@ -119,8 +119,6 @@ class PSAAuthnz(IdentityProvider):
     def _load_backend(self, strategy, redirect_uri):
         backends = self._get_helper('AUTHENTICATION_BACKENDS')
         backend = get_backend(backends, BACKENDS_NAME[self.config['provider']])
-        backend.EXTRA_DATA.append('id_token')
-        backend.EXTRA_DATA.append('refresh_token')
         return backend(strategy, redirect_uri)
 
     def _login_user(self, backend, user, social_user):
@@ -165,6 +163,7 @@ class Strategy(BaseStrategy):
         self.session = trans.session if trans.session else {}
         self.config = config
         self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
+        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
         super(Strategy, self).__init__(storage, tpl)
 
     def get_setting(self, name):
