@@ -22,7 +22,7 @@ class ConfigSerializer(base.ModelSerializer):
         super(ConfigSerializer, self).__init__(app)
 
         self.default_view = 'all'
-        self.add_view('all', self.serializers.keys())
+        self.add_view('all', list(self.serializers.keys()))
 
     def default_serializer(self, config, key):
         return getattr(config, key, None)
@@ -51,6 +51,7 @@ class ConfigSerializer(base.ModelSerializer):
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'biostar_url'                       : _defaults_to(''),
             'biostar_url_redirect'              : lambda *a, **c: self.url_for(controller='biostar', action='biostar_redirect', qualified=True),
+            'default_locale'                    : _defaults_to(self.app.config.default_locale),
 
             'enable_beta_ts_api_install'        : _defaults_to(False),
             'enable_communication_server'       : _defaults_to(False),

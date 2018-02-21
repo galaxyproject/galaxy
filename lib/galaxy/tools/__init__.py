@@ -11,9 +11,9 @@ import threading
 from cgi import FieldStorage
 from collections import OrderedDict
 from datetime import datetime
-from distutils.version import LooseVersion
 from xml.etree import ElementTree
 
+import packaging.version
 from mako.template import Template
 from paste import httpexceptions
 from six import string_types
@@ -28,6 +28,7 @@ from galaxy import (
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers import histories
 from galaxy.managers.jobs import JobSearch
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -163,9 +164,9 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "sam_to_bam": LooseVersion("1.1.3"),
-    "PEsortedSAM2readprofile": LooseVersion("1.1.1"),
-    "fetchflank": LooseVersion("1.0.1"),
+    "sam_to_bam": packaging.version.parse("1.1.3"),
+    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
+    "fetchflank": packaging.version.parse("1.0.1"),
 }
 
 
@@ -373,7 +374,7 @@ class DefaultToolState(object):
         return new_state
 
 
-class Tool(object, Dictifiable):
+class Tool(Dictifiable):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -440,11 +441,14 @@ class Tool(object, Dictifiable):
             raise e
         self.history_manager = histories.HistoryManager(app)
         self._view = views.DependencyResolversView(app)
-        self.job_search = JobSearch(app=self.app)
+        # The job search is only relevant in a galaxy context, and breaks
+        # loading tools into the toolshed for validation.
+        if self.app.name == 'galaxy':
+            self.job_search = JobSearch(app=self.app)
 
     @property
     def version_object(self):
-        return LooseVersion(self.version)
+        return packaging.version.parse(self.version)
 
     @property
     def sa_session(self):
@@ -583,8 +587,8 @@ class Tool(object, Dictifiable):
         if not self.id:
             raise Exception("Missing tool 'id' for tool at '%s'" % tool_source)
 
-        profile = LooseVersion(str(self.profile))
-        if profile >= LooseVersion("16.04") and LooseVersion(VERSION_MAJOR) < profile:
+        profile = packaging.version.parse(str(self.profile))
+        if profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
             raise Exception(message)
@@ -623,6 +627,23 @@ class Tool(object, Dictifiable):
 
         self.parse_command(tool_source)
         self.environment_variables = self.parse_environment_variables(tool_source)
+        self.tmp_directory_vars = tool_source.parse_tmp_directory_vars()
+
+        home_target = tool_source.parse_home_target()
+        tmp_target = tool_source.parse_tmp_target()
+        # If a tool explicitly sets one of these variables just respect that and turn off
+        # explicit processing by Galaxy.
+        for environment_variable in self.environment_variables:
+            if environment_variable.get("name") == "HOME":
+                home_target = None
+                continue
+            for tmp_directory_var in self.tmp_directory_vars:
+                if environment_variable.get("name") == tmp_directory_var:
+                    tmp_target = None
+                    break
+        self.home_target = home_target
+        self.tmp_target = tmp_target
+        self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -2313,7 +2334,7 @@ class DatabaseOperationTool(Tool):
 class UnzipCollectionTool(DatabaseOperationTool):
     tool_type = 'unzip_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
         has_collection = incoming["input"]
         if hasattr(has_collection, "element_type"):
             # It is a DCE
@@ -2324,10 +2345,12 @@ class UnzipCollectionTool(DatabaseOperationTool):
 
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
-        forward, reverse = forward_o.copy(), reverse_o.copy()
+        forward, reverse = forward_o.copy(copy_tags=tags), reverse_o.copy(copy_tags=tags)
+
         # TODO: rename...
         history.add_dataset(forward, set_hid=True)
         history.add_dataset(reverse, set_hid=True)
+
         out_data["forward"] = forward
         out_data["reverse"] = reverse
 
@@ -2335,7 +2358,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
 class ZipCollectionTool(DatabaseOperationTool):
     tool_type = 'zip_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
@@ -2354,7 +2377,7 @@ class ZipCollectionTool(DatabaseOperationTool):
 class MergeCollectionTool(DatabaseOperationTool):
     tool_type = 'merge_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         input_lists = []
 
         for incoming_repeat in incoming["inputs"]:
@@ -2437,7 +2460,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
 
         assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
@@ -2474,7 +2497,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
 class FlattenTool(DatabaseOperationTool):
     tool_type = 'flatten_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = odict()
@@ -2499,7 +2522,7 @@ class FlattenTool(DatabaseOperationTool):
 class SortTool(DatabaseOperationTool):
     tool_type = 'sort_collection'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
         new_elements = odict()
@@ -2537,7 +2560,7 @@ class SortTool(DatabaseOperationTool):
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = 'relabel_from_file'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
@@ -2583,10 +2606,69 @@ class RelabelFromFileTool(DatabaseOperationTool):
         )
 
 
+class TagFromFileTool(DatabaseOperationTool):
+    tool_type = 'tag_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        how = incoming['how']
+        new_tags_dataset_assoc = incoming["tags"]
+        new_elements = odict()
+        tags_manager = GalaxyTagManager(trans.app.model.context)
+
+        def add_copied_value_to_new_elements(new_tags_dict, dce):
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_value = dce.element_object.copy()
+                # copy should never be visible, since part of a collection
+                copied_value.visble = False
+                history.add_dataset(copied_value, copied_value, set_hid=False)
+                new_tags = new_tags_dict.get(dce.element_identifier)
+                if new_tags:
+                    if how in ('add', 'remove') and dce.element_object.tags:
+                        # We need get the original tags and update them with the new tags
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(dce.element_object.tags).split(',') if tag)
+                        if how == 'add':
+                            old_tags.update(set(new_tags))
+                        elif how == 'remove':
+                            old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags)
+            else:
+                # We have a collection, and we copy the elements so that we don't manipulate the original tags
+                copied_value = dce.element_object.copy(element_destination=history)
+                for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
+                    # TODO: This should be eliminated, but collections created by the collection builder
+                    # don't set `visible` to `False` if you don't hide the original elements.
+                    new_element.element_object.visible = False
+                    new_tags = new_tags_dict.get(new_element.element_identifier)
+                    if how in ('add', 'remove'):
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(old_element.element_object.tags).split(',') if tag)
+                        if new_tags:
+                            if how == 'add':
+                                old_tags.update(set(new_tags))
+                            elif how == 'remove':
+                                old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags)
+            new_elements[dce.element_identifier] = copied_value
+
+        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags = open(new_tags_path, "r").readlines(1024 * 1000000)
+        # We have a tabular file, where the first column is an existing element identifier,
+        # and the remaining columns represent new tags.
+        source_new_tags = (line.strip().split('\t') for line in new_tags)
+        new_tags_dict = {item[0]: item[1:] for item in source_new_tags}
+        for i, dce in enumerate(hdca.collection.elements):
+            add_copied_value_to_new_elements(new_tags_dict, dce)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
 class FilterFromFileTool(DatabaseOperationTool):
     tool_type = 'filter_from_file'
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history):
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]

@@ -9,7 +9,7 @@ import galaxy.config
 from tool_shed.galaxy_install import installed_repository_manager, tool_migration_manager
 
 
-class MigrateToolsApplication(object, galaxy.config.ConfiguresGalaxyMixin):
+class MigrateToolsApplication(galaxy.config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a basic Galaxy Universe application in order to initiate the Install Manager"""
 
     def __init__(self, tools_migration_config):

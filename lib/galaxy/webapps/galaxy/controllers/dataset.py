@@ -936,17 +936,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # Invalid HDA
             assert hda, 'Invalid history dataset ID'
 
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
                 current_history_id = trans.galaxy_session.current_history_id
-                assert topmost_parent.history.id == current_history_id, 'Data does not belong to current user'
+                assert hda.history.id == current_history_id, 'Data does not belong to current user'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
-                assert topmost_parent.history.user == user, 'Data does not belong to current user'
+                assert hda.history.user == user, 'Data does not belong to current user'
 
             # Ensure HDA is deleted
             hda.deleted = True

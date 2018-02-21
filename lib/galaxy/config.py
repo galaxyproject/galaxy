@@ -177,6 +177,9 @@ class Configuration(object):
         self.database_template = kwargs.get("database_template", None)
         self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
+        self.thread_local_log = None
+        if string_as_bool(kwargs.get("enable_per_request_sql_debugging", "False")):
+            self.thread_local_log = threading.local()
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
@@ -188,10 +191,12 @@ class Configuration(object):
 
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
+        self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Galaxy OpenID settings
@@ -288,6 +293,7 @@ class Configuration(object):
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
+        self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
         self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
@@ -432,6 +438,7 @@ class Configuration(object):
         self.user_library_import_dir = kwargs.get('user_library_import_dir', None)
         self.user_library_import_symlink_whitelist = listify(kwargs.get('user_library_import_symlink_whitelist', []), do_strip=True)
         self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
+        self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
@@ -485,7 +492,7 @@ class Configuration(object):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            involucro_path = os.path.join(tool_dependency_dir, "involucro")
+            involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
 
@@ -551,8 +558,9 @@ class Configuration(object):
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
             self.server_name = kwargs.get("server_name")
-        # The application stack code may manipulate the server name
-        self.base_server_name = self.server_name
+        # The application stack code may manipulate the server name. It also needs to be accessible via the get() method
+        # for galaxy.util.facts()
+        self.config_dict['base_server_name'] = self.base_server_name = self.server_name
         # Store all configured server names for the message queue routing
         self.server_names = []
         for section in global_conf_parser.sections():
@@ -601,6 +609,7 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
             raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
@@ -898,7 +907,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin:
+class ConfiguresGalaxyMixin(object):
     """ Shared code for configuring Galaxy-like app objects.
     """
 
@@ -1044,7 +1053,8 @@ class ConfiguresGalaxyMixin:
                                   object_store=self.object_store,
                                   trace_logger=getattr(self, "trace_logger", None),
                                   use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
-                                  slow_query_log_threshold=self.config.slow_query_log_threshold)
+                                  slow_query_log_threshold=self.config.slow_query_log_threshold,
+                                  thread_local_log=self.config.thread_local_log)
 
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")

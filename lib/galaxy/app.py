@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 app = None
 
 
-class UniverseApplication(object, config.ConfiguresGalaxyMixin):
+class UniverseApplication(config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs):

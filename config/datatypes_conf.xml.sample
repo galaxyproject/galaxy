@@ -16,6 +16,11 @@
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
+    <datatype extension="bam_native" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+      <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      <converter file="bam_native_to_bam_converter.xml" target_datatype="bam"/>
+    </datatype>
+    <datatype extension="probam" type="galaxy.datatypes.binary:ProBam" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
         <converter file="cram_to_bam_converter.xml" target_datatype="bam"/>
     </datatype>
@@ -36,6 +41,7 @@
     <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6" display_in_upload="true">
     </datatype>
     <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" display_in_upload="true"/>
+    <datatype extension="probed" type="galaxy.datatypes.interval:ProBed" display_in_upload="true"/>
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount" />
     </datatype>
@@ -74,6 +80,9 @@
       <converter file="fasta_to_len.xml" target_datatype="len"/>
       <converter file="fasta_to_fai.xml" target_datatype="fai"/>
       <display file="igv/genome_fasta.xml" inherit="true"/>
+    </datatype>
+    <datatype extension="fasta.gz" type="galaxy.datatypes.sequence:FastaGz" display_in_upload="true">
+        <converter file="fastagz_to_fasta.xml" target_datatype="fasta"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
@@ -284,6 +293,7 @@
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
+        <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
         <converter file="sam_to_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
@@ -480,7 +490,7 @@
     <datatype extension="ncbi" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexus" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexusnon" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="phylip" type="galaxy.datatypes.data:Text" subclass="true"/>
+    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" subclass="true" display_in_upload="true"/>
     <datatype extension="phylipnon" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="pir" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="staden" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -670,6 +680,9 @@
     <datatype extension="allegro_ihaplo" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_descent" type="galaxy.datatypes.tabular:Tabular" />
     <datatype extension="allegro_fparam" type="galaxy.datatypes.genetics:AllegroLOD" />
+    <!-- IDEAS datatypes -->
+    <datatype extension="ideaspre" type="galaxy.datatypes.genetics:IdeasPre" display_in_upload="true"/>
+    <!-- End IDEAS datatypes -->
   </registration>
   <sniffers>
     <!--
@@ -756,7 +769,9 @@
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
+    <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer type="galaxy.datatypes.sequence:FastaGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSangerGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSangerBz2"/>

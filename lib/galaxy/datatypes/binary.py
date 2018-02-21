@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections import OrderedDict
 from json import dumps
 
 import h5py
@@ -187,14 +188,11 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-@dataproviders.decorators.has_dataproviders
-class Bam(Binary):
-    """Class describing a BAM binary file"""
+class BamNative(Binary):
+    """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
-    file_ext = "bam"
-    track_type = "ReadTrack"
-    data_sources = {"data": "bai", "index": "bigwig"}
+    file_ext = "bam_native"
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -216,6 +214,124 @@ class Bam(Binary):
         :param output_file: Write merged bam file to this location
         """
         pysam.merge('-O', 'BAM', output_file, *split_files)
+
+    def init_meta(self, dataset, copy_from=None):
+        Binary.init_meta(self, dataset, copy_from=copy_from)
+
+    def sniff(self, filename):
+        # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
+        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
+        try:
+            header = gzip.open(filename).read(4)
+            if header == b'BAM\1':
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        try:
+            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+            dataset.metadata.reference_names = list(bam_file.references)
+            dataset.metadata.reference_lengths = list(bam_file.lengths)
+            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
+            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+        except Exception:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
+            pass
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary bam alignments file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
+
+    def to_archive(self, trans, dataset, name=""):
+        rel_paths = []
+        file_paths = []
+        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.file_name)
+        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
+        file_paths.append(dataset.metadata.bam_index.file_name)
+        return zip(file_paths, rel_paths)
+
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+        if not offset == -1:
+            try:
+                with pysam.AlignmentFile(dataset.file_name, "rb") as bamfile:
+                    ck_size = 300  # 300 lines
+                    ck_data = ""
+                    header_line_count = 0
+                    if offset == 0:
+                        ck_data = bamfile.text.replace('\t', ' ')
+                        header_line_count = bamfile.text.count('\n')
+                    else:
+                        bamfile.seek(offset)
+                    for line_number, alignment in enumerate(bamfile) :
+                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
+                        # FIXME: Can be problematic if bam has million lines of header
+                        offset = bamfile.tell()
+                        if (line_number + header_line_count) > ck_size:
+                            break
+                        else:
+                            bamline = alignment.tostring(bamfile)
+                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
+                            # Below code will remove spaces between each tag.
+                            bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
+                            ck_data = "%s\n%s" % (ck_data, bamline_modified)
+            except Exception as e:
+                offset = -1
+                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+        else:
+            ck_data = ''
+            offset = -1
+        return dumps({'ck_data': util.unicodify(ck_data),
+                      'offset': offset})
+
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        preview = util.string_as_bool(preview)
+        if offset is not None:
+            return self.get_chunk(trans, dataset, offset, ck_size)
+        elif to_ext or not preview:
+            return super(BamNative, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+        else:
+            column_names = dataset.metadata.column_names
+            if not column_names:
+                column_names = []
+            column_types = dataset.metadata.column_types
+            if not column_types:
+                column_types = []
+            column_number = dataset.metadata.columns
+            if column_number is None:
+                column_number = 1
+            return trans.fill_template("/dataset/tabular_chunked.mako",
+                                       dataset=dataset,
+                                       chunk=self.get_chunk(trans, dataset, 0),
+                                       column_number=column_number,
+                                       column_names=column_names,
+                                       column_types=column_types)
+
+
+@dataproviders.decorators.has_dataproviders
+class Bam(BamNative):
+    """Class describing a BAM binary file"""
+    edam_format = "format_2572"
+    edam_data = "data_0863"
+    file_ext = "bam"
+    track_type = "ReadTrack"
+    data_sources = {"data": "bai", "index": "bigwig"}
 
     def dataset_content_needs_grooming(self, file_name):
         """
@@ -266,121 +382,17 @@ class Bam(Binary):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def init_meta(self, dataset, copy_from=None):
-        Binary.init_meta(self, dataset, copy_from=copy_from)
-
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
+        super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         index_file = dataset.metadata.bam_index
         if not index_file:
             index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
         pysam.index(dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
-        # Now use pysam with BAI index to determine additional metadata
-        try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
-        except Exception:
-            # Per Dan, don't log here because doing so will cause datasets that
-            # fail metadata to end in the error state
-            pass
 
-    def sniff(self, filename):
-        # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
-        # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
-        try:
-            header = gzip.open(filename).read(4)
-            if header == b'BAM\1':
-                return True
-            return False
-        except Exception:
-            return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Binary bam alignments file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Binary bam alignments file (%s)" % (nice_size(dataset.get_size()))
-
-    def to_archive(self, trans, dataset, name=""):
-        rel_paths = []
-        file_paths = []
-        rel_paths.append("%s.%s" % (name or dataset.file_name, dataset.extension))
-        file_paths.append(dataset.file_name)
-        rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
-        file_paths.append(dataset.metadata.bam_index.file_name)
-        return zip(file_paths, rel_paths)
-
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        index_file = dataset.metadata.bam_index
-        if not offset == -1:
-            try:
-                with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
-                    ck_size = 300  # 300 lines
-                    ck_data = ""
-                    header_line_count = 0
-                    if offset == 0:
-                        ck_data = bamfile.text.replace('\t', ' ')
-                        header_line_count = bamfile.text.count('\n')
-                    else:
-                        bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile) :
-                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
-                        # FIXME: Can be problematic if bam has million lines of header
-                        offset = bamfile.tell()
-                        if (line_number + header_line_count) > ck_size:
-                            break
-                        else:
-                            bamline = alignment.tostring(bamfile)
-                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                            # Below code will remove spaces between each tag.
-                            bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
-                            ck_data = "%s\n%s" % (ck_data, bamline_modified)
-            except Exception as e:
-                offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e.message
-        else:
-            ck_data = ''
-            offset = -1
-        return dumps({'ck_data': util.unicodify(ck_data),
-                      'offset': offset})
-
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
-        preview = util.string_as_bool(preview)
-        if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
-        elif to_ext or not preview:
-            return super(Bam, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
-        else:
-            column_names = dataset.metadata.column_names
-            if not column_names:
-                column_names = []
-            column_types = dataset.metadata.column_types
-            if not column_types:
-                column_types = []
-            column_number = dataset.metadata.columns
-            if column_number is None:
-                column_number = 1
-            return trans.fill_template("/dataset/tabular_chunked.mako",
-                                       dataset=dataset,
-                                       chunk=self.get_chunk(trans, dataset, 0),
-                                       column_number=column_number,
-                                       column_names=column_names,
-                                       column_types=column_types)
+    def sniff(self, file_name):
+        return super(Bam, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -463,6 +475,13 @@ class Bam(Binary):
         """Generic samtools interface - all options available through settings."""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
+
+
+class ProBam(Bam):
+    """Class describing a BAM binary file - extended for proteomics data"""
+    edam_format = "format_3826"
+    edam_data = "data_0863"
+    file_ext = "probam"
 
 
 class CRAM(Binary):

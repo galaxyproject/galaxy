@@ -47,7 +47,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             controller = trans.webapp.api_controllers.get( 'configuration', None )
             if controller:
                 config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
-        except Exception, exc:
+        except Exception as exc:
             pass
         return config_dict
     %>
@@ -89,7 +89,7 @@ ${ h.dumps( get_config_dict() )}
             try:
                 usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
                 percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
-            except AssertionError, assertion:
+            except AssertionError as assertion:
                 # no history for quota_agent.get_usage assertion
                 pass
             return {
@@ -98,7 +98,7 @@ ${ h.dumps( get_config_dict() )}
                 'quota_percent'         : percent
             }
 
-        except Exception, exc:
+        except Exception as exc:
             pass
             #TODO: no logging available?
             #log.exception( exc )

@@ -31,6 +31,7 @@
 @import "jstree.less";
 @import "tour.less";
 @import "flex.less";
+@import "charts.less";
 
 // Mixins
 .unselectable {
@@ -1177,8 +1178,15 @@ ul.manage-table-actions li {
 }
 
 .state-color-deleted {
-    border-color: @state-deleted-border;
-    background: @state-deleted-bg;
+    border-color: darken(@state-default-border, 30%);
+    border-style: dotted;
+    background: darken(@state-default-bg, 30%);
+}
+
+.state-color-hidden {
+    border-color: @state-default-border;
+    border-style: dotted;
+    background: @state-default-bg;
 }
 
 .state-fg-new {
@@ -1797,7 +1805,7 @@ div.toolTitleNoSection
     display: none;
 }
 
-// communication channel bootstrap modal 
+// communication channel bootstrap modal
 .chat-modal {
     overflow: hidden;
 }
@@ -1812,7 +1820,7 @@ div.toolTitleNoSection
 }
 
 .close-modal {
-    float: right; 
+    float: right;
     cursor: pointer;
 }
 
@@ -1885,6 +1893,19 @@ div.toolTitleNoSection
 .hidden_description_layer.dragover {
   visibility: visible;
   opacity: 1;
+}
+
+/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
+.tags-display {
+    .list-item .vertical-spacing;
+    .select2-container {
+        max-height: 80px;
+        overflow: auto;
+        min-width: 0px;
+        .select2-choices {
+            border-radius: 3px;
+        }
+    }
 }
 
 /* For Vue */

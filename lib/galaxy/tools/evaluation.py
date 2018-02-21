@@ -521,6 +521,15 @@ class ToolEvaluator(object):
             environment_variable["raw"] = True
             environment_variables.append(environment_variable)
 
+        home_dir = self.compute_environment.home_directory()
+        tmp_dir = self.compute_environment.tmp_directory()
+        if home_dir:
+            environment_variable = dict(name="HOME", value='"%s"' % home_dir, raw=True)
+            environment_variables.append(environment_variable)
+        if tmp_dir:
+            for tmp_directory_var in self.tool.tmp_directory_vars:
+                environment_variable = dict(name=tmp_directory_var, value='"%s"' % tmp_dir, raw=True)
+                environment_variables.append(environment_variable)
         self.environment_variables = environment_variables
         return environment_variables
 

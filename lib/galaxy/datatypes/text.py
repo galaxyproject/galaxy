@@ -259,7 +259,7 @@ class Biom1(Json):
 class Obo(Text):
     """
         OBO file format description
-        http://www.geneontology.org/GO.format.obo-1_2.shtml
+        https://owlcollab.github.io/oboformat/doc/GO.format.obo-1_2.html
     """
     edam_data = "data_0582"
     edam_format = "format_2549"

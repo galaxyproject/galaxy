@@ -36,7 +36,7 @@ from .tags import tool_tag_manager
 log = logging.getLogger(__name__)
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
+class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
@@ -58,6 +58,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         # dictionary can instead hold multiple tools with different versions.
         self._tool_versions_by_id = {}
         self._workflows_by_id = {}
+        # Cache for toolbox to_dict calls. Invalidates on toolbox reload.
+        self._cached_to_dict_panel = None
+        self._cached_to_dict_all = None
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
@@ -926,29 +929,50 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
 
     def to_dict(self, trans, in_panel=True, **kwds):
         """
-        to_dict toolbox.
+        Create a dictionary representation of the toolbox.
+        Uses primitive cache for Galaxies without filters.
         """
+        filters_enabled = self.check_for_filters(trans)
         if in_panel:
-            panel_elts = list(self.tool_panel_contents(trans, **kwds))
-            # Produce panel.
-            rval = []
-            kwargs = dict(
-                trans=trans,
-                link_details=True
-            )
-            for elt in panel_elts:
-                rval.append(elt.to_dict(**kwargs))
+            if not filters_enabled and self._cached_to_dict_panel:
+                return self._cached_to_dict_panel
+            else:
+                panel_elts = list(self.tool_panel_contents(trans, **kwds))
+                rval = []
+                kwargs = dict(
+                    trans=trans,
+                    link_details=True
+                )
+                for elt in panel_elts:
+                    rval.append(elt.to_dict(**kwargs))
+                if not filters_enabled:
+                    self._cached_to_dict_panel = rval
         else:
-            filter_method = self._build_filter_method(trans)
-            tools = []
-            for id, tool in self._tools_by_id.items():
-                tool = filter_method(tool, panel_item_types.TOOL)
-                if not tool:
-                    continue
-                tools.append(tool.to_dict(trans, link_details=True))
-            rval = tools
-
+            if not filters_enabled and self._cached_to_dict_all:
+                return self._cached_to_dict_all
+            else:
+                filter_method = self._build_filter_method(trans)
+                tools = []
+                for id, tool in self._tools_by_id.items():
+                    tool = filter_method(tool, panel_item_types.TOOL)
+                    if not tool:
+                        continue
+                    tools.append(tool.to_dict(trans, link_details=True))
+                rval = tools
+                if not filters_enabled:
+                    self._cached_to_dict_all = rval
         return rval
+
+    def check_for_filters(self, trans):
+        filters_enabled = getattr(self.app.config, "tool_filters", False) or \
+            getattr(self.app.config, "tool_label_filters", False) or \
+            getattr(self.app.config, "tool_section_filters", False)
+        if not filters_enabled and trans.user:
+            for name, value in trans.user.preferences.items():
+                if name in ['toolbox_tool_filters', 'toolbox_section_filters', 'toolbox_label_filters']:
+                    filters_enabled = True
+                    break
+        return filters_enabled
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
         """ If tool with same lineage already in panel (or section) - find
