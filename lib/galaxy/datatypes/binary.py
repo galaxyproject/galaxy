@@ -298,7 +298,7 @@ class BamNative(Binary):
                         offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % str(e)
+                ck_data = "Could not display BAM file, error was:\n%s" % e
         else:
             ck_data = ''
             offset = -1
