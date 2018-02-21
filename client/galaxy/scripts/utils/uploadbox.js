@@ -131,7 +131,10 @@
                                 cnf.success(tool_response);
                             },
                             error: (tool_response) => {
-                                cnf.error(tool_response || cnf.error_tool);
+                                var err_msg = tool_response &&
+                                              tool_response.responseJSON &&
+                                              tool_response.responseJSON.err_msg;
+                                cnf.error(err_msg || cnf.error_tool);
                             }
                         });
                     }
