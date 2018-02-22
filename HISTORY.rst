@@ -9,7 +9,8 @@ History
 17.9.11.dev0
 ---------------------
 
-    
+* Update to the latest Galaxy dev just prior to the branch of 18.01.
+* Python 3 fixes.
 
 ---------------------
 17.9.10 (2017-11-23)
