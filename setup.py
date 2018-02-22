@@ -53,6 +53,8 @@ PACKAGES = [
     'galaxy.tools.verify',
     'galaxy.tools.verify.asserts',
     'galaxy.util',  # Incomplete
+    'galaxy.util.logging',
+    'galaxy.util.path',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
