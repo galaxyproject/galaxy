@@ -91,10 +91,13 @@ def add_file(dataset, registry, json_file, output_path):
     # Older in_place check for upload jobs created before 18.01, TODO remove in 19.XX. xref #5206
     run_as_real_user = dataset.get('run_as_real_user', False) or dataset.get("in_place", False)
 
-    # purge_source is False if this is an FTP import and ftp_upload_purge has been overridden to False in Galaxy's config.
-    # This prevents us from deleting the user supplied paths in this case. We disable this behavior
-    # if running as the real user so the file can be cleaned up by Galaxy.
-    purge_source = dataset.get('purge_source', True) and not run_as_real_user
+    # purge_source defaults to True unless this is an FTP import and
+    # ftp_upload_purge has been overridden to False in Galaxy's config.
+    # We set purge_source to False if:
+    # - the job does not have write access to the file, e.g. when running as the
+    #   real user
+    # - the files are uploaded from external paths.
+    purge_source = dataset.get('purge_source', True) and not run_as_real_user and dataset.type not in ('server_dir', 'path_paste')
 
     # in_place is True unless we are running as a real user or importing external paths (i.e.
     # this is a real upload and not a path paste or ftp import).
