@@ -16,13 +16,17 @@
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
         <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
-        <converter file="sam_to_bam.xml" target_datatype="bam"/>
+        <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
+        <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bam" />
+    <datatype extension="qname_input_sorted.bam" type="galaxy.datatypes.binary:BamInputSorted" mimetype="application/octet-stream" display_in_upload="false" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted based on the aligner output." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM"/>
+    <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM"/>
     <datatype extension="bam_native" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
-      <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
-      <converter file="bam_native_to_bam_converter.xml" target_datatype="bam"/>
+        <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+        <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
+        <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bcf' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bcf" />
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json"/>

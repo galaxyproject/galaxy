@@ -1,5 +1,4 @@
-<tool id="CONVERTER_bam_native_to_bam" name="Convert BAM native to BAM" version="1.0.0" hidden="true" profile="18.01">
-    <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+<tool id="CONVERTER_bam_to_coodinate_sorted_bam" name="Convert BAM to coordinate-sorted BAM" version="1.0.0" hidden="true" profile="18.01">
     <requirements>
         <requirement type="package" version="1.6">samtools</requirement>
     </requirements>
@@ -13,7 +12,7 @@
     ]]>
     </command>
     <inputs>
-        <param format="bam_native" name="input" type="data" label="Choose a BAM native file"/>
+        <param format="sam,bam_native,qname_sorted.bam" name="input" type="data" label="Choose a BAM native or queryname sortedfile"/>
     </inputs>
     <outputs>
         <data format="bam" name="output"/>
