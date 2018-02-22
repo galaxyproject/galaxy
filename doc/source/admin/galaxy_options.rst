@@ -126,6 +126,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_per_request_sql_debugging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable's a per request sql debugging option. If this is set to
+    true, append ?sql_debug=1 to web request URLs to enable detailed
+    logging on the backend of SQL queries generated during that
+    request. This is useful for debugging slow endpoints during
+    development.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``install_database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

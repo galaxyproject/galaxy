@@ -2513,7 +2513,7 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0):
+        slow_query_log_threshold=0, thread_local_log=None):
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2524,7 +2524,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
 
     # Connect the metadata to the database.
     metadata.bind = engine
@@ -2545,4 +2545,5 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     result.create_tables = create_tables
     # load local galaxy security policy
     result.security_agent = GalaxyRBACAgent(result)
+    result.thread_local_log = thread_local_log
     return result
