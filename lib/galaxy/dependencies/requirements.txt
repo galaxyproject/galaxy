@@ -35,6 +35,8 @@ Parsley
 six
 Whoosh
 galaxy_sequence_utils
+h5py
+packaging
 
 # Cheetah and dependencies
 Cheetah

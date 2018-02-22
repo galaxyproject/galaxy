@@ -3,8 +3,8 @@ from __future__ import print_function
 
 import collections
 import hashlib
-from distutils.version import LooseVersion
 
+import packaging.version
 try:
     import requests
 except ImportError:
@@ -69,7 +69,7 @@ def split_tag(tag):
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=LooseVersion, reverse=True)
+    return sorted(elements, key=packaging.version.parse, reverse=True)
 
 
 Target = collections.namedtuple("Target", ["package_name", "version", "build"])

@@ -11,9 +11,9 @@ import threading
 from cgi import FieldStorage
 from collections import OrderedDict
 from datetime import datetime
-from distutils.version import LooseVersion
 from xml.etree import ElementTree
 
+import packaging.version
 from mako.template import Template
 from paste import httpexceptions
 from six import string_types
@@ -163,9 +163,9 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "sam_to_bam": LooseVersion("1.1.3"),
-    "PEsortedSAM2readprofile": LooseVersion("1.1.1"),
-    "fetchflank": LooseVersion("1.0.1"),
+    "sam_to_bam": packaging.version.parse("1.1.3"),
+    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
+    "fetchflank": packaging.version.parse("1.0.1"),
 }
 
 
@@ -447,7 +447,7 @@ class Tool(object, Dictifiable):
 
     @property
     def version_object(self):
-        return LooseVersion(self.version)
+        return packaging.version.parse(self.version)
 
     @property
     def sa_session(self):
@@ -586,8 +586,8 @@ class Tool(object, Dictifiable):
         if not self.id:
             raise Exception("Missing tool 'id' for tool at '%s'" % tool_source)
 
-        profile = LooseVersion(str(self.profile))
-        if profile >= LooseVersion("16.04") and LooseVersion(VERSION_MAJOR) < profile:
+        profile = packaging.version.parse(str(self.profile))
+        if profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
             raise Exception(message)
