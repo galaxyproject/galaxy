@@ -310,7 +310,14 @@ class JobContext(object):
 
         sa_session.flush()
         # Move data from temp location to dataset location
-        app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+
+	# Maintain symlink if file represents a symlink
+        if os.path.islink(filename):
+            preserve_symlinks=True
+        else:
+            preserve_symlinks=False
+
+        app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True, preserve_symlinks=preserve_symlinks)
         primary_data.set_size()
         # If match specified a name use otherwise generate one from
         # designation.
