@@ -30,6 +30,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
@@ -114,12 +115,17 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
-    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
-    pkg_list = set([x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')])
-    for pkg in pkg_list:
+    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
+    pkg_list = check_output(cmd, shell=True)
+    ret = list()
+    for pkg in pkg_list.strip().split('\n'):
         if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
-            yield (get_pkg_name(args, pkg), get_tests(args, pkg))
+            ret.append((get_pkg_name(args, pkg), get_tests(args, pkg)))
+    return ret
+
+
+def check_output(cmd, shell=True):
+    return subprocess.check_output(cmd, shell=shell)
 
 
 def conda_versions(pkg_name, file_name):
@@ -235,7 +241,8 @@ def mull_targets(
             with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
-        ret = involucro_context.exec_command(involucro_args)
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
         if singularity:
             # we can not remove this folder as it contains the image wich is owned by root
             pass
