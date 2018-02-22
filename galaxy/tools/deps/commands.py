@@ -3,9 +3,13 @@ import os
 import subprocess
 import sys as _sys
 
+import six
 from six.moves import shlex_quote
 
-from galaxy.util import which
+from galaxy.util import (
+    unicodify,
+    which
+)
 
 STDOUT_INDICATOR = "-"
 
@@ -30,9 +34,15 @@ def redirect_aware_commmunicate(p, sys=_sys):
     out, err = p.communicate()
     if redirecting_io(sys=sys):
         if out:
+            # We don't unicodify in Python2 because sys.stdout may be a
+            # cStringIO.StringIO object, which does not accept Unicode strings
+            if not six.PY2:
+                out = unicodify(out)
             sys.stdout.write(out)
             out = None
         if err:
+            if not six.PY2:
+                err = unicodify(err)
             sys.stderr.write(err)
             err = None
     return out, err
