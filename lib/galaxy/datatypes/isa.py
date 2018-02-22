@@ -19,6 +19,8 @@ import logging
 import tarfile
 import tempfile
 import csv
+# Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
+logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
 from isatools import isatab
 from isatools import isajson
 from json import dumps
