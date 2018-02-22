@@ -51,6 +51,7 @@ class UnivaJobRunner( DRMAAJobRunner ):
             time_granted, mem_granted = _parse_native_specs( ajs.job_id, native_spec )
             time_wasted = extinfo["time_wasted"]
             mem_wasted = extinfo["memory_wasted"]
+            slots = extinfo["slots"]
 
             # check if the output contains indicators for a memory violation these are
             # 1 general programming language dependent messages 
@@ -77,7 +78,7 @@ class UnivaJobRunner( DRMAAJobRunner ):
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
-            elif memviolation or mem_wasted > mem_granted:
+            elif memviolation or mem_wasted > mem_granted * slots:
                 log.info( '({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted) )
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
@@ -256,6 +257,8 @@ class UnivaJobRunner( DRMAAJobRunner ):
 
         extinfo["time_wasted"] = _parse_time( qacct["wallclock"] )
         extinfo["memory_wasted"] = util.size_to_bytes( qacct["maxvmem"] )
+        extinfo["slots"] = int( qacct["slots"] )
+        
 #         extinfo["memory_wasted"] = _parse_mem( qacct["maxvmem"] )
 
 #         log.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
@@ -408,6 +411,8 @@ class UnivaJobRunner( DRMAAJobRunner ):
         # get the used time and memory
         extinfo["time_wasted"] = float(rv.resourceUsage['wallclock'])
         extinfo["memory_wasted"] = float(rv.resourceUsage['maxvmem'])
+        #TODO unsure if the resourceUsage key is really slots -> test in submit as galaxy user setting
+        extinfo["slots"] = float(rv.resourceUsage['slots'])
 
 #         log.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
         if rv.wasAborted:
