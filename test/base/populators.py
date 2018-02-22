@@ -536,7 +536,7 @@ class LibraryPopulator(object):
         def show():
             return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
 
-        wait_on_state(show, timeout=DEFAULT_TIMEOUT)
+        wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
     def raw_library_contents_create(self, library_id, payload, files={}):
