@@ -11,9 +11,17 @@ STDOUT_INDICATOR = "-"
 
 
 def redirecting_io(sys=_sys):
-    """Predicate to determine if we are redicting I/O in process."""
+    """Predicate to determine if we are redicting stdout in process."""
     assert sys is not None
-    return not hasattr(sys.stdout, "fileno")
+    try:
+        # Need to explicitly call fileno() because sys.stdout could be a
+        # io.StringIO object, which has a fileno() method but only raises an
+        # io.UnsupportedOperation exception
+        sys.stdout.fileno()
+    except Exception:
+        return True
+    else:
+        return False
 
 
 def redirect_aware_commmunicate(p, sys=_sys):
