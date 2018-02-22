@@ -104,8 +104,8 @@ if VAR.SINGULARITY ~= '' then
         .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
         -- for small containers (less than 7MB), double the size otherwise, add a little bit more as half the conda size
-        .run("size=$(du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '7' ]; then echo $(($size*2)); else  echo $(($size+$size*7/10)); fi")
-        .run("singularity create --size `size=$(du -sc /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '7' ]; then echo $(($size*2)); else  echo $(($size+$size*7/10)); fi` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
+        .run("size=$(du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '10' ]; then echo 20; else  echo $(($size+$size*7/10)); fi")
+        .run("singularity create --size `size=$(du -sc /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '10' ]; then echo 20; else  echo $(($size+$size*7/10)); fi` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
         .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
         .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
