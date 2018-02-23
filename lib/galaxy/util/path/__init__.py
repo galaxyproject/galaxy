@@ -36,11 +36,11 @@ log = logging.getLogger(__name__)
 def path_under_whitelist_dir(path, whitelist=None):
     """Ensure that a the absolute location of the path (after following symlink) is on the whitelist of acceptable locations
 
-    :type path:   string
-    :param path:    a path to check
+    :type path:         string
+    :param path:        a path to check
     :type whitelist:    comma separated list of strings
     :param whitelist:   list of acceptable locations
-    :return: ``True`` if ``path`` resolves to a whitelisted location
+    :return:            ``True`` if ``path`` resolves to a whitelisted location
     """
 
     return __on_whitelist(path, whitelist=None)

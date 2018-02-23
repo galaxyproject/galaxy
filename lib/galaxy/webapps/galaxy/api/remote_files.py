@@ -157,11 +157,11 @@ class RemoteFilesAPIController(BaseAPIController):
         """
         Checks to see if the directory is a link, if it is, confirms that the target is on the whitelist
 
-        :param directory: the directory to check for safety
-        :type directory: string
-        :param whitelist: a list of acceptable paths to import from
-        :type whitelist: comma separated list of strings
-        :return: ``True`` if the path is safe to import from, ``False`` otherwise
+        :param directory:   the directory to check for safety
+        :type directory:    string
+        :param whitelist:   a list of acceptable paths to import from
+        :type whitelist:    comma separated list of strings
+        :return:            ``True`` if the path is safe to import from, ``False`` otherwise
         """
         if os.path.islink(directory):
             return path_under_whitelist_dir(directory, whitelist)
