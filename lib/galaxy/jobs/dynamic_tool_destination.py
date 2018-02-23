@@ -39,6 +39,12 @@ A correction for another word.
 """
 max_edit_dist = 2
 
+"""
+List of valid categories that can be expected in the configuration.
+"""
+valid_categories = ['verbose', 'tools', 'default_destination',
+                  'users', 'default_priority']
+
 
 class MalformedYMLException(Exception):
     pass
@@ -1124,9 +1130,7 @@ def validate_config(obj, return_bool=False):
 
         # quickly run through categories to detect unrecognized types
         for category in obj.keys():
-            if not (category == 'verbose' or category == 'tools'
-                    or category == 'default_destination' or category == 'users'
-                    or category == 'default_priority'):
+            if category not in valid_categories:
                 error = "Unrecognized category '" + category
                 error += "' found in config file!"
                 if verbose:
