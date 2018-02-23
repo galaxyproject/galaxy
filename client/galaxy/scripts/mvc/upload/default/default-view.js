@@ -104,7 +104,7 @@ export default Backbone.View.extend({
 
         // file upload
         this.uploadbox = this.$uploadbox.uploadbox({
-            url: this.app.options.nginx_upload_path,
+            url: this.app.options.upload_path,
             announce: function(index, file) {
                 self._eventAnnounce(index, file);
             },
@@ -442,7 +442,7 @@ export default Backbone.View.extend({
         if (list.length > 0) {
             $.uploadpost({
                 data: this.app.toData(list),
-                url: this.app.options.nginx_upload_path,
+                url: this.app.options.upload_path,
                 success: function(message) {
                     _.each(list, model => {
                         self._eventSuccess(model.id);
