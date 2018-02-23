@@ -9,7 +9,8 @@ History
 17.9.12.dev0
 ---------------------
 
-    
+* Python 3 fix for Planemo thanks to @nsoranzo.
+* Fix bad merge of miniconda update for mulled work.
 
 ---------------------
 17.9.11 (2018-02-22)
