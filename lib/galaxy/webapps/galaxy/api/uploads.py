@@ -28,7 +28,7 @@ class UploadsAPIController(BaseAPIController):
             raise exceptions.MessageException("Requires a session id.")
         if session_start is None:
             raise exceptions.MessageException("Requires a session start.")
-        target_file = "%s/%s" % (trans.app.config.nginx_upload_store, session_id)
+        target_file = "%s/%s" % (trans.app.config.new_file_path, session_id)
         target_size = 0
         if os.path.exists(target_file):
             target_size = os.path.getsize(target_file)

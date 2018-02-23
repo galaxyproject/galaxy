@@ -519,11 +519,19 @@ class FileToolParameter(ToolParameter):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type(value) == dict:
-            upload_store = trans.app.config.nginx_upload_store
-            assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
-            # Check that the file is in the right location
-            local_filename = os.path.abspath(value['path'])
-            assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
+            if 'session_id' in value:
+                # handle api upload
+                session_id = value["session_id"]
+                upload_store = trans.app.config.new_file_path
+                if re.match('^[\w-]+$', session_id) is None:
+                    raise Exception("Invald session id format.")
+                local_filename = os.path.abspath(os.path.join(upload_store, session_id))
+            else:
+                # handle nginx upload
+                upload_store = trans.app.config.nginx_upload_store
+                assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+                local_filename = os.path.abspath(value['path'])
+                assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 

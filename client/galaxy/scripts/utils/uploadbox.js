@@ -65,7 +65,7 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunksize: 1048576 * 50,
+                chunk_size: 1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
@@ -90,7 +90,6 @@
         var file = file_data.file;
         var attempts = cnf.attempts;
         var session_id = `${cnf.session.id}-${new Date().valueOf()}-${file.size}`;
-        var session_path = cnf.session.path;
 
         // chunk processing helper
         function process(start) {
@@ -100,7 +99,7 @@
                 cnf.error("Browser does not support chunked uploads.");
                 return;
             }
-            var end = Math.min(start + cnf.chunksize, file.size);
+            var end = Math.min(start + cnf.chunk_size, file.size);
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
             var form = new FormData();
@@ -111,7 +110,7 @@
                 url: Galaxy.root + "api/uploads",
                 data: form,
                 success: upload_response => {
-                    var new_start = start + cnf.chunksize;
+                    var new_start = start + cnf.chunk_size;
                     if (new_start < size ) {
                         attempts = cnf.attempts;
                         process(new_start);
@@ -119,7 +118,7 @@
                         console.debug("Upload completed.");
                         data.payload.inputs = JSON.parse(data.payload.inputs);
                         data.payload.inputs["files_0|file_data"] = {
-                            "path": `${session_path}/${session_id}`,
+                            "session_id": session_id,
                             "name": file.name
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
@@ -315,7 +314,7 @@
             multiple: true,
             onchange: files => {
                 _.each(files, file => {
-                    file.chunkmode = true;
+                    file.chunk_mode = true;
                 });
                 add(files);
             },
@@ -382,7 +381,7 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (file.chunkmode && session.id && session.path) {
+            if (file.chunk_mode && session.id && session.chunk_upload) {
                 submitter = $.uploadchunk;
             }
             submitter({
