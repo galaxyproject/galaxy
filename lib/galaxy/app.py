@@ -95,7 +95,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
-        self.test_data_resolver = test_data.TestDataResolver()
+        self.test_data_resolver = test_data.TestDataResolver(file_dirs=getattr(self.config, "tool_test_data_directories", None))
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
