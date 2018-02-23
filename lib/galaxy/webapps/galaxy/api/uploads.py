@@ -3,7 +3,6 @@ API operations for uploaded files in storage.
 """
 import logging
 import os
-import re
 
 from galaxy import exceptions
 from galaxy.web import expose_api_anonymous
