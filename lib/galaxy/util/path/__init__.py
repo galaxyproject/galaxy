@@ -33,6 +33,17 @@ from six import iteritems, string_types
 from six.moves import map, zip
 log = logging.getLogger(__name__)
 
+def path_under_whitelist_dir(path, whitelist=None):
+    """Ensure that a the absolute location of the path (after following symlink) is on the whitelist of acceptable locations
+
+    :type path:   string
+    :param path:    a path to check
+    :type whitelist:    comma separated list of strings
+    :param whitelist:   list of acceptable locations
+    :return: ``True`` if ``path`` resolves to a whitelisted location
+    """
+
+    return __on_whitelist(path, whitelist=None)
 
 def safe_contains(prefix, path, whitelist=None):
     """Ensure a path is contained within another path.
@@ -272,21 +283,22 @@ def __walk(path):
         for name in dirnames + filenames:
             yield join(dirpath, name)
 
-
 def __contains(prefix, path, whitelist=None):
     real = realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
-    for wldir in whitelist or []:
-        yield not relpath(real, wldir).startswith(pardir)
+    yield __on_whitelist(real)
 
+def __on_whitelist(path, whitelist=None):
+    real = realpath(path)
+    for wldir in whitelist or []:
+        # a path is under the whitelist if the relative path between it and the whitelist does not have to go up (..)
+        yield not relpath(real, wldir).startswith(pardir)
 
 def __ext_strip_sep(ext):
     return ext.lstrip(extsep)
 
-
 def __splitext_no_sep(path):
     return (path.rsplit(extsep, 1) + [''])[0:2]
-
 
 def __splitext_ignore(path, ignore=None):
     # note: unlike os.path.splitext this strips extsep from ext
@@ -357,6 +369,7 @@ __all__ = (
     'get_ext',
     'has_ext',
     'joinext',
+    'path_under_whitelist_dir',
     'safe_contains',
     'safe_makedirs',
     'safe_relpath',
