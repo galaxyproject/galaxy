@@ -28,7 +28,7 @@ var ToolPanel = Backbone.View.extend({
 
         // add upload modal
         this.upload_button = new Upload({
-            upload_path: config.nginx_upload_path || `${Galaxy.root}/api/tools`,
+            upload_path: config.nginx_upload_path || `${Galaxy.root}api/tools`,
             chunk_upload: config.chunk_upload,
             ftp_upload_site: config.ftp_upload_site,
             default_genome: config.default_genome,
