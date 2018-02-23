@@ -126,6 +126,27 @@ class XmlToolSource(ToolSource):
             )
         return environment_variables
 
+    def parse_home_target(self):
+        target = "job_home" if self.parse_profile() >= "18.01" else "shared_home"
+        command_el = self._command_el
+        command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
+        if command_legacy is not None:
+            target = "shared_home" if string_as_bool(command_legacy) else "job_home"
+        return target
+
+    def parse_tmp_target(self):
+        # Default to not touching TMPDIR et. al. but if job_tmp is set
+        # in job_conf then do. This is a very conservative approach that shouldn't
+        # break or modify any configurations by default.
+        return "job_tmp_if_explicit"
+
+    def parse_docker_env_pass_through(self):
+        if self.parse_profile() < "18.01":
+            return ["GALAXY_SLOTS"]
+        else:
+            # Pass home, etc...
+            return super(XmlToolSource, self).parse_docker_env_pass_through()
+
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el
@@ -836,6 +857,8 @@ class StdioParser(object):
                     return_level = StdioErrorLevel.LOG
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
+                elif (re.search("fatal_oom", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.FATAL_OOM
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:

@@ -6,8 +6,8 @@ import hashlib
 import sys
 import threading
 import time
-from distutils.version import LooseVersion
 
+import packaging.version
 try:
     import requests
 except ImportError:
@@ -72,7 +72,7 @@ def split_tag(tag):
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=LooseVersion, reverse=True)
+    return sorted(elements, key=packaging.version.parse, reverse=True)
 
 
 Target = collections.namedtuple("Target", ["package_name", "version", "build"])
