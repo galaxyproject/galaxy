@@ -1043,6 +1043,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
+    if asbool(conf.get('enable_per_request_sql_debugging', False)):
+        from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
+        app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
 
 
