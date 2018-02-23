@@ -80,6 +80,11 @@ var View = Backbone.View.extend({
         return this;
     },
 
+    changeActiveTab: function(active_tab) {
+        this.$(".dropdown.active").removeClass("active");
+        this.$("#" + active_tab + ">.dropdown").addClass("active");
+    },
+
     /** body template */
     _template: function() {
         return (
