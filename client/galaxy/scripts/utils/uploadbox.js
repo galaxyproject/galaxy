@@ -107,7 +107,7 @@
             form.append("session_start", start);
             form.append("session_chunk", slicer.bind(file)(start, end));
             _uploadrequest({
-                url: Galaxy.root + "api/uploads",
+                url: `${Galaxy.root}api/uploads`,
                 data: form,
                 success: upload_response => {
                     var new_start = start + cnf.chunk_size;
@@ -123,7 +123,7 @@
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
-                            url: Galaxy.root + "api/tools",
+                            url:  `${Galaxy.root}api/tools`,
                             method: "POST",
                             data: data.payload,
                             success: (tool_response) => {
@@ -381,7 +381,10 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (file.chunk_mode && session.id && session.chunk_upload) {
+            if (session &&
+                session.id &&
+                session.chunk_upload &&
+                file.chunk_mode) {
                 submitter = $.uploadchunk;
             }
             submitter({
