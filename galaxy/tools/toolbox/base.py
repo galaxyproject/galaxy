@@ -36,7 +36,7 @@ from .tags import tool_tag_manager
 log = logging.getLogger(__name__)
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
+class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
