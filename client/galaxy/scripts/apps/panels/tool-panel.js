@@ -75,70 +75,54 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to one tool */
     _templateTool: function(tool) {
-        return [
-            '<div class="toolTitle">',
-            '<a href="',
-            this.root,
-            tool.href,
-            '" target="galaxy_main">',
-            tool.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a href="${Galaxy.root}${tool.href}" target="galaxy_main">
+                        ${tool.title}
+                    </a>
+                </div>`;
     },
 
     /** build a link to 'All Workflows' */
     _templateAllWorkflow: function(tool) {
-        return [
-            '<div class="toolTitle">',
-            // global
-            '<a href="',
-            Galaxy.root,
-            tool.href,
-            '">',
-            tool.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a href="${Galaxy.root}${tool.href}">
+                        ${tool.title}
+                    </a>
+                </div>`;
     },
 
     /** build links to workflows in toolpanel */
     _templateWorkflowLink: function(wf) {
-        return [
-            '<div class="toolTitle">',
-            `<a class="${wf.cls} " href="`,
-            Galaxy.root,
-            wf.href,
-            '">',
-            wf.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a class="${wf.cls}" href="${Galaxy.root}${wf.href}">
+                        ${wf.title}
+                    </a>
+                </div>`;
     },
 
     /** override to include inital menu dom and workflow section */
     _template: function() {
-        return [
-            '<div class="toolMenuContainer">',
-            '<div class="toolMenu" style="display: none">',
-            '<div id="search-no-results" style="display: none; padding-top: 5px">',
-            "<em><strong>",
-            _l("Search did not match any tools."),
-            "</strong></em>",
-            "</div>",
-            "</div>",
-            '<div class="toolSectionPad"/>',
-            '<div class="toolSectionPad"/>',
-            '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">',
-            "<span>",
-            _l("Workflows"),
-            "</span>",
-            "</div>",
-            '<div id="internal-workflows" class="toolSectionBody">',
-            '<div class="toolSectionBg"/>',
-            "</div>",
-            "</div>"
-        ].join("");
+        return `<div class="toolMenuContainer">
+                    <div class="toolMenu" style="display: none">
+                        <div id="search-no-results" style="display: none; padding-top: 5px">
+                            <em>
+                                <strong>
+                                    ${_l("Search did not match any tools.")}
+                                </strong>
+                            </em>
+                        </div>
+                    </div>
+                    <div class="toolSectionPad"/>
+                    <div class="toolSectionPad"/>
+                    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                        <span>
+                            ${_l("Workflows")}
+                        </span>
+                    </div>
+                        <div id="internal-workflows" class="toolSectionBody">
+                            <div class="toolSectionBg"/>
+                        </div>
+                </div>`;
     },
 
     toString: function() {
