@@ -330,6 +330,11 @@ export function setWindowTitle(title) {
     }
 }
 
+export function setActiveTab(active_tab) {
+    $(".dropdown.active").removeClass("active");
+    $("#" + active_tab + ">.dropdown").addClass("active");
+}
+
 export default {
     cssLoadFile: cssLoadFile,
     cssGetAttribute: cssGetAttribute,
@@ -349,5 +354,6 @@ export default {
     linkify: linkify,
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
-    setWindowTitle: setWindowTitle
+    setWindowTitle: setWindowTitle,
+    setActiveTab: setActiveTab
 };

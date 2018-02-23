@@ -156,6 +156,7 @@ const WorkflowItemView = Backbone.View.extend({
 /** View of the main workflow list page */
 const WorkflowListView = Backbone.View.extend({
     title: _l("Workflows"),
+    active_tab: 'workflow',
     initialize: function() {
         this.setElement("<div/>");
         _.bindAll(this, "adjustActiondropdown");
