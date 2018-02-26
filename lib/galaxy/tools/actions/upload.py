@@ -9,9 +9,9 @@ from . import ToolAction
 log = logging.getLogger(__name__)
 
 
-class UploadToolAction(ToolAction):
+class BaseUploadToolAction(ToolAction):
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=True, history=None, **kwargs):
+    def execute(self, tool, trans, incoming={}, history=None, **kwargs):
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.items():
             if input.type == "upload_dataset":
@@ -21,36 +21,40 @@ class UploadToolAction(ToolAction):
         persisting_uploads_timer = ExecutionTimer()
         incoming = upload_common.persist_uploads(incoming, trans)
         log.debug("Persisted uploads %s" % persisting_uploads_timer)
+        rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history)
+        return rval
+
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
+        """Take persisted uploads and create a job for given tool."""
+
+    def _create_job(self, *args, **kwds):
+        """Wrapper around upload_common.create_job with a timer."""
+        create_job_timer = ExecutionTimer()
+        rval = upload_common.create_job(*args, **kwds)
+        log.debug("Created upload job %s" % create_job_timer)
+        return rval
+
+
+class UploadToolAction(BaseUploadToolAction):
+
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
         check_timer = ExecutionTimer()
-        # We can pass an empty string as the cntrller here since it is used to check whether we
-        # are in an admin view, and this tool is currently not used there.
         uploaded_datasets = upload_common.get_uploaded_datasets(trans, '', incoming, dataset_upload_inputs, history=history)
 
         if not uploaded_datasets:
             return None, 'No data was entered in the upload form, please go back and choose data to upload.'
 
-        log.debug("Checked uploads %s" % check_timer)
-        create_job_timer = ExecutionTimer()
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
-        rval = upload_common.create_job(trans, incoming, tool, json_file_path, data_list, history=history)
-        log.debug("Created upload job %s" % create_job_timer)
-        return rval
+        log.debug("Checked uploads %s" % check_timer)
+        return self._create_job(
+            trans, incoming, tool, json_file_path, data_list, history=history
+        )
 
 
-class FetchUploadToolAction(ToolAction):
+class FetchUploadToolAction(BaseUploadToolAction):
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=True, history=None, **kwargs):
-        dataset_upload_inputs = []
-        for input_name, input in tool.inputs.items():
-            if input.type == "upload_dataset":
-                dataset_upload_inputs.append(input)
-        assert dataset_upload_inputs, Exception("No dataset upload groups were found.")
-
-        persisting_uploads_timer = ExecutionTimer()
-        incoming = upload_common.persist_uploads(incoming, trans)
-        log.debug("Persisted uploads %s" % persisting_uploads_timer)
-
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
         # Now replace references in requests with these.
         files = incoming.get("files", [])
         files_iter = iter(files)
@@ -76,16 +80,6 @@ class FetchUploadToolAction(ToolAction):
         replace_file_srcs(request)
 
         incoming["request_json"] = json.dumps(request)
-        check_timer = ExecutionTimer()
-        # We can pass an empty string as the cntrller here since it is used to check whether we
-        # are in an admin view, and this tool is currently not used there.
-        # uploaded_datasets = upload_common.get_uploaded_datasets(trans, '', incoming, dataset_upload_inputs, history=history)
-
-        # if not uploaded_datasets:
-        #    return None, 'No data was entered in the upload form, please go back and choose data to upload.'
-
-        log.debug("Checked uploads %s" % check_timer)
-        create_job_timer = ExecutionTimer()
-        rval = upload_common.create_job(trans, incoming, tool, None, [], history=history)
-        log.debug("Created upload job %s" % create_job_timer)
-        return rval
+        return self._create_job(
+            trans, incoming, tool, None, [], history=history
+        )
