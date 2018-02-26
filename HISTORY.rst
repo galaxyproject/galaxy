@@ -6,10 +6,11 @@ History
 .. to_doc
 
 ---------------------
-17.9.13.dev0
+18.1.0.dev0
 ---------------------
 
-    
+* More Python 3 fixes for Planemo thanks to @nsoranzo.    
+* 
 
 ---------------------
 17.9.12 (2018-02-22)
