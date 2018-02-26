@@ -86,3 +86,6 @@ class SmartTarget(object):
 
     def has_class(self, class_name):
         return class_name in self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class")
+
+    def wait_for_and_send_keys(self, text):
+        self.wait_for_visible().send_keys(text)

@@ -252,17 +252,33 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if more for creating a set of images to augment automated testing with manual human inspection
         after a test or test suite has executed.
         """
+        target = self._screenshot_path(label)
+        if target is None:
+            return
+
+        self.driver.save_screenshot(target)
+
+    def write_screenshot_directory_file(self, label, content):
+        target = self._screenshot_path(label, ".txt")
+        if target is None:
+            return
+
+        with open(target, "w") as f:
+            f.write(content)
+
+    def _screenshot_path(self, label, extension=".png"):
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
             return
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
             os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
-        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + ".png")
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d.png" % (label, copy))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
             copy += 1
-        self.driver.save_screenshot(target)
+
+        return target
 
     def reset_driver_and_session(self):
         self.tear_down_driver()

@@ -28,7 +28,8 @@
     "raven-js": "^3.17.0",
     "requirejs": "2",
     "underscore": "^1.8.3",
-    "vue": "^2.5.9"
+    "vue": "^2.5.9",
+    "vue-handsontable-official": "^1.0.0"
   },
   "scripts": {
     "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
