@@ -188,6 +188,78 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         create_response = self._post("dataset_collections", payload)
         self._assert_status_code_is(create_response, 400)
 
+    def test_upload_collection(self):
+        elements = [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": "list",
+            "name": "Test upload",
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        self.assertEquals(hdca["name"], "Test upload")
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "4.bed"
+        assert element0["object"]["file_size"] == 61
+
+    def test_upload_nested(self):
+        elements = [{"name": "samp1", "elements": [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]}]
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": "list:list",
+            "name": "Test upload",
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        self.assertEquals(hdca["name"], "Test upload")
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "samp1"
+
+    def test_upload_collection_from_url(self):
+        elements = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "info": "my cool bed"}]
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": "list",
+        }]
+        payload = {
+            "history_id": self.history_id,
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "4.bed"
+        assert element0["object"]["file_size"] == 61
+
+    def _assert_one_collection_created_in_history(self):
+        contents_response = self._get("histories/%s/contents/dataset_collections" % self.history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == 1
+        hdca = contents[0]
+        assert hdca["history_content_type"] == "dataset_collection"
+        hdca_id = hdca["id"]
+        collection_response = self._get("histories/%s/contents/dataset_collections/%s" % (self.history_id, hdca_id))
+        self._assert_status_code_is(collection_response, 200)
+        return collection_response.json()
+
     def _check_create_response(self, create_response):
         self._assert_status_code_is(create_response, 200)
         dataset_collection = create_response.json()

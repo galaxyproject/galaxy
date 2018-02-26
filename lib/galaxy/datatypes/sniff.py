@@ -14,6 +14,7 @@ import tempfile
 import zipfile
 
 from six import text_type
+from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.util import compression_utils
@@ -37,6 +38,12 @@ def get_test_fname(fname):
     path, name = os.path.split(__file__)
     full_path = os.path.join(path, 'test', fname)
     return full_path
+
+
+def stream_url_to_file(path):
+    page = urlopen(path)  # page will be .close()ed in stream_to_file
+    temp_name = stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
+    return temp_name
 
 
 def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):

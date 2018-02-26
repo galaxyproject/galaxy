@@ -12,8 +12,13 @@ from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
+from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
+
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
 
 
 class ToolsController(BaseAPIController, UsesVisualizationMixin):
@@ -291,11 +296,51 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return download_file
 
     @expose_api_anonymous
+    def fetch(self, trans, payload, **kwd):
+        """Adapt clean API to tool-constrained API.
+        """
+        log.info("Keywords are %s" % payload)
+        request_version = '1'
+        history_id = payload.pop("history_id")
+        clean_payload = {}
+        files_payload = {}
+        for key, value in payload.items():
+            if key == "key":
+                continue
+            if key.startswith('files_') or key.startswith('__files_'):
+                files_payload[key] = value
+                continue
+            clean_payload[key] = value
+        log.info("payload %s" % clean_payload)
+        validate_and_normalize_targets(trans, clean_payload)
+        clean_payload["check_content"] = trans.app.config.check_upload_content
+        request = dumps(clean_payload)
+        log.info(request)
+        create_payload = {
+            'tool_id': "__DATA_FETCH__",
+            'history_id': history_id,
+            'inputs': {
+                'request_version': request_version,
+                'request_json': request,
+            },
+        }
+        create_payload.update(files_payload)
+        return self._create(trans, create_payload, **kwd)
+
+    @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
         POST /api/tools
         Executes tool using specified inputs and returns tool's outputs.
         """
+        tool_id = payload.get("tool_id")
+        if tool_id in PROTECTED_TOOLS:
+            raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
+        if tool_id is None:
+            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
+        return self._create(trans, payload, **kwd)
+
+    def _create(self, trans, payload, **kwd):
         # HACK: for now, if action is rerun, rerun tool.
         action = payload.get('action', None)
         if action == 'rerun':

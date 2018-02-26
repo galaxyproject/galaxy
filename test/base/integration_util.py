@@ -8,6 +8,7 @@ import os
 from unittest import skip, TestCase
 
 from galaxy.tools.deps.commands import which
+from galaxy.tools.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
@@ -56,6 +57,7 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         cls._app_available = False
 
     def setUp(self):
+        self.test_data_resolver = TestDataResolver()
         # Setup attributes needed for API testing...
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host

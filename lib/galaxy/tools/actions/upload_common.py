@@ -16,7 +16,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 from galaxy import datatypes, util
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
 from galaxy.managers import tags
 from galaxy.util import unicodify
 from galaxy.util.odict import odict
@@ -102,7 +102,7 @@ def validate_url(url, ip_whitelist):
                 pass
             else:
                 # Otherwise, we deny access.
-                raise Exception("Access to this address in not permitted by server configuration")
+                raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
     return url
 
 
@@ -123,7 +123,7 @@ def persist_uploads(params, trans):
                                                    local_filename=local_filename)
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
-            if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
+            if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
                     StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
@@ -284,7 +284,11 @@ def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=No
 def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
-        uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
+        try:
+            uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
+        except AttributeError:
+            # TODO: refine...
+            pass
     for uploaded_dataset in uploaded_datasets:
         data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
         uploaded_dataset.data = data
