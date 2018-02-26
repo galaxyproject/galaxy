@@ -78,7 +78,7 @@ class GitDataResolver(FileDataResolver):
         self.updated = False
         repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-cache")
         m = hashlib.md5()
-        m.update(repository)
+        m.update(repository.encode('utf-8'))
         repo_path = os.path.join(repo_cache, m.hexdigest())
         super(GitDataResolver, self).__init__(repo_path)
         # My preference would be for this to be false, but for backward compat
