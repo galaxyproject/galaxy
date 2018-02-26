@@ -374,7 +374,7 @@ export default Backbone.View.extend({
             // queue remaining files
             this.uploadbox.start({
                 id: Galaxy.user.id,
-                chunk_upload: this.app.options.chunk_upload
+                chunk_upload_size: this.app.options.chunk_upload_size
             });
             this.render();
         }

@@ -65,7 +65,6 @@
                 error: () => {},
                 warning: () => {},
                 progress: () => {},
-                chunk_size: 1048576 * 50,
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
@@ -90,6 +89,8 @@
         var file = file_data.file;
         var attempts = cnf.attempts;
         var session_id = `${cnf.session.id}-${new Date().valueOf()}-${file.size}`;
+        var chunk_size = cnf.session.chunk_upload_size * 1048576;
+        console.debug(`Starting chunked uploads [size=${chunk_size}].`);
 
         // chunk processing helper
         function process(start) {
@@ -99,7 +100,7 @@
                 cnf.error("Browser does not support chunked uploads.");
                 return;
             }
-            var end = Math.min(start + cnf.chunk_size, file.size);
+            var end = Math.min(start + chunk_size, file.size);
             var size = file.size;
             console.debug(`Submitting chunk at ${start} bytes...`);
             var form = new FormData();
@@ -110,7 +111,7 @@
                 url: `${Galaxy.root}api/uploads`,
                 data: form,
                 success: upload_response => {
-                    var new_start = start + cnf.chunk_size;
+                    var new_start = start + chunk_size;
                     if (new_start < size ) {
                         attempts = cnf.attempts;
                         process(new_start);
@@ -381,10 +382,11 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (session &&
+            if (file.chunk_mode &&
+                session &&
                 session.id &&
-                session.chunk_upload &&
-                file.chunk_mode) {
+                session.chunk_upload_size &&
+                session.chunk_upload_size > 0) {
                 submitter = $.uploadchunk;
             }
             submitter({
