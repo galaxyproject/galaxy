@@ -1,9 +1,12 @@
 import json
 import logging
+import os
 
+from galaxy.dataset_collections.structure import UnitializedTree
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
+from galaxy.util.bunch import Bunch
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -79,7 +82,67 @@ class FetchUploadToolAction(BaseUploadToolAction):
 
         replace_file_srcs(request)
 
+        outputs = []
+        for target in request.get("targets", []):
+            destination = target.get("destination")
+            destination_type = destination.get("type")
+            # Start by just pre-creating HDAs.
+            if destination_type == "hdas":
+                if target.get("elements_from"):
+                    # Dynamic collection required I think.
+                    continue
+                _precreate_fetched_hdas(trans, history, target, outputs)
+
+            if destination_type == "hdca":
+                _precreate_fetched_collection_instance(trans, history, target, outputs)
+
         incoming["request_json"] = json.dumps(request)
         return self._create_job(
-            trans, incoming, tool, None, [], history=history
+            trans, incoming, tool, None, outputs, history=history
         )
+
+
+def _precreate_fetched_hdas(trans, history, target, outputs):
+    for item in target.get("elements", []):
+        name = item.get("name", None)
+        if name is None:
+            src = item.get("src", None)
+            if src == "url":
+                url = item.get("url")
+                if name is None:
+                    name = url.split("/")[-1]
+            elif src == "path":
+                path = item["path"]
+                if name is None:
+                    name = os.path.basename(path)
+
+        file_type = item.get("ext", "auto")
+        dbkey = item.get("dbkey", "?")
+        uploaded_dataset = Bunch(
+            type='file', name=name, file_type=file_type, dbkey=dbkey
+        )
+        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history)
+        outputs.append(data)
+        item["object_id"] = data.id
+
+
+def _precreate_fetched_collection_instance(trans, history, target, outputs):
+    collection_type = target.get("collection_type")
+    if not collection_type:
+        # Can't precreate collections of unknown type at this time.
+        return
+
+    name = target.get("name")
+    if not name:
+        return
+
+    collections_service = trans.app.dataset_collections_service
+    collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+    structure = UnitializedTree(collection_type_description)
+    hdca = collections_service.precreate_dataset_collection_instance(
+        trans, history, name, structure=structure
+    )
+    outputs.append(hdca)
+    # Following flushed needed for an ID.
+    trans.sa_session.flush()
+    target["destination"]["object_id"] = hdca.id

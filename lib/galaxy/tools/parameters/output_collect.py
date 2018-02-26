@@ -218,13 +218,18 @@ def collect_dynamic_outputs(
         elif destination_type == "hdca":
             history = job.history
             assert "collection_type" in unnamed_output_dict
-            name = unnamed_output_dict.get("name", "unnamed collection")
-            collection_type = unnamed_output_dict["collection_type"]
-            collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
-            structure = UnitializedTree(collection_type_description)
-            hdca = collections_service.precreate_dataset_collection_instance(
-                trans, history, name, structure=structure
-            )
+            object_id = destination.get("object_id")
+            if object_id:
+                sa_session = tool.app.model.context
+                hdca = sa_session.query(app.model.HistoryDatasetCollectionAssociation).get(int(object_id))
+            else:
+                name = unnamed_output_dict.get("name", "unnamed collection")
+                collection_type = unnamed_output_dict["collection_type"]
+                collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+                structure = UnitializedTree(collection_type_description)
+                hdca = collections_service.precreate_dataset_collection_instance(
+                    trans, history, name, structure=structure
+                )
             filenames = odict.odict()
 
             def add_to_discovered_files(elements, parent_identifiers=[]):
@@ -268,6 +273,12 @@ def collect_dynamic_outputs(
                         # Create new primary dataset
                         name = fields_match.name or designation
 
+                        hda_id = discovered_file.match.object_id
+                        primary_dataset = None
+                        if hda_id:
+                            sa_session = tool.app.model.context
+                            primary_dataset = sa_session.query(app.model.HistoryDatasetAssociation).get(int(hda_id))
+
                         dataset = job_context.create_dataset(
                             ext=ext,
                             designation=designation,
@@ -276,7 +287,8 @@ def collect_dynamic_outputs(
                             name=name,
                             filename=discovered_file.path,
                             info=info,
-                            link_data=link_data
+                            link_data=link_data,
+                            primary_data=primary_dataset,
                         )
                         dataset.raw_set_dataset_state('ok')
                         datasets.append(dataset)
@@ -451,14 +463,16 @@ class JobContext(object):
         info=None,
         library_folder=None,
         link_data=False,
+        primary_data=None,
     ):
         app = self.app
         sa_session = self.sa_session
 
-        if not library_folder:
-            primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, self.permissions)
-        else:
-            primary_data = _new_ldda(self.work_context, name, ext, visible, dbkey, library_folder)
+        if primary_data is None:
+            if not library_folder:
+                primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, self.permissions)
+            else:
+                primary_data = _new_ldda(self.work_context, name, ext, visible, dbkey, library_folder)
 
         # Copy metadata from one of the inputs if requested.
         metadata_source = None
@@ -841,6 +855,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def link_data(self):
         return bool(self.as_dict.get("link_data_only", False))
+
+    @property
+    def object_id(self):
+        return self.as_dict.get("object_id", None)
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

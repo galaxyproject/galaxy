@@ -419,9 +419,14 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
             "destination": {"type": "hdca"},
             "elements": elements,
             "collection_type": "list",
+            "name": "cool collection",
         }
         response = self.fetch_target(target)
         self._assert_status_code_is(response, 200)
+        response_object = response.json()
+        assert "output_collections" in response_object
+        output_collections = response_object["output_collections"]
+        assert len(output_collections) == 1, response_object
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, hid=2)
         self._check_content(dataset, content)
 
@@ -787,13 +792,18 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
             "history_id": self.history_id,  # TODO: Shouldn't be needed :(
             "targets": json.dumps(targets),
         }
-        self.dataset_populator.fetch(payload)
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        outputs = fetch_response.json()["outputs"]
+        assert len(outputs) == 1
+        output = outputs[0]
+        assert output["name"] == "1.fastqsanger.gz"
         contents_response = self.dataset_populator._get_contents_request(self.history_id)
         assert contents_response.status_code == 200
         contents = contents_response.json()
-        assert len(contents) == 1
-        print(contents)
-        contents[0]["extension"] == "fastqsanger.gz"
+        assert len(contents) == 1, contents
+        assert contents[0]["extension"] == "fastqsanger.gz", contents[0]
+        assert contents[0]["name"] == "1.fastqsanger.gz", contents[0]
 
     def test_fetch_recursive_archive_history(self):
         destination = {"type": "hdas"}

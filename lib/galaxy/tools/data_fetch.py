@@ -98,6 +98,7 @@ def _fetch_target(upload_config, target):
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
         info = item.get("info", None)
+        object_id = item.get("object_id", None)
         link_data_only = upload_config.link_data_only
         if "link_data_only" in item:
             # Allow overriding this on a per file basis.
@@ -170,6 +171,8 @@ def _fetch_target(upload_config, target):
         rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only}
         if info is not None:
             rval["info"] = info
+        if object_id is not None:
+            rval["object_id"] = object_id
         return rval
 
     elements = elements_tree_map(_resolve_src, items)
