@@ -535,6 +535,8 @@ class LibraryPopulator(object):
             "file_type": kwds.get("file_type", "auto"),
             "db_key": kwds.get("db_key", "?"),
         }
+        if kwds.get("link_data"):
+            create_data["link_data_only"] = "link_to_files"
 
         if upload_option == "upload_file":
             files = {
@@ -553,7 +555,9 @@ class LibraryPopulator(object):
         library = self.new_private_library(name)
         payload, files = self.create_dataset_request(library, **create_dataset_kwds)
         dataset = self.raw_library_contents_create(library["id"], payload, files=files).json()[0]
+        return self.wait_on_library_dataset(library, dataset)
 
+    def wait_on_library_dataset(self, library, dataset):
         def show():
             return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
 
