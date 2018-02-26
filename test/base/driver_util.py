@@ -199,6 +199,7 @@ def setup_galaxy_config(
         enable_beta_tool_formats=True,
         expose_dataset_path=True,
         file_path=file_path,
+        ftp_upload_purge=False,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
         job_config_file=job_config_file,

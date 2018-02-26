@@ -186,10 +186,14 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries(self):
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths="%s/1.txt" % TEST_DATA_DIRECTORY)
+        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        assert os.path.exists(path)
+        payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path)
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         # Was 403 for non-admin above.
         assert response.status_code == 200
+        # Test regression where this was getting deleted in this mode.
+        assert os.path.exists(path)
 
     def test_admin_fetch(self):
         elements = [{"src": "path", "path": "%s/1.txt" % TEST_DATA_DIRECTORY}]
@@ -354,6 +358,22 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
         if not os.path.exists(path):
             os.makedirs(path)
 
+    def _run_purgable_upload(self):
+        # Purge setting is actually used with a fairly specific set of parameters - see:
+        # https://github.com/galaxyproject/galaxy/issues/5361
+        content = "hello world\n"
+        ftp_path = self._write_ftp_file(content)
+        ftp_files = self.dataset_populator.get_remote_files()
+        assert len(ftp_files) == 1
+        assert ftp_files[0]["path"] == "test"
+        assert os.path.exists(ftp_path)
+        # gotta set to_posix_lines to None currently to force purging of non-binary data.
+        dataset = self.dataset_populator.new_dataset(
+            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
+        )
+        self._check_content(dataset, content)
+        return ftp_path
+
 
 class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
 
@@ -370,7 +390,6 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
             self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
         )
         self._check_content(dataset, content)
-        assert not os.path.exists(ftp_path)
 
     def test_ftp_fetch(self):
         content = "hello world\n"
@@ -426,19 +445,20 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
         config["ftp_upload_purge"] = "False"
 
     def test_ftp_uploads_not_purged(self):
-        content = "hello world\n"
-        ftp_path = self._write_ftp_file(content)
-        ftp_files = self.dataset_populator.get_remote_files()
-        assert len(ftp_files) == 1
-        assert ftp_files[0]["path"] == "test"
-        assert os.path.exists(ftp_path)
-        # gotta set to_posix_lines to None currently to force purging of non-binary data.
-        dataset = self.dataset_populator.new_dataset(
-            self.history_id, ftp_files="test", file_type="txt", to_posix_lines=None, wait=True
-        )
-        self._check_content(dataset, content)
+        ftp_path = self._run_purgable_upload()
         # Purge is disabled, this better still be here.
         assert os.path.exists(ftp_path)
+
+
+class EnableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
+
+    @classmethod
+    def handle_extra_ftp_config(cls, config):
+        config["ftp_upload_purge"] = "True"
+
+    def test_ftp_uploads_not_purged(self):
+        ftp_path = self._run_purgable_upload()
+        assert not os.path.exists(ftp_path)
 
 
 class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
