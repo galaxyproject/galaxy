@@ -2,6 +2,7 @@ import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
 import ToolForm from "mvc/tool/tool-form-composite";
+import _ from "libs/underscore";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -95,7 +96,7 @@ var ToolPanel = Backbone.View.extend({
     _templateWorkflowLink: function(wf) {
         return `<div class="toolTitle">
                     <a class="${wf.cls}" href="${Galaxy.root}${wf.href}">
-                        ${wf.title}
+                        ${_.escape(wf.title)}
                     </a>
                 </div>`;
     },
