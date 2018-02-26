@@ -37,6 +37,9 @@ def validate_and_normalize_targets(trans, payload):
     for target in targets:
         destination = _get_required_item(target, "destination", "Each target must specify a 'destination'")
         destination_type = _get_required_item(destination, "type", "Each target destination must specify a 'type'")
+        if "object_id" in destination:
+            raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
+
         if destination_type not in VALID_DESTINATION_TYPES:
             template = "Invalid target destination type [%s] encountered, must be one of %s"
             msg = template % (destination_type, VALID_DESTINATION_TYPES)
@@ -63,6 +66,9 @@ def validate_and_normalize_targets(trans, payload):
     payload["check_content"] = trans.app.config.check_upload_content
 
     def check_src(item):
+        if "object_id" in item:
+            raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
+
         # Normalize file:// URLs into paths.
         if item["src"] == "url" and item["url"].startswith("file://"):
             item["src"] = "path"
