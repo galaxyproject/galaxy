@@ -62,7 +62,7 @@ def main():
     tmp_file = tempfile.NamedTemporaryFile('w+b')
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
-    tmp_file.write("%s\n" % hdr_str)
+    tmp_file.write(("%s\n" % hdr_str).encode())
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
@@ -83,7 +83,7 @@ def main():
                     break
             if valid:
                 data_str = "\t".join(fields[col] for col in cols)
-                tmp_file.write("%s\n" % data_str)
+                tmp_file.write(("%s\n" % data_str).encode())
     tmp_file.flush()
 
     if skipped_lines == i + 1:
@@ -107,13 +107,13 @@ def main():
             outfile.close()
             stop_err("Computation resulted in the following error: %s" % str(s))
         summary = summary.as_py(BASIC_CONVERSION)
-        outfile.write("#%s\n" % headings_str)
+        outfile.write(("#%s\n" % headings_str).encode())
         if type(summary) is dict:
             # using rpy
-            outfile.write("%s\n" % "\t".join(["%g" % summary[k] for k in headings]))
+            outfile.write(("%s\n" % "\t".join(["%g" % summary[k] for k in headings])).encode())
         else:
             # using rpy2
-            outfile.write("%s\n" % "\t".join(["%g" % k for k in summary]))
+            outfile.write(("%s\n" % "\t".join(["%g" % k for k in summary])).encode())
         outfile.close()
 
         if skipped_lines:
