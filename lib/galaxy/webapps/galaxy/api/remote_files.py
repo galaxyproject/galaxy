@@ -9,8 +9,8 @@ from operator import itemgetter
 
 from galaxy import exceptions
 from galaxy.util import jstree, unicodify
+from galaxy.util.path import safe_path, safe_walk
 from galaxy.web import _future_expose_api as expose_api
-from galaxy.util.path import path_under_whitelist_dir
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class RemoteFilesAPIController(BaseAPIController):
                 if format == 'jstree':
                     disable = kwd.get('disable', 'folders')
                     try:
-                        userdir_jstree = self.__create_jstree(full_import_dir, disable, trans.app.config.user_library_import_symlink_whitelist)
+                        userdir_jstree = self.__create_jstree(full_import_dir, disable, whitelist=trans.app.config.user_library_import_symlink_whitelist)
                         response = userdir_jstree.jsonData()
                     except Exception as exception:
                         log.debug(str(exception))
@@ -61,7 +61,7 @@ class RemoteFilesAPIController(BaseAPIController):
                     raise exceptions.NotImplemented('Not implemented yet. Sorry.')
                 else:
                     try:
-                        response = self.__load_all_filenames(full_import_dir, trans.app.config.user_library_import_symlink_whitelist)
+                        response = self.__load_all_filenames(full_import_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist)
                     except Exception as exception:
                         log.error('Could not get user import files: %s', str(exception), exc_info=True)
                         raise exceptions.InternalServerError('Could not get the files from your user directory folder.')
@@ -74,7 +74,7 @@ class RemoteFilesAPIController(BaseAPIController):
             if format == 'jstree':
                 disable = kwd.get('disable', 'folders')
                 try:
-                    importdir_jstree = self.__create_jstree(base_dir, disable, trans.app.config.user_library_import_symlink_whitelist)
+                    importdir_jstree = self.__create_jstree(base_dir, disable, whitelist=trans.app.config.user_library_import_symlink_whitelist)
                     response = importdir_jstree.jsonData()
                 except Exception as exception:
                     log.debug(str(exception))
@@ -103,16 +103,14 @@ class RemoteFilesAPIController(BaseAPIController):
                 return None
         return response
 
-    def __load_all_filenames(self, directory, whitelist):
+    def __load_all_filenames(self, directory, whitelist=None):
         """
         Loads recursively all files within the given folder and its
         subfolders and returns a flat list.
         """
         response = []
-        if os.path.exists(directory):
-            if os.path.islink(directory) and not self.__safe_directory(directory, whitelist):
-                raise exceptions.ConfigDoesNotAllowException('directory (%s) is a symlink to a location not on the whitelist' % directory)
-            for (dirpath, dirnames, filenames) in os.walk(directory):
+        if self.__safe_directory(directory, whitelist=whitelist):
+            for (dirpath, dirnames, filenames) in safe_walk(directory, whitelist=whitelist):
                 for filename in filenames:
                     path = os.path.relpath(os.path.join(dirpath, filename), directory)
                     statinfo = os.lstat(os.path.join(dirpath, filename))
@@ -133,10 +131,8 @@ class RemoteFilesAPIController(BaseAPIController):
         of its structure.
         """
         jstree_paths = []
-        if os.path.exists(directory):
-            if os.path.islink(directory) and not self.__safe_directory(directory, whitelist):
-                raise exceptions.ConfigDoesNotAllowException('directory (%s) is a symlink to a location not on the whitelist' % directory)
-            for (dirpath, dirnames, filenames) in os.walk(directory):
+        if self.__safe_directory(directory, whitelist=whitelist):
+            for (dirpath, dirnames, filenames) in safe_walk(directory, whitelist=whitelist):
                 for dirname in dirnames:
                     dir_path = os.path.relpath(os.path.join(dirpath, dirname), directory)
                     dir_path_hash = hashlib.sha1(unicodify(dir_path).encode('utf-8')).hexdigest()
@@ -155,7 +151,7 @@ class RemoteFilesAPIController(BaseAPIController):
 
     def __safe_directory(self, directory, whitelist=None):
         """
-        Checks to see if the directory is a link, if it is, confirms that the target is on the whitelist
+        Checks to see if the directory is contained within itself or the whitelist, and whether it exists
 
         :param directory:   the directory to check for safety
         :type directory:    string
@@ -163,8 +159,8 @@ class RemoteFilesAPIController(BaseAPIController):
         :type whitelist:    comma separated list of strings
         :return:            ``True`` if the path is safe to import from, ``False`` otherwise
         """
-        if os.path.islink(directory):
-            return path_under_whitelist_dir(directory, whitelist)
-        else:
-            return True
-        return False
+        if not safe_path(directory, whitelist=whitelist):
+            raise exceptions.ConfigDoesNotAllowException('directory (%s) is a symlink to a location not on the whitelist' % directory)
+        if not os.path.exists(directory):
+            return False
+        return True
