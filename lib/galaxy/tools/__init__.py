@@ -26,7 +26,6 @@ from galaxy import (
     model
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
-from galaxy.managers import histories
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.queue_worker import send_control_task
@@ -36,7 +35,6 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
-    views
 )
 from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
@@ -69,6 +67,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     ExecutionTimer,
+    in_directory,
     listify,
     Params,
     rst_to_html,
@@ -439,12 +438,18 @@ class Tool(Dictifiable):
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
-        self.history_manager = histories.HistoryManager(app)
-        self._view = views.DependencyResolversView(app)
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    @property
+    def history_manager(self):
+        return self.app.history_manager
+
+    @property
+    def _view(self):
+        return self.app.dependency_resolvers_view
 
     @property
     def version_object(self):
@@ -824,6 +829,44 @@ class Tool(Dictifiable):
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
+
+    @property
+    def _repository_dir(self):
+        """If tool shed installed tool, the base directory of the repository installed."""
+        repository_dir = None
+
+        if hasattr(self, 'tool_shed') and self.tool_shed:
+            repository_dir = self.tool_dir
+            while True:
+                repository_dir_name = os.path.basename(repository_dir)
+                if repository_dir_name == self.repository_name:
+                    break
+
+                parent_repository_dir = os.path.dirname(repository_dir)
+                if repository_dir == parent_repository_dir:
+                    log.error("Problem finding repository dir for tool [%s]" % self.id)
+                    repository_dir = None
+
+        return repository_dir
+
+    def test_data_path(self, filename):
+        repository_dir = self._repository_dir
+        if repository_dir:
+            for root, dirs, files in os.walk(repository_dir):
+                if '.' in dirs:
+                    dirs.remove('.hg')
+                if 'test-data' in dirs:
+                    test_data_dir = os.path.join(root, 'test-data')
+                    result = os.path.abspath(os.path.join(test_data_dir, filename))
+                    if not in_directory(result, test_data_dir):
+                        # Don't raise an explicit exception and reveal details about what
+                        # files are or are not on the path, simply return None and let the
+                        # API raise a 404.
+                        return None
+                    else:
+                        return result
+        else:
+            return self.app.test_data_resolver.get_filename(filename)
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
