@@ -9,7 +9,7 @@ History
 18.5.1.dev0
 ---------------------
 
-    
+* Redo last release - pushed to PyPI without actually including the desired fix.
 
 ---------------------
 18.5.0 (2018-02-26)
