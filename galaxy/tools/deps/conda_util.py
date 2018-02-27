@@ -548,6 +548,7 @@ def build_isolated_environment(
         conda_packages = [conda_packages]
 
     # Lots we could do in here, hashing, checking revisions, etc...
+    tempdir = None
     try:
         hash = hash_conda_packages(conda_packages)
         tempdir = tempfile.mkdtemp(prefix="jobdeps", suffix=hash)
@@ -596,7 +597,8 @@ def build_isolated_environment(
         return (path or tempdir_name, exit_code)
     finally:
         conda_context.exec_clean(quiet=quiet)
-        shutil.rmtree(tempdir)
+        if tempdir is not None:
+            shutil.rmtree(tempdir)
 
 
 def requirement_to_conda_targets(requirement):
