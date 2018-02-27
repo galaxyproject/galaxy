@@ -49,7 +49,11 @@ class CloudStorageController(BaseAPIController):
         :rtype:  boolean
         :return: True/False if the given object is successfully downloaded from the cloud-based storage.
         """
-        pass
+        if not isinstance(payload, dict):
+            trans.response.status = 400
+            return "Invalid payload data type. The payload is expected to be a dictionary, " \
+                   "but received data of type `%s`." % str(type(payload))
+
 
     @web.expose_api
     def upload(self, trans, payload, **kwargs):
