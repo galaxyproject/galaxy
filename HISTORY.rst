@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.1.dev0
+18.5.1 (2018-02-26)
 ---------------------
 
 * Redo last release - pushed to PyPI without actually including the desired fix.
