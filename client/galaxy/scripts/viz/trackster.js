@@ -1,9 +1,9 @@
-import _l from "utils/localization";
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
-//import * as $ from "jquery";  TODO: fix local import here
+import _l from "utils/localization";
 import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import IconButton from "mvc/ui/icon-button";
@@ -19,6 +19,9 @@ import "libs/farbtastic";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
+
+/* global Galaxy */
+/* global $ */
 
 /**
  * User interface controls for trackster
