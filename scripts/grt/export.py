@@ -78,7 +78,7 @@ class Sanitization:
             self.sanitization_config['tool_params'] = {}
 
     def blacklisted_tree(self, path):
-        if path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
+        if self.tool_id in self.sanitization_config['tool_params'] and path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
             return True
         return False
 
@@ -88,17 +88,12 @@ class Sanitization:
             return 'null'
         # Thus, all tools below here are not blacklisted at the top level.
 
-        # If it isn't in tool_params, there are no keys being sanitized for
-        # this tool so we can return quickly without parsing.
-        if tool_id not in self.sanitization_config['tool_params']:
-            return value
-
         # If the key is listed precisely (not a sub-tree), we can also return slightly more quickly.
-        if key in self.sanitization_config['tool_params'][tool_id]:
+        if tool_id in self.sanitization_config['tool_params'] and key in self.sanitization_config['tool_params'][tool_id]:
             return 'null'
 
         # If the key isn't a prefix for any of the keys being sanitized, then this is safe.
-        if not any(san_key.startswith(key) for san_key in self.sanitization_config['tool_params'][tool_id]):
+        if tool_id in self.sanitization_config['tool_params'] and not any(san_key.startswith(key) for san_key in self.sanitization_config['tool_params'][tool_id]):
             return value
 
         # Slow path.
@@ -126,7 +121,8 @@ class Sanitization:
             self.filesize_cache[data['id']] = data
             return data
         else:
-            raise Exception("Cannot handle {src} yet".format(data))
+            logging.warning("Cannot handle {src} yet".format(data))
+            return data
 
     def _sanitize_dict(self, unsanitized_dict, path=""):
         # if it is a file dictionary, handle specially.
