@@ -186,6 +186,8 @@ class Grid(object):
         # There might be a current row
         current_item = self.get_current_item(trans, **kwargs)
         # Process page number.
+        num_pages = None
+        total_row_count_query = query  # query without limit applied to get total number of rows.
         if self.use_paging:
             if 'page' in kwargs:
                 if kwargs['page'] == 'all':
@@ -195,20 +197,13 @@ class Grid(object):
             else:
                 page_num = 1
             if page_num == 0:
-                # Show all rows in page.
-                total_num_rows = query.count()
-                page_num = 1
                 num_pages = 1
+                page_num = 1
             else:
-                # Show a limited number of rows. Before modifying query, get the total number of rows that query
-                # returns so that the total number of pages can be computed.
-                total_num_rows = query.count()
                 query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
-                num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
         else:
             # Defaults.
             page_num = 1
-            num_pages = 1
         # There are some places in grid templates where it's useful for a grid
         # to have its current filter.
         self.cur_filter_dict = cur_filter_dict
@@ -263,7 +258,6 @@ class Grid(object):
             'sort_key'                      : sort_key,
             'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
             'cur_page_num'                  : page_num,
-            'num_pages'                     : num_pages,
             'num_page_links'                : self.num_page_links,
             'status'                        : status,
             'message'                       : restore_text(message),
@@ -367,6 +361,15 @@ class Grid(object):
                     'target'    : operation.target
                 }
             grid_config['items'].append(item_dict)
+
+        if self.use_paging and num_pages is None:
+            # TODO: it would be better to just return this as None, render, and fire
+            # off a second request for this count I think.
+            total_num_rows = total_row_count_query.count()
+            num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
+
+        grid_config["num_pages"] = num_pages
+
         trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
         return grid_config
 
