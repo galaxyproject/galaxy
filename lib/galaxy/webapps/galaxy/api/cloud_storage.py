@@ -51,8 +51,24 @@ class CloudStorageController(BaseAPIController):
         """
         if not isinstance(payload, dict):
             trans.response.status = 400
-            return "Invalid payload data type. The payload is expected to be a dictionary, " \
-                   "but received data of type `%s`." % str(type(payload))
+            return {'status': 'error',
+                    'message': 'Invalid payload data type. The payload is expected to be a dictionary, '
+                               'but received data of type `%s`.' % str(type(payload))}
+
+        missing_arguments = []
+        bucket = payload.get("bucket", None)
+        if bucket is None:
+            missing_arguments.append("bucket")
+
+        obj = payload.get("object", None)
+        if obj is None:
+            missing_arguments.append("object")
+
+        if len(missing_arguments) > 0:
+            trans.response.status = 400
+            return {'status': 'error',
+                    'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
+
 
 
     @web.expose_api
