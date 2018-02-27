@@ -220,8 +220,12 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        cmd_string = ' '.join(map(shlex_quote, cmd))
-        log.debug("Executing command: %s", cmd_string)
+        if ">" not in cmd:
+            cmd_string = ' '.join(map(shlex_quote, cmd))
+            log.debug("Executing command: %s", cmd_string)
+        else:
+            cmd_string = ' '.join(cmd)
+            cmd = cmd_string
         conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
         try:
             return self.shell_exec(cmd, env=env)
