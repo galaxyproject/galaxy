@@ -6,17 +6,18 @@ History
 .. to_doc
 
 ---------------------
-18.1.1.dev0
+18.5.0.dev0
 ---------------------
 
-    
+* Another Python 3 fix for Planemo.
+* Fix galaxy-lib version - this has actually been tracking the 18.05 release of Galaxy for the last two releases.
 
 ---------------------
 18.1.0 (2018-02-26)
 ---------------------
 
-* More Python 3 fixes for Planemo thanks to @nsoranzo.    
-* 
+* More Python 3 fixes for Planemo thanks to @nsoranzo.
+* Bring in the latest Galaxy development branch.
 
 ---------------------
 17.9.12 (2018-02-22)
