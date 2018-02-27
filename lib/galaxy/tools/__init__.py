@@ -67,6 +67,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     ExecutionTimer,
+    in_directory,
     listify,
     Params,
     rst_to_html,
@@ -855,7 +856,15 @@ class Tool(Dictifiable):
                 if '.' in dirs:
                     dirs.remove('.hg')
                 if 'test-data' in dirs:
-                    return os.path.abspath(os.path.join(root, 'test-data', filename))
+                    test_data_dir = os.path.join(root, 'test-data')
+                    result = os.path.abspath(os.path.join(test_data_dir, filename))
+                    if not in_directory(result, test_data_dir):
+                        # Don't raise an explicit exception and reveal details about what
+                        # files are or are not on the path, simply return None and let the
+                        # API raise a 404.
+                        return None
+                    else:
+                        return result
         else:
             return self.app.test_data_resolver.get_filename(filename)
 

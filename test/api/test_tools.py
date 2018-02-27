@@ -136,6 +136,16 @@ class ToolsTestCase(api.ApiTestCase):
         return tool_info
 
     @skip_without_tool("composite_output")
+    def test_test_data_filepath_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output", admin=True)
+        assert test_data_response.status_code == 404, test_data_response.json()
+
+    @skip_without_tool("composite_output")
+    def test_test_data_admin_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
+        assert test_data_response.status_code == 403, test_data_response.json()
+
+    @skip_without_tool("composite_output")
     def test_test_data_composite_output(self):
         test_data_response = self._get("tools/%s/test_data" % "composite_output")
         assert test_data_response.status_code == 200

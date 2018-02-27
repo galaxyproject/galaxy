@@ -112,7 +112,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             kwd = kwd.get('payload')
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return tool.test_data_path(kwd.get("filename"))
+        path = tool.test_data_path(kwd.get("filename"))
+        if path:
+            return path
+        else:
+            raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless
     def tests_summary(self, trans, **kwd):
