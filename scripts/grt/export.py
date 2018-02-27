@@ -97,7 +97,14 @@ class Sanitization:
             return value
 
         # Slow path.
-        unsanitized = {key: json.loads(value)}
+        if isinstance(value, str):
+            try:
+                unsanitized = {key: json.loads(value)}
+            except ValueError:
+                unsanitized = {key: value}
+        else:
+            unsanitized = {key: value}
+
         self.tool_id = tool_id
         return json.dumps(self._sanitize_value(unsanitized))
 
