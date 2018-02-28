@@ -375,9 +375,10 @@ class TestCollectionDef(object):
             element_identifier = element_attrib["name"]
             nested_collection_elem = element.find("collection")
             if nested_collection_elem is not None:
-                elements.append((element_identifier, TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)))
+                element_definition = TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)
             else:
-                elements.append((element_identifier, parse_param_elem(element)))
+                element_definition = parse_param_elem(element)
+            elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
 
         return TestCollectionDef(
             attrib=attrib,
@@ -387,18 +388,18 @@ class TestCollectionDef(object):
         )
 
     def to_dict(self):
-        def element_to_dict(element_pair):
-            element_identifier, element_def = element_pair
+        def element_to_dict(element_dict):
+            element_identifier, element_def = element_dict["element_identifier"], element_dict["element_definition"]
             if isinstance(element_def, TestCollectionDef):
                 element_def = element_def.to_dict()
             return {
                 "element_identifier": element_identifier,
-                "element_def": element_def,
+                "element_definition": element_def,
             }
 
         return {
             "model_class": "TestCollectionDef",
-            "attrib": self.attrib,
+            "attributes": self.attrib,
             "collection_type": self.collection_type,
             "elements": map(element_to_dict, self.elements or []),
             "name": self.name,
@@ -409,27 +410,24 @@ class TestCollectionDef(object):
         assert as_dict["model_class"] == "TestCollectionDef"
 
         def element_from_dict(element_dict):
-            if "element_def" not in element_dict:
+            if "element_definition" not in element_dict:
                 raise Exception("Invalid element_dict %s" % element_dict)
-            element_def = element_dict["element_def"]
-            # TODO: stop using tuples and use dicts internally to eliminate this check
-            if not isinstance(element_def, dict):
-                pass
-            elif element_def.get("model_class", None) == "TestCollectionDef":
+            element_def = element_dict["element_definition"]
+            if element_def.get("model_class", None) == "TestCollectionDef":
                 element_def = TestCollectionDef.from_dict(element_def)
-            return (element_dict["element_identifier"], element_def)
+            return {"element_identifier": element_dict["element_identifier"], "element_definition": element_def}
 
         return TestCollectionDef(
-            attrib=as_dict["attrib"],
+            attrib=as_dict["attributes"],
             name=as_dict["name"],
-            elements=map(element_from_dict, as_dict["elements"] or []),
+            elements=list(map(element_from_dict, as_dict["elements"] or [])),
             collection_type=as_dict["collection_type"],
         )
 
     def collect_inputs(self):
         inputs = []
         for element in self.elements:
-            value = element[1]
+            value = element["element_definition"]
             if isinstance(value, TestCollectionDef):
                 inputs.extend(value.collect_inputs())
             else:
@@ -451,13 +449,13 @@ class TestCollectionOutputDef(object):
     def from_dict(as_dict):
         return TestCollectionOutputDef(
             name=as_dict["name"],
-            attrib=as_dict["attrib"],
+            attrib=as_dict["attributes"],
             element_tests=as_dict["element_tests"],
         )
 
     def to_dict(self):
         return dict(
             name=self.name,
-            attrib=self.attrib,
+            attributes=self.attrib,
             element_tests=self.element_tests
         )

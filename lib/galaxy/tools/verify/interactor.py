@@ -342,19 +342,20 @@ class GalaxyInteractorApi(object):
 
     def _element_identifiers(self, collection_def):
         element_identifiers = []
-        for (element_identifier, element) in collection_def.elements:
-            if isinstance(element, TestCollectionDef):
-                subelement_identifiers = self._element_identifiers(element)
+        for element_dict in collection_def.elements:
+            element_identifier = element_dict["element_identifier"]
+            element_def = element_dict["element_definition"]
+            if isinstance(element_def, TestCollectionDef):
+                subelement_identifiers = self._element_identifiers(element_def)
                 element = dict(
                     name=element_identifier,
                     src="new_collection",
-                    collection_type=element.collection_type,
+                    collection_type=element_def.collection_type,
                     element_identifiers=subelement_identifiers
                 )
             else:
-                element_name = element[0]
-                element = self.uploads[element[1]].copy()
-                element["name"] = element_name
+                element = self.uploads[element_def["value"]].copy()
+                element["name"] = element_identifier
             element_identifiers.append(element)
         return element_identifiers
 
@@ -621,14 +622,19 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
 
 def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_path_builder, keep_outputs_dir):
     files_list = []
-    for extra_type, extra_value, extra_name, extra_attributes in extra_files:
-        if extra_type == 'file':
-            files_list.append((extra_name, extra_value, extra_attributes))
-        elif extra_type == 'directory':
-            for filename in os.listdir(test_data_path_builder(extra_value)):
-                files_list.append((filename, os.path.join(extra_value, filename), extra_attributes))
+    for extra_file_dict in extra_files:
+        extra_file_type = extra_file_dict["type"]
+        extra_file_name = extra_file_dict["name"]
+        extra_file_attributes = extra_file_dict["attributes"]
+        extra_file_value = extra_file_dict["value"]
+
+        if extra_file_type == 'file':
+            files_list.append((extra_file_name, extra_file_value, extra_file_attributes))
+        elif extra_file_type == 'directory':
+            for filename in os.listdir(test_data_path_builder(extra_file_value)):
+                files_list.append((filename, os.path.join(extra_file_value, filename), extra_file_attributes))
         else:
-            raise ValueError('unknown extra_files type: %s' % extra_type)
+            raise ValueError('unknown extra_files type: %s' % extra_file_type)
     for filename, filepath, attributes in files_list:
         _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder, keep_outputs_dir=keep_outputs_dir)
 
@@ -758,9 +764,11 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
             error = AssertionError("Expected job to complete with exit code %s, found %s" % (expect_exit_code, exit_code))
             register_exception(error)
 
-    for output_index, output_tuple in enumerate(testdef.outputs):
+    for output_index, output_dict in enumerate(testdef.outputs):
         # Get the correct hid
-        name, outfile, attributes = output_tuple
+        name = output_dict["name"]
+        outfile = output_dict["value"]
+        attributes = output_dict["attributes"]
         output_testdef = Bunch(name=name, outfile=outfile, attributes=attributes)
         try:
             output_data = data_list[name]
@@ -922,7 +930,6 @@ class ToolTestDescription(object):
         self.stderr = processed_test_dict.get("stderr", None)
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
         self.expect_failure = processed_test_dict.get("expect_failure", False)
-        self.md5 = processed_test_dict.get("md5", None)
 
     def test_data(self):
         """
@@ -948,7 +955,6 @@ class ToolTestDescription(object):
             "stderr": self.stderr,
             "expect_exit_code": self.expect_exit_code,
             "expect_failure": self.expect_failure,
-            "md5": self.md5,
             "name": self.name,
             "test_index": self.test_index,
             "tool_id": self.tool_id,

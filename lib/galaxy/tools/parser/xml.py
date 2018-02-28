@@ -416,7 +416,7 @@ def _test_elem_to_dict(test_elem, i):
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
     )
-    _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
+    _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
 
 
@@ -429,7 +429,7 @@ def __parse_output_elems(test_elem):
     outputs = []
     for output_elem in test_elem.findall("output"):
         name, file, attributes = __parse_output_elem(output_elem)
-        outputs.append([name, file, attributes])
+        outputs.append({"name": name, "value": file, "attributes": attributes})
     return outputs
 
 
@@ -563,7 +563,12 @@ def __parse_extra_files_elem(extra):
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
     extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
-    return extra_type, extra_value, extra_name, extra_attributes
+    return {
+        "value": extra_value,
+        "name": extra_name,
+        "type": extra_type,
+        "attributes": extra_attributes
+    }
 
 
 def __expand_input_elems(root_elem, prefix=""):
@@ -626,8 +631,8 @@ def _copy_to_dict_if_present(elem, rval, attributes):
 def __parse_inputs_elems(test_elem, i):
     raw_inputs = []
     for param_elem in test_elem.findall("param"):
-        name, value, attrib = __parse_param_elem(param_elem, i)
-        raw_inputs.append((name, value, attrib))
+        raw_inputs.append(__parse_param_elem(param_elem, i))
+
     return raw_inputs
 
 
@@ -671,7 +676,11 @@ def __parse_param_elem(param_elem, i=0):
             # take precedence
             attrib['edit_attributes'].insert(0, {'type': 'name', 'value': composite_data_name})
     name = attrib.pop('name')
-    return (name, value, attrib)
+    return {
+        "name": name,
+        "value": value,
+        "attributes": attrib
+    }
 
 
 class StdioParser(object):

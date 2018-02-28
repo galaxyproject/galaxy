@@ -40,8 +40,9 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
         num_outputs = int(num_outputs)
 
     try:
+        processed_inputs = _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files)
         processed_test_dict = {
-            "inputs": _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files),
+            "inputs": processed_inputs,
             "outputs": raw_test_dict["outputs"],
             "output_collections": raw_test_dict["output_collections"],
             "num_outputs": num_outputs,
@@ -50,13 +51,13 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "stderr": raw_test_dict.get("stderr", None),
             "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
             "expect_failure": raw_test_dict.get("expect_failure", False),
-            "md5": raw_test_dict.get("md5", None),
             "required_files": required_files,
             "tool_id": tool.id,
             "test_index": test_index,
             "error": False,
         }
     except Exception as e:
+        log.exception("Failed to load tool test number [%d] for %s" % (test_index, tool.id))
         processed_test_dict = {
             "tool_id": tool.id,
             "test_index": test_index,
@@ -80,8 +81,8 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
         if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
             cond_context = ParamContext(name=value.name, parent_context=parent_context)
             case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
-            raw_input = case_context.extract_value(raw_inputs)
-            case_value = raw_input[1] if raw_input else None
+            raw_input_dict = case_context.extract_value(raw_inputs)
+            case_value = raw_input_dict["value"] if raw_input_dict else None
             case = _matching_case_for_value(tool, value, case_value)
             if case:
                 for input_name, input_value in case.inputs.items():
@@ -120,9 +121,11 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                 repeat_index += 1
         else:
             context = ParamContext(name=value.name, parent_context=parent_context)
-            raw_input = context.extract_value(raw_inputs)
-            if raw_input:
-                (name, param_value, param_extra) = raw_input
+            raw_input_dict = context.extract_value(raw_inputs)
+            if raw_input_dict:
+                name = raw_input_dict["name"]
+                param_value = raw_input_dict["value"]
+                param_extra = raw_input_dict["attributes"]
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
@@ -133,8 +136,11 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                 elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
                     assert 'collection' in param_extra
                     collection_def = param_extra['collection']
-                    for (name, value, extra) in collection_def.collect_inputs():
-                        require_file(name, value, extra, required_files)
+                    for input_dict in collection_def.collect_inputs():
+                        name = input_dict["name"]
+                        value = input_dict["value"]
+                        attributes = input_dict["attributes"]
+                        require_file(name, value, attributes, required_files)
                     processed_value = collection_def
                 else:
                     processed_value = _process_simple_value(value, param_value)
@@ -309,13 +315,13 @@ class ParamContext(object):
 
     def __raw_param_found(self, param_name, raw_inputs):
         index = None
-        for i, raw_input in enumerate(raw_inputs):
-            if raw_input[0] == param_name:
+        for i, raw_input_dict in enumerate(raw_inputs):
+            if raw_input_dict["name"] == param_name:
                 index = i
         if index is not None:
-            raw_input = raw_inputs[index]
+            raw_input_dict = raw_inputs[index]
             del raw_inputs[index]
-            return raw_input
+            return raw_input_dict
         else:
             return None
 
