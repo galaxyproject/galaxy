@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.2.dev0
+18.5.2 (2018-02-28)
 ---------------------
 
 * Various fixes for library usage mostly related to Conda (with help from @nsoranzo).
