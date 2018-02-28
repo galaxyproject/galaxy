@@ -957,7 +957,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 if elt.__class__.__name__ == 'Tool':
                     rval.append(self.get_tool_to_dict(trans, elt))
                 else:
-                    kwargs = dict(trans=trans, link_details=True)
+                    kwargs = dict(trans=trans, link_details=True, toolbox=self)
                     rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)
