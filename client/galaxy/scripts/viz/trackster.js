@@ -369,7 +369,7 @@ class TracksterUI extends Backbone.Model {
     }
 }
 
-class TracksterView extends Backbone.View {
+class TracksterUIView extends Backbone.View {
     constructor(options) {
         super(options);
     }
@@ -626,5 +626,5 @@ class TracksterView extends Backbone.View {
 
 export default {
     TracksterUI: TracksterUI,
-    GalaxyApp: TracksterView
+    GalaxyApp: TracksterUIView
 };

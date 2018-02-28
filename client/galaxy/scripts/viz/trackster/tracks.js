@@ -1,5 +1,6 @@
 import _l from "utils/localization";
 import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";
@@ -12,6 +13,9 @@ import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
 var extend = _.extend;
+
+/* global $ */
+/* global Galaxy */
 
 // ---- Web UI specific utilities ----
 
@@ -1265,11 +1269,11 @@ var TracksterView = Backbone.View.extend({
         $(window).bind("resize", function() {
             // Stop previous timer.
             if (this.resize_timer) {
-                clearTimeout(this.resize_timer);
+                window.clearTimeout(this.resize_timer);
             }
 
             // When function activated, resize window and redraw.
-            this.resize_timer = setTimeout(() => {
+            this.resize_timer = window.setTimeout(() => {
                 view.resize_window();
             }, 500);
         });
@@ -1304,13 +1308,13 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     trigger_navigate: function(new_chrom, new_low, new_high, delay) {
         // Stop previous timer.
         if (this.timer) {
-            clearTimeout(this.timer);
+            window.clearTimeout(this.timer);
         }
 
         if (delay) {
             // To aggregate calls, use timer and only navigate once
             // location has stabilized.
-            this.timer = setTimeout(() => {
+            this.timer = window.setTimeout(() => {
                 this.trigger("navigate", `${new_chrom}:${new_low}-${new_high}`);
             }, 500);
         } else {
@@ -1530,10 +1534,10 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         // Set up timeout to redraw with more data when moving stops.
         if (this.redraw_on_move_fn) {
-            clearTimeout(this.redraw_on_move_fn);
+            window.clearTimeout(this.redraw_on_move_fn);
         }
 
-        this.redraw_on_move_fn = setTimeout(() => {
+        this.redraw_on_move_fn = window.setTimeout(() => {
             view.request_redraw();
         }, 200);
 
@@ -2731,7 +2735,7 @@ extend(Track.prototype, Drawable.prototype, {
                 track.container_div.addClass("pending");
                 track.show_message(DATA_PENDING);
                 //$("<img/>").attr("src", image_path + "/yui/rel_interstitial_loading.gif").appendTo(track.tiles_div);
-                setTimeout(() => {
+                window.setTimeout(() => {
                     track.init();
                 }, track.data_query_wait);
             } else if (result === "data" || result.status === "data") {
@@ -4114,7 +4118,7 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
             },
             result => {
                 // What does this do?  Is it meant to be attached to some higher scope state object?
-                var data = result.data;
+                // var data = result.data;
             }
         );
     },
