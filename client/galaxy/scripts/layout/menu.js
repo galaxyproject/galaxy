@@ -48,7 +48,7 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id: "visualization",
             title: _l("Visualization"),
-            url: "visualizations/list",
+            url: "plugins",
             tooltip: _l("Visualize datasets"),
             disabled: !Galaxy.user.id
         });
