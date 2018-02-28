@@ -9,7 +9,7 @@ History
 18.5.2.dev0
 ---------------------
 
-    
+* Various fixes for library usage mostly related to Conda (with help from @nsoranzo).
 
 ---------------------
 18.5.1 (2018-02-26)
