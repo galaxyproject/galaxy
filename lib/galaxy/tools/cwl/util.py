@@ -9,7 +9,11 @@ import tarfile
 import tempfile
 from collections import namedtuple
 
-from six import BytesIO, iteritems, python_2_unicode_compatible
+from six import (
+    BytesIO,
+    iteritems,
+    python_2_unicode_compatible
+)
 
 STORE_SECONDARY_FILES_WITH_BASENAME = True
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
