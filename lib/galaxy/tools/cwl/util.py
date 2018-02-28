@@ -40,7 +40,7 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
     try:
         contents = f.read(1024 * 1024)
         filesize = 0
-        while len(contents) > 0:
+        while contents:
             checksum.update(contents)
             filesize += len(contents)
             contents = f.read(1024 * 1024)
