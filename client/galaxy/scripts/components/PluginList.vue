@@ -1,7 +1,7 @@
 <template>
     <div class="ui-thumbnails">
         <div class="ui-thumbnails-grid">
-            <div v-for="plugin in plugins" class="ui-thumbnails-item" :value="plugin.id">
+            <div v-for="plugin in plugins" class="ui-thumbnails-item">
                 <table>
                     <tr>
                         <td>
