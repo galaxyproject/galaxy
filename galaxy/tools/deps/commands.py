@@ -55,18 +55,13 @@ def shell(cmds, env=None, **kwds):
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
-    redirecting_stdout = kwds.get("stdout_path", None)
     p = shell_process(cmds, env, **kwds)
-    try:
-        if redirecting_io(sys=sys):
-            redirect_aware_commmunicate(p, sys=sys)
-            exit = p.returncode
-            return exit
-        else:
-            return p.wait()
-    finally:
-        if redirecting_stdout and p.stdout:
-            p.stdout.close()
+    if redirecting_io(sys=sys):
+        redirect_aware_commmunicate(p, sys=sys)
+        exit = p.returncode
+        return exit
+    else:
+        return p.wait()
 
 
 def shell_process(cmds, env=None, **kwds):
@@ -80,9 +75,6 @@ def shell_process(cmds, env=None, **kwds):
     if isinstance(cmds, six.string_types):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds['shell'] = True
-    stdout_path = kwds.pop("stdout_path", None)
-    if stdout_path:
-        popen_kwds["stdout"] = open(stdout_path, "w")
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
         popen_kwds["stdout"] = subprocess.PIPE
     if kwds.get("stderr", None) is None and redirecting_io(sys=sys):

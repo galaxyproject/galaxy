@@ -221,17 +221,22 @@ class CondaContext(installable.InstallableContext):
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
         cmd_string = ' '.join(map(shlex_quote, cmd))
-        if stdout_path:
-            cmd_string += " > '%s'" % stdout_path
-        log.debug("Executing command: %s", cmd_string)
-        conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
+        kwds = dict()
         try:
-            return self.shell_exec(cmd, env=env, stdout_path=stdout_path)
+            if stdout_path:
+                kwds['stdout'] = open(stdout_path, 'w')
+                cmd_string += " > '%s'" % stdout_path
+            conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
+            log.debug("Executing command: %s", cmd_string)
+            return self.shell_exec(cmd, env=env, **kwds)
         except Exception:
             log.exception("Failed to execute command: %s", cmd_string)
             return 1
         finally:
-            shutil.rmtree(conda_exec_home, ignore_errors=True)
+            if kwds.get('stdout'):
+                kwds['stdout'].close()
+            if conda_exec_home:
+                shutil.rmtree(conda_exec_home, ignore_errors=True)
 
     def exec_create(self, args, allow_local=True, stdout_path=None):
         """
