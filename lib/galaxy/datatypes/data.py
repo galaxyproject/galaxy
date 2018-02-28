@@ -116,22 +116,6 @@ class Data(object):
         self.composite_files = self.composite_files.copy()
         self.display_applications = odict()
 
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        fd = open(dataset.file_name, 'wb')
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd = open(dataset.file_name, 'wb')
-        os.write(fd, data)
-        os.close(fd)
-
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
@@ -772,36 +756,6 @@ class Text(Data):
 
     # Add metadata elements
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0)
-
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        # write it twice for now
-        fd, temp_name = tempfile.mkstemp()
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd, temp_name = tempfile.mkstemp()
-        os.write(fd, data)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-        os.remove(temp_name)
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
