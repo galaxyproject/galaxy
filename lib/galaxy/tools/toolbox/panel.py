@@ -79,7 +79,7 @@ class ToolSection(Dictifiable, HasPanelItems, object):
             link_details=link_details
         )
         for elt in self.elems.values():
-            if elt.__class__.__name__ == 'Tool' and toolbox:
+            if hasattr(elt, "tool_type") and toolbox:
                 section_elts.append(toolbox.get_tool_to_dict(trans, elt))
             else:
                 section_elts.append(elt.to_dict(**kwargs))

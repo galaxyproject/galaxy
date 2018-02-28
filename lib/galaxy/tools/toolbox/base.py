@@ -953,8 +953,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         if in_panel:
             panel_elts = list(self.tool_panel_contents(trans, **kwds))
             for elt in panel_elts:
-                # Only use cache for galaxy.tools.Tool objects.
-                if elt.__class__.__name__ == 'Tool':
+                # Only use cache for objects that are Tools.
+                if hasattr(elt, "tool_type"):
                     rval.append(self.get_tool_to_dict(trans, elt))
                 else:
                     kwargs = dict(trans=trans, link_details=True, toolbox=self)
