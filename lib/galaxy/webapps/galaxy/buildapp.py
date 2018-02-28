@@ -707,6 +707,16 @@ def populate_api_routes(webapp, app):
                                            name_prefix="library_dataset_",
                                            path_prefix='/api/libraries/{library_id}/contents/{library_content_id}')
 
+    # ========================
+    # ===== WEBHOOKS API =====
+    # ========================
+
+    webapp.mapper.connect('plugins',
+                          '/api/plugins',
+                          controller='plugins',
+                          action='index',
+                          conditions=dict(method=['GET']))
+
     # =======================
     # ===== FOLDERS API =====
     # =======================

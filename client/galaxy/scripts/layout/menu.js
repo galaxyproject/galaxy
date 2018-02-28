@@ -43,6 +43,17 @@ var Collection = Backbone.Collection.extend({
         });
 
         //
+        // Visualization tab.
+        //
+        this.add({
+            id: "visualization",
+            title: _l("Visualization"),
+            url: "visualizations/list",
+            tooltip: _l("Visualize datasets"),
+            disabled: !Galaxy.user.id
+        });
+
+        //
         // 'Shared Items' or Libraries tab.
         //
         this.add({
@@ -70,34 +81,6 @@ var Collection = Backbone.Collection.extend({
                 {
                     title: _l("Pages"),
                     url: "pages/list_published"
-                }
-            ]
-        });
-
-        //
-        // Visualization tab.
-        //
-        this.add({
-            id: "visualization",
-            title: _l("Visualization"),
-            url: "visualizations/list",
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("New Track Browser"),
-                    url: "visualization/trackster",
-                    target: "_frame"
-                },
-                {
-                    title: _l("Saved Visualizations"),
-                    url: "visualizations/list",
-                    target: "_frame"
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
                 }
             ]
         });

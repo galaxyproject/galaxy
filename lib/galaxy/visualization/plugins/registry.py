@@ -230,6 +230,12 @@ class VisualizationsRegistry(object):
             raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
+    def get_plugins(self):
+        result = []
+        for plugin in self.plugins.itervalues():
+            result.append(plugin.to_dict())
+        return result
+
     # -- building links to visualizations from objects --
     def get_visualizations(self, trans, target_object):
         """
