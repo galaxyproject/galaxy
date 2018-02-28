@@ -206,7 +206,7 @@ class CondaContext(installable.InstallableContext):
                         self.conda_prefix, self.conda_exec)
             return False
 
-    def exec_command(self, operation, args):
+    def exec_command(self, operation, args, stdout_path=None):
         """
         Execute the requested command.
 
@@ -220,22 +220,20 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        if ">" not in cmd:
-            cmd_string = ' '.join(map(shlex_quote, cmd))
-            log.debug("Executing command: %s", cmd_string)
-        else:
-            cmd_string = ' '.join(cmd)
-            cmd = cmd_string
+        cmd_string = ' '.join(map(shlex_quote, cmd))
+        if stdout_path:
+            cmd_string += " > '%s'" % stdout_path
+        log.debug("Executing command: %s", cmd_string)
         conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
         try:
-            return self.shell_exec(cmd, env=env)
+            return self.shell_exec(cmd, env=env, stdout_path=stdout_path)
         except Exception:
             log.exception("Failed to execute command: %s", cmd_string)
             return 1
         finally:
             shutil.rmtree(conda_exec_home, ignore_errors=True)
 
-    def exec_create(self, args, allow_local=True):
+    def exec_create(self, args, allow_local=True, stdout_path=None):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -246,7 +244,7 @@ class CondaContext(installable.InstallableContext):
             create_base_args.extend(["--use-local"])
         create_base_args.extend(self._override_channels_args)
         create_base_args.extend(args)
-        return self.exec_command("create", create_base_args)
+        return self.exec_command("create", create_base_args, stdout_path=stdout_path)
 
     def exec_remove(self, args):
         """
@@ -262,7 +260,7 @@ class CondaContext(installable.InstallableContext):
         remove_base_args.extend(args)
         return self.exec_command("env", remove_base_args)
 
-    def exec_install(self, args, allow_local=True):
+    def exec_install(self, args, allow_local=True, stdout_path=None):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -273,7 +271,7 @@ class CondaContext(installable.InstallableContext):
             install_base_args.append("--use-local")
         install_base_args.extend(self._override_channels_args)
         install_base_args.extend(args)
-        return self.exec_command("install", install_base_args)
+        return self.exec_command("install", install_base_args, stdout_path=stdout_path)
 
     def exec_clean(self, args=[], quiet=False):
         """
@@ -286,9 +284,10 @@ class CondaContext(installable.InstallableContext):
             "-y"
         ]
         clean_args = clean_base_args + args
+        stdout_path = None
         if quiet:
-            clean_args.extend([">", "/dev/null"])
-        return self.exec_command("clean", clean_args)
+            stdout_path = "/dev/null"
+        return self.exec_command("clean", clean_args, stdout_path=stdout_path)
 
     def export_list(self, name, path):
         """
@@ -296,8 +295,8 @@ class CondaContext(installable.InstallableContext):
         """
         return self.exec_command("list", [
             "--name", name,
-            "--export", ">", path
-        ])
+            "--export"
+        ], stdout_path=path)
 
     def env_path(self, env_name):
         return os.path.join(self.envs_path, env_name)
@@ -587,16 +586,17 @@ def build_isolated_environment(
             create_args.append("--copy")
         for export_path in export_paths:
             create_args.extend([
-                "--file", export_path, ">", "/dev/null"
+                "--file", export_path
             ])
 
+        stdout_path = None
         if quiet:
-            create_args.extend([">", "/dev/null"])
+            stdout_path = "/dev/null"
 
         if path is not None and os.path.exists(path):
-            exit_code = conda_context.exec_install(create_args)
+            exit_code = conda_context.exec_install(create_args, stdout_path=stdout_path)
         else:
-            exit_code = conda_context.exec_create(create_args)
+            exit_code = conda_context.exec_create(create_args, stdout_path=stdout_path)
 
         return (path or tempdir_name, exit_code)
     finally:
