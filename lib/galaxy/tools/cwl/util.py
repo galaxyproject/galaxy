@@ -9,7 +9,7 @@ import tarfile
 import tempfile
 from collections import namedtuple
 
-from six import iteritems, python_2_unicode_compatible, StringIO
+from six import BytesIO, iteritems, python_2_unicode_compatible
 
 STORE_SECONDARY_FILES_WITH_BASENAME = True
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
@@ -31,12 +31,12 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
         properties["path"] = path
         f = open(path, "rb")
     else:
-        f = StringIO(content)
+        f = BytesIO(content)
 
     try:
         contents = f.read(1024 * 1024)
         filesize = 0
-        while contents != "":
+        while len(contents) > 0:
             checksum.update(contents)
             filesize += len(contents)
             contents = f.read(1024 * 1024)
