@@ -20,6 +20,7 @@
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140",
     "bootstrap-vue": "^2.0.0-rc.11",
     "d3": "3",
+    "expose-loader": "^0.7.5",
     "font-awesome": "^4.7.0",
     "gulp-sass": "^4.0.1",
     "handsontable": "^2.0.0",
@@ -36,7 +37,7 @@
     "raven-js": "^3.26.3",
     "requirejs": "2",
     "underscore": "^1.9.1",
-    "vue": "2.5.16"
+    "vue": "2.5.17"
   },
   "scripts": {
     "watch": "gulp staging && yarn run save-build-hash && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
@@ -104,10 +105,11 @@
     "qunitjs": "^2.4.1",
     "sass-loader": "^7.0.3",
     "sinon": "^4.1.2",
-    "vue-loader": "^15.2.4",
-    "vue-styleguidist": "^1.6.1",
-    "vue-template-compiler": "2.5.16",
-    "webpack": "^3.10.0",
+    "vue-loader": "^15.4.1",
+    "vue-styleguidist": "^1.8.5",
+    "vue-template-compiler": "2.5.17",
+    "webpack": "^4.17.2",
+    "webpack-cli": "^3.1.0",
     "yaml-loader": "^0.5.0"
   }
 }
