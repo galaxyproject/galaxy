@@ -116,6 +116,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/plugins')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
@@ -708,7 +709,7 @@ def populate_api_routes(webapp, app):
                                            path_prefix='/api/libraries/{library_id}/contents/{library_content_id}')
 
     # ========================
-    # ===== WEBHOOKS API =====
+    # ===== PLUGINS API =====
     # ========================
 
     webapp.mapper.connect('plugins',

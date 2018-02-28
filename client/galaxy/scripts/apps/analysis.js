@@ -15,6 +15,7 @@ import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryList from "mvc/history/history-list";
+import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
 import Utils from "utils/utils";
@@ -66,6 +67,7 @@ window.app = function app(options, bootstrapped) {
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories(/)(:action_id)": "show_histories",
+            "(/)plugins(/)": "show_plugins",
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
@@ -210,6 +212,13 @@ window.app = function app(options, bootstrapped) {
                     redirect: "pages/list"
                 })
             );
+        },
+
+        show_plugins: function() {
+            var pluginListInstance = Vue.extend(PluginList);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new pluginListInstance().$mount(vm);
         },
 
         show_workflows: function() {
