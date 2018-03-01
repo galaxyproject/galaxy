@@ -69,7 +69,7 @@ class ToolSection(Dictifiable, HasPanelItems, object):
         copy.elems = self.elems.copy()
         return copy
 
-    def to_dict(self, trans, link_details=False):
+    def to_dict(self, trans, link_details=False, toolbox=None):
         """ Return a dict that includes section's attributes. """
 
         section_dict = super(ToolSection, self).to_dict()
@@ -79,7 +79,10 @@ class ToolSection(Dictifiable, HasPanelItems, object):
             link_details=link_details
         )
         for elt in self.elems.values():
-            section_elts.append(elt.to_dict(**kwargs))
+            if hasattr(elt, "tool_type") and toolbox:
+                section_elts.append(toolbox.get_tool_to_dict(trans, elt))
+            else:
+                section_elts.append(elt.to_dict(**kwargs))
         section_dict['elems'] = section_elts
 
         return section_dict
