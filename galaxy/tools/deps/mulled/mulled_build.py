@@ -17,11 +17,8 @@ import string
 import subprocess
 import sys
 from sys import platform as _platform
-try:
-    from shlex import quote as shlex_quote
-except ImportError:
-    from pipes import quote as shlex_quote
 
+from six.moves import shlex_quote
 try:
     import yaml
 except ImportError:
