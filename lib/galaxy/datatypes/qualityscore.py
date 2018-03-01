@@ -34,8 +34,7 @@ class QualityScoreSOLiD (QualityScore):
         >>> QualityScoreSOLiD().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             readlen = None
             goodblock = 0
             while True:
@@ -63,9 +62,6 @@ class QualityScoreSOLiD (QualityScore):
                             return True
                     else:
                         break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except Exception:
-            pass
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -92,8 +88,7 @@ class QualityScore454 (QualityScore):
         >>> QualityScore454().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -111,9 +106,6 @@ class QualityScore454 (QualityScore):
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except Exception:
-            pass
         return False
 
 
