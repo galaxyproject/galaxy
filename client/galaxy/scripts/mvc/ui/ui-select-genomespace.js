@@ -25,16 +25,10 @@ var View = Backbone.View.extend({
         // create genomespace filepath textbox
         this.filename_textbox = new Ui.Input();
 
-        // create genomespace token textbox
-        this.token_textbox = new Ui.Input({
-          type       : 'password'        
-        });
-
         // create elements
         this.setElement(this._template(options));
-        this.$('.ui-gs-browse-button').append(this.browse_button.$el);
-        this.$('.ui-gs-filename-textbox').append(this.filename_textbox.$el);
-        this.$('.ui-gs-token-textbox').append(this.token_textbox.$el);
+        this.$(".ui-gs-browse-button").append(this.browse_button.$el);
+        this.$(".ui-gs-filename-textbox").append(this.filename_textbox.$el);
     },
 
     /** Browse GenomeSpace */
@@ -42,27 +36,25 @@ var View = Backbone.View.extend({
         var self = this;
         GenomespaceBrowser.openFileBrowser({
             successCallback: function(data) {
-                self.value(data.destination + "^" + data.token);
+                self.value(`${data.destination}`);
             }
         });
     },
-    
+
     /** Main Template */
     _template: function(options) {
-        return  '<div class="ui-gs-select-file">' +
-                    '<div class="ui-gs-browse-field">' +
-                        '<span class="ui-gs-browse-button" />' +
-                        '<span class="ui-gs-filename-textbox" />' +
-                    '</div>' +
-                    '<div class="ui-gs-token-field">' +
-                        '<span class=ui-gs-label"><div class="ui-gs-token-label">Token</div></span>' +
-                        '<span class="ui-gs-token-textbox" />' +
-                    '</div>' +
-                '</div>';
+        return (
+            '<div class="ui-gs-select-file">' +
+            '<div class="ui-gs-browse-field">' +
+            '<span class="ui-gs-browse-button" />' +
+            '<span class="ui-gs-filename-textbox" />' +
+            "</div>" +
+            "</div>"
+        );
     },
-    
-    /** Return/Set currently selected genomespace filename/token */
-    value : function (new_value) {
+
+    /** Return/Set currently selected genomespace filename */
+    value: function(new_value) {
         // check if new_value is defined
         if (new_value !== undefined) {
             this._setValue(new_value);
@@ -71,22 +63,19 @@ var View = Backbone.View.extend({
           return this._getValue();
         }
     },
-    
+
     // get value
     _getValue: function() {
-        return this.filename_textbox.value() +
-            "^" + this.token_textbox.value();
+        return `${this.filename_textbox.value()}`;
     },
-    
+
     // set value
     _setValue: function(new_value) {
         if (new_value) {
-          values = new_value.split("^");
-          this.filename_textbox.value(values[0]);
-          this.token_textbox.value(values[1]);
+            this.filename_textbox.value(new_value);
         }
     },
-    
+
 });
 
 return {
