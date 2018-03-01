@@ -854,7 +854,7 @@ class Tool(Dictifiable):
         repository_dir = self._repository_dir
         if repository_dir:
             for root, dirs, files in os.walk(repository_dir):
-                if '.' in dirs:
+                if '.hg' in dirs:
                     dirs.remove('.hg')
                 if 'test-data' in dirs:
                     test_data_dir = os.path.join(root, 'test-data')
