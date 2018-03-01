@@ -299,6 +299,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
+    webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
@@ -707,16 +708,6 @@ def populate_api_routes(webapp, app):
     _add_item_extended_metadata_controller(webapp,
                                            name_prefix="library_dataset_",
                                            path_prefix='/api/libraries/{library_id}/contents/{library_content_id}')
-
-    # ========================
-    # ===== PLUGINS API =====
-    # ========================
-
-    webapp.mapper.connect('plugins',
-                          '/api/plugins',
-                          controller='plugins',
-                          action='index',
-                          conditions=dict(method=['GET']))
 
     # =======================
     # ===== FOLDERS API =====
