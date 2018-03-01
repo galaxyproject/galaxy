@@ -562,7 +562,7 @@ class UploadDataset(Group):
                         if meta_name in metadata_name_substition_default_dict:
                             meta_value = sanitize_for_filename(meta_value, default=metadata_name_substition_default_dict[meta_name])
                         dataset.metadata[meta_name] = meta_value
-            dataset.precreated_name = dataset.name = self.get_composite_dataset_name(context)
+            dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
                 temp_name = sniff.stream_to_file(StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')

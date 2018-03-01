@@ -30,6 +30,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
@@ -235,7 +236,8 @@ def mull_targets(
             with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
-        ret = involucro_context.exec_command(involucro_args)
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
         if singularity:
             # we can not remove this folder as it contains the image wich is owned by root
             pass
