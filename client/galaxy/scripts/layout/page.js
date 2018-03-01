@@ -32,7 +32,7 @@ var View = Backbone.View.extend({
             }
             if (view.active_tab) {
                 Utils.setActiveTab(view.active_tab);
-            };
+            }
             self.center.display(view);
         };
         Galaxy.router = this.router = options.Router && new options.Router(self, options);

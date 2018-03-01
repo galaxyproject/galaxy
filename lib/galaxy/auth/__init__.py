@@ -24,10 +24,10 @@ class AuthManager(object):
         for provider, options in self.active_authenticators(email, username, password):
             allow_reg = _get_allow_register(options)
             if allow_reg == 'challenge':
-                auth_result, msg = provider.authenticate(email, username, password, options)
-                if auth_result is True:
+                auth_results = provider.authenticate(email, username, password, options)
+                if auth_results[0] is True:
                     break
-                if auth_result is None:
+                if auth_results[0] is None:
                     message = 'Invalid email address/username or password.'
                     status = 'error'
                     break
