@@ -29,10 +29,13 @@ default_desinations section of the config
 priority_list = set()
 
 """
-list of all valid destinations, retrieved from the
-job configuration file
-"""
+Instantiated to a list of all valid destinations in the job configuration file
+if run directly to validate configs. Otherwise, remains None. We often check
+to see if app is None, because if it is then we'll try using the
+destination_list instead.
+-"""
 destination_list = set()
+
 """
 The largest the edit distance can be for a word to be considered
 A correction for another word.
@@ -44,6 +47,11 @@ List of valid categories that can be expected in the configuration.
 """
 valid_categories = ['verbose', 'tools', 'default_destination',
                   'users', 'default_priority']
+
+"""
+If running from inside Galaxy, will be galaxy app. Otherwise, it will be none.
+"""
+app = None
 
 
 class MalformedYMLException(Exception):
@@ -410,6 +418,8 @@ class RuleValidator:
             rule["destination"] = "fail"
 
         if "destination" in rule:
+            valid_destination = True
+            suggestion = None
             if isinstance(rule["destination"], str):
                 if rule["destination"] == "fail" and "fail_message" not in rule:
                     error = "Missing a fail_message for rule " + str(counter)
@@ -422,15 +432,21 @@ class RuleValidator:
                     if verbose:
                         log.debug(error)
                     valid_rule = False
-                elif (rule["destination"] not in destination_list
-                        and rule["destination"] != "fail"):
+                elif app is None:
+                    if (rule["destination"] not in destination_list
+                            and rule["destination"] != "fail"):
+                                valid_destination = False
+                                suggestion = get_typo_correction(rule['destination'],
+                                    destination_list, max_edit_dist)
+                elif not app.job_config.get_destination(rule["destination"]):
+                        valid_destination = False
+
+                if not valid_destination:
                     error = "Destination for '" + str(tool) + "', rule "
                     error += str(counter) + ": '"
                     error += str(rule["destination"])
                     error += "' does not exist in job configuration."
-                    suggestion = get_typo_correction(rule['destination'],
-                        destination_list, max_edit_dist)
-                    if suggestion is not None:
+                    if suggestion:
                         error += " Did you mean '" + str(suggestion) + "'?"
                     if not return_bool:
                         error += " Ignoring..."
@@ -449,7 +465,7 @@ class RuleValidator:
                             error += str(counter) + " in '" + str(tool) + "'."
                             suggestion = get_typo_correction(priority,
                                 priority_list, max_edit_dist)
-                            if suggestion is not None:
+                            if suggestion:
                                 error += " Did you mean '" + str(suggestion) + "'?"
                             if not return_bool:
                                 error += " Ignoring..."
@@ -467,15 +483,25 @@ class RuleValidator:
                             if verbose:
                                 log.debug(error)
                             valid_rule = False
+                            suggestion = None
 
-                        elif rule["destination"]["priority"][priority] not in destination_list:
+                        elif app is None:
+                            if (rule["destination"]["priority"][priority]
+                                    not in destination_list
+                                    and rule["destination"]["priority"][priority] != "fail"):
+                                valid_destination = False
+                                suggestion = get_typo_correction(rule['destination']["priority"][priority],
+                                destination_list, max_edit_dist)
+                        elif not app.job_config.get_destination(
+                                rule["destination"]["priority"][priority]):
+                            valid_destination = False
+
+                        if not valid_destination:
                             error = "Destination for '" + str(tool) + "', rule "
                             error += str(counter) + ": '"
                             error += str(rule["destination"]["priority"][priority])
                             error += "' does not exist in job configuration."
-                            suggestion = get_typo_correction(rule["destination"]["priority"][priority],
-                                destination_list, max_edit_dist)
-                            if suggestion is not None:
+                            if suggestion:
                                 error += " Did you mean '" + str(suggestion) + "'?"
                             if not return_bool:
                                 error += " Ignoring..."
@@ -726,9 +752,9 @@ def parse_yaml(path="/config/tool_destinations.yml",
 
     """
 
-    global destination_list
-    destination_list = get_destination_list_from_job_config(
-        job_config_location=job_conf_path)
+    if app is None:
+        global destination_list
+        destination_list = get_destination_list_from_job_config(job_conf_path)
 
     # Import file from path
     try:
@@ -824,21 +850,33 @@ def validate_config(obj, return_bool=False):
         # default_priority, users, and verbose
 
         if 'default_destination' in obj:
+            valid_destination = False
+            suggestion = None
             if isinstance(obj['default_destination'], str):
-                if obj['default_destination'] in destination_list:
+                if app is None:
+                    if obj['default_destination'] in destination_list:
+                        new_config["default_destination"] = obj['default_destination']
+                        valid_destination = True
+                    else:
+                        suggestion = get_typo_correction(obj['default_destination'],
+                                                         destination_list, max_edit_dist)
+                elif app.job_config.get_destination(
+                        obj['default_destination']):
                     new_config["default_destination"] = obj['default_destination']
-                else:
+                    valid_destination = True
+
+                if not valid_destination:
                     error = ("Default destination '"
-                      + obj['default_destination']
-                      + "' does not appear in the job configuration.")
-                    suggestion = get_typo_correction(obj['default_destination'],
-                        destination_list, max_edit_dist)
-                    if suggestion is not None:
+                        + obj['default_destination']
+                        + "' does not appear in the job configuration.")
+                    if suggestion:
                         error += " Did you mean '" + str(suggestion) + "'?"
                     if verbose:
                         log.debug(error)
                     valid_config = False
+
             elif isinstance(obj['default_destination'], dict):
+
                 if ('priority' in obj['default_destination'] and
                         isinstance(obj['default_destination']['priority'], dict)):
 
@@ -847,16 +885,23 @@ def validate_config(obj, return_bool=False):
                                       str):
                             priority_list.add(priority)
 
-                            if obj['default_destination']['priority'][priority] in destination_list:
-                                new_config['default_destination']['priority'][priority] = obj[
-                                    'default_destination']['priority'][priority]
-                            else:
+                            if app is None:
+                                if obj['default_destination']['priority'][priority] in destination_list:
+                                    new_config["default_destination"]['priority'][priority] = obj['default_destination']['priority'][priority]
+                                    valid_destination = True
+                                else:
+                                    suggestion = get_typo_correction(obj['default_destination']['priority'][priority],
+                                        destination_list, max_edit_dist)
+                            elif app.job_config.get_destination(
+                                    obj['default_destination']['priority'][priority]):
+                                new_config["default_destination"]['priority'][priority] = obj['default_destination']['priority'][priority]
+                                valid_destination = True
+
+                            if not valid_destination:
                                 error = ("Default destination '"
                                   + obj['default_destination']['priority'][priority]
                                   + "' does not appear in the job configuration.")
-                                suggestion = get_typo_correction(obj['default_destination']['priority'][priority],
-                                    destination_list, max_edit_dist)
-                                if suggestion is not None:
+                                if suggestion:
                                     error += " Did you mean '" + str(suggestion) + "'?"
                                 if verbose:
                                     log.debug(error)
@@ -884,7 +929,7 @@ def validate_config(obj, return_bool=False):
                                              + "' is not a valid priority.")
                                     suggestion = get_typo_correction(obj['default_priority'],
                                         priority_list, max_edit_dist)
-                                    if suggestion is not None:
+                                    if suggestion:
                                         error += " Did you mean '" + str(suggestion) + "'?"
                                     if verbose:
                                         log.debug(error)
@@ -939,7 +984,7 @@ def validate_config(obj, return_bool=False):
                                   + "in the global default_destination section")
                                 suggestion = get_typo_correction(curr['priority'],
                                     priority_list, max_edit_dist)
-                                if suggestion is not None:
+                                if suggestion:
                                     error += " Did you mean '" + str(suggestion) + "'?"
                                 if verbose:
                                     log.debug(error)
@@ -974,22 +1019,34 @@ def validate_config(obj, return_bool=False):
                         # in each tool, there should always be only 2 sub-categories:
                         # default_destination (not mandatory) and rules (mandatory)
                         if "default_destination" in curr:
+                            valid_destination = False
+                            suggestion = None
                             if isinstance(curr['default_destination'], str):
-                                if curr['default_destination'] in destination_list:
+                                if app is None:
+                                    if curr['default_destination'] in destination_list:
+                                        new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
+                                        tool_has_default = True
+                                        valid_destination = True
+                                    else:
+                                        suggestion = get_typo_correction(curr['default_destination'],
+                                            destination_list, max_edit_dist)
+                                elif app.job_config.get_destination(
+                                        curr['default_destination']):
                                     new_config['tools'][tool]['default_destination'] = (curr['default_destination'])
                                     tool_has_default = True
-                                else:
+                                    valid_destination = True
+
+                                if not valid_destination:
                                     error = ("Default destination for '"
                                              + str(tool) + "': '"
                                              + curr['default_destination']
                                              + "' does not appear in the job configuration.")
-                                    suggestion = get_typo_correction(curr['default_destination'],
-                                        destination_list, max_edit_dist)
-                                    if suggestion is not None:
+                                    if suggestion:
                                         error += " Did you mean '" + str(suggestion) + "'?"
                                     if verbose:
                                         log.debug(error)
                                     valid_config = False
+
                             elif isinstance(curr['default_destination'], dict):
 
                                 if ('priority' in curr['default_destination']
@@ -999,22 +1056,33 @@ def validate_config(obj, return_bool=False):
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
                                             if isinstance(destination, str):
-                                                if destination in destination_list:
+                                                if app is None:
+                                                    if destination in destination_list:
+                                                        new_config['tools'][tool]['default_destination'][
+                                                            'priority'][priority] = destination
+                                                        tool_has_default = True
+                                                        valid_destination = True
+                                                    else:
+                                                        suggestion = get_typo_correction(destination,
+                                                            destination_list, max_edit_dist)
+                                                elif app.job_config.get_destination(
+                                                        destination):
                                                     new_config['tools'][tool]['default_destination'][
                                                         'priority'][priority] = destination
                                                     tool_has_default = True
-                                                else:
+                                                    valid_destination = True
+                                                    
+                                                if not valid_destination:
                                                     error = ("Default destination for '"
                                                              + str(tool) + "': '"
                                                              + destination + "' does not appear "
                                                              + "in the job configuration.")
-                                                    suggestion = get_typo_correction(destination,
-                                                        destination_list, max_edit_dist)
-                                                    if suggestion is not None:
+                                                    if suggestion:
                                                         error += " Did you mean '" + str(suggestion) + "'?"
                                                     if verbose:
                                                         log.debug(error)
                                                     valid_config = False
+
                                             else:
                                                 error = ("No default '" + str(priority)
                                                          + "' priority destination  for tool "
@@ -1029,7 +1097,7 @@ def validate_config(obj, return_bool=False):
                                                      + "'.")
                                             suggestion = get_typo_correction(priority,
                                                 priority_list, max_edit_dist)
-                                            if suggestion is not None:
+                                            if suggestion:
                                                 error += " Did you mean '" + str(suggestion) + "'?"
                                             if verbose:
                                                 log.debug(error)
@@ -1272,7 +1340,7 @@ def importer(test):
 
 
 def map_tool_to_destination(
-        job, app, tool, user_email, test=False, path=None, job_conf_path=None):
+        job, appl, tool, user_email, test=False, path=None, job_conf_path=None):
     """
     Dynamically allocate resources
 
@@ -1291,10 +1359,12 @@ def map_tool_to_destination(
     """
     importer(test)
 
-    # set verbose to True by default, just in case (some tests fail without this due to
-    # how the tests apparently work)
+    # set verbose to True by default, just in case (some tests fail without
+    # this due to how the tests apparently work)
     global verbose
+    global app
     verbose = True
+    app = appl
     filesize_rule_present = False
     num_input_datasets_rule_present = False
     records_rule_present = False
@@ -1592,6 +1662,9 @@ def map_tool_to_destination(
             output += destination + "'."
             log.debug(output)
 
+    #unset app so that it doesn't mess with future runs.
+    app = None
+
     return destination
 
 
@@ -1783,8 +1856,8 @@ if __name__ == '__main__':
         help='Use this option to validate tool_destinations.yml.'
              + ' Optionally, provide the path to the tool_destinations.yml'
              + ' that you would like to check, and/or the path to the related'
-             + ' job_conf.xml. Default: galaxy/config/tool_destinations.yml and'
-             + ' galaxy/config/job_conf.xml')
+             + ' job_conf.xml. Default: galaxy/config/tool_destinations.yml'
+             + 'and galaxy/config/job_conf.xml')
 
     parser.add_argument(
         '-j', '--job-config', dest='job_config')
@@ -1799,17 +1872,16 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
 
-    if args.job_config:
-        job_conf = args.job_config
-    else:
-        job_conf = None
+    job_config_location = args.job_config
 
     if args.check_config:
         valid_config = parse_yaml(path=args.check_config,
-                                  job_conf_path=job_conf, return_bool=True)
+                                  job_conf_path=job_config_location,
+                                  return_bool=True)
     else:
         valid_config = parse_yaml(path="/config/tool_destinations.yml",
-                                  job_conf_path=job_conf, return_bool=True)
+                                 job_conf_path=job_config_location,
+                                 return_bool=True)
 
     if valid_config:
         print("Configuration is valid!")
