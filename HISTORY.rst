@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.3.dev0
+18.5.3 (2018-02-28)
 ---------------------
 
 * Fix path module for import on Windows for Pulsar.
