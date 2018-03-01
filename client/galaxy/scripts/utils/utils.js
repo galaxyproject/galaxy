@@ -3,6 +3,11 @@
  * do not require their own classes/files
  */
 import _l from "utils/localization";
+import * as _ from "underscore";
+
+/* global $ */
+/* global Galaxy */
+
 /** Builds a basic iframe */
 export function iframe(src) {
     return `<iframe src="${src}" frameborder="0" style="width: 100%; height: 100%;"/>`;
@@ -14,7 +19,9 @@ export function deepeach(dict, callback) {
         var d = dict[i];
         if (_.isObject(d)) {
             var new_dict = callback(d);
-            new_dict && (dict[i] = new_dict);
+            if (new_dict) {
+                dict[i] = new_dict;
+            }
             deepeach(d, callback);
         }
     }
@@ -117,7 +124,9 @@ export function get(options) {
     top.__utils__get__ = top.__utils__get__ || {};
     var cache_key = JSON.stringify(options);
     if (options.cache && top.__utils__get__[cache_key]) {
-        options.success && options.success(top.__utils__get__[cache_key]);
+        if (options.success) {
+            options.success(top.__utils__get__[cache_key]);
+        }
         window.console.debug(`utils.js::get() - Fetching from cache [${options.url}].`);
     } else {
         request({
@@ -125,10 +134,14 @@ export function get(options) {
             data: options.data,
             success: function(response) {
                 top.__utils__get__[cache_key] = response;
-                options.success && options.success(response);
+                if (options.success) {
+                    options.success(response);
+                }
             },
             error: function(response, status) {
-                options.error && options.error(response, status);
+                if (options.error) {
+                    options.error(response, status);
+                }
             }
         });
     }
@@ -169,24 +182,30 @@ export function request(options) {
             if (typeof response === "string") {
                 try {
                     response = response.replace("Infinity,", '"Infinity",');
-                    response = jQuery.parseJSON(response);
+                    response = $.parseJSON(response);
                 } catch (e) {
                     console.debug(e);
                 }
             }
-            options.success && options.success(response);
+            if (options.success) {
+                options.success(response);
+            }
         })
         .fail(response => {
             var response_text = null;
             try {
-                response_text = jQuery.parseJSON(response.responseText);
+                response_text = $.parseJSON(response.responseText);
             } catch (e) {
                 response_text = response.responseText;
             }
-            options.error && options.error(response_text, response.status);
+            if (options.error) {
+                options.error(response_text, response.status);
+            }
         })
         .always(() => {
-            options.complete && options.complete();
+            if (options.complete) {
+                options.complete();
+            }
         });
 }
 
