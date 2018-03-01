@@ -6,7 +6,7 @@
         <div class="ui-thumbnails-grid">
             <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
             <div v-for="plugin in plugins">
-                <table v-if="!search || plugin.name.indexOf(search) != -1">
+                <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
                             <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo"/>
@@ -91,6 +91,11 @@ export default {
         create: function(plugin) {
             let href = `${Galaxy.root}plugins/visualizations/${plugin.name}/show?dataset_id=${this.selected}`;
             $("#galaxy_main").attr("src", href);
+        },
+        match: function(plugin) {
+            return !this.search ||
+                   plugin.name.indexOf(this.search) != -1 ||
+                   (plugin.description && plugin.description.indexOf(this.search) != -1);
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
