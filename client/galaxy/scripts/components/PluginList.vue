@@ -63,7 +63,6 @@ export default {
         select: function(plugin) {
             this.name = plugin.name;
             this.files = [{id: "1", name: "name"}, {id: "2", name: "name"}, {id: "3", name: "name"}, {id: "4", name: "name"}];
-            window.console.log(plugin);
         }
     }
 };
