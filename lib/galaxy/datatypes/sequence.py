@@ -319,7 +319,7 @@ class FastaGz(Sequence, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTA format"""
-        if not SNIFF_COMPRESSED_FASTAS:
+        if not SNIFF_COMPRESSED_FASTAS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
@@ -746,7 +746,7 @@ class FastqGz(BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
@@ -784,7 +784,7 @@ class FastqBz2(BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_bz2(filename):
             return False
