@@ -48,11 +48,6 @@ List of valid categories that can be expected in the configuration.
 valid_categories = ['verbose', 'tools', 'default_destination',
                   'users', 'default_priority']
 
-"""
-If running from inside Galaxy, will be galaxy app. Otherwise, it will be none.
-"""
-app = None
-
 
 class MalformedYMLException(Exception):
     pass
@@ -81,7 +76,7 @@ class RuleValidator:
     """
 
     @classmethod
-    def validate_rule(cls, rule_type, return_bool=False, *args, **kwargs):
+    def validate_rule(cls, rule_type, app, return_bool=False, *args, **kwargs):
         """
         This function is responsible for passing each rule to its relevant
         function.
@@ -98,20 +93,20 @@ class RuleValidator:
                  return_bool)
         """
         if rule_type == 'file_size':
-            return cls.__validate_file_size_rule(return_bool, *args, **kwargs)
+            return cls.__validate_file_size_rule(app, return_bool, *args, **kwargs)
 
         elif rule_type == 'num_input_datasets':
-            return cls.__validate_num_input_datasets_rule(return_bool, *args, **kwargs)
+            return cls.__validate_num_input_datasets_rule(app, return_bool, *args, **kwargs)
 
         elif rule_type == 'records':
-            return cls.__validate_records_rule(return_bool, *args, **kwargs)
+            return cls.__validate_records_rule(app, return_bool, *args, **kwargs)
 
         elif rule_type == 'arguments':
-            return cls.__validate_arguments_rule(return_bool, *args, **kwargs)
+            return cls.__validate_arguments_rule(app, return_bool, *args, **kwargs)
 
     @classmethod
     def __validate_file_size_rule(
-            cls, return_bool, original_rule, counter, tool):
+            cls, app, return_bool, original_rule, counter, tool):
         """
         This function is responsible for validating 'file_size' rules.
 
@@ -150,7 +145,7 @@ class RuleValidator:
         # Destination Verification #
         if rule is not None:
             valid_rule, rule = cls.__validate_destination(
-                valid_rule, return_bool, rule, tool, counter)
+                valid_rule, app, return_bool, rule, tool, counter)
 
         # Bounds Verification #
         if rule is not None:
@@ -165,7 +160,7 @@ class RuleValidator:
 
     @classmethod
     def __validate_num_input_datasets_rule(
-            cls, return_bool, original_rule, counter, tool):
+            cls, app, return_bool, original_rule, counter, tool):
         """
         This function is responsible for validating 'num_input_datasets' rules.
 
@@ -204,7 +199,7 @@ class RuleValidator:
         # Destination Verification #
         if rule is not None:
             valid_rule, rule = cls.__validate_destination(
-                valid_rule, return_bool, rule, tool, counter)
+                valid_rule, app, return_bool, rule, tool, counter)
 
         # Bounds Verification #
         if rule is not None:
@@ -218,7 +213,7 @@ class RuleValidator:
             return rule
 
     @classmethod
-    def __validate_records_rule(cls, return_bool, original_rule, counter, tool):
+    def __validate_records_rule(cls, app, return_bool, original_rule, counter, tool):
         """
         This function is responsible for validating 'records' rules.
 
@@ -257,7 +252,7 @@ class RuleValidator:
         # Destination Verification #
         if rule is not None:
             valid_rule, rule = cls.__validate_destination(
-                valid_rule, return_bool, rule, tool, counter)
+                valid_rule, app, return_bool, rule, tool, counter)
 
         # Bounds Verification #
         if rule is not None:
@@ -272,7 +267,7 @@ class RuleValidator:
 
     @classmethod
     def __validate_arguments_rule(
-            cls, return_bool, original_rule, counter, tool):
+            cls, app, return_bool, original_rule, counter, tool):
         """
         This is responsible for validating 'arguments' rules.
 
@@ -311,7 +306,7 @@ class RuleValidator:
         # Destination Verification #
         if rule is not None:
             valid_rule, rule = cls.__validate_destination(
-                valid_rule, return_bool, rule, tool, counter)
+                valid_rule, app, return_bool, rule, tool, counter)
 
         # Arguments Verification (for rule_type arguments; read comment block at top
         # of function for clarification.
@@ -378,7 +373,7 @@ class RuleValidator:
         return valid_rule, rule
 
     @classmethod
-    def __validate_destination(cls, valid_rule, return_bool, rule, tool, counter):
+    def __validate_destination(cls, valid_rule, app, return_bool, rule, tool, counter):
         """
         This function is responsible for validating destination.
 
@@ -712,7 +707,7 @@ class RuleValidator:
 
 
 def parse_yaml(path="/config/tool_destinations.yml",
-               job_conf_path="/config/job_conf.xml", appl=None, test=False,
+               job_conf_path="/config/job_conf.xml", app=None, test=False,
                return_bool=False):
     """
     Get a yaml file from path and send it to validate_config for validation.
@@ -761,9 +756,9 @@ def parse_yaml(path="/config/tool_destinations.yml",
         # Test imported file
         try:
             if return_bool:
-                valid_config = validate_config(config, return_bool)
+                valid_config = validate_config(config, app, return_bool)
             else:
-                config = validate_config(config)
+                config = validate_config(config, app)
         except MalformedYMLException:
             if verbose:
                 log.error(str(sys.exc_value))
@@ -812,7 +807,7 @@ def validate_destination(app, destination):
     return (valid_destination, suggestion)
 
 
-def validate_config(obj, return_bool=False):
+def validate_config(obj, app=None, return_bool=False,):
     """
     Validate received config.
 
@@ -1100,7 +1095,7 @@ def validate_config(obj, return_bool=False):
                                         # result
                                         if return_bool:
                                             valid_rule = RuleValidator.validate_rule(
-                                                rule['rule_type'], return_bool,
+                                                rule['rule_type'], app, return_bool,
                                                 rule, counter, tool)
 
                                         # otherwise, retrieve the processed rule
@@ -1108,7 +1103,7 @@ def validate_config(obj, return_bool=False):
                                             validated_rule = (
                                                 RuleValidator.validate_rule(
                                                     rule['rule_type'],
-                                                    return_bool,
+                                                    app, return_bool,
                                                     rule, counter, tool))
 
                                         # if the result we get is False, then
@@ -1315,7 +1310,7 @@ def importer(test):
 
 
 def map_tool_to_destination(
-        job, appl, tool, user_email, test=False, path=None, job_conf_path=None):
+        job, app, tool, user_email, test=False, path=None, job_conf_path=None):
     """
     Dynamically allocate resources
 
@@ -1337,9 +1332,7 @@ def map_tool_to_destination(
     # set verbose to True by default, just in case (some tests fail without
     # this due to how the tests apparently work)
     global verbose
-    global app
     verbose = True
-    app = appl
     filesize_rule_present = False
     num_input_datasets_rule_present = False
     records_rule_present = False
@@ -1351,7 +1344,7 @@ def map_tool_to_destination(
         job_conf_path = app.config.job_config_file
 
     try:
-        config = parse_yaml(path, job_conf_path)
+        config = parse_yaml(path, job_conf_path, app)
     except MalformedYMLException as e:
         raise JobMappingException(e)
 
@@ -1636,9 +1629,6 @@ def map_tool_to_destination(
             output = "Running '" + str(tool.old_id) + "' with '"
             output += destination + "'."
             log.debug(output)
-
-    # unset app so that it doesn't mess with future runs.
-    app = None
 
     return destination
 
