@@ -6,7 +6,10 @@ import errno
 import imp
 import logging
 from functools import partial
-from grp import getgrgid
+try:
+    from grp import getgrgid
+except ImportError:
+    getgrgid = None
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -27,7 +30,10 @@ from os.path import (
     relpath,
     sep as separator,
 )
-from pwd import getpwuid
+try:
+    from pwd import getpwuid
+except ImportError:
+    getpwuid = None
 
 from six import iteritems, string_types
 from six.moves import map, zip
@@ -119,6 +125,9 @@ def __path_permission_for_user(path, username):
     :type username:     string
     :param username:    a username matching the systems username
     """
+    if getpwuid is None:
+        raise NotImplementedError("This functionality is not implemented for Windows.")
+
     group_id_of_file = stat(path).st_gid
     file_owner = getpwuid(stat(path).st_uid)
     group_members = getgrgid(group_id_of_file).gr_mem
