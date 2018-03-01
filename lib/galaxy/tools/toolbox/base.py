@@ -927,7 +927,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             if elt:
                 yield elt
 
-    def _get_tool_to_dict(self, trans, tool):
+    def get_tool_to_dict(self, trans, tool):
         """Return tool's to_dict.
         Use cache if present, store to cache otherwise.
         Note: The cached tool's to_dict is specific to the calls from toolbox.
@@ -953,14 +953,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         if in_panel:
             panel_elts = list(self.tool_panel_contents(trans, **kwds))
             for elt in panel_elts:
-                rval.append(self._get_tool_to_dict(trans, elt))
+                # Only use cache for objects that are Tools.
+                if hasattr(elt, "tool_type"):
+                    rval.append(self.get_tool_to_dict(trans, elt))
+                else:
+                    kwargs = dict(trans=trans, link_details=True, toolbox=self)
+                    rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)
             for id, tool in self._tools_by_id.items():
                 tool = filter_method(tool, panel_item_types.TOOL)
                 if not tool:
                     continue
-                rval.append(self._get_tool_to_dict(trans, tool))
+                rval.append(self.get_tool_to_dict(trans, tool))
         return rval
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
