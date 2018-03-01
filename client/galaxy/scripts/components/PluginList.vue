@@ -25,7 +25,7 @@
                         <td/>
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="ui-form-info ui-bold">Select the dataset you would like to use:</div>
+                                <div class="ui-form-info ui-bold">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
