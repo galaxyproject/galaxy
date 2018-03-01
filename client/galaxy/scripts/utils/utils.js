@@ -350,7 +350,7 @@ export function setWindowTitle(title) {
 }
 
 export function setActiveTab(active_tab) {
-    $(".dropdown.active").removeClass("active");
+    $("#masthead .dropdown.active").removeClass("active");
     $("#" + active_tab + ">.dropdown").addClass("active");
 }
 
