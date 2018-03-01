@@ -30,7 +30,9 @@ var View = Backbone.View.extend({
                 Utils.setWindowTitle();
                 view.allow_title_display = true;
             }
-            view.active_tab && Utils.setActiveTab(view.active_tab);
+            if (view.active_tab) {
+                Utils.setActiveTab(view.active_tab);
+            };
             self.center.display(view);
         };
         Galaxy.router = this.router = options.Router && new options.Router(self, options);
