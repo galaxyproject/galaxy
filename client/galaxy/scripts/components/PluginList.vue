@@ -4,8 +4,9 @@
             {{ error }}
         </div>
         <div class="ui-thumbnails-grid">
+            <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
             <div v-for="plugin in plugins">
-                <table>
+                <table v-if="!search || plugin.name.indexOf(search) != -1">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
                             <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo"/>
@@ -53,6 +54,7 @@ export default {
         return {
             plugins: [],
             hdas: [],
+            search: "",
             selected: null,
             name: null,
             error: null
