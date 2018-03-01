@@ -256,18 +256,22 @@ var Collection = Backbone.Collection.extend({
                         divider: true
                     },
                     {
-                        title: _l("Saved Histories"),
-                        url: "histories/list",
-                        target: "_top"
-                    },
-                    {
                         title: _l("Saved Datasets"),
                         url: "datasets/list",
                         target: "_top"
                     },
                     {
+                        title: _l("Saved Histories"),
+                        url: "histories/list",
+                        target: "_top"
+                    },
+                    {
                         title: _l("Saved Pages"),
                         url: "pages/list",
+                        target: "_top"
+                    },{
+                        title: _l("Saved Visualizations"),
+                        url: "visualizations/list",
                         target: "_top"
                     }
                 ]

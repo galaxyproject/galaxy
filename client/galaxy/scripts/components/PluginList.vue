@@ -26,12 +26,12 @@
                             <div v-if="hdas && hdas.length > 0">
                                 <div class="ui-form-info ui-bold">Select the dataset you would like to use:</div>
                                 <div class="ui-select">
-                                    <select class="select">
+                                    <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down"/>
                                 </div>
-                                <button type="button" class="ui-button-default ui-float-left btn btn-primary">
+                                <button type="button" class="ui-button-default ui-float-left btn btn-primary" @click="create(plugin)">
                                     <i class="icon fa fa-check ui-margin-right"/>
                                     <span class="title">Create Visualization</span>
                                 </button>
@@ -53,6 +53,7 @@ export default {
         return {
             plugins: [],
             hdas: [],
+            selected: null,
             name: null,
             error: null
         }
@@ -63,8 +64,7 @@ export default {
             this.plugins = response.data;
         })
         .catch(e => {
-            let message = e.response && e.response.data && e.response.data.err_msg;
-            this.error = message || "Request failed for unkown reason.";
+            this.error = this._errorMessage(e);
         })
     },
     methods: {
@@ -75,14 +75,24 @@ export default {
                 .then(response => {
                     this.name = plugin.name;
                     this.hdas = response.data && response.data.hdas;
+                    if (this.hdas && this.hdas.length > 0) {
+                        this.selected = this.hdas[0].id;
+                    }
                 })
                 .catch(e => {
-                    let message = e.response && e.response.data && e.response.data.err_msg;
-                    this.error = message || "Request failed for unkown reason.";
+                    this.error = this._errorMessage(e);
                 })
             } else {
-                this.error = "This view requires an accessible history.";
+                this.error = "This option requires an accessible history.";
             }
+        },
+        create: function(plugin) {
+            let href = `${Galaxy.root}plugins/visualizations/${plugin.name}/show?dataset_id=${this.selected}`;
+            $("#galaxy_main").attr("src", href);
+        },
+        _errorMessage: function(e) {
+            let message = e && e.response && e.response.data && e.response.data.err_msg;
+            return message || "Request failed for unkown reason.";
         }
     }
 };
