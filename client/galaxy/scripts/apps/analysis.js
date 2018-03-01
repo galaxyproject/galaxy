@@ -127,7 +127,8 @@ window.app = function app(options, bootstrapped) {
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`
+                    url_base: `${Galaxy.root}workflow/list_published`,
+                    active_tab: "shared"
                 })
             );
         },
@@ -171,7 +172,8 @@ window.app = function app(options, bootstrapped) {
         show_openids: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}user/openids_list`
+                    url_base: `${Galaxy.root}user/openids_list`,
+                    active_tab: "user"
                 })
             );
         },
@@ -179,7 +181,8 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`
+                    url_base: `${Galaxy.root}dataset/list`,
+                    active_tab: "user"
                 })
             );
         },

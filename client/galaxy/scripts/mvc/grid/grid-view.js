@@ -18,6 +18,7 @@ export default Backbone.View.extend({
     initialize: function(grid_config) {
         this.grid = new GridModel();
         this.title = grid_config.title;
+        this.active_tab = grid_config.active_tab;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
