@@ -109,7 +109,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
-    "Extract genomic DNA 1",
     "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
     "GeneBed_Maf_Fasta2",
@@ -164,6 +163,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_to_bam": LooseVersion("1.1.3"),
     "PEsortedSAM2readprofile": LooseVersion("1.1.1"),
     "fetchflank": LooseVersion("1.0.1"),
+    "Extract genomic DNA 1": LooseVersion("3.0.0"),
 }
 
 
