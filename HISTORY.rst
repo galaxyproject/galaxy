@@ -9,7 +9,7 @@ History
 18.5.3.dev0
 ---------------------
 
-    
+* Fix path module for import on Windows for Pulsar.
 
 ---------------------
 18.5.2 (2018-02-28)
