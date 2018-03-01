@@ -31,7 +31,7 @@ class PluginsController(BaseAPIController):
     @expose_api
     def show(self, trans, id, **kwargs):
         """
-        GET /api/plugins/{plugin_name}:
+        GET /api/plugins/{id}:
         """
         registry = self._get_registry(trans)
         result = {}

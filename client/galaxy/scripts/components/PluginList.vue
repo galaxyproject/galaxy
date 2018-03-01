@@ -1,5 +1,8 @@
 <template>
     <div class="ui-thumbnails">
+        <div v-if="error" class="ui-message alert alert-danger">
+            {{ error }}
+        </div>
         <div class="ui-thumbnails-grid">
             <div v-for="plugin in plugins">
                 <table>
@@ -19,12 +22,12 @@
                     </tr>
                     <tr>
                         <td/>
-                        <td>
-                            <div v-if="files && plugin.name == name">
+                        <td v-if="plugin.name == name">
+                            <div v-if="hdas && hdas.length > 0">
                                 <div class="ui-form-info ui-bold">Select the dataset you would like to use:</div>
                                 <div class="ui-select">
                                     <select class="select">
-                                        <option v-for="file in files" :value="file.id">{{ file.name }}</option>
+                                        <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down"/>
                                 </div>
@@ -32,6 +35,9 @@
                                     <i class="icon fa fa-check ui-margin-right"/>
                                     <span class="title">Create Visualization</span>
                                 </button>
+                            </div>
+                            <div v-else class="ui-message alert alert-danger">
+                                There is no suitable dataset in your current history which can be visualized with this plugin.
                             </div>
                         </td>
                     </tr>
@@ -46,8 +52,9 @@ export default {
     data() {
         return {
             plugins: [],
-            files: [],
-            name: null
+            hdas: [],
+            name: null,
+            error: null
         }
     },
     created() {
@@ -56,18 +63,35 @@ export default {
             this.plugins = response.data;
         })
         .catch(e => {
-            alert(e);
+            let message = e.response && e.response.data && e.response.data.err_msg;
+            this.error = message || "Request failed for unkown reason.";
         })
     },
     methods: {
         select: function(plugin) {
-            this.name = plugin.name;
-            this.files = [{id: "1", name: "name"}, {id: "2", name: "name"}, {id: "3", name: "name"}, {id: "4", name: "name"}];
+            let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+            if (history_id) {
+                axios.get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
+                .then(response => {
+                    this.name = plugin.name;
+                    this.hdas = response.data && response.data.hdas;
+                })
+                .catch(e => {
+                    let message = e.response && e.response.data && e.response.data.err_msg;
+                    this.error = message || "Request failed for unkown reason.";
+                })
+            } else {
+                this.error = "This view requires an accessible history.";
+            }
         }
     }
 };
 </script>
 <style>
+.ui-message {
+    display: block;
+    margin-top: 0px;
+}
 .ui-bold {
     font-weight: bold;
     margin-bottom: 5px;
