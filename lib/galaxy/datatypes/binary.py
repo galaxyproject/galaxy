@@ -193,6 +193,7 @@ class BamNative(Binary):
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "bam_native"
+    sort_flag = None
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -266,6 +267,36 @@ class BamNative(Binary):
         rel_paths.append("%s.%s.bai" % (name or dataset.file_name, dataset.extension))
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
+
+    def groom_dataset_content(self, file_name):
+        """
+        Ensures that the BAM file contents are coordinate-sorted.  This function is called
+        on an output dataset after the content is initially generated.
+        """
+        # Use pysam to sort the BAM file
+        # This command may also creates temporary files <out.prefix>.%d.bam when the
+        # whole alignment cannot fit into memory.
+        # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
+        if not self.dataset_content_needs_grooming(file_name):
+            # Don't re-sort if already sorted
+            return
+        tmp_dir = tempfile.mkdtemp()
+        tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
+        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
+        slots = os.environ.get('GALAXY_SLOTS', 1)
+        sort_args = []
+        if self.sort_flag:
+            sort_args = [self.sort_flag]
+        sort_args.extend(["-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name])
+        try:
+            pysam.sort(*sort_args)
+        except Exception:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            raise
+        # Move samtools_created_sorted_file_name to our output dataset location
+        shutil.move(sorted_file_name, file_name)
+        # Remove temp file and empty temporary directory
+        os.rmdir(tmp_dir)
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
         if not offset == -1:
@@ -361,32 +392,6 @@ class Bam(BamNative):
             pass
         return needs_sorting
 
-    def groom_dataset_content(self, file_name):
-        """
-        Ensures that the BAM file contents are sorted.  This function is called
-        on an output dataset after the content is initially generated.
-        """
-        # Use pysam to sort the BAM file
-        # This command may also creates temporary files <out.prefix>.%d.bam when the
-        # whole alignment cannot fit into memory.
-        # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
-        if not self.dataset_content_needs_grooming(file_name):
-            # Don't re-sort if already sorted
-            return
-        tmp_dir = tempfile.mkdtemp()
-        tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
-        slots = os.environ.get('GALAXY_SLOTS', 1)
-        try:
-            pysam.sort("-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
-        except Exception:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            raise
-        # Move samtools_created_sorted_file_name to our output dataset location
-        shutil.move(sorted_file_name, file_name)
-        # Remove temp file and empty temporary directory
-        os.rmdir(tmp_dir)
-
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
         super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
@@ -480,6 +485,48 @@ class Bam(BamNative):
         """Generic samtools interface - all options available through settings."""
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
+
+
+class BamInputSorted(BamNative):
+
+    sort_flag = '-n'
+    file_ext = 'qname_input_sorted.bam'
+
+    """
+    A class for BAM files that can formally be unsorted or queryname sorted.
+    Alignments are either ordered based on the order with which the queries appear when producing the alignment,
+    or ordered by their queryname.
+    This notaby keeps alignments produced by paired end sequencing adjacent.
+    """
+
+    def dataset_content_needs_grooming(self, file_name):
+        """
+        Groom if the file is coordinate sorted
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        with pysam.AlignmentFile(filename=file_name) as f:
+            # The only sure thing we know here is that the sort order can't be coordinate
+            return f.header.get('HD', {}).get('SO') == 'coordinate'
+
+
+class BamQuerynameSorted(BamInputSorted):
+    """A class for queryname sorted BAM files."""
+
+    sort_flag = '-n'
+    file_ext = "qname_sorted.bam"
+
+    def sniff(self, file_name):
+        return super(BamQuerynameSorted, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
+
+    def dataset_content_needs_grooming(self, file_name):
+        """
+        Check if file_name is a queryname-sorted BAM file
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        with pysam.AlignmentFile(filename=file_name) as f:
+            return f.header.get('HD', {}).get('SO') != 'queryname'
 
 
 class CRAM(Binary):
