@@ -286,8 +286,6 @@ class Grid(object):
                         extra = "&darr;"
                     else:
                         extra = "&uarr;"
-                else:
-                    href = url(sort=column.key)
             grid_config['columns'].append({
                 'key'               : column.key,
                 'visible'           : column.visible,
