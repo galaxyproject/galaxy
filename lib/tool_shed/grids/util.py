@@ -71,9 +71,7 @@ def build_changeset_revision_select_field(trans, repository, selected_value=None
         name = 'changeset_revision_%d' % repository.id
     else:
         name = 'changeset_revision'
-    select_field = SelectField(name=name,
-                               refresh_on_change=True,
-                               refresh_on_change_values=refresh_on_change_values)
+    select_field = SelectField(name=name, refresh_on_change=True)
     for option_tup in options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option(option_tup[0], option_tup[1], selected=selected)
@@ -122,7 +120,7 @@ def get_latest_downloadable_repository_metadata(trans, repository):
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
-    except:
+    except Exception:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
                                                                                               repo,
                                                                                               tip_ctx,
@@ -161,7 +159,7 @@ def get_latest_repository_metadata(trans, repository):
     try:
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, encoded_repository_id, tip_ctx)
         return repository_metadata
-    except:
+    except Exception:
         latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
                                                                                               repo,
                                                                                               tip_ctx,

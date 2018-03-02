@@ -1,38 +1,55 @@
 from __future__ import absolute_import
 
 import base64
-import httplib
 import json
 import logging
 import os
 import sgmllib
+
 import requests
-
-from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import expression
 from markupsafe import escape
+from six.moves.http_client import HTTPConnection
+from sqlalchemy import and_
+from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
+from sqlalchemy.sql import expression
 
-from tool_shed.util import encoding_util
-
-from galaxy import model
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    model,
+    util,
+    web
+)
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import unicodify, FILENAME_VALID_CHARS
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    unicodify
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
-from galaxy.web.framework.formbuilder import form
-from galaxy.web.framework.helpers import grids, time_ago, to_unicode
-from galaxy.workflow.extract import extract_workflow
-from galaxy.workflow.extract import summarize
-from galaxy.workflow.modules import module_factory
-from galaxy.workflow.modules import WorkflowModuleInjector
-from galaxy.workflow.render import WorkflowCanvas, STANDALONE_SVG_TEMPLATE
+from galaxy.web.base.controller import (
+    BaseUIController,
+    SharableMixin,
+    UsesStoredWorkflowMixin
+)
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago,
+)
+from galaxy.workflow.extract import (
+    extract_workflow,
+    summarize
+)
+from galaxy.workflow.modules import (
+    module_factory,
+    WorkflowModuleInjector
+)
+from galaxy.workflow.render import (
+    STANDALONE_SVG_TEMPLATE,
+    WorkflowCanvas
+)
+from tool_shed.util import encoding_util
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +102,6 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
     model_class = model.StoredWorkflow
     default_sort_key = "update_time"
     default_filter = dict(public_url="All", username="All", tags="All")
-    use_async = True
     columns = [
         grids.PublicURLColumn("Name", key="name", filterable="advanced", attach_popup=True),
         grids.OwnerAnnotationColumn("Annotation",
@@ -120,10 +136,14 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             url_args=dict(action="export_to_file")
         ),
     ]
+    num_rows_per_page = 50
+    use_paging = True
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching stored_workflow.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        # In addition to that - be sure to lazyload the latest_workflow - it isn't needed and it causes all
+        # of its steps to be eagerly loaded.
+        return trans.sa_session.query(self.model_class).join("user").options(lazyload("latest_workflow"), eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # A public workflow is published, has a slug, and is not deleted.
@@ -185,7 +205,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
-        kwargs['dict_format'] = True
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose
@@ -366,28 +385,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
             message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for(controller='workflow'), referer_message), use_panels=True)
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def rename(self, trans, id, new_name=None, **kwargs):
-        stored = self.get_stored_workflow(trans, id)
-        if new_name is not None:
-            san_new_name = sanitize_html(new_name)
-            stored.name = san_new_name
-            stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
-            message = 'Workflow renamed to: %s' % escape(san_new_name)
-            trans.set_message(message)
-            # Take care of proxy prefix in url as well
-            redirect_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
-            return trans.response.send_redirect(redirect_url)
-        else:
-            return form(url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id)),
-                        "Rename workflow",
-                        submit_text="Rename",
-                        use_panels=True) \
-                .add_text("new_name", "Workflow Name", value=to_unicode(stored.name))
+            % (stored.name, web.url_for('/workflows/list'), referer_message))
 
     @web.expose
     @web.require_login("use Galaxy workflows")
@@ -518,14 +516,26 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
         trans.response.send_redirect(return_url)
 
-    @web.expose
-    @web.require_login("create workflows")
-    def create(self, trans, workflow_name=None, workflow_annotation=""):
-        """
-        Create a new stored workflow with name `workflow_name`.
-        """
-        user = trans.get_user()
-        if workflow_name is not None:
+    @web.expose_api
+    def create(self, trans, payload=None, **kwd):
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Create Workflow',
+                'inputs' : [{
+                    'name'  : 'workflow_name',
+                    'label' : 'Name',
+                    'value' : 'Unnamed workflow'
+                }, {
+                    'name'  : 'workflow_annotation',
+                    'label' : 'Annotation',
+                    'help'  : 'A description of the workflow; annotation is shown alongside shared or published workflows.'
+                }]}
+        else:
+            user = trans.get_user()
+            workflow_name = payload.get('workflow_name')
+            workflow_annotation = payload.get('workflow_annotation')
+            if not workflow_name:
+                return self.message_exception(trans, 'Please provide a workflow name.')
             # Create the new stored workflow
             stored_workflow = model.StoredWorkflow()
             stored_workflow.name = workflow_name
@@ -543,14 +553,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session = trans.sa_session
             session.add(stored_workflow)
             session.flush()
-            return self.editor(trans, id=trans.security.encode_id(stored_workflow.id))
-        else:
-            return form(url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True) \
-                .add_text("workflow_name", "Workflow Name", value="Unnamed workflow") \
-                .add_text("workflow_annotation",
-                          "Workflow Annotation",
-                          value="",
-                          help="A description of the workflow; annotation is shown alongside shared or published workflows.")
+            return {'id': trans.security.encode_id(stored_workflow.id), 'message': 'Workflow %s has been created.' % workflow_name}
 
     @web.json
     def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation=""):
@@ -679,7 +682,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         auth_header = base64.b64encode('%s:%s' % (myexp_username, myexp_password))
         headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": "Basic %s" % auth_header}
         myexp_url = trans.app.config.get("myexperiment_url", self.__myexp_url)
-        conn = httplib.HTTPConnection(myexp_url)
+        conn = HTTPConnection(myexp_url)
         # NOTE: blocks web thread.
         conn.request("POST", "/workflow.xml", request, headers)
         response = conn.getresponse()
@@ -903,12 +906,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                                                                         id=repository_id,
                                                                         message=message,
                                                                         status=status))
-                    redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+                    redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
                     return trans.response.send_redirect(redirect_url)
         if cntrller == 'api':
             return status, message
         if status == 'error':
-            redirect_url = url_for('/') + 'workflow?status=' + status + '&message=%s' % escape(message)
+            redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
             return trans.response.send_redirect(redirect_url)
         else:
             return {
@@ -988,7 +991,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                     # Extract just the output flags for this step.
                     p = "%s|otag|" % step.id
                     l = len(p)
-                    outputs = [k[l:] for (k, v) in kwargs.iteritems() if k.startswith(p)]
+                    outputs = [k[l:] for (k, v) in kwargs.items() if k.startswith(p)]
                     if step.workflow_outputs:
                         for existing_output in step.workflow_outputs:
                             if existing_output.output_name not in outputs:
@@ -1059,10 +1062,10 @@ def _expand_multiple_inputs(kwargs):
     input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
 
     # Input name that are multiply specified
-    multi_input_keys = matched_multi_inputs.keys() + multiplied_multi_inputs.keys()
+    multi_input_keys = list(matched_multi_inputs.keys()) + list(multiplied_multi_inputs.keys())
 
     for input_combo in input_combos:
-        for key, value in input_combo.iteritems():
+        for key, value in input_combo.items():
             kwargs[key] = value
         yield (kwargs, multi_input_keys)
 
@@ -1073,14 +1076,14 @@ def _extend_with_matched_combos(single_inputs, multi_inputs):
 
     matched_multi_inputs = []
 
-    first_multi_input_key = multi_inputs.keys()[0]
+    first_multi_input_key = next(iter(multi_inputs.keys()))
     first_multi_value = multi_inputs.get(first_multi_input_key)
 
     for value in first_multi_value:
         new_inputs = _copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
         matched_multi_inputs.append(new_inputs)
 
-    for multi_input_key, multi_input_values in multi_inputs.iteritems():
+    for multi_input_key, multi_input_values in multi_inputs.items():
         if multi_input_key == first_multi_input_key:
             continue
         if len(multi_input_values) != len(first_multi_value):
@@ -1093,7 +1096,7 @@ def _extend_with_matched_combos(single_inputs, multi_inputs):
 def _extend_with_multiplied_combos(input_combos, multi_inputs):
     combos = input_combos
 
-    for multi_input_key, multi_input_value in multi_inputs.iteritems():
+    for multi_input_key, multi_input_value in multi_inputs.items():
         iter_combos = []
 
         for combo in combos:
@@ -1113,7 +1116,7 @@ def _copy_and_extend_inputs(inputs, key, value):
 def _split_inputs(kwargs):
     """
     """
-    input_keys = filter(lambda a: a.endswith('|input'), kwargs)
+    input_keys = [a for a in kwargs if a.endswith('|input')]
     single_inputs = {}
     matched_multi_inputs = {}
     multiplied_multi_inputs = {}

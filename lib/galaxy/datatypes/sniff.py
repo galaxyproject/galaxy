@@ -16,12 +16,7 @@ import zipfile
 from six import text_type
 
 from galaxy import util
-from galaxy.datatypes.binary import Binary
-from galaxy.util import (
-    compression_utils,
-    multi_byte,
-    unicodify
-)
+from galaxy.util import compression_utils
 from galaxy.util.checkers import (
     check_binary,
     check_html,
@@ -45,16 +40,15 @@ def get_test_fname(fname):
 
 
 def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
-    """Writes a stream to the provided file descriptor, returns the file's name and bool( is_multi_byte ). Closes file descriptor"""
+    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
     # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
     CHUNK_SIZE = 1048576
     data_checked = False
     is_compressed = False
     is_binary = False
-    is_multi_byte = False
     try:
         codecs.lookup(target_encoding)
-    except:
+    except Exception:
         target_encoding = util.DEFAULT_ENCODING  # utf-8
     if not source_encoding:
         source_encoding = util.DEFAULT_ENCODING  # sys.getdefaultencoding() would mimic old behavior (defaults to ascii)
@@ -70,14 +64,10 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
                 try:
                     if text_type(chunk[:2]) == text_type(util.gzip_magic):
                         is_compressed = True
-                except:
+                except Exception:
                     pass
             if not is_compressed:
-                # See if we have a multi-byte character file
-                chars = chunk[:100]
-                is_multi_byte = multi_byte.is_multi_byte(chars)
-                if not is_multi_byte:
-                    is_binary = util.is_binary(chunk)
+                is_binary = util.is_binary(chunk)
             data_checked = True
         if not is_compressed and not is_binary:
             if not isinstance(chunk, text_type):
@@ -88,7 +78,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             # while binary files should not be encoded at all.
             os.write(fd, chunk)
     os.close(fd)
-    return filename, is_multi_byte
+    return filename
 
 
 def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
@@ -103,18 +93,16 @@ def check_newlines(fname, bytes_to_read=52428800):
     number_of_bytes (by default, 50MB) of the file.
     """
     CHUNK_SIZE = 2 ** 20
-    f = open(fname, 'r')
-    for chunk in f.read(CHUNK_SIZE):
-        if f.tell() > bytes_to_read:
-            break
-        if chunk.count('\r'):
-            f.close()
-            return True
-    f.close()
+    with open(fname, 'r') as f:
+        for chunk in f.read(CHUNK_SIZE):
+            if f.tell() > bytes_to_read:
+                break
+            if chunk.count('\r'):
+                return True
     return False
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix=None):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -127,11 +115,10 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix=None):
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname, "U")):
-        fp.write("%s\n" % line.rstrip("\r\n"))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname, "U")):
+            fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
     else:
@@ -157,13 +144,12 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp()
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname)):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname)):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -176,7 +162,7 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix=None):
+def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
@@ -190,12 +176,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    for i, line in enumerate(open(fname, "U")):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        for i, line in enumerate(open(fname, "U")):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -204,17 +189,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
         return (i + 1, temp_name)
 
 
-def iter_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=None):
+def iter_headers(fname, sep, count=60, comment_designator=None):
     with compression_utils.get_fileobj(fname) as in_file:
         idx = 0
         for line in in_file:
             line = line.rstrip('\n\r')
-            if is_multi_byte:
-                # TODO: fix this - sep is never found in line
-                line = unicodify(line, 'utf-8')
-                sep = sep.encode('utf-8')
-                if comment_designator is not None and comment_designator != '':
-                    comment_designator = comment_designator.encode('utf-8')
             if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
                 continue
             yield line.split(sep)
@@ -223,22 +202,22 @@ def iter_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=N
                 break
 
 
-def get_headers(fname, sep, count=60, is_multi_byte=False, comment_designator=None):
+def get_headers(fname, sep, count=60, comment_designator=None):
     """
     Returns a list with the first 'count' lines split by 'sep', ignoring lines
     starting with 'comment_designator'
 
     >>> fname = get_test_fname('complete.bed')
-    >>> get_headers(fname,'\\t')
-    [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    >>> get_headers(fname,'\\t') == [['chr7', '127475281', '127491632', 'NM_000230', '0', '+', '127486022', '127488767', '0', '3', '29,172,3225,', '0,10713,13126,'], ['chr7', '127486011', '127488900', 'D49487', '0', '+', '127486022', '127488767', '0', '2', '155,490,', '0,2399']]
+    True
     >>> fname = get_test_fname('test.gff')
-    >>> get_headers(fname, '\\t', count=5, comment_designator='#')
-    [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
+    >>> get_headers(fname, '\\t', count=5, comment_designator='#') == [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
+    True
     """
-    return list(iter_headers(fname=fname, sep=sep, count=count, is_multi_byte=is_multi_byte, comment_designator=comment_designator))
+    return list(iter_headers(fname=fname, sep=sep, count=count, comment_designator=comment_designator))
 
 
-def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
+def is_column_based(fname, sep='\t', skip=0):
     """
     Checks whether the file is column based with respect to a separator
     (defaults to tab separator).
@@ -266,7 +245,10 @@ def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
     >>> is_column_based(fname)
     True
     """
-    headers = get_headers(fname, sep, is_multi_byte=is_multi_byte)
+    try:
+        headers = get_headers(fname, sep)
+    except UnicodeDecodeError:
+        return False
     count = 0
     if not headers:
         return False
@@ -284,7 +266,7 @@ def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
     return True
 
 
-def guess_ext(fname, sniff_order, is_multi_byte=False):
+def guess_ext(fname, sniff_order):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -350,7 +332,7 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
-    'bam'
+    'bam_native'
     >>> fname = get_test_fname('test.idpDB')
     >>> guess_ext(fname, sniff_order)
     'idpdb'
@@ -393,13 +375,16 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
     >>> guess_ext(fname, sniff_order)
     'biom2'
+    >>> fname = get_test_fname('454Score.pdf')
+    >>> guess_ext(fname, sniff_order)
+    'pdf'
     """
     file_ext = None
     for datatype in sniff_order:
         """
-        Some classes may not have a sniff function, which is ok.  In fact, the
-        Tabular and Text classes are 2 examples of classes that should never have
-        a sniff function.  Since these classes are default classes, they contain
+        Some classes may not have a sniff function, which is ok.  In fact,
+        Binary, Data, Tabular and Text are examples of classes that should never
+        have a sniff function. Since these classes are default classes, they contain
         few rules to filter out data of other formats, so they should be called
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
@@ -408,34 +393,22 @@ def guess_ext(fname, sniff_order, is_multi_byte=False):
             if datatype.sniff(fname):
                 file_ext = datatype.file_ext
                 break
-        except:
+        except Exception:
             pass
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
     # if it is an okay tabular and use that instead.
     if file_ext == 'tsv':
-        if is_column_based(fname, '\t', 1, is_multi_byte=is_multi_byte):
+        if is_column_based(fname, '\t', 1):
             file_ext = 'tabular'
     if file_ext is not None:
         return file_ext
 
-    headers = get_headers(fname, None)
-    is_binary = False
-    if is_multi_byte:
-        is_binary = False
-    else:
-        for hdr in headers:
-            for char in hdr:
-                # old behavior had 'char' possibly having length > 1,
-                # need to determine when/if this occurs
-                is_binary = util.is_binary(char)
-                if is_binary:
-                    break
-            if is_binary:
-                break
-    if is_binary:
+    try:
+        get_headers(fname, None)
+    except UnicodeDecodeError:
         return 'data'  # default binary data type file extension
-    if is_column_based(fname, '\t', 1, is_multi_byte=is_multi_byte):
+    if is_column_based(fname, '\t', 1):
         return 'tabular'  # default tabular data type file extension
     return 'txt'  # default text data type file extension
 
@@ -489,17 +462,17 @@ def handle_compressed_file(filename, datatypes_registry, ext='auto'):
     return is_valid, ext
 
 
-def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto', is_multi_byte=False):
+def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto'):
     is_valid, ext = handle_compressed_file(filename, datatypes_registry, ext=ext)
 
     if not is_valid:
         raise InappropriateDatasetContentError('The compressed uploaded file contains inappropriate content.')
 
     if ext in AUTO_DETECT_EXTENSIONS:
-        ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order, is_multi_byte=is_multi_byte)
+        ext = guess_ext(filename, sniff_order=datatypes_registry.sniff_order)
 
     if check_binary(filename):
-        if not Binary.is_ext_unsniffable(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
+        if not datatypes_registry.is_extension_unsniffable_binary(ext) and not datatypes_registry.get_datatype_by_extension(ext).sniff(filename):
             raise InappropriateDatasetContentError('The binary uploaded file contains inappropriate content.')
     elif check_html(filename):
         raise InappropriateDatasetContentError('The uploaded file contains inappropriate HTML content.')
@@ -509,7 +482,7 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto', is_mu
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File)
 COMPRESSION_CHECK_FUNCTIONS = [('gzip', is_gzip), ('bz2', is_bz2)]
-COMPRESSION_DATATYPES = dict(gzip=['bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
+COMPRESSION_DATATYPES = dict(gzip=['bam', 'fasta.gz', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend(exts)

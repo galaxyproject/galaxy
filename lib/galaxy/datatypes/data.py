@@ -16,16 +16,19 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
-from galaxy.util import compression_utils
-from galaxy.util import FILENAME_VALID_CHARS
-from galaxy.util import inflector
-from galaxy.util import unicodify
+from galaxy.util import (
+    compression_utils,
+    FILENAME_VALID_CHARS,
+    inflector,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
-
-from . import dataproviders
-from . import metadata
+from . import (
+    dataproviders,
+    metadata
+)
 
 XSS_VULNERABLE_MIME_TYPES = [
     'image/svg+xml',  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -113,22 +116,6 @@ class Data(object):
         self.composite_files = self.composite_files.copy()
         self.display_applications = odict()
 
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        fd = open(dataset.file_name, 'wb')
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd = open(dataset.file_name, 'wb')
-        os.write(fd, data)
-        os.close(fd)
-
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
@@ -179,7 +166,7 @@ class Data(object):
     def set_max_optional_metadata_filesize(self, max_value):
         try:
             max_value = int(max_value)
-        except:
+        except (TypeError, ValueError):
             return
         self.__class__._max_optional_metadata_filesize = max_value
 
@@ -192,7 +179,12 @@ class Data(object):
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
     def set_peek(self, dataset, is_multi_byte=False):
-        """Set the peek and blurb text"""
+        """
+        Set the peek and blurb text
+
+        :param is_multi_byte: deprecated
+        :type  is_multi_byte: bool
+        """
         if not dataset.dataset.purged:
             dataset.peek = ''
             dataset.blurb = 'data'
@@ -368,33 +360,32 @@ class Data(object):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    tmp_fh = tempfile.NamedTemporaryFile(delete=False)
-                    tmp_file_name = tmp_fh.name
-                    dir_items = sorted(os.listdir(file_path))
-                    base_path, item_name = os.path.split(file_path)
-                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
-                    tmp_fh.write('<body><p/><table cellpadding="2">\n')
-                    for index, fname in enumerate(dir_items):
-                        if index % 2 == 0:
-                            bgcolor = '#D8D8D8'
-                        else:
-                            bgcolor = '#FFFFFF'
-                        # Can't have an href link here because there is no route
-                        # defined for files contained within multiple subdirectory
-                        # levels of the primary dataset.  Something like this is
-                        # close, but not quite correct:
-                        # href = url_for(controller='dataset', action='display',
-                        # dataset_id=trans.security.encode_id(data.dataset.id),
-                        # preview=preview, filename=fname, to_ext=to_ext)
-                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
-                    tmp_fh.write('</table></body></html>\n')
-                    tmp_fh.close()
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp_fh:
+                        tmp_file_name = tmp_fh.name
+                        dir_items = sorted(os.listdir(file_path))
+                        base_path, item_name = os.path.split(file_path)
+                        tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
+                        tmp_fh.write('<body><p/><table cellpadding="2">\n')
+                        for index, fname in enumerate(dir_items):
+                            if index % 2 == 0:
+                                bgcolor = '#D8D8D8'
+                            else:
+                                bgcolor = '#FFFFFF'
+                            # Can't have an href link here because there is no route
+                            # defined for files contained within multiple subdirectory
+                            # levels of the primary dataset.  Something like this is
+                            # close, but not quite correct:
+                            # href = url_for(controller='dataset', action='display',
+                            # dataset_id=trans.security.encode_id(data.dataset.id),
+                            # preview=preview, filename=fname, to_ext=to_ext)
+                            tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
+                        tmp_fh.write('</table></body></html>\n')
                     return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
-                    except:
+                    except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
@@ -490,7 +481,7 @@ class Data(object):
             info = unicodify(info, 'utf-8')
 
             return info
-        except:
+        except Exception:
             return "info unavailable"
 
     def validate(self, dataset):
@@ -521,7 +512,7 @@ class Data(object):
         self.supported_display_apps = self.supported_display_apps.copy()
         try:
             del self.supported_display_apps[app_id]
-        except:
+        except Exception:
             log.exception('Tried to remove display app %s from datatype %s, but this display app is not declared.', type, self.__class__.__name__)
 
     def clear_display_apps(self):
@@ -551,7 +542,7 @@ class Data(object):
         """Returns primary label for display app"""
         try:
             return self.supported_display_apps[type]['label']
-        except:
+        except Exception:
             return 'unknown'
 
     def as_display_type(self, dataset, type, **kwd):
@@ -559,7 +550,7 @@ class Data(object):
         try:
             if type in self.get_display_types():
                 return getattr(self, self.supported_display_apps[type]['file_function'])(dataset, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for displaying as type %s, but is not accessible', self.supported_display_apps[type]['file_function'], self.__class__.__name__, type)
         return "This display type (%s) is not implemented for this datatype (%s)." % (type, dataset.ext)
 
@@ -573,7 +564,7 @@ class Data(object):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]['links_function'])(dataset, type, app, base_url, **kwd)
-        except:
+        except Exception:
             log.exception('Function %s is referred to in datatype %s for generating links for type %s, but is not accessible',
                           self.supported_display_apps[type]['links_function'], self.__class__.__name__, type)
         return target_frame, []
@@ -702,10 +693,9 @@ class Data(object):
         elif len(split_files) == 1:
             shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            fdst = open(output_file, 'wb')
-            for fsrc in split_files:
-                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
-            fdst.close()
+            with open(output_file, 'wb') as fdst:
+                for fsrc in split_files:
+                    shutil.copyfileobj(open(fsrc, 'rb'), fdst)
 
     merge = staticmethod(merge)
 
@@ -765,36 +755,6 @@ class Text(Data):
     # Add metadata elements
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0)
 
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        # write it twice for now
-        fd, temp_name = tempfile.mkstemp()
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd, temp_name = tempfile.mkstemp()
-        os.write(fd, data)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-        os.remove(temp_name)
-
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'text/plain'
@@ -810,9 +770,8 @@ class Text(Data):
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
         sample_size = 1048576
-        dataset_fh = open(dataset.file_name)
-        dataset_read = dataset_fh.read(sample_size)
-        dataset_fh.close()
+        with open(dataset.file_name) as dataset_fh:
+            dataset_read = dataset_fh.read(sample_size)
         sample_lines = dataset_read.count('\n')
         est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         return est_lines
@@ -835,7 +794,7 @@ class Text(Data):
         """
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+            dataset.peek = get_file_peek(dataset.file_name, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -877,10 +836,9 @@ class Text(Data):
             # Computing the length is expensive!
             def _file_len(fname):
                 i = 0
-                f = open(fname)
-                for i, _ in enumerate(f):
-                    pass
-                f.close()
+                with open(fname) as f:
+                    for i, _ in enumerate(f):
+                        pass
                 return i + 1
             length = _file_len(input_files[0])
             parts = int(split_params['split_size'])
@@ -923,15 +881,13 @@ class Text(Data):
                         part_file = open(part_path, 'w')
                     part_file.write(a_line)
                     lines_remaining -= 1
-                if part_file is not None:
-                    part_file.close()
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     split = classmethod(split)
 
     # ------------- Dataproviders
@@ -1009,9 +965,8 @@ class Nexus(Text):
 
     def sniff(self, filename):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
-        f = open(filename, "r")
-        firstline = f.readline().upper()
-        f.close()
+        with open(filename, "r") as f:
+            firstline = f.readline().upper()
 
         if "#NEXUS" in firstline:
             return True
@@ -1043,7 +998,10 @@ def get_test_fname(fname):
 
 def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
     """
-    Returns the first LINE_COUNT lines wrapped to WIDTH
+    Returns the first LINE_COUNT lines wrapped to WIDTH.
+
+    :param is_multi_byte: deprecated
+    :type  is_multi_byte: bool
 
     >>> fname = get_test_fname('4.bed')
     >>> get_file_peek(fname, LINE_COUNT=1)
@@ -1058,20 +1016,12 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
         skipchars = []
     lines = []
     count = 0
-    file_type = None
-    data_checked = False
     with compression_utils.get_fileobj(file_name, "U") as temp:
         while count < LINE_COUNT:
-            line = temp.readline(WIDTH)
-            if line and not is_multi_byte and not data_checked:
-                # See if we have a compressed or binary file
-                for char in line:
-                    if ord(char) > 128:
-                        file_type = 'binary'
-                        break
-                data_checked = True
-                if file_type == 'binary':
-                    break
+            try:
+                line = temp.readline(WIDTH)
+            except UnicodeDecodeError:
+                return "binary file"
             if not line_wrap:
                 if line.endswith('\n'):
                     line = line[:-1]
@@ -1088,11 +1038,4 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
             if not skip_line:
                 lines.append(line)
                 count += 1
-    if file_type == 'binary':
-        text = "%s file" % file_type
-    else:
-        try:
-            text = util.unicodify('\n'.join(lines))
-        except UnicodeDecodeError:
-            text = "binary/unknown file"
-    return text
+    return '\n'.join(lines)

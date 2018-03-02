@@ -6,15 +6,16 @@ from __future__ import absolute_import
 import hmac
 import logging
 import re
-import urlparse
-
 from unicodedata import normalize
 
 from six import text_type
+from six.moves.urllib.parse import (
+    urljoin,
+    urlsplit
+)
 
 from galaxy.tools.errors import ErrorReporter
 from galaxy.web.base.controller import url_for
-
 from . import smart_str
 
 log = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ def get_biostar_url(app, payload=None, biostar_action=None):
         payload[hmac_value_name] = smart_str(payload.get(hmac_value_name, ''), encoding='ascii', errors='replace')
         payload[hmac_parameter_name] = hmac.new(app.config.biostar_key, payload[hmac_value_name]).hexdigest()
     # generate url, can parse payload info
-    url = str(urlparse.urljoin(app.config.biostar_url, biostar_action.get('url')(payload)))
+    url = str(urljoin(app.config.biostar_url, biostar_action.get('url')(payload)))
     if not biostar_action.get('uses_payload'):
         payload = {}
     url = url_for(url)
@@ -138,8 +139,8 @@ def create_cookie(trans, key_name, key, email, age=DEFAULT_BIOSTAR_COOKIE_AGE, o
     value = "%s:%s" % (email, digest)
     trans.set_cookie(value, name=key_name, path='/', age=age, version='1')
     # We need to explicitly set the domain here, in order to allow for biostar in a subdomain to work
-    galaxy_hostname = urlparse.urlsplit(url_for('/', qualified=True)).hostname
-    biostar_hostname = urlparse.urlsplit(trans.app.config.biostar_url).hostname
+    galaxy_hostname = urlsplit(url_for('/', qualified=True)).hostname
+    biostar_hostname = urlsplit(trans.app.config.biostar_url).hostname
     trans.response.cookies[key_name]['domain'] = determine_cookie_domain(galaxy_hostname, biostar_hostname)
 
 

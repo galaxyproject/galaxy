@@ -21,7 +21,7 @@ class GenericXml(data.Text):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'XML data'
         else:
             dataset.peek = 'file does not exist'
@@ -40,9 +40,8 @@ class GenericXml(data.Text):
         False
         """
         # TODO - Use a context manager on Python 2.5+ to close handle
-        handle = open(filename)
-        line = handle.readline()
-        handle.close()
+        with open(filename) as handle:
+            line = handle.readline()
 
         # TODO - Is there a more robust way to do this?
         return line.startswith('<?xml ')
@@ -68,7 +67,7 @@ class MEMEXml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'MEME XML data'
         else:
             dataset.peek = 'file does not exist'
@@ -85,7 +84,7 @@ class CisML(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'CisML data'
         else:
             dataset.peek = 'file does not exist'
@@ -104,7 +103,7 @@ class Phyloxml(GenericXml):
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Phyloxml data'
         else:
             dataset.peek = 'file does not exist'
@@ -113,9 +112,8 @@ class Phyloxml(GenericXml):
     def sniff(self, filename):
         """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines"""
 
-        f = open(filename, "r")
-        firstlines = "".join(f.readlines(5))
-        f.close()
+        with open(filename, "r") as f:
+            firstlines = "".join(f.readlines(5))
 
         if "phyloxml" in firstlines:
             return True
@@ -139,7 +137,7 @@ class Owl(GenericXml):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
         else:
             dataset.peek = 'file does not exist'

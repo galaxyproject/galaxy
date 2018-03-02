@@ -9,10 +9,11 @@ import logging
 import os
 import random
 
+
 log = logging.getLogger(__name__)
 
 
-class ConfiguresHandlers:
+class ConfiguresHandlers(object):
 
     def _init_handlers(self, config_element):
         # Parse handlers
@@ -93,16 +94,19 @@ class ConfiguresHandlers:
                 rval.append(elem)
         return rval
 
-    def is_handler(self, server_name):
-        """Given a server name, indicate whether the server is a handler.
+    @property
+    def is_handler(self):
+        """Indicate whether the current server is a handler.
 
         :param server_name: The name to check
         :type server_name: str
 
         :return: bool
         """
+        if self._is_handler is not None:
+            return self._is_handler
         for collection in self.handlers.values():
-            if server_name in collection:
+            if self.app.config.server_name in collection:
                 return True
         return False
 
@@ -128,6 +132,8 @@ class ConfiguresHandlers:
 
         :returns: str -- A valid job handler ID.
         """
+        if id_or_tag is None and self.default_handler_id is None:
+            return None
         if id_or_tag is None:
             id_or_tag = self.default_handler_id
         return self._get_single_item(self.handlers[id_or_tag], index=index)

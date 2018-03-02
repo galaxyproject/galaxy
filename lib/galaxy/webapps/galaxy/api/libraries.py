@@ -1,14 +1,23 @@
 """
 API operations on a data library.
 """
-from galaxy import util
-from galaxy import exceptions
-from galaxy.managers import libraries, folders, roles
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+import logging
+
+from galaxy import (
+    exceptions,
+    util
+)
+from galaxy.managers import (
+    folders,
+    libraries,
+    roles
+)
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous
+)
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -37,10 +46,10 @@ class LibrariesController(BaseAPIController):
 
         """
         deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
-        query, restricted_library_ids = self.library_manager.list(trans, deleted)
+        query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, restricted_library_ids))
+            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
         return libraries
 
     def __decode_id(self, trans, encoded_id, object_name=None):

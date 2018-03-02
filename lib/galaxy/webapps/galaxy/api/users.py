@@ -179,7 +179,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
-        except:
+        except Exception:
             raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
@@ -283,7 +283,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         try:
             with open(path, 'r') as stream:
                 config = yaml.safe_load(stream)
-        except:
+        except Exception:
             log.warning('Config file (%s) could not be found or is malformed.' % path)
             return {}
 
@@ -296,21 +296,21 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         if not preferences:
             return []
-        data = []
-        # Get data if present
-        data_key = "extra_user_preferences"
-        if data_key in user.preferences:
-            data = json.loads(user.preferences[data_key])
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
         for item, value in preferences.items():
             if value is not None:
                 for input in value["inputs"]:
-                    input['help'] = 'Required' if input['required'] else ''
+                    help = input.get('help', '')
+                    required = 'Required' if util.string_as_bool(input.get('required')) else ''
+                    if help:
+                        input['help'] = "%s %s" % (help, required)
+                    else:
+                        input['help'] = required
                     field = item + '|' + input['name']
-                    for data_item in data:
+                    for data_item in user.extra_preferences:
                         if field in data_item:
-                            input['value'] = data[data_item]
+                            input['value'] = user.extra_preferences[data_item]
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
@@ -455,9 +455,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
 
         # Update values for extra user preference items
         extra_user_pref_data = dict()
-        get_extra_pref_keys = self._get_extra_user_preferences(trans)
-        if get_extra_pref_keys is not None:
-            for key in get_extra_pref_keys:
+        extra_pref_keys = self._get_extra_user_preferences(trans)
+        if extra_pref_keys is not None:
+            for key in extra_pref_keys:
                 key_prefix = key + '|'
                 for item in payload:
                     if item.startswith(key_prefix):
@@ -465,7 +465,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                         if payload[item] == "":
                             # Raise an exception when a required field is empty while saving the form
                             keys = item.split("|")
-                            section = get_extra_pref_keys[keys[0]]
+                            section = extra_pref_keys[keys[0]]
                             for input in section['inputs']:
                                 if input['name'] == keys[1] and input['required']:
                                     raise MessageException("Please fill the required field")
@@ -675,10 +675,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if name in filter_types:
                 saved_values[name] = listify(value, do_strip=True)
         inputs = []
+        errors = {}
         factory = FilterFactory(trans.app.toolbox)
         for filter_type in filter_types:
-            self._add_filter_inputs(factory, filter_types, inputs, filter_type, saved_values)
-        return {'inputs': inputs}
+            self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
+        return {'inputs': inputs, 'errors': errors}
 
     @expose_api
     def set_toolbox_filters(self, trans, id, payload={}, **kwd):
@@ -690,36 +691,48 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
-                prefix = filter_type + '|'
-                if prefixed_name.startswith(filter_type):
+                if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
+                    prefix = filter_type + '|'
                     new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
         trans.sa_session.flush()
         return {'message': 'Toolbox filters have been saved.'}
 
-    def _add_filter_inputs(self, factory, filter_types, inputs, filter_type, saved_values):
+    def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
         filter_inputs = list()
         filter_values = saved_values.get(filter_type, [])
         filter_config = filter_types[filter_type]['config']
         filter_title = filter_types[filter_type]['title']
         for filter_name in filter_config:
             function = factory.build_filter_function(filter_name)
+            if function is None:
+                errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
+
+            short_description, description = None, None
+            doc_string = docstring_trim(function.__doc__)
+            split = doc_string.split('\n\n')
+            if split:
+                short_description = split[0]
+                if len(split) > 1:
+                    description = split[1]
+            else:
+                log.warning('No description specified in the __doc__ string for %s.' % filter_name)
+
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
-                'label': filter_name,
-                'help': docstring_trim(function.__doc__) or 'No description available.',
-                'value': 'true' if filter_name in filter_values else 'false',
-                'ignore': 'false'
+                'label': short_description or filter_name,
+                'help': description or 'No description available.',
+                'value': 'true' if filter_name in filter_values else 'false'
             })
         if filter_inputs:
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
         return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_tool_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_tool_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
+                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):
@@ -889,7 +902,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                     new_linecount = new_len.get_converted_dataset(trans, 'linecount')
                     build_dict['len'] = new_len.id
                     build_dict['linecount'] = new_linecount.id
-                except:
+                except Exception:
                     raise MessageException('Failed to convert dataset.')
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)

@@ -52,7 +52,7 @@ class TaskedJobRunner(BaseJobRunner):
             parallelism = job_wrapper.get_parallelism()
             try:
                 splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
-            except:
+            except Exception:
                 job_wrapper.change_state(model.Job.states.ERROR)
                 job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
                 return
@@ -125,7 +125,7 @@ class TaskedJobRunner(BaseJobRunner):
         # Finish the job
         try:
             job_wrapper.finish(stdout, stderr, job_exit_code)
-        except:
+        except Exception:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 

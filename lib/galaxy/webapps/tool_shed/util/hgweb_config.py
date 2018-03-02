@@ -1,9 +1,10 @@
-import os
-import ConfigParser
 import logging
+import os
 import shutil
 import threading
 from datetime import date
+
+from six.moves import configparser
 
 log = logging.getLogger(__name__)
 
@@ -60,12 +61,12 @@ class HgWebConfigManager(object):
         self.read_config()
         try:
             entry = self.in_memory_config.get('paths', lhs)
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             try:
                 # We have a multi-threaded front-end, so one of the threads may not have the latest version of the hgweb.config file.
                 self.read_config(force_read=True)
                 entry = self.in_memory_config.get('paths', lhs)
-            except ConfigParser.NoOptionError:
+            except configparser.NoOptionError:
                 raise Exception("Entry for repository %s missing in file %s." % (lhs, self.hgweb_config))
         return entry
 
@@ -92,7 +93,7 @@ class HgWebConfigManager(object):
 
     def read_config(self, force_read=False):
         if force_read or self.in_memory_config is None:
-            config = ConfigParser.ConfigParser()
+            config = configparser.ConfigParser()
             config.read(self.hgweb_config)
             self.in_memory_config = config
 

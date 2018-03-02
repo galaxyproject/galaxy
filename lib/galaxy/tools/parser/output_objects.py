@@ -21,7 +21,7 @@ class ToolOutput(ToolOutputBase):
       (format, metadata_source, parent)
     """
 
-    dict_collection_visible_keys = ('name', 'format', 'label', 'hidden')
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden']
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
@@ -195,7 +195,10 @@ class ToolOutputCollectionStructure(object):
         if self.structured_like:
             collection_prototype = inputs[self.structured_like].collection
         else:
-            collection_prototype = type_registry.prototype(self.collection_type)
+            collection_type = self.collection_type
+            assert collection_type
+            collection_prototype = type_registry.prototype(collection_type)
+            collection_prototype.collection_type = collection_type
         return collection_prototype
 
 

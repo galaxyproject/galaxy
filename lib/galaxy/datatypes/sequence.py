@@ -30,9 +30,7 @@ from galaxy.util.checkers import (
     is_bz2,
     is_gzip
 )
-
 from galaxy.util.image_util import check_image_type
-
 from . import data
 
 if sys.version_info > (3,):
@@ -41,6 +39,7 @@ if sys.version_info > (3,):
 log = logging.getLogger(__name__)
 
 SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
+SNIFF_COMPRESSED_FASTAS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTA_SNIFFING", "0") == "1"
 
 
 class SequenceSplitLocations(data.Text):
@@ -63,7 +62,7 @@ class SequenceSplitLocations(data.Text):
             try:
                 parsed_data = json.load(open(dataset.file_name))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+                dataset.peek = data.get_file_peek(dataset.file_name)
                 dataset.blurb = '%d sections' % len(parsed_data['sections'])
             except Exception:
                 dataset.peek = 'Not FQTOC file'
@@ -81,7 +80,7 @@ class SequenceSplitLocations(data.Text):
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
                         return False
                 return True
-            except:
+            except Exception:
                 pass
         return False
 
@@ -114,7 +113,7 @@ class Sequence(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
                 dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
             else:
@@ -196,9 +195,8 @@ class Sequence(data.Text):
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
-                f = open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w')
-                json.dump(split_data, f)
-                f.close()
+                with open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w') as f:
+                    json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
     write_split_files = classmethod(write_split_files)
@@ -313,6 +311,21 @@ class Alignment(data.Text):
         raise NotImplementedError("Can't split generic alignment files")
 
 
+class FastaGz(Sequence, Binary):
+    """Class representing a generic compressed FASTA sequence"""
+    edam_format = "format_1929"
+    file_ext = "fasta.gz"
+    compressed = True
+
+    def sniff(self, filename):
+        """Determines whether the file is in gzip-compressed FASTA format"""
+        if not SNIFF_COMPRESSED_FASTAS:
+            return False
+        if not is_gzip(filename):
+            return False
+        return Sequence.sniff(self, filename)
+
+
 class Fasta(Sequence):
     """Class representing a FASTA sequence"""
     edam_format = "format_1929"
@@ -352,9 +365,7 @@ class Fasta(Sequence):
         >>> Fasta().sniff( fname )
         True
         """
-
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -371,13 +382,9 @@ class Fasta(Sequence):
                         line = fh.readline()
                         if not line.startswith('>') and re.search("[\(\)\[\]\.]", line):
                             break
-
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a fasta header
-            fh.close()
-        except:
-            pass
         return False
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -458,11 +465,11 @@ class Fasta(Sequence):
                 part_file.write(line)
         except Exception as e:
             log.error('Unable to size split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _size_split = classmethod(_size_split)
 
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -493,14 +500,13 @@ class Fasta(Sequence):
                         log.debug("Writing %s part to %s" % (input_file, part_path))
                         rec_count = 1
                 part_file.write(line)
-            part_file.close()
         except Exception as e:
             log.error('Unable to count split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _count_split = classmethod(_count_split)
 
 
@@ -523,8 +529,7 @@ class csFasta(Sequence):
         >>> csFasta().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -542,9 +547,6 @@ class csFasta(Sequence):
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except:
-            pass
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -634,7 +636,7 @@ class BaseFastq (Sequence):
                     return False
                 return True
             return False
-        except:
+        except Exception:
             return False
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
@@ -736,7 +738,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz (BaseFastq, Binary):
+class FastqGz(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -744,6 +746,8 @@ class FastqGz (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_gzip(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -759,11 +763,6 @@ class FastqSolexaGz(FastqGz):
     """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
     edam_format = "format_1933"
     file_ext = "fastqsolexa.gz"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.gz", "fastqsanger.gz", FastqSangerGz)
-    Binary.register_sniffable_binary_format("fastq.gz", "fastq.gz", FastqGz)
 
 
 class FastqIlluminaGz(FastqGz):
@@ -785,6 +784,8 @@ class FastqBz2 (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
+        if not SNIFF_COMPRESSED_FASTQS:
+            return False
         if not is_bz2(filename):
             return False
         return BaseFastq.sniff(self, filename)
@@ -794,11 +795,6 @@ class FastqSangerBz2(FastqBz2):
     """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger.bz2"
-
-
-if SNIFF_COMPRESSED_FASTQS:
-    Binary.register_sniffable_binary_format("fastqsanger.bz2", "fastqsanger.bz2", FastqSangerBz2)
-    Binary.register_sniffable_binary_format("fastq.bz2", "fastq.bz2", FastqBz2)
 
 
 class FastqSolexaBz2(FastqBz2):
@@ -848,10 +844,9 @@ class Maf(Alignment):
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
             chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
-        chrom_out = open(chrom_file.file_name, 'wb')
-        for spec, chroms in species_chromosomes.items():
-            chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
-        chrom_out.close()
+        with open(chrom_file.file_name, 'wb') as chrom_out:
+            for spec, chroms in species_chromosomes.items():
+                chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file
 
         index_file = dataset.metadata.maf_index
@@ -863,7 +858,7 @@ class Maf(Alignment):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.blocks:
                 dataset.blurb = "%s blocks" % util.commaify(str(dataset.metadata.blocks))
             else:
@@ -930,7 +925,7 @@ class Maf(Alignment):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -968,7 +963,7 @@ class MafCustomTrack(data.Text):
                 dataset.metadata.vp_chromosome = chrom
                 dataset.metadata.vp_start = forward_strand_start
                 dataset.metadata.vp_end = forward_strand_end
-        except:
+        except Exception:
             pass
 
 
@@ -1019,7 +1014,7 @@ class Axt(data.Text):
                     return False
                 try:
                     map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
-                except:
+                except Exception:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False
@@ -1060,7 +1055,7 @@ class Lav(data.Text):
                 return True
             else:
                 return False
-        except:
+        except Exception:
             return False
 
 
@@ -1205,7 +1200,7 @@ class Genbank(data.Text):
         try:
             with open(filename, 'r') as handle:
                 return 'LOCUS ' == handle.read(6)
-        except:
+        except Exception:
             pass
 
         return False
@@ -1236,7 +1231,7 @@ class MemePsp(Sequence):
             for item in l.split():
                 try:
                     float(item)
-                except:
+                except ValueError:
                     return False
             return True
         try:
@@ -1269,7 +1264,7 @@ class MemePsp(Sequence):
                         # We found a non-empty line,
                         # but it's not a psp id width.
                         return False
-        except:
+        except Exception:
             return False
         # We've reached EOF in less than 100 lines.
         return True

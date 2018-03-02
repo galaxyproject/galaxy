@@ -12,7 +12,6 @@ from galaxy.util import (
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.web import url_for
-
 from .parameters import (
     DEFAULT_DATASET_NAME,
     DisplayApplicationDataParameter,
@@ -122,7 +121,7 @@ class DynamicDisplayApplicationBuilder(object):
         id_col = elem.get('id', None)
         try:
             id_col = int(id_col)
-        except:
+        except (TypeError, ValueError):
             if data_table:
                 if id_col is None:
                     id_col = data_table.columns.get('id', None)
@@ -130,14 +129,14 @@ class DynamicDisplayApplicationBuilder(object):
                     id_col = data_table.columns.get('value', None)
                 try:
                     id_col = int(id_col)
-                except:
+                except (TypeError, ValueError):
                     # id is set to a string or None, use column by that name if available
                     id_col = data_table.columns.get(id_col, None)
                     id_col = int(id_col)
         name_col = elem.get('name', None)
         try:
             name_col = int(name_col)
-        except:
+        except (TypeError, ValueError):
             if data_table:
                 if name_col is None:
                     name_col = data_table.columns.get('name', None)

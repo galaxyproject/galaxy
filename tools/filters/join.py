@@ -392,7 +392,7 @@ def main():
         column1 = int(args[2]) - 1
         column2 = int(args[3]) - 1
         out_filename = args[4]
-    except:
+    except Exception:
         print("Error parsing command line.", file=sys.stderr)
         sys.exit()
 

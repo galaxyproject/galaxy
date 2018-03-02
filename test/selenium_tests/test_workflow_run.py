@@ -1,14 +1,11 @@
-import time
-
+from ._workflow_fixtures import (
+    WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_WITH_OLD_TOOL_VERSION,
+)
 from .framework import (
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
-)
-
-from ._workflow_fixtures import (
-    WORKFLOW_SIMPLE_CAT_TWICE,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
 )
 
 
@@ -26,6 +23,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_index_open()
         self.workflow_index_click_option("Run")
 
+        self.screenshot("workflow_manage_run_simple")
         self.workflow_run_submit()
 
         self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
@@ -39,6 +37,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.workflow_index_open()
         self.workflow_index_click_option("Run")
-        time.sleep(.5)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
         self.assert_warning_message(contains="different versions")
+        self.screenshot("workflow_manage_run_tool_upgrade")

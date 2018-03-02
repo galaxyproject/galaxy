@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import string
 import sys
@@ -20,7 +22,7 @@ def main(argv=None):
         'title': title,
         'content': content,
     })
-    print html
+    print(html)
     open(output, "w").write(html)
 
 

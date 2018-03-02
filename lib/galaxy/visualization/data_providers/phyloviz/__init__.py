@@ -2,8 +2,8 @@
 """ Data providers code for PhyloViz """
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser
+from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml_Parser
 
 

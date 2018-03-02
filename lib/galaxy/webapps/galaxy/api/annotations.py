@@ -1,18 +1,20 @@
 """
 API operations on annotations.
 """
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesStoredWorkflowMixin
-from galaxy.model.item_attrs import UsesAnnotations
-
-from galaxy import managers
-
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import sanitize_html
-
 import logging
+
+from galaxy import (
+    exceptions,
+    managers
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util import sanitize_html
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesStoredWorkflowMixin
+)
+
 log = logging.getLogger(__name__)
 
 

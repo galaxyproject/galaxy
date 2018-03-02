@@ -1,7 +1,7 @@
 from requests import delete
 
-from base import api
-from galaxy.exceptions import error_codes
+from base import api  # noqa: I100,I202
+from galaxy.exceptions import error_codes  # noqa: I201
 
 
 class BasePageApiTestCase(api.ApiTestCase):

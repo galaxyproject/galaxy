@@ -9,7 +9,12 @@ from galaxy import util
 from galaxy.util.image_util import image_type
 
 if sys.version_info < (3, 3):
-    import bz2file as bz2
+    gzip.GzipFile.read1 = gzip.GzipFile.read  # workaround for https://bugs.python.org/issue12591
+    try:
+        import bz2file as bz2
+    except ImportError:
+        # If bz2file is unavailable, just fallback to not having pbzip2 support.
+        import bz2
 else:
     import bz2
 
@@ -71,7 +76,7 @@ def check_gzip(file_path, check_content=True):
         temp.close()
         if magic_check != util.gzip_magic:
             return (False, False)
-    except:
+    except Exception:
         return (False, False)
     # We support some binary data types, so check if the compressed binary file is valid
     # If the file is Bam, it should already have been detected as such, so we'll just check
@@ -80,7 +85,7 @@ def check_gzip(file_path, check_content=True):
         header = gzip.open(file_path).read(4)
         if header == b'.sff':
             return (True, True)
-    except:
+    except Exception:
         return(False, False)
 
     if not check_content:
@@ -103,7 +108,7 @@ def check_bz2(file_path, check_content=True):
         temp.close()
         if magic_check != util.bz2_magic:
             return (False, False)
-    except:
+    except Exception:
         return(False, False)
 
     if not check_content:

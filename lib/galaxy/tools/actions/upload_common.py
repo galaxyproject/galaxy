@@ -124,7 +124,7 @@ def persist_uploads(params, trans):
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
-                upload_dataset['url_paste'], is_multi_byte = datatypes.sniff.stream_to_file(
+                upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
                     StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
                 )
@@ -162,56 +162,6 @@ def handle_library_params(trans, params, folder_id, replace_dataset=None):
         role = trans.sa_session.query(trans.app.model.Role).get(role_id)
         library_bunch.roles.append(role)
     return library_bunch
-
-
-def get_precreated_datasets(trans, params, data_obj, controller='root'):
-    """
-    Get any precreated datasets (when using asynchronous uploads).
-    """
-    rval = []
-    async_datasets = []
-    if params.get('async_datasets', None) not in ["None", "", None]:
-        async_datasets = params['async_datasets'].split(',')
-    current_user_roles = trans.get_current_user_roles()
-    for id in async_datasets:
-        try:
-            data = trans.sa_session.query(data_obj).get(int(id))
-        except:
-            log.exception('Unable to load precreated dataset (%s) sent in upload form' % id)
-            continue
-        if data_obj is trans.app.model.HistoryDatasetAssociation:
-            if trans.user is None and trans.galaxy_session.current_history != data.history:
-                log.error('Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' % (data.id, trans.galaxy_session.id))
-            elif data.history.user != trans.user:
-                log.error('Got a precreated dataset (%s) but it does not belong to current user (%s)' % (data.id, trans.user.id))
-            else:
-                rval.append(data)
-        elif data_obj is trans.app.model.LibraryDatasetDatasetAssociation:
-            if controller == 'library' and not trans.app.security_agent.can_add_library_item(current_user_roles, data.library_dataset.folder):
-                log.error('Got a precreated dataset (%s) but this user (%s) is not allowed to write to it' % (data.id, trans.user.id))
-            else:
-                rval.append(data)
-    return rval
-
-
-def get_precreated_dataset(precreated_datasets, name):
-    """
-    Return a dataset matching a name from the list of precreated (via async
-    upload) datasets. If there's more than one upload with the exact same
-    name, we need to pop one (the first) so it isn't chosen next time.
-    """
-    names = [d.name for d in precreated_datasets]
-    if names.count(name) > 0:
-        return precreated_datasets.pop(names.index(name))
-    else:
-        return None
-
-
-def cleanup_unused_precreated_datasets(precreated_datasets):
-    for data in precreated_datasets:
-        log.info('Cleaned up unclaimed precreated dataset (%s).' % (data.id))
-        data.state = data.states.ERROR
-        data.info = 'No file contents were available.'
 
 
 def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
@@ -331,45 +281,12 @@ def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=No
         return __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
 
-def get_uploaded_datasets(trans, cntrller, params, precreated_datasets, dataset_upload_inputs, library_bunch=None, history=None):
+def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
         uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
     for uploaded_dataset in uploaded_datasets:
-        data = get_precreated_dataset(precreated_datasets, uploaded_dataset.name)
-        if not data:
-            data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
-        else:
-            data.extension = uploaded_dataset.file_type
-            data.dbkey = uploaded_dataset.dbkey
-            data.uuid = uploaded_dataset.uuid
-            trans.sa_session.add(data)
-            trans.sa_session.flush()
-            if library_bunch:
-                library_bunch.folder.genome_build = uploaded_dataset.dbkey
-                trans.sa_session.add(library_bunch.folder)
-                # Handle template included in the upload form, if any.  If the upload is asynchronous ( e.g., file upload ),
-                # then the template and contents will be included in the library_bunch at this point.  If the upload is
-                # not asynchronous ( e.g., URL paste ), then the template and contents will be included in the library_bunch
-                # in the new_library_upload() method above.
-                if library_bunch.template and library_bunch.template_field_contents:
-                    # Since information templates are inherited, the template fields can be displayed on the upload form.
-                    # If the user has added field contents, we'll need to create a new form_values and info_association
-                    # for the new library_dataset_dataset_association object.
-                    # Create a new FormValues object, using the template we previously retrieved
-                    form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
-                    trans.sa_session.add(form_values)
-                    trans.sa_session.flush()
-                    # Create a new info_association between the current ldda and form_values
-                    # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
-                    # we need to figure out if this is optimal
-                    info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(data, library_bunch.template, form_values)
-                    trans.sa_session.add(info_association)
-                trans.sa_session.flush()
-            else:
-                if not history:
-                    history = trans.history
-                history.genome_build = uploaded_dataset.dbkey
+        data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
         uploaded_dataset.data = data
     return uploaded_datasets
 
@@ -448,7 +365,7 @@ def create_paramfile(trans, uploaded_datasets):
                         auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
                         purge_source=purge_source,
                         space_to_tab=uploaded_dataset.space_to_tab,
-                        in_place=trans.app.config.external_chown_script is None,
+                        run_as_real_user=trans.app.config.external_chown_script is not None,
                         check_content=trans.app.config.check_upload_content,
                         path=uploaded_dataset.path)
             # TODO: This will have to change when we start bundling inputs.
@@ -516,7 +433,7 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
     trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_queue.put(job.id, job.tool_id)
+    trans.app.job_manager.job_queue.put(job.id, job.tool_id)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = odict()
     for i, v in enumerate(data_list):

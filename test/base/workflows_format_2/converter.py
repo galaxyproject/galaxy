@@ -390,6 +390,28 @@ def transform_tool(context, step):
                 )
                 post_job_actions[action_name] = action
 
+            add_tags = output.get("add_tags", [])
+            if add_tags:
+                action_name = "TagDatasetAction%s" % name
+                arguments = dict(tags=",".join(add_tags))
+                action = _action(
+                    "TagDatasetAction",
+                    name,
+                    arguments
+                )
+                post_job_actions[action_name] = action
+
+            remove_tags = output.get("remove_tags", [])
+            if remove_tags:
+                action_name = "RemoveTagDatasetAction%s" % name
+                arguments = dict(tags=",".join(remove_tags))
+                action = _action(
+                    "RemoveTagDatasetAction",
+                    name,
+                    arguments
+                )
+                post_job_actions[action_name] = action
+
         del step["outputs"]
 
 

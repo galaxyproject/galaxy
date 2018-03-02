@@ -66,17 +66,6 @@
                 content: ':';
             }
         }
-        .tags-display {
-            .select2-container {
-                min-width: 0px;
-                .select2-choices {
-                    border-radius: 3px;
-                }
-            }
-            input {
-                border-radius: 3px;
-            }
-        }
         .annotation-display {
             .annotation {
                 background: white;
@@ -221,7 +210,9 @@
                 }
             }
         }
-        span.nametags {
+        div.nametags {
+            max-height:26px;
+            overflow-y: auto;
             span.label {
                 display: inline-block;
                 margin-right: 2px;

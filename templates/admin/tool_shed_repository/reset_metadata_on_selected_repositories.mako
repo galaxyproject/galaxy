@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/webapps/tool_shed/common/common.mako" import="common_misc_javascripts" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -24,11 +24,11 @@
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                <input type="checkbox" id="checkAll" name="select_all_repositories_checkbox" value="true" onclick="checkAllRepositoryIdFields(1);"/><input type="hidden" name="select_all_repositories_checkbox" value="true"/><b>Select/unselect all repositories</b>
+                <input type="checkbox" id="checkAll" name="select_all_repositories_checkbox" value="true" onclick="checkAllRepositoryIdFields(1);"/><b>Select/unselect all repositories</b>
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
-                ${repositories_select_field.get_html()}
+                ${render_select(repositories_select_field)}
             </div>
             <div style="clear: both"></div>
             <div class="form-row">

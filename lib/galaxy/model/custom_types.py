@@ -16,7 +16,7 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 
-from galaxy import app
+from galaxy.util import unicodify
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
@@ -24,6 +24,9 @@ log = logging.getLogger(__name__)
 # Default JSON encoder and decoder
 json_encoder = json.JSONEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
+
+# Galaxy app will set this if configured to avoid circular dependency
+MAX_METADATA_VALUE_SIZE = None
 
 
 def _sniffnfix_pg9_hex(value):
@@ -61,7 +64,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            value = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
+            value = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
         return value
 
     def load_dialect_impl(self, dialect):
@@ -272,10 +275,10 @@ class MetadataType(JSONType):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            if app.app and app.app.config.max_metadata_value_size:
+            if MAX_METADATA_VALUE_SIZE is not None:
                 for k, v in list(value.items()):
                     sz = total_size(v)
-                    if sz > app.app.config.max_metadata_value_size:
+                    if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
                         log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
             value = json_encoder.encode(value)
@@ -289,10 +292,10 @@ class MetadataType(JSONType):
             ret = metadata_pickler.loads(str(value))
             if ret:
                 ret = dict(ret.__dict__)
-        except:
+        except Exception:
             try:
                 ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
-            except:
+            except Exception:
                 ret = None
         return ret
 

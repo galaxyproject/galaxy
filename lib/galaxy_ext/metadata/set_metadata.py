@@ -66,7 +66,8 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
 def set_metadata():
     # locate galaxy_root for loading datatypes
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
-    galaxy.datatypes.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+    import galaxy.model
+    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
 
     # This is ugly, but to transition from existing jobs without this parameter
     # to ones with, smoothly, it has to be the last optional parameter and we
@@ -90,6 +91,7 @@ def set_metadata():
         if not os.path.exists(datatypes_config):
             print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
             sys.exit(1)
+    import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config)
     galaxy.model.set_datatypes_registry(datatypes_registry)
@@ -105,7 +107,7 @@ def set_metadata():
                     existing_job_metadata_dict[line['dataset_id']] = line
                 elif line['type'] == 'new_primary_dataset':
                     new_job_metadata_dict[line['filename']] = line
-            except:
+            except Exception:
                 continue
 
     for filenames in sys.argv[1:]:

@@ -9,7 +9,6 @@ import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
 import galaxy.tools.deps.requirements
-
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -472,7 +471,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         ctx = repo.changectx(tip_changeset)
         try:
             username = ctx.user().split()[0]
-        except:
+        except Exception:
             username = ctx.user()
         # We'll use 2 template bodies because we only want to send content
         # alerts to tool shed admin users.

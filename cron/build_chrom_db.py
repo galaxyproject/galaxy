@@ -20,7 +20,7 @@ import sys
 import requests
 from six.moves.urllib.parse import urlencode
 
-import parse_builds
+import parse_builds  # noqa: I100,I202
 
 
 def getchrominfo(url, db):
@@ -60,13 +60,13 @@ if __name__ == "__main__":
                 if line.startswith("#"):
                     continue
                 builds.append(line.split("\t")[0])
-        except:
+        except Exception:
             sys.exit("Bad input file.")
     else:
         try:
             for build in parse_builds.getbuilds("http://genome.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
-        except:
+        except Exception:
             sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":

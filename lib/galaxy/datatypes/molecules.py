@@ -33,7 +33,7 @@ def count_special_lines(word, filename, invert=False):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -48,7 +48,7 @@ def count_lines(filename, non_empty=False):
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -61,12 +61,11 @@ class GenericMolFile(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -171,9 +170,8 @@ class SDF(GenericMolFile):
         def _write_part_sdf_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             sdf_records = _read_sdf_records(input_files[0])
@@ -260,9 +258,8 @@ class MOL2(GenericMolFile):
         def _write_part_mol2_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             mol2_records = _read_mol2_records(input_files[0])
@@ -333,9 +330,8 @@ class FPS(GenericMolFile):
         def _write_part_fingerprint_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             header_lines = []
@@ -370,19 +366,18 @@ class FPS(GenericMolFile):
         if not split_files:
             raise ValueError("No fps files given, %r, to merge into %s"
                              % (split_files, output_file))
-        out = open(output_file, "w")
-        first = True
-        for filename in split_files:
-            with open(filename) as handle:
-                for line in handle:
-                    if line.startswith('#'):
-                        if first:
+        with open(output_file, "w") as out:
+            first = True
+            for filename in split_files:
+                with open(filename) as handle:
+                    for line in handle:
+                        if line.startswith('#'):
+                            if first:
+                                out.write(line)
+                        else:
+                            # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
+                            first = False
                             out.write(line)
-                    else:
-                        # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
-                        first = False
-                        out.write(line)
-        out.close()
     merge = staticmethod(merge)
 
 
@@ -427,7 +422,7 @@ class OBFS(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
@@ -471,7 +466,7 @@ class PHAR(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "pharmacophore"
         else:
             dataset.peek = 'file does not exist'
@@ -524,7 +519,7 @@ class PDB(GenericMolFile):
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -575,7 +570,7 @@ class PDBQT(GenericMolFile):
         if not dataset.dataset.purged:
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -587,7 +582,7 @@ class grd(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "grids for docking"
         else:
             dataset.peek = 'file does not exist'
@@ -621,12 +616,11 @@ class InChI(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -666,12 +660,11 @@ class SMILES(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -702,7 +695,7 @@ class SMILES(Tabular):
                     # if we have atoms, we have a molecule
                     if not len(pybel.readstring('smi', smiles).atoms) > 0:
                         return False
-                except:
+                except Exception:
                     # if convert fails its not a smiles string
                     return False
             return True
@@ -727,12 +720,11 @@ class CML(GenericXml):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -797,11 +789,10 @@ class CML(GenericXml):
         def _write_part_cml_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(header_lines)
-            part_file.writelines(accumulated_lines)
-            part_file.writelines(footer_line)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(header_lines)
+                part_file.writelines(accumulated_lines)
+                part_file.writelines(footer_line)
 
         try:
             cml_records = _read_cml_records(input_files[0])

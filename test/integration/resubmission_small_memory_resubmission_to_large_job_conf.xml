@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="local_too_small">
+        <destination id="local_too_small" runner="local">
+            <env id="GALAXY_MEMORY_MB">4</env>
+            <resubmit condition="memory_limit_reached" destination="local_more_memory" />
+        </destination>
+
+        <destination id="local_more_memory" runner="local">
+            <env id="GALAXY_MEMORY_MB">40</env>
+        </destination>
+    </destinations>
+
+</job_conf>

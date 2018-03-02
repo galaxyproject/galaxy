@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import sys
 
 from common import submit
@@ -22,7 +24,7 @@ def copy_hda_to_library_folder(base_url, key, hda_id, library_id, folder_id, mes
 if __name__ == '__main__':
     num_args = len(sys.argv)
     if num_args < 6:
-        print >> sys.stderr, usage
+        print(usage, file=sys.stderr)
         sys.exit(1)
 
     (base_url, key, hda_id, library_id, folder_id) = sys.argv[1:6]
@@ -31,5 +33,5 @@ if __name__ == '__main__':
     if num_args >= 7:
         message = sys.argv[6]
 
-    print >> sys.stderr, base_url, key, hda_id, library_id, folder_id, message
+    print(base_url, key, hda_id, library_id, folder_id, message, file=sys.stderr)
     returned = copy_hda_to_library_folder(base_url, key, hda_id, library_id, folder_id, message)

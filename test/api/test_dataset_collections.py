@@ -64,19 +64,13 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_collections) == 1, dataset_collection
 
     def test_create_list_of_new_pairs(self):
-        pair_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
-        element_identifiers = [dict(
-            src="new_collection",
-            name="test_pair",
-            collection_type="paired",
-            element_identifiers=pair_identifiers,
-        )]
+        identifiers = self.dataset_collection_populator.nested_collection_identifiers(self.history_id, "list:paired")
         payload = dict(
             collection_type="list:paired",
             instance_type="history",
             history_id=self.history_id,
             name="a nested collection",
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=json.dumps(identifiers),
         )
         create_response = self._post("dataset_collections", payload)
         dataset_collection = self._check_create_response(create_response)
@@ -85,9 +79,11 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         returned_collections = dataset_collection["elements"]
         assert len(returned_collections) == 1, dataset_collection
         pair_1_element = returned_collections[0]
-        self._assert_has_keys(pair_1_element, "element_index")
+        self._assert_has_keys(pair_1_element, "element_identifier", "element_index", "object")
+        assert pair_1_element["element_identifier"] == "test_level_1", pair_1_element
+        assert pair_1_element["element_index"] == 0, pair_1_element
         pair_1_object = pair_1_element["object"]
-        self._assert_has_keys(pair_1_object, "collection_type", "elements")
+        self._assert_has_keys(pair_1_object, "collection_type", "elements", "element_count")
         self.assertEquals(pair_1_object["collection_type"], "paired")
         self.assertEquals(pair_1_object["populated"], True)
         pair_elements = pair_1_object["elements"]
@@ -97,11 +93,9 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
 
     def test_list_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_in_history(self.history_id).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 3, dataset_collection
-        returned_datasets = [dce["object"] for dce in returned_dce]
-        for element in returned_datasets:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
@@ -113,11 +107,9 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
 
     def test_pair_download(self):
         dataset_collection = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 2, dataset_collection
-        returned_datasets = [dce["object"] for dce in returned_dce]
-        for element in returned_datasets:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element['id'], assert_ok=True)
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
@@ -130,12 +122,11 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
 
     def test_list_pair_download(self):
         dataset_collection = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 1, dataset_collection
         list_collection_name = dataset_collection['name']
         pair = returned_dce[0]
-        for element in pair['object']['elements']:
-            self.dataset_populator.wait_for_dataset(history_id=self.history_id, dataset_id=element["object"]['id'], assert_ok=True)
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
         tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
@@ -144,6 +135,28 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         pair_collection_name = pair['element_identifier']
         for element, zip_path in zip(pair['object']['elements'], namelist):
             assert "%s/%s/%s.%s" % (list_collection_name, pair_collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
+
+    def test_list_list_download(self):
+        dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        returned_dce = dataset_collection["elements"]
+        assert len(returned_dce) == 1, dataset_collection
+        create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
+        self._assert_status_code_is(create_response, 200)
+        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        namelist = tar_contents.getnames()
+        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
+
+    def test_list_list_list_download(self):
+        dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(self.history_id, collection_type='list:list:list').json()
+        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        returned_dce = dataset_collection["elements"]
+        assert len(returned_dce) == 1, dataset_collection
+        create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
+        self._assert_status_code_is(create_response, 200)
+        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        namelist = tar_contents.getnames()
+        assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
@@ -178,7 +191,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
     def _check_create_response(self, create_response):
         self._assert_status_code_is(create_response, 200)
         dataset_collection = create_response.json()
-        self._assert_has_keys(dataset_collection, "elements", "url", "name", "collection_type")
+        self._assert_has_keys(dataset_collection, "elements", "url", "name", "collection_type", "element_count")
         return dataset_collection
 
     def _download_dataset_collection(self, history_id, hdca_id):

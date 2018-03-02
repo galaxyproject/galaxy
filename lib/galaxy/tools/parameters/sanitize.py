@@ -16,16 +16,16 @@ class ToolParameterSanitizer(object):
     Handles tool parameter specific sanitizing.
 
     >>> from xml.etree.ElementTree import XML
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
+    >>> sanitizer = ToolParameterSanitizer.from_element(XML(
     ... '''
     ... <sanitizer invalid_char="">
-    ...   <valid initial="string.letters"/>
+    ...   <valid initial="string.ascii_letters"/>
     ... </sanitizer>
-    ... ''' ) )
-    >>> sanitizer.sanitize_param( ''.join( sorted( [ c for c in string.printable ] ) ) ) == ''.join( sorted( [ c for c in string.letters ] ) )
+    ... '''))
+    >>> sanitizer.sanitize_param(''.join(sorted(c for c in string.printable))) == ''.join(sorted(c for c in string.ascii_letters))
     True
-    >>> slash = chr( 92 )
-    >>> sanitizer = ToolParameterSanitizer.from_element( XML(
+    >>> slash = chr(92)
+    >>> sanitizer = ToolParameterSanitizer.from_element(XML(
     ... '''
     ... <sanitizer>
     ...   <valid initial="none">
@@ -38,13 +38,13 @@ class ToolParameterSanitizer(object):
     ...     <add source="%s" target="%s%s"/>
     ...   </mapping>
     ... </sanitizer>
-    ... ''' % ( slash, slash, slash, slash, slash ) ) )
+    ... ''' % (slash, slash, slash, slash, slash)))
     >>> text = '%s"$rm&#!' % slash
-    >>> [ c for c in sanitizer.sanitize_param( text ) ] == [ slash, slash, slash, '"', '$', 'r', 'm', '&', '#', '!' ]
+    >>> [c for c in sanitizer.sanitize_param(text)] == [slash, slash, slash, '"', '$', 'r', 'm', '&', '#', '!']
     True
     """
 
-    VALID_PRESET = {'default': (string.letters + string.digits + " -=_.()/+*^,:?!"), 'none': ''}
+    VALID_PRESET = {'default': (string.ascii_letters + string.digits + " -=_.()/+*^,:?!"), 'none': ''}
     MAPPING_PRESET = {'default': galaxy.util.mapped_chars, 'none': {}}
     DEFAULT_INVALID_CHAR = 'X'
 
@@ -95,9 +95,14 @@ class ToolParameterSanitizer(object):
     def get_valid_by_name(cls, name):
         rval = []
         for split_name in name.split(','):
+            # Remove ';' (if present) and everything after it
+            split_name = split_name.split(';', 1)[0]
             split_name = split_name.strip()
             value = []
             if split_name.startswith('string.'):
+                string_constant = split_name[7:]
+                if string_constant in ('letters', 'lowercase', 'uppercase'):
+                    split_name = 'string.ascii_' + string_constant
                 try:
                     value = eval(split_name)
                 except NameError as e:

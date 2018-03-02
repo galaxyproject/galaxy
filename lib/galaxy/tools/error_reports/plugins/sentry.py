@@ -3,7 +3,6 @@ import logging
 
 from galaxy import web
 from galaxy.util import string_as_bool, unicodify
-
 from ..plugins import ErrorPlugin
 
 log = logging.getLogger(__name__)
@@ -32,11 +31,21 @@ class SentryPlugin(ErrorPlugin):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
+        self.custom_dsn = kwargs.get('custom_dsn', None)
+        self.sentry = None
+        # Use the built in one by default
+        if hasattr(self.app, 'sentry_client'):
+            self.sentry = self.app.sentry_client
+
+        # if they've set a custom one, override.
+        if self.custom_dsn:
+            import raven
+            self.sentry = raven.Client(self.custom_dsn)
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to sentry
         """
-        if self.app.sentry_client:
+        if self.sentry:
             user = job.get_user()
             extra = {
                 'info': job.info,
@@ -75,7 +84,7 @@ class SentryPlugin(ErrorPlugin):
             except AttributeError:
                 # The above does not work when handlers are separate from the web handlers
                 url = None
-            self.app.sentry_client.context.merge({
+            self.sentry_client.context.merge({
                 # User information here also places email links + allows seeing
                 # a list of affected users in the tags/filtering.
                 'user': {
@@ -88,7 +97,7 @@ class SentryPlugin(ErrorPlugin):
             })
 
             # Send the message, using message because
-            response = self.app.sentry_client.capture(
+            response = self.sentry_client.capture(
                 'raven.events.Message',
                 tags={
                     'tool_id': job.tool_id,

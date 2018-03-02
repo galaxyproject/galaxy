@@ -1,10 +1,9 @@
 import os
 
 from galaxy.util import parse_xml
-
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.tools import tool_version_manager
-from tools.test_toolbox import (
+from ..tools.test_toolbox import (
     BaseToolBoxTestCase,
     SimplifiedToolBox
 )
@@ -73,7 +72,6 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
 
     def test_add_twice(self):
         self._init_dynamic_tool_conf()
-        tool_versions = {}
         previous_guid = None
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
@@ -82,7 +80,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
             tool = self._init_ts_tool(guid=guid, filename="tool_v%s.xml" % v, version=v)
             tool_path = self._tool_path(name="tool_v%s.xml" % v)
             new_tools = [{"guid": guid, "tool_config": tool_path}]
-            tool_shed_repository = self._repo_install(changeset)
+            self._repo_install(changeset)
             repository_tools_tups = [
                 (
                     tool_path,
@@ -96,9 +94,6 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
                 tool_dicts=new_tools,
                 tool_section=section,
             )
-            if previous_guid:
-                tool_versions[guid] = previous_guid
-            self.tvm.handle_tool_versions([tool_versions], tool_shed_repository)
             tpm.add_to_tool_panel(
                 repository_name="example",
                 repository_clone_url="github.com",

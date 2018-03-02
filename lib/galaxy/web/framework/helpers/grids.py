@@ -10,7 +10,6 @@ from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemR
 from galaxy.util import restore_text, sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
-from galaxy.web.framework.helpers import iff
 
 
 log = logging.getLogger(__name__)
@@ -21,12 +20,8 @@ class Grid(object):
     Specifies the content and format of a grid (data table).
     """
     title = ""
-    exposed = True
     model_class = None
     show_item_checkboxes = False
-    template = "grid_base.mako"
-    async_template = "grid_base_async.mako"
-    use_async = False
     use_hide_message = True
     global_actions = []
     columns = []
@@ -35,14 +30,12 @@ class Grid(object):
     # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
     default_filter = {}
     default_sort_key = None
-    preserve_state = False
     use_paging = False
     num_rows_per_page = 25
     num_page_links = 10
     # Set preference names.
     cur_filter_pref_name = ".filter"
     cur_sort_key_pref_name = ".sort_key"
-    pass_through_operations = {}
     legend = None
     info_text = None
 
@@ -65,7 +58,6 @@ class Grid(object):
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
         status = kwargs.get('status', None)
         message = kwargs.get('message', None)
-        dict_format = kwargs.get('dict_format', False)
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -73,14 +65,6 @@ class Grid(object):
             # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            if pref_name in trans.get_user().preferences:
-                saved_filter = loads(trans.get_user().preferences[pref_name])
-                base_filter.update(saved_filter)
-            pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-            if pref_name in trans.get_user().preferences:
-                base_sort_key = loads(trans.get_user().preferences[pref_name])
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
@@ -202,6 +186,8 @@ class Grid(object):
         # There might be a current row
         current_item = self.get_current_item(trans, **kwargs)
         # Process page number.
+        num_pages = None
+        total_row_count_query = query  # query without limit applied to get total number of rows.
         if self.use_paging:
             if 'page' in kwargs:
                 if kwargs['page'] == 'all':
@@ -211,43 +197,21 @@ class Grid(object):
             else:
                 page_num = 1
             if page_num == 0:
-                # Show all rows in page.
-                total_num_rows = query.count()
-                page_num = 1
                 num_pages = 1
+                page_num = 1
             else:
-                # Show a limited number of rows. Before modifying query, get the total number of rows that query
-                # returns so that the total number of pages can be computed.
-                total_num_rows = query.count()
                 query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
-                num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
         else:
             # Defaults.
             page_num = 1
-            num_pages = 1
         # There are some places in grid templates where it's useful for a grid
         # to have its current filter.
         self.cur_filter_dict = cur_filter_dict
-        # Preserve grid state: save current filter and sort key.
-        if self.preserve_state:
-            pref_name = text_type(self.__class__.__name__ + self.cur_filter_pref_name)
-            trans.get_user().preferences[pref_name] = text_type(dumps(cur_filter_dict))
-            if sort_key:
-                pref_name = text_type(self.__class__.__name__ + self.cur_sort_key_pref_name)
-                trans.get_user().preferences[pref_name] = text_type(dumps(sort_key))
-            trans.sa_session.flush()
+
         # Log grid view.
         context = text_type(self.__class__.__name__)
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
-        params['async'] = ('async' in kwargs)
-
-        # TODO:??
-        # commenting this out; when this fn calls session.add( action ) and session.flush the query from this fn
-        # is effectively 'wiped' out. Nate believes it has something to do with our use of session( autocommit=True )
-        # in mapping.py. If you change that to False, the log_action doesn't affect the query
-        # Below, I'm rendering the template first (that uses query), then calling log_action, then returning the page
-        # trans.log_action( trans.get_user(), text_type( "grid.view" ), context, params )
 
         # Render grid.
         def url(*args, **kwargs):
@@ -280,50 +244,20 @@ class Grid(object):
 
         self.use_panels = (kwargs.get('use_panels', False) in [True, 'True', 'true'])
         self.advanced_search = (kwargs.get('advanced_search', False) in [True, 'True', 'true'])
-        async_request = ((self.use_async) and (kwargs.get('async', False) in [True, 'True', 'true']))
         # Currently, filling the template returns a str object; this requires decoding the string into a
         # unicode object within mako templates. What probably should be done is to return the template as
         # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
-        if not dict_format:
-            page = trans.fill_template(iff(async_request, self.async_template, self.template),
-                                       grid=self,
-                                       query=query,
-                                       cur_page_num=page_num,
-                                       num_pages=num_pages,
-                                       num_page_links=self.num_page_links,
-                                       default_filter_dict=self.default_filter,
-                                       cur_filter_dict=cur_filter_dict,
-                                       sort_key=sort_key,
-                                       current_item=current_item,
-                                       ids=kwargs.get('id', []),
-                                       url=url,
-                                       status=status,
-                                       message=message,
-                                       info_text=self.info_text,
-                                       use_panels=self.use_panels,
-                                       use_hide_message=self.use_hide_message,
-                                       advanced_search=self.advanced_search,
-                                       show_item_checkboxes=(self.show_item_checkboxes or
-                                                             kwargs.get('show_item_checkboxes', '') in ['True', 'true']),
-                                       # Pass back kwargs so that grid template can set and use args without
-                                       # grid explicitly having to pass them.
-                                       kwargs=kwargs)
-            trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
-            return page
-
         grid_config = {
             'title'                         : self.title,
             'url_base'                      : trans.request.path_url,
-            'async'                         : self.use_async,
             'async_ops'                     : [],
             'categorical_filters'           : {},
             'filters'                       : cur_filter_dict,
             'sort_key'                      : sort_key,
             'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
             'cur_page_num'                  : page_num,
-            'num_pages'                     : num_pages,
             'num_page_links'                : self.num_page_links,
             'status'                        : status,
             'message'                       : restore_text(message),
@@ -413,7 +347,7 @@ class Grid(object):
                     target = column.target
                     value = column.get_value(trans, self, item)
                     if isinstance(value, str):
-                        value = unicode(value, 'utf-8')
+                        value = text_type(value, 'utf-8')
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -423,9 +357,19 @@ class Grid(object):
             for operation in self.operations:
                 item_dict['operation_config'][operation.label] = {
                     'allowed'   : operation.allowed(item),
-                    'url_args'  : url(**operation.get_url_args(item))
+                    'url_args'  : url(**operation.get_url_args(item)),
+                    'target'    : operation.target
                 }
             grid_config['items'].append(item_dict)
+
+        if self.use_paging and num_pages is None:
+            # TODO: it would be better to just return this as None, render, and fire
+            # off a second request for this count I think.
+            total_num_rows = total_row_count_query.count()
+            num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
+
+        grid_config["num_pages"] = num_pages
+
         trans.log_action(trans.get_user(), text_type("grid.view"), context, params)
         return grid_config
 
@@ -438,8 +382,8 @@ class Grid(object):
                 id = id.split(",")
             # Ensure ids are integers
             try:
-                id = map(int, id)
-            except:
+                id = list(map(int, id))
+            except Exception:
                 decorators.error("Invalid id")
         return id
 
@@ -632,7 +576,12 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
     """ Column that displays community ratings for an item. """
 
     def get_value(self, trans, grid, item):
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        if not hasattr(item, "average_rating"):
+            # No prefetched column property, generate it on the fly.
+            ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, item, webapp_model=trans.model)
+        else:
+            ave_item_rating = item.average_rating
+            num_ratings = 2  # just used for pluralization
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
@@ -876,13 +825,17 @@ class StateColumn(GridColumn):
 class SharingStatusColumn(GridColumn):
     """ Grid column to indicate sharing status. """
 
+    def __init__(self, *args, **kwargs):
+        self.use_shared_with_count = kwargs.pop("use_shared_with_count", False)
+        super(SharingStatusColumn, self).__init__(*args, **kwargs)
+
     def get_value(self, trans, grid, item):
         # Delete items cannot be shared.
         if item.deleted:
             return ""
         # Build a list of sharing for this item.
         sharing_statuses = []
-        if item.users_shared_with:
+        if self._is_shared(item):
             sharing_statuses.append("Shared")
         if item.importable:
             sharing_statuses.append("Accessible")
@@ -890,8 +843,16 @@ class SharingStatusColumn(GridColumn):
             sharing_statuses.append("Published")
         return ", ".join(sharing_statuses)
 
+    def _is_shared(self, item):
+        if self.use_shared_with_count:
+            # optimization to skip join for users_shared_with and loading in that data.
+            return item.users_shared_with_count > 0
+
+        return item.users_shared_with
+
     def get_link(self, trans, grid, item):
-        if not item.deleted and (item.users_shared_with or item.importable or item.published):
+        is_shared = self._is_shared(item)
+        if not item.deleted and (is_shared or item.importable or item.published):
             return dict(operation="share or publish", id=item.id)
         return None
 

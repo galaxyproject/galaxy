@@ -42,7 +42,7 @@ class RoleAPIController(BaseAPIController):
             return "Malformed role id ( %s ) specified, unable to decode." % str(role_id)
         try:
             role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-        except:
+        except Exception:
             role = None
         if not role or not (trans.user_is_admin() or trans.app.security_agent.ok_to_display(trans.user, role)):
             trans.response.status = 400

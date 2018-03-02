@@ -2,18 +2,18 @@ import datetime
 import json
 import os
 import time
-
 from operator import itemgetter
 
-from base import api
-from base.api_asserts import assert_status_code_is_ok
-from base.populators import (
+from requests import put
+
+from base import api  # noqa: I100,I202
+from base.api_asserts import assert_status_code_is_ok  # noqa: I100
+from base.populators import (  # noqa: I100
+    DatasetCollectionPopulator,
     DatasetPopulator,
     wait_on,
     wait_on_state,
 )
-
-from requests import put
 
 
 class JobsApiTestCase(api.ApiTestCase):
@@ -21,6 +21,7 @@ class JobsApiTestCase(api.ApiTestCase):
     def setUp(self):
         super(JobsApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_index(self):
         # Create HDA to ensure at least one job exists...
@@ -273,72 +274,172 @@ class JobsApiTestCase(api.ApiTestCase):
 
     def test_search(self):
         history_id, dataset_id = self.__history_with_ok_dataset()
+        # We first copy the datasets, so that the update time is lower than the job creation time
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
+        # We test that a job can be found even if the dataset has been copied to another history
+        new_dataset_id = copy_response.json()['id']
+        copied_inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': new_dataset_id}
+        })
+        search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=copied_inputs)
+        self._search(search_payload, expected_search_count=1)
+        # Now we delete the original input HDA that was used -- we should still be able to find the job
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, dataset_id))
+        self._assert_status_code_is(delete_respone, 200)
+        self._search(search_payload, expected_search_count=1)
+        # Now we also delete the copy -- we shouldn't find a job
+        delete_respone = self._delete("histories/%s/contents/%s" % (new_history_id, new_dataset_id))
+        self._assert_status_code_is(delete_respone, 200)
+        self._search(search_payload, expected_search_count=0)
 
-        inputs = json.dumps(
-            dict(
-                input1=dict(
-                    src='hda',
-                    id=dataset_id,
-                )
-            )
-        )
-        search_payload = dict(
-            tool_id="cat1",
-            inputs=inputs,
-            state="ok",
-        )
+    def test_search_handle_identifiers(self):
+        # Test that input name and element identifier of a jobs' output must match for a job to be returned.
+        history_id, dataset_id = self.__history_with_ok_dataset()
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        self._job_search(tool_id='identifier_single', history_id=history_id, inputs=inputs)
+        dataset_details = self._get("histories/%s/contents/%s" % (history_id, dataset_id)).json()
+        dataset_details['name'] = 'Renamed Test Dataset'
+        dataset_update_response = self._put("histories/%s/contents/%s" % (history_id, dataset_id), data=dict(name='Renamed Test Dataset'))
+        self._assert_status_code_is(dataset_update_response, 200)
+        assert dataset_update_response.json()['name'] == 'Renamed Test Dataset'
+        search_payload = self._search_payload(history_id=history_id, tool_id='identifier_single', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
 
+    def test_search_delete_outputs(self):
+        history_id, dataset_id = self.__history_with_ok_dataset()
+        inputs = json.dumps({
+            'input1': {'src': 'hda', 'id': dataset_id}
+        })
+        tool_response = self._job_search(tool_id='cat1', history_id=history_id, inputs=inputs)
+        output_id = tool_response.json()['outputs'][0]['id']
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='cat1', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_with_hdca_list_input(self):
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
+        history_id, list_id_b = self.__history_with_ok_collection(collection_type='list', history_id=history_id)
+        inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': list_id_a},
+            'f2': {'src': 'hdca', 'id': list_id_b},
+        })
+        tool_response = self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        # We switch the inputs, this should not return a match
+        inputs_switched = json.dumps({
+            'f2': {'src': 'hdca', 'id': list_id_a},
+            'f1': {'src': 'hdca', 'id': list_id_b},
+        })
+        search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs_switched)
+        self._search(search_payload, expected_search_count=0)
+        # We delete the ouput (this is a HDA, as multi_data_param reduces collections)
+        # and use the correct input job definition, the job should not be found
+        output_id = tool_response.json()['outputs'][0]['id']
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='multi_data_param', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_delete_hdca_output(self):
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='list')
+        inputs = json.dumps({
+            'input1': {'src': 'hdca', 'id': list_id_a},
+        })
+        tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
+        output_id = tool_response.json()['outputs'][0]['id']
+        # We delete a single tool output, no job should be returned
+        delete_respone = self._delete("histories/%s/contents/%s" % (history_id, output_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+        tool_response = self._job_search(tool_id='collection_creates_list', history_id=history_id, inputs=inputs)
+        output_collection_id = tool_response.json()['output_collections'][0]['id']
+        # We delete a collection output, no job should be returned
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, output_collection_id))
+        self._assert_status_code_is(delete_respone, 200)
+        search_payload = self._search_payload(history_id=history_id, tool_id='collection_creates_list', inputs=inputs)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_with_hdca_pair_input(self):
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='pair')
+        inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': list_id_a},
+            'f2': {'src': 'hdca', 'id': list_id_a},
+        })
+        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+        # We test that a job can be found even if the collection has been copied to another history
+        new_history_id = self.dataset_populator.new_history()
+        copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
+        copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload)
+        self._assert_status_code_is(copy_response, 200)
+        new_list_a = copy_response.json()['id']
+        copied_inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': new_list_a},
+            'f2': {'src': 'hdca', 'id': new_list_a},
+        })
+        search_payload = self._search_payload(history_id=new_history_id, tool_id='multi_data_param', inputs=copied_inputs)
+        self._search(search_payload, expected_search_count=1)
+        # Now we delete the original input HDCA that was used -- we should still be able to find the job
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, list_id_a))
+        self._assert_status_code_is(delete_respone, 200)
+        self._search(search_payload, expected_search_count=1)
+        # Now we also delete the copy -- we shouldn't find a job
+        delete_respone = self._delete("histories/%s/contents/dataset_collections/%s" % (history_id, new_list_a))
+        self._assert_status_code_is(delete_respone, 200)
+        self._search(search_payload, expected_search_count=0)
+
+    def test_search_with_hdca_list_pair_input(self):
+        history_id, list_id_a = self.__history_with_ok_collection(collection_type='list:pair')
+        inputs = json.dumps({
+            'f1': {'src': 'hdca', 'id': list_id_a},
+            'f2': {'src': 'hdca', 'id': list_id_a},
+        })
+        self._job_search(tool_id='multi_data_param', history_id=history_id, inputs=inputs)
+
+    def _job_search(self, tool_id, history_id, inputs):
+        search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
         self.assertEquals(len(empty_search_response.json()), 0)
+        tool_response = self._post("tools", data=search_payload)
+        self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
+        self._search(search_payload, expected_search_count=1)
+        return tool_response
 
-        self.__run_cat_tool(history_id, dataset_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+    def _search_payload(self, history_id, tool_id, inputs, state='ok'):
+        search_payload = dict(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+            state=state
+        )
+        return search_payload
 
-        search_count = -1
+    def _search(self, payload, expected_search_count=1):
         # in case job and history aren't updated at exactly the same
         # time give time to wait
         for i in range(5):
-            search_count = self._search_count(search_payload)
-            if search_count == 1:
+            search_count = self._search_count(payload)
+            if search_count == expected_search_count:
                 break
-            time.sleep(.1)
-
-        self.assertEquals(search_count, 1)
+            time.sleep(1)
+        assert search_count == expected_search_count, "expected to find %d jobs, got %d jobs" % (expected_search_count, search_count)
+        return search_count
 
     def _search_count(self, search_payload):
         search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(search_response, 200)
         search_json = search_response.json()
         return len(search_json)
-
-    def __run_cat_tool(self, history_id, dataset_id):
-        # Code duplication with test_jobs.py, eliminate
-        payload = self.dataset_populator.run_tool_payload(
-            tool_id='cat1',
-            inputs=dict(
-                input1=dict(
-                    src='hda',
-                    id=dataset_id
-                ),
-            ),
-            history_id=history_id,
-        )
-        self._post("tools", data=payload)
-
-    def __run_randomlines_tool(self, lines, history_id, dataset_id):
-        payload = self.dataset_populator.run_tool_payload(
-            tool_id="random_lines1",
-            inputs=dict(
-                num_lines=lines,
-                input=dict(
-                    src='hda',
-                    id=dataset_id,
-                ),
-            ),
-            history_id=history_id,
-        )
-        self._post("tools", data=payload)
 
     def __uploads_with_state(self, *states):
         jobs_response = self._get("jobs", data=dict(state=states))
@@ -356,6 +457,18 @@ class JobsApiTestCase(api.ApiTestCase):
         history_id = self.dataset_populator.new_history()
         dataset_id = self.dataset_populator.new_dataset(history_id, wait=True)["id"]
         return history_id, dataset_id
+
+    def __history_with_ok_collection(self, collection_type='list', history_id=None):
+        if not history_id:
+            history_id = self.dataset_populator.new_history()
+        if collection_type == 'list':
+            create_reposonse = self.dataset_collection_populator.create_list_in_history(history_id).json()
+        elif collection_type == 'pair':
+            create_reposonse = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+        elif collection_type == 'list:pair':
+            create_reposonse = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
+        self.dataset_collection_populator.wait_for_dataset_collection(create_reposonse)
+        return history_id, create_reposonse['id']
 
     def __jobs_index(self, **kwds):
         jobs_response = self._get("jobs", **kwds)

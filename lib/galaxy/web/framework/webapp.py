@@ -24,19 +24,20 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import ConfigurationError, MessageException
 from galaxy.managers import context
 from galaxy.util import (
     asbool,
+    safe_makedirs,
     safe_str_cmp
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework import (
     base,
-    formbuilder,
     helpers,
     url_for
 )
+from galaxy.web.stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
@@ -102,8 +103,6 @@ class WebApplication(base.WebApplication):
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
     def make_body_iterable(self, trans, body):
-        if isinstance(body, formbuilder.FormBuilder):
-            body = trans.show_form(body)
         return base.WebApplication.make_body_iterable(self, trans, body)
 
     def transaction_chooser(self, environ, galaxy_app, session_cookie):
@@ -340,7 +339,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 return self.response.cookies[name].value
             else:
                 return self.request.cookies[name].value
-        except:
+        except Exception:
             return None
 
     def set_cookie(self, value, name='galaxysession', path='/', age=90, version='1'):
@@ -428,11 +427,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         galaxy_session_requires_flush = False
         if secure_id:
             # Decode the cookie value to get the session_key
-            session_key = self.security.decode_guid(secure_id)
             try:
-                # Make sure we have a valid UTF-8 string
+                session_key = self.security.decode_guid(secure_id)
                 session_key = session_key.encode('utf8')
-            except UnicodeDecodeError:
+            except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
             if session_key:
@@ -632,16 +630,31 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
                         name=name, path=self.app.config.cookie_path)
 
+    def check_user_library_import_dir(self, user):
+        if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
+            # try to create a user library import directory
+            try:
+                safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))
+            except ConfigurationError as e:
+                self.log_event(str(e))
+
+    def user_checks(self, user):
+        """
+        This could contain more checks around a user upon login
+        """
+        self.check_user_library_import_dir(user)
+
     def handle_user_login(self, user):
         """
         Login a new user (possibly newly created)
-
+           - do some 'system' checks (if any) for this user
            - create a new session
            - associate new session with user
            - if old session had a history and it was not associated with a user, associate it with the new session,
              otherwise associate the current session's history with the user
            - add the disk usage of the current session to the user's total disk usage
         """
+        self.user_checks(user)
         # Set the previous session
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
@@ -654,7 +667,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 users_last_session = user.galaxy_sessions[0]
                 last_accessed = True
-            except:
+            except Exception:
                 users_last_session = None
                 last_accessed = False
             if (prev_galaxy_session.current_history and not
@@ -874,15 +887,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
 
-    def show_form(self, form, header=None, template="form.mako", use_panels=False, active_view=""):
-        """
-        Convenience method for displaying a simple page with a single HTML
-        form.
-        """
-        return self.fill_template(template, form=form, header=header,
-                                  use_panels=(form.use_panels or use_panels),
-                                  active_view=active_view)
-
     @property
     def session_csrf_token(self):
         token = ''
@@ -961,17 +965,9 @@ def build_native_uwsgi_app(paste_factory, config_section):
     """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
 
     In particular these are useful with --yaml or --json for config."""
-    import uwsgi
-    uwsgi_opt = uwsgi.opt
-    config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-    if not config_file:
-        # Probably loaded via --ini-paste - expect paste app.
-        return None
-
-    uwsgi_app = paste_factory(uwsgi.opt, load_app_kwds={
-        "config_file": config_file,
-        "config_section": config_section,
-    })
+    # TODO: just move this to a classmethod on stack?
+    app_kwds = get_app_kwds(config_section)
+    uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
     return uwsgi_app
 
 

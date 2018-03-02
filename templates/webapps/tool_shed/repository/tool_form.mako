@@ -43,7 +43,7 @@
                         <%
                             try:
                                 group_state = tool_state[ input.name ][ 0 ]
-                            except Exception, e:
+                            except Exception as e:
                                 group_state = tool_state[ input.name ]
                             current_case = group_state[ '__current_case__' ]
                             group_prefix = prefix + input.name + "|"
@@ -75,40 +75,8 @@
         </%def>
         
         <%def name="row_for_param( prefix, param, parent_state, other_values )">
-            <%
-                # Disable refresh_on_change for select lists displayed in the tool shed. 
-                param.refresh_on_change = False
-                label = param.get_label()
-                if isinstance( param, DataToolParameter ) or isinstance( param, ColumnListParameter ) or isinstance( param, GenomeBuildParameter ):
-                    field = SelectField( param.name )
-                    field.add_option( param.name, param.name )
-                    field_html = field.get_html()
-                elif isinstance( param, SelectToolParameter ) and hasattr( param, 'data_ref' ):
-                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
-                    field.add_option( param.data_ref, param.data_ref )
-                    field_html = field.get_html( prefix )
-                elif isinstance( param, SelectToolParameter ) and param.is_dynamic:
-                    field = SelectField( param.name, display=param.display, multiple=param.multiple )
-                    dynamic_options = param.options
-                    if dynamic_options is not None:
-                        if dynamic_options.index_file:
-                            option_label = "Dynamically generated from entries in file %s" % str( dynamic_options.index_file )
-                            field.add_option( option_label, "none" )
-                        elif dynamic_options.missing_index_file:
-                            option_label = "Dynamically generated from entries in missing file %s" % str( dynamic_options.missing_index_file )
-                            field.add_option( option_label, "none" )
-                    else:
-                        field.add_option( "Dynamically generated from old-style Dynamic Options.", "none" )
-                    field_html = field.get_html( prefix )
-                else:
-                    field = TextField( param.name, value="Parameter type: %s" % param.type )
-                    field_html = field.get_html( prefix, disabled=True )
-            %>
             <div class="form-row">
-                %if label:
-                    <label for="${param.name}">${label}:</label>
-                %endif
-                <div class="form-row-input">${field_html}</div>
+                <label >${param.label or param.name}:</label>
                 %if param.help:
                     <div class="toolParamHelp" style="clear: both;">
                         ${param.help}

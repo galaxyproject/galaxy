@@ -2,6 +2,7 @@ from json import loads
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, false, true
+from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import managers, model, util, web
 from galaxy.model.item_attrs import UsesItemRatings
@@ -32,7 +33,7 @@ class PageListGrid(grids.Grid):
     default_filter = {"published": "All", "tags": "All", "title": "All", "sharing": "All"}
     default_sort_key = "-update_time"
     columns = [
-        grids.TextColumn("Title", key="title", attach_popup=True, filterable="advanced"),
+        grids.TextColumn("Title", key="title", attach_popup=True, filterable="advanced", link=(lambda item: dict(action="display_by_username_and_slug", username=item.user.username, slug=item.slug))),
         URLColumn("Public URL"),
         grids.OwnerAnnotationColumn("Annotation", key="annotation", model_annotation_association_class=model.PageAnnotationAssociation, filterable="advanced"),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.PageTagAssociation, filterable="advanced", grid_name="PageListGrid"),
@@ -45,13 +46,13 @@ class PageListGrid(grids.Grid):
         cols_to_filter=[columns[0], columns[2]],
         key="free-text-search", visible=False, filterable="standard"))
     global_actions = [
-        grids.GridAction("Add new page", dict(action='create'), target="inbound")
+        grids.GridAction("Add new page", dict(controller="", action="pages/create"))
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action='edit_content')),
-        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(action='edit')),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
+        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="sharing")),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
 
@@ -62,7 +63,6 @@ class PageListGrid(grids.Grid):
 class PageAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
-    use_async = True
     title = "Published Pages"
     model_class = model.Page
     default_sort_key = "update_time"
@@ -83,8 +83,8 @@ class PageAllPublishedGrid(grids.Grid):
     )
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
@@ -104,7 +104,6 @@ class ItemSelectionGrid(grids.Grid):
     show_item_checkboxes = True
     default_filter = {"deleted": "False", "sharing": "All"}
     default_sort_key = "-update_time"
-    use_async = True
     use_paging = True
     num_rows_per_page = 10
 
@@ -322,7 +321,6 @@ class PageController(BaseUIController, SharableMixin,
             session.flush()
 
         # Build grid dictionary.
-        kwargs['dict_format'] = True
         grid = self._page_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -330,7 +328,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.expose
     @web.json
     def list_published(self, trans, *args, **kwargs):
-        kwargs['dict_format'] = True
         grid = self._all_published_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -348,107 +345,115 @@ class PageController(BaseUIController, SharableMixin,
                  'slug'     : p.page.slug,
                  'title'    : p.page.title} for p in shared_by_others]
 
-    @web.expose
+    @web.expose_api
     @web.require_login("create pages")
-    def create(self, trans, page_title="", page_slug="", page_annotation=""):
+    def create(self, trans, payload=None, **kwd):
         """
-        Create a new page
+        Create a new page.
         """
-        user = trans.get_user()
-        page_title_err = page_slug_err = page_annotation_err = ""
-        if trans.request.method == "POST":
-            if not page_title:
-                page_title_err = "Page name is required"
-            elif not page_slug:
-                page_slug_err = "Page id is required"
-            elif not self._is_valid_slug(page_slug):
-                page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif trans.sa_session.query(model.Page).filter_by(user=user, slug=page_slug, deleted=False).first():
-                page_slug_err = "Page id must be unique"
+        if trans.request.method == 'GET':
+            return {
+                'title'  : 'Create a new page',
+                'inputs' : [{
+                    'name'      : 'title',
+                    'label'     : 'Name'
+                }, {
+                    'name'      : 'slug',
+                    'label'     : 'Identifier',
+                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
+                }, {
+                    'name'      : 'annotation',
+                    'label'     : 'Annotation',
+                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                }]
+            }
+        else:
+            user = trans.get_user()
+            p_title = payload.get('title')
+            p_slug = payload.get('slug')
+            p_annotation = payload.get('annotation')
+            if not p_title:
+                return self.message_exception(trans, 'Please provide a page name is required.')
+            elif not p_slug:
+                return self.message_exception(trans, 'Please provide a unique identifier.')
+            elif not self._is_valid_slug(p_slug):
+                return self.message_exception(trans, 'Page identifier can only contain lowercase letters, numbers, and dashes (-).')
+            elif trans.sa_session.query(model.Page).filter_by(user=user, slug=p_slug, deleted=False).first():
+                return self.message_exception(trans, 'Page id must be unique.')
             else:
                 # Create the new stored page
-                page = model.Page()
-                page.title = page_title
-                page.slug = page_slug
-                page_annotation = sanitize_html(page_annotation, 'utf-8', 'text/html')
-                self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-                page.user = user
+                p = model.Page()
+                p.title = p_title
+                p.slug = p_slug
+                p.user = user
+                if p_annotation:
+                    p_annotation = sanitize_html(p_annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 # And the first (empty) page revision
-                page_revision = model.PageRevision()
-                page_revision.title = page_title
-                page_revision.page = page
-                page.latest_revision = page_revision
-                page_revision.content = ""
+                p_revision = model.PageRevision()
+                p_revision.title = p_title
+                p_revision.page = p
+                p.latest_revision = p_revision
+                p_revision.content = ""
                 # Persist
-                session = trans.sa_session
-                session.add(page)
-                session.flush()
-                # Display the management page
-                # trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect(web.url_for(controller='pages', action='list'))
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit")
-            .add_text("page_title", "Page title", value=page_title, error=page_title_err)
-            .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                      help="""A unique identifier that will be used for
-                            public links to this page. A default is generated
-                            from the page title, but can be edited. This field
-                            must contain only lowercase letters, numbers, and
-                            the '-' character.""")
-            .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                      help="A description of the page; annotation is shown alongside published pages."),
-            template="page/create.mako")
+                trans.sa_session.add(p)
+                trans.sa_session.flush()
+            return {'message': 'Page \'%s\' successfully created.' % p.title, 'status': 'success'}
 
-    @web.expose
+    @web.expose_api
     @web.require_login("edit pages")
-    def edit(self, trans, id, page_title="", page_slug="", page_annotation=""):
+    def edit(self, trans, payload=None, **kwd):
         """
         Edit a page's attributes.
         """
-        encoded_id = id
-        id = self.decode_id(id)
-        session = trans.sa_session
-        page = session.query(model.Page).get(id)
-        user = trans.user
-        assert page.user == user
-        page_title_err = page_slug_err = page_annotation_err = ""
-        if trans.request.method == "POST":
-            if not page_title:
-                page_title_err = "Page name is required"
-            elif not page_slug:
-                page_slug_err = "Page id is required"
-            elif not self._is_valid_slug(page_slug):
-                page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
-            elif page_slug != page.slug and trans.sa_session.query(model.Page).filter_by(user=user, slug=page_slug, deleted=False).first():
-                page_slug_err = "Page id must be unique"
-            elif not page_annotation:
-                page_annotation_err = "Page annotation is required"
-            else:
-                page.title = page_title
-                page.slug = page_slug
-                page_annotation = sanitize_html(page_annotation, 'utf-8', 'text/html')
-                self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-                session.flush()
-                # Redirect to page list.
-                return trans.response.send_redirect(web.url_for(controller='pages', action='list'))
+        id = kwd.get('id')
+        if not id:
+            return self.message_exception(trans, 'No page id received for editing.')
+        decoded_id = self.decode_id(id)
+        user = trans.get_user()
+        p = trans.sa_session.query(model.Page).get(decoded_id)
+        if trans.request.method == 'GET':
+            if p.slug is None:
+                self.create_item_slug(trans.sa_session, p)
+            return {
+                'title'  : 'Edit page attributes',
+                'inputs' : [{
+                    'name'      : 'title',
+                    'label'     : 'Name',
+                    'value'     : p.title
+                }, {
+                    'name'      : 'slug',
+                    'label'     : 'Identifier',
+                    'value'     : p.slug,
+                    'help'      : 'A unique identifier that will be used for public links to this page. This field can only contain lowercase letters, numbers, and dashes (-).'
+                }, {
+                    'name'      : 'annotation',
+                    'label'     : 'Annotation',
+                    'value'     : self.get_item_annotation_str(trans.sa_session, user, p),
+                    'help'      : 'A description of the page. The annotation is shown alongside published pages.'
+                }]
+            }
         else:
-            page_title = page.title
-            page_slug = page.slug
-            page_annotation = self.get_item_annotation_str(trans.sa_session, trans.user, page)
-            if not page_annotation:
-                page_annotation = ""
-        return trans.show_form(
-            web.FormBuilder(web.url_for(controller='page', action='edit', id=encoded_id), "Edit page attributes", submit_text="Submit")
-            .add_text("page_title", "Page title", value=page_title, error=page_title_err)
-            .add_text("page_slug", "Page identifier", value=page_slug, error=page_slug_err,
-                      help="""A unique identifier that will be used for
-                       public links to this page. A default is generated
-                       from the page title, but can be edited. This field
-                       must contain only lowercase letters, numbers, and
-                       the '-' character.""")
-            .add_text("page_annotation", "Page annotation", value=page_annotation, error=page_annotation_err,
-                      help="A description of the page; annotation is shown alongside published pages."),
-            template="page/create.mako")
+            p_title = payload.get('title')
+            p_slug = payload.get('slug')
+            p_annotation = payload.get('annotation')
+            if not p_title:
+                return self.message_exception(trans, 'Please provide a page name is required.')
+            elif not p_slug:
+                return self.message_exception(trans, 'Please provide a unique identifier.')
+            elif not self._is_valid_slug(p_slug):
+                return self.message_exception(trans, 'Page identifier can only contain lowercase letters, numbers, and dashes (-).')
+            elif p_slug != p.slug and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first():
+                return self.message_exception(trans, 'Page id must be unique.')
+            else:
+                p.title = p_title
+                p.slug = p_slug
+                if p_annotation:
+                    p_annotation = sanitize_html(p_annotation, 'utf-8', 'text/html')
+                    self.add_item_annotation(trans.sa_session, user, p, p_annotation)
+                trans.sa_session.add(p)
+                trans.sa_session.flush()
+            return {'message': 'Attributes of \'%s\' successfully saved.' % p.title, 'status': 'success'}
 
     @web.expose
     @web.require_login("edit pages")
@@ -692,7 +697,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more histories. """
-        kwargs['dict_format'] = True
         return self._history_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -700,7 +704,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a workflow from saved workflows")
     def list_workflows_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more workflows. """
-        kwargs['dict_format'] = True
         return self._workflow_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -708,7 +711,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a visualization from saved visualizations")
     def list_visualizations_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more visualizations. """
-        kwargs['dict_format'] = True
         return self._visualization_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -716,7 +718,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a page from saved pages")
     def list_pages_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more pages. """
-        kwargs['dict_format'] = True
         return self._page_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -724,7 +725,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a dataset from saved datasets")
     def list_datasets_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more datasets. """
-        kwargs['dict_format'] = True
         return self._datasets_selection_grid(trans, **kwargs)
 
     @web.expose

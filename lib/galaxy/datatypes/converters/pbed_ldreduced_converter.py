@@ -48,7 +48,7 @@ def pruneLD(plinktasks=[], cd='./', vclbase=[]):
             alog += lplog
             alog.append('\n')
             os.unlink(plog)  # no longer needed
-        except:
+        except Exception:
             alog.append('### %s Strange - no std out from plink when running command line\n%s\n' % (timenow(), ' '.join(vcl)))
     return alog
 
@@ -92,7 +92,7 @@ def main():
     outfilepath = sys.argv[6]
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass
     plink = sys.argv[7]
     makeLDreduced(base_name, infpath=inpedfilepath, outfpath=outfilepath, plinke=plink, forcerebuild=False, returnFname=False,

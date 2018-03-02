@@ -60,7 +60,7 @@ def main():
     outfilepath = sys.argv[3]
     try:
         os.makedirs(outfilepath)
-    except:
+    except Exception:
         pass
     plink = sys.argv[4]
     rgConv(inpedfilepath, outhtmlname, outfilepath, plink)

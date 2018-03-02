@@ -2,10 +2,11 @@
 API operations on FormDefinition objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, url_for
+from xml.etree.ElementTree import XML
+
 from galaxy import web
 from galaxy.forms.forms import form_factory
-from xml.etree.ElementTree import XML
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class FormDefinitionAPIController(BaseAPIController):
             return "Malformed form definition id ( %s ) specified, unable to decode." % str(form_definition_id)
         try:
             form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(decoded_form_definition_id)
-        except:
+        except Exception:
             form_definition = None
         if not form_definition or not trans.user_is_admin():
             trans.response.status = 400

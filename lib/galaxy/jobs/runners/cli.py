@@ -12,7 +12,6 @@ from galaxy.jobs.runners import (
     AsynchronousJobState
 )
 from galaxy.util import asbool
-
 from .util.cli import CliInterface, split_params
 
 log = logging.getLogger(__name__)
@@ -82,7 +81,7 @@ class ShellJobRunner(AsynchronousJobRunner):
 
         try:
             self.write_executable_script(ajs.job_file, script)
-        except:
+        except Exception:
             log.exception("(%s) failure writing job script" % galaxy_id_tag)
             job_wrapper.fail("failure preparing job script", exception=True)
             return

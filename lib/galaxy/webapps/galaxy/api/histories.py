@@ -317,9 +317,19 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
 
         if "archive_source" in payload:
             archive_source = payload["archive_source"]
-            archive_type = payload.get("archive_type", "url")
+            archive_file = payload.get("archive_file")
+            if archive_source:
+                archive_type = payload.get("archive_type", "url")
+            elif hasattr(archive_file, "file"):
+                # archive_file.file is a TemporaryFile and will be deleted once it is closed.
+                # We prevent this by setting `delete` to `False`.
+                archive_file.file.delete = False
+                archive_source = payload["archive_file"].file.name
+                archive_type = "file"
+            else:
+                raise exceptions.MessageException("Please provide a url or file.")
             self.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
-            return {}
+            return {"message": "Importing history from source '%s'. This history will be visible when the import is complete." % archive_source}
 
         new_history = None
         # if a history id was passed, copy that history
@@ -497,7 +507,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         return self.serve_ready_history_export(trans, jeha)
 
     @expose_api
-    def get_custom_builds_metadata(self, trans, id, payload={}, **kwd):
+    def get_custom_builds_metadata(self, trans, id, payload=None, **kwd):
         """
         GET /api/histories/{id}/custom_builds_metadata
         Returns meta data for custom builds.
@@ -505,6 +515,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         :param id: the encoded history id
         :type  id: str
         """
+        if payload is None:
+            payload = {}
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         installed_builds = []
         for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):

@@ -7,8 +7,8 @@ from decimal import Decimal
 from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
-from galaxy.web.base.controller import BaseUIController, web
 from galaxy import model, util
+from galaxy.web.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class System(BaseUIController):
                         dataset_count += 1
                         try:
                             disk_space += hda.dataset.file_size
-                        except:
+                        except Exception:
                             pass
                 history_count += 1
             message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, " \
@@ -121,7 +121,7 @@ class System(BaseUIController):
                 dataset_count += 1
                 try:
                     disk_space += dataset.file_size
-                except:
+                except Exception:
                     pass
             message = "%d datasets were deleted more than %d days ago, but have not yet been purged," \
                 " disk space: %s." % (dataset_count, deleted_datasets_days, nice_size(disk_space, True))
@@ -166,13 +166,13 @@ class System(BaseUIController):
                         try:
                             disk_size, disk_used, disk_avail, disk_cap_pct, file_system = df_line.split()
                             break
-                        except:
+                        except Exception:
                             pass
                 else:
                     try:
                         file_system, disk_size, disk_used, disk_avail, disk_cap_pct, mount = df_line.split()
                         break
-                    except:
+                    except Exception:
                         pass
             else:
                 break  # EOF
@@ -208,6 +208,6 @@ def nice_size(size, include_bytes=False):
             niced = True
         if include_bytes and x != 'bytes':
             nice_string = "%s (%s bytes)" % (nice_string, size)
-    except:
+    except Exception:
         pass
     return nice_string

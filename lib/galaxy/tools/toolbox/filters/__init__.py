@@ -1,6 +1,5 @@
 import logging
 import sys
-
 from copy import deepcopy
 
 from galaxy.util import listify
@@ -45,7 +44,7 @@ class FilterFactory(object):
                     elif name == 'toolbox_label_filters':
                         category = "label"
                     if category:
-                        validate = getattr(trans.app.config, 'user_%s_filters' % category, [])
+                        validate = getattr(trans.app.config, 'user_tool_%s_filters' % category, [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
         else:
             if kwds.get("trackster", False):
@@ -57,7 +56,8 @@ class FilterFactory(object):
         for filter in filters:
             if validate is None or filter in validate or filter in self.default_filters:
                 filter_function = self.build_filter_function(filter)
-                toolbox_filters[key].append(filter_function)
+                if filter_function is not None:
+                    toolbox_filters[key].append(filter_function)
             else:
                 log.warning("Refusing to load %s filter '%s' which is not defined in config", key, filter)
         return toolbox_filters
@@ -73,7 +73,7 @@ class FilterFactory(object):
         else:
             # No module found, just load a function from this file or
             # one that has be explicitly imported.
-            function = getattr(globals(), filter_name.strip())
+            function = globals()[filter_name.strip()]
         return function
 
     def _import_filter(self, module_name, function_name):
@@ -83,12 +83,11 @@ class FilterFactory(object):
             try:
                 __import__(full_module_name)
             except ImportError:
-                # log.debug("Failed to load module.", exc_info=True)
                 continue
             module = sys.modules[full_module_name]
             if hasattr(module, function_name):
                 return getattr(module, function_name)
-        raise Exception("Failed to find filter %s.%s" % (module_name, function_name))
+        log.warning("Failed to load module for '%s.%s'.", module_name, function_name, exc_info=True)
 
 
 # Stock Filter Functions
