@@ -9,7 +9,8 @@ History
 18.5.4.dev0
 ---------------------
 
-    
+* Make conda image for mulled builds configurable via an environment variable
+  (thanks to @mbargull).
 
 ---------------------
 18.5.3 (2018-02-28)
