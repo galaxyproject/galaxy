@@ -112,4 +112,8 @@ gulp.task("watch", function() {
     gulp.watch(paths.scripts, ["scripts"]);
 });
 
+gulp.task("watch-style", function() {
+    gulp.watch(paths.style, ["style"]);
+});
+
 gulp.task("default", ["scripts", "libs"]);
