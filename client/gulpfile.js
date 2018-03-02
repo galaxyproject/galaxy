@@ -21,9 +21,7 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
-    style_sources: [
-        "galaxy/style/scss/**/*.scss"
-    ],
+    style_sources: ["galaxy/style/scss/**/*.scss"],
     style: [
         "galaxy/style/scss/base.scss",
         "galaxy/style/scss/autocomplete_tagging.scss",
