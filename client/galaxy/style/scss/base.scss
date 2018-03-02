@@ -2,18 +2,15 @@
 // Galaxy modifications (override)
 @import "galaxy_bootstrap/variables.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 @import "galaxy_bootstrap/overrides.scss";
 
 // Galaxy specific variables
 @import "galaxy_variables.scss";
 
-// Galaxy Report Webapp
-@import "reports";
-
 $white: #fff;
 $black: #000;
 
-@import "../../../node_modules/@fortawesome/fontawesome/fontawesome/styles.css";
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
@@ -27,6 +24,7 @@ $black: #000;
 }
 
 // galaxy sub-components
+@import "reports";
 @import "frame.scss";
 @import "upload.scss";
 @import "ui.scss";
