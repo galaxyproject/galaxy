@@ -619,7 +619,7 @@ class Bed12(BedStrict):
     file_ext = "bed12"
 
 
-class _RemoteCallMixin:
+class _RemoteCallMixin(object):
     def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app, base_url):
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
@@ -1272,7 +1272,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
 
 
-class CustomTrack (Tabular):
+class CustomTrack(Tabular):
     """UCSC CustomTrack"""
     edam_format = "format_3588"
     file_ext = "customtrack"

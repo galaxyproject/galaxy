@@ -386,7 +386,7 @@ def preprocess_volumes(volumes_raw_str, container_type):
     return ",".join([":".join(v) for v in volumes])
 
 
-class HasDockerLikeVolumes:
+class HasDockerLikeVolumes(object):
     """Mixin to share functionality related to Docker volume handling.
 
     Singularity seems to have a fairly compatible syntax for volume handling.

@@ -170,7 +170,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
 }
 
 
-class ToolErrorLog:
+class ToolErrorLog(object):
     def __init__(self):
         self.error_stack = []
         self.max_errors = 100
@@ -2713,7 +2713,7 @@ for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
 
 
 # ---- Utility classes to be factored out -----------------------------------
-class TracksterConfig:
+class TracksterConfig(object):
     """ Trackster configuration encapsulation. """
 
     def __init__(self, actions):
@@ -2727,7 +2727,7 @@ class TracksterConfig:
         return TracksterConfig(actions)
 
 
-class SetParamAction:
+class SetParamAction(object):
     """ Set parameter action. """
 
     def __init__(self, name, output_name):
