@@ -18,6 +18,7 @@ import subprocess
 import sys
 from sys import platform as _platform
 
+from six.moves import shlex_quote
 try:
     import yaml
 except ImportError:
@@ -196,7 +197,7 @@ def mull_targets(
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
         '-set', "CHANNELS='%s'" % channels,
-        '-set', "TEST='%s'" % test,
+        '-set', "TEST=%s" % shlex_quote(test),
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
