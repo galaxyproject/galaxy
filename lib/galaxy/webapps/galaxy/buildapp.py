@@ -108,9 +108,10 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
     webapp.add_client_route('/openids/list')
+    webapp.add_client_route('/visualizations/dataset_id={dataset_id}')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
-    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
@@ -1042,6 +1043,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
+    if asbool(conf.get('enable_per_request_sql_debugging', False)):
+        from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
+        app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
 
 

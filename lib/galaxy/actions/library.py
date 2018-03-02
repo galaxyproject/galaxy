@@ -103,15 +103,13 @@ class LibraryActions(object):
             message = "Unable to parse upload parameters, please report this error."
         # Proceed with (mostly) regular upload processing if we're still errorless
         if response_code == 200:
-            precreated_datasets = upload_common.get_precreated_datasets(trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller)
             if upload_option == 'upload_file':
                 tool_params = upload_common.persist_uploads(tool_params, trans)
-                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch)
+                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, dataset_upload_inputs, library_bunch=library_bunch)
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self._get_server_dir_uploaded_datasets(trans, kwd, full_dir, import_dir_desc, library_bunch, response_code, message)
             elif upload_option == 'upload_paths':
                 uploaded_datasets, response_code, message = self._get_path_paste_uploaded_datasets(trans, kwd, library_bunch, response_code, message)
-            upload_common.cleanup_unused_precreated_datasets(precreated_datasets)
             if upload_option == 'upload_file' and not uploaded_datasets:
                 response_code = 400
                 message = 'Select a file, enter a URL or enter text'

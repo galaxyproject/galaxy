@@ -791,7 +791,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             this.debug("_showLoadingIndicator", this.indicator, msg, speed, callback);
             speed = speed !== undefined ? speed : this.fxSpeed;
             if (!this.indicator) {
-                this.indicator = new LoadingIndicator(this.$el);
+                this.indicator = new LoadingIndicator.LoadingIndicator(this.$el);
                 this.debug("\t created", this.indicator);
             }
             if (!this.$el.is(":visible")) {

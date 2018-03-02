@@ -192,17 +192,21 @@ class JobContext(object):
         self.job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
+        self._permissions = None
 
     @property
     def permissions(self):
-        inp_data = self.inp_data
-        existing_datasets = [inp for inp in inp_data.values() if inp]
-        if existing_datasets:
-            permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
-        else:
-            # No valid inputs, we will use history defaults
-            permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
-        return permissions
+        if self._permissions is None:
+            inp_data = self.inp_data
+            existing_datasets = [inp for inp in inp_data.values() if inp]
+            if existing_datasets:
+                permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            else:
+                # No valid inputs, we will use history defaults
+                permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
+            self._permissions = permissions
+
+        return self._permissions
 
     def find_files(self, output_name, collection, dataset_collectors):
         filenames = odict.odict()

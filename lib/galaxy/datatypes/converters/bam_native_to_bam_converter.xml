@@ -1,4 +1,4 @@
-<tool id="CONVERTER_bam_native_to_bam" name="Convert BAM native to BAM" version="1.0.0" hidden="true">
+<tool id="CONVERTER_bam_native_to_bam" name="Convert BAM native to BAM" version="1.0.0" hidden="true" profile="18.01">
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.6">samtools</requirement>

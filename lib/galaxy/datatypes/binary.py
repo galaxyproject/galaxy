@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections import OrderedDict
 from json import dumps
 
 import h5py
@@ -234,10 +235,10 @@ class BamNative(Binary):
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
             dataset.metadata.reference_names = list(bam_file.references)
             dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = bam_file.header
+            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
             dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
         except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -278,7 +279,7 @@ class BamNative(Binary):
                         header_line_count = bamfile.text.count('\n')
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile) :
+                    for line_number, alignment in enumerate(bamfile):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
                         offset = bamfile.tell()
@@ -290,9 +291,14 @@ class BamNative(Binary):
                             # Below code will remove spaces between each tag.
                             bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
                             ck_data = "%s\n%s" % (ck_data, bamline_modified)
+                    else:
+                        # Nothing to enumerate; we've either offset to the end
+                        # of the bamfile, or there is no data. (possible with
+                        # header-only bams)
+                        offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+                ck_data = "Could not display BAM file, error was:\n%s" % e
         else:
             ck_data = ''
             offset = -1
@@ -383,25 +389,12 @@ class Bam(BamNative):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         # These metadata values are not accessible by users, always overwrite
+        super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         index_file = dataset.metadata.bam_index
         if not index_file:
             index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
         pysam.index(dataset.file_name, index_file.file_name)
         dataset.metadata.bam_index = index_file
-        # Now use pysam with BAI index to determine additional metadata
-        try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
-        except Exception:
-            # Per Dan, don't log here because doing so will cause datasets that
-            # fail metadata to end in the error state
-            pass
 
     def sniff(self, file_name):
         return super(Bam, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
@@ -960,7 +953,7 @@ class SQlite(Binary):
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
             rslt = c.execute(tables_query).fetchall()
-            for table, sql in rslt:
+            for table, _ in rslt:
                 tables.append(table)
                 try:
                     col_query = 'SELECT * FROM %s LIMIT 0' % table
@@ -1581,25 +1574,22 @@ class SearchGuiArchive(CompressedArchive):
         super(SearchGuiArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
-                tempzip = zipfile.ZipFile(dataset.file_name)
-                if 'searchgui.properties' in tempzip.namelist():
-                    fh = tempzip.open('searchgui.properties')
-                    for line in fh:
-                        if line.startswith('searchgui.version'):
-                            version = line.split('=')[1].strip()
-                            dataset.metadata.searchgui_version = version
-                            dataset.metadata.searchgui_major_version = version.split('.')[0]
-                    fh.close()
-                tempzip.close()
+                with zipfile.ZipFile(dataset.file_name) as tempzip:
+                    if 'searchgui.properties' in tempzip.namelist():
+                        with tempzip.open('searchgui.properties') as fh:
+                            for line in fh:
+                                if line.startswith('searchgui.version'):
+                                    version = line.split('=')[1].strip()
+                                    dataset.metadata.searchgui_version = version
+                                    dataset.metadata.searchgui_major_version = version.split('.')[0]
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
         try:
             if filename and zipfile.is_zipfile(filename):
-                tempzip = zipfile.ZipFile(filename, 'r')
-                is_searchgui = 'searchgui.properties' in tempzip.namelist()
-                tempzip.close()
+                with zipfile.ZipFile(filename, 'r') as tempzip:
+                    is_searchgui = 'searchgui.properties' in tempzip.namelist()
                 return is_searchgui
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)

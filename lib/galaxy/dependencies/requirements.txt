@@ -1,7 +1,9 @@
-# packages with C extensions
-# numpy should be installed before bx to enable extra features in bx
+# bx-python and dependencies
 numpy
+python-lzo
 bx-python
+
+# packages with C extensions
 MarkupSafe
 PyYAML
 SQLAlchemy
@@ -9,10 +11,6 @@ mercurial; python_version < '3.0'
 pycrypto
 # Flexible BAM index naming is new to main pysam
 pysam>=0.13
-
-# Install python_lzo if you want to support indexed access to lzo-compressed
-# locally cached maf files via bx-python
-#python_lzo
 
 # pure Python packages
 bz2file; python_version < '3.3'

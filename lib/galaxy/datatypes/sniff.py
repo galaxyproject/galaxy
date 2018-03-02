@@ -93,14 +93,12 @@ def check_newlines(fname, bytes_to_read=52428800):
     number_of_bytes (by default, 50MB) of the file.
     """
     CHUNK_SIZE = 2 ** 20
-    f = open(fname, 'r')
-    for chunk in f.read(CHUNK_SIZE):
-        if f.tell() > bytes_to_read:
-            break
-        if chunk.count('\r'):
-            f.close()
-            return True
-    f.close()
+    with open(fname, 'r') as f:
+        for chunk in f.read(CHUNK_SIZE):
+            if f.tell() > bytes_to_read:
+                break
+            if chunk.count('\r'):
+                return True
     return False
 
 
@@ -117,11 +115,10 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname, "U")):
-        fp.write("%s\n" % line.rstrip("\r\n"))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname, "U")):
+            fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
     else:
@@ -147,13 +144,12 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp()
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname)):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname)):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -180,12 +176,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    for i, line in enumerate(open(fname, "U")):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        for i, line in enumerate(open(fname, "U")):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -487,7 +482,7 @@ def handle_uploaded_dataset_file(filename, datatypes_registry, ext='auto'):
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File)
 COMPRESSION_CHECK_FUNCTIONS = [('gzip', is_gzip), ('bz2', is_bz2)]
-COMPRESSION_DATATYPES = dict(gzip=['bam', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
+COMPRESSION_DATATYPES = dict(gzip=['bam', 'fasta.gz', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'], bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'])
 COMPRESSED_EXTENSIONS = []
 for exts in COMPRESSION_DATATYPES.values():
     COMPRESSED_EXTENSIONS.extend(exts)

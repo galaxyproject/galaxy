@@ -2106,14 +2106,6 @@ class DatasetInstance(object):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data(self)
 
-    def write_from_stream(self, stream):
-        """Writes data from a stream"""
-        self.datatype.write_from_stream(self, stream)
-
-    def set_raw_data(self, data):
-        """Saves the data on the disc"""
-        self.datatype.set_raw_data(self, data)
-
     def get_mime(self):
         """Returns the mime type of the data"""
         try:

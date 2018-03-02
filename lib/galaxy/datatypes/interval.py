@@ -3,7 +3,6 @@ Interval datatypes
 """
 import logging
 import math
-import os
 import sys
 import tempfile
 
@@ -213,32 +212,31 @@ class Interval(Tabular):
 
     def as_ucsc_display_file(self, dataset, **kwd):
         """Returns file contents with only the bed data"""
-        fd, temp_name = tempfile.mkstemp()
-        c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
-        c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
-        if t >= 0:  # strand column (should) exists
-            for i, elems in enumerate(util.file_iter(dataset.file_name)):
-                strand = "+"
-                name = "region_%i" % i
-                if n >= 0 and n < len(elems):
-                    name = elems[n]
-                if t < len(elems):
-                    strand = elems[t]
-                tmp = [elems[c], elems[s], elems[e], name, '0', strand]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        elif n >= 0:  # name column (should) exists
-            for i, elems in enumerate(util.file_iter(dataset.file_name)):
-                name = "region_%i" % i
-                if n >= 0 and n < len(elems):
-                    name = elems[n]
-                tmp = [elems[c], elems[s], elems[e], name]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        else:
-            for elems in util.file_iter(dataset.file_name):
-                tmp = [elems[c], elems[s], elems[e]]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        os.close(fd)
-        return open(temp_name)
+        with tempfile.NamedTemporaryFile(delete=False) as fh:
+            c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
+            c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
+            if t >= 0:  # strand column (should) exists
+                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                    strand = "+"
+                    name = "region_%i" % i
+                    if n >= 0 and n < len(elems):
+                        name = elems[n]
+                    if t < len(elems):
+                        strand = elems[t]
+                    tmp = [elems[c], elems[s], elems[e], name, '0', strand]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            elif n >= 0:  # name column (should) exists
+                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                    name = "region_%i" % i
+                    if n >= 0 and n < len(elems):
+                        name = elems[n]
+                    tmp = [elems[c], elems[s], elems[e], name]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            else:
+                for elems in util.file_iter(dataset.file_name):
+                    tmp = [elems[c], elems[s], elems[e]]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            return open(fh.name)
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -279,22 +277,21 @@ class Interval(Tabular):
         errors = list()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
-        infile = open(dataset.file_name, "r")
-        reader = GenomicIntervalReader(
-            infile,
-            chrom_col=c,
-            start_col=s,
-            end_col=e,
-            strand_col=t)
+        with open(dataset.file_name, "r") as infile:
+            reader = GenomicIntervalReader(
+                infile,
+                chrom_col=c,
+                start_col=s,
+                end_col=e,
+                strand_col=t)
 
-        while True:
-            try:
-                next(reader)
-            except ParseError as e:
-                errors.append(e)
-            except StopIteration:
-                infile.close()
-                return errors
+            while True:
+                try:
+                    next(reader)
+                except ParseError as e:
+                    errors.append(e)
+                except StopIteration:
+                    return errors
 
     def repair_methods(self, dataset):
         """Return options for removing errors along with a description"""
@@ -1499,9 +1496,8 @@ class ScIdx(Tabular):
         """
         Checks for 'scidx-ness.'
         """
-        try:
-            count = 0
-            fh = open(filename, "r")
+        count = 0
+        with open(filename, "r") as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -1545,10 +1541,6 @@ class ScIdx(Tabular):
                 count += 1
             if count < 100 and count > 0:
                 return True
-        except Exception:
-            return False
-        finally:
-            fh.close()
         return False
 
 
