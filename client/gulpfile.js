@@ -21,6 +21,9 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
+    style_sources: [
+        "galaxy/style/scss/**/*.scss"
+    ],
     style: [
         "galaxy/style/scss/base.scss",
         "galaxy/style/scss/autocomplete_tagging.scss",
@@ -113,7 +116,7 @@ gulp.task("watch", function() {
 });
 
 gulp.task("watch-style", function() {
-    gulp.watch(paths.style, ["style"]);
+    gulp.watch(paths.style_sources, ["style"]);
 });
 
 gulp.task("default", ["scripts", "libs"]);
