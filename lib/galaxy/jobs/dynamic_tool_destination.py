@@ -48,6 +48,11 @@ List of valid categories that can be expected in the configuration.
 valid_categories = ['verbose', 'tools', 'default_destination',
                   'users', 'default_priority']
 
+# --- destination validation error messages --- #
+dest_err_default_dest = "Default destination '%s' does not appear in the job configuration."  # destination
+dest_err_tool_default_dest = "Default destination for '%s': '%s' does not appear in the job configuration."  # tool, destination
+dest_err_tool_rule_dest = "Destination for '%s', rule %s: '%s' does not exist in job configuration."  # tool, counter, destination
+
 
 class MalformedYMLException(Exception):
     pass
@@ -427,20 +432,11 @@ class RuleValidator:
                         log.debug(error)
                     valid_rule = False
                 else:
-                    validity = validate_destination(app, rule["destination"])
-                    if not validity[0] and rule["destination"] != "fail":
-                        error = "Destination for '" + str(tool) + "', rule "
-                        error += str(counter) + ": '"
-                        error += str(rule["destination"])
-                        error += "' does not exist in job configuration."
-                        if validity[1]:
-                            error += " Did you mean '" + str(validity[1]) + "'?"
-                        if not return_bool:
-                            error += " Ignoring..."
-                        if verbose:
-                            log.debug(error)
+                    is_valid = validate_destination(app, rule["destination"],
+                        dest_err_tool_rule_dest, (tool, counter, rule["destination"]),
+                        return_bool)
+                    if not is_valid:
                         valid_rule = False
-
             elif isinstance(rule["destination"], dict):
                 if ("priority" in rule["destination"]
                         and isinstance(rule["destination"]["priority"], dict)):
@@ -471,21 +467,13 @@ class RuleValidator:
                                 log.debug(error)
                             valid_rule = False
                         else:
-                            validity = validate_destination(app,
-                                rule["destination"]["priority"][priority])
-                            if not validity[0]:
-                                error = "Destination for '" + str(tool) + "', rule "
-                                error += str(counter) + ": '"
-                                error += str(rule["destination"]["priority"][priority])
-                                error += "' does not exist in job configuration."
-                                if validity[1]:
-                                    error += " Did you mean '" + str(validity[1]) + "'?"
-                                if not return_bool:
-                                    error += " Ignoring..."
-                                if verbose:
-                                    log.debug(error)
+                            is_valid = validate_destination(app,
+                                rule["destination"]["priority"][priority],
+                                dest_err_tool_rule_dest,
+                                (tool, counter, rule["destination"]["priority"][priority]),
+                                return_bool)
+                            if not is_valid:
                                 valid_rule = False
-
                 else:
                     error = "No destination specified for rule " + str(counter)
                     error += " in '" + str(tool) + "'."
@@ -775,7 +763,8 @@ def parse_yaml(path="/config/tool_destinations.yml",
         return config
 
 
-def validate_destination(app, destination):
+def validate_destination(app, destination, err_message, err_message_contents,
+                         return_bool=True):
     """
     Validate received destination id.
 
@@ -786,16 +775,30 @@ def validate_destination(app, destination):
     @param destination: string containing the destination id that is being
                         validated
 
-    @rtype: tuple(bool, str/None)
-    @return: The first item in the tuple is True if the destination is valid
-             and False otherwise. The second item is a str suggesting the best
-             typo-correction suggestion, or None if there's no suggestion.
+    @type err_message: str
+    @param err_message: Error message to be formatted with the contents of
+                        `err_message_contents` upon the event of invalid
+                        destination
+
+    @type err_message_contents: tuple
+    @param err_message_contents: A tuple of strings to be placed in
+                                 `err_message`
+
+    @type return_bool: bool
+    @param return_bool: Whether or not the calling function has been told to
+                        return a boolean value or not. Determines whether or
+                        not to print 'Ignoring...' after error messages.
+
+    @rtype: bool
+    @return: True if the destination is valid and False otherwise.
     """
 
     valid_destination = False
     suggestion = None
 
-    if app is None:
+    if destination is 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
+        valid_destination = True
+    elif app is None:
         if destination in destination_list:
             valid_destination = True
         else:
@@ -804,7 +807,16 @@ def validate_destination(app, destination):
     elif app.job_config.get_destination(destination):
         valid_destination = True
 
-    return (valid_destination, suggestion)
+    if not valid_destination:
+        error = err_message % err_message_contents
+        if suggestion:
+            error += " Did you mean '" + suggestion + "'?"
+        if not return_bool:
+            error += " Ignoring..."
+        if verbose:
+            log.debug(error)
+
+    return valid_destination
 
 
 def validate_config(obj, app=None, return_bool=False,):
@@ -862,18 +874,11 @@ def validate_config(obj, app=None, return_bool=False,):
         if 'default_destination' in obj:
             suggestion = None
             if isinstance(obj['default_destination'], str):
-                validity = validate_destination(app, obj['default_destination'])
-                if validity[0]:
+                valid_config = validate_destination(app, obj['default_destination'],
+                                                    dest_err_default_dest,
+                                                    (obj['default_destination']))
+                if valid_config:
                     new_config["default_destination"] = obj['default_destination']
-                else:
-                    error = ("Default destination '"
-                        + obj['default_destination']
-                        + "' does not appear in the job configuration.")
-                    if validity[1]:
-                        error += " Did you mean '" + str(validity[1]) + "'?"
-                    if verbose:
-                        log.debug(error)
-                    valid_config = False
 
             elif isinstance(obj['default_destination'], dict):
 
@@ -884,27 +889,14 @@ def validate_config(obj, app=None, return_bool=False,):
                         if isinstance(obj['default_destination']['priority'][priority],
                                       str):
                             priority_list.add(priority)
-                            validity = validate_destination(app,
-                                obj['default_destination']['priority'][priority])
-                            if validity[0]:
+                            valid_config = validate_destination(
+                                app, obj['default_destination']['priority'][priority],
+                                dest_err_default_dest,
+                                (obj['default_destination']['priority'][priority]))
+
+                            if valid_config:
                                 new_config["default_destination"]['priority'][priority] = (
                                     obj['default_destination']['priority'][priority])
-                            else:
-                                error = ("Default destination '"
-                                  + obj['default_destination']['priority'][priority]
-                                  + "' does not appear in the job configuration.")
-                                if validity[1]:
-                                    error += " Did you mean '" + str(validity[1]) + "'?"
-                                if verbose:
-                                    log.debug(error)
-                                valid_config = False
-                        else:
-                            error = ("Invalid default priority destination '"
-                              + str(priority) + "' found in config!")
-                            if verbose:
-                                log.debug(error)
-                            valid_config = False
-
                     if len(priority_list) < 1:
                         error = ("No valid priorities found!")
                         if verbose:
@@ -1012,22 +1004,14 @@ def validate_config(obj, app=None, return_bool=False,):
                         if "default_destination" in curr:
                             suggestion = None
                             if isinstance(curr['default_destination'], str):
-                                validity = validate_destination(app,
-                                    curr['default_destination'])
-                                if validity[0]:
+                                valid_config = validate_destination(app,
+                                    curr['default_destination'],
+                                    dest_err_tool_default_dest,
+                                    (tool, curr['default_destination']))
+                                if valid_config:
                                     new_config['tools'][tool]['default_destination'] = (
                                         (curr['default_destination']))
                                     tool_has_default = True
-                                else:
-                                    error = ("Default destination for '"
-                                             + str(tool) + "': '"
-                                             + curr['default_destination']
-                                             + "' does not appear in the job configuration.")
-                                    if validity[1]:
-                                        error += " Did you mean '" + validity[1] + "'?"
-                                    if verbose:
-                                        log.debug(error)
-                                    valid_config = False
                             elif isinstance(curr['default_destination'], dict):
 
                                 if ('priority' in curr['default_destination']
@@ -1037,22 +1021,15 @@ def validate_config(obj, app=None, return_bool=False,):
                                         destination = curr['default_destination']['priority'][priority]
                                         if priority in priority_list:
                                             if isinstance(destination, str):
-                                                validity = validate_destination(
-                                                    app, destination)
-                                                if validity[0]:
+
+                                                valid_config = validate_destination(
+                                                    app, destination,
+                                                    dest_err_tool_default_dest,
+                                                    (tool, curr['default_destination']['priority'][priority]))
+                                                if valid_config:
                                                     new_config['tools'][tool]['default_destination']['priority'][priority] = destination
                                                     tool_has_default = True
-                                                else:
-                                                    error = ("Default destination for '"
-                                                         + str(tool) + "': '"
-                                                         + destination + "' does not appear "
-                                                         + "in the job configuration.")
-                                                    if validity[1]:
-                                                        error += " Did you mean '"
-                                                        error += str(validity[1]) + "'?"
-                                                    if verbose:
-                                                        log.debug(error)
-                                                    valid_config = False
+
                                             else:
                                                 error = ("No default '" + str(priority)
                                                          + "' priority destination  for tool "
