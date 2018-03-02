@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.4.dev0
+18.5.4 (2018-03-01)
 ---------------------
 
 * Make conda image for mulled builds configurable via an environment variable
