@@ -279,15 +279,12 @@ class Grid(object):
         if current_item:
             grid_config['current_item_id'] = current_item.id
         for column in self.columns:
-            href = None
             extra = ''
             if column.sortable:
                 if sort_key.endswith(column.key):
                     if not sort_key.startswith("-"):
-                        href = url(sort=("-" + column.key))
                         extra = "&darr;"
                     else:
-                        href = url(sort=(column.key))
                         extra = "&uarr;"
                 else:
                     href = url(sort=column.key)
@@ -301,7 +298,6 @@ class Grid(object):
                 'label'             : column.label,
                 'filterable'        : column.filterable,
                 'is_text'           : isinstance(column, TextColumn),
-                'href'              : href,
                 'extra'             : extra
             })
         for operation in self.operations:
