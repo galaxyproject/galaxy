@@ -1095,11 +1095,11 @@ div.odd_row {
 
 // Extra label colors
 .label-beta {
-  @extend .label-warning;
+  @extend .badge-warning;
 }
 
 .label-new {
-  @extend .label-info;
+  @extend .badge-info;
 }
 
 .sm-label-pad {
@@ -1279,7 +1279,7 @@ a.action-button {
     @extend .btn;
     @extend .btn-secondary;
 
-    &:hover { @extend .btn.hover; }
+    &:hover { @extend .btn.hover !optional; }
     &:active { @extend .btn.active; }
 
     display: inline-block;
@@ -1911,7 +1911,7 @@ div.toolTitleNoSection
 
 /* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
 .tags-display {
-    @extend .list-item.vertical-spacing;
+    @extend .list-item.vertical-spacing !optional;
     .select2-container {
         max-height: 80px;
         overflow: auto;
