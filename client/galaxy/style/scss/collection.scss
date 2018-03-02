@@ -1,6 +1,6 @@
 //============================================================================= collection element
 .dataset-collection-element {
-    @extend has-job-state-mixin;
+    @extend .has-job-state-mixin;
     .title-bar {
         .subtitle {
             margin-top: 2px;
@@ -19,12 +19,12 @@
 
 //============================================================================= collection
 .history-content.dataset-collection {
-    @extend has-job-state-mixin;
+    @extend .has-job-state-mixin;
 }
 
 //============================================================================= collection panel
 .dataset-collection-panel {
-    @extend flex-vertical-container;
+    @extend .flex-vertical-container;
 
     .vertically-spaced {
         margin-top: 4px;
@@ -39,7 +39,7 @@
             margin-top: 4px;
             .back {
                 span {
-                    @extend fa-lg;
+                    @extend .fa-lg !optional;
                     margin-right: 4px;
                     font-weight: bold;
                 }
@@ -54,7 +54,7 @@
     }
 
     > .list-items {
-        @extend flex-column;
+        @extend .flex-column;
         overflow-x: hidden;
         overflow-y: auto;
 
