@@ -59,10 +59,10 @@ def main():
         except:
             pass
 
-    tmp_file = tempfile.NamedTemporaryFile('w+b')
+    tmp_file = tempfile.NamedTemporaryFile('w+t')
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
-    tmp_file.write(("%s\n" % hdr_str).encode())
+    tmp_file.write("%s\n" % hdr_str)
     skipped_lines = 0
     first_invalid_line = 0
     i = 0
@@ -83,7 +83,7 @@ def main():
                     break
             if valid:
                 data_str = "\t".join(fields[col] for col in cols)
-                tmp_file.write(("%s\n" % data_str).encode())
+                tmp_file.write("%s\n" % data_str)
     tmp_file.flush()
 
     if skipped_lines == i + 1:
