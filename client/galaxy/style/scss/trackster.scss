@@ -441,7 +441,7 @@ input {
 // are required to exist in the location specified.
 // TODO: make images into spritemap.
 @mixin icon-hover-mixin($name) {
-    &.${name} {
+    &.#{$name} {
         background: transparent url('../images/fugue/${name}-bw.png') no-repeat;
 
         &:hover {
