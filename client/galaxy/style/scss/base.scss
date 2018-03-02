@@ -1,8 +1,8 @@
 // bootstrap.scss modified for Galaxy
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
 // Galaxy modifications (override)
-@import "galaxy_bootstrap/overrides.scss";
 @import "galaxy_bootstrap/variables.scss";
+@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "galaxy_bootstrap/overrides.scss";
 
 // Galaxy specific variables
 @import "galaxy_variables.scss";
