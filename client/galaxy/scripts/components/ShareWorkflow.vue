@@ -104,7 +104,7 @@
                     <a class="action-button" :href="shareWfUrl"><span>Share with a user</span></a>
                 </div>
             </div>
-            <div class="sharing-section">
+            <div v-if="workflowItem.importable" class="sharing-section">
                 <h5>Share workflow on social media</h5>
                 <social-sharing :url="workflowUrl"
                                 title="Link to a Galaxy workflow: "
