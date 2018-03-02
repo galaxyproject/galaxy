@@ -66,7 +66,7 @@
     .title-bar {
         cursor: pointer;
         outline: none;
-        @extend padded;
+        @extend .padded;
 
         .title {
             display: inline;
@@ -119,7 +119,7 @@
             font-weight: normal;
         }
         .prompt {
-            @extend help-text;
+            @extend .help-text;
         }
         .prompt:after {
             content: ':';
@@ -189,7 +189,7 @@
         }
         .list-actions {
             display: none;
-            @extend clear;
+            @extend .clear;
             .btn {
                 padding-top: 2px;
                 padding-bottom: 2px;
