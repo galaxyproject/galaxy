@@ -36,7 +36,7 @@ var View = Backbone.View.extend({
         var self = this;
         GenomespaceBrowser.openFileBrowser({
             successCallback: function(data) {
-                self.value(`${data.destination}`);
+                self.value(data.destination);
             }
         });
     },
@@ -66,7 +66,7 @@ var View = Backbone.View.extend({
 
     // get value
     _getValue: function() {
-        return `${this.filename_textbox.value()}`;
+        return this.filename_textbox.value();
     },
 
     // set value
