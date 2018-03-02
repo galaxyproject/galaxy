@@ -1,6 +1,6 @@
 // augmented ui-modal meant to replace alert() and display error details
 .error-modal .modal-content {
-    @extend errormessagelarge;
+    @extend .errormessagelarge;
     & > * {
         padding: 0;
         margin: 0;

@@ -299,7 +299,7 @@
 
     // ---- unpaired
     .unpaired-columns {
-        @extend flex-bordered-vertically;
+        @extend .flex-bordered-vertically;
 
         .forward-column {
             .dataset.unpaired {
@@ -358,7 +358,7 @@
 
     // ---- paired datasets
     .paired-columns {
-        @extend flex-bordered-vertically;
+        @extend .flex-bordered-vertically;
         margin-bottom: 8px;
 
         .column-datasets {
@@ -462,7 +462,7 @@
         margin-bottom: 8px;
 
         .clear-selected {
-            @extend pull-right;
+            @extend .pull-right;
             display: none;
         }
     }
@@ -515,7 +515,7 @@
             margin-top: 3px;
         }
         .discard {
-            @extend pull-right;
+            @extend .pull-right;
         }
     }
     .element-drop-placeholder {
@@ -549,7 +549,7 @@
         margin-bottom: 8px;
 
         .clear-selected {
-            @extend pull-right;
+            @extend .pull-right;
             display: none;
         }
     }
