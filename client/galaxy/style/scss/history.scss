@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------- all histories
 .history-panel {
-    @extend flex-vertical-container;
+    @extend .flex-vertical-container;
 
     > .controls {
         margin: 8px 8px 1px;
@@ -173,7 +173,7 @@
     }
 
     > .list-items {
-        @extend flex-column;
+        @extend .flex-column;
         overflow-x: hidden;
         overflow-y: auto;
 
@@ -521,7 +521,7 @@
         margin-top: 4px;
 
         .btn {
-            @extend smaller-btn;
+            @extend .btn-sm;
         }
         .search-control {
             display: inline-block;
@@ -627,7 +627,7 @@
             align-self: auto;
 
             .btn {
-                @extend smaller-btn;
+                @extend .btn-sm;
             }
             .pull-left .btn {
                 margin-right: 4px;
