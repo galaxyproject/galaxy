@@ -23,7 +23,7 @@
     <data auto_format="true" name="report">
       <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true" />
     </data>
-    <data auto_format="true" name="report_optional" optional="true">
+    <data auto_format="true" name="report_optional">
       <discover_datasets pattern="__designation__" directory="i_do_not_exist" visible="true" recurse="true" />
     </data>
   </outputs>
