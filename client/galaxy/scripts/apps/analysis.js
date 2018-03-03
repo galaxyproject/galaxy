@@ -1,5 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
+import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -14,6 +15,7 @@ import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
 import HistoryImport from "components/HistoryImport.vue";
+import HistoryView from "components/HistoryView.vue";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -23,8 +25,11 @@ import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Visualization from "mvc/visualization/visualization-view";
 import Citations from "components/Citations.vue";
+import DisplayStructure from "components/DisplayStructured.vue";
 import ShareWorkflow from "components/ShareWorkflow.vue";
 import Vue from "vue";
+
+/* global Galaxy */
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -67,6 +72,8 @@ window.app = function app(options, bootstrapped) {
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
+            "(/)histories/view": "show_history_view",
+            "(/)histories/show_structure": "show_history_structure",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
@@ -133,6 +140,20 @@ window.app = function app(options, bootstrapped) {
                     active_tab: "shared"
                 })
             );
+        },
+
+        show_history_view: function() {
+            var historyInstance = Vue.extend(HistoryView);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+        },
+
+        show_history_structure: function() {
+            let displayStructureInstance = Vue.extend(DisplayStructure);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new displayStructureInstance({ propsData: { id: QueryStringParsing.get(" id: ") } }).$mount(vm);
         },
 
         show_histories: function(action_id) {
