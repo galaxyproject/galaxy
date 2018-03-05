@@ -2528,7 +2528,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
 
             # dealing with a single element
             if hasattr(element, "is_ok"):
-                if element.is_ok:
+                if element.is_ok and element.has_data():
                     valid = True
             elif hasattr(element, "dataset_instances"):
                 # we are probably a list:paired dataset, both need to be in non error state
