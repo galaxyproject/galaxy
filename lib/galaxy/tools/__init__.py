@@ -104,6 +104,7 @@ MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
+    "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
     "laj_1",
@@ -1063,7 +1064,10 @@ class Tool(Dictifiable):
                 group.file_type_name = elem.get('file_type_name', group.file_type_name)
                 group.default_file_type = elem.get('default_file_type', group.default_file_type)
                 group.metadata_ref = elem.get('metadata_ref', group.metadata_ref)
-                rval[group.file_type_name].refresh_on_change = True
+                try:
+                    rval[group.file_type_name].refresh_on_change = True
+                except KeyError:
+                    pass
                 group_page_source = XmlPageSource(elem)
                 group.inputs = self.parse_input_elem(group_page_source, enctypes, context)
                 rval[group.name] = group
@@ -1614,10 +1618,10 @@ class Tool(Dictifiable):
         """
         return output_collect.collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey=input_dbkey)
 
-    def collect_dynamic_collections(self, output, tool_provided_metadata, **kwds):
-        """ Find files corresponding to dynamically structured collections.
+    def collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds):
+        """Collect dynamic outputs associated with a job from this tool.
         """
-        return output_collect.collect_dynamic_collections(self, output, tool_provided_metadata, **kwds)
+        return output_collect.collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds)
 
     def to_archive(self):
         tool = self

@@ -15,6 +15,7 @@ uWSGI==2.0.15
 pysam==0.14
 
 # pure Python packages
+bdbag==1.1.1
 bz2file==0.98; python_version < '3.3'
 ipaddress==1.0.18; python_version < '3.3'
 boltons==17.1.0

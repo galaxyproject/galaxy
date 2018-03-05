@@ -12,6 +12,8 @@ import galaxy.security
 from galaxy import config, jobs
 from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.folders import FolderManager
+from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
@@ -90,6 +92,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.tag_handler = GalaxyTagManager(self.model.context)
         # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
+        self.library_folder_manager = FolderManager()
+        self.library_manager = LibraryManager()
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)

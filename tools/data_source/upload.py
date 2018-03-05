@@ -18,8 +18,12 @@ from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.datatypes import sniff
-from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.registry import Registry
+from galaxy.datatypes.upload_util import (
+    handle_sniffable_binary_check,
+    handle_unsniffable_binary_check,
+    UploadProblemException,
+)
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -34,12 +38,6 @@ else:
     import bz2
 
 assert sys.version_info[:2] >= (2, 7)
-
-
-class UploadProblemException(Exception):
-
-    def __init__(self, message):
-        self.message = message
 
 
 def file_err(msg, dataset, json_file):
@@ -83,7 +81,10 @@ def add_file(dataset, registry, json_file, output_path):
     line_count = None
     converted_path = None
     stdout = None
-    link_data_only = dataset.get('link_data_only', 'copy_files') != 'copy_files'
+    link_data_only_str = dataset.get('link_data_only', 'copy_files')
+    if link_data_only_str not in ['link_data_only', 'copy_files']:
+        raise UploadProblemException("Invalid setting for option link_data_only - upload request misconfigured.")
+    link_data_only = link_data_only_str == 'link_data_only'
 
     # run_as_real_user is estimated from galaxy config (external chmod indicated of inputs executed)
     # If this is True we always purge supplied upload inputs so they are cleaned up and we reuse their
@@ -120,26 +121,21 @@ def add_file(dataset, registry, json_file, output_path):
 
     if dataset.type == 'url':
         try:
-            page = urlopen(dataset.path)  # page will be .close()ed by sniff methods
-            temp_name = sniff.stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
+            dataset.path = sniff.stream_url_to_file(dataset.path)
         except Exception as e:
             raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, str(e)))
-        dataset.path = temp_name
+
     # See if we have an empty file
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
+
     if not os.path.getsize(dataset.path) > 0:
         raise UploadProblemException('The uploaded file is empty')
+
     # Is dataset content supported sniffable binary?
     is_binary = check_binary(dataset.path)
     if is_binary:
-        # Sniff the data type
-        guessed_ext = sniff.guess_ext(dataset.path, registry.sniff_order)
-        # Set data_type only if guessed_ext is a binary datatype
-        datatype = registry.get_datatype_by_extension(guessed_ext)
-        if isinstance(datatype, Binary):
-            data_type = guessed_ext
-            ext = guessed_ext
+        data_type, ext = handle_sniffable_binary_check(data_type, ext, dataset.path, registry)
     if not data_type:
         root_datatype = registry.get_datatype_by_extension(dataset.file_type)
         if getattr(root_datatype, 'compressed', False):
@@ -262,18 +258,9 @@ def add_file(dataset, registry, json_file, output_path):
                             dataset.name = uncompressed_name
                     data_type = 'zip'
             if not data_type:
-                if is_binary or registry.is_extension_unsniffable_binary(dataset.file_type):
-                    # We have a binary dataset, but it is not Bam, Sff or Pdf
-                    data_type = 'binary'
-                    parts = dataset.name.split(".")
-                    if len(parts) > 1:
-                        ext = parts[-1].strip().lower()
-                        is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
-                        if check_content and not is_ext_unsniffable_binary:
-                            raise UploadProblemException('The uploaded binary file contains inappropriate content')
-                        elif is_ext_unsniffable_binary and dataset.file_type != ext:
-                            err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
-                            raise UploadProblemException(err_msg)
+                data_type, ext = handle_unsniffable_binary_check(
+                    data_type, ext, dataset.path, dataset.name, is_binary, dataset.file_type, check_content, registry
+                )
             if not data_type:
                 # We must have a text file
                 if check_content and check_html(dataset.path):
@@ -302,7 +289,7 @@ def add_file(dataset, registry, json_file, output_path):
     if ext == 'auto':
         ext = 'data'
     datatype = registry.get_datatype_by_extension(ext)
-    if dataset.type in ('server_dir', 'path_paste') and link_data_only:
+    if link_data_only:
         # Never alter a file that will not be copied to Galaxy's local file store.
         if datatype.dataset_content_needs_grooming(dataset.path):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \

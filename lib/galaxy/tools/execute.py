@@ -275,9 +275,9 @@ class ExecutionTracker(object):
                 trans=trans,
                 parent=history,
                 name=output_collection_name,
+                structure=effective_structure,
                 implicit_inputs=implicit_inputs,
                 implicit_output_name=output_name,
-                structure=effective_structure,
             )
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance
