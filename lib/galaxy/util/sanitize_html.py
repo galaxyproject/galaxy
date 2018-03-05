@@ -349,7 +349,7 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
         # declare xlink namespace, if needed
         if self.mathmlOK or self.svgOK:
-            if any(map(lambda n, v: n.startswith('xlink:'), attrs)):
+            if any(n_v[0].startswith('xlink:') for n_v in attrs):
                 if not ('xmlns:xlink', 'http://www.w3.org/1999/xlink') in attrs:
                     attrs.append(('xmlns:xlink', 'http://www.w3.org/1999/xlink'))
 
