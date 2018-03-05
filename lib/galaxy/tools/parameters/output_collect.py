@@ -516,16 +516,17 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     """
     matches = []
     directory = discover_target_directory(target_dir, job_working_directory)
-    for filename in os.listdir(directory):
-        path = os.path.join(directory, filename)
-        if os.path.isdir(path) and extra_file_collector.recurse:
-            # The current directory is already validated, so use that as the next job_working_directory when recursing
-            for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
-                yield match
-        else:
-            match = extra_file_collector.match(matchable, filename, path=path)
-            if match:
-                matches.append(match)
+    if os.path.isdir(directory):
+        for filename in os.listdir(directory):
+            path = os.path.join(directory, filename)
+            if os.path.isdir(path) and extra_file_collector.recurse:
+                # The current directory is already validated, so use that as the next job_working_directory when recursing
+                for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                    yield match
+            else:
+                match = extra_file_collector.match(matchable, filename, path=path)
+                if match:
+                    matches.append(match)
 
     for match in extra_file_collector.sort(matches):
         yield match
