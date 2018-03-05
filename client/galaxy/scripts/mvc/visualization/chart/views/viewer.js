@@ -25,11 +25,13 @@ export default Backbone.View.extend({
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
-        this.chart.on("redraw", function() {
-            self.app.deferred.execute(function(process) {
-                console.debug("viewer:redraw() - Redrawing...");
-                self._draw(process, self.chart);
-            });
+        this.chart.on("redraw", function(confirmed) {
+            if (!self.chart.plugin.specs.confirm || confirmed) {
+                self.app.deferred.execute(function(process) {
+                    console.debug("viewer:redraw() - Redrawing...");
+                    self._draw(process, self.chart);
+                });
+            }
         });
         this.chart.on("set:state", function() {
             var $container = self.$(".charts-viewer-container");

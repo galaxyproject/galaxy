@@ -96,8 +96,10 @@ export default Backbone.Model.extend({
     /** Load nested models/collections from packed dictionary */
     load: function(chart_parsed) {
         var d = chart_parsed || this.chart_dict;
-        console.debug("model::load() - Attempting to load with configuration:");
-        console.debug(d);
+        if (d) {
+            console.debug("model::load() - Attempting to load with configuration:");
+            console.debug(d);
+        }
         this.reset();
         if (d && d.attributes) {
             this.set(d.attributes);

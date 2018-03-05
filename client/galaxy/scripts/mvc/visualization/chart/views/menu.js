@@ -7,6 +7,13 @@ export default Backbone.View.extend({
     initialize: function(app) {
         this.app = app;
         this.model = new Backbone.Model({ visible: true });
+        this.execute_button = new Ui.ButtonIcon({
+            icon: "fa-play",
+            tooltip: "Create",
+            onclick: () => {
+                app.chart.trigger("redraw", true);
+            }
+        });
         this.export_button = new Ui.ButtonMenu({
             icon: "fa-camera",
             tooltip: "Export"
@@ -90,6 +97,7 @@ export default Backbone.View.extend({
                     window.dispatchEvent(new Event("resize"));
                 }
             }),
+            this.execute_button,
             this.export_button,
             new Ui.ButtonIcon({
                 icon: "fa-save",
@@ -130,6 +138,7 @@ export default Backbone.View.extend({
     render: function() {
         var visible = this.model.get("visible");
         this.app.$el[visible ? "removeClass" : "addClass"]("charts-fullscreen");
+        this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs.confirm);
         this.export_button.model.set("visible", visible);
         var exports = this.app.chart.plugin.specs.exports || [];
         this.export_button.collection.each(model => {
