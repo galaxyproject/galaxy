@@ -38,7 +38,7 @@ DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 DEFAULT_FTYPE = 'auto'
 DEFAULT_DBKEY = 'hg17'
-DEFAULT_MAX_SECS = None
+DEFAULT_MAX_SECS = DEFAULT_TOOL_TEST_WAIT
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
@@ -195,11 +195,8 @@ class GalaxyInteractorApi(object):
     def wait_for(self, func, **kwd):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = kwd.get("maxseconds", None)
-        if walltime_exceeded is None:
-            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+        walltime_exceeded = kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT)
 
-        exceeded = True
         while slept <= walltime_exceeded:
             result = func()
             if result:
@@ -207,13 +204,11 @@ class GalaxyInteractorApi(object):
                 slept += sleep_amount
                 sleep_amount *= 2
             else:
-                exceeded = False
-                break
+                return
 
-        if exceeded:
-            message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
-            log.info(message)
-            raise AssertionError(message)
+        message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+        log.info(message)
+        raise AssertionError(message)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
@@ -280,15 +275,19 @@ class GalaxyInteractorApi(object):
                 "files_0|file_data": open(file_name, 'rb')
             }
         submit_response_object = self.__submit_tool(history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files)
+        if submit_response_object.status_code != 200:
+            raise Exception("Request to upload dataset failed [%s]" % submit_response_object.content)
         submit_response = submit_response_object.json()
-        try:
-            dataset = submit_response["outputs"][0]
-        except KeyError:
-            raise Exception(submit_response)
-        # raise Exception(str(dataset))
+        assert "outputs" in submit_response, "Invalid response from server [%s], expecteding outputs in response." % submit_response
+        outputs = submit_response["outputs"]
+        assert len(outputs) > 0, "Invalid response from server [%s], expecting an output dataset." % submit_response
+        dataset = outputs[0]
         hid = dataset['id']
         self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
-        return self.__wait_for_history(history_id)
+        assert "jobs" in submit_response, "Invalid response from server [%s], expecting jobs in response." % submit_response
+        jobs = submit_response["jobs"]
+        assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
+        return lambda: self.wait_for_job(jobs[0]["id"], history_id, DEFAULT_TOOL_TEST_WAIT)
 
     def run_tool(self, testdef, history_id, resource_parameters={}):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -385,12 +384,6 @@ class GalaxyInteractorApi(object):
     def delete_history(self, history):
         return None
 
-    def __wait_for_history(self, history_id):
-        def wait():
-            while not self.__history_ready(history_id):
-                pass
-        return wait
-
     def __job_ready(self, job_id, history_id):
         if job_id is None:
             raise ValueError("__job_ready passed empty job_id")
@@ -398,18 +391,6 @@ class GalaxyInteractorApi(object):
         state = job_json['state']
         try:
             return self._state_ready(state, error_msg="Job in error state.")
-        except Exception:
-            if VERBOSE_ERRORS:
-                self._summarize_history(history_id)
-            raise
-
-    def __history_ready(self, history_id):
-        if history_id is None:
-            raise ValueError("__history_ready passed empty history_id")
-        history_json = self._get("histories/%s" % history_id).json()
-        state = history_json['state']
-        try:
-            return self._state_ready(state, error_msg="History in error state.")
         except Exception:
             if VERBOSE_ERRORS:
                 self._summarize_history(history_id)
@@ -959,6 +940,8 @@ class ToolTestDescription(object):
             "test_index": self.test_index,
             "tool_id": self.tool_id,
             "required_files": self.required_files,
+            "error": self.error,
+            "exception": self.exception,
         }
 
 

@@ -474,7 +474,6 @@ def cleanup_directory(tempdir):
 
 def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
     """Modify Galaxy app's toolbox for migrated or installed tool tests."""
-    # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
     if testing_installed_tools:
         # TODO: Do this without modifying app - that is a pretty violation
         # of Galaxy's abstraction - we shouldn't require app at all let alone
