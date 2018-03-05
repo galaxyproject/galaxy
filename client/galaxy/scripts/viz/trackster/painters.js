@@ -437,12 +437,7 @@ class FeaturePainter extends Painter {
      * a FeaturePositionMapper object with information about where features were drawn.
      */
     draw(ctx, width, height, w_scale, slots) {
-        var data = this.data;
-        var view_start = this.view_start;
-        var view_end = this.view_end;
-
         ctx.save();
-
         ctx.fillStyle = this.prefs.block_color;
         ctx.textAlign = "right";
 
@@ -451,26 +446,29 @@ class FeaturePainter extends Painter {
         var x_draw_coords;
         var incomplete_features = [];
 
-        for (var i = 0, len = data.length; i < len; i++) {
-            var feature = data[i];
+        for (var i = 0, len = this.data.length; i < len; i++) {
+            var feature = this.data[i];
             var feature_uid = feature[0];
             var feature_start = feature[1];
             var feature_end = feature[2];
 
-            var // Slot valid only if features are slotted and this feature is slotted;
+            // Slot valid only if features are slotted and this feature is slotted;
             // feature may not be due to lack of space.
-            slot = slots && slots[feature_uid] !== undefined ? slots[feature_uid].slot : null;
+            var slot = slots && slots[feature_uid] !== undefined ? slots[feature_uid].slot : null;
 
             // Draw feature if (a) mode is dense or feature is slotted (as it must be for all non-dense modes) and
             // (b) there's overlap between the feature and drawing region.
-            if ((this.mode === "Dense" || slot !== null) && (feature_start < view_end && feature_end > view_start)) {
+            if (
+                (this.mode === "Dense" || slot !== null) &&
+                (feature_start < this.view_end && feature_end > this.view_start)
+            ) {
                 x_draw_coords = this.draw_element(
                     ctx,
                     this.mode,
                     feature,
                     slot,
-                    view_start,
-                    view_end,
+                    this.view_start,
+                    this.view_end,
                     w_scale,
                     y_scale,
                     width
@@ -478,7 +476,7 @@ class FeaturePainter extends Painter {
                 feature_mapper.map_feature_data(feature, slot, x_draw_coords[0], x_draw_coords[1]);
 
                 // Add to incomplete features if it's not drawn completely in region.
-                if (feature_start < view_start || feature_end > view_end) {
+                if (feature_start < this.view_start || feature_end > this.view_end) {
                     incomplete_features.push(feature);
                 }
             }
