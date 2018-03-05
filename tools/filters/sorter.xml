@@ -64,7 +64,7 @@
                 <option value="ASC">Ascending order</option>
             </param>
         </repeat>
-        <param name="header_lines" type="integer" value="0" label="Number of header lines to skip" help="# characters are already considered as comments and keep"/>
+        <param name="header_lines" type="integer" value="0" label="Number of header lines to skip" help="# characters are already considered as comments and kept"/>
     </inputs>
     <outputs>
         <data format_source="input" name="out_file1" metadata_source="input"/>
