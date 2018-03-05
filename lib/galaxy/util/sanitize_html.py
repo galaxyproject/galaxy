@@ -41,7 +41,6 @@ _cp1252 = {
 
 
 class _BaseHTMLProcessor(sgmllib.SGMLParser):
-    special = re.compile('''[<>'"]''')
     bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
     elements_no_end_tag = ['area', 'base', 'basefont', 'br', 'col', 'frame', 'hr',
                            'img', 'input', 'isindex', 'link', 'meta', 'param']
@@ -223,29 +222,6 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
     unacceptable_elements_with_end_tag = ['script', 'applet', 'style']
 
-    acceptable_css_properties = ['azimuth', 'background-color',
-                                 'border-bottom-color', 'border-collapse', 'border-color',
-                                 'border-left-color', 'border-right-color', 'border-top-color', 'clear',
-                                 'color', 'cursor', 'direction', 'display', 'elevation', 'float', 'font',
-                                 'font-family', 'font-size', 'font-style', 'font-variant', 'font-weight',
-                                 'height', 'letter-spacing', 'line-height', 'overflow', 'pause',
-                                 'pause-after', 'pause-before', 'pitch', 'pitch-range', 'richness',
-                                 'speak', 'speak-header', 'speak-numeral', 'speak-punctuation',
-                                 'speech-rate', 'stress', 'text-align', 'text-decoration', 'text-indent',
-                                 'unicode-bidi', 'vertical-align', 'voice-family', 'volume',
-                                 'white-space', 'width']
-
-    # survey of common keywords found in feeds
-    acceptable_css_keywords = ['auto', 'aqua', 'black', 'block', 'blue',
-                               'bold', 'both', 'bottom', 'brown', 'center', 'collapse', 'dashed',
-                               'dotted', 'fuchsia', 'gray', 'green', '!important', 'italic', 'left',
-                               'lime', 'maroon', 'medium', 'none', 'navy', 'normal', 'nowrap', 'olive',
-                               'pointer', 'purple', 'red', 'right', 'solid', 'silver', 'teal', 'top',
-                               'transparent', 'underline', 'white', 'yellow']
-
-    valid_css_values = re.compile('^(#[0-9a-f]+|rgb\(\d+%?,\d*%?,?\d*%?\)?|' +
-                                  '\d{0,2}\.?\d{0,2}(cm|em|ex|in|mm|pc|pt|px|%|,|\))?)$')
-
     mathml_elements = ['annotation', 'annotation-xml', 'maction', 'math',
                        'merror', 'mfenced', 'mfrac', 'mi', 'mmultiscripts', 'mn', 'mo', 'mover', 'mpadded',
                        'mphantom', 'mprescripts', 'mroot', 'mrow', 'mspace', 'msqrt', 'mstyle',
@@ -301,10 +277,6 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
 
     svg_attr_map = None
     svg_elem_map = None
-
-    acceptable_svg_properties = ['fill', 'fill-opacity', 'fill-rule',
-                                 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
-                                 'stroke-opacity']
 
     def reset(self):
         _BaseHTMLProcessor.reset(self)
@@ -362,8 +334,6 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
                 clean_attrs.append((key, value))
             elif key == 'style':
                 pass
-                # clean_value = self.sanitize_style(value)
-                # if clean_value: clean_attrs.append((key,clean_value))
         _BaseHTMLProcessor.unknown_starttag(self, tag, clean_attrs)
 
     def unknown_endtag(self, tag):
@@ -390,33 +360,6 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
     def handle_data(self, text):
         if not self.unacceptablestack:
             _BaseHTMLProcessor.handle_data(self, text)
-
-    def sanitize_style(self, style):
-        # disallow urls
-        style = re.compile('url\s*\(\s*[^\s)]+?\s*\)\s*').sub(' ', style)
-
-        # gauntlet
-        if not re.match("""^([:,;#%.\sa-zA-Z0-9!]|\w-\w|'[\s\w]+'|"[\s\w]+"|\([\d,\s]+\))*$""", style):
-            return ''
-        if not re.match("^(\s*[-\w]+\s*:\s*[^:;]*(;|$))*$", style):
-            return ''
-
-        clean = []
-        for prop, value in re.findall("([-\w]+)\s*:\s*([^:;]*)", style):
-            if not value:
-                continue
-            if prop.lower() in self.acceptable_css_properties:
-                clean.append(prop + ': ' + value + ';')
-            elif prop.split('-')[0].lower() in ['background', 'border', 'margin', 'padding']:
-                for keyword in value.split():
-                    if keyword not in self.acceptable_css_keywords and \
-                            not self.valid_css_values.match(keyword):
-                        break
-                else:
-                    clean.append(prop + ': ' + value + ';')
-            elif self.svgOK and prop.lower() in self.acceptable_svg_properties:
-                clean.append(prop + ': ' + value + ';')
-        return ' '.join(clean)
 
 
 def sanitize_html(htmlSource, encoding="utf-8", type="text/html"):
