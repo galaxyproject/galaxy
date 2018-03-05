@@ -125,7 +125,7 @@ var ButtonLink = ButtonDefault.extend({
                 target: options.target || "_top",
                 disabled: options.disabled
             })
-            .css("display", options.visible ? "inline" : "none")
+            .css("display", options.visible ? "inline-block" : "none")
             .tooltip({ placement: "bottom" })
             .off("click")
             .on("click", () => {

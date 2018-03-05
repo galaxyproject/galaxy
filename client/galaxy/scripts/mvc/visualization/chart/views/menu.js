@@ -79,53 +79,56 @@ export default Backbone.View.extend({
                 });
             }
         });
+        this.left_button = new Ui.ButtonIcon({
+            icon: "fa-angle-double-left",
+            tooltip: "Show",
+            cls: "ui-button-icon charts-fullscreen-button",
+            onclick: () => {
+                this.model.set("visible", true);
+                window.dispatchEvent(new Event("resize"));
+            }
+        });
+        this.right_button = new Ui.ButtonIcon({
+            icon: "fa-angle-double-right",
+            tooltip: "Hide",
+            onclick: () => {
+                this.model.set("visible", false);
+                window.dispatchEvent(new Event("resize"));
+            }
+        });
+        this.save_button = new Ui.ButtonIcon({
+            icon: "fa-save",
+            tooltip: "Save",
+            onclick: () => {
+                if (app.chart.get("title")) {
+                    app.message.update({
+                        message: `Saving '${app.chart.get(
+                            "title"
+                        )}'. It will appear in the list of 'Saved Visualizations'.`,
+                        status: "success"
+                    });
+                    app.chart.save({
+                        error: () => {
+                            app.message.update({
+                                message: "Could not save visualization.",
+                                status: "danger"
+                            });
+                        }
+                    });
+                } else {
+                    app.message.update({
+                        message: "Please provide a name.",
+                        status: "danger"
+                    });
+                }
+            }
+        });
         this.buttons = [
-            new Ui.ButtonIcon({
-                icon: "fa-angle-double-left",
-                tooltip: "Show",
-                cls: "ui-button-icon charts-fullscreen-button",
-                onclick: () => {
-                    this.model.set("visible", true);
-                    window.dispatchEvent(new Event("resize"));
-                }
-            }),
-            new Ui.ButtonIcon({
-                icon: "fa-angle-double-right",
-                tooltip: "Hide",
-                onclick: () => {
-                    this.model.set("visible", false);
-                    window.dispatchEvent(new Event("resize"));
-                }
-            }),
+            this.left_button,
+            this.right_button,
             this.execute_button,
             this.export_button,
-            new Ui.ButtonIcon({
-                icon: "fa-save",
-                tooltip: "Save",
-                onclick: () => {
-                    if (app.chart.get("title")) {
-                        app.message.update({
-                            message: `Saving '${app.chart.get(
-                                "title"
-                            )}'. It will appear in the list of 'Saved Visualizations'.`,
-                            status: "success"
-                        });
-                        app.chart.save({
-                            error: () => {
-                                app.message.update({
-                                    message: "Could not save visualization.",
-                                    status: "danger"
-                                });
-                            }
-                        });
-                    } else {
-                        app.message.update({
-                            message: "Please provide a name.",
-                            status: "danger"
-                        });
-                    }
-                }
-            })
+            this.save_button
         ];
         this.setElement("<div/>");
         for (let b of this.buttons) {
@@ -139,7 +142,10 @@ export default Backbone.View.extend({
         var visible = this.model.get("visible");
         this.app.$el[visible ? "removeClass" : "addClass"]("charts-fullscreen");
         this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs.confirm);
+        this.save_button.model.set("visible", visible);
         this.export_button.model.set("visible", visible);
+        this.right_button.model.set("visible", visible);
+        this.left_button.model.set("visible", !visible);
         var exports = this.app.chart.plugin.specs.exports || [];
         this.export_button.collection.each(model => {
             model.set("visible", exports.indexOf(model.get("key")) !== -1);
