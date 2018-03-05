@@ -8,7 +8,7 @@ export default Backbone.Model.extend({
         date: null,
         state: "",
         state_info: "",
-        modified: false,
+        modified: true,
         dataset_id: "",
         dataset_id_job: ""
     },
@@ -111,9 +111,11 @@ export default Backbone.Model.extend({
             this.trigger("load");
             console.debug("model::load() - Loading chart model " + d.attributes.type + ".");
             return true;
+        } else {
+            this.set("modified", true);
+            this.trigger("load");
+            console.debug("model::load() - Visualization attributes unavailable.");
+            return false;
         }
-        this.trigger("load");
-        console.debug("model::load() - Visualization attributes unavailable.");
-        return false;
     }
 });

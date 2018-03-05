@@ -26,7 +26,7 @@ export default Backbone.View.extend({
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
         this.chart.on("redraw", function(confirmed) {
-            if (!self.chart.plugin.specs.confirm || confirmed) {
+            if (!self.chart.get("modified") || !self.chart.plugin.specs.confirm || confirmed ) {
                 self.app.deferred.execute(function(process) {
                     console.debug("viewer:redraw() - Redrawing...");
                     self._draw(process, self.chart);
