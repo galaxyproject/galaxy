@@ -557,7 +557,7 @@ class csFasta(Sequence):
         return Sequence.set_meta(self, dataset, **kwd)
 
 
-class BaseFastq (Sequence):
+class BaseFastq(Sequence):
     """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
@@ -776,7 +776,7 @@ class FastqCSSangerGz(FastqGz):
     file_ext = "fastqcssanger.gz"
 
 
-class FastqBz2 (BaseFastq, Binary):
+class FastqBz2(BaseFastq, Binary):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
@@ -1092,7 +1092,7 @@ class RNADotPlotMatrix(data.Data):
         return False
 
 
-class DotBracket (Sequence):
+class DotBracket(Sequence):
     edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"

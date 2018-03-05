@@ -39,7 +39,7 @@ def get_keys_from_dict(dl, keys_list):
         map(lambda x: get_keys_from_dict(x, keys_list), dl)
 
 
-class RuleValidator:
+class RuleValidator(object):
     """
     This class is the primary facility for validating configs. It's always called
     in map_tool_to_destination and it's called for validating config directly through
