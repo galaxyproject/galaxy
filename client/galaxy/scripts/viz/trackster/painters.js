@@ -148,11 +148,11 @@ class Painter {
         this.view_start = view_start;
         this.view_end = view_end;
         // Drawing prefs
-        this.prefs = _.extend({}, this.getDefaultPrefs(), prefs);
+        this.prefs = _.extend({}, this.default_prefs, prefs);
         this.mode = mode;
     }
 
-    getDefaultPrefs() {
+    static get default_prefs() {
         return {};
     }
 
@@ -195,7 +195,7 @@ class LinePainter extends Painter {
         super(data, view_start, view_end, prefs, mode);
     }
 
-    getDefaultPrefs() {
+    static get default_prefs() {
         return {
             min_value: undefined,
             max_value: undefined,
@@ -408,7 +408,10 @@ class FeaturePainter extends Painter {
         this.alpha_scaler = alpha_scaler ? alpha_scaler : new Scaler();
         this.height_scaler = height_scaler ? height_scaler : new Scaler();
         this.max_label_length = 200;
-        this.default_prefs = {
+    }
+
+    static get default_prefs() {
+        return {
             block_color: "#FFF",
             connector_color: "#FFF"
         };
@@ -1444,7 +1447,7 @@ class DiagonalHeatmapPainter extends Painter {
         }
     }
 
-    getDefailtPrefs() {
+    static get default_prefs() {
         return {
             min_value: undefined,
             max_value: undefined,
