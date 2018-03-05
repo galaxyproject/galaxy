@@ -758,16 +758,17 @@ class Tool(Dictifiable):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        if self._allow_code_files:
-            for code_elem in root.findall("code"):
-                for hook_elem in code_elem.findall("hook"):
-                    for key, value in hook_elem.items():
-                        # map hook to function
-                        self.hook_map[key] = value
-                file_name = code_elem.get("file")
-                code_path = os.path.join(self.tool_dir, file_name)
-                with open(code_path) as f:
-                    exec(compile(f.read(), code_path, 'exec'), self.code_namespace)
+        for code_elem in root.findall("code"):
+            for hook_elem in code_elem.findall("hook"):
+                for key, value in hook_elem.items():
+                    # map hook to function
+                    self.hook_map[key] = value
+            file_name = code_elem.get("file")
+            code_path = os.path.join(self.tool_dir, file_name)
+            with open(code_path) as f:
+                compiled_code = compile(f.read(), code_path, 'exec')
+            if self._allow_code_files:
+                exec(compiled_code, self.code_namespace)
 
         # User interface hints
         uihints_elem = root.find("uihints")
