@@ -2,10 +2,63 @@ import * as bootstrap from "bootstrap";
 import * as Backbone from "backbone";
 import * as d3 from "d3";
 import "jquery-ui-bundle";
-import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
 import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
 import "../../../../../client/galaxy/scripts/ui/pagination";
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
+
+var Visualization = Backbone.Model.extend({
+        /** default attributes for a model */
+        defaults: {
+            config: {}
+        },
+
+        /** override urlRoot to handle prefix */
+        urlRoot: function() {
+            var apiUrl = "api/visualizations";
+            return Galaxy.root + apiUrl;
+        },
+
+        /** Set up the model, determine if accessible, bind listeners
+         *  @see Backbone.Model#initialize
+         */
+        initialize: function(data) {
+            //this.log( this + '.initialize', data, this.attributes );
+
+            // munge config sub-object here since bbone won't handle defaults with this
+            if (_.isObject(data.config) && _.isObject(this.defaults.config)) {
+                _.defaults(data.config, this.defaults.config);
+            }
+
+            this._setUpListeners();
+        },
+
+        /** set up any event listeners
+         */
+        _setUpListeners: function() {},
+
+        /** override set to properly allow update and trigger change when setting the sub-obj 'config' */
+        set: function(key, val) {
+            //TODO: validate config is object
+            if (key === "config") {
+                var oldConfig = this.get("config");
+                if (_.isObject(oldConfig)) {
+                    val = _.extend(_.clone(oldConfig), val);
+                }
+            }
+            Backbone.Model.prototype.set.call(this, key, val);
+            return this;
+        },
+
+        /** String representation */
+        toString: function() {
+            var idAndTitle = this.get("id") || "";
+            if (this.get("title")) {
+                idAndTitle += `:${this.get("title")}`;
+            }
+            return `Visualization(${idAndTitle})`;
+        }
+    }
+);
 
 /**
  *  Two Variable scatterplot visualization using d3
@@ -377,7 +430,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
     /** initialize requires a configuration Object containing a dataset Object */
     initialize: function(attributes) {
         if (!this.model) {
-            this.model = new VisualizationModel.Visualization({ type: "scatterplot" });
+            this.model = new Visualization({ type: "scatterplot" });
         }
         //this.log( this + '.initialize, attributes:', attributes );
 
@@ -980,7 +1033,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         return "ScatterplotView()";
     }
 });
-var ScatterplotModel = VisualizationModel.Visualization.extend({
+var ScatterplotModel = Visualization.extend({
     defaults: {
         type: "scatterplot",
 

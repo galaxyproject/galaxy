@@ -19,6 +19,8 @@
         "bootstrap": "^3.3.7",
         "d3": "^3.5.17",
         "jquery": "^3.2.1",
-        "jquery-ui-bundle": "^1.12.1"
+        "jquery-ui-bundle": "^1.12.1",
+        "parcel-bundler": "^1.4.1",
+        "npm": "^5.7.1"
     }
 }
