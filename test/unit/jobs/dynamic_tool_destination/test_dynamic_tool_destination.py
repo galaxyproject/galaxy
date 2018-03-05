@@ -856,6 +856,30 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'destinationf' does not appear in the job configuration. Did you mean 'DestinationF'?"),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
         )
+        
+    @log_capture()
+    def test_invalid_verbose_value(self, l):
+        dt.parse_yaml(path=yt.ivYMLTest171, job_conf_path=job_conf_path, test=True)
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Verbose value 'notavalue' is not True or False! Falling back to verbose..."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Finished config validation.')
+        )
+        
+    @log_capture()
+    def test_invalid_default_dest_valid_tool_default_dest_bool(self, l):
+        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest172, job_conf_path=job_conf_path, test=True, return_bool=True))
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination 'fake_destination' does not appear in the job configuration."),
+        )
+
+    @log_capture()
+    def test_valid_default_dest_invalid_tool_default_dest_bool(self, l):
+        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest173, job_conf_path=job_conf_path, test=True, return_bool=True))
+        l.check(
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Default destination for 'blah': 'fake_destination' does not appear in the job configuration."),
+            ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'blah' does not have rules nor a default_destination!"),
+        )
 
 # ================================Valid yaml files==============================
     @log_capture()

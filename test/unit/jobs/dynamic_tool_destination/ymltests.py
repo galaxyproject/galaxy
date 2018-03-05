@@ -1337,3 +1337,30 @@ ivYMLTest170 = '''
     default_priority: med
     verbose: True
 '''
+
+# Invalid verbose setting
+ivYMLTest171 = '''
+    default_destination:
+      priority:
+        med: DestinationF
+    default_priority: med
+    verbose: notavalue
+'''
+
+#invalid default destination and valid tool default destination
+ivYMLTest172 = '''
+    default_destination: fake_destination
+    tools:
+      blah:
+        default_destination: cluster_default
+    verbose: True
+'''
+
+#valid default destination and invalid tool default destination
+ivYMLTest173 = '''
+    default_destination: cluster_default
+    tools:
+      blah:
+        default_destination: fake_destination
+    verbose: True
+'''

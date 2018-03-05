@@ -851,11 +851,13 @@ def validate_config(obj, app=None, return_bool=False,):
 
     if return_bool:
         verbose = True
-
     elif obj is not None and 'verbose' in obj and isinstance(obj['verbose'], bool):
         verbose = obj['verbose']
     else:
         valid_config = False
+        if obj:
+            log.debug("Verbose value '" + str(obj['verbose']) + "' is not True or False! Falling back to verbose...")
+            verbose = True
 
     if not return_bool and verbose:
         log.debug("Running config validation...")
@@ -874,11 +876,13 @@ def validate_config(obj, app=None, return_bool=False,):
         if 'default_destination' in obj:
             suggestion = None
             if isinstance(obj['default_destination'], str):
-                valid_config = validate_destination(app, obj['default_destination'],
-                                                    dest_err_default_dest,
-                                                    (obj['default_destination']))
-                if valid_config:
+                is_valid = validate_destination(app, obj['default_destination'],
+                                                dest_err_default_dest,
+                                                (obj['default_destination']))
+                if is_valid:
                     new_config["default_destination"] = obj['default_destination']
+                else:
+                   valid_config = False
 
             elif isinstance(obj['default_destination'], dict):
 
@@ -889,14 +893,16 @@ def validate_config(obj, app=None, return_bool=False,):
                         if isinstance(obj['default_destination']['priority'][priority],
                                       str):
                             priority_list.add(priority)
-                            valid_config = validate_destination(
+                            is_valid = validate_destination(
                                 app, obj['default_destination']['priority'][priority],
                                 dest_err_default_dest,
                                 (obj['default_destination']['priority'][priority]))
 
-                            if valid_config:
+                            if is_valid:
                                 new_config["default_destination"]['priority'][priority] = (
                                     obj['default_destination']['priority'][priority])
+                            else:
+                                valid_config = False
                     if len(priority_list) < 1:
                         error = ("No valid priorities found!")
                         if verbose:
@@ -1004,14 +1010,16 @@ def validate_config(obj, app=None, return_bool=False,):
                         if "default_destination" in curr:
                             suggestion = None
                             if isinstance(curr['default_destination'], str):
-                                valid_config = validate_destination(app,
+                                is_valid = validate_destination(app,
                                     curr['default_destination'],
                                     dest_err_tool_default_dest,
                                     (tool, curr['default_destination']))
-                                if valid_config:
+                                if is_valid:
                                     new_config['tools'][tool]['default_destination'] = (
                                         (curr['default_destination']))
                                     tool_has_default = True
+                                else:
+                                    valid_config = False
                             elif isinstance(curr['default_destination'], dict):
 
                                 if ('priority' in curr['default_destination']
@@ -1022,13 +1030,15 @@ def validate_config(obj, app=None, return_bool=False,):
                                         if priority in priority_list:
                                             if isinstance(destination, str):
 
-                                                valid_config = validate_destination(
+                                                is_valid = validate_destination(
                                                     app, destination,
                                                     dest_err_tool_default_dest,
                                                     (tool, curr['default_destination']['priority'][priority]))
-                                                if valid_config:
+                                                if is_valid:
                                                     new_config['tools'][tool]['default_destination']['priority'][priority] = destination
                                                     tool_has_default = True
+                                                else:
+                                                    valid_config = False
 
                                             else:
                                                 error = ("No default '" + str(priority)
