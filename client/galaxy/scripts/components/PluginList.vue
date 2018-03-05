@@ -3,7 +3,7 @@
         <div v-if="error" class="ui-message alert alert-danger">
             {{ error }}
         </div>
-        <div class="ui-thumbnails-grid">
+        <div v-else class="ui-thumbnails-grid">
             <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
             <div v-for="plugin in plugins">
                 <table v-if="match(plugin)">
