@@ -165,7 +165,8 @@ def collect_dynamic_outputs(
         inp_data,
         input_dbkey,
     )
-    log.info(tool_provided_metadata)
+    # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
+    # from the tool provided metadata (e.g. galaxy.json).
     for unnamed_output_dict in tool_provided_metadata.get_unnamed_outputs():
         assert "destination" in unnamed_output_dict
         assert "elements" in unnamed_output_dict
@@ -174,9 +175,14 @@ def collect_dynamic_outputs(
 
         assert "type" in destination
         destination_type = destination["type"]
+        assert destination_type in ["library_folder", "hdca", "hdas"]
         trans = job_context.work_context
 
+        # three destination types we need to handle here - "library_folder" (place discovered files in a library folder),
+        # "hdca" (place discovered files in a history dataset collection), and "hdas" (place discovered files in a history
+        # as stand-alone datasets).
         if destination_type == "library_folder":
+            # populate a library folder (needs to be already have been created)
 
             library_folder_manager = app.library_folder_manager
             library_folder = library_folder_manager.get(trans, app.security.decode_id(destination.get("library_folder_id")))
@@ -216,6 +222,7 @@ def collect_dynamic_outputs(
 
             add_elements_to_folder(elements, library_folder)
         elif destination_type == "hdca":
+            # create or populate a dataset collection in the history
             history = job.history
             assert "collection_type" in unnamed_output_dict
             object_id = destination.get("object_id")
@@ -253,6 +260,7 @@ def collect_dynamic_outputs(
             )
             collection_builder.populate()
         elif destination_type == "hdas":
+            # discover files as individual datasets for the target history
             history = job.history
 
             datasets = []

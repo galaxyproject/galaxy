@@ -284,11 +284,7 @@ def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=No
 def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None):
     uploaded_datasets = []
     for dataset_upload_input in dataset_upload_inputs:
-        try:
-            uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
-        except AttributeError:
-            # TODO: refine...
-            pass
+        uploaded_datasets.extend(dataset_upload_input.get_uploaded_datasets(trans, params))
     for uploaded_dataset in uploaded_datasets:
         data = new_upload(trans, cntrller, uploaded_dataset, library_bunch=library_bunch, history=history)
         uploaded_dataset.data = data

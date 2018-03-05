@@ -62,19 +62,21 @@ def _fetch_target(upload_config, target):
     def expand_elements_from(target_or_item):
         elements_from = target_or_item.get("elements_from", None)
         items = None
-        assert not elements_from or elements_from in ["archive", "bagit", "bagit_archive", "directory"], elements_from
-        if elements_from == "archive":
-            decompressed_directory = _decompress_target(target_or_item)
-            items = _directory_to_items(decompressed_directory)
-        elif elements_from == "bagit":
-            _, elements_from_path = _has_src_to_path(target_or_item)
-            items = _bagit_to_items(elements_from_path)
-        elif elements_from == "bagit_archive":
-            decompressed_directory = _decompress_target(target_or_item)
-            items = _bagit_to_items(decompressed_directory)
-        elif elements_from == "directory":
-            _, elements_from_path = _has_src_to_path(target_or_item)
-            items = _directory_to_items(elements_from_path)
+        if elements_from:
+            if elements_from == "archive":
+                decompressed_directory = _decompress_target(target_or_item)
+                items = _directory_to_items(decompressed_directory)
+            elif elements_from == "bagit":
+                _, elements_from_path = _has_src_to_path(target_or_item)
+                items = _bagit_to_items(elements_from_path)
+            elif elements_from == "bagit_archive":
+                decompressed_directory = _decompress_target(target_or_item)
+                items = _bagit_to_items(decompressed_directory)
+            elif elements_from == "directory":
+                _, elements_from_path = _has_src_to_path(target_or_item)
+                items = _directory_to_items(elements_from_path)
+            else:
+                raise Exception("Unknown elements from type encountered [%s]" % elements_from)
 
         if items:
             del target_or_item["elements_from"]
