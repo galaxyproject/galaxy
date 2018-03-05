@@ -22,8 +22,6 @@ var Visualization = Backbone.Model.extend({
          *  @see Backbone.Model#initialize
          */
         initialize: function(data) {
-            //this.log( this + '.initialize', data, this.attributes );
-
             // munge config sub-object here since bbone won't handle defaults with this
             if (_.isObject(data.config) && _.isObject(this.defaults.config)) {
                 _.defaults(data.config, this.defaults.config);
@@ -32,13 +30,11 @@ var Visualization = Backbone.Model.extend({
             this._setUpListeners();
         },
 
-        /** set up any event listeners
-         */
+        /** set up any event listeners */
         _setUpListeners: function() {},
 
         /** override set to properly allow update and trigger change when setting the sub-obj 'config' */
         set: function(key, val) {
-            //TODO: validate config is object
             if (key === "config") {
                 var oldConfig = this.get("config");
                 if (_.isObject(oldConfig)) {
