@@ -1,5 +1,4 @@
 <tool id="CONVERTER_sam_to_bam_native" name="Convert SAM to BAM native - without sorting" version="1.0.0" profile="18.01">
-    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.6">samtools</requirement>
     </requirements>
