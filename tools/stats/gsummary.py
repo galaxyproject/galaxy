@@ -59,7 +59,7 @@ def main():
         except:
             pass
 
-    tmp_file = tempfile.NamedTemporaryFile('w+b')
+    tmp_file = tempfile.NamedTemporaryFile('w+')
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
     tmp_file.write("%s\n" % hdr_str)
