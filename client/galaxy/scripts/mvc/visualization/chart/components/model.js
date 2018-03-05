@@ -89,8 +89,7 @@ export default Backbone.Model.extend({
                 }
                 console.debug("model::save() - Saving failed.");
             });
-        console.debug("model::save() - Saved with configuration:");
-        console.debug(this.chart_last);
+        console.debug("model::save() - Saving with configuration.");
     },
 
     /** Load nested models/collections from packed dictionary */
