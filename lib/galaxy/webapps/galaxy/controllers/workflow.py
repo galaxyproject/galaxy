@@ -4,10 +4,10 @@ import base64
 import json
 import logging
 import os
-import sgmllib
 
 import requests
 from markupsafe import escape
+from six.moves.html_parser import HTMLParser
 from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
 from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
@@ -153,16 +153,17 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             self.model_class.deleted == expression.false())
 
 
-# Simple SGML parser to get all content in a single tag.
-class SingleTagContentsParser(sgmllib.SGMLParser):
+# Simple HTML parser to get all content in a single tag.
+class SingleTagContentsParser(HTMLParser):
 
     def __init__(self, target_tag):
-        sgmllib.SGMLParser.__init__(self)
+        # Cannot use super() because HTMLParser is an old-style class in Python2
+        HTMLParser.__init__(self)
         self.target_tag = target_tag
         self.cur_tag = None
         self.tag_content = ""
 
-    def unknown_starttag(self, tag, attrs):
+    def handle_starttag(self, tag, attrs):
         """ Called for each start tag. """
         self.cur_tag = tag
 
