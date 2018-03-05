@@ -68,7 +68,8 @@ class BaseUploadContentConfigurationTestCase(integration_util.IntegrationTestCas
 
     @classmethod
     def temp_config_dir(cls, name):
-        return os.path.join(cls._test_driver.galaxy_test_tmp_dir, name)
+        # realpath here to get around problems with symlinks being blocked.
+        return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
     def _write_file(self, dir_path, content, filename="test"):
         """Helper for writing ftp/server dir files."""
