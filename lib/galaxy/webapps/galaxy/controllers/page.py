@@ -229,8 +229,8 @@ class _PageContentProcessor(_BaseHTMLProcessor):
     For now, processor renders embedded objects.
     """
 
-    def __init__(self, trans, encoding, type, render_embed_html_fn):
-        _BaseHTMLProcessor.__init__(self, encoding, type)
+    def __init__(self, trans, render_embed_html_fn):
+        _BaseHTMLProcessor.__init__(self)
         self.trans = trans
         self.ignore_content = False
         self.num_open_tags_for_ignore = 0
@@ -618,8 +618,10 @@ class PageController(BaseUIController, SharableMixin,
         self.security_check(trans, page, False, True)
 
         # Process page content.
-        processor = _PageContentProcessor(trans, 'utf-8', 'text/html', self._get_embed_html)
+        processor = _PageContentProcessor(trans, self._get_embed_html)
         processor.feed(page.latest_revision.content)
+        # Output is string, so convert to unicode for display.
+        page_content = unicodify(processor.output(), 'utf-8')
 
         # Get rating data.
         user_item_rating = 0
@@ -631,8 +633,6 @@ class PageController(BaseUIController, SharableMixin,
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
 
-        # Output is string, so convert to unicode for display.
-        page_content = unicodify(processor.output(), 'utf-8')
         return trans.fill_template_mako("page/display.mako", item=page,
                                         item_data=page_content,
                                         user_item_rating=user_item_rating,

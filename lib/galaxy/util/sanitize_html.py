@@ -6,7 +6,6 @@ import re
 import sgmllib
 
 import bleach
-from six import unichr
 from six.moves.html_entities import name2codepoint
 
 _acceptable_elements = ['a', 'abbr', 'acronym', 'address', 'area', 'article',
@@ -47,45 +46,43 @@ _acceptable_attributes = ['abbr', 'accept', 'accept-charset', 'accesskey',
         'volume', 'vspace', 'vrml', 'width', 'wrap', 'xml:lang']
 
 _cp1252 = {
-    unichr(128): unichr(8364),  # euro sign
-    unichr(130): unichr(8218),  # single low-9 quotation mark
-    unichr(131): unichr(402),  # latin small letter f with hook
-    unichr(132): unichr(8222),  # double low-9 quotation mark
-    unichr(133): unichr(8230),  # horizontal ellipsis
-    unichr(134): unichr(8224),  # dagger
-    unichr(135): unichr(8225),  # double dagger
-    unichr(136): unichr(710),  # modifier letter circumflex accent
-    unichr(137): unichr(8240),  # per mille sign
-    unichr(138): unichr(352),  # latin capital letter s with caron
-    unichr(139): unichr(8249),  # single left-pointing angle quotation mark
-    unichr(140): unichr(338),  # latin capital ligature oe
-    unichr(142): unichr(381),  # latin capital letter z with caron
-    unichr(145): unichr(8216),  # left single quotation mark
-    unichr(146): unichr(8217),  # right single quotation mark
-    unichr(147): unichr(8220),  # left double quotation mark
-    unichr(148): unichr(8221),  # right double quotation mark
-    unichr(149): unichr(8226),  # bullet
-    unichr(150): unichr(8211),  # en dash
-    unichr(151): unichr(8212),  # em dash
-    unichr(152): unichr(732),  # small tilde
-    unichr(153): unichr(8482),  # trade mark sign
-    unichr(154): unichr(353),  # latin small letter s with caron
-    unichr(155): unichr(8250),  # single right-pointing angle quotation mark
-    unichr(156): unichr(339),  # latin small ligature oe
-    unichr(158): unichr(382),  # latin small letter z with caron
-    unichr(159): unichr(376)}  # latin capital letter y with diaeresis
+    128: u'\u20ac',  # euro sign
+    130: u'\u201a',  # single low-9 quotation mark
+    131: u'\u0192',  # latin small letter f with hook
+    132: u'\u201e',  # double low-9 quotation mark
+    133: u'\u2026',  # horizontal ellipsis
+    134: u'\u2020',  # dagger
+    135: u'\u2021',  # double dagger
+    136: u'\u02c6',  # modifier letter circumflex accent
+    137: u'\u2030',  # per mille sign
+    138: u'\u0160',  # latin capital letter s with caron
+    139: u'\u2039',  # single left-pointing angle quotation mark
+    140: u'\u0152',  # latin capital ligature oe
+    142: u'\u017d',  # latin capital letter z with caron
+    145: u'\u2018',  # left single quotation mark
+    146: u'\u2019',  # right single quotation mark
+    147: u'\u201c',  # left double quotation mark
+    148: u'\u201d',  # right double quotation mark
+    149: u'\u2022',  # bullet
+    150: u'\u2013',  # en dash
+    151: u'\u2014',  # em dash
+    152: u'\u02dc',  # small tilde
+    153: u'\u2122',  # trade mark sign
+    154: u'\u0161',  # latin small letter s with caron
+    155: u'\u203a',  # single right-pointing angle quotation mark
+    156: u'\u0153',  # latin small ligature oe
+    158: u'\u017e',  # latin small letter z with caron
+    159: u'\u0178',  # latin capital letter y with diaeresis
+}
 
 
-class _BaseHTMLProcessor(sgmllib.SGMLParser):
+class _BaseHTMLProcessor(sgmllib.SGMLParser, object):
     bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
-    elements_no_end_tag = ['area', 'base', 'basefont', 'br', 'col', 'frame', 'hr',
-                           'img', 'input', 'isindex', 'link', 'meta', 'param']
-
-    def __init__(self, encoding, type):
-        self.encoding = encoding
-        self.type = type
-        # if _debug: sys.stderr.write('entering BaseHTMLProcessor, encoding=%s\n' % self.encoding)
-        sgmllib.SGMLParser.__init__(self)
+    elements_no_end_tag = set([
+        'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
+        'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
+        'source', 'track', 'wbr'
+    ])
 
     def reset(self):
         self.pieces = []
@@ -97,13 +94,6 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
             return '<' + tag + ' />'
         else:
             return '<' + tag + '></' + tag + '>'
-
-    def parse_starttag(self, i):
-        j = sgmllib.SGMLParser.parse_starttag(self, i)
-        if self.type == 'application/xhtml+xml':
-            if j > 2 and self.rawdata[j - 2:j] == '/>':
-                self.unknown_endtag(self.lasttag)
-        return j
 
     def feed(self, data):
         data = re.compile(r'<!((?!DOCTYPE|--|\[))', re.IGNORECASE).sub(r'&lt;!\1', data)
@@ -124,7 +114,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
                 value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
                 value = self.bare_ampersand.sub("&amp;", value)
                 uattrs.append((key, value))
-            strattrs = ''.join([' %s="%s"' % (k, v) for k, v in uattrs])
+            strattrs = ''.join(' %s="%s"' % (k, v) for k, v in uattrs)
         if tag in self.elements_no_end_tag:
             self.pieces.append('<%s%s />' % (tag, strattrs))
         else:
@@ -134,28 +124,29 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
         # called for each end tag, e.g. for </pre>, tag will be 'pre'
         # Reconstruct the original end tag.
         if tag not in self.elements_no_end_tag:
-            self.pieces.append("</%(tag)s>" % locals())
+            self.pieces.append("</%s>" % tag)
 
     def handle_charref(self, ref):
         # called for each character reference, e.g. for '&#160;', ref will be '160'
         # Reconstruct the original character reference.
+        ref = ref.lower()
         if ref.startswith('x'):
-            value = unichr(int(ref[1:], 16))
+            value = int(ref[1:], 16)
         else:
-            value = unichr(int(ref))
+            value = int(ref)
 
-        if value in _cp1252.keys():
+        if value in _cp1252:
             self.pieces.append('&#%s;' % hex(ord(_cp1252[value]))[1:])
         else:
-            self.pieces.append('&#%(ref)s;' % locals())
+            self.pieces.append('&#%s;' % ref)
 
     def handle_entityref(self, ref):
         # called for each entity reference, e.g. for '&copy;', ref will be 'copy'
         # Reconstruct the original entity reference.
-        if ref in name2codepoint:
-            self.pieces.append('&%(ref)s;' % locals())
+        if ref in name2codepoint or ref == 'apos':
+            self.pieces.append('&%s;' % ref)
         else:
-            self.pieces.append('&amp;%(ref)s' % locals())
+            self.pieces.append('&amp;%s' % ref)
 
     def handle_data(self, text):
         # called for each block of plain text, i.e. outside of any tag and
@@ -166,19 +157,19 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
     def handle_comment(self, text):
         # called for each HTML comment, e.g. <!-- insert Javascript code here -->
         # Reconstruct the original comment.
-        self.pieces.append('<!--%(text)s-->' % locals())
+        self.pieces.append('<!--%s-->' % text)
 
     def handle_pi(self, text):
         # called for each processing instruction, e.g. <?instruction>
         # Reconstruct original processing instruction.
-        self.pieces.append('<?%(text)s>' % locals())
+        self.pieces.append('<?%s>' % text)
 
     def handle_decl(self, text):
         # called for the DOCTYPE, if present, e.g.
         # <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         #     "http://www.w3.org/TR/html4/loose.dtd">
         # Reconstruct original DOCTYPE
-        self.pieces.append('<!%(text)s>' % locals())
+        self.pieces.append('<!%s>' % text)
 
     _new_declname_match = re.compile(r'[a-zA-Z][-_.a-zA-Z0-9:]*\s*').match
 
