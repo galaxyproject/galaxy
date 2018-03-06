@@ -31,6 +31,8 @@ export default Backbone.View.extend({
                     console.debug("viewer:redraw() - Redrawing...");
                     self._draw(process, self.chart);
                 });
+            } else {
+                self.chart.state("info", "Please verify the visualization settings before rendering the result.");
             }
         });
         this.chart.on("set:state", function() {
@@ -49,6 +51,10 @@ export default Backbone.View.extend({
                     break;
                 case "failed":
                     $icon.addClass("icon fa fa-warning");
+                    $container.hide();
+                    break;
+                case "info":
+                    $icon.addClass("icon fa fa-info");
                     $container.hide();
                     break;
                 default:
