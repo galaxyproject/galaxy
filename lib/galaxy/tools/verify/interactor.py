@@ -37,7 +37,9 @@ ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
 
 DEFAULT_FTYPE = 'auto'
-DEFAULT_DBKEY = 'hg17'
+# This following default dbkey was traditionally hg17 before Galaxy 18.05,
+# restore this behavior by setting GALAXY_TEST_DEFAULT_DBKEY to hg17.
+DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
 DEFAULT_MAX_SECS = DEFAULT_TOOL_TEST_WAIT
 
 
