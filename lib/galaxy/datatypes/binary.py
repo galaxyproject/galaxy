@@ -499,6 +499,10 @@ class BamInputSorted(BamNative):
     This notaby keeps alignments produced by paired end sequencing adjacent.
     """
 
+    def sniff(self, file_name):
+        # We never want to sniff to this datatype
+        return False
+
     def dataset_content_needs_grooming(self, file_name):
         """
         Groom if the file is coordinate sorted
