@@ -3992,6 +3992,12 @@ jpeg-js@^0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/jpeg-js/-/jpeg-js-0.1.2.tgz#135b992c0575c985cfa0f494a3227ed238583ece"
 
+jquery-form@^3.50.0:
+  version "3.50.0"
+  resolved "https://registry.yarnpkg.com/jquery-form/-/jquery-form-3.50.0.tgz#d7c969b51e094e12da6991eb61ff5af25f59798f"
+  dependencies:
+    jquery ">=1.5"
+
 jquery-migrate@~1.4:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/jquery-migrate/-/jquery-migrate-1.4.1.tgz#85152f3ec99a95625f4f7d0bcf62e9b8638f5a76"
@@ -4019,6 +4025,10 @@ jquery@2:
 jquery@>=1.12.0, jquery@>=1.9.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.2.1.tgz#5c4d9de652af6cd0a770154a631bba12b015c787"
+
+jquery@>=1.5:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.3.1.tgz#958ce29e81c9790f31be7792df5d4d95fc57fbca"
 
 js-base64@^2.1.9:
   version "2.3.2"

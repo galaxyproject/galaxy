@@ -29,6 +29,7 @@ var paths = {
         'bibtex-parse-js': [ 'bibtexParse.js', 'bibtexParse.js' ],
         'jquery': ['dist/jquery.js', 'jquery/jquery.js'],
         'jquery.complexify':     [ 'jquery.complexify.js', 'jquery/jquery.complexify.js' ],
+        'jquery-form':     [ 'jquery.form.js', 'jquery/jquery.form.js' ],
         'jquery.cookie': [ 'jquery.cookie.js', 'jquery/jquery.cookie.js' ],
         'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
         'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
