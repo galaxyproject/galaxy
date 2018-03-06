@@ -108,7 +108,7 @@ def config_exception(e, file):
     return Exception(message)
 
 
-class JobConfiguration(object, ConfiguresHandlers):
+class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
@@ -223,7 +223,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         except AttributeError:
             base_server_name = self.app.config.get('base_server_name', None)
         if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
+                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
             # Shortcut for compatibility with existing job confs that use the default handlers block,
             # there are no defined handlers, or there's only one handler and it's this server
             self.__set_default_job_handler()
@@ -412,8 +412,8 @@ class JobConfiguration(object, ConfiguresHandlers):
             key = param.get('id')
             if key in ["container", "container_override"]:
                 from galaxy.tools.deps import requirements
-                containers = map(requirements.container_from_element, list(param))
-                param_value = map(lambda c: c.to_dict(), containers)
+                containers = map(requirements.container_from_element, param.findall('container'))
+                param_value = list(map(lambda c: c.to_dict(), containers))
             else:
                 param_value = param.text
 
@@ -662,7 +662,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class HasResourceParameters:
+class HasResourceParameters(object):
 
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
@@ -685,7 +685,7 @@ class HasResourceParameters:
         return resource_params
 
 
-class JobWrapper(object, HasResourceParameters):
+class JobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -1100,6 +1100,15 @@ class JobWrapper(object, HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
+    @property
+    def home_target(self):
+        home_target = self.tool.home_target
+        return home_target
+
+    @property
+    def tmp_target(self):
+        return self.tool.tmp_target
+
     def get_destination_configuration(self, key, default=None):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
@@ -1241,7 +1250,7 @@ class JobWrapper(object, HasResourceParameters):
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
-                elif not purged and dataset.has_data():
+                elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'data')
@@ -1289,7 +1298,7 @@ class JobWrapper(object, HasResourceParameters):
                     except Exception:
                         dataset.set_peek()
                 else:
-                    # Handle an empty dataset.
+                    # Handle purged datasets.
                     dataset.blurb = "empty"
                     if dataset.ext == 'auto':
                         dataset.extension = context.get('ext', 'txt')
@@ -1542,7 +1551,7 @@ class JobWrapper(object, HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return map(os.path.basename, map(str, self.get_output_fnames()))
+        return list(map(os.path.basename, map(str, self.get_output_fnames())))
 
     def get_output_fnames(self):
         if self.output_paths is None:
@@ -1592,6 +1601,39 @@ class JobWrapper(object, HasResourceParameters):
             elif os.path.basename(dp.real_path) == file:
                 return dp.dataset_id
         return None
+
+    @property
+    def tmp_dir_creation_statement(self):
+        tmp_dir = self.get_destination_configuration("tmp_dir", None)
+        if not tmp_dir or tmp_dir.lower() == "true":
+            working_directory = self.working_directory
+            return '''$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')'''.format(working_directory)
+        else:
+            return tmp_dir
+
+    def home_directory(self):
+        home_target = self.home_target
+        return self._target_to_directory(home_target)
+
+    def tmp_directory(self):
+        tmp_target = self.tmp_target
+        return self._target_to_directory(tmp_target)
+
+    def _target_to_directory(self, target):
+        working_directory = self.working_directory
+        tmp_dir = self.get_destination_configuration("tmp_dir", None)
+        if target is None or (target == "job_tmp_if_explicit" and tmp_dir is None):
+            return None
+        elif target in ["job_tmp", "job_tmp_if_explicit"]:
+            return "$_GALAXY_JOB_TMP_DIR"
+        elif target == "shared_home":
+            return self.get_destination_configuration("shared_home_dir", None)
+        elif target == "job_home":
+            return "$_GALAXY_JOB_HOME_DIR"
+        elif target == "pwd":
+            return os.path.join(working_directory, "working")
+        else:
+            raise Exception("Unknown target type [%s]" % target)
 
     def get_tool_provided_job_metadata(self):
         if self.tool_provided_job_metadata is not None:
@@ -1710,9 +1752,13 @@ class JobWrapper(object, HasResourceParameters):
         method should be removed ASAP and replaced with some properly generic
         and stateful way of determining link-only datasets. -nate
         """
-        job = self.get_job()
-        param_dict = job.get_param_values(self.app)
-        return self.tool.id == 'upload1' and param_dict.get('link_data_only', None) == 'link_to_files'
+        if self.tool:
+            job = self.get_job()
+            param_dict = job.get_param_values(self.app)
+            return self.tool.id == 'upload1' and param_dict.get('link_data_only', None) == 'link_to_files'
+        else:
+            # The tool is unavailable, we try to move the outputs.
+            return False
 
     def _change_ownership(self, username, gid):
         job = self.get_job()
@@ -1722,8 +1768,11 @@ class JobWrapper(object, HasResourceParameters):
             cmd.extend([self.working_directory, username, str(gid)])
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # TODO: log stdout/stderr
             stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                log.error('external script failed.')
+                log.error('stdout was: %s' % stdout)
+                log.error('stderr was: %s' % stderr)
             assert p.returncode == 0
 
     def change_ownership_for_run(self):
@@ -2017,6 +2066,14 @@ class ComputeEnvironment(object):
         be rewritten.)
         """
 
+    @abstractmethod
+    def home_directory(self):
+        """Home directory of target job - none if HOME should not be set."""
+
+    @abstractmethod
+    def tmp_directory(self):
+        """Temp directory of target job - none if HOME should not be set."""
+
 
 class SimpleComputeEnvironment(object):
 
@@ -2061,6 +2118,12 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
 
     def tool_directory(self):
         return os.path.abspath(self.job_wrapper.tool.tool_dir)
+
+    def home_directory(self):
+        return self.job_wrapper.home_directory()
+
+    def tmp_directory(self):
+        return self.job_wrapper.tmp_directory()
 
 
 class NoopQueue(object):

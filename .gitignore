@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
@@ -123,9 +124,8 @@ tool-data/shared/jars/
 sprite-*.less
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
+static/scripts
 static/maps
-static/scripts/bundled/*.map
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
@@ -133,6 +133,9 @@ client/galaxy/scripts/libs/*
 # Documentation build files.
 doc/build
 doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/api/api.rst
+doc/source/api/ts_api.rst
 doc/source/dev/schema.rst
 
 # Misc

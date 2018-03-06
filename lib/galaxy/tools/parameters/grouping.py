@@ -27,7 +27,7 @@ from galaxy.util.expressions import ExpressionContext
 log = logging.getLogger(__name__)
 
 
-class Group(object, Dictifiable):
+class Group(Dictifiable):
 
     dict_collection_visible_keys = ['name', 'type']
 
@@ -338,7 +338,7 @@ class UploadDataset(Group):
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
             url_paste_file = group_incoming.get('url_paste', None)
             if url_paste_file is not None:
-                url_paste = open(url_paste_file, 'r').read(1024)
+                url_paste = open(url_paste_file, 'r').read()
 
                 def start_of_url(content):
                     start_of_url_paste = content.lstrip()[0:8].lower()
@@ -562,7 +562,7 @@ class UploadDataset(Group):
                         if meta_name in metadata_name_substition_default_dict:
                             meta_value = sanitize_for_filename(meta_value, default=metadata_name_substition_default_dict[meta_name])
                         dataset.metadata[meta_name] = meta_value
-            dataset.precreated_name = dataset.name = self.get_composite_dataset_name(context)
+            dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
                 temp_name = sniff.stream_to_file(StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
@@ -693,7 +693,7 @@ class Conditional(Group):
         return cond_dict
 
 
-class ConditionalWhen(object, Dictifiable):
+class ConditionalWhen(Dictifiable):
     dict_collection_visible_keys = ['value']
 
     def __init__(self):

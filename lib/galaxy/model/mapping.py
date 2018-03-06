@@ -14,6 +14,7 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
+    func,
     Integer,
     MetaData,
     not_,
@@ -1569,7 +1570,15 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="histories")
+        backref="histories"),
+    average_rating=column_property(
+        select([func.avg(model.HistoryRatingAssociation.table.c.rating)]).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id),
+        deferred=True
+    ),
+    users_shared_with_count=column_property(
+        select([func.count(model.HistoryUserShareAssociation.table.c.id)]).where(model.History.table.c.id == model.HistoryUserShareAssociation.table.c.history_id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -1596,6 +1605,11 @@ mapper(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
+        primaryjoin=(
+            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id) &
+            (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id) &
+            not_(model.StoredWorkflow.table.c.deleted)
+        ),
         backref="user",
         cascade="all, delete-orphan",
         collection_class=ordering_list('order_index')),
@@ -2110,7 +2124,12 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
         primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
-        lazy=False)
+        lazy=False),
+    step_count=column_property(
+        select([func.count(model.WorkflowStep.table.c.id)]).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
+        deferred=True
+    )
+
 ))
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
@@ -2173,7 +2192,11 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         backref="stored_workflows"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflows")
+        backref="stored_workflows"),
+    average_rating=column_property(
+        select([func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)]).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2305,7 +2328,11 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
-        backref="pages")
+        backref="pages"),
+    average_rating=column_property(
+        select([func.avg(model.PageRatingAssociation.table.c.rating)]).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2337,7 +2364,11 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualizations")
+        backref="visualizations"),
+    average_rating=column_property(
+        select([func.avg(model.VisualizationRatingAssociation.table.c.rating)]).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2480,10 +2511,12 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update
 
 
-def init(file_path, url, engine_options={}, create_tables=False, map_install_models=False,
+def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0):
+        slow_query_log_threshold=0, thread_local_log=None):
     """Connect mappings to the database"""
+    if engine_options is None:
+        engine_options = {}
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
     # Connect dataset to object store
@@ -2491,7 +2524,7 @@ def init(file_path, url, engine_options={}, create_tables=False, map_install_mod
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
 
     # Connect the metadata to the database.
     metadata.bind = engine
@@ -2512,4 +2545,5 @@ def init(file_path, url, engine_options={}, create_tables=False, map_install_mod
     result.create_tables = create_tables
     # load local galaxy security policy
     result.security_agent = GalaxyRBACAgent(result)
+    result.thread_local_log = thread_local_log
     return result

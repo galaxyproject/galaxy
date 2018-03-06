@@ -19,6 +19,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 import galaxy.config
 import galaxy.model.mapping
+from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
@@ -340,7 +341,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
         deleted_dataset_count += 1
         for dataset_instance in dataset.history_associations + dataset.library_associations:
             # Mark each associated HDA as deleted
-            _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True)
+            _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=info_only, is_deletable=True)
             deleted_instance_count += 1
     stop = time.time()
     print("Examined %d datasets, marked %d datasets and %d dataset instances (HDA) as deleted" % (len(skip), deleted_dataset_count, deleted_instance_count))
@@ -381,13 +382,13 @@ def purge_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_re
     print("##########################################")
 
 
-def _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_children=True, info_only=False, is_deletable=False):
+def _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=False, is_deletable=False):
     # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted,
     # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
         print("Marking as deleted: %s id %d (for dataset id %d)" %
               (dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id))
-        dataset_instance.mark_deleted(include_children=include_children)
+        dataset_instance.mark_deleted()
         dataset_instance.clear_associated_files()
         app.sa_session.add(dataset_instance)
         app.sa_session.flush()
@@ -403,10 +404,6 @@ def _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_chi
             print("Not deleting dataset ", dataset_instance.dataset.id, " (will be possibly deleted without 'info_only' mode)")
         else:
             print("Not deleting dataset %d (shared between multiple histories/libraries, at least one not deleted)" % dataset_instance.dataset.id)
-    # need to purge children here
-    if include_children:
-        for child in dataset_instance.children:
-            _purge_dataset_instance(child, app, remove_from_disk, include_children=include_children, info_only=info_only)
 
 
 def _dataset_is_deletable(dataset):
@@ -530,6 +527,9 @@ class CleanupDatasetsApplication(object):
         self.object_store = build_object_store_from_config(config)
         # Setup the database engine and ORM
         self.model = galaxy.model.mapping.init(config.file_path, config.database_connection, engine_options={}, create_tables=False, object_store=self.object_store)
+        registry = Registry()
+        registry.load_datatypes()
+        galaxy.model.set_datatypes_registry(registry)
 
     @property
     def sa_session(self):

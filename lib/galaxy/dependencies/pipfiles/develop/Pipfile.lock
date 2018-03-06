@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7da6298d5a5d49c87941125b449f37cc26c44d80f94d3d35a211463aa1efcf10"
+            "sha256": "5050d55a5cfaa22fddfa05d7edd3b2102a632d322266917f36a2c05f2522bcbb"
         },
         "host-environment-markers": {
             "implementation_name": "cpython",
@@ -156,6 +156,12 @@
             ],
             "version": "==2.0.0"
         },
+        "nodeenv": {
+            "hashes": [
+                "sha256:98835dab727f94a713eacc7234e3db6777a55cafb60f391485011899e5c818df"
+            ],
+            "version": "==1.2.0"
+        },
         "nose": {
             "hashes": [
                 "sha256:dadcddc0aefbf99eea214e0f1232b94f2fa9bd98fa8353711dacb112bfcbbb2a",
@@ -188,6 +194,7 @@
             "hashes": [
                 "sha256:5669a4cdbf4b3192716442e2224db45ecd1639e42f990739ddfa8f2ca3f7ba87"
             ],
+            "markers": "python_version < '3'",
             "version": "==0.5.1"
         },
         "pygments": {
@@ -297,6 +304,7 @@
             "hashes": [
                 "sha256:d2df51cc4eca5a6dec0a2af3817b236655558deff9542fc3d7653d16c8d5ba7e"
             ],
+            "markers": "python_version < '3'",
             "version": "==0.9.1"
         },
         "typing": {

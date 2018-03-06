@@ -243,6 +243,12 @@ class TestComputeEnviornment(SimpleComputeEnvironment):
     def working_directory(self):
         return self._working_directory
 
+    def home_directory(self):
+        return self._working_directory
+
+    def tmp_directory(self):
+        return self._working_directory
+
     def new_file_path(self):
         return self._new_file_path
 
@@ -292,6 +298,14 @@ class MockTool(object):
         return dict(
             output1=ToolOutput("output1"),
         )
+
+    @property
+    def config_file(self):
+        return self._config_files[0]
+
+    @property
+    def tmp_directory_vars(self):
+        return ["TMP"]
 
     @property
     def config_files(self):

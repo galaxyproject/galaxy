@@ -129,7 +129,7 @@ class MockJobConfig(object):
         return DYNAMICALLY_GENERATED_DESTINATION
 
 
-class MockJobWrapper(object, HasResourceParameters):
+class MockJobWrapper(HasResourceParameters):
 
     def __init__(self, tool_job_destination):
         self.tool = MockTool(tool_job_destination)

@@ -327,7 +327,9 @@ class BaseJobRunner(object):
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
+        tmp_dir_creation_statement = job_wrapper.tmp_dir_creation_statement
         options = dict(
+            tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
@@ -353,6 +355,7 @@ class BaseJobRunner(object):
         compute_working_directory=None,
         compute_tool_directory=None,
         compute_job_directory=None,
+        compute_tmp_directory=None,
     ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -364,13 +367,17 @@ class BaseJobRunner(object):
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
 
+        if not compute_tmp_directory:
+            compute_tmp_directory = job_wrapper.tmp_directory()
+
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
         job_info = containers.JobInfo(
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
+            compute_tmp_directory,
             job_directory_type,
         )
 
@@ -540,7 +547,7 @@ class AsynchronousJobState(JobState):
             self.cleanup_file_attributes.append(attribute)
 
 
-class AsynchronousJobRunner(Monitors, BaseJobRunner):
+class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
     thread to monitor the state of asynchronous jobs and submitting those jobs

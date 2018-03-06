@@ -36,7 +36,7 @@ from .tags import tool_tag_manager
 log = logging.getLogger(__name__)
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
+class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
@@ -58,6 +58,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
         # dictionary can instead hold multiple tools with different versions.
         self._tool_versions_by_id = {}
         self._workflows_by_id = {}
+        # Cache for tool's to_dict calls specific to toolbox. Invalidates on toolbox reload.
+        self._tool_to_dict_cache = {}
+        self._tool_to_dict_cache_admin = {}
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
@@ -121,7 +124,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                     raise
             except Exception:
                 log.exception("Error loading tools defined in config %s", config_filename)
-        log.debug("Reading tools from config files finshed %s", execution_timer)
+        log.debug("Reading tools from config files finished %s", execution_timer)
 
     def _init_tools_from_config(self, config_filename):
         """
@@ -924,30 +927,45 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
             if elt:
                 yield elt
 
+    def get_tool_to_dict(self, trans, tool):
+        """Return tool's to_dict.
+        Use cache if present, store to cache otherwise.
+        Note: The cached tool's to_dict is specific to the calls from toolbox.
+        """
+        if not trans.user_is_admin():
+            to_dict = self._tool_to_dict_cache.get(tool.id, None)
+            if not to_dict:
+                to_dict = tool.to_dict(trans, link_details=True)
+                self._tool_to_dict_cache[tool.id] = to_dict
+        else:
+            to_dict = self._tool_to_dict_cache_admin.get(tool.id, None)
+            if not to_dict:
+                to_dict = tool.to_dict(trans, link_details=True)
+                self._tool_to_dict_cache_admin[tool.id] = to_dict
+        return to_dict
+
     def to_dict(self, trans, in_panel=True, **kwds):
         """
-        to_dict toolbox.
+        Create a dictionary representation of the toolbox.
+        Uses primitive cache for toolbox-specific tool 'to_dict's.
         """
+        rval = []
         if in_panel:
             panel_elts = list(self.tool_panel_contents(trans, **kwds))
-            # Produce panel.
-            rval = []
-            kwargs = dict(
-                trans=trans,
-                link_details=True
-            )
             for elt in panel_elts:
-                rval.append(elt.to_dict(**kwargs))
+                # Only use cache for objects that are Tools.
+                if hasattr(elt, "tool_type"):
+                    rval.append(self.get_tool_to_dict(trans, elt))
+                else:
+                    kwargs = dict(trans=trans, link_details=True, toolbox=self)
+                    rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)
-            tools = []
             for id, tool in self._tools_by_id.items():
                 tool = filter_method(tool, panel_item_types.TOOL)
                 if not tool:
                     continue
-                tools.append(tool.to_dict(trans, link_details=True))
-            rval = tools
-
+                rval.append(self.get_tool_to_dict(trans, tool))
         return rval
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
