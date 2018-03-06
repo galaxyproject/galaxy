@@ -2516,6 +2516,7 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
+        remove_empty = incoming["remove_empty"]
 
         assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
 
@@ -2528,13 +2529,21 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
 
             # dealing with a single element
             if hasattr(element, "is_ok"):
-                if element.is_ok and element.has_data():
-                    valid = True
+                if remove_empty == "Yes":
+                    if element.is_ok and element.has_data():
+                        valid = True
+                elif remove_empty == "No":
+                    if element.is_ok :
+                        valid = True
             elif hasattr(element, "dataset_instances"):
                 # we are probably a list:paired dataset, both need to be in non error state
                 forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
+                if remove_empty == "Yes":
+                    if forward_o.is_ok and reverse_o.is_ok and forward_o.has_data() and reverse_o.has_data():
+                        valid = True
+                elif remove_empty == "No":
+                    if forward_o.is_ok and reverse_o.is_ok:
+                        valid = True
 
             if valid:
                 element_identifier = dce.element_identifier
