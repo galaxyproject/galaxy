@@ -290,7 +290,7 @@ def add_file(dataset, registry, json_file, output_path):
                         else:
                             line_count, converted_path = sniff.convert_newlines(dataset.path, in_place=in_place, tmp_dir=tmpdir, tmp_prefix=tmp_prefix)
                 if dataset.file_type == 'auto':
-                    ext = sniff.guess_ext(dataset.path, registry.sniff_order)
+                    ext = sniff.guess_ext(converted_path or dataset.path, registry.sniff_order)
                 else:
                     ext = dataset.file_type
                 data_type = ext
