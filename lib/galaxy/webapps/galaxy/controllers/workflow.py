@@ -136,6 +136,8 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             url_args=dict(action="export_to_file")
         ),
     ]
+    num_rows_per_page = 50
+    use_paging = True
 
     def build_initial_query(self, trans, **kwargs):
         # See optimization description comments and TODO for tags in matching public histories query.

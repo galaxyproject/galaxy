@@ -192,17 +192,21 @@ class JobContext(object):
         self.job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
+        self._permissions = None
 
     @property
     def permissions(self):
-        inp_data = self.inp_data
-        existing_datasets = [inp for inp in inp_data.values() if inp]
-        if existing_datasets:
-            permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
-        else:
-            # No valid inputs, we will use history defaults
-            permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
-        return permissions
+        if self._permissions is None:
+            inp_data = self.inp_data
+            existing_datasets = [inp for inp in inp_data.values() if inp]
+            if existing_datasets:
+                permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            else:
+                # No valid inputs, we will use history defaults
+                permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
+            self._permissions = permissions
+
+        return self._permissions
 
     def find_files(self, output_name, collection, dataset_collectors):
         filenames = odict.odict()
@@ -512,16 +516,17 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
     """
     matches = []
     directory = discover_target_directory(target_dir, job_working_directory)
-    for filename in os.listdir(directory):
-        path = os.path.join(directory, filename)
-        if os.path.isdir(path) and extra_file_collector.recurse:
-            # The current directory is already validated, so use that as the next job_working_directory when recursing
-            for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
-                yield match
-        else:
-            match = extra_file_collector.match(matchable, filename, path=path)
-            if match:
-                matches.append(match)
+    if os.path.isdir(directory):
+        for filename in os.listdir(directory):
+            path = os.path.join(directory, filename)
+            if os.path.isdir(path) and extra_file_collector.recurse:
+                # The current directory is already validated, so use that as the next job_working_directory when recursing
+                for match in walk_over_extra_files(filename, extra_file_collector, directory, matchable):
+                    yield match
+            else:
+                match = extra_file_collector.match(matchable, filename, path=path)
+                if match:
+                    matches.append(match)
 
     for match in extra_file_collector.sort(matches):
         yield match

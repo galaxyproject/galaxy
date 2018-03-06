@@ -123,6 +123,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
     webapp.add_client_route('/histories/permissions')
+    webapp.add_client_route('/histories/view')
+    webapp.add_client_route('/histories/show_structure')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -1042,6 +1044,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
+    if asbool(conf.get('enable_per_request_sql_debugging', False)):
+        from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
+        app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
 
 

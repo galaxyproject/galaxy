@@ -230,12 +230,11 @@ class Gmaj(data.Data):
         if not zipfile.is_zipfile(filename):
             return False
         contains_gmaj_file = False
-        zip_file = zipfile.ZipFile(filename, "r")
-        for name in zip_file.namelist():
-            if name.split(".")[1].strip().lower() == 'gmaj':
-                contains_gmaj_file = True
-                break
-        zip_file.close()
+        with zipfile.ZipFile(filename, "r") as zip_file:
+            for name in zip_file.namelist():
+                if name.split(".")[1].strip().lower() == 'gmaj':
+                    contains_gmaj_file = True
+                    break
         if not contains_gmaj_file:
             return False
         return True

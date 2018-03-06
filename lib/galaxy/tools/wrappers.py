@@ -297,7 +297,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     __nonzero__ = __bool__
 
 
-class HasDatasets:
+class HasDatasets(object):
 
     def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
         wrapper_kwds = kwargs.copy()

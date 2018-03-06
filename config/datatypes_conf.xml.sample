@@ -10,15 +10,21 @@
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
+    <datatype extension="qname_input_sorted.bam" type="galaxy.datatypes.binary:BamInputSorted" mimetype="application/octet-stream" display_in_upload="false" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted based on the aligner output." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+    </datatype>
+    <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+    </datatype>
     <datatype extension="bam_native" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
-      <converter file="bam_native_to_bam_converter.xml" target_datatype="bam"/>
+      <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
+      <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
     </datatype>
     <datatype extension="probam" type="galaxy.datatypes.binary:ProBam" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="cram" type="galaxy.datatypes.binary:CRAM" mimetype="application/octet-stream" display_in_upload="true" description="CRAM is a file format for highly efficient and tunable reference-based compression of alignment data." description_url="http://www.ebi.ac.uk/ena/software/cram-usage">
@@ -80,6 +86,9 @@
       <converter file="fasta_to_len.xml" target_datatype="len"/>
       <converter file="fasta_to_fai.xml" target_datatype="fai"/>
       <display file="igv/genome_fasta.xml" inherit="true"/>
+    </datatype>
+    <datatype extension="fasta.gz" type="galaxy.datatypes.sequence:FastaGz" display_in_upload="true">
+        <converter file="fastagz_to_fasta.xml" target_datatype="fasta"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
         <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
@@ -291,7 +300,8 @@
     <datatype extension="roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
         <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
-        <converter file="sam_to_bam.xml" target_datatype="bam"/>
+        <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
+        <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
@@ -768,6 +778,7 @@
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer type="galaxy.datatypes.sequence:FastaGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSangerGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSangerBz2"/>

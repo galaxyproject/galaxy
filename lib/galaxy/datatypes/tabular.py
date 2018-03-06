@@ -463,8 +463,7 @@ class Sam(Tabular):
         >>> Sam().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             count = 0
             while True:
                 line = fh.readline()
@@ -487,33 +486,29 @@ class Sam(Tabular):
                         count += 1
                         if count == 5:
                             return True
-            fh.close()
             if count < 5 and count > 0:
                 return True
-        except Exception:
-            pass
         return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
-            dataset_fh = open(dataset.file_name)
-            comment_lines = 0
-            if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                # If the dataset is larger than optional_metadata, just count comment lines.
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('@'):
-                        comment_lines += 1
-                    else:
-                        # No more comments, and the file is too big to look at the whole thing.  Give up.
-                        dataset.metadata.data_lines = None
-                        break
-            else:
-                # Otherwise, read the whole thing and set num data lines.
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('@'):
-                        comment_lines += 1
-                dataset.metadata.data_lines = i + 1 - comment_lines
-            dataset_fh.close()
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                    # If the dataset is larger than optional_metadata, just count comment lines.
+                    for i, l in enumerate(dataset_fh):
+                        if l.startswith('@'):
+                            comment_lines += 1
+                        else:
+                            # No more comments, and the file is too big to look at the whole thing.  Give up.
+                            dataset.metadata.data_lines = None
+                            break
+                else:
+                    # Otherwise, read the whole thing and set num data lines.
+                    for i, l in enumerate(dataset_fh):
+                        if l.startswith('@'):
+                            comment_lines += 1
+                    dataset.metadata.data_lines = i + 1 - comment_lines
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
