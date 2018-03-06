@@ -1,5 +1,5 @@
 import * as _ from "underscore";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 import addLogging from "utils/add-logging";
 import _l from "utils/localization";
 

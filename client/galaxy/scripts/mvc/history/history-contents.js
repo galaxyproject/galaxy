@@ -6,7 +6,7 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
 import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 
 /* global Galaxy */
 /* global jQuery */

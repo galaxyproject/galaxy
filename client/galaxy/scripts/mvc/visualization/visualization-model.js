@@ -1,4 +1,4 @@
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
  *

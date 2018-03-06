@@ -4,7 +4,7 @@ import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import * as _ from "underscore";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 
 /* global jQuery */
 /* global Galaxy */

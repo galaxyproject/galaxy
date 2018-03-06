@@ -1,6 +1,6 @@
 import _l from "utils/localization";
 import * as _ from "underscore";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";

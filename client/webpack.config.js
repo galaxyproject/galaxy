@@ -28,7 +28,7 @@ var commonLibs = [
     "vue",
     // mvc
     "underscore",
-    "libs/backbone",
+    "backbone",
     "toastr",
     // all pages get these
     "ui/autocom_tagging",
@@ -106,7 +106,7 @@ let buildconfig = {
             jQuery: "jquery",
             "window.jQuery": "jquery",
             _: "underscore",
-            Backbone: "libs/backbone"
+            Backbone: "backbone"
         })
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
     ]

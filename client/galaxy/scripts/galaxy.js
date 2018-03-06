@@ -1,5 +1,5 @@
 import * as _ from "underscore";
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
 import BASE_MVC from "mvc/base-mvc";
 import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
