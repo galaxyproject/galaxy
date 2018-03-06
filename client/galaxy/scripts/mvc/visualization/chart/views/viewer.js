@@ -32,7 +32,7 @@ export default Backbone.View.extend({
                     self._draw(process, self.chart);
                 });
             } else {
-                self.chart.state("info", "Please verify the visualization settings before rendering the result.");
+                self.chart.state("info", "Please confirm the settings before rendering the results.");
             }
         });
         this.chart.on("set:state", function() {

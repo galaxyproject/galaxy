@@ -8,8 +8,8 @@ export default Backbone.View.extend({
         this.app = app;
         this.model = new Backbone.Model({ visible: true });
         this.execute_button = new Ui.ButtonIcon({
-            icon: "fa-play-circle",
-            tooltip: "Create",
+            icon: "fa-check-square",
+            tooltip: "Confirm",
             onclick: () => {
                 app.chart.trigger("redraw", true);
             }
@@ -82,7 +82,6 @@ export default Backbone.View.extend({
         this.left_button = new Ui.ButtonIcon({
             icon: "fa-angle-double-left",
             tooltip: "Show",
-            cls: "ui-button-icon charts-fullscreen-button",
             onclick: () => {
                 this.model.set("visible", true);
                 window.dispatchEvent(new Event("resize"));
@@ -126,9 +125,9 @@ export default Backbone.View.extend({
         this.buttons = [
             this.left_button,
             this.right_button,
+            this.execute_button,
             this.export_button,
-            this.save_button,
-            this.execute_button
+            this.save_button
         ];
         this.setElement("<div/>");
         for (let b of this.buttons) {
