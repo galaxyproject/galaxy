@@ -882,7 +882,7 @@ def validate_config(obj, app=None, return_bool=False,):
                 if is_valid:
                     new_config["default_destination"] = obj['default_destination']
                 else:
-                   valid_config = False
+                    valid_config = False
 
             elif isinstance(obj['default_destination'], dict):
 

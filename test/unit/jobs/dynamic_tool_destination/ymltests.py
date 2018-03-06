@@ -1347,7 +1347,7 @@ ivYMLTest171 = '''
     verbose: notavalue
 '''
 
-#invalid default destination and valid tool default destination
+# invalid default destination and valid tool default destination
 ivYMLTest172 = '''
     default_destination: fake_destination
     tools:
@@ -1356,7 +1356,7 @@ ivYMLTest172 = '''
     verbose: True
 '''
 
-#valid default destination and invalid tool default destination
+# valid default destination and invalid tool default destination
 ivYMLTest173 = '''
     default_destination: cluster_default
     tools:
