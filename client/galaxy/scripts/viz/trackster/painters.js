@@ -144,6 +144,7 @@ class Painter {
     constructor(data, view_start, view_end, prefs, mode) {
         // Data and data properties
         this.data = data;
+        this.default_prefs = {};
         // View
         this.view_start = view_start;
         this.view_end = view_end;
@@ -416,7 +417,6 @@ class FeaturePainter extends Painter {
             connector_color: "#FFF"
         };
     }
-
     get_required_height(rows_required, width) {
         // y_scale is the height per row
         var required_height = this.get_row_height();
