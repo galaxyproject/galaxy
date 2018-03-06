@@ -8,6 +8,10 @@
             class="ModelOperationToolAction"/>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" />
+        <param type="select" name="remove_empty" label="Remove also empty files" help="Selecting yes will also remove empty files from the collection">
+            <option value="Yes">Yes</option>
+            <option value="No" selected="true">No</option>
+        </param>
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >
