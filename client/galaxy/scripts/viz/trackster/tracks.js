@@ -251,7 +251,10 @@ var Drawable = function(view, container, obj_dict) {
     this.action_icons = {};
 
     // -- Set up drawable configuration. --
-    this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(this.config_params, obj_dict.prefs);
+    this.config = config_mod.ConfigSettingCollection.from_models_and_saved_values(
+        this.build_config_params(),
+        obj_dict.prefs
+    );
 
     // If there's no saved name, use object name.
     if (!this.config.get_value("name")) {
@@ -344,6 +347,10 @@ extend(Drawable.prototype, {
             hidden: true
         }
     ],
+
+    build_config_params: function() {
+        return this.config_params;
+    },
 
     config_onchange: function() {},
 
