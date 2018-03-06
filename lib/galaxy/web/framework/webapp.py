@@ -429,7 +429,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Decode the cookie value to get the session_key
             try:
                 session_key = self.security.decode_guid(secure_id)
-                session_key = session_key.encode('utf8')
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None

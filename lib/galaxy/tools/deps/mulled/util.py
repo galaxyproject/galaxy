@@ -209,7 +209,7 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
 
 
-class PrintProgress:
+class PrintProgress(object):
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
         self.stop = False

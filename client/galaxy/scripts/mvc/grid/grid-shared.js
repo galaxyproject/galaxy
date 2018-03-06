@@ -1,9 +1,11 @@
 /** This class renders the grid list with shared section. */
 import GridView from "mvc/grid/grid-view";
+import LoadingIndicator from "ui/loading-indicator";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
-        this.setElement($("<div/>"));
+        LoadingIndicator.markViewAsLoading(this);
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");
         this.title = this.model.get("plural");

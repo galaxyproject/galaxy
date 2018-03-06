@@ -112,7 +112,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
-    "Extract genomic DNA 1",
     "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
     "GeneBed_Maf_Fasta2",
@@ -167,10 +166,11 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_to_bam": packaging.version.parse("1.1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "fetchflank": packaging.version.parse("1.0.1"),
+    "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
 }
 
 
-class ToolErrorLog:
+class ToolErrorLog(object):
     def __init__(self):
         self.error_stack = []
         self.max_errors = 100
@@ -758,16 +758,17 @@ class Tool(Dictifiable):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        if self._allow_code_files:
-            for code_elem in root.findall("code"):
-                for hook_elem in code_elem.findall("hook"):
-                    for key, value in hook_elem.items():
-                        # map hook to function
-                        self.hook_map[key] = value
-                file_name = code_elem.get("file")
-                code_path = os.path.join(self.tool_dir, file_name)
-                with open(code_path) as f:
-                    exec(compile(f.read(), code_path, 'exec'), self.code_namespace)
+        for code_elem in root.findall("code"):
+            for hook_elem in code_elem.findall("hook"):
+                for key, value in hook_elem.items():
+                    # map hook to function
+                    self.hook_map[key] = value
+            file_name = code_elem.get("file")
+            code_path = os.path.join(self.tool_dir, file_name)
+            with open(code_path) as f:
+                compiled_code = compile(f.read(), code_path, 'exec')
+            if self._allow_code_files:
+                exec(compiled_code, self.code_namespace)
 
         # User interface hints
         uihints_elem = root.find("uihints")
@@ -2713,7 +2714,7 @@ for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
 
 
 # ---- Utility classes to be factored out -----------------------------------
-class TracksterConfig:
+class TracksterConfig(object):
     """ Trackster configuration encapsulation. """
 
     def __init__(self, actions):
@@ -2727,7 +2728,7 @@ class TracksterConfig:
         return TracksterConfig(actions)
 
 
-class SetParamAction:
+class SetParamAction(object):
     """ Set parameter action. """
 
     def __init__(self, name, output_name):

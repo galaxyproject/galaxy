@@ -39,24 +39,23 @@ def __main__():
         nameCol = -1
     skipped_lines = 0
     first_skipped_line = 0
-    out = open(output_name, 'w')
     count = 0
-    for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(input_name, 'r'), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
-        try:
-            if nameCol >= 0:
-                name = region.fields[nameCol]
-            else:
-                raise IndexError
-        except Exception:
-            name = "region_%i" % count
-        try:
+    with open(input_name, 'r') as fh, open(output_name, 'w') as out:
+        for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(fh, chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
+            try:
+                if nameCol >= 0:
+                    name = region.fields[nameCol]
+                else:
+                    raise IndexError
+            except Exception:
+                name = "region_%i" % count
+            try:
 
-            out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
-        except Exception:
-            skipped_lines += 1
-            if not first_skipped_line:
-                first_skipped_line = count + 1
-    out.close()
+                out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
+            except Exception:
+                skipped_lines += 1
+                if not first_skipped_line:
+                    first_skipped_line = count + 1
     print("%i regions converted to BED." % (count + 1 - skipped_lines))
     if skipped_lines > 0:
         print("Skipped %d blank or invalid lines starting with line # %d." % (skipped_lines, first_skipped_line))

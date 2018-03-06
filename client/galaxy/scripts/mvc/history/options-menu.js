@@ -1,8 +1,11 @@
+import * as _ from "underscore";
+import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
-import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
 import Webhooks from "mvc/webhooks";
+
+/* global $ */
+/* global Galaxy */
 
 // ============================================================================
 var menu = [
@@ -47,8 +50,12 @@ var menu = [
     },
     {
         html: _l("Show Structure"),
-        href: "history/display_structured",
-        anon: true
+        anon: true,
+        func: function() {
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/show_structure`);
+            }
+        }
     },
     {
         html: _l("Extract Workflow"),
@@ -220,6 +227,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
         if (menuOption.confirm) {
             menuOption.func = () => {
                 if (confirm(menuOption.confirm)) {
+                    /* galaxy_main is a global here: TODO: Fix it! */
                     galaxy_main.location = menuOption.href;
                 }
             };

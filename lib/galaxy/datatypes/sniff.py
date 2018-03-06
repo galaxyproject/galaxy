@@ -93,14 +93,12 @@ def check_newlines(fname, bytes_to_read=52428800):
     number_of_bytes (by default, 50MB) of the file.
     """
     CHUNK_SIZE = 2 ** 20
-    f = open(fname, 'r')
-    for chunk in f.read(CHUNK_SIZE):
-        if f.tell() > bytes_to_read:
-            break
-        if chunk.count('\r'):
-            f.close()
-            return True
-    f.close()
+    with open(fname, 'r') as f:
+        for chunk in f.read(CHUNK_SIZE):
+            if f.tell() > bytes_to_read:
+                break
+            if chunk.count('\r'):
+                return True
     return False
 
 
@@ -117,11 +115,10 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname, "U")):
-        fp.write("%s\n" % line.rstrip("\r\n"))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname, "U")):
+            fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
     else:
@@ -147,13 +144,12 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp()
-    fp = os.fdopen(fd, "wt")
-    i = None
-    for i, line in enumerate(open(fname)):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        i = None
+        for i, line in enumerate(open(fname)):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -180,12 +176,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    fp = os.fdopen(fd, "wt")
-    for i, line in enumerate(open(fname, "U")):
-        line = line.rstrip('\r\n')
-        elems = regexp.split(line)
-        fp.write("%s\n" % '\t'.join(elems))
-    fp.close()
+    with os.fdopen(fd, "wt") as fp:
+        for i, line in enumerate(open(fname, "U")):
+            line = line.rstrip('\r\n')
+            elems = regexp.split(line)
+            fp.write("%s\n" % '\t'.join(elems))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
