@@ -13,7 +13,6 @@
     "farbtastic": "~2.0.0-alpha.1",
     "jquery-autocomplete": "git://github.com/dyve/jquery-autocomplete",
     "select2": "~3.5.2",
-    "jStorage": "~0.4.12",
     "dynatree": "~1.2.5",
     "wymeditor": "~1.0.0-rc.1",
     "threedubmedia.jquery.event": "*"

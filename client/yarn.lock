@@ -4150,6 +4150,10 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
+jstorage@^0.4.8:
+  version "0.4.8"
+  resolved "https://registry.yarnpkg.com/jstorage/-/jstorage-0.4.8.tgz#29380072d6d3c1a0e2a5893ff1ee3b1cfc74f9a0"
+
 jstree@^3.3.4:
   version "3.3.4"
   resolved "https://registry.yarnpkg.com/jstree/-/jstree-3.3.4.tgz#3d089bb9623bd6f3f25f64c4e4ce547b30d40264"
