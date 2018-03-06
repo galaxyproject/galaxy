@@ -285,7 +285,7 @@ def collect_dynamic_outputs(
                         primary_dataset = None
                         if hda_id:
                             sa_session = tool.app.model.context
-                            primary_dataset = sa_session.query(app.model.HistoryDatasetAssociation).get(int(hda_id))
+                            primary_dataset = sa_session.query(app.model.HistoryDatasetAssociation).get(hda_id)
 
                         dataset = job_context.create_dataset(
                             ext=ext,
@@ -299,7 +299,8 @@ def collect_dynamic_outputs(
                             primary_data=primary_dataset,
                         )
                         dataset.raw_set_dataset_state('ok')
-                        datasets.append(dataset)
+                        if not hda_id:
+                            datasets.append(dataset)
 
             collect_elements_for_history(elements)
             job.history.add_datasets(job_context.sa_session, datasets)
@@ -481,6 +482,10 @@ class JobContext(object):
                 primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, self.permissions)
             else:
                 primary_data = _new_ldda(self.work_context, name, ext, visible, dbkey, library_folder)
+        else:
+            primary_data.extension = ext
+            primary_data.visible = visible
+            primary_data.dbkey = dbkey
 
         # Copy metadata from one of the inputs if requested.
         metadata_source = None

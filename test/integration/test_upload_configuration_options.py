@@ -805,6 +805,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         assert len(contents) == 1, contents
         assert contents[0]["extension"] == "fastqsanger.gz", contents[0]
         assert contents[0]["name"] == "1.fastqsanger.gz", contents[0]
+        assert contents[0]["hid"] == 1, contents[0]
 
     def test_fetch_recursive_archive_history(self):
         destination = {"type": "hdas"}
