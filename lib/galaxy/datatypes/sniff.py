@@ -138,7 +138,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
         return (i, temp_name)
 
 
-def sep2tabs(fname, in_place=True, patt="\\s+"):
+def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
@@ -150,13 +150,18 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with os.fdopen(fd, "wt") as fp:
         i = None
         for i, line in enumerate(open(fname)):
-            line = line.rstrip('\r\n')
-            elems = regexp.split(line)
-            fp.write("%s\n" % '\t'.join(elems))
+            if line.endswith("\r"):
+                line = line.rstrip('\r')
+                elems = regexp.split(line)
+                fp.write("%s\r" % '\t'.join(elems))
+            else:
+                line = line.rstrip('\n')
+                elems = regexp.split(line)
+                fp.write("%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:

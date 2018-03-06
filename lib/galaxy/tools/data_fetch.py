@@ -137,6 +137,9 @@ def _fetch_target(upload_config, target):
                         line_count, converted_path = sniff.convert_newlines_sep2tabs(path, in_place=in_place, tmp_dir=".")
                     else:
                         line_count, converted_path = sniff.convert_newlines(path, in_place=in_place, tmp_dir=".")
+                else:
+                    if space_to_tab:
+                        line_count, converted_path = sniff.sep2tabs(path, in_place=in_place, tmp_dir=".")
 
             if requested_ext == 'auto':
                 ext = sniff.guess_ext(path, registry.sniff_order)
