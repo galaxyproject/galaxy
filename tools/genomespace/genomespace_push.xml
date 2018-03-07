@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Push" id="genomespace_push"  tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.1">
+<tool name="GenomeSpace Push" id="genomespace_push"  tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.6">
     <description> - Push data from GenomeSpace to Galaxy</description>
     <environment_variables>
         <environment_variable name="GS_TOKEN">
-            #set $token = $__user__.preferences.get( 'genomespace_token', None )
-            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID or select a valid file via the GenomeSpace browse dialog.' )
+            #set $token = $__user__.preferences.get('genomespace_token', None)
+            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
             $token
         </environment_variable>
     </environment_variables>
