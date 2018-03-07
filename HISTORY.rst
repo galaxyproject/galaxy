@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.5.dev0
+18.5.5 (2018-03-06)
 ---------------------
 
 * Fix mulled to use shlex.quote to escape single quotes in test command
