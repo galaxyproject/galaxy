@@ -12,7 +12,6 @@ var commonLibs = [
     "libs/jquery/jquery.migrate",
     // jquery plugins
     "libs/jquery/jquery.autocomplete",
-    "libs/jquery/jquery.event.hover",
     "libs/jquery/jquery.event.drag",
     "libs/jquery/jquery.mousewheel",
     "libs/jquery/jquery.form",

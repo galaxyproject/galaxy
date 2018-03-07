@@ -36,7 +36,6 @@ var paths = {
         ["jquery.cookie", "jquery.cookie.js", "jquery/jquery.cookie.js"],
         ["jquery.threedubmedia", "event.drop/jquery.event.drop.js", "jquery/jquery.event.drop.js"],
         ["jquery.threedubmedia", "event.drag/jquery.event.drag.js", "jquery/jquery.event.drag.js"],
-        ["jquery.threedubmedia", "event.hover/jquery.event.hover.js", "jquery/jquery.event.hover.js"],
         ["jquery-form", "jquery.form.js", "jquery/jquery.form.js"],
         ["jquery-migrate", "dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         ["jquery-mousewheel", "jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],

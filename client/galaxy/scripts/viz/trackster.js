@@ -11,7 +11,6 @@ import query_string from "utils/query-string-parsing";
 import GridView from "mvc/grid/grid-view";
 import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
-import "libs/jquery/jquery.event.hover";
 import "libs/jquery/jquery.mousewheel";
 import "jquery-ui-bundle";
 import "libs/jquery/select2";
