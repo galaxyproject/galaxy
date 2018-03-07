@@ -2,7 +2,7 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
 
 
-class ToolOutputBase(Dictifiable, object):
+class ToolOutputBase(Dictifiable):
 
     def __init__(self, name, label=None, filters=None, hidden=False):
         super(ToolOutputBase, self).__init__()
