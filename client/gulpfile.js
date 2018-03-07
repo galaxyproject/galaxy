@@ -27,6 +27,7 @@ var paths = {
         // (we still need to stage things used by external javascript that has
         // not been packaged via webpack/parcel like all the modern stuff)
         backbone: ["backbone.js", "backbone.js"],
+        bootstrap: ["dist/js/bootstrap.js", "bootstrap.js"],
         d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
