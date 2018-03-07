@@ -414,7 +414,7 @@ var View = Backbone.View.extend({
             var field = this.fields[current];
             var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
-            var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
+            var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
             var new_value = { id: new_id, src: new_src };
             if (data) {
                 if (!_.findWhere(data[new_src], new_value)) {
