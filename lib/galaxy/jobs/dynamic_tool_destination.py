@@ -8,12 +8,11 @@ import logging
 import os
 import re
 import sys
+from functools import reduce
+from xml.etree import ElementTree as ET
 
 import numpy as np
-
-from functools import reduce
 from yaml import load
-from xml.etree import ElementTree as ET
 
 __version__ = '1.1.0'
 
@@ -47,7 +46,7 @@ max_edit_dist = 2
 List of valid categories that can be expected in the configuration.
 """
 valid_categories = ['verbose', 'tools', 'default_destination',
-                  'users', 'default_priority']
+                    'users', 'default_priority']
 
 # --- destination validation error messages --- #
 dest_err_default_dest = "Default destination '%s' does not appear in the job configuration."  # destination
@@ -434,8 +433,8 @@ class RuleValidator(object):
                     valid_rule = False
                 else:
                     is_valid = validate_destination(app, rule["destination"],
-                        dest_err_tool_rule_dest, (tool, counter, rule["destination"]),
-                        return_bool)
+                               dest_err_tool_rule_dest, (tool, counter, rule["destination"]),
+                               return_bool)
                     if not is_valid:
                         valid_rule = False
             elif isinstance(rule["destination"], dict):
@@ -448,7 +447,7 @@ class RuleValidator(object):
                             error += str(priority) + "' for rule "
                             error += str(counter) + " in '" + str(tool) + "'."
                             suggestion = get_typo_correction(priority,
-                                priority_list, max_edit_dist)
+                                         priority_list, max_edit_dist)
                             if suggestion:
                                 error += " Did you mean '" + str(suggestion) + "'?"
                             if not return_bool:
@@ -916,9 +915,9 @@ def validate_config(obj, app=None, return_bool=False,):
                                     new_config['default_priority'] = obj['default_priority']
                                 else:
                                     error = ("Default priority '" + str(obj['default_priority'])
-                                             + "' is not a valid priority.")
+                                          + "' is not a valid priority.")
                                     suggestion = get_typo_correction(obj['default_priority'],
-                                        priority_list, max_edit_dist)
+                                                 priority_list, max_edit_dist)
                                     if suggestion:
                                         error += " Did you mean '" + str(suggestion) + "'?"
                                     if verbose:
@@ -970,10 +969,10 @@ def validate_config(obj, app=None, return_bool=False,):
                                 new_config['users'][user]['priority'] = curr['priority']
                             else:
                                 error = ("User '" + user + "', priority '"
-                                  + str(curr['priority']) + "' is not defined "
-                                  + "in the global default_destination section")
+                                      + str(curr['priority']) + "' is not defined "
+                                      + "in the global default_destination section")
                                 suggestion = get_typo_correction(curr['priority'],
-                                    priority_list, max_edit_dist)
+                                             priority_list, max_edit_dist)
                                 if suggestion:
                                     error += " Did you mean '" + str(suggestion) + "'?"
                                 if verbose:
@@ -1054,7 +1053,7 @@ def validate_config(obj, app=None, return_bool=False,):
                                                      + str(priority) + "' for '" + str(tool)
                                                      + "'.")
                                             suggestion = get_typo_correction(priority,
-                                                priority_list, max_edit_dist)
+                                                         priority_list, max_edit_dist)
                                             if suggestion:
                                                 error += " Did you mean '" + str(suggestion) + "'?"
                                             if verbose:
@@ -1668,7 +1667,7 @@ def get_destination_list_from_job_config(job_config_location):
             message += "using 'config/job_conf.xml.sample_basic'. *"
         else:
             message += ("and no default job configs in 'config/'. "
-                + "Expect lots of failures. *")
+                    + "Expect lots of failures. *")
 
         if verbose:
             log.debug(message)
@@ -1834,8 +1833,8 @@ if __name__ == '__main__':
                                   return_bool=True)
     else:
         valid_config = parse_yaml(path="/config/tool_destinations.yml",
-                                 job_conf_path=job_config_location,
-                                 return_bool=True)
+                                  job_conf_path=job_config_location,
+                                  return_bool=True)
 
     if valid_config:
         print("Configuration is valid!")
