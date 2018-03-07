@@ -24,6 +24,8 @@ var paths = {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
+        // (we still need to stage things used by external javascript that has
+        // not been packaged via webpack/parcel like all the modern stuff)
         backbone: ["backbone.js", "backbone.js"],
         d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
@@ -36,7 +38,8 @@ var paths = {
         jstorage: ["jstorage.js", "jquery/jstorage.js"],
         select2: ["select2.js", "jquery/select2.js"],
         "raven-js": ["dist/raven.js", "raven.js"],
-        requirejs: ["require.js", "require.js"]
+        requirejs: ["require.js", "require.js"],
+        toastr: ["toastr.js", "toastr.js"]
     },
     libs: ["galaxy/scripts/libs/**/*.js"]
 };
