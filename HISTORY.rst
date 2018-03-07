@@ -9,7 +9,11 @@ History
 18.5.5.dev0
 ---------------------
 
-    
+* Fix mulled to use shlex.quote to escape single quotes in test command
+  (thanks to @mbargull).
+* Make markupsafe a dependency since it is import unconditionally in galaxy.tools.toolbox
+  (thanks to @mbargull).
+* Python 3 fix for assertion testing.
 
 ---------------------
 18.5.4 (2018-03-01)
