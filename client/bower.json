@@ -8,7 +8,6 @@
   ],
   "homepage": "usegalaxy.org",
   "dependencies": {
-    "bootstrap-tour": "~0.10.2",
     "farbtastic": "~2.0.0-alpha.1",
     "jquery-autocomplete": "git://github.com/dyve/jquery-autocomplete",
     "dynatree": "~1.2.5",

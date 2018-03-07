@@ -28,6 +28,7 @@ var paths = {
         // not been packaged via webpack/parcel like all the modern stuff)
         backbone: ["backbone.js", "backbone.js"],
         bootstrap: ["dist/js/bootstrap.js", "bootstrap.js"],
+        "bootstrap-tour": ["build/js/bootstrap-tour-standalone.js", "bootstrap-tour.js"],
         d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
