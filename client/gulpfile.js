@@ -20,30 +20,33 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
-    lib_locs: {
+    lib_locs: [
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         // (we still need to stage things used by external javascript that has
         // not been packaged via webpack/parcel like all the modern stuff)
-        backbone: ["backbone.js", "backbone.js"],
-        bootstrap: ["dist/js/bootstrap.js", "bootstrap.js"],
-        "bootstrap-tour": ["build/js/bootstrap-tour-standalone.js", "bootstrap-tour.js"],
-        d3: ["d3.js", "d3.js"],
-        "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
-        jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
-        "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
-        "jquery-form": ["jquery.form.js", "jquery/jquery.form.js"],
-        "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
-        "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        jstorage: ["jstorage.js", "jquery/jstorage.js"],
-        select2: ["select2.js", "jquery/select2.js"],
-        "raven-js": ["dist/raven.js", "raven.js"],
-        requirejs: ["require.js", "require.js"],
-        toastr: ["toastr.js", "toastr.js"],
-        underscore: ["underscore.js", "underscore.js"]
-    },
+        ["backbone", "backbone.js", "backbone.js"],
+        ["bootstrap", "dist/js/bootstrap.js", "bootstrap.js"],
+        ["bootstrap-tour", "build/js/bootstrap-tour-standalone.js", "bootstrap-tour.js"],
+        ["d3", "d3.js", "d3.js"],
+        ["bibtex-parse-js", "bibtexParse.js", "bibtexParse.js"],
+        ["jquery", "dist/jquery.js", "jquery/jquery.js"],
+        ["jquery.complexify", "jquery.complexify.js", "jquery/jquery.complexify.js"],
+        ["jquery.cookie", "jquery.cookie.js", "jquery/jquery.cookie.js"],
+        ["jquery.threedubmedia", "event.drop/jquery.event.drop.js", "jquery/jquery.event.drop.js"],
+        ["jquery.threedubmedia", "event.drag/jquery.event.drag.js", "jquery/jquery.event.drag.js"],
+        ["jquery.threedubmedia", "event.hover/jquery.event.hover.js", "jquery/jquery.event.hover.js"],
+        ["jquery-form", "jquery.form.js", "jquery/jquery.form.js"],
+        ["jquery-migrate", "dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
+        ["jquery-mousewheel", "jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
+        ["jstorage", "jstorage.js", "jquery/jstorage.js"],
+        ["select2", "select2.js", "jquery/select2.js"],
+        ["raven-js", "dist/raven.js", "raven.js"],
+        ["requirejs", "require.js", "require.js"],
+        ["toastr", "toastr.js", "toastr.js"],
+        ["underscore", "underscore.js", "underscore.js"]
+    ],
     libs: ["galaxy/scripts/libs/**/*.js"]
 };
 
@@ -72,9 +75,9 @@ gulp.task("scripts", function() {
 });
 
 gulp.task("stage-libs", function(callback) {
-    _.each(_.keys(paths.lib_locs), function(lib) {
-        var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
-        var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
+    _.each(paths.lib_locs, function(lib) {
+        var p1 = path.resolve(path.join(paths.node_modules, lib[0], lib[1]));
+        var p2 = path.resolve(path.join("galaxy", "scripts", "libs", lib[2]));
         if (fs.existsSync(p1)) {
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
