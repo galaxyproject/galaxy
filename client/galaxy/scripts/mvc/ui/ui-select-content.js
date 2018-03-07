@@ -420,6 +420,7 @@ var View = Backbone.View.extend({
                 if (!_.findWhere(data[new_src], new_value)) {
                     data[new_src].push({
                         id: new_id,
+                        src: new_src,
                         hid: drop_data.hid || "Dropped",
                         name: drop_data.hid ? drop_data.name : new_id,
                         keep: true,
