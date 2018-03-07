@@ -4029,6 +4029,10 @@ jquery.cookie@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/jquery.cookie/-/jquery.cookie-1.4.1.tgz#d63dce209eab691fe63316db08ca9e47e0f9385b"
 
+jquery.threedubmedia@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/jquery.threedubmedia/-/jquery.threedubmedia-2.2.0.tgz#95747d2001f280847040b8c43dff7246f4336740"
+
 jquery@2:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-2.2.4.tgz#2c89d6889b5eac522a7eea32c14521559c6cbf02"

@@ -11,7 +11,6 @@
     "farbtastic": "~2.0.0-alpha.1",
     "jquery-autocomplete": "git://github.com/dyve/jquery-autocomplete",
     "dynatree": "~1.2.5",
-    "wymeditor": "~1.0.0-rc.1",
-    "threedubmedia.jquery.event": "*"
+    "wymeditor": "~1.0.0-rc.1"
   }
 }

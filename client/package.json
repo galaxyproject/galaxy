@@ -25,6 +25,7 @@
     "jquery-ui-bundle": "^1.12.1",
     "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
+    "jquery.threedubmedia": "^2.2.0",
     "jstorage": "^0.4.8",
     "jstree": "^3.3.4",
     "latex-parser": "^0.6.2",
