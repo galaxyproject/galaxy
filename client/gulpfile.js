@@ -34,6 +34,7 @@ var paths = {
         'jquery-migrate': [ 'dist/jquery-migrate.js', 'jquery/jquery.migrate.js' ],
         'jquery-mousewheel': [ 'jquery.mousewheel.js', 'jquery/jquery.mousewheel.js' ],
         'jstorage': ['jstorage.js', 'jquery/jstorage.js'],
+        'select2': [ 'select2.js', 'jquery/select2.js' ],
         'raven-js': ['dist/raven.js', 'raven.js'],
         'requirejs': [ 'require.js', 'require.js' ]
     },

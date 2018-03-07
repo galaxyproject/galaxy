@@ -30,6 +30,7 @@
     "latex-to-unicode-converter": "^0.5.0",
     "raven-js": "^3.17.0",
     "requirejs": "2",
+    "select2": "^3.5.2-browserify",
     "toastr": "^2.1.4",
     "underscore": "^1.8.3",
     "vue": "^2.5.9"
