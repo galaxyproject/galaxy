@@ -1,4 +1,4 @@
-import * as _ from "libs/underscore";
+import * as _ from "underscore";
 import Client from "mvc/visualization/chart/chart-client";
 import Datasets from "mvc/visualization/chart/utilities/datasets";
 import Series from "mvc/visualization/chart/utilities/series";

@@ -39,7 +39,8 @@ var paths = {
         select2: ["select2.js", "jquery/select2.js"],
         "raven-js": ["dist/raven.js", "raven.js"],
         requirejs: ["require.js", "require.js"],
-        toastr: ["toastr.js", "toastr.js"]
+        toastr: ["toastr.js", "toastr.js"],
+        underscore: ["underscore.js", "underscore.js"]
     },
     libs: ["galaxy/scripts/libs/**/*.js"]
 };
