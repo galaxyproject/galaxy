@@ -1167,6 +1167,15 @@ galaxy:
   # Set maximum size of ngrams
   #tool_ngram_maxsize: 4
 
+  # Set tool test data directory. The test framework sets this value to
+  # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
+  # which will cause Galaxy to clone down extra test data on the fly for
+  # certain tools distributed with Galaxy but this is likely not
+  # appropriate for production systems. Instead one can simply clone
+  # that repository directly and specify a path here instead of a Git
+  # HTTP repository.
+  #tool_test_data_directories: test-data
+
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should
   # set a key to be used by the algorithm that encodes and decodes these
