@@ -1,7 +1,4 @@
 from __future__ import print_function
-from functools import reduce
-from yaml import load
-from xml.etree import ElementTree as ET
 
 import argparse
 import collections
@@ -11,7 +8,12 @@ import logging
 import os
 import re
 import sys
+
 import numpy as np
+
+from functools import reduce
+from yaml import load
+from xml.etree import ElementTree as ET
 
 __version__ = '1.1.0'
 
