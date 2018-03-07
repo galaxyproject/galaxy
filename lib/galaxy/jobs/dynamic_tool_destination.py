@@ -1,4 +1,7 @@
 from __future__ import print_function
+from functools import reduce
+from yaml import load
+from xml.etree import ElementTree as ET
 
 import argparse
 import collections
@@ -9,10 +12,6 @@ import os
 import re
 import sys
 import numpy as np
-from functools import reduce
-from xml.etree import ElementTree as ET
-
-from yaml import load
 
 __version__ = '1.1.0'
 
@@ -1787,6 +1786,7 @@ def get_typo_correction(typo_str, word_set, max_dist):
                     curr_best = edit_distance
 
     return suggestion
+
 
 if __name__ == '__main__':
     """
