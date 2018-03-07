@@ -414,9 +414,25 @@ var View = Backbone.View.extend({
             var field = this.fields[current];
             var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
+            var new_hid = drop_data.hid;
+            var new_name = drop_data.name;
             var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
             var new_value = { id: new_id, src: new_src };
-            if (data && _.findWhere(data[new_src], new_value)) {
+            if (data) {
+
+                if (!_.findWhere(data[new_src], new_value)) {
+                    window.console.log(drop_data);
+                    data[new_src].push({
+                        id: new_id,
+                        hid: new_hid || "Dropped",
+                        name: new_hid ? new_name : new_id,
+                        keep: true,
+                        tags: []
+                    });
+                    this._changeData();
+                }
+
+
                 if (config.src == new_src) {
                     var current_value = field.value();
                     if (current_value && config.multiple) {
