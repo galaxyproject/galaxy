@@ -9,7 +9,10 @@ History
 18.5.6.dev0
 ---------------------
 
-    
+* Add missing markupsafe dependency (thanks to @mbargull).
+* Python 3 fix for assertion testing.
+* Bring in the latest Galaxy dev branch - includes code cleanup and many Python 3 fixes from
+  @nsoranzo as well as client code for executing tool tests against external Galaxy instances.
 
 ---------------------
 18.5.5 (2018-03-06)
