@@ -74,6 +74,7 @@ var View = Backbone.View.extend({
         if (new_value) {
             this.filename_textbox.value(new_value);
         }
+        this.options.onchange && this.options.onchange(new_value);
     }
 });
 
