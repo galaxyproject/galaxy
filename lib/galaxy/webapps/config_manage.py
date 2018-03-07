@@ -55,7 +55,7 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('buffer-size', {
-        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. Increase it up to 65535. buffer-size: 4096""",
+        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. Increase it up to 65535.""",
         'default': '4096',
         'type': 'int',
     }),
