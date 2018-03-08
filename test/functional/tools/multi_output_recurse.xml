@@ -1,4 +1,4 @@
-<tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0">
+<tool id="multi_output_recurse" name="multi_output_recurse" version="0.1.0" profile="18.01">
   <command>
     echo "Hello" > $report;
     mkdir subdir1;
@@ -22,6 +22,9 @@
   <outputs>
     <data auto_format="true" name="report">
       <discover_datasets pattern="__designation__" directory="." visible="true" recurse="true" />
+    </data>
+    <data auto_format="true" name="report_optional">
+      <discover_datasets pattern="__designation__" directory="i_do_not_exist" visible="true" recurse="true" />
     </data>
   </outputs>
   <tests>
