@@ -148,13 +148,29 @@ class BaseDatasetPopulator(object):
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get('assert_ok', True))
         return run_response
 
+    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT):
+        tool_response = self._post("tools/fetch", data=payload)
+        if assert_ok:
+            job = self.check_run(tool_response)
+            self.wait_for_job(job["id"], timeout=timeout)
+
+            job = tool_response.json()["jobs"][0]
+            details = self.get_job_details(job["id"]).json()
+            assert details["state"] == "ok", details
+
+        return tool_response
+
     def wait_for_tool_run(self, history_id, run_response, timeout=DEFAULT_TIMEOUT, assert_ok=True):
-        run = run_response.json()
-        assert run_response.status_code == 200, run
-        job = run["jobs"][0]
+        job = self.check_run(run_response)
         self.wait_for_job(job["id"], timeout=timeout)
         self.wait_for_history(history_id, assert_ok=assert_ok, timeout=timeout)
         return run_response
+
+    def check_run(self, run_response):
+        run = run_response.json()
+        assert run_response.status_code == 200, run
+        job = run["jobs"][0]
+        return job
 
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         try:
@@ -266,8 +282,8 @@ class BaseDatasetPopulator(object):
         else:
             return tool_response
 
-    def tools_post(self, payload):
-        tool_response = self._post("tools", data=payload)
+    def tools_post(self, payload, url="tools"):
+        tool_response = self._post(url, data=payload)
         return tool_response
 
     def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
@@ -463,6 +479,11 @@ class LibraryPopulator(object):
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
+        self.dataset_populator = DatasetPopulator(galaxy_interactor)
+
+    def get_libraries(self):
+        get_response = self.galaxy_interactor.get("libraries")
+        return get_response.json()
 
     def new_private_library(self, name):
         library = self.new_library(name)
@@ -562,6 +583,24 @@ class LibraryPopulator(object):
             library_dataset = show().json()
 
         return library, library_dataset
+
+    def get_library_contents_with_path(self, library_id, path):
+        all_contents_response = self.galaxy_interactor.get("libraries/%s/contents" % library_id)
+        api_asserts.assert_status_code_is(all_contents_response, 200)
+        all_contents = all_contents_response.json()
+        matching = [c for c in all_contents if c["name"] == path]
+        if len(matching) == 0:
+            raise Exception("Failed to find library contents with path [%s], contents are %s" % (path, all_contents))
+        get_response = self.galaxy_interactor.get(matching[0]["url"])
+        api_asserts.assert_status_code_is(get_response, 200)
+        return get_response.json()
+
+    def setup_fetch_to_folder(self, test_name):
+        history_id = self.dataset_populator.new_history()
+        library = self.new_private_library(test_name)
+        folder_id = library["root_folder_id"][1:]
+        destination = {"type": "library_folder", "library_folder_id": folder_id}
+        return history_id, library, destination
 
 
 class BaseDatasetCollectionPopulator(object):
