@@ -925,7 +925,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         Check whether token fits the user and then activate the user's account.
         """
         params = util.Params(kwd, sanitize=False)
-        email = unquote(params.get('email', None))
+        email = params.get('email', None)
+        if email is not None:
+            email = unquote(email)
         activation_token = params.get('activation_token', None)
 
         if email is None or activation_token is None:
