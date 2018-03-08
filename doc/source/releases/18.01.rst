@@ -15,32 +15,21 @@ Enhancements
 .. feature
 
 
-* Run Galaxy fully under uWSGI, including job handlers
-  `Pull Request 4475`_
 * Clone tools in workflows
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 5087`_
-* Libraries to collections
-  `Pull Request 5080`_
 * Cloud ObjectStore
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4487`_
 * Reload tools immediatelly if a macro changes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4635`_
-* Galaxy client tooling overhaul and ES6 support
-  `Pull Request 4435`_
-* Vue integration, bibtex replacement
-  `Pull Request 4978`_
 * Skip job execution if equivalent job exists
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4690`_
 * Add AskOmics Interactive Environment
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4737`_
-* Allow downloading collections (through UI) at arbitrary levels of nesting
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4942`_
 * Implement github error report backend
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4765`_
@@ -49,8 +38,6 @@ Enhancements
   `Pull Request 4916`_
 * Create the $GALAXY_MEMORY_MB tool job environment variable
   `Pull Request 4958`_
-* Enhance hdca creation API endpoint to accept lddas
-  `Pull Request 4998`_
 * Add API that allows admins to decode galaxy objects' ids
   `Pull Request 5018`_
 * Add sorting options for data library folders
@@ -81,18 +68,12 @@ Enhancements
 * Add Classical linkage and haplotype datatypes
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 4894`_
-* Add BamNative datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 5180`_
 * Add support for the ideaspre datatype
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 5445`_
 * add fasta.gz support
   `Pull Request 5561`_
-* Add queryname sorted and input sorted datatypes
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5589`_
-* add cool datatype
+* add ``cool`` datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5023`_
 * Neostore Zip datatype support
@@ -342,13 +323,9 @@ Enhancements
 * i18n improvements French localization the sequel
   (thanks to `@ValentinChCloud <https://github.com/ValentinChCloud>`__).
   `Pull Request 5089`_
-* Render arbitrarily large collections in the UI.
-  `Pull Request 5091`_
 * Update Jupyter IE default image
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 5095`_
-* Convert options file to YAML and use uWSGI by default
-  `Pull Request 5105`_
 * Determine dynamically if an extension corresponds to an unsniffable binary
   datatype
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -365,8 +342,6 @@ Enhancements
   `Pull Request 5125`_
 * Client build check
   `Pull Request 5128`_
-* Migrate documentation for setting up a production instance to Galaxy.
-  `Pull Request 5135`_
 * Postpone depends_list generation
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5137`_
@@ -419,11 +394,8 @@ Enhancements
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
   `Pull Request 5232`_
 * Added support for recursively discovering output datasets
-  (thanks to `@gvlproject <https://github.com/gvlproject>`__).
+  (thanks to `@gvlproject <https://github.com/gvlproject>`__). TODO: fix author
   `Pull Request 5240`_
-* Fix and enhance job resume functionality
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5247`_
 * Make pam a conditional dependency
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5251`_
@@ -434,9 +406,6 @@ Enhancements
   `Pull Request 5262`_
 * Clarify some FTP purging behaviors with tests.
   `Pull Request 5266`_
-* Copy element_identifier to resumed job
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5270`_
 * Allow sorting collection elements based on file
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5273`_
@@ -452,22 +421,15 @@ Enhancements
   `Pull Request 5299`_
 * allow message to be modified on ldda
   `Pull Request 5312`_
-* Add option to replace failed elements on job rerun
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5321`_
 * Tag editor size constraint
   `Pull Request 5337`_
 * Webhooks improvements
   `Pull Request 5342`_
 * Environment variable to skip client build.
-  `Pull Request 5371`_
-* improve config options docs
-  `Pull Request 5373`_
+  `Pull Request 5371`_  
 * Make TabularToolDataTable._deduplicate_data() faster
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5383`_
-* Update framework dependencies documentation
-  `Pull Request 5390`_
 * Allow map-over when discovering dataset collections
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5413`_

@@ -9,23 +9,58 @@ Highlights
 ===========================================================
 
 **Performance and User Experience Improvements**
-We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
-We achieved this by optimising queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
+  We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
+  We achieved this by optimising queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
 
-**Collection Overhaul**
-  Feature description.
+**Web Server and Configuration**
+  The default web server used by Galaxy has changed from Paste to uWSGI and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``. 
+  uWSGI is more production ready and should allow Galaxy to scale better in its default
+  configuration. In the future uWSGI will allow Galaxy to setup GIE proxies without additional
+  configuration and use modern web technology such as web sockets.
 
-**uWSGI**
-  Feature description.
+  To minimize the impact of this on existing Galaxy instances, if a Galaxy has an existing ``galaxy.ini``
+  file configured it will continue to use Paste by default unless additional steps are
+  taken by the administrator (one can force Galaxy to start in uWSGI even with an older configuration file 
+  by setting ``APP_WEBSERVER=uwsgi`` in the environment). As part of the transition to YAML-based 
+  configuration files we have implemented a schema to validate Galaxy configuration files. Run
+  ``make config-validate`` from Galaxy's root directory to validate a schema and ``make config-lint`` to
+  check for best practices. While there is no need to convert your configuration file (``galaxy.ini`` hasn't
+  been deprecated), we have included make targets ``make config-convert-dry-run`` and ``make config-convert``
+  to assist converting an ``ini`` configuration file to a YAML one.
+
+  These are big changes that affect many parts of Galaxy's administration documentation and makes
+  this documentation very dependent on which Galaxy version they are targetting. To address this, we have
+  moved a signifcant amount of administration documentation into Galaxy's code
+  base and made it available on a per release basis. The latest administration documentation for
+  the previous release of Galaxy (17.09) which reference galaxy.ini files and Paste servers can
+  be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
+
+  `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_, `Pull Request 5105`_
 
 **ES6 + Vue**
   Feature description.
 
+  `Pull Request 4435`_, `Pull Request 4978`_
+
 **New BAM datatypes**
-  Feature description.
+  TODO: Feature description.
+  `Pull Request 5180`_, `Pull Request 5589`_
 
 **Job Replacement**
-  Feature description.
+  TODO: Feature description.  
+  `Pull Request 4690`_
+
+**Dataset Collection Usability**
+  This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
+  to collections have been made, some the key highlights include:
+  
+    - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
+    - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
+    - The Galaxy web interface works with collections with arbitrary nesting and size (with help
+      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 5091`_
+    - TODO: more of these...
+    - TODO: a couple small screenshots - libraries, resume, and collection progress bar.
+
 
 Get Galaxy
 ==========
