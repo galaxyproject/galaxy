@@ -1103,7 +1103,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def purge_deleted_datasets(self, trans):
         count = 0
-        if trans.app.config.allow_user_dataset_purge:
+        if trans.app.config.allow_user_dataset_purge and trans.history:
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
@@ -1121,7 +1121,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     except Exception:
                         log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                 count += 1
-        return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+            return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+        return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
     def delete(self, trans, id, purge=False):
