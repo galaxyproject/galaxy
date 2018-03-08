@@ -416,7 +416,7 @@ var View = Backbone.View.extend({
             var new_id = drop_data.id;
             var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
             var new_value = { id: new_id, src: new_src };
-            if (data) {
+            if (data && drop_data.history_id) {
                 if (!_.findWhere(data[new_src], new_value)) {
                     data[new_src].push({
                         id: new_id,
