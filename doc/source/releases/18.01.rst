@@ -588,6 +588,8 @@ Fixes
 
 .. major_bug
 
+ * Fix Trackster
+   `Pull Request 5261`_
 
 .. bug
 
@@ -1269,6 +1271,7 @@ Fixes
 .. _Pull Request 5258: https://github.com/galaxyproject/galaxy/pull/5258
 .. _Pull Request 5259: https://github.com/galaxyproject/galaxy/pull/5259
 .. _Pull Request 5260: https://github.com/galaxyproject/galaxy/pull/5260
+.. _Pull Request 5261: https://github.com/galaxyproject/galaxy/pull/5261
 .. _Pull Request 5262: https://github.com/galaxyproject/galaxy/pull/5262
 .. _Pull Request 5264: https://github.com/galaxyproject/galaxy/pull/5264
 .. _Pull Request 5266: https://github.com/galaxyproject/galaxy/pull/5266
