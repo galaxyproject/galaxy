@@ -8,6 +8,7 @@ from string import Template
 
 from galaxy.util import (
     asbool,
+    in_directory,
     smart_str
 )
 
@@ -27,32 +28,25 @@ LIST_SEP = re.compile("\s*,\s*")
 
 class TestDataResolver(object):
 
-    def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
-        file_dirs = environ.get(env_var, None)
+    def __init__(self, file_dirs=None, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
+        if file_dirs is None:
+            file_dirs = environ.get(env_var, None)
+        if file_dirs is None:
+            file_dirs = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
         if file_dirs:
             self.resolvers = [build_resolver(u, environ) for u in LIST_SEP.split(file_dirs)]
         else:
             self.resolvers = []
 
     def get_filename(self, name):
-        if not self.resolvers:
-            filename = None
-        else:
-            resolver = self.resolvers[0]
+        filename = None
+        for resolver in self.resolvers or []:
+            if not resolver.exists(name):
+                continue
             filename = resolver.path(name)
-            if not resolver.exists(filename):
-                for resolver in self.resolvers[1:]:
-                    if resolver.exists(name):
-                        filename = resolver.path(name)
-            else:
-                # For backward compat. returning first path if none
-                # exist - though I don't know if this function is ever
-                # actually used in a context where one should return
-                # a file even if it doesn't exist (e.g. a prefix or
-                # or something) - I am pretty sure it is not used in
-                # such a fashion in the context of tool tests.
-                filename = resolver.path(name)
-        return os.path.abspath(filename)
+
+        if filename:
+            return os.path.abspath(filename)
 
 
 def build_resolver(uri, environ):
@@ -68,7 +62,8 @@ class FileDataResolver(object):
         self.file_dir = file_dir
 
     def exists(self, filename):
-        return os.path.exists(self.path(filename))
+        path = os.path.abspath(self.path(filename))
+        return os.path.exists(path) and in_directory(path, self.file_dir)
 
     def path(self, filename):
         return os.path.join(self.file_dir, filename)

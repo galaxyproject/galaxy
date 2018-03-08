@@ -2439,6 +2439,22 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``id_secret``
 ~~~~~~~~~~~~~
