@@ -41,7 +41,14 @@ def main(argv=None):
             test_results = previous_results["tests"]
 
     exceptions = []
+    verbose = args.verbose
     for test_index in test_indices:
+        if tool_version:
+            tool_id_and_version = "%s/%s" % (tool_id, tool_version)
+        else:
+            tool_id_and_version = tool_id
+
+        test_identifier = "tool %s test # %d" % (tool_id_and_version, test_index)
 
         def register(job_data):
             test_results.append({
@@ -52,9 +59,16 @@ def main(argv=None):
 
         try:
             verify_tool(
-                tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version, register_job_data=register
+                tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
+                register_job_data=register, quiet=not verbose
             )
+
+            if verbose:
+                print("%s passed" % test_identifier)
+
         except Exception as e:
+            if verbose:
+                print("%s failed, %s" % (test_identifier, e))
             exceptions.append(e)
 
     report_obj = {
@@ -85,6 +99,7 @@ def _arg_parser():
     parser.add_argument('-o', '--output', default=None, help='directory to dump outputs to')
     parser.add_argument('--append', default=False, action="store_true", help="Extend a test record json (created with --output-json) with additional tests.")
     parser.add_argument('-j', '--output-json', default=None, help='output metadata json')
+    parser.add_argument('--verbose', default=False, action="store_true", help="Verbose logging.")
     return parser
 
 
