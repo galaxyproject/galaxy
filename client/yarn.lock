@@ -2,6 +2,30 @@
 # yarn lockfile v1
 
 
+"@bower_components/dynatree@mar10/dynatree#~1.2.5":
+  version "1.2.8"
+  resolved "https://codeload.github.com/mar10/dynatree/tar.gz/3f10f0fe84d115ae0b01fcdfdf2cb03c185f2575"
+
+"@bower_components/farbtastic@mattfarina/farbtastic#~2.0.0-alpha.1":
+  version "2.0.0-alpha.1"
+  resolved "https://codeload.github.com/mattfarina/farbtastic/tar.gz/449c5a27de73efecf526594a19b0e1b2789255e1"
+  dependencies:
+    jQuery "*"
+
+"@bower_components/jquery-autocomplete@git://github.com/dyve/jquery-autocomplete.git#*":
+  version "2.1.0"
+  resolved "git://github.com/dyve/jquery-autocomplete.git#cdcc367d0685f9db19f0db757b1039d6423e509a"
+  dependencies:
+    jquery "1"
+
+"@bower_components/jquery@jquery/jquery-dist#1.4.4 - 1.11":
+  version "1.11.3"
+  resolved "https://codeload.github.com/jquery/jquery-dist/tar.gz/1472290917f17af05e98007136096784f9051fab"
+
+"@bower_components/wymeditor@wymeditor/wymeditor#~1.0.0-rc.1":
+  version "1.0.7"
+  resolved "https://codeload.github.com/wymeditor/wymeditor/tar.gz/75d19b69b0613cff2a67ad8b9f556caf372db3d2"
+
 "@gulp-sourcemaps/identity-map@1.X":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@gulp-sourcemaps/identity-map/-/identity-map-1.0.1.tgz#cfa23bc5840f9104ce32a65e74db7e7a974bbee1"
@@ -3995,6 +4019,10 @@ isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
 
+jQuery@*:
+  version "1.7.4"
+  resolved "https://registry.yarnpkg.com/jQuery/-/jQuery-1.7.4.tgz#f32dc5c85a7044ee864b4443b9ee45f9478ba137"
+
 jpeg-js@0.0.4:
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/jpeg-js/-/jpeg-js-0.0.4.tgz#06aaf47efec7af0b1924a59cd695a6d2b5ed870e"
@@ -4032,6 +4060,10 @@ jquery.cookie@^1.4.1:
 jquery.threedubmedia@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/jquery.threedubmedia/-/jquery.threedubmedia-2.2.0.tgz#95747d2001f280847040b8c43dff7246f4336740"
+
+jquery@1:
+  version "1.12.4"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-1.12.4.tgz#01e1dfba290fe73deba77ceeacb0f9ba2fec9e0c"
 
 jquery@2:
   version "2.2.4"
