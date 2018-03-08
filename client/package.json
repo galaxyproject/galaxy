@@ -63,8 +63,7 @@
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
     "build-scatterplot": "NODE_PATH=./node_modules webpack -p --config ../config/plugins/visualizations/scatterplot/webpack.config.js",
-    "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/{*.js,*.vue}\"",
-    "postinstall": "node -e \"try { require('fs').symlinkSync(require('path').resolve('node_modules/@bower_components'), 'bower_components', 'junction') } catch (e) { }\""
+    "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/{*.js,*.vue}\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",

@@ -123,11 +123,10 @@ tool-data/shared/jars/
 # CSS build artifacts.
 sprite-*.less
 
-# JS, Local node_modules, and bower_components directories
+# JS, Local node_modules
 static/scripts
 static/maps
 node_modules
-bower_components
 client/galaxy/scripts/libs/*
 
 # Documentation build files.

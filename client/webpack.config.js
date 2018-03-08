@@ -61,7 +61,7 @@ let buildconfig = {
         rules: [
             {
                 test: /\.js$/,
-                exclude: [/(node_modules|bower_components)/, libsBase],
+                exclude: [/(node_modules)/, libsBase],
                 loader: "babel-loader"
             },
             {
