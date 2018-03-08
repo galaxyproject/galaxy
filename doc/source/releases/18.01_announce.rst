@@ -38,7 +38,10 @@ Highlights
   `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_, `Pull Request 5105`_
 
 **ES6 + Vue**
-  Feature description.
+  The client code that powers the Galaxy user interface has been converted to `ES6 <http://es6-features.org/>`__ that is significantly more concise than plain JavaScript. Other major client changes include
+  integration of the   `VueJS <https://vuejs.org/>`__ framework and improved client build and development
+  tooling. Taken together these changes will enable Galaxy developers to write usable, responsive
+  client code TODO...
 
   `Pull Request 4435`_, `Pull Request 4978`_
 
@@ -46,8 +49,11 @@ Highlights
   TODO: Feature description.
   `Pull Request 5180`_, `Pull Request 5589`_
 
-**Job Replacement**
-  TODO: Feature description.  
+**Experimental Job Caching**
+  Galaxy can now be configured to allow users the option of skipping duplicated jobs if one with
+  identical parameters has been previously executed and simply reuse the previously generated outputs.
+  This contribution is thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+
   `Pull Request 4690`_
 
 **Dataset Collection Usability**
