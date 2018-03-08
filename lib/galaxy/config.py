@@ -463,6 +463,8 @@ class Configuration(object):
         self.tool_enable_ngram_search = kwargs.get("tool_enable_ngram_search", False)
         self.tool_ngram_minsize = kwargs.get("tool_ngram_minsize", 3)
         self.tool_ngram_maxsize = kwargs.get("tool_ngram_maxsize", 4)
+        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
+        self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Location for tool dependencies.
         use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
             parse_dependency_options(kwargs, self.root, self.dependency_resolvers_config_file)

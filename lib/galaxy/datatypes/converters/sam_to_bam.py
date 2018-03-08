@@ -75,14 +75,13 @@ def __main__():
         stderr_target = sys.stderr
     else:
         stderr_target = sys.stdout
-    stderr = open(unsorted_stderr_filename)
-    while True:
-        chunk = stderr.read(CHUNK_SIZE)
-        if chunk:
-            stderr_target.write(chunk)
-        else:
-            break
-    stderr.close()
+    with open(unsorted_stderr_filename) as stderr:
+        while True:
+            chunk = stderr.read(CHUNK_SIZE)
+            if chunk:
+                stderr_target.write(chunk)
+            else:
+                break
 
     # sort sam, so indexing will not fail
     sorted_stderr_filename = os.path.join(tmp_dir, 'sorted.stderr')
@@ -103,14 +102,13 @@ def __main__():
         stderr_target = sys.stderr
     else:
         stderr_target = sys.stdout
-    stderr = open(sorted_stderr_filename)
-    while True:
-        chunk = stderr.read(CHUNK_SIZE)
-        if chunk:
-            stderr_target.write(chunk)
-        else:
-            break
-    stderr.close()
+    with open(sorted_stderr_filename) as stderr:
+        while True:
+            chunk = stderr.read(CHUNK_SIZE)
+            if chunk:
+                stderr_target.write(chunk)
+            else:
+                break
 
     cleanup_before_exit(tmp_dir)
 

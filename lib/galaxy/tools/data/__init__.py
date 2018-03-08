@@ -712,7 +712,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return rval
 
 
-class TabularToolDataField(Dictifiable, object):
+class TabularToolDataField(Dictifiable):
 
     dict_collection_visible_keys = []
 

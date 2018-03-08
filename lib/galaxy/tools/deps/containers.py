@@ -8,9 +8,15 @@ from abc import (
 
 import six
 
-from galaxy.util import asbool
-from galaxy.util import in_directory
-from galaxy.util import plugin_config
+from galaxy.util import (
+    asbool,
+    in_directory,
+    plugin_config
+)
+from . import (
+    docker_util,
+    singularity_util
+)
 from .container_resolvers.explicit import ExplicitContainerResolver
 from .container_resolvers.mulled import (
     BuildMulledDockerContainerResolver,
@@ -19,10 +25,11 @@ from .container_resolvers.mulled import (
     CachedMulledSingularityContainerResolver,
     MulledDockerContainerResolver,
 )
-from .requirements import ContainerDescription
-from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
-from ..deps import docker_util
-from ..deps import singularity_util
+from .requirements import (
+    ContainerDescription,
+    DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
+    DEFAULT_CONTAINER_SHELL
+)
 
 log = logging.getLogger(__name__)
 
@@ -379,7 +386,7 @@ def preprocess_volumes(volumes_raw_str, container_type):
     return ",".join([":".join(v) for v in volumes])
 
 
-class HasDockerLikeVolumes:
+class HasDockerLikeVolumes(object):
     """Mixin to share functionality related to Docker volume handling.
 
     Singularity seems to have a fairly compatible syntax for volume handling.
