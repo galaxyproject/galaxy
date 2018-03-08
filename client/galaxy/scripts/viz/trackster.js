@@ -101,7 +101,7 @@ var TracksterUI = Base.extend({
                 view.has_changes = false;
 
                 // Needed to set URL when first saving a visualization.
-                window.history.pushState({}, "", vis_info.url + window.location.hash);
+                window.history.pushState({}, "", vis_info.url + window.top.location.hash);
             })
             .error(() => {
                 // show dialog
@@ -159,7 +159,7 @@ var TracksterUI = Base.extend({
                     icon_class: "globe",
                     title: _l("Circster"),
                     on_click: function() {
-                        window.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
+                        window.top.location = `${self.baseURL}visualization/circster?id=${view.vis_id}`;
                     }
                 },
                 {
@@ -366,17 +366,17 @@ var TracksterUI = Base.extend({
                     },
                     "Leave without Saving": function() {
                         $(window).off("beforeunload");
-                        window.location = `${Galaxy.root}visualization`;
+                        window.top.location = `${Galaxy.root}visualization`;
                     },
                     Save: function() {
                         $.when(self.save_viz()).then(() => {
-                            window.location = `${Galaxy.root}visualization`;
+                            window.top.location = `${Galaxy.root}visualization`;
                         });
                     }
                 }
             });
         } else {
-            window.location = `${Galaxy.root}visualization`;
+            window.top.location = `${Galaxy.root}visualization`;
         }
     }
 });
@@ -443,7 +443,7 @@ var TracksterView = Backbone.View.extend({
                 "Not available."}</b></li><li>or create a new session with this dataset as the only track</li></ul></p>`,
             buttons: {
                 Cancel: function() {
-                    window.location = `${Galaxy.root}visualizations/list`;
+                    window.top.location = `${Galaxy.root}visualizations/list`;
                 },
                 "View in saved visualization": function() {
                     self.view_in_saved(dataset_params);
@@ -466,14 +466,14 @@ var TracksterView = Backbone.View.extend({
             body: tracks_grid.$el,
             buttons: {
                 Cancel: function() {
-                    window.location = `${Galaxy.root}visualizations/list`;
+                    window.top.location = `${Galaxy.root}visualizations/list`;
                 },
                 "Add to visualization": function() {
                     $(parent.document)
                         .find("input[name=id]:checked")
                         .each(function() {
                             dataset_params.id = $(this).val();
-                            window.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
+                            window.top.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
                         });
                 }
             }
@@ -522,7 +522,7 @@ var TracksterView = Backbone.View.extend({
                     body: self.template_view_new(response),
                     buttons: {
                         Cancel: function() {
-                            window.location = `${Galaxy.root}visualizations/list`;
+                            window.top.location = `${Galaxy.root}visualizations/list`;
                         },
                         Create: function() {
                             self.create_browser($("#new-title").val(), $("#new-dbkey").val());
