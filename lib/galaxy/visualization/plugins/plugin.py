@@ -14,6 +14,7 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils
 )
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -141,7 +142,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         ))
         return self._render(render_vars, trans=trans, embedded=embedded)
 
-    def to_dict(self):
+    def to_dict(self, trans=None, target_object=None, param_data=None):
         return {
             'name'          : self.name,
             'html'          : self.config.get('name'),
@@ -154,8 +155,69 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),
             'specs'         : self.config.get('specs'),
-            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url])
+            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url]),
+            'href'          : self.get_visualization_url(trans, target_object, param_data)
         }
+
+    def get_visualization_url(self, trans, target_object, param_data):
+        """
+        Generates a url for the visualization with `visualization`
+        for use with the given `target_object` with a query string built
+        from the configuration data in `param_data`.
+        """
+        # precondition: the target_object should be usable by the visualization (accrd. to data_sources)
+        # convert params using vis.data_source.to_params
+        params = self.get_url_params(trans, target_object, param_data)
+
+        # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
+        #   so generate their urls differently
+        url = None
+        # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
+        # TODO: change/remove if/when they can be updated to use this system
+        #: any built in visualizations that have their own render method in ctrls/visualization
+        BUILT_IN_VISUALIZATIONS = [
+            'trackster',
+            'circster',
+            'sweepster',
+            'phyloviz'
+        ]
+        if self.name in BUILT_IN_VISUALIZATIONS:
+            url = url_for(controller='visualization', action=self.name, **params)
+        # TODO: needs to be split off as it's own registry
+        elif isinstance(self, InteractiveEnvironmentPlugin):
+            url = url_for('interactive_environment_plugin', visualization_name=self.name, **params)
+        else:
+            url = url_for('visualization_plugin', visualization_name=self.name, **params)
+
+        # TODO:?? not sure if embedded would fit/used here? or added in client...
+        return url
+
+    def get_url_params(self, trans, target_object, param_data):
+        """
+        Convert the applicable objects and assoc. data into a param dict
+        for a url query string to add to the url that loads the visualization.
+        """
+        params = {}
+        if param_data is not None:
+            for to_param_name, to_param_data in param_data.items():
+                # TODO??: look into params as well? what is required, etc.
+                target_attr = to_param_data.get('param_attr', None)
+                assign = to_param_data.get('assign', None)
+                # one or the other is needed
+                # assign takes precedence (goes last, overwrites)?
+                # NOTE this is only one level
+
+                if target_attr and utils.hasattr_recursive(target_object, target_attr):
+                    params[to_param_name] = utils.getattr_recursive(target_object, target_attr)
+
+                if assign:
+                    params[to_param_name] = assign
+
+        # NOTE!: don't expose raw ids: encode id, _id
+        # TODO: double encodes if from config
+        if params:
+            params = trans.security.encode_dict_ids(params)
+        return params
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """

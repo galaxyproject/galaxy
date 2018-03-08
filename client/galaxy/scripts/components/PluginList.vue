@@ -89,7 +89,7 @@ export default {
             }
         },
         create: function(plugin) {
-            let href = `${Galaxy.root}plugins/visualizations/${plugin.name}/show?dataset_id=${this.selected}`;
+            let href = `${plugin.href}?dataset_id=${this.selected}`;
             $("#galaxy_main").attr("src", href);
         },
         match: function(plugin) {

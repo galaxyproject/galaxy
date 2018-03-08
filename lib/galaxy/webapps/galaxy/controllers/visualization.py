@@ -144,7 +144,13 @@ class VisualizationListGrid(grids.Grid):
         url_kwargs = dict(controller='visualization', id=item.id)
         # TODO: hack to build link to saved visualization - need trans in this function instead in order to do
         # link_data = trans.app.visualizations_registry.get_visualizations( trans, item )
-        if item.type in registry.VisualizationsRegistry.BUILT_IN_VISUALIZATIONS:
+        BUILT_IN_VISUALIZATIONS = [
+            'trackster',
+            'circster',
+            'sweepster',
+            'phyloviz'
+        ]
+        if item.type in BUILT_IN_VISUALIZATIONS:
             url_kwargs['action'] = item.type
         else:
             url_kwargs['__route_name__'] = 'saved_visualization'
