@@ -493,11 +493,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = trans.sa_session.query(model.History).options(
             eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
         ).get(id)
-        assert history
-        # TODO: formalize to trans.show_error
-        assert (history.user and (history.user.id == trans.user.id) or
-                (history.id == trans.history.id) or
-                (trans.user_is_admin()))
+        if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
+                             (trans.history and history.id == trans.history.id) or
+                             trans.user_is_admin())):
+            return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
