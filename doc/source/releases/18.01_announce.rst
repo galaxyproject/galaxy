@@ -3,8 +3,82 @@
 January 2018 Galaxy Release (v 18.01)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2018-01-08
- * Planned Release Date: 2018-01-29
+
+**Performance and User Experience Improvements**
+We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
+We achieved this by optimising queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
+
+**Collection Overhaul**
+  Feature description.
+
+**uWSGI**
+  Feature description.
+
+**ES6 + Vue**
+  Feature description.
+
+**New BAM datatypes**
+  Feature description.
+
+**Job Replacement**
+  Feature description.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_18.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git checkout release_18.01 && git pull --ff-only origin release_18.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+
+Security
+========
+
+Breaking Changes
+================
+
+We have reworked the Galaxy Webhook interface so if you have custom webhooks at your instance
+you need to take the following steps in order to fix them:
+
+1. Rename the main config file: <name>.yml -> config.yml
+2. In the config file, rename the name attribute: name -> id
+3. Put all files into the plugin's root folder, which should contain only four files: ``config.yml`` (mandatory), ``__init__.py`` (optional), ``script.js`` (optional), ``styles.css`` (optional)
+
+Deprecation Notices
+===================
+
+* This is the last release we are shipping JavaScript source maps for Galaxy client.
+
+Removal Notices
+===============
+The following features that have been deprecated in the past releases are being removed in 18.01:
+
+* Sample tracking
+* Sample request and external services management
+* Legacy library interface for Administrators
+
+Release Notes
+=============
+
+.. include:: 18.01.rst
+   :start-after: announce_start
+
+Security patch details
+======================
+
+.. include:: _thanks.rst
+
