@@ -71,6 +71,8 @@ The following features that have been deprecated in the past releases are being 
 * Sample request and external services management
 * Legacy library interface for Administrators
 
+In addition to that the PlantTribes datatypes have been commented out in the source code. Uncomment them if you want to re-enable it.
+
 Release Notes
 =============
 
