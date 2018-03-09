@@ -10,7 +10,7 @@ Highlights
 
 **Performance and User Experience Improvements**
   We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
-  We achieved this by optimising queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
+  We achieved this by optimizing database queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
 
   `Pull Request 5514`_, `Pull Request 5515`_, `Pull Request 5542`_,
   `Pull Request 5574`_, `Pull Request 5576`_, `Pull Request 5582`_,
@@ -20,7 +20,7 @@ Highlights
   The default web server used by Galaxy has changed from Paste to uWSGI and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``. 
   uWSGI is more production ready and should allow Galaxy to scale better in its default
   configuration. In the future uWSGI will allow Galaxy to setup GIE proxies without additional
-  configuration and use modern web technology such as web sockets.
+  configuration and use modern web technologies such as web sockets.
 
   To minimize the impact of this on existing Galaxy instances, if a Galaxy has an existing ``galaxy.ini``
   file configured it will continue to use Paste by default unless additional steps are
@@ -33,8 +33,8 @@ Highlights
   to assist converting an ``ini`` configuration file to a YAML one.
 
   These are big changes that affect many parts of Galaxy's administration documentation and makes
-  this documentation very dependent on which Galaxy version they are targetting. To address this, we have
-  moved a signifcant amount of administration documentation into Galaxy's code
+  this documentation very dependent on which Galaxy version they are targeting. To address this, we have
+  moved a significant amount of administration documentation into Galaxy's code
   base and made it available on a per release basis. The latest administration documentation for
   the previous release of Galaxy (17.09) which reference galaxy.ini files and Paste servers can
   be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
