@@ -97,13 +97,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
     """
-    BUILT_IN_VISUALIZATIONS = [
-        'trackster',
-        'circster',
-        'sweepster',
-        'phyloviz'
-    ]
-
     def __init__(self, app, path, name, config, context=None, **kwargs):
         context = context or {}
         self.app = app
@@ -163,7 +156,7 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         }
 
     def _get_url(self):
-        if self.name in self.BUILT_IN_VISUALIZATIONS:
+        if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
             return url_for(controller='visualization', action=self.name)
         return url_for('visualization_plugin', visualization_name=self.name)
 
