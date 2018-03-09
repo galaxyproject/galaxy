@@ -37,16 +37,28 @@ Highlights
 
   `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_, `Pull Request 5105`_
 
-**ES6 + Vue**
-  The client code that powers the Galaxy user interface has been converted to `ES6 <http://es6-features.org/>`__ that is significantly more concise than plain JavaScript. Other major client changes include
-  integration of the   `VueJS <https://vuejs.org/>`__ framework and improved client build and development
-  tooling. Taken together these changes will enable Galaxy developers to write usable, responsive
-  client code TODO...
+**Client Architecture**
+  The architecture for the client code that powers the Galaxy user interface has been significantly
+  overhauled. The code base has been converted to `ES6 <http://es6-features.org/>`__,
+  `Yarn <https://github.com/yarnpkg/yarn>`__ now powers the build and dependency management of the code,
+  `Prettier <https://prettier.io/>`__ is now used ensure consistent code formatting,
+  and the `VueJS <https://vuejs.org/>`__ framework has been integrated. Taken together these changes will
+  enable Galaxy developers to write usable, responsive client code more quickly and concisely than
+  previously possible. A big thanks goes out to community contributions from
+  `@anuprulez <https://github.com/anuprulez>`__ and `@anatskiy <https://github.com/anatskiy>`__ that are
+  already converting existing Galaxy components to reactive VueJS ones.
 
-  `Pull Request 4435`_, `Pull Request 4978`_
+  `Pull Request 4435`_, `Pull Request 4978`_, `Pull Request 4436`_, `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_
 
 **New BAM datatypes**
-  TODO: Feature description.
+  Previously Galaxy only supported coordinate sorted BAM files by default (the ``bam`` datatype). This
+  release of Galaxy now supports three new types of BAM file - including ``qname_sorted.bam`` that
+  ensures that the file is queryname sorted (e.g. ``SO:queryname``), ``qname_input_sorted.bam`` that
+  can be used to describe the output of aligners which generally keep mate pairs adjacent, and ``native_bam``
+  that makes no assumptions about the sort order of the file. A huge thanks goes out to
+  `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
+  implemented these datatypes.
+
   `Pull Request 5180`_, `Pull Request 5589`_
 
 **Experimental Job Caching**

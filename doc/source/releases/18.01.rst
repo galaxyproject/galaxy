@@ -24,9 +24,6 @@ Enhancements
 * Reload tools immediatelly if a macro changes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4635`_
-* Skip job execution if equivalent job exists
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4690`_
 * Add AskOmics Interactive Environment
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4737`_
@@ -36,14 +33,14 @@ Enhancements
 * Add maintenance script to simplify setting up a cleanup cron job
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 4916`_
-* Create the $GALAXY_MEMORY_MB tool job environment variable
+* Create the ``$GALAXY_MEMORY_MB`` job environment variable for tools.
   `Pull Request 4958`_
-* Add API that allows admins to decode galaxy objects' ids
+* Add API that allows admins to decode galaxy object IDs.
   `Pull Request 5018`_
-* Add sorting options for data library folders
+* Add sorting options for data library folders.
   `Pull Request 4877`_
-* Add option to auto create user_library_import_dir directories upon user
-  login
+* Add option to auto create ``user_library_import_dir`` directories upon user
+  login.
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5138`_
 * Add option to check file permissions for the user library imports
@@ -52,56 +49,57 @@ Enhancements
 * Add an admin form to pre-populate an ldap user
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5238`_
-
 * Add CRAM to BAM converter
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4939`_
-* add infernal-cm datatype
+* Add infernal-cm datatype
   (thanks to `@mmiladi <https://github.com/mmiladi>`__).
   `Pull Request 4977`_
-* Add ICM  for glimmer
-  (thanks to `@adatatypebretaud <https://github.com/abretaud>`__).
+* Add ICM datatype for glimmer
+  (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 5042`_
-* add Analyze75 datatype
+* Add Analyze75 datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4841`_
 * Add Classical linkage and haplotype datatypes
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 4894`_
-* Add support for the ideaspre datatype
+* Add ideaspre datatype
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 5445`_
-* add fasta.gz support
+* Add compressed fasta support.
   `Pull Request 5561`_
-* add ``cool`` datatype
+* Add ``cool`` datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5023`_
-* Neostore Zip datatype support
+* Add neostore zip datatype
   (thanks to `@zipho <https://github.com/zipho>`__).
   `Pull Request 4178`_
-* fast5_archive datatype
+* Add fast5_archive datatype
   (thanks to `@jvolkening <https://github.com/jvolkening>`__).
   `Pull Request 4569`_
-* add postgresql datatype
+* Add postgresql datatype
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4730`_
 * Add IQtree datatypes
   (thanks to `@mtekman <https://github.com/mtekman>`__).
   `Pull Request 4849`_
-* add Phylip datatype
+* Add Phylip datatype
   (thanks to `@khillion <https://github.com/khillion>`__).
   `Pull Request 5301`_
 .. enhancement
 
-* Galaxy Tours - Grouping tours for viewing clarity
+* Option to group Galaxy Tours for viewing clarity
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 4829`_
 * Allow users to upload multiple FTP files within a single request
   `Pull Request 4513`_
 * Replaces the admin form builder grid and forms
   `Pull Request 4480`_
-* Bumping pysam to 0.13 *core*, without customization
-  `Pull Request 4497`_
+* Update pysam dependency to 0.14 and eliminate the need to have
+  samtools on Galaxy's ``PATH`` (with huge help from `@mvdbeek
+  <https://github.com/mvdbeek>`__)
+  `Pull Request 4497`_, `Pull Request 5512`_, `Pull Request 5037`_
 * Initial selenium tests for libraries.
   `Pull Request 4543`_
 * Allow multiple simultaneous uploads via single POST.
@@ -189,12 +187,6 @@ Enhancements
   `Pull Request 4790`_
 * Add labels to selection options of the collection flattening tool
   `Pull Request 4791`_
-* Python3: fix remaining print statements
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 4799`_
-*  Extend Python3 flake8 linting to whole codebase
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 4811`_
 * ES6 broad pass overhaul
   `Pull Request 4827`_
 * expose state, stdout, stderr, uuid in the library API
@@ -357,39 +349,20 @@ Enhancements
 * change hicexplorer image name
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5177`_
-* Client dependency upgrades, changes.
-  `Pull Request 5190`_
-* Admin data tables vue
-  `Pull Request 5191`_
 * Improved home and temp directory handling.
   `Pull Request 5193`_
 * Tool-based annotation of out of memory errors.
   `Pull Request 5196`_
-* Python3: use collections.Mapping instead of removed DictMixin
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5199`_
-* Fix Python3 compatibility for lib/galaxy/web/
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5200`_
-* `#3002 <https://github.com/galaxyproject/galaxy/issues/3002>`__ update to
+* Fix `#3002 <https://github.com/galaxyproject/galaxy/issues/3002>`__ with update to
   newer version of virtualenv.
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 5202`_
-* Library Upload Refactoring, Testing, and Fixes
+* Library upload refactoring, testing, and fixes
   `Pull Request 5209`_
-*  Python3: finish first pass on whole codebase
+* Huge steps toward Python 3 compatiblity
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5215`_
-* Python3: fix moved imports
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5221`_
-* Python3: fix list.sort() and sorted() to use `key` parameter instead of
-  `cmp`
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5225`_
-* Add check_py3_compatibility Travis job
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5228`_
+  `Pull Request 5215`_, `Pull Request 5221`_, `Pull Request 5225`_, `Pull Request 5228`_,
+  `Pull Request 5200`_, `Pull Request 5199`_, `Pull Request 4799`_, `Pull Request 4811`_
 * Add chinese support
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
   `Pull Request 5232`_
@@ -414,8 +387,6 @@ Enhancements
 * Update Japanese translation
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
   `Pull Request 5288`_
-* Prettier 1.10 upgrade, supports Vue components now.
-  `Pull Request 5293`_
 * Improve the migration message when having to downgrade the database
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5299`_
@@ -472,8 +443,6 @@ Enhancements
 
 .. small_enhancement
 
-* Prettier javascript formatting.
-  `Pull Request 4436`_
 * Removes Sample request and External services makos/controllers
   `Pull Request 4526`_
 * Remove unused abstraction layers from Visualizations Registry
@@ -505,9 +474,6 @@ Enhancements
 * Try next dep. resolver if building env failed
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5036`_
-* Samtools to pysam
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5037`_
 * Sourcemap removal
   `Pull Request 5054`_
 * Fail job if job output collection fails
@@ -769,12 +735,12 @@ Fixes
   `Pull Request 5259`_
 * Fix dev sourcemap firefox compatibility
   `Pull Request 5278`_
-* Mark rerun_with_use_cached_job as flakey
+* Mark the test ``rerun_with_use_cached_job`` as flakey
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5286`_
 * Fix dataset edit link
   `Pull Request 5289`_
-* Fixes the --no-client-build startup option
+* Fixes the ``--no-client-build`` startup option
   `Pull Request 5294`_
 * `#5291 <https://github.com/galaxyproject/galaxy/issues/5291>`__ fix link to
   HTTP getgalaxy.org
@@ -870,9 +836,6 @@ Fixes
   `Pull Request 5506`_
 * do not allow codefiles for TS tool loading
   `Pull Request 5510`_
-* Make galaxy compatible with pysam 0.14
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5512`_
 * Fix for GenomeSpace importer/exporter
   (thanks to `@gvlproject <https://github.com/gvlproject>`__).
   `Pull Request 5528`_
