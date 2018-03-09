@@ -35,7 +35,8 @@ Highlights
   the previous release of Galaxy (17.09) which reference galaxy.ini files and Paste servers can
   be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
 
-  `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_, `Pull Request 5105`_
+  `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_,
+  `Pull Request 5105`_, `Pull Request 5441`_
 
 **Client Architecture**
   The architecture for the client code that powers the Galaxy user interface has been significantly
@@ -48,7 +49,9 @@ Highlights
   `@anuprulez <https://github.com/anuprulez>`__ and `@anatskiy <https://github.com/anatskiy>`__ that are
   already converting existing Galaxy components to reactive VueJS ones.
 
-  `Pull Request 4435`_, `Pull Request 4978`_, `Pull Request 4436`_, `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_
+  `Pull Request 4435`_, `Pull Request 4978`_, `Pull Request 4436`_,
+  `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_,
+  `Pull Request 4827`_, `Pull Request 4964`_, `Pull Request 5371`_  
 
 **New BAM datatypes**
   Previously Galaxy only supported coordinate sorted BAM files by default (the ``bam`` datatype). This
@@ -75,7 +78,9 @@ Highlights
     - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
     - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
     - The Galaxy web interface works with collections with arbitrary nesting and size (with help
-      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 5091`_
+      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
+    - Implement intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_
+    - Implement more intuitive options for collection deletion in the history panel. `Pull Request 5442`_
     - TODO: more of these...
     - TODO: a couple small screenshots - libraries, resume, and collection progress bar.
 

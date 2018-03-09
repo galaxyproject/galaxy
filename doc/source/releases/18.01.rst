@@ -15,19 +15,21 @@ Enhancements
 .. feature
 
 
-* Clone tools in workflows
+* Add option to clone tool steps in the workflow editor
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 5087`_
-* Cloud ObjectStore
+* Implement a generic Cloud ObjectStore using multi-cloud support from 
+  `cloudbridge <https://github.com/gvlproject/cloudbridge>`__
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4487`_
 * Reload tools immediatelly if a macro changes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4635`_
-* Add AskOmics Interactive Environment
+* Add an interactive environment for `AskOmics <https://github.com/askomics/askomics>`__ 
+  a visual SPARQL query builder for RDF databases
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4737`_
-* Implement github error report backend
+* Implement a Github error report backend for 
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4765`_
 * Add maintenance script to simplify setting up a cleanup cron job
@@ -35,7 +37,7 @@ Enhancements
   `Pull Request 4916`_
 * Create the ``$GALAXY_MEMORY_MB`` job environment variable for tools.
   `Pull Request 4958`_
-* Add API that allows admins to decode galaxy object IDs.
+* Add an API endpoint that allows admins to decode galaxy object IDs.
   `Pull Request 5018`_
 * Add sorting options for data library folders.
   `Pull Request 4877`_
@@ -46,10 +48,10 @@ Enhancements
 * Add option to check file permissions for the user library imports
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5154`_
-* Add an admin form to pre-populate an ldap user
+* Add an admin form to pre-populate an LDAP user
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5238`_
-* Add CRAM to BAM converter
+* Add a CRAM to BAM datatype converter
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4939`_
 * Add infernal-cm datatype
@@ -106,7 +108,7 @@ Enhancements
   `Pull Request 4753`_, `Pull Request 4732`_, `Pull Request 4909`_,
   `Pull Request 4935`_, `Pull Request 4925`_,
   `Pull Request 4687`_, `Pull Request 4660`_, `Pull Request 5333`_,
-  `Pull Request 5068`_, `Pull Request 4757`_
+  `Pull Request 5068`_, `Pull Request 4757`_, `Pull Request 4971`_
 * Allow multiple simultaneous uploads via single POST.
   `Pull Request 4563`_
 * Various bits of proactive security-related hardening
@@ -121,7 +123,7 @@ Enhancements
   `Pull Request 4672`_
 * Migrate various mako templates to modern JavaScript driven views.
   `Pull Request 4681`_, `Pull Request 4682`_, `Pull Request 4711`_,
-  `Pull Request 4755`_, `Pull Request 4661`_
+  `Pull Request 4755`_, `Pull Request 4661`_, `Pull Request 4993`_
 * More HDCA copying tests, add option to copy HDAs into new history.
   `Pull Request 5004`_
 * Use only latest publication
@@ -148,44 +150,39 @@ Enhancements
 * Typo fixes and small cleanups
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4725`_
-* Stricter checks for SDF sniffing
+* Fix that implements stricter checks for SDF datatype sniffing
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4729`_
-* Reuse existing dependency manager if possible
+* When reloading the toolbox, use the existing dependency manager if possible
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4739`_
-* Many more upload tests.
-  `Pull Request 4746`_
+* Many more upload tests - big improvements to uploads will be coming to Galaxy 18.05.
+  `Pull Request 4746`_, `Pull Request 4762`_, `Pull Request 4790`_,
+  `Pull Request 4863`_  
 * Kubernetes resources requests/limits support
-  (thanks to `@phnmnl <https://github.com/phnmnl>`__).
+  (thanks to `@pcm32 <https://github.com/pcm32>`__ and the `@phnmnl <https://github.com/phnmnl>`__ project).
   `Pull Request 4751`_
-* Additionally send all stats to a single bucket
+* Send all influxdb stats to a single bucket
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4758`_
-* Tests for blocking path pastes and intranet URLs for secondary files...
-  `Pull Request 4762`_
 * PEP-8 fixes in random doctests.
   `Pull Request 4764`_
 * Avoid circular import when determining max metadata value size.
   `Pull Request 4770`_
 * Remove unused concept of dataset children.
   `Pull Request 4771`_
-* Allow dataset attribute changes without refreshing the page
+* Allow dataset attribute changes without refreshing the page.
   `Pull Request 4779`_
 * Include check for updates to dependencies in tox, Makefile, Travis.
   `Pull Request 4788`_
-* Add another upload test this time with no dbkey param.
-  `Pull Request 4790`_
-* Add labels to selection options of the collection flattening tool
+* Add labels to selection options of the collection flattening tool.
   `Pull Request 4791`_
-* ES6 broad pass overhaul
-  `Pull Request 4827`_
-* expose state, stdout, stderr, uuid in the library API
+* Expose ``state``, ``stdout``, ``stderr``, ``uuid`` in the library API
   `Pull Request 4839`_
-* Updated QUnit testing.
-  `Pull Request 4855`_
-* Simple tests for data source responses.
-  `Pull Request 4863`_
+* Significant improvements to client QUnit tests including new
+  `Karma <https://karma-runner.github.io/>`__ based test driver.
+  `Pull Request 4855`_, `Pull Request 5066`_, `Pull Request 5063`_,
+  `Pull Request 5074`_
 * Remove tool reloading buttons and packaging endpoint, revise admin labels
   `Pull Request 4866`_
 * Require flake8-import-order >=0.14
@@ -196,47 +193,36 @@ Enhancements
   `Pull Request 4871`_
 * Absolute pins on linting dependencies.
   `Pull Request 4876`_
-* Rev to a newer version of the testing image.
-  `Pull Request 4879`_
 * Update various Galaxy requirements.
   `Pull Request 4884`_
 * Updates and enhancements for the testing Dockerfile.
-  `Pull Request 4885`_
+  `Pull Request 4885`_, `Pull Request 4879`_, `Pull Request 4900`_
 * Add nicer composite dataset names by default
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4886`_
-* Automatic-er database initialization.
+* Automatic-er database initialization for testing.
   `Pull Request 4887`_
 * Rework dev depenedencies to be Pipfile generated, locked, and hashed.
   `Pull Request 4891`_
-* Another round of Docker enhancements and fixes for 18.01.
-  `Pull Request 4900`_
 * Install dev and regular dependencies at the same time.
   `Pull Request 4903`_
 * More structured app shutdown.
   `Pull Request 4910`_
-* Touch up issue labels.
+* Touch up issue labels in repository procedures document.
   `Pull Request 4912`_
 * Improve error handling for incorrect datatype upload.
   `Pull Request 4922`_
-* Fix downloading of arbitrarily-nested collections
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 4934`_
 * Activate mulled dependencies once per job
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4945`_
 * Remove invalid user preferences beta (no longer a beta, always enabled)
   `Pull Request 4957`_
-* Add DELETE /api/jobs/<job_id> as a job cancellation API endpoint.
+* Add ``DELETE /api/jobs/<job_id>`` as a job cancellation API endpoint.
   `Pull Request 4961`_
 * Kill off processes when stopping the local job runner.
   `Pull Request 4962`_
-* Prettier upgrade
-  `Pull Request 4964`_
 * Test both endpoints for collection creation in history contents API.
   `Pull Request 4965`_
-* Capture labelled screenshots of Galaxy during PR CI testing.
-  `Pull Request 4971`_
 * Add @flakey test annotation and "skip" them if the fail on Jenkins.
   `Pull Request 4972`_
 * Include path in job script integrity errors
@@ -245,8 +231,6 @@ Enhancements
 * Fix tox envlist to contain all envs that should pass
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4992`_
-* Replace history import form
-  `Pull Request 4993`_
 * Changes made while working on uWSGI mules that don't belong in the mules PR
   `Pull Request 4994`_
 * Revise workflow create form, remove unused rename endpoint
@@ -280,12 +264,6 @@ Enhancements
 * Remove wchartype dependency and is_multi_byte [1/2]
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5062`_
-* Re-enable qunit testing.
-  `Pull Request 5063`_
-* Improved Karma configuration and options.
-  `Pull Request 5066`_
-* More QUnit Fixes and Enhancements
-  `Pull Request 5074`_
 * Implement Multilingualization support on workflow page
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 5077`_
@@ -378,23 +356,12 @@ Enhancements
   `Pull Request 5337`_
 * Webhooks improvements
   `Pull Request 5342`_
-* Environment variable to skip client build.
-  `Pull Request 5371`_  
-* Make TabularToolDataTable._deduplicate_data() faster
+* Make ``TabularToolDataTable._deduplicate_data()`` faster
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5383`_
 * Allow map-over when discovering dataset collections
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5413`_
-* Fix rename post job actions to be more intuitive when mapping over
-  collections.
-  `Pull Request 5416`_
-* Implement more intuitive collection PJA
-  `Pull Request 5418`_
-* Admin doc corrections
-  `Pull Request 5441`_
-* More intuitive options for collection deletion.
-  `Pull Request 5442`_
 * Backport: Add --skip_flakey_fails flag to CI script for API tests
   `Pull Request 5455`_
 * Optimize public grid database interactions.
