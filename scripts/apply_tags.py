@@ -2,6 +2,7 @@
 
 import sys
 import time
+
 from bioblend.galaxy import GalaxyInstance
 
 
@@ -30,12 +31,12 @@ class ApplyTagsHistory:
             try:
                 update_history = history.show_history(self.history_id)
             except Exception as exception:
-                print "Some problem occurred with history: %s" % self.history_id
-                print exception
+                print("Some problem occurred with history: %s" % self.history_id)
+                print(exception)
                 return
         update_history_id = update_history["id"]
-        print "History name: %s" % update_history["name"]
-        print "History id: %s" % update_history_id
+        print("History name: %s" % update_history["name"])
+        print("History id: %s" % update_history_id)
         self.find_dataset_parents_update_tags(history, job, update_history_id)
 
     @classmethod
@@ -50,7 +51,7 @@ class ApplyTagsHistory:
         count_datasets_updated = 0
         # get all datasets belonging to a history
         all_datasets = history.show_history(history_id, contents=True)
-        print "Total datasets: %d. Updating their tags may take a while..." % len(all_datasets)
+        print("Total datasets: %d. Updating their tags may take a while..." % len(all_datasets))
         for dataset in all_datasets:
             try:
                 if dataset["deleted"] is False and dataset["state"] == 'ok':
@@ -91,7 +92,7 @@ class ApplyTagsHistory:
                 is_updated = self.propagate_tags(history, history_id, parent_dataset_ids, dataset_id, parent_tags, own_tags)
                 if is_updated is True:
                     count_datasets_updated += 1
-        print "Tags of %d datasets updated" % count_datasets_updated
+        print("Tags of %d datasets updated" % count_datasets_updated)
 
     @classmethod
     def collect_parent_ids(self, datasets_inheritance_chain):
@@ -163,4 +164,4 @@ if __name__ == "__main__":
     history_tags = ApplyTagsHistory(sys.argv[1], sys.argv[2], history_id)
     history_tags.read_galaxy_history()
     end_time = time.time()
-    print "Program finished in %d seconds" % int(end_time - start_time)
+    print("Program finished in %d seconds" % int(end_time - start_time))
