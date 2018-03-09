@@ -57,7 +57,7 @@ var View = Backbone.View.extend({
             collection: this.vis_array,
             onclick: function(id) {
                 var vis_type = self.vis_index[id];
-                $("#galaxy_main").attr("src", vis_type.visualization.href);
+                $("#galaxy_main").attr("src", `${vis_type.visualization.href}?dataset_id=${dataset.id}`);
             }
         });
         this.$el.empty().append(this.types.$el);
