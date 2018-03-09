@@ -1,6 +1,6 @@
 <template>
     <div class="ui-thumbnails">
-        <div v-if="error" class="ui-message alert alert-danger">
+        <div v-if="error" class="ui-message ui-show alert alert-danger">
             {{ error }}
         </div>
         <div v-else class="ui-thumbnails-grid">
@@ -37,7 +37,7 @@
                                     <span class="title">Create Visualization</span>
                                 </button>
                             </div>
-                            <div v-else class="ui-message alert alert-danger">
+                            <div v-else class="ui-message ui-show alert alert-danger">
                                 There is no suitable dataset in your current history which can be visualized with this plugin.
                             </div>
                         </td>
@@ -117,7 +117,7 @@ export default {
 };
 </script>
 <style>
-.ui-message {
+.ui-show {
     display: block;
     margin-top: 0px;
 }
