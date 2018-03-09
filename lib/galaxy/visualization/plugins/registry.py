@@ -18,7 +18,6 @@ from galaxy.visualization.plugins import (
     config_parser,
     plugin as vis_plugins
 )
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +43,7 @@ class VisualizationsRegistry(object):
         'sweepster',
         'phyloviz'
     ]
+
     def __str__(self):
         return self.__class__.__name__
 
