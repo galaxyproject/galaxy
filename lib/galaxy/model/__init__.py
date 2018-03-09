@@ -2035,6 +2035,12 @@ class DatasetInstance(object):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
 
+    def link_to(self, path):
+        self.file_name = os.path.abspath(path)
+        # Since we are not copying the file into Galaxy's managed
+        # default file location, the dataset should never be purgable.
+        self.dataset.purgable = False
+
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
