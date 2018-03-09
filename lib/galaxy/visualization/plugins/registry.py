@@ -225,7 +225,7 @@ class VisualizationsRegistry(object):
         result = []
         for plugin in self.plugins.itervalues():
             result.append(plugin.to_dict())
-        return result
+        return sorted(result, key=lambda k: k.get('html'))
 
     # -- building links to visualizations from objects --
     def get_visualizations(self, trans, target_object):
