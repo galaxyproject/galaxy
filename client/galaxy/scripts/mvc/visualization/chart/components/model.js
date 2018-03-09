@@ -10,7 +10,7 @@ export default Backbone.Model.extend({
         state_info: "",
         modified: true,
         dataset_id: "",
-        dataset_id_job: ""
+        dataset_id_job: null
     },
 
     initialize: function(options, viz_options) {
