@@ -136,15 +136,12 @@ Enhancements
   `Pull Request 4833`_, `Pull Request 5212`_, `Pull Request 5114`_
 * More HDCA copying tests, add option to copy HDAs into new history.
   `Pull Request 5004`_
-* Use only latest publication
+* Use only latest publication in ``CITATION``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4688`_
 * Nicer logging message for sentry
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4693`_
-* Fix Python import order for ``cron/``, ``scripts/``, and ``test/``
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 4697`_
 * Use enumeration to provide history input index names.
   `Pull Request 4700`_
 * Cleanup delayed action in ``history-view.js``.
@@ -195,9 +192,6 @@ Enhancements
   `Pull Request 5074`_
 * Remove tool reloading buttons and packaging endpoint, revise admin labels
   `Pull Request 4866`_
-* Require flake8-import-order >=0.14
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 4869`_
 * Add various elements to the Tool XML doc page
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4871`_
@@ -245,9 +239,9 @@ Enhancements
   `Pull Request 4994`_
 * Add warning for sort-of-defunct workflow options in galaxy.ini.
   `Pull Request 5002`_
-* Fix import order everywhere
+* Fix Python import order everywhere
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5005`_
+  `Pull Request 4697`_, `Pull Request 5005`_
 * dataset info: present decoded IDs for admins and add peek
   `Pull Request 5006`_
 * Removed unneeded skip_install tags in tox.ini.
@@ -267,15 +261,12 @@ Enhancements
   `Pull Request 5056`_
 * Build endpoint separation
   `Pull Request 5058`_
-* Remove wchartype dependency and ``is_multi_byte`` attribute
+* Remove ``wchartype`` dependency and ``is_multi_byte`` attribute
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5062`_
+  `Pull Request 5062`_, `Pull Request 5088`_
 * Implement multilingualization support on workflow page
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 5077`_
-* Remove wchartype dependency and is_multi_byte [2/2]
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5088`_
 * Update Jupyter IE default image
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 5095`_
@@ -285,7 +276,7 @@ Enhancements
   `Pull Request 5109`_
 * Update to flake8-import-order 0.16
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 5110`_
+  `Pull Request 4869`_, `Pull Request 5110`_
 * Change the default to not add tags based on filename
   `Pull Request 5115`_
 * Improve tool validation and metadata generation
@@ -317,7 +308,7 @@ Enhancements
 * Add chinese support
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
   `Pull Request 5232`_
-* Make pam a conditional dependency
+* Make ``pam`` a conditional dependency
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5251`_
 * Update api quickstart doc to use default port, with a little bit of extra
@@ -376,7 +367,7 @@ Enhancements
 * Remove unused galaxy-side set_tool_version code
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4986`_
-* Fix ``allow-register`` option in auth module
+* Fix ``allow-register`` option in ``auth`` module
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4989`_
 * Tried to fix issue with Conda environment building failing jobs that
@@ -472,7 +463,7 @@ Fixes
   `Pull Request 4952`_
 * Fix up reports JavaScript.
   `Pull Request 4967`_
-* Run `hg clone` in a subprocess instead of using Mercurial API
+* Run ``hg clone`` in a subprocess instead of using the Mercurial API
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4979`_
 * Tolerate ``IOError`` in tool and data table watcher
@@ -495,7 +486,7 @@ Fixes
   `Pull Request 4990`_
 * Fix to allow ``get_history`` calls with ``create=False`` when evaluating workflows.
   `Pull Request 4997`_
-* Add missing ipaddress requirement
+* Add missing ``ipaddress`` requirement
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5000`_
 * Use github instead of NCBI for problematic data manager test FASTA.
@@ -622,7 +613,7 @@ Fixes
 * Fix tool report submission with sentry
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5303`_
-* Fix common_startup.sh bash-isms
+* Fix ``common_startup.sh`` bash-isms
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5304`_
 * Fix Galaxy instance startup error
@@ -708,7 +699,7 @@ Fixes
 * Fix search overlay JS errors
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5531`_
-* Allow LDAP options not starting with OPT_
+* Allow LDAP options not starting with ``OPT_``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5556`_
 * Fix broken admin ``create new user`` when ``registration =='challenge'``
