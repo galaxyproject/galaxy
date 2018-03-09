@@ -107,20 +107,15 @@ class VisualizationsRegistry(object):
         for plugin_path in self._find_plugins():
             try:
                 plugin = self._load_plugin(plugin_path)
-
                 if plugin and plugin.name not in self.plugins:
                     self.plugins[plugin.name] = plugin
                     log.info('%s, loaded plugin: %s', self, plugin.name)
-                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
-                # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
                     log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
-
             except Exception:
                 if not self.skip_bad_plugins:
                     raise
                 log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
-
         return self.plugins
 
     def _find_plugins(self):
@@ -232,7 +227,6 @@ class VisualizationsRegistry(object):
         Get the names of visualizations usable on the `target_object` and
         the urls to call in order to render the visualizations.
         """
-        # TODO:?? a list of objects? YAGNI?
         applicable_visualizations = []
         for vis_name in self.plugins:
             url_data = self.get_visualization(trans, vis_name, target_object)
@@ -246,28 +240,15 @@ class VisualizationsRegistry(object):
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        # log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
         visualization = self.plugins.get(visualization_name, None)
-        if not visualization:
-            return None
-
-        data_sources = visualization.config['data_sources']
-        for data_source in data_sources:
-            # currently a model class is required
-            model_class = data_source['model_class']
-            if not isinstance(target_object, model_class):
-                continue
-
-            # TODO: not true: must have test currently
-            tests = data_source['tests']
-            if tests and not self.is_object_applicable(trans, target_object, tests):
-                continue
-
-            # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
-            param_data = data_source['to_params']
-            response = visualization.to_dict(trans, target_object, param_data)
-            return response
-        return None
+        if visualization is not None:
+            data_sources = visualization.config['data_sources']
+            for data_source in data_sources:
+                model_class = data_source['model_class']
+                if isinstance(target_object, model_class):
+                    tests = data_source['tests']
+                    if tests is None or self.is_object_applicable(trans, target_object, tests):
+                        return visualization.to_dict()
 
     def is_object_applicable(self, trans, target_object, data_source_tests):
         """
