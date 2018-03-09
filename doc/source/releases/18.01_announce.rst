@@ -13,7 +13,8 @@ Highlights
   We achieved this by optimising queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
 
   `Pull Request 5514`_, `Pull Request 5515`_, `Pull Request 5542`_,
-  `Pull Request 5574`_, `Pull Request 5576`_, `Pull Request 5582`_
+  `Pull Request 5574`_, `Pull Request 5576`_, `Pull Request 5582`_,
+  `Pull Request 5533`_, `Pull Request 5615`_, `Pull Request 5616`_
 
 **Web Server and Configuration**
   The default web server used by Galaxy has changed from Paste to uWSGI and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``. 
@@ -56,7 +57,8 @@ Highlights
   `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_,
   `Pull Request 4827`_, `Pull Request 4964`_, `Pull Request 5371`_,
   `Pull Request 5128`_, `Pull Request 5262`_, `Pull Request 5081`_, `Pull Request 5054`_
-  `Pull Request 5093`_, `Pull Request 5001`_, `Pull Request 5261`_
+  `Pull Request 5093`_, `Pull Request 5001`_, `Pull Request 5261`_, `Pull Request 5278`_,
+  `Pull Request 5294`_  
 
 **New BAM datatypes**
   Previously Galaxy only supported coordinate sorted BAM files by default (the ``bam`` datatype). This
@@ -67,7 +69,7 @@ Highlights
   `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
   implemented these datatypes.
 
-  `Pull Request 5180`_, `Pull Request 5589`_
+  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_
 
 **Experimental Job Caching**
   Galaxy can now be configured to allow users the option of skipping duplicated jobs if one with
@@ -85,14 +87,10 @@ Highlights
     - Collections now appear with state and progress bars in the history panel and contained datasets
       are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
       `Pull Request 5013`_, `Pull Request 5078`_
-    - The Galaxy web interface works with collections with arbitrary nesting and size (with help
-      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
     - Implement intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
-    - Implement more intuitive options for collection deletion in the history panel. `Pull Request 5442`_
+    - The web interface now supports collections with arbitrary nesting and size (with help
+      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
     - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
-    -  Allow map-over when discovering dataset collections (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5413`_
-    - TODO: a couple small screenshots - libraries, resume, and collection progress bar.
-
 
 Get Galaxy
 ==========

@@ -14,7 +14,6 @@ Enhancements
 
 .. feature
 
-
 * Add option to clone tool steps in the workflow editor
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 5087`_, `Pull Request 5124`_, `Pull Request 5185`_
@@ -122,12 +121,13 @@ Enhancements
 * Various bits of proactive security-related hardening
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4604`_
-* Move wait_for_dataset_collection to populators
+* Move test helper ``wait_for_dataset_collection`` for reuse
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4658`_
 * Extend job search for hdcas
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-* Add a custom "TRACE" log level for even more verbosity.
+  `Pull Request 4665`_
+* Add a custom ``TRACE`` log level for even more verbosity.
   `Pull Request 4672`_
 * Migrate various mako templates to modern JavaScript driven views.
   `Pull Request 4681`_, `Pull Request 4682`_, `Pull Request 4711`_,
@@ -363,7 +363,8 @@ Enhancements
 .. small_enhancement
 
 * Removes Sample request and External services makos/controllers
-  `Pull Request 4526`_, `Pull Request 4872`_, `Pull Request 5103`_
+  `Pull Request 4526`_, `Pull Request 4872`_, `Pull Request 5103`_,
+  `Pull Request 5204`_
 * Remove unused abstraction layers from Visualizations Registry.
   `Pull Request 4620`_
 * Visible keys standardization in model classes.
@@ -412,6 +413,9 @@ Fixes
 
 .. bug
 
+* Allow mapping over collections when discovering dataset collections in tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 5413`_
 * Make liftover tool use data tables
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4645`_
@@ -564,7 +568,7 @@ Fixes
 * Resolve broken link for "all workflows"
   (thanks to `@mmiladi <https://github.com/mmiladi>`__).
   `Pull Request 5161`_
-* Fix workflow collection attachments
+* Fix workflow collection attachments.
   `Pull Request 5166`_
 * Provide UI collection output information for subworkflows.
   `Pull Request 5172`_
@@ -572,8 +576,6 @@ Fixes
   `Pull Request 5182`_
 * Fixes genome decode handling.
   `Pull Request 5198`_
-* Sample tracking removal cleanup
-  `Pull Request 5204`_
 * Remove broken Yahoo OpenID support
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 5208`_
@@ -596,7 +598,7 @@ Fixes
   `Pull Request 5233`_
 * Workflow list show-in-tool-panel callback bugfix.
   `Pull Request 5234`_
-* fix image proxy prefix in tool form
+* Fix image proxy prefix in tool form.
   `Pull Request 5237`_
 * Fix wrong tool id after switching versions
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -604,20 +606,17 @@ Fixes
 * Catch and display error when displaying broken BAM file
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5253`_
-* Topic/getmicrobedata quick fix
+* Fix for getmicrobedata tool
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 5258`_
 * Adjust note about nginx enabled sites configuration
+  (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5259`_
-* Fix dev sourcemap firefox compatibility
-  `Pull Request 5278`_
 * Mark the test ``rerun_with_use_cached_job`` as flakey
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5286`_
-* Fix dataset edit link
+* Fix dataset edit link.
   `Pull Request 5289`_
-* Fixes the ``--no-client-build`` startup option
-  `Pull Request 5294`_
 * `#5291 <https://github.com/galaxyproject/galaxy/issues/5291>`__ fix link to
   HTTP getgalaxy.org
   (thanks to `@selten <https://github.com/selten>`__).
@@ -631,7 +630,7 @@ Fixes
 * Fix Galaxy instance startup error
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5306`_
-* fix link to library from history structure view
+* Fix link to library from history structure view.
   `Pull Request 5327`_
 * Prevent reloading when data table is being modified
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -639,9 +638,9 @@ Fixes
 * Work around (temporarily) wrong getsize() output
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5335`_
-* Disable galaxy tour 'path' navigation
+* Disable galaxy tour 'path' navigation.
   `Pull Request 5340`_
-* Fix tool-shed-config-validate
+* Fix ``tool-shed-config-validate`` ``Makefile`` target.
   (thanks to `@ValentinChCloud <https://github.com/ValentinChCloud>`__).
   `Pull Request 5343`_
 * History import fixes
@@ -653,26 +652,25 @@ Fixes
 * Fix bam conversion test tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5351`_
-* remove charlimit for fetching urls
+* Remove charlimit for fetching urls.
   `Pull Request 5353`_
-* Use print() function in common_startup.sh
+* Use ``print()`` function in common_startup.sh
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5357`_
-* Handle none job owner in API
+* Handle ``None`` in job owner in API
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 5358`_
-* Fix logic in deactivate or uninstall
-  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+* Fix form logic in deactivate or uninstall.
   `Pull Request 5363`_
-* History multipanel fixes
+* History multipanel fixes.
   `Pull Request 5364`_
 * Remove additional checkbox workarounds.
   `Pull Request 5367`_
-* Workflow tool menu fix for deleted workflows
+* Workflow tool menu fix for deleted workflows.
   `Pull Request 5368`_
 * Bump conditional Pygments version to 2.2.0 so it matches the dev
   `Pull Request 5376`_
-* Fix `make docs` when the virtualenv is not .venv
+* Fix ``make docs`` when the virtualenv is not .venv
   `Pull Request 5377`_
 * Force a fixed node image version when building client for Jenkins.
   `Pull Request 5382`_
@@ -690,54 +688,45 @@ Fixes
 * Don't silently fail rest of multi-action queue when attempting to purge a
   collection.
   `Pull Request 5443`_
-* Ensure jobStateSummariesCollection exists;
+* Ensure jobStateSummariesCollection exists.
   `Pull Request 5444`_
-* Fix server_name when config is a dict
+* Fix ``server_name`` when config is a ``dict``.
   `Pull Request 5447`_
 * Fixes for workflow sharing links.
   `Pull Request 5467`_
 * Fix workflow execution post action - rename
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5485`_
-* Fix common_startup.sh for galaxy tarballs
+* Fix ``common_startup.sh`` for galaxy tarballs
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5491`_
-* Close tempfile handles.
+* Close ``tempfile`` handles.
   `Pull Request 5506`_
-* do not allow codefiles for TS tool loading
+* Do not allow ``codefiles`` during tool shed tool loading.
   `Pull Request 5510`_
 * Fix for GenomeSpace importer/exporter
-  (thanks to `@gvlproject <https://github.com/gvlproject>`__).
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 5528`_
 * Fix search overlay JS errors
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5531`_
-* Use profile="18.01" for BamNative converters
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5532`_
-* Improve performance bugs and misleading summary info in history list.
-  `Pull Request 5533`_
 * Close tempfile handles.
   `Pull Request 5552`_
 * Allow LDAP options not starting with OPT_
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5556`_
-* fix broken admin 'create new user' when registration =='challenge'
+* Fix broken admin ``create new user`` when ``registration =='challenge'``
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5569`_
 * Do not remove external path files during library uploads
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5573`_
-* Bump sqlite3 dependency for web proxy
+* Bump sqlite3 dependency for web proxy.
   `Pull Request 5575`_
-* Fix small bam (header-only) infinite fetching
+* Fix small bam (header-only) infinite fetching.
   `Pull Request 5579`_
-* Fix migration 0137's downgrade
+* Fix migration 0137's downgrade.
   `Pull Request 5605`_
-* fix for cases where panel elements have to_dict with different signature
-  `Pull Request 5615`_
-* toolbox to_dict cache fix and improvements
-  `Pull Request 5616`_
 * Conda fix for commands using stdout redirection.
   `Pull Request 5620`_
 * Move `Extract genomic DNA 1` to list of versioned galaxy tools requiring
@@ -746,9 +735,6 @@ Fixes
   `Pull Request 5626`_
 * Changed GenomeSpace token handling to use manual OpenID association only
   `Pull Request 5631`_
-* Do not sniff BamInputSorted
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5644`_
 * Use sample file path when adding missing indexes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5650`_
