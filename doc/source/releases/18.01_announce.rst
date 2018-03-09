@@ -84,15 +84,15 @@ Highlights
   This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
   to collections have been made, some of the key highlights include:
   
-    - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
-    - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
-    - Collections now appear with state and progress bars in the history panel and contained datasets
-      are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
-      `Pull Request 5013`_, `Pull Request 5078`_
-    - Implement intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
-    - The web interface now supports collections with arbitrary nesting and size (with help
-      from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
-    - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
+  - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
+  - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
+  - Collections now appear with state and progress bars in the history panel and contained datasets
+    are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
+    `Pull Request 5013`_, `Pull Request 5078`_
+  - Implement intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
+  - The web interface now supports collections with arbitrary nesting and size (with help
+    from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
+  - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
 
 Get Galaxy
 ==========
