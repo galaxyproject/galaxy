@@ -61,7 +61,12 @@ export default {
         }
     },
     created() {
-        axios.get(`${Galaxy.root}api/plugins`)
+        let url = `${Galaxy.root}api/plugins`;
+        let dataset_id = Galaxy.params.dataset_id;
+        if (dataset_id) {
+            url += `?dataset_id=${dataset_id}`;
+        }
+        axios.get(url)
         .then(response => {
             this.plugins = response.data;
         })

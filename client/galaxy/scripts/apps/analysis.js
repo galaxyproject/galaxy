@@ -60,7 +60,6 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
-            "(/)visualizations/dataset_id=(:dataset_id)": "show_visualizations_selector",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import_workflow": "show_import_workflow",
             "(/)workflows/run(/)": "show_run",
@@ -121,14 +120,6 @@ window.app = function app(options, bootstrapped) {
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
                     redirect: "visualizations/list"
-                })
-            );
-        },
-
-        show_visualizations_selector: function(dataset_id) {
-            this.page.display(
-                new Visualization.View({
-                    dataset_id: dataset_id
                 })
             );
         },

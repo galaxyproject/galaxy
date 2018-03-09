@@ -238,7 +238,7 @@ class VisualizationsRegistry(object):
             url_data = self.get_visualization(trans, vis_name, target_object)
             if url_data:
                 applicable_visualizations.append(url_data)
-        return applicable_visualizations
+        return sorted(applicable_visualizations, key=lambda k: k.get('html'))
 
     def get_visualization(self, trans, visualization_name, target_object):
         """
