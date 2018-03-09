@@ -10,37 +10,28 @@ Highlights
 
 **Performance and User Experience Improvements**
   We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
-  We achieved this by optimizing database queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed.
-
-  `Pull Request 5514`_, `Pull Request 5515`_, `Pull Request 5542`_,
-  `Pull Request 5574`_, `Pull Request 5576`_, `Pull Request 5582`_,
-  `Pull Request 5533`_, `Pull Request 5615`_, `Pull Request 5616`_
+  We achieved this by optimizing database queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed. See the `list of related performance pull requests`_.
 
 **Web Server and Configuration**
-  The default web server used by Galaxy has changed from Paste to `uWSGI <https://uwsgi-docs.readthedocs.io/>`__ and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``. 
-  uWSGI is more production ready and should allow Galaxy to scale better in its default
+  The default web server used by Galaxy has changed from Paste to `uWSGI <https://uwsgi-docs.readthedocs.io/>`__ and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``.
+  uWSGI is more production ready and allows Galaxy to scale better in its default
   configuration. In the future uWSGI will allow Galaxy to setup GIE proxies without additional
   configuration and use modern web technologies such as web sockets.
+  Read more about the server, configuration, and documentation changes in the `uWSGI details`_ section of this document.
 
-  To minimize the impact of this on existing Galaxy instances, if a Galaxy has a ``galaxy.ini``
-  file configured, it will continue to use Paste by default unless additional steps are
-  taken by the administrator (Galaxy can be forced to start under uWSGI even with an older configuration file 
-  by setting ``APP_WEBSERVER=uwsgi`` in the environment). As part of the transition to YAML-based 
-  configuration files, we have implemented a schema to validate Galaxy configuration files. Run
-  ``make config-validate`` from Galaxy's root directory to validate a schema and ``make config-lint`` to
-  check for best practices. While there is no need to convert your configuration file (``galaxy.ini`` hasn't
-  been deprecated), you can run ``make config-convert-dry-run`` and ``make config-convert``
-  to respectively test and perform the conversion of an ``ini`` configuration file to a YAML one.
+**Dataset Collection Usability**
+  This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
+  to collections have been made, some of the key highlights include:
 
-  These are big changes that affect many parts of Galaxy's administration documentation and makes
-  this documentation very dependent on which Galaxy version they are targeting. To address this, we have
-  moved a significant amount of administration documentation into Galaxy's code
-  base and made it available on a per-release basis. The latest administration documentation for
-  the previous release of Galaxy (17.09) which reference ``galaxy.ini`` files and Paste servers can
-  be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
-
-  `Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_,
-  `Pull Request 5105`_, `Pull Request 5441`_
+  - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
+  - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
+  - Collections now appear with state and progress bars in the history panel and contained datasets
+    are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
+    `Pull Request 5013`_, `Pull Request 5078`_
+  - We added intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
+  - The web interface now supports collections with arbitrary nesting and size (with help
+    from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
+  - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
 
 **Client Architecture**
   The architecture for the client code that powers the Galaxy user interface has been significantly
@@ -51,23 +42,16 @@ Highlights
   enabling Galaxy developers to write usable, responsive client code more quickly and concisely than
   previously possible. A big thanks goes out to community contributions from
   `@anuprulez <https://github.com/anuprulez>`__ and `@anatskiy <https://github.com/anatskiy>`__ that are
-  already converting existing Galaxy components to reactive VueJS ones.
-
-  `Pull Request 4435`_, `Pull Request 4978`_, `Pull Request 4436`_, `Pull Request 5173`_
-  `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_,
-  `Pull Request 4827`_, `Pull Request 4964`_, `Pull Request 5371`_,
-  `Pull Request 5128`_, `Pull Request 5262`_, `Pull Request 5081`_, `Pull Request 5054`_
-  `Pull Request 5093`_, `Pull Request 5001`_, `Pull Request 5261`_, `Pull Request 5278`_,
-  `Pull Request 5294`_  
+  already converting existing Galaxy components to reactive VueJS ones. See the `list of related client pull requests`_.
 
 **New BAM datatypes**
   Previously Galaxy only supported coordinate sorted BAM files by default (the ``bam`` datatype). In addition, this
   release of Galaxy now supports three new types of BAM:
-  
+
   - ``qname_sorted.bam``, that ensures that the file is queryname sorted (e.g. ``SO:queryname``);
   - ``qname_input_sorted.bam``, that can be used to describe the output of aligners which generally keep mate pairs adjacent
   - ``native_bam``, that makes no assumptions about the sort order of the file.
-  
+
   A huge thanks goes out to `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
   implemented these datatypes.
 
@@ -80,19 +64,6 @@ Highlights
 
   `Pull Request 4690`_
 
-**Dataset Collection Usability**
-  This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
-  to collections have been made, some of the key highlights include:
-  
-  - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
-  - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
-  - Collections now appear with state and progress bars in the history panel and contained datasets
-    are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
-    `Pull Request 5013`_, `Pull Request 5078`_
-  - Implement intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
-  - The web interface now supports collections with arbitrary nesting and size (with help
-    from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
-  - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
 
 Get Galaxy
 ==========
@@ -118,8 +89,8 @@ Security
 Breaking Changes
 ================
 
-We have reworked the Galaxy Webhook interface so if you have custom webhooks at your instance
-you need to take the following steps in order to fix them:
+We have reworked the **Galaxy Webhook** interface so if you have custom webhooks at your instance
+you need to take the following steps in order to make them work:
 
 1. Rename the main config file: <name>.yml -> config.yml
 2. In the config file, rename the name attribute: name -> id
@@ -139,6 +110,29 @@ The following features that have been deprecated in the past releases are being 
 * Legacy library interface for Administrators
 
 In addition to that, the PlantTribes datatypes have been commented out in the source code. Uncomment them if you want to re-enable it.
+
+uWSGI details
+=============
+
+To minimize the impact of this change on existing Galaxy instances, if a Galaxy has a ``galaxy.ini``
+file configured, it will continue to use Paste by default unless additional steps are
+taken by the administrator (Galaxy can be forced to start under uWSGI even with an older configuration file
+by setting ``APP_WEBSERVER=uwsgi`` in the environment). As part of the transition to YAML-based
+configuration files, we have implemented a schema to validate Galaxy configuration files. Run
+``make config-validate`` from Galaxy's root directory to validate a schema and ``make config-lint`` to
+check for best practices. While there is no need to convert your configuration file (``galaxy.ini`` hasn't
+been deprecated), you can run ``make config-convert-dry-run`` and ``make config-convert``
+to respectively test and perform the conversion of an ``ini`` configuration file to a YAML one.
+
+These are big changes that affect many parts of Galaxy's administration documentation and makes
+this documentation very dependent on which Galaxy version they are targeting. To address this, we have
+moved a significant amount of administration documentation into Galaxy's code
+base and made it available on a per-release basis. The latest administration documentation for
+the previous release of Galaxy (17.09) which reference ``galaxy.ini`` files and Paste servers can
+be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
+
+`Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_,
+`Pull Request 5105`_, `Pull Request 5441`_
 
 Release Notes
 =============

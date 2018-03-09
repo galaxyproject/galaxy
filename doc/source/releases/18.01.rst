@@ -11,24 +11,40 @@ Enhancements
 
 .. major_feature
 
+.. _list of related performance pull requests:
+
+* Performance and User Experience Improvements
+  `Pull Request 5514`_, `Pull Request 5515`_, `Pull Request 5542`_,
+  `Pull Request 5574`_, `Pull Request 5576`_, `Pull Request 5582`_,
+  `Pull Request 5533`_, `Pull Request 5615`_, `Pull Request 5616`_
+
+.. _list of related client pull requests:
+
+* Client Architecture
+  `Pull Request 4435`_, `Pull Request 4978`_, `Pull Request 4436`_, `Pull Request 5173`_
+  `Pull Request 5293`_, `Pull Request 5191`_, `Pull Request 5190`_,
+  `Pull Request 4827`_, `Pull Request 4964`_, `Pull Request 5371`_,
+  `Pull Request 5128`_, `Pull Request 5262`_, `Pull Request 5081`_, `Pull Request 5054`_
+  `Pull Request 5093`_, `Pull Request 5001`_, `Pull Request 5261`_, `Pull Request 5278`_,
+  `Pull Request 5294`_
 
 .. feature
 
 * Add option to clone tool steps in the workflow editor
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
   `Pull Request 5087`_, `Pull Request 5124`_, `Pull Request 5185`_
-* Implement a generic Cloud ObjectStore using multi-cloud support from 
+* Implement a generic Cloud ObjectStore using multi-cloud support from
   `cloudbridge <https://github.com/gvlproject/cloudbridge>`__
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4487`_
 * Reload tools immediately if a macro changes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4635`_
-* Add an interactive environment for `AskOmics <https://github.com/askomics/askomics>`__ 
+* Add an interactive environment for `AskOmics <https://github.com/askomics/askomics>`__
   a visual SPARQL query builder for RDF databases
   (thanks to `@xgaia <https://github.com/xgaia>`__).
   `Pull Request 4737`_
-* Implement a Github error report backend for 
+* Implement a Github error report backend for
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4765`_
 * Add maintenance script to simplify setting up a cleanup cron job
