@@ -21,7 +21,7 @@ Enhancements
   `cloudbridge <https://github.com/gvlproject/cloudbridge>`__
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 4487`_
-* Reload tools immediatelly if a macro changes
+* Reload tools immediately if a macro changes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4635`_
 * Add an interactive environment for `AskOmics <https://github.com/askomics/askomics>`__ 
@@ -205,14 +205,14 @@ Enhancements
   `Pull Request 4876`_
 * Update various Galaxy requirements.
   `Pull Request 4884`_
-* Updates and enhancements for the testing Dockerfile.
+* Updates and enhancements for the testing ``Dockerfile``.
   `Pull Request 4885`_, `Pull Request 4879`_, `Pull Request 4900`_
 * Add nicer composite dataset names by default
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4886`_
-* Improved initialization and isolation of postgres databases used in integration testing.
+* Improved initialization and isolation of Postgres databases used in integration testing.
   `Pull Request 4887`_, `Pull Request 4914`_
-* Rework dev depenedencies to be Pipfile generated, locked, and hashed.
+* Rework dev dependencies to be Pipfile generated, locked, and hashed.
   `Pull Request 4891`_
 * Install dev and regular dependencies at the same time.
   `Pull Request 4903`_
@@ -270,7 +270,7 @@ Enhancements
 * Remove wchartype dependency and ``is_multi_byte`` attribute
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5062`_
-* Implement Multilingualization support on workflow page
+* Implement multilingualization support on workflow page
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 5077`_
 * Remove wchartype dependency and is_multi_byte [2/2]
@@ -326,7 +326,7 @@ Enhancements
 * Allow sorting collection elements based on file
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5273`_
-* Add biostar configuration options to the configuration sample file.
+* Add Biostar configuration options to the configuration sample file.
   `Pull Request 5276`_
 * Update Japanese translation
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
@@ -391,12 +391,12 @@ Enhancements
   `Pull Request 5206`_
 * Refactor ``upload.py`` toward reuse.
   `Pull Request 5229`_
-* javascript router cleanup
+* JavaScript router cleanup.
   `Pull Request 5235`_
 * Comment PlantTribes datatypes
   (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
   `Pull Request 5254`_
-* Dataset Error Interface Cleanup
+* Dataset error interface cleanup.
   `Pull Request 5279`_
 * Mention how to specify the config file location
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -463,14 +463,14 @@ Fixes
 * Fix revision selection during (beta) repository installation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4944`_
-* Fix trackster styles bleeding into the app (the slightly offcenter upload
-  .icon buttons)
+* Fix Trackster styles bleeding into the app (the slightly off-center upload
+  .icon buttons).
   `Pull Request 4948`_
-* Fix multiple selections for grid operations redirecting to center panel
+* Fix multiple selections for grid operations redirecting to center panel.
   `Pull Request 4951`_
-* Fix visualization link in import success message
+* Fix visualization link in import success message.
   `Pull Request 4952`_
-* Fix up reports javascript
+* Fix up reports JavaScript.
   `Pull Request 4967`_
 * Run `hg clone` in a subprocess instead of using Mercurial API
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -500,7 +500,7 @@ Fixes
   `Pull Request 5000`_
 * Use github instead of NCBI for problematic data manager test FASTA.
   `Pull Request 5007`_
-* Fix for history contents api to remove the default flag override.
+* Fix for history contents API to remove the default flag override.
   `Pull Request 5008`_
 * Fix to avoid visiting child inputs of invalid conditionals.
   `Pull Request 5010`_
@@ -547,7 +547,7 @@ Fixes
 * Toolshed install stability improvements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5099`_
-* Fix trackster link to custom builds view.
+* Fix Trackster link to custom builds view.
   `Pull Request 5104`_
 * Improve resilience of filter detection, add error messages, fix identifiers.
   `Pull Request 5106`_
@@ -579,7 +579,7 @@ Fixes
 * Remove broken Yahoo OpenID support
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 5208`_
-* Force window jquery access for charts.
+* Force window jQuery access for charts.
   `Pull Request 5210`_
 * Mark transiently failing ``test_run_data`` as flakey.
   `Pull Request 5211`_
@@ -592,8 +592,7 @@ Fixes
 * paster.pid/log to galaxy.pid/log reference update
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5226`_
-* `#5187 <https://github.com/galaxyproject/galaxy/issues/5187>`__: altered
-  conda version number for using '--offline' option again
+* Refine Conda version numbers allowed for using ``--offline`` flag again
   (thanks to `@NCEichner <https://github.com/NCEichner>`__).
   `Pull Request 5233`_
 * Workflow list show-in-tool-panel callback bugfix.
@@ -617,14 +616,13 @@ Fixes
   `Pull Request 5286`_
 * Fix dataset edit link.
   `Pull Request 5289`_
-* `#5291 <https://github.com/galaxyproject/galaxy/issues/5291>`__ fix link to
-  HTTP getgalaxy.org
+* Fix link to getgalaxy.org
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 5295`_
 * Fix tool report submission with sentry
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5303`_
-* Fix common_startup.sh bashisms
+* Fix common_startup.sh bash-isms
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5304`_
 * Fix Galaxy instance startup error
@@ -674,13 +672,13 @@ Fixes
   `Pull Request 5377`_
 * Force a fixed node image version when building client for Jenkins.
   `Pull Request 5382`_
-* Install latest conda and don't use ``shell=True``
+* Install latest Conda and don't use ``shell=True``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5397`_
 * Fix for subworkflow creation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5398`_
-* Follow IUC and drop r channel from default conda channels
+* Follow IUC and drop r channel from default Conda channels
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5406`_
 * Implement workaround for extra metadata revision creation.
@@ -701,7 +699,7 @@ Fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5491`_
 * Close ``tempfile`` handles.
-  `Pull Request 5506`_
+  `Pull Request 5506`_, `Pull Request 5552`_
 * Do not allow ``codefiles`` during tool shed tool loading.
   `Pull Request 5510`_
 * Fix for GenomeSpace importer/exporter
@@ -710,8 +708,6 @@ Fixes
 * Fix search overlay JS errors
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5531`_
-* Close tempfile handles.
-  `Pull Request 5552`_
 * Allow LDAP options not starting with OPT_
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5556`_
