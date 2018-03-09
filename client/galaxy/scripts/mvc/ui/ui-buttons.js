@@ -37,7 +37,7 @@ var ButtonDefault = Backbone.View.extend({
             .addClass(options.disabled && "disabled")
             .attr("id", options.id)
             .attr("disabled", options.disabled)
-            .css("display", options.visible ? "block" : "none")
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
                 $(".tooltip").hide();
@@ -162,7 +162,7 @@ var ButtonCheck = Backbone.View.extend({
         var options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
-            .css("display", options.visible ? "block" : "none")
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
                 self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
@@ -224,7 +224,7 @@ var ButtonIcon = ButtonDefault.extend({
             .removeClass()
             .addClass(options.cls)
             .addClass(options.disabled && "disabled")
-            .css("display", options.visible ? "block" : "none")
+            .css("display", options.visible ? "inline-block" : "none")
             .attr("disabled", options.disabled)
             .attr("id", options.id)
             .off("click")
