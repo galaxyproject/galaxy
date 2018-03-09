@@ -21,7 +21,7 @@
                             </div>
                         </td>
                     </tr>
-                    <tr>
+                    <tr v-if="!fixed">
                         <td/>
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
@@ -57,13 +57,16 @@ export default {
             search: "",
             selected: null,
             name: null,
-            error: null
+            error: null,
+            fixed: false
         }
     },
     created() {
         let url = `${Galaxy.root}api/plugins`;
         let dataset_id = Galaxy.params.dataset_id;
         if (dataset_id) {
+            this.fixed = true;
+            this.selected = dataset_id;
             url += `?dataset_id=${dataset_id}`;
         }
         axios.get(url)
@@ -76,21 +79,25 @@ export default {
     },
     methods: {
         select: function(plugin) {
-            let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-            if (history_id) {
-                axios.get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
-                .then(response => {
-                    this.name = plugin.name;
-                    this.hdas = response.data && response.data.hdas;
-                    if (this.hdas && this.hdas.length > 0) {
-                        this.selected = this.hdas[0].id;
-                    }
-                })
-                .catch(e => {
-                    this.error = this._errorMessage(e);
-                })
+            if (this.fixed) {
+                this.create(plugin);
             } else {
-                this.error = "This option requires an accessible history.";
+                let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+                if (history_id) {
+                    axios.get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
+                    .then(response => {
+                        this.name = plugin.name;
+                        this.hdas = response.data && response.data.hdas;
+                        if (this.hdas && this.hdas.length > 0) {
+                            this.selected = this.hdas[0].id;
+                        }
+                    })
+                    .catch(e => {
+                        this.error = this._errorMessage(e);
+                    })
+                } else {
+                    this.error = "This option requires an accessible history.";
+                }
             }
         },
         create: function(plugin) {
