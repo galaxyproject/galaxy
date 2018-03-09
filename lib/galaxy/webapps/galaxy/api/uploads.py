@@ -3,6 +3,7 @@ API operations for uploaded files in storage.
 """
 import logging
 import os
+import re
 
 from galaxy.exceptions import MessageException, NotImplemented
 from galaxy.web import expose_api_anonymous
@@ -25,7 +26,7 @@ class UploadsAPIController(BaseAPIController):
         session_id = payload.get("session_id")
         session_start = payload.get("session_start")
         session_chunk = payload.get("session_chunk")
-        if session_id is None:
+        if re.match('^[\w-]+$', session_id) is None:
             raise MessageException("Requires a session id.")
         if session_start is None:
             raise MessageException("Requires a session start.")
