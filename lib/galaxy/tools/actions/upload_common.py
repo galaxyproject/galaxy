@@ -16,7 +16,7 @@ except ImportError:
     from urllib.parse import urlparse
 
 from galaxy import datatypes, util
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
 from galaxy.managers import tags
 from galaxy.util import unicodify
 from galaxy.util.odict import odict
@@ -102,7 +102,7 @@ def validate_url(url, ip_whitelist):
                 pass
             else:
                 # Otherwise, we deny access.
-                raise Exception("Access to this address in not permitted by server configuration")
+                raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
     return url
 
 
@@ -123,7 +123,7 @@ def persist_uploads(params, trans):
                                                    local_filename=local_filename)
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
-            if upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
+            if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
                     StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
@@ -380,7 +380,7 @@ def create_paramfile(trans, uploaded_datasets):
     return json_file_path
 
 
-def create_job(trans, params, tool, json_file_path, data_list, folder=None, history=None, job_params=None):
+def create_job(trans, params, tool, json_file_path, outputs, folder=None, history=None, job_params=None):
     """
     Create the upload job.
     """
@@ -408,21 +408,28 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
         job.add_parameter(name, value)
     job.add_parameter('paramfile', dumps(json_file_path))
     object_store_id = None
-    for i, dataset in enumerate(data_list):
-        if folder:
-            job.add_output_library_dataset('output%i' % i, dataset)
+    for i, output_object in enumerate(outputs):
+        output_name = "output%i" % i
+        if hasattr(output_object, "collection"):
+            job.add_output_dataset_collection(output_name, output_object)
+            output_object.job = job
         else:
-            job.add_output_dataset('output%i' % i, dataset)
-        # Create an empty file immediately
-        if not dataset.dataset.external_filename:
-            dataset.dataset.object_store_id = object_store_id
-            try:
-                trans.app.object_store.create(dataset.dataset)
-            except ObjectInvalid:
-                raise Exception('Unable to create output dataset: object store is full')
-            object_store_id = dataset.dataset.object_store_id
-            trans.sa_session.add(dataset)
-            # open( dataset.file_name, "w" ).close()
+            dataset = output_object
+            if folder:
+                job.add_output_library_dataset(output_name, dataset)
+            else:
+                job.add_output_dataset(output_name, dataset)
+            # Create an empty file immediately
+            if not dataset.dataset.external_filename:
+                dataset.dataset.object_store_id = object_store_id
+                try:
+                    trans.app.object_store.create(dataset.dataset)
+                except ObjectInvalid:
+                    raise Exception('Unable to create output dataset: object store is full')
+                object_store_id = dataset.dataset.object_store_id
+
+        trans.sa_session.add(output_object)
+
     job.object_store_id = object_store_id
     job.set_state(job.states.NEW)
     job.set_handler(tool.get_job_handler(None))
@@ -436,8 +443,9 @@ def create_job(trans, params, tool, json_file_path, data_list, folder=None, hist
     trans.app.job_manager.job_queue.put(job.id, job.tool_id)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = odict()
-    for i, v in enumerate(data_list):
-        output['output%i' % i] = v
+    for i, v in enumerate(outputs):
+        if not hasattr(output_object, "collection_type"):
+            output['output%i' % i] = v
     return job, output
 
 
