@@ -29,7 +29,7 @@ def main(argv=None):
     raw_test_index = args.test_index
     if raw_test_index == ALL_TESTS:
         tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
-        test_indices = [i for i in range(len(tool_test_dicts))]
+        test_indices = list(range(len(tool_test_dicts)))
     else:
         test_indices = [int(raw_test_index)]
 
