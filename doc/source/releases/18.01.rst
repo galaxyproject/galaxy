@@ -41,7 +41,7 @@ Enhancements
 * Tool-based annotation of out of memory errors.
   `Pull Request 5196`_
 * Added support for recursively discovering output datasets
-  (thanks to `@nuwang <https://github.com/nuwang>`__). TODO: fix author
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 5240`_
 * Add an API endpoint that allows admins to decode galaxy object IDs.
   `Pull Request 5018`_
@@ -411,7 +411,7 @@ Fixes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4645`_
 * Pass job output file unqualified names to Pulsar so that it can create them
-  before running the job
+  before running the job.
   `Pull Request 4662`_
 * Fix transiently failing saved histories due to success message disappearing.
   `Pull Request 4669`_
@@ -513,21 +513,21 @@ Fixes
 * Cleanup SA objects between workflow invocation scheduling attempts.
   `Pull Request 5045`_
 * Safely handle possible ``None`` value encountered in processing and execution of
-  post-job action arguments.
+  post-job action arguments
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 5050`_
 * Restore admin form routes.
   `Pull Request 5065`_
-* Fixes galaxy startup when ``LC_TYPE=UTF-8`` on os-x
+* Fixes galaxy startup when ``LC_TYPE=UTF-8`` on OS X
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5070`_
 * Ignore ``OSError`` when chmod'ing integrated_tool_panel_conf.xml
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5071`_
-* Fix metadata setting for ``otu`` datatypes.
+* Fix metadata setting for ``otu`` datatypes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5072`_
-* Fix exception in admin panel.
+* Fix exception in admin panel
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5079`_
 * Always fill ``message`` to avoid ``KeyError`` for sentry ``ERROR_TEMPLATE``
@@ -563,7 +563,7 @@ Fixes
   `Pull Request 5166`_
 * Provide UI collection output information for subworkflows.
   `Pull Request 5172`_
-* Remove legacy request controller from reports app
+* Remove legacy request controller from reports app.
   `Pull Request 5182`_
 * Fixes genome decode handling.
   `Pull Request 5198`_
@@ -624,7 +624,7 @@ Fixes
 * Prevent reloading when data table is being modified
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5331`_
-* Work around (temporarily) wrong getsize() output
+* Work around (temporarily) wrong ``getsize()`` output
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5335`_
 * Disable galaxy tour 'path' navigation.
@@ -638,10 +638,10 @@ Fixes
 * Fix dataset purging, dataset cleanup script and db_shell script
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5346`_
-* Fix bam conversion test tool
+* Fix BAM conversion test tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5351`_
-* Remove charlimit for fetching urls.
+* Remove charlimit for fetching URLs.
   `Pull Request 5353`_
 * Use ``print()`` function in common_startup.sh
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -657,9 +657,9 @@ Fixes
   `Pull Request 5367`_
 * Workflow tool menu fix for deleted workflows.
   `Pull Request 5368`_
-* Bump conditional Pygments version to 2.2.0 so it matches the dev
+* Bump conditional ``Pygments`` version to 2.2.0 so it matches the dev.
   `Pull Request 5376`_
-* Fix ``make docs`` when the virtualenv is not .venv
+* Fix ``make docs`` when the virtualenv is not ``.venv`` .
   `Pull Request 5377`_
 * Force a fixed node image version when building client for Jenkins.
   `Pull Request 5382`_
@@ -669,7 +669,7 @@ Fixes
 * Fix for subworkflow creation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5398`_
-* Follow IUC and drop r channel from default Conda channels
+* Follow IUC and drop ``r`` channel from the default Conda channels
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5406`_
 * Implement workaround for extra metadata revision creation.
@@ -677,7 +677,7 @@ Fixes
 * Don't silently fail rest of multi-action queue when attempting to purge a
   collection.
   `Pull Request 5443`_
-* Ensure jobStateSummariesCollection exists.
+* Ensure ``jobStateSummariesCollection`` exists.
   `Pull Request 5444`_
 * Fix ``server_name`` when config is a ``dict``.
   `Pull Request 5447`_
@@ -720,7 +720,7 @@ Fixes
   galaxy to be importable
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5626`_
-* Changed GenomeSpace token handling to use manual OpenID association only
+* Changed GenomeSpace token handling to use manual OpenID association only.
   `Pull Request 5631`_
 * Use sample file path when adding missing indexes
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -737,6 +737,8 @@ Fixes
 * Show error message if history structure can't be shown
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5665`_
+* Consistent sniffing regardless of in_place.
+  `Pull Request 5643`_
 
 .. github_links
 .. _Pull Request 4178: https://github.com/galaxyproject/galaxy/pull/4178
@@ -1156,6 +1158,7 @@ Fixes
 .. _Pull Request 5631: https://github.com/galaxyproject/galaxy/pull/5631
 .. _Pull Request 5634: https://github.com/galaxyproject/galaxy/pull/5634
 .. _Pull Request 5635: https://github.com/galaxyproject/galaxy/pull/5635
+.. _Pull Request 5643: https://github.com/galaxyproject/galaxy/pull/5643
 .. _Pull Request 5644: https://github.com/galaxyproject/galaxy/pull/5644
 .. _Pull Request 5650: https://github.com/galaxyproject/galaxy/pull/5650
 .. _Pull Request 5662: https://github.com/galaxyproject/galaxy/pull/5662
