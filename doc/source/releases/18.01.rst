@@ -17,7 +17,7 @@ Enhancements
 
 * Add option to clone tool steps in the workflow editor
   (thanks to `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 5087`_
+  `Pull Request 5087`_, `Pull Request 5124`_, `Pull Request 5185`_
 * Implement a generic Cloud ObjectStore using multi-cloud support from 
   `cloudbridge <https://github.com/gvlproject/cloudbridge>`__
   (thanks to `@VJalili <https://github.com/VJalili>`__).
@@ -37,6 +37,13 @@ Enhancements
   `Pull Request 4916`_
 * Create the ``$GALAXY_MEMORY_MB`` job environment variable for tools.
   `Pull Request 4958`_
+* Improved home and temp directory handling for tools and jobs.
+  `Pull Request 5193`_
+* Tool-based annotation of out of memory errors.
+  `Pull Request 5196`_
+* Added support for recursively discovering output datasets
+  (thanks to `@nuwang <https://github.com/nuwang>`__). TODO: fix author
+  `Pull Request 5240`_
 * Add an API endpoint that allows admins to decode galaxy object IDs.
   `Pull Request 5018`_
 * Add sorting options for data library folders.
@@ -108,7 +115,8 @@ Enhancements
   `Pull Request 4753`_, `Pull Request 4732`_, `Pull Request 4909`_,
   `Pull Request 4935`_, `Pull Request 4925`_,
   `Pull Request 4687`_, `Pull Request 4660`_, `Pull Request 5333`_,
-  `Pull Request 5068`_, `Pull Request 4757`_, `Pull Request 4971`_
+  `Pull Request 5068`_, `Pull Request 4757`_, `Pull Request 4971`_,
+  `Pull Request 4653`_
 * Allow multiple simultaneous uploads via single POST.
   `Pull Request 4563`_
 * Various bits of proactive security-related hardening
@@ -123,7 +131,9 @@ Enhancements
   `Pull Request 4672`_
 * Migrate various mako templates to modern JavaScript driven views.
   `Pull Request 4681`_, `Pull Request 4682`_, `Pull Request 4711`_,
-  `Pull Request 4755`_, `Pull Request 4661`_, `Pull Request 4993`_
+  `Pull Request 4755`_, `Pull Request 4661`_, `Pull Request 4993`_,
+  `Pull Request 4664`_, `Pull Request 4996`_, `Pull Request 5014`_,
+  `Pull Request 4833`_, `Pull Request 5212`_, `Pull Request 5114`_
 * More HDCA copying tests, add option to copy HDAs into new history.
   `Pull Request 5004`_
 * Use only latest publication
@@ -142,9 +152,9 @@ Enhancements
 * Add logging during for script integrity exceptions
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 4720`_
-* Fix to respect galaxy.json supplied metadata for empty outputs.
+* Fix to respect ``galaxy.json`` supplied metadata for empty outputs.
   `Pull Request 4722`_
-* Update reports.md with a link to the community hub
+* Update ``reports.md`` with a link to the community hub
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 4723`_
 * Typo fixes and small cleanups
@@ -158,7 +168,7 @@ Enhancements
   `Pull Request 4739`_
 * Many more upload tests - big improvements to uploads will be coming to Galaxy 18.05.
   `Pull Request 4746`_, `Pull Request 4762`_, `Pull Request 4790`_,
-  `Pull Request 4863`_  
+  `Pull Request 4863`_, `Pull Request 5266`_, `Pull Request 5209`_
 * Kubernetes resources requests/limits support
   (thanks to `@pcm32 <https://github.com/pcm32>`__ and the `@phnmnl <https://github.com/phnmnl>`__ project).
   `Pull Request 4751`_
@@ -200,8 +210,8 @@ Enhancements
 * Add nicer composite dataset names by default
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 4886`_
-* Automatic-er database initialization for testing.
-  `Pull Request 4887`_
+* Improved initialization and isolation of postgres databases used in integration testing.
+  `Pull Request 4887`_, `Pull Request 4914`_
 * Rework dev depenedencies to be Pipfile generated, locked, and hashed.
   `Pull Request 4891`_
 * Install dev and regular dependencies at the same time.
@@ -233,8 +243,6 @@ Enhancements
   `Pull Request 4992`_
 * Changes made while working on uWSGI mules that don't belong in the mules PR
   `Pull Request 4994`_
-* Revise workflow create form, remove unused rename endpoint
-  `Pull Request 4996`_
 * Add warning for sort-of-defunct workflow options in galaxy.ini.
   `Pull Request 5002`_
 * Fix import order everywhere
@@ -244,8 +252,6 @@ Enhancements
   `Pull Request 5006`_
 * Removed unneeded skip_install tags in tox.ini.
   `Pull Request 5011`_
-* Improved Collection and Workflow State with Applications
-  `Pull Request 5013`_
 * Add metric to the core plugin to collect $GALAXY_MEMORY_MB
   `Pull Request 5016`_
 * Test renaming multiple different outputs in workflows.
@@ -261,20 +267,15 @@ Enhancements
   `Pull Request 5056`_
 * Build endpoint separation
   `Pull Request 5058`_
-* Remove wchartype dependency and is_multi_byte [1/2]
+* Remove wchartype dependency and ``is_multi_byte`` attribute
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5062`_
 * Implement Multilingualization support on workflow page
   (thanks to `@manabuishii <https://github.com/manabuishii>`__).
   `Pull Request 5077`_
-* Viz plugin loading fixes
-  `Pull Request 5081`_
 * Remove wchartype dependency and is_multi_byte [2/2]
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5088`_
-* i18n improvements French localization the sequel
-  (thanks to `@ValentinChCloud <https://github.com/ValentinChCloud>`__).
-  `Pull Request 5089`_
 * Update Jupyter IE default image
   (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
   `Pull Request 5095`_
@@ -285,40 +286,30 @@ Enhancements
 * Update to flake8-import-order 0.16
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5110`_
-* change the default to not add tags based on filename
+* Change the default to not add tags based on filename
   `Pull Request 5115`_
 * Improve tool validation and metadata generation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5119`_
-* Download fixes
+* Download button fixes.
   `Pull Request 5125`_
-* Client build check
-  `Pull Request 5128`_
-* Postpone depends_list generation
+* Datatype conversion check optimization
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5137`_
 * Test resubmit for dynamic JobDestination structures.
   `Pull Request 5139`_
-* Dataset hashtag display improvements
+* Various dataset hashtag display improvements.
   `Pull Request 5155`_
-* French localization  part 2
+* i18n improvements for French localization
   (thanks to `@ValentinChCloud <https://github.com/ValentinChCloud>`__).
-  `Pull Request 5157`_
-* Bundle all the things (elimination of require)
-  `Pull Request 5173`_
-* change hicexplorer image name
+  `Pull Request 5089`_, `Pull Request 5157`_
+* Change hicexplorer image name
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5177`_
-* Improved home and temp directory handling.
-  `Pull Request 5193`_
-* Tool-based annotation of out of memory errors.
-  `Pull Request 5196`_
 * Fix `#3002 <https://github.com/galaxyproject/galaxy/issues/3002>`__ with update to
   newer version of virtualenv.
   (thanks to `@selten <https://github.com/selten>`__).
   `Pull Request 5202`_
-* Library upload refactoring, testing, and fixes
-  `Pull Request 5209`_
 * Huge steps toward Python 3 compatiblity
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5215`_, `Pull Request 5221`_, `Pull Request 5225`_, `Pull Request 5228`_,
@@ -326,23 +317,16 @@ Enhancements
 * Add chinese support
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
   `Pull Request 5232`_
-* Added support for recursively discovering output datasets
-  (thanks to `@gvlproject <https://github.com/gvlproject>`__). TODO: fix author
-  `Pull Request 5240`_
 * Make pam a conditional dependency
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5251`_
 * Update api quickstart doc to use default port, with a little bit of extra
   guidance.
   `Pull Request 5260`_
-* Add extra help output in Makefile for when Yarn isn't found.
-  `Pull Request 5262`_
-* Clarify some FTP purging behaviors with tests.
-  `Pull Request 5266`_
 * Allow sorting collection elements based on file
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5273`_
-* add biostar configs to the sample
+* Add biostar configuration options to the configuration sample file.
   `Pull Request 5276`_
 * Update Japanese translation
   (thanks to `@istevenshen <https://github.com/istevenshen>`__).
@@ -350,60 +334,40 @@ Enhancements
 * Improve the migration message when having to downgrade the database
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5299`_
-* allow message to be modified on ldda
+* Allow ``message`` attribute to be modified on a library dataset.
   `Pull Request 5312`_
-* Tag editor size constraint
+* Enforce a size constraint on the tag editor.
   `Pull Request 5337`_
-* Webhooks improvements
+* Various webhooks improvements.
   `Pull Request 5342`_
 * Make ``TabularToolDataTable._deduplicate_data()`` faster
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5383`_
-* Allow map-over when discovering dataset collections
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5413`_
-* Backport: Add --skip_flakey_fails flag to CI script for API tests
+* Add ``--skip_flakey_fails`` flag to CI script for API tests
   `Pull Request 5455`_
-* Optimize public grid database interactions.
-  `Pull Request 5514`_
-* Optimize database interaction for user workflow list.
-  `Pull Request 5515`_
-* fix toolbox filters
+* Fix for toolbox filters
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 5526`_
 * Fix missing job stdout/stderr on Pulsar transfer failures.
   `Pull Request 5535`_
-* optimize nonadmin and nonanon library list permission queries
-  `Pull Request 5542`_
-* Optimize count query in grids (Part 1).
-  `Pull Request 5574`_
-* Paginate published workflows grid.
-  `Pull Request 5576`_
-* Fix repeated fetching dataset permissions in dynamic output collection.
+* Optimization to fix repeated fetching dataset permissions in dynamic output collection.
   `Pull Request 5578`_
-* Fix lack of feedback when slow grids are loading data from the server.
-  `Pull Request 5582`_
 * Backport toolbox cache
   `Pull Request 5583`_
-* Replace distutils.version with packaging.version
+* Replace distutils.version with packaging.version (fixing lineage handling for
+  freebayes among other things).
   `Pull Request 5588`_
-* move the cache from toolbox level to the tool level
+* Move the cache from toolbox level to the tool level.
   `Pull Request 5600`_
 
 .. small_enhancement
 
 * Removes Sample request and External services makos/controllers
-  `Pull Request 4526`_
-* Remove unused abstraction layers from Visualizations Registry
+  `Pull Request 4526`_, `Pull Request 4872`_, `Pull Request 5103`_
+* Remove unused abstraction layers from Visualizations Registry.
   `Pull Request 4620`_
-* More unused template cleanup
-  `Pull Request 4664`_
-* Visible keys standardization
+* Visible keys standardization in model classes.
   `Pull Request 4744`_
-* Use installation monitoring view instead of monitoring grid
-  `Pull Request 4833`_
-* Remove legacy sample tracking api endpoints
-  `Pull Request 4872`_
 * Remove legacy library interface
   `Pull Request 4908`_
 * ES6 client/galaxy/scripts/utils/ajax-queue.js
@@ -411,36 +375,20 @@ Enhancements
 * Remove unused galaxy-side set_tool_version code
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4986`_
-* Fix allow-register option in auth module
+* Fix ``allow-register`` option in auth module
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4989`_
-* ES6 refactoring of files touched in collection_state branch.
-  `Pull Request 5001`_
-* Remove unused search template
-  `Pull Request 5014`_
-* Try next dep. resolver if building env failed
+* Tried to fix issue with Conda environment building failing jobs that
+  had to be rolled back.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5036`_
-* Sourcemap removal
-  `Pull Request 5054`_
-* Fail job if job output collection fails
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5078`_
-* Bundle refactoring
-  `Pull Request 5093`_
+  `Pull Request 5036`_, `Pull Request 5470`_
 * Add packed symlink back pending a deprecation cycle.
   `Pull Request 5094`_
-* Remove sample tracking backend support, preserve data tables
-  `Pull Request 5103`_
-* Remove html formbuilder from backend
-  `Pull Request 5114`_
 * Onload webhook toggles.
   `Pull Request 5116`_
-* Re-organize edge case upload options for my own understanding.
+* Re-organize edge case upload options for greater readability.
   `Pull Request 5206`_
-* Remove html producing grid helpers
-  `Pull Request 5212`_
-* Refactor upload.py toward reuse
+* Refactor ``upload.py`` toward reuse.
   `Pull Request 5229`_
 * javascript router cleanup
   `Pull Request 5235`_
@@ -452,7 +400,7 @@ Enhancements
 * Mention how to specify the config file location
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5297`_
-* Uninstall a tool by default (vs. deactivating it)
+* Uninstall a tool by default (vs. deactivating it).
   `Pull Request 5300`_
 
 
@@ -462,16 +410,11 @@ Fixes
 
 .. major_bug
 
- * Fix Trackster
-   `Pull Request 5261`_
-
 .. bug
 
 * Make liftover tool use data tables
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4645`_
-* Improve robustness of published workflow display test case.
-  `Pull Request 4653`_
 * Pass job output file unqualified names to Pulsar so that it can create them
   before running the job
   `Pull Request 4662`_
@@ -489,32 +432,30 @@ Fixes
   `Pull Request 4781`_
 * MacOS X fix for a test tool.
   `Pull Request 4806`_
-* Minor architecture slides typos/grammar.
+* Minor architecture slides fixes for typos/grammar.
   `Pull Request 4822`_
-* Fix two invalid targets in dataset list item
+* Fix two invalid targets in dataset list item.
   `Pull Request 4823`_
-* Fix double return in form-parameters
+* Fix double return in form-parameters.
   `Pull Request 4826`_
 * Fix the case where 'Labels' in a docker node inspect exists but is null.
   `Pull Request 4838`_
 * Fix all E722 errors and ignore E741
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4847`_
-* Fix jsutils time - fixes charts visualize
+* Fix jsutils time - fixes charts visualize.
   `Pull Request 4852`_
 * Bugfix during error handling with linked files during upload
   (thanks to `@ieguinoa <https://github.com/ieguinoa>`__).
   `Pull Request 4858`_
 * Add a gulp plumber.
   `Pull Request 4867`_
-* Minor admin panel fixes
+* Minor admin panel fixes.
   `Pull Request 4895`_
 * Fix list collection creator dragdrop event bindings.
   `Pull Request 4901`_
-* Fix status handling for grids
+* Fix status handling for grids.
   `Pull Request 4913`_
-* Fix integration database encoding issue with templated database stuff.
-  `Pull Request 4914`_
 * Fix revision selection during (beta) repository installation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4944`_
@@ -530,71 +471,71 @@ Fixes
 * Run `hg clone` in a subprocess instead of using Mercurial API
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4979`_
-* Tolerate IOError in tool and data table watcher
+* Tolerate ``IOError`` in tool and data table watcher
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4981`_
 * Install numpy before bx-python in case you are installing from sdists
   `Pull Request 4982`_
-* Specify TagAssociation class when copying a tag
+* Specify ``TagAssociation`` class when copying a tag
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4984`_
-* Fix initialization of named ajax queue
+* Fix initialization of named ajax queue.
   `Pull Request 4985`_
 * Encode file content with utf-8
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 4987`_
-* Revert export to file
+* Revert export to file.
   `Pull Request 4988`_
 * Remove extraneous subclass for DMND datatype
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 4990`_
-* Allow get_history calls with create=False when evaluation workflows.
+* Fix to allow ``get_history`` calls with ``create=False`` when evaluating workflows.
   `Pull Request 4997`_
 * Add missing ipaddress requirement
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5000`_
 * Use github instead of NCBI for problematic data manager test FASTA.
   `Pull Request 5007`_
-* history contents api - remove the default flag override
+* Fix for history contents api to remove the default flag override.
   `Pull Request 5008`_
-* Do not visit child inputs of invalid conditionals
+* Fix to avoid visiting child inputs of invalid conditionals.
   `Pull Request 5010`_
-* parse_interpreter: log a warning only if interpreter is set
+* Fix for ``parse_interpreter`` - log a warning only if interpreter is set
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5015`_
-* fix few stray wiki links
+* Fix a few stray wiki links.
   `Pull Request 5020`_
-* Workflow editor outputs fixes
+* Workflow editor outputs fixes.
   `Pull Request 5021`_
 * Fix workflow editor output attributes.
   `Pull Request 5022`_
 * Metadata parameters rely on their own optional setting not on the field
-  attribute
+  attribute.
   `Pull Request 5027`_
-* gsummary python3 fix
+* A Python 3 fix for the gsummary tool
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 5043`_
 * Cleanup SA objects between workflow invocation scheduling attempts.
   `Pull Request 5045`_
-* Safely handle possible None value encountered in processing and execution of
-  post-job action arguments
+* Safely handle possible ``None`` value encountered in processing and execution of
+  post-job action arguments.
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 5050`_
-* Restore admin form routes
+* Restore admin form routes.
   `Pull Request 5065`_
-* Fixes galaxy startup when LC_TYPE=UTF-8 on os-x
+* Fixes galaxy startup when ``LC_TYPE=UTF-8`` on os-x
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5070`_
-* Ignore OSError when chmod'ing integrated_tool_panel_conf.xml
+* Ignore ``OSError`` when chmod'ing integrated_tool_panel_conf.xml
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5071`_
-* Fix metadata setting for Otu datatypes
+* Fix metadata setting for ``otu`` datatypes.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5072`_
-* Fix exception in admin panel
+* Fix exception in admin panel.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5079`_
-* Always fill `message` to avoid KeyError for sentry ERROR_TEMPLATE
+* Always fill ``message`` to avoid ``KeyError`` for sentry ``ERROR_TEMPLATE``
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5086`_
 * Attempt to make data manager integration test more robust.
@@ -602,9 +543,9 @@ Fixes
 * Toolshed install stability improvements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5099`_
-* Fix trackster link to custom builds view
+* Fix trackster link to custom builds view.
   `Pull Request 5104`_
-* Improve resilience of filter detection, add error messages, fix identifiers
+* Improve resilience of filter detection, add error messages, fix identifiers.
   `Pull Request 5106`_
 * Fix ICM datatype sniffer config
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -612,11 +553,9 @@ Fixes
 * Fix attribute error that was missed during refactor of sentry
   (thanks to `@erasche <https://github.com/erasche>`__).
   `Pull Request 5122`_
-* Workflow tool copy tweaks
-  `Pull Request 5124`_
 * Fix connecting non-input modules to subworkflow inputs.
   `Pull Request 5140`_
-* Fix history copy
+* Fix for history copy.
   `Pull Request 5144`_
 * Fixes for handling delayed steps within subworkflows.
   `Pull Request 5145`_
@@ -631,9 +570,6 @@ Fixes
   `Pull Request 5172`_
 * Remove legacy request controller from reports app
   `Pull Request 5182`_
-* Don't clone subworkflows.
-  (thanks to `@anatskiy <https://github.com/anatskiy>`__).
-  `Pull Request 5185`_
 * Fixes genome decode handling.
   `Pull Request 5198`_
 * Sample tracking removal cleanup
@@ -740,20 +676,16 @@ Fixes
   `Pull Request 5377`_
 * Force a fixed node image version when building client for Jenkins.
   `Pull Request 5382`_
-* Install latest conda and don't use shell=True
+* Install latest conda and don't use ``shell=True``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 5397`_
-* Subworkflow creation fix
+* Fix for subworkflow creation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5398`_
-* More robust nametag discovery and propagation.
-  `Pull Request 5403`_
 * Follow IUC and drop r channel from default conda channels
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5406`_
-* Fix the PJA type issue when mapping renames over nested lists.
-  `Pull Request 5414`_
-* Workaround for extra metadata revision creation
+* Implement workaround for extra metadata revision creation.
   `Pull Request 5433`_
 * Don't silently fail rest of multi-action queue when attempting to purge a
   collection.
@@ -762,10 +694,8 @@ Fixes
   `Pull Request 5444`_
 * Fix server_name when config is a dict
   `Pull Request 5447`_
-* Workflow sharing link fixes
+* Fixes for workflow sharing links.
   `Pull Request 5467`_
-* Revert `#5036 <https://github.com/galaxyproject/galaxy/issues/5036>`__
-  `Pull Request 5470`_
 * Fix workflow execution post action - rename
   (thanks to `@scholtalbers <https://github.com/scholtalbers>`__).
   `Pull Request 5485`_
