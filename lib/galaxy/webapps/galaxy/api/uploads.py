@@ -11,8 +11,10 @@ from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
-
 class UploadsAPIController(BaseAPIController):
+
+    READ_CHUNK_SIZE = 2 ** 16
+    BYTES_PER_MEGABYTE = 1048576
 
     @expose_api_anonymous
     def index(self, trans, **kwd):
@@ -38,11 +40,15 @@ class UploadsAPIController(BaseAPIController):
             target_size = os.path.getsize(target_file)
         if session_start != target_size:
             raise MessageException("Incorrect session start.")
-        chunk_size = os.fstat(session_chunk.file.fileno()).st_size / 1048576
+        chunk_size = os.fstat(session_chunk.file.fileno()).st_size / self.BYTES_PER_MEGABYTE
         if chunk_size > trans.app.config.chunk_upload_size:
             raise MessageException("Invalid chunk size.")
         with open(target_file, "a") as f:
-            f.write(session_chunk.file.read())
+            while True:
+                read_chunk = session_chunk.file.read(self.READ_CHUNK_SIZE)
+                if not read_chunk:
+                    break
+                f.write(read_chunk)
             f.close()
         session_chunk.file.close()
         return {"message": "Successful."}
