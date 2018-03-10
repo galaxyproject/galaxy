@@ -11,6 +11,7 @@ from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
+
 class UploadsAPIController(BaseAPIController):
 
     READ_CHUNK_SIZE = 2 ** 16
@@ -49,6 +50,5 @@ class UploadsAPIController(BaseAPIController):
                 if not read_chunk:
                     break
                 f.write(read_chunk)
-            f.close()
         session_chunk.file.close()
         return {"message": "Successful."}
