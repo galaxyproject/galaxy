@@ -94,7 +94,10 @@ window.app = function app(options, bootstrapped) {
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
-            this.page.display(new FormWrapper.View(model.get(form_id)));
+            this.page.display(new FormWrapper.View(_.extend(
+                model.get(form_id),
+                {active_tab: "user"}
+            )));
         },
 
         show_visualizations: function(action_id) {
