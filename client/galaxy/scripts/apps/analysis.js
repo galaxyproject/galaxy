@@ -105,7 +105,8 @@ window.app = function app(options, bootstrapped) {
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Visualizations",
-                    item: "visualization"
+                    item: "visualization",
+                    active_tab: "visualization"
                 })
             );
         },
