@@ -196,7 +196,8 @@ window.app = function app(options, bootstrapped) {
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Pages",
-                    item: "page"
+                    item: "page",
+                    active_tab: "user"
                 })
             );
         },
@@ -205,7 +206,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: "page/create",
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
         },
@@ -214,7 +216,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `page/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
         },
