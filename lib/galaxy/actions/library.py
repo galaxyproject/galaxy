@@ -249,16 +249,14 @@ class LibraryActions(object):
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
         uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
+        uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload(trans, 'api', uploaded_dataset, library_bunch)
         uploaded_dataset.link_data_only = link_data_only
         uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
-            uploaded_dataset.data.file_name = os.path.abspath(path)
-            # Since we are not copying the file into Galaxy's managed
-            # default file location, the dataset should never be purgable.
-            uploaded_dataset.data.dataset.purgable = False
+            uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
             trans.sa_session.flush()
         return uploaded_dataset

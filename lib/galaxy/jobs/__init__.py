@@ -1380,7 +1380,7 @@ class JobWrapper(HasResourceParameters):
         collected_datasets = {
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
-        self.tool.collect_dynamic_collections(
+        self.tool.collect_dynamic_outputs(
             out_collections,
             self.get_tool_provided_job_metadata(),
             job_working_directory=tool_working_directory,
