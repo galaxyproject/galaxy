@@ -115,7 +115,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "visualizations/list"
+                    redirect: "visualizations/list",
+                    active_tab: "visualization"
                 })
             );
         },
