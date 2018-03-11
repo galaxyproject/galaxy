@@ -231,7 +231,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `workflow/create`,
-                    redirect: "workflow/editor"
+                    redirect: "workflow/editor",
+                    active_tab: "workflow"
                 })
             );
         },
