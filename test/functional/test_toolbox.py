@@ -10,6 +10,7 @@ except ImportError:
         return x
 
 from base.driver_util import setup_keep_outdir, target_url_parts
+from base.instrument import register_job_data
 from galaxy.tools import DataManagerTool  # noqa: I201
 from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool  # noqa: I201
 from .twilltestcase import TwillTestCase
@@ -37,7 +38,7 @@ class ToolTestCase(TwillTestCase):
             tool_id = self.tool_id
         assert tool_id
 
-        verify_tool(tool_id, self.galaxy_interactor, resource_parameters=resource_parameters, test_index=test_index, tool_version=tool_version)
+        verify_tool(tool_id, self.galaxy_interactor, resource_parameters=resource_parameters, test_index=test_index, tool_version=tool_version, register_job_data=register_job_data)
 
 
 @nottest
