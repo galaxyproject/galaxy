@@ -4075,7 +4075,7 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -4199,7 +4199,7 @@ class WorkflowInvocationStep(object, Dictifiable):
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     @property
     def jobs(self):
