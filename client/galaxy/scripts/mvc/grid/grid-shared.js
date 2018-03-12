@@ -9,7 +9,9 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");
         this.title = this.model.get("plural");
-        this.active_tab = options.active_tab;
+        if (options && options.active_tab){
+            this.active_tab = options.active_tab;
+        }
         $.ajax({
             url: `${Galaxy.root + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
             success: function(response) {
