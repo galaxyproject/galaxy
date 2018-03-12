@@ -101,12 +101,18 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_visualizations: function(action_id) {
+            if (action_id == 'list_published'){
+                var activeTab = "shared";
+            }
+            else {
+                var activeTab = "visualization";
+            }
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Visualizations",
                     item: "visualization",
-                    active_tab: "visualization"
+                    active_tab: activeTab
                 })
             );
         },
