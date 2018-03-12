@@ -147,11 +147,11 @@ class LibraryManager(object):
                 if action.action == library_access_action:
                     accessible_restricted_library_ids.append(action.library_id)
                 if action.action == library_add_action:
-                    allowed_library_add_ids.append(action.library_id)
+                    allowed_library_add_ids.add(action.library_id)
                 if action.action == library_modify_action:
-                    allowed_library_modify_ids.append(action.library_id)
+                    allowed_library_modify_ids.add(action.library_id)
                 if action.action == library_manage_action:
-                    allowed_library_manage_ids.append(action.library_id)
+                    allowed_library_manage_ids.add(action.library_id)
             query = query.filter(or_(
                 not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
                 trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
