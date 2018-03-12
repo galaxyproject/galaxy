@@ -228,8 +228,7 @@ class GalaxyInteractorApi(object):
 
     @nottest
     def test_data_path(self, tool_id, filename):
-        admin_key = self.master_api_key
-        response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), key=admin_key)
+        response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
         assert response.status_code == 200
         return response.json()
 
