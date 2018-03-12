@@ -1181,4 +1181,4 @@ Fixes
 .. _Pull Request 5663: https://github.com/galaxyproject/galaxy/pull/5663
 .. _Pull Request 5664: https://github.com/galaxyproject/galaxy/pull/5664
 .. _Pull Request 5665: https://github.com/galaxyproject/galaxy/pull/5665
-
+.. _Pull Request 5674: https://github.com/galaxyproject/galaxy/pull/5674

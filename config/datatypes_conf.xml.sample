@@ -21,7 +21,7 @@
     </datatype>
     <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
     </datatype>
-    <datatype extension="bam_native" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+    <datatype extension="unsorted.bam" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
       <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
@@ -297,7 +297,7 @@
     <datatype extension="qual454" type="galaxy.datatypes.qualityscore:QualityScore454" display_in_upload="true"/>
     <datatype extension="roadmaps" type="galaxy.datatypes.assembly:Roadmaps" display_in_upload="false"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
-        <converter file="sam_to_bam_native.xml" target_datatype="bam_native"/>
+        <converter file="sam_to_unsorted_bam.xml" target_datatype="unsorted.bam"/>
         <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
         <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
         <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>

@@ -50,12 +50,12 @@ Highlights
 
   - ``qname_sorted.bam``, that ensures that the file is queryname sorted (e.g. ``SO:queryname``);
   - ``qname_input_sorted.bam``, that can be used to describe the output of aligners which generally keep mate pairs adjacent
-  - ``native_bam``, that makes no assumptions about the sort order of the file.
+  - ``unsorted.bam``, that makes no assumptions about the sort order of the file.
 
   A huge thanks goes out to `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
   implemented these datatypes.
 
-  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_
+  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_, `Pull Request 5674`_
 
 **Experimental Job Caching**
   Galaxy can now be configured to allow users the option of skipping duplicated jobs if one with
