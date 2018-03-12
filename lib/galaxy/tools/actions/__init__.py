@@ -554,7 +554,7 @@ class DefaultToolAction(object):
                 for pja in old_job.workflow_invocation_step.workflow_step.post_job_actions:
                     # execute immediate actions here, with workflow context.
                     if pja.action_type in ActionBox.immediate_actions:
-                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job)
+                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
             for p in old_job.parameters:
                 if p.name.endswith('|__identifier__'):
                     current_job.parameters.append(p.copy())
