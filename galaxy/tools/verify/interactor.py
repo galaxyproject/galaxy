@@ -672,26 +672,26 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job
                 job_output_exceptions = [e]
                 raise e
     finally:
-        end_time = time.time()
-        job_data = {
-            "tool_id": tool_id,
-            "tool_version": tool_version,
-            "test_index": test_index,
-            "time_seconds": end_time - begin_time,
-        }
-        if tool_inputs is not None:
-            job_data["inputs"] = tool_inputs
-        if job_stdio is not None:
-            job_data["job"] = job_stdio
-        if job_output_exceptions:
-            job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
-            job_data["status"] = "failure"
-        if tool_execution_exception:
-            job_data["execution_problem"] = str(tool_execution_exception)
-            job_data["status"] = "error"
         if register_job_data is not None:
-            if "status" not in job_data:
-                job_data["status"] = "success"
+            end_time = time.time()
+            job_data = {
+                "tool_id": tool_id,
+                "tool_version": tool_version,
+                "test_index": test_index,
+                "time_seconds": end_time - begin_time,
+            }
+            if tool_inputs is not None:
+                job_data["inputs"] = tool_inputs
+            if job_stdio is not None:
+                job_data["job"] = job_stdio
+            status = "success"
+            if job_output_exceptions:
+                job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
+                status = "failure"
+            if tool_execution_exception:
+                job_data["execution_problem"] = str(tool_execution_exception)
+                status = "error"
+            job_data["status"] = status
             register_job_data(job_data)
 
     galaxy_interactor.delete_history(test_history)
