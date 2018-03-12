@@ -7,7 +7,8 @@ from six import string_types
 
 from galaxy import model
 from galaxy.exceptions import ObjectInvalid
-from galaxy.model import LibraryDatasetDatasetAssociation
+from galaxy.jobs.actions.post import ActionBox
+from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -493,7 +494,6 @@ class DefaultToolAction(object):
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
-
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
 
         job_flush_timer = ExecutionTimer()
@@ -546,6 +546,15 @@ class DefaultToolAction(object):
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
+            if old_job.workflow_invocation_step:
+                replacement_dict = {}
+                for parameter in old_job.workflow_invocation_step.workflow_invocation.input_parameters:
+                    if parameter.type == WorkflowRequestInputParameter.types.REPLACEMENT_PARAMETERS:
+                        replacement_dict[parameter.name] = parameter.value
+                for pja in old_job.workflow_invocation_step.workflow_step.post_job_actions:
+                    # execute immediate actions here, with workflow context.
+                    if pja.action_type in ActionBox.immediate_actions:
+                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job)
             for p in old_job.parameters:
                 if p.name.endswith('|__identifier__'):
                     current_job.parameters.append(p.copy())
