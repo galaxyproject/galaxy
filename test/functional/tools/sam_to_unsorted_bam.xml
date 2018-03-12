@@ -23,13 +23,13 @@
     </command>
     <inputs>
         <param name="input1" type="data" format="sam" label="SAM file" optional="true"/>
-        <param name="input2" type="data" format="bam_native" label="Unsorted BAM file" optional="true"/>
+        <param name="input2" type="data" format="unsorted.bam" label="Unsorted BAM file" optional="true"/>
         <param name="input3" type="data" format="bam" label="BAM file sorted by coordinate" optional="true"/>
         <param name="input4" type="data" format="qname_sorted.bam" label="BAM file sorted by queryname" optional="true"/>
         <param name="input5" type="data" format="qname_input_sorted.bam" label="BAM file with sort order determined by the aligner" optional="true"/>
     </inputs>
     <outputs>
-        <data name="bam_native_output" format="bam_native">
+        <data name="bam_native_output" format="unsorted.bam">
             <filter>input1 or input2</filter>
         </data>
         <data name="bam_output" format="bam">
@@ -46,12 +46,12 @@
         <!-- Test that bam native output won't be sorted-->
         <test>
             <param name="input1" value="sam_with_header.sam" ftype="sam"/>
-            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="bam_native"/>
+            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="unsorted.bam"/>
         </test>
         <!-- Test that sam input is properly converted to bam native -->
         <test>
             <param name="input2" value="sam_with_header.sam" ftype="sam"/>
-            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="bam_native"/>
+            <output name="bam_native_output" file="bam_native_from_sam.bam" ftype="unsorted.bam"/>
         </test>
         <!-- Test that sam input is properly converted to bam -->
         <test>

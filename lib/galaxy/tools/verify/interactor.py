@@ -622,7 +622,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder, keep_outputs_dir=keep_outputs_dir)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None, test_index=0, tool_version=None):
+def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None, test_index=0, tool_version=None, quiet=False):
     tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     testdef = ToolTestDescription(tool_test_dict)
@@ -642,6 +642,7 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job
     job_output_exceptions = None
     tool_execution_exception = None
     expected_failure_occurred = False
+    begin_time = time.time()
     try:
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
@@ -662,7 +663,7 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job
             assert data_list or data_collection_list
 
             try:
-                job_stdio = _verify_outputs(testdef, test_history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor)
+                job_stdio = _verify_outputs(testdef, test_history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor, quiet=quiet)
             except JobOutputsError as e:
                 job_stdio = e.job_stdio
                 job_output_exceptions = e.output_exceptions
@@ -671,16 +672,26 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job
                 job_output_exceptions = [e]
                 raise e
     finally:
-        job_data = {}
-        if tool_inputs is not None:
-            job_data["inputs"] = tool_inputs
-        if job_stdio is not None:
-            job_data["job"] = job_stdio
-        if job_output_exceptions:
-            job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
-        if tool_execution_exception:
-            job_data["execution_problem"] = str(tool_execution_exception)
         if register_job_data is not None:
+            end_time = time.time()
+            job_data = {
+                "tool_id": tool_id,
+                "tool_version": tool_version,
+                "test_index": test_index,
+                "time_seconds": end_time - begin_time,
+            }
+            if tool_inputs is not None:
+                job_data["inputs"] = tool_inputs
+            if job_stdio is not None:
+                job_data["job"] = job_stdio
+            status = "success"
+            if job_output_exceptions:
+                job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
+                status = "failure"
+            if tool_execution_exception:
+                job_data["execution_problem"] = str(tool_execution_exception)
+                status = "error"
+            job_data["status"] = status
             register_job_data(job_data)
 
     galaxy_interactor.delete_history(test_history)
@@ -698,7 +709,7 @@ def _handle_def_errors(testdef):
             raise Exception("Test parse failure")
 
 
-def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor):
+def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_list, galaxy_interactor, quiet=False):
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
 
@@ -713,7 +724,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
     found_exceptions = []
 
     def register_exception(e):
-        if not found_exceptions:
+        if not found_exceptions and not quiet:
             # Only print this stuff out once.
             for stream in ['stdout', 'stderr']:
                 if stream in job_stdio:

@@ -151,7 +151,7 @@ var NumberFilter = function(obj_dict) {
         .addClass("elt-label")
         .appendTo(filter.parent_div);
 
-    var name_span = $("<span/>")
+    $("<span/>")
         .addClass("slider-name")
         .text(`${filter.name}  `)
         .appendTo(filter_label);
@@ -341,9 +341,6 @@ extend(NumberFilter.prototype, {
             return true;
         }
 
-        // Keep value function.
-        var filter = this;
-
         // Do filtering.
         var to_filter = element[this.index];
         if (to_filter instanceof Array) {
@@ -482,7 +479,7 @@ var FiltersManager = function(track, obj_dict) {
                     filter.height_icon.addClass("active").show();
                 }
             } else {
-                console.log("ERROR: unsupported filter: ", name, type);
+                console.log("ERROR: unsupported filter: ", filters_dict[i]);
             }
         }
 
@@ -656,6 +653,7 @@ extend(FiltersManager.prototype, {
             // Remove current filter.
             filters = filters.slice(1);
 
+            // DBTODO: This will never work, run_tool_url doesn't exist?
             $.getJSON(run_tool_url, url_params, response => {
                 if (response.error) {
                     // General error.
