@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.6.dev0
+18.5.6 (2018-03-12)
 ---------------------
 
 * Bring in the latest Galaxy dev branch - includes code cleanup and many Python 3 fixes from
