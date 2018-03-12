@@ -194,12 +194,13 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_pages: function(action_id) {
+            var activeTab = action_id=="list_published"?"shared":"user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Pages",
                     item: "page",
-                    active_tab: "user"
+                    active_tab: activeTab
                 })
             );
         },
