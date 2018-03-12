@@ -308,14 +308,18 @@ window.app = function app(options, bootstrapped) {
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
-                    this.page.display(new ToolFormComposite.View(response));
+                    this.page.display(new ToolFormComposite.View(_.extend(
+                        response,
+                        {active_tab: "workflow"}
+                    )));
                 },
                 error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
-                        persistent: true
+                        persistent: true,
+                        active_tab: "workflow"
                     };
                     this.page.display(new Ui.Message(options));
                 }
