@@ -43,6 +43,7 @@ def copy_sample_file(app, filename, dest_path=None):
     """
     Copies a sample file at `filename` to `the dest_path`
     directory and strips the '.sample' extensions from `filename`.
+    Returns the path to the copied file (with the .sample extension).
     """
     if dest_path is None:
         dest_path = os.path.abspath(app.config.tool_data_path)
@@ -56,8 +57,10 @@ def copy_sample_file(app, filename, dest_path=None):
         shutil.copy(full_source_path, full_destination_path)
     # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it
     # contains stuff proprietary to the local instance.
-    if not os.path.lexists(os.path.join(dest_path, copied_file)):
+    non_sample_path = os.path.join(dest_path, copied_file)
+    if not os.path.lexists(non_sample_path):
         shutil.copy(full_source_path, os.path.join(dest_path, copied_file))
+    return non_sample_path
 
 
 def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None):
@@ -159,10 +162,10 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                 for sample_file in sample_files:
                     sample_file_name = basic_util.strip_path(sample_file)
                     if sample_file_name == '%s.sample' % missing_file_name:
-                        copy_sample_file(app, os.path.join(tool_path, sample_file))
+                        target_path = copy_sample_file(app, os.path.join(tool_path, sample_file))
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
-                            options.tool_data_table.handle_found_index_file(options.missing_index_file)
-                        sample_files_copied.append(options.missing_index_file)
+                            options.tool_data_table.handle_found_index_file(target_path)
+                        sample_files_copied.append(target_path)
                         break
     return repository_tools_tups, sample_files_copied
 
