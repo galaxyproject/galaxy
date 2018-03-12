@@ -55,7 +55,7 @@ Highlights
   A huge thanks goes out to `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
   implemented these datatypes.
 
-  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_
+  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_, `Pull Request 5674`_
 
 **Experimental Job Caching**
   Galaxy can now be configured to allow users the option of skipping duplicated jobs if one with
