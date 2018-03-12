@@ -15,6 +15,7 @@ var View = Backbone.View.extend({
         this.modal = parent.Galaxy.modal || new Modal.View();
         this.model = (options && options.model) || new Backbone.Model(options);
         this.deferred = new Deferred();
+        this.active_tab = options.active_tab || null;
         this.setElement(
             $("<div/>")
                 .addClass("ui-form-composite")
