@@ -9,7 +9,7 @@ History
 18.5.7.dev0
 ---------------------
 
-    
+* More tool testing client fixes, this time for ephemeris.
 
 ---------------------
 18.5.6 (2018-03-12)
