@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.7.dev0
+18.5.7 (2018-03-12)
 ---------------------
 
 * More tool testing client fixes, this time for ephemeris.
