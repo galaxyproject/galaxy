@@ -68,7 +68,7 @@ cd /galaxy
 
 HOME=/galaxy
 echo "Running common startup for updated dependencies (if any)"
-sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh --dev-wheels || { echo "common_startup.sh failed"; exit 1; }
+sudo -E -u "#${GALAXY_TEST_UID}" ./scripts/common_startup.sh --dev-wheels --skip-client-build || { echo "common_startup.sh failed"; exit 1; }
 
 echo "Upgrading test database..."
 sudo -E -u "#${GALAXY_TEST_UID}" GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI" sh manage_db.sh upgrade
