@@ -4,7 +4,6 @@ API operations for uploaded files in storage.
 import logging
 import os
 import re
-
 from math import ceil
 
 from galaxy.exceptions import MessageException, NotImplemented
