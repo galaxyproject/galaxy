@@ -18,6 +18,7 @@ class CloudStorageController(BaseAPIController):
 
     def __init__(self, app):
         super(CloudStorageController, self).__init__(app)
+        self.cloud_storage_manager = cloud_storage.CloudStorageManager(app)
 
     @web.expose_api
     def index(self, trans, **kwargs):
@@ -73,7 +74,9 @@ class CloudStorageController(BaseAPIController):
             return {'status': 'error',
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
 
-
+        status, message = self.cloud_storage_manager.download(provider=provider, container=container, obj=obj)
+        trans.response.status = 200 if status == 'ok' else trans.response.status = 500
+        return {'status': status, 'message': message}
 
     @web.expose_api
     def upload(self, trans, payload, **kwargs):
