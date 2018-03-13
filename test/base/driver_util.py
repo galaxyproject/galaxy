@@ -191,7 +191,7 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
-        chunk_upload_size=1,
+        chunk_upload_size=100,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
