@@ -139,10 +139,10 @@ class LibraryManager(object):
             library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
             library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
             library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
-            accessible_restricted_library_ids = []
-            allowed_library_add_ids = set([])
-            allowed_library_modify_ids = set([])
-            allowed_library_manage_ids = set([])
+            accessible_restricted_library_ids = set()
+            allowed_library_add_ids = set()
+            allowed_library_modify_ids = set()
+            allowed_library_manage_ids = set()
             for action in all_actions:
                 if action.action == library_access_action:
                     accessible_restricted_library_ids.append(action.library_id)
