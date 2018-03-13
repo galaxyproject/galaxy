@@ -355,9 +355,9 @@ It is also a good idea to make sure that only trusted users, e.g. root, have wri
 
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
 
-## Special environment variables for parallel jobs
+## Special environment variables for job resources
 
-Galaxy *tries* to define special enironment variables for each job that contain
+Galaxy *tries* to define special environment variables for each job that contain
 the information on the number of available slots and the amount of available
 memory: 
 
@@ -371,14 +371,13 @@ tries to determine these values. This bash code is defined here:
 * lib/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
 * lib/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
 
-If this code is unable to determine the variables then they will not be set. 
-Therefore in the tool xml files the variables should be used with a default, 
-e.g. `\${GALAXY_SLOTS:-DEFAULT}` (see also https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage). 
+If this code is unable to determine the variables, then they will not be set. 
+Therefore in the tool XML files the variables should be used with a default, 
+e.g. `\${GALAXY_SLOTS:-1}` (see also https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage). 
 
 In particular `GALAXY_MEMORY_MB` and `GALAXY_MEMORY_MB_PER_SLOT` are currently
 defined only for a few cluster types. Contributions are very welcome, e.g. let
-the Galaxy development mailing list know how to modify that file to support
-it.
+the Galaxy developers know how to modify that file to support your cluster.
 
 ## Contributors
 
