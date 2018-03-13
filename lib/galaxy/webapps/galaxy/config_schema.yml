@@ -1239,6 +1239,15 @@ mapping:
           operations on the remote end.  See the Galaxy nginx documentation for the
           corresponding nginx configuration.
 
+      chunk_upload_size:
+        type: int
+        default: 104857600
+        required: false
+        desc: |
+          Galaxy can upload user files in chunks without using nginx. Enable the chunk
+          uploader by specifying a chunk size larger than 0. The chunk size is specified
+          in bytes (default: 100MB).
+
       dynamic_proxy_manage:
         type: bool
         default: true

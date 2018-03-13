@@ -1643,6 +1643,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``dynamic_proxy_manage``
 ~~~~~~~~~~~~~~~~~~~~~~~~

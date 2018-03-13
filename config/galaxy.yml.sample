@@ -815,7 +815,7 @@ galaxy:
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
   # chunk size is specified in bytes (default: 100MB).
-  #chunk_upload_size = 104857600
+  #chunk_upload_size: 104857600
 
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
