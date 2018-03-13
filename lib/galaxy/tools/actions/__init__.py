@@ -609,7 +609,7 @@ class DefaultToolAction(object):
 
     def _get_on_text(self, inp_data):
         input_names = []
-        for _name, data in reversed(inp_data.items()):
+        for data in reversed(inp_data.values()):
             if getattr(data, "hid", None):
                 input_names.append('data %s' % data.hid)
 
@@ -793,7 +793,7 @@ class OutputCollections(object):
         if "elements" in element_kwds:
             elements = element_kwds["elements"]
             if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
-                for _key, value in elements.items():
+                for value in elements.values():
                     # Either a HDA (if) or a DatasetCollection (the else)
                     if getattr(value, "history_content_type", None) == "dataset":
                         assert value.history is not None
