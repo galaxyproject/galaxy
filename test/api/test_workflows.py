@@ -2142,6 +2142,55 @@ test_data:
         name = content["name"]
         assert name == "fasta1 suffix", name
 
+    @skip_without_tool("fail_identifier")
+    @skip_without_tool("cat")
+    def test_run_rename_when_resuming_jobs(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: fail_identifier
+    label: first_fail
+    state:
+      failbool: true
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "cat1 out"
+  - tool_id: cat
+    state:
+      input1:
+        $link: first_fail#out_file1
+    outputs:
+      out_file1:
+        rename: "#{input1} suffix"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fail
+""", history_id=history_id, wait=True, assert_ok=False)
+            content = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
+            name = content["name"]
+            assert content['state'] == 'error', content
+            input1 = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
+            job_id = content['creating_job']
+            inputs = {"input1": {'values': [{'src': 'hda',
+                                             'id': input1['id']}]
+                                 },
+                      "failbool": "false",
+                      "rerun_remap_job_id": job_id}
+            self.dataset_populator.run_tool(tool_id='fail_identifier',
+                                            inputs=inputs,
+                                            history_id=history_id,
+                                            assert_ok=True)
+            unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
+            assert unpaused_dataset['state'] == 'ok'
+            assert unpaused_dataset['name'] == "%s suffix" % name
+
     @skip_without_tool("cat")
     def test_run_rename_based_on_input_recursive(self):
         history_id = self.dataset_populator.new_history()
