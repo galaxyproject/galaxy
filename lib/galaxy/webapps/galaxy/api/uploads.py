@@ -5,6 +5,8 @@ import logging
 import os
 import re
 
+from math import ceil
+
 from galaxy.exceptions import MessageException, NotImplemented
 from galaxy.web import expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
@@ -41,8 +43,8 @@ class UploadsAPIController(BaseAPIController):
             target_size = os.path.getsize(target_file)
         if session_start != target_size:
             raise MessageException("Incorrect session start.")
-        chunk_size = os.fstat(session_chunk.file.fileno()).st_size / self.BYTES_PER_MEGABYTE
-        if chunk_size > trans.app.config.chunk_upload_size:
+        chunk_size = os.fstat(session_chunk.file.fileno()).st_size
+        if chunk_size > ceil(trans.app.config.chunk_upload_size * self.BYTES_PER_MEGABYTE):
             raise MessageException("Invalid chunk size.")
         with open(target_file, "a") as f:
             while True:
