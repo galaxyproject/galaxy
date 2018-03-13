@@ -60,9 +60,9 @@ class CloudStorageController(BaseAPIController):
         if provider is None:
             missing_arguments.append("provider")
 
-        bucket = payload.get("bucket", None)
-        if bucket is None:
-            missing_arguments.append("bucket")
+        container = payload.get("container", None)
+        if container is None:
+            missing_arguments.append("container")
 
         obj = payload.get("object", None)
         if obj is None:
