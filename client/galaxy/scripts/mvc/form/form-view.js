@@ -80,7 +80,7 @@ export default Backbone.View.extend({
                     .first();
                 $panel.animate(
                     {
-                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - 120
+                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - $panel.position().top - 120
                     },
                     500
                 );
