@@ -1123,14 +1123,14 @@ class ColumnListParameter(SelectToolParameter):
             # Valid column-based datasets contain at least 1 column if that column has not been
             # specified we prepopulate the selector assuming that the datasets is not ready yet.
             if dataset.metadata.columns is None:
-                this_column_list = list(map(str, range(1, MAX_DEFAULT_COLUMNS + 1)))
+                this_column_list = [str(i) for i in range(1, MAX_DEFAULT_COLUMNS + 1)]
             elif self.numerical:
                 # If numerical was requested, filter columns based on metadata
                 for i, col in enumerate(dataset.metadata.column_types):
                     if col == 'int' or col == 'float':
                         this_column_list.append(str(i + 1))
             else:
-                this_column_list = list(map(str, range(1, dataset.metadata.columns + 1)))
+                this_column_list = [str(i) for i in range(1, dataset.metadata.columns + 1)]
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
