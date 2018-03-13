@@ -43,6 +43,8 @@ workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile('''\$\{.+?\}''')
 
+MAX_DEFAULT_COLUMNS = 999
+
 
 def contains_workflow_parameter(value, search=False):
     if not isinstance(value, string_types):
@@ -1114,11 +1116,16 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             # Columns can only be identified if metadata is available
-            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns') or not dataset.metadata.columns:
+            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns'):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
-            if self.numerical:
+            # Valid column-based datasets contain at least 1 column if that column has not been
+            # specified we prepopulate the selector assuming that the datasets is not ready yet.
+            if dataset.metadata.columns is None:
+                for i in range(0, MAX_DEFAULT_COLUMNS):
+                    this_column_list.append(str(i + 1))
+            elif self.numerical:
                 # If numerical was requested, filter columns based on metadata
                 for i, col in enumerate(dataset.metadata.column_types):
                     if col == 'int' or col == 'float':
