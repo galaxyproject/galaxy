@@ -195,7 +195,7 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 ```
 
 
-The value of *ppn=* is used by PBS to define the environment variable $PBS_NCPUS which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
 
 ### Condor
 
@@ -354,6 +354,31 @@ Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` t
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
+
+## Special environment variables for parallel jobs
+
+Galaxy *tries* to define special enironment variables for each job that contain
+the information on the number of available slots and the amount of available
+memory: 
+
+* `GALAXY_SLOTS`: number of available slots 
+* `GALAXY_MEMORY_MB`: total amount of available memory in MB
+* `GALAXY_MEMORY_MB_PER_SLOT`: amount of memory that is available for each slot in MB
+
+More precisely Galaxy inserts bash code in the job submit script that 
+tries to determine these values. This bash code is defined here: 
+
+* lib/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
+* lib/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
+
+If this code is unable to determine the variables then they will not be set. 
+Therefore in the tool xml files the variables should be used with a default, 
+e.g. `\${GALAXY_SLOTS:-DEFAULT}` (see also https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage). 
+
+In particular `GALAXY_MEMORY_MB` and `GALAXY_MEMORY_MB_PER_SLOT` are currently
+defined only for a few cluster types. Contributions are very welcome, e.g. let
+the Galaxy development mailing list know how to modify that file to support
+it.
 
 ## Contributors
 
