@@ -86,6 +86,21 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Security
 ========
 
+Unsecure GenomeSpace token exposure
+-----------------------------------
+Tracked as ``GX-2018-0002``.
+
+We have found and fixed a medium-level security issue concering the GenomeSpace importer/exporter tools that were updated in the Galaxy release 17.09. These tools did not handle the GenomeSpace access token securely and stored it as a job parameter which made it accessible to anybody with access to the datasets created by these tools.
+This means that any user that used a GenomeSpace token to access these tools and subsequently shared the output dataset (or history that contains it) with another user shared their GenomeSpace token also.
+
+These tools are both included in the ``tool_conf.xml.sample`` and are therefore *enabled on every new Galaxy by default*.
+
+Administrators please see the `GenomeSpace security sanitization`_ section of this document for the details on how to sanitize the tokens stored in the Galaxy database created prior to this fix.
+
+The vulnerability has been resolved by removing the token functionality until a proper implementation is in place. The GenomeSpace tools continue to work using the OpenID authentication as before.
+
+The fix for this issue has been applied back to Galaxy release 17.09 and can be found in this `pull request <https://github.com/galaxyproject/galaxy/pull/5631>`__.
+
 Breaking Changes
 ================
 
@@ -140,8 +155,74 @@ Release Notes
 .. include:: 18.01.rst
    :start-after: announce_start
 
-Security patch details
-======================
+GenomeSpace security sanitization
+=================================
+
+Outputs of these tools may require sanitization: ``genomespace_importer`` and ``genomespace_exporter``
+
+The following SQL commands will help you **identify** the datasets in your Galaxy's database.
+
+Finding bad GenomeSpace importer params:
+
+.. code-block:: sql
+
+  SELECT j.id,
+         j.create_time,
+         j.user_id,
+         jp.value
+  FROM job_parameter jp
+  JOIN job j ON j.id = jp.job_id
+  WHERE jp.job_id IN
+      (SELECT id
+       FROM job
+       WHERE tool_id = 'genomespace_importer')
+    AND jp.name = 'URL'
+    AND jp.value LIKE '%^%'
+  ORDER BY j.id DESC;
+
+Finding bad GenomeSpace exporter params:
+
+.. code-block:: sql
+
+  SELECT j.id,
+         j.create_time,
+         j.user_id,
+         jp.value
+  FROM job_parameter jp
+  JOIN job j ON j.id = jp.job_id
+  WHERE jp.job_id IN
+      (SELECT id
+       FROM job
+       WHERE tool_id = 'genomespace_exporter')
+    AND jp.name = 'genomespace_browser'
+    AND jp.value LIKE '%^%'
+  ORDER BY j.id DESC;
+
+The following SQL commands will help you **sanitize** the datasets in your Galaxy's database.
+
+Sanitizing GenomeSpace importer params:
+
+.. code-block:: sql
+
+  UPDATE job_parameter jp
+  SET value = split_part(jp.value, '^', 1) || '"'
+  FROM job j
+  WHERE jp.job_id = j.id
+    AND j.tool_id = 'genomespace_importer'
+    AND jp.name = 'URL'
+    AND jp.value LIKE '%^%';
+
+Sanitizing GenomeSpace exporter params:
+
+.. code-block:: sql
+
+  UPDATE job_parameter jp
+  SET value = split_part(jp.value, '^', 1) || '"'
+  FROM job j
+  WHERE jp.job_id = j.id
+    AND j.tool_id = 'genomespace_exporter'
+    AND jp.name = 'genomespace_browser'
+    AND jp.value LIKE '%^%';
 
 .. include:: _thanks.rst
 
