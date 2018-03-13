@@ -74,7 +74,7 @@ class ConfigSerializer(base.ModelSerializer):
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
             'nginx_upload_path'                 : lambda i, k, **c: getattr(i, k, False),
-            'chunk_upload_size'                 : _defaults_to(100),
+            'chunk_upload_size'                 : _defaults_to(104857600),
             'ftp_upload_dir'                    : _defaults_to(None),
             'ftp_upload_site'                   : _defaults_to(None),
             'version_major'                     : _defaults_to(None),

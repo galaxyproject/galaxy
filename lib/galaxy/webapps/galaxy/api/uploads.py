@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 class UploadsAPIController(BaseAPIController):
 
     READ_CHUNK_SIZE = 2 ** 16
-    BYTES_PER_MEGABYTE = 1048576
 
     @expose_api_anonymous
     def index(self, trans, **kwd):
@@ -43,7 +42,7 @@ class UploadsAPIController(BaseAPIController):
         if session_start != target_size:
             raise MessageException("Incorrect session start.")
         chunk_size = os.fstat(session_chunk.file.fileno()).st_size
-        if chunk_size > ceil(trans.app.config.chunk_upload_size * self.BYTES_PER_MEGABYTE):
+        if chunk_size > trans.app.config.chunk_upload_size:
             raise MessageException("Invalid chunk size.")
         with open(target_file, "a") as f:
             while True:

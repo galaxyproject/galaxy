@@ -89,7 +89,7 @@
         var file = file_data.file;
         var attempts = cnf.attempts;
         var session_id = `${cnf.session.id}-${new Date().valueOf()}-${file.size}`;
-        var chunk_size = Math.ceil(cnf.session.chunk_upload_size * 1048576);
+        var chunk_size = cnf.session.chunk_upload_size;
         console.debug(`Starting chunked uploads [size=${chunk_size}].`);
 
         // chunk processing helper
