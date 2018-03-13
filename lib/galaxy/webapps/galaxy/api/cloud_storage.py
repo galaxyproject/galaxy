@@ -56,6 +56,10 @@ class CloudStorageController(BaseAPIController):
                                'but received data of type `%s`.' % str(type(payload))}
 
         missing_arguments = []
+        provider = payload.get("provider", None)
+        if provider is None:
+            missing_arguments.append("provider")
+
         bucket = payload.get("bucket", None)
         if bucket is None:
             missing_arguments.append("bucket")
