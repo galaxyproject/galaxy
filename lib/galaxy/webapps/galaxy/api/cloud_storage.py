@@ -6,7 +6,7 @@ import logging
 
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
-from galaxy.managers import cloud_storages
+from galaxy.managers import cloud_storage
 
 log = logging.getLogger(__name__)
 
