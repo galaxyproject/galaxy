@@ -75,7 +75,7 @@ class CloudStorageController(BaseAPIController):
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
 
         status, message = self.cloud_storage_manager.download(provider=provider, container=container, obj=obj)
-        trans.response.status = 200 if status == 'ok' else trans.response.status = 500
+        trans.response.status = 200 if status == 'ok' else 500
         return {'status': status, 'message': message}
 
     @web.expose_api
