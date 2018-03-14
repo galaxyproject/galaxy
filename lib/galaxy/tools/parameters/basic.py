@@ -43,8 +43,6 @@ workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile('''\$\{.+?\}''')
 
-MAX_DEFAULT_COLUMNS = 999
-
 
 def contains_workflow_parameter(value, search=False):
     if not isinstance(value, string_types):
@@ -1128,11 +1126,7 @@ class ColumnListParameter(SelectToolParameter):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
-            # Valid column-based datasets contain at least 1 column if that column has not been
-            # specified we prepopulate the selector assuming that the datasets is not ready yet.
-            if dataset.metadata.columns is None:
-                this_column_list = [str(i) for i in range(1, MAX_DEFAULT_COLUMNS + 1)]
-            elif self.numerical:
+            if self.numerical:
                 # If numerical was requested, filter columns based on metadata
                 for i, col in enumerate(dataset.metadata.column_types):
                     if col == 'int' or col == 'float':
