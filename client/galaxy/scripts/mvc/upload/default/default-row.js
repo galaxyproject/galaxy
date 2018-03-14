@@ -19,6 +19,7 @@ export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
+        this.list_extensions = app.list_extensions;
         this.model = options.model;
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
@@ -58,7 +59,7 @@ export default Backbone.View.extend({
         // create select extension
         this.select_extension = new Select.View({
             css: "upload-extension",
-            data: self.app.list_extensions,
+            data: _.filter(this.list_extensions, ext => !ext.composite_files),
             container: this.$(".upload-extension"),
             value: default_extension,
             onchange: function(extension) {
