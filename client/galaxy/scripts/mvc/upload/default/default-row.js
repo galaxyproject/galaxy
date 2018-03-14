@@ -11,6 +11,7 @@ export default Backbone.View.extend({
         init: "upload-icon-button fa fa-trash-o",
         queued: "upload-icon fa fa-spinner fa-spin",
         running: "upload-icon fa fa-spinner fa-spin",
+        warning: "upload-icon fa fa-spinner fa-spin",
         success: "upload-icon-button fa fa-check",
         error: "upload-icon-button fa fa-exclamation-triangle"
     },
@@ -183,7 +184,7 @@ export default Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get("info");
         if (info) {
-            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
+            this.$info_text.html(`<strong>Warning: </strong>${info}`).show();
         } else {
             this.$info_text.hide();
         }
@@ -213,12 +214,16 @@ export default Backbone.View.extend({
             this.select_genome.disable();
             this.select_extension.disable();
         }
+        this.$info_progress.show();
+        this.$el.removeClass().addClass("upload-row");
         if (status == "success") {
             this.$el.addClass("success");
             this.$percentage.html("100%");
-        }
-        if (status == "error") {
+        } else if (status == "error") {
             this.$el.addClass("danger");
+            this.$info_progress.hide();
+        } else if (status == "warning") {
+            this.$el.addClass("warning");
             this.$info_progress.hide();
         }
     },

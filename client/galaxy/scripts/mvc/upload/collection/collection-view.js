@@ -116,7 +116,7 @@ export default Backbone.View.extend({
 
         // file upload
         this.uploadbox = this.$(".upload-box").uploadbox({
-            url: this.app.options.nginx_upload_path,
+            url: this.app.options.upload_path,
             announce: function(index, file) {
                 self._eventAnnounce(index, file);
             },
