@@ -918,8 +918,7 @@ class Tool(Dictifiable):
                 # If we have an nginx upload, save the action as a tuple instead of
                 # a string. The actual action needs to get url_for run to add any
                 # prefixes, and we want to avoid adding the prefix to the
-                # nginx_upload_path. This logic is handled in the tool_form.mako
-                # template.
+                # nginx_upload_path.
                 if self.nginx_upload and self.app.config.nginx_upload_path:
                     if '?' in unquote_plus(self.action):
                         raise Exception('URL parameters in a non-default tool action can not be used '

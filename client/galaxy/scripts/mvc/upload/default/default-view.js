@@ -104,7 +104,7 @@ export default Backbone.View.extend({
 
         // file upload
         this.uploadbox = this.$uploadbox.uploadbox({
-            url: this.app.options.nginx_upload_path,
+            url: this.app.options.upload_path,
             announce: function(index, file) {
                 self._eventAnnounce(index, file);
             },
@@ -119,6 +119,9 @@ export default Backbone.View.extend({
             },
             error: function(index, message) {
                 self._eventError(index, message);
+            },
+            warning: function(index, message) {
+                self._eventWarning(index, message);
             },
             complete: function() {
                 self._eventComplete();
@@ -247,7 +250,7 @@ export default Backbone.View.extend({
     /** Progress */
     _eventProgress: function(index, percentage) {
         var it = this.collection.get(index);
-        it.set("percentage", percentage);
+        it.set({ percentage: percentage, status: "running", info: "" });
         this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
     },
 
@@ -261,6 +264,12 @@ export default Backbone.View.extend({
         this.counter.success++;
         this.render();
         Galaxy.currHistoryPanel.refreshContents();
+    },
+
+    /** Warning */
+    _eventWarning: function(index, message) {
+        var it = this.collection.get(index);
+        it.set({ status: "warning", info: message });
     },
 
     /** Error */
@@ -363,7 +372,10 @@ export default Backbone.View.extend({
             this._uploadFtp();
 
             // queue remaining files
-            this.uploadbox.start();
+            this.uploadbox.start({
+                id: Galaxy.user.id,
+                chunk_upload_size: this.app.options.chunk_upload_size
+            });
             this.render();
         }
     },
@@ -430,7 +442,7 @@ export default Backbone.View.extend({
         if (list.length > 0) {
             $.uploadpost({
                 data: this.app.toData(list),
-                url: this.app.options.nginx_upload_path,
+                url: this.app.options.upload_path,
                 success: function(message) {
                     _.each(list, model => {
                         self._eventSuccess(model.id);
@@ -452,37 +464,37 @@ export default Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            '<div class="upload-view-default">' +
-            '<div class="upload-top">' +
-            '<h6 class="upload-top-info"/>' +
-            "</div>" +
-            '<div class="upload-box">' +
-            '<div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div>' +
-            '<table class="upload-table ui-table-striped" style="display: none;">' +
-            "<thead>" +
-            "<tr>" +
-            "<th>Name</th>" +
-            "<th>Size</th>" +
-            "<th>Type</th>" +
-            "<th>Genome</th>" +
-            "<th>Settings</th>" +
-            "<th>Status</th>" +
-            "<th/>" +
-            "</tr>" +
-            "</thead>" +
-            "<tbody/>" +
-            "</table>" +
-            "</div>" +
-            '<div class="upload-footer">' +
-            '<span class="upload-footer-title">Type (set all):</span>' +
-            '<span class="upload-footer-extension"/>' +
-            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-            '<span class="upload-footer-title">Genome (set all):</span>' +
-            '<span class="upload-footer-genome"/>' +
-            "</div>" +
-            '<div class="upload-buttons"/>' +
-            "</div>"
-        );
+        return `<div class="upload-view-default">
+                    <div class="upload-top">
+                        <h6 class="upload-top-info"/>
+                    </div>
+                    <div class="upload-box">
+                        <div class="upload-helper">
+                            <i class="fa fa-files-o"/>Drop files here
+                        </div>
+                        <table class="upload-table ui-table-striped" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th>Type</th>
+                                    <th>Genome</th>
+                                    <th>Settings</th>
+                                    <th>Status</th>
+                                    <th/>
+                                </tr>
+                            </thead>
+                            <tbody/>
+                        </table>
+                    </div>
+                    <div class="upload-footer">
+                        <span class="upload-footer-title">Type (set all):</span>
+                        <span class="upload-footer-extension"/>
+                        <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
+                        <span class="upload-footer-title">Genome (set all):</span>
+                        <span class="upload-footer-genome"/>
+                    </div>
+                    <div class="upload-buttons"/>
+                </div>`;
     }
 });

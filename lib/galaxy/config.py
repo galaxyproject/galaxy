@@ -436,6 +436,7 @@ class Configuration(object):
         self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
         self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
+        self.chunk_upload_size = int(kwargs.get('chunk_upload_size', 104857600))
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
