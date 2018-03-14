@@ -46,7 +46,7 @@ def flakey(method):
 def skip_without_tool(tool_id):
     """Decorate an API test method as requiring a specific tool.
 
-    Have test framework skip the test case is the tool is unavailable.
+    Have test framework skip the test case if the tool is unavailable.
     """
 
     def method_wrapper(method):
@@ -71,7 +71,7 @@ def skip_without_tool(tool_id):
 def skip_without_datatype(extension):
     """Decorate an API test method as requiring a specific datatype.
 
-    Have test framework skip the test case is the tool is unavailable.
+    Have test framework skip the test case if the datatype is unavailable.
     """
 
     def has_datatype(api_test_case):

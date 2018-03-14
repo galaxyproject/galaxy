@@ -343,7 +343,7 @@
     <datatype extension="bcf_uncompressed" type="galaxy.datatypes.binary:BcfUncompressed" mimetype="application/octet-stream">
       <converter file="bcf_uncompressed_to_bcf_converter.xml" target_datatype="bcf"/>
     </datatype>
-    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
+    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
