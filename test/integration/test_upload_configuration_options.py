@@ -502,8 +502,8 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
         hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
         assert len(hdca["elements"]) == 3, hdca
         element0 = hdca["elements"][0]
-        assert element0["element_identifier"] == "1"
-        assert element0["object"]["file_size"] == 9
+        assert element0["element_identifier"] == "1", hdca
+        assert element0["object"]["file_size"] == 9, element0
 
     def test_fetch_nested_elements_from(self):
         dir_path = self._get_user_ftp_path()
