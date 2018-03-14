@@ -117,9 +117,9 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
 
     def test_disallowed_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
-            self.history_id, 'file://%s/1.RData' % TEST_DATA_DIRECTORY, ext="binary"
+            self.history_id, 'file://%s/1.RData' % TEST_DATA_DIRECTORY, file_type="binary"
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
@@ -139,7 +139,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
                 "files_2|type": "upload_dataset",
             },
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
@@ -193,7 +193,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         payload = self.dataset_populator.upload_payload(
             self.history_id, 'file://%s/random-file' % TEST_DATA_DIRECTORY,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator.tools_post(payload)
         # Is admin - so this should work fine!
         assert create_response.status_code == 200
 
@@ -301,9 +301,9 @@ class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
 
     def test_blocked_url_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
-            self.history_id, 'http://localhost/', ext="txt"
+            self.history_id, 'http://localhost/', file_type="txt"
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
@@ -321,7 +321,7 @@ class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
                 "files_2|type": "upload_dataset",
             },
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
         # the newer API decorator that handles those details.
         assert create_response.status_code >= 400
