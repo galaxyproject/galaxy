@@ -144,4 +144,3 @@ doc/source/dev/schema.rst
 *.rej
 *~
 .idea
-*.bak
