@@ -6,6 +6,15 @@ import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
 
+/* global $ */
+/* global Galaxy */
+/* global show_modal */
+/* global hide_modal */
+/* global make_popupmenu */
+
+// This is page-level state we use in various places, bootstrapped in at entry.
+var page_opts = {};
+
 var CONTROLS = {
     // Item types.
     ITEM_HISTORY: "item_history",
@@ -30,20 +39,23 @@ var CONTROLS = {
 };
 
 // Initialize Galaxy elements.
-function init_galaxy_elts(wym) {
-    // Set up events to make annotation easy.
-    $(".annotation", wym._doc.body).each(function() {
-        $(this).click(function() {
-            // Works in Safari, not in Firefox.
-            var range = wym._doc.createRange();
-            range.selectNodeContents(this);
-            var selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            var t = "";
-        });
-    });
-}
+/* 
+ * UNUSED -- remove this pending figuring out whether we still need it or not.
+ * function init_galaxy_elts(wym) {
+ *     // Set up events to make annotation easy.
+ *     $(".annotation", wym._doc.body).each(function() {
+ *         $(this).click(function() {
+ *             // Works in Safari, not in Firefox.
+ *             var range = wym._doc.createRange();
+ *             range.selectNodeContents(this);
+ *             var selection = window.getSelection();
+ *             selection.removeAllRanges();
+ *             selection.addRange(range);
+ *             var t = "";
+ *         });
+ *     });
+ * }
+ */
 
 // Based on the dialog type, return a dictionary of information about an item
 function get_item_info(dialog_type) {
@@ -86,7 +98,7 @@ function get_item_info(dialog_type) {
 
     // Build ajax URL that lists items for selection.
     var item_list_action = `list_${item_plural.toLowerCase()}_for_selection`;
-    var ajax_url = list_objects_url.replace("LIST_ACTION", item_list_action);
+    var ajax_url = page_opts.list_objects_url.replace("LIST_ACTION", item_list_action);
 
     // Set up and return dict.
     return {
@@ -100,7 +112,7 @@ function get_item_info(dialog_type) {
 
 // Make an item importable.
 function make_item_importable(item_controller, item_id, item_type) {
-    var ajax_url = set_accessible_url.replace("ITEM_CONTROLLER", item_controller);
+    var ajax_url = page_opts.set_accessible_url.replace("ITEM_CONTROLLER", item_controller);
     $.ajax({
         type: "POST",
         url: ajax_url,
@@ -112,10 +124,12 @@ function make_item_importable(item_controller, item_id, item_type) {
 }
 
 // Completely replace WYM's dialog handling
-WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtml) {
+function _gxy_custom_wym_dialog(dialogType, dialogFeatures, bodyHtml) {
     var wym = this;
     var sStamp = wym.uniqueStamp();
     var selected = wym.selected();
+    var item_info;
+    var grid;
 
     // Swap out URL attribute for id/name attribute in link creation to enable anchor creation in page.
     function set_link_id() {
@@ -133,7 +147,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
             $(this).remove();
         });
     }
-
     // LINK DIALOG
     if (dialogType == WYMeditor.DIALOG_LINK) {
         if (selected) {
@@ -149,9 +162,9 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         var curTitle;
         if (selected) {
             curURL = $(selected).attr("href");
-            if (curURL == undefined) curURL = "";
+            if (curURL === undefined) curURL = "";
             curTitle = $(selected).attr("title");
-            if (curTitle == undefined) curTitle = "";
+            if (curTitle === undefined) curTitle = "";
         }
         show_modal(
             "Create Link",
@@ -265,8 +278,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
                     if (iRows > 0 && iCols > 0) {
                         var table = wym._doc.createElement(WYMeditor.TABLE);
-                        var newRow = null;
-                        var newCol = null;
+                        let newRow;
 
                         var sCaption = $(wym._options.captionSelector).val();
 
@@ -308,7 +320,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         dialogType == CONTROLS.DIALOG_VISUALIZATION_LINK
     ) {
         // Based on item type, set useful vars.
-        var item_info;
         switch (dialogType) {
             case CONTROLS.DIALOG_HISTORY_LINK:
                 item_info = get_item_info(CONTROLS.ITEM_HISTORY);
@@ -327,7 +338,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 break;
         }
 
-        var grid = new GridView({
+        grid = new GridView({
             url_base: item_info.list_ajax_url,
             embedded: true
         });
@@ -347,10 +358,9 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 Insert: function() {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null) make_importable = true;
+                    if ($("#make-importable:checked").val() !== null) make_importable = true;
 
                     // Insert links to history for each checked item.
-                    var item_ids = new Array();
                     grid.$("input[name=id]:checked").each(function() {
                         var item_id = $(this).val();
 
@@ -358,7 +368,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                         if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
 
                         // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
-                        var url_template = get_name_and_link_url + item_id;
+                        var url_template = page_opts.get_name_and_link_url + item_id;
                         var ajax_url = url_template.replace("ITEM_CONTROLLER", item_info.controller);
                         $.getJSON(ajax_url, returned_item_info => {
                             // Get link text.
@@ -367,7 +377,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
                             // Insert link: need to do different actions depending on link text.
                             if (
-                                link_text == "" || // Firefox.
+                                link_text === "" || // Firefox.
                                 link_text == sStamp // Safari
                             ) {
                                 // User selected no text; create link from scratch and use default text.
@@ -401,7 +411,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         dialogType == CONTROLS.DIALOG_EMBED_VISUALIZATION
     ) {
         // Based on item type, set useful vars.
-        var item_info;
         switch (dialogType) {
             case CONTROLS.DIALOG_EMBED_HISTORY:
                 item_info = get_item_info(CONTROLS.ITEM_HISTORY);
@@ -420,7 +429,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 break;
         }
 
-        var grid = new GridView({
+        grid = new GridView({
             url_base: item_info.list_ajax_url,
             embedded: true
         });
@@ -440,7 +449,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 Embed: function() {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null) make_importable = true;
+                    if ($("#make-importable:checked").val() !== null) make_importable = true;
 
                     grid.$("input[name=id]:checked").each(function() {
                         // Get item ID and name.
@@ -486,9 +495,10 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
             }
         });
     }
-};
+}
 
-export default function pagesEditorOnload() {
+export default function pagesEditorOnload(opts) {
+    page_opts = opts;
     // Generic error handling
     $(document).ajaxError((e, x) => {
         // console.log( e, x );
@@ -498,16 +508,18 @@ export default function pagesEditorOnload() {
     });
     // Create editor
     $("[name=page_content]").wymeditor({
-        skin: "galaxy",
-        basePath: editor_base_path,
-        iframeBasePath: iframe_base_path,
+        //skin: "galaxy",
+        basePath: page_opts.editor_base_path,
+        iframeBasePath: page_opts.iframe_base_path,
         // + WYMeditor.HTML
-        boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${
-            WYMeditor.TOOLS
-        }</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${
+        boxHtml:
+            "<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>" +
+            WYMeditor.TOOLS +
+            "</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>" +
             // + WYMeditor.HTML
-            WYMeditor.IFRAME
-        }${WYMeditor.STATUS}</div></div></td></tr></table>`,
+            WYMeditor.IFRAME +
+            WYMeditor.STATUS +
+            "</div></div></td></tr></table>",
         toolsItems: [
             { name: "Bold", title: "Strong", css: "wym_tools_strong" },
             { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
@@ -543,17 +555,18 @@ export default function pagesEditorOnload() {
     });
     // Get the editor object
     var editor = $.wymeditors(0);
+    editor.dialog = _gxy_custom_wym_dialog;
     var save = callback => {
         show_modal("Saving page", "progress");
 
         // Do save.
         $.ajax({
-            url: save_url,
+            url: page_opts.save_url,
             type: "POST",
             data: {
-                id: page_id,
+                id: page_opts.page_id,
                 content: editor.xhtml(),
-                annotations: JSON.stringify(new Object()),
+                annotations: JSON.stringify({}),
                 // annotations: JSON.stringify(annotations),
                 _: "true"
             },
@@ -576,7 +589,7 @@ export default function pagesEditorOnload() {
         if (changed) {
             var do_close = () => {
                 window.onbeforeunload = undefined;
-                window.document.location = page_list_url;
+                window.document.location = page_opts.page_list_url;
             };
             show_modal(
                 "Close editor",
@@ -592,7 +605,7 @@ export default function pagesEditorOnload() {
                 }
             );
         } else {
-            window.document.location = page_list_url;
+            window.document.location = page_opts.page_list_url;
         }
     });
 
@@ -612,7 +625,7 @@ export default function pagesEditorOnload() {
     $.each(editor._options.containersItems, (k, v) => {
         var tagname = v.name;
         items[v.title.replace("_", " ")] = () => {
-            editor.container(tagname);
+            editor.getRootContainer(tagname);
         };
     });
     make_popupmenu(containers_menu, items);
