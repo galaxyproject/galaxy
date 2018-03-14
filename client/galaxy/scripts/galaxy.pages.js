@@ -565,7 +565,7 @@ export default function pagesEditorOnload(opts) {
             type: "POST",
             data: {
                 id: page_opts.page_id,
-                content: editor.xhtml(),
+                content: editor.html(),
                 annotations: JSON.stringify({}),
                 // annotations: JSON.stringify(annotations),
                 _: "true"
