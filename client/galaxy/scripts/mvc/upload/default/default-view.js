@@ -250,7 +250,7 @@ export default Backbone.View.extend({
     /** Progress */
     _eventProgress: function(index, percentage) {
         var it = this.collection.get(index);
-        it.set({percentage: percentage, status: "running", info: ""});
+        it.set({ percentage: percentage, status: "running", info: "" });
         this.ui_button.model.set("percentage", this._uploadPercentage(percentage, it.get("file_size")));
     },
 
@@ -464,7 +464,7 @@ export default Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return  `<div class="upload-view-default">
+        return `<div class="upload-view-default">
                     <div class="upload-top">
                         <h6 class="upload-top-info"/>
                     </div>

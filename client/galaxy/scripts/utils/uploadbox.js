@@ -9,12 +9,15 @@
         xhr request helper
     */
     var _uploadrequest = config => {
-        var cnf = $.extend({
-            error_default: "Please make sure the file is available.",
-            error_server: "Upload request failed.",
-            error_login: "Uploads require you to log in.",
-            error_retry: "Waiting for server to resume...",
-        }, config);
+        var cnf = $.extend(
+            {
+                error_default: "Please make sure the file is available.",
+                error_server: "Upload request failed.",
+                error_login: "Uploads require you to log in.",
+                error_retry: "Waiting for server to resume..."
+            },
+            config
+        );
         console.debug(cnf);
         var xhr = new XMLHttpRequest();
         xhr.open("POST", cnf.url, true);
@@ -23,7 +26,7 @@
         xhr.setRequestHeader("Accept", "application/json");
         xhr.onreadystatechange = () => {
             if (xhr.readyState == xhr.DONE) {
-                if (([502, 0]).indexOf(xhr.status) !== -1 && cnf.warning) {
+                if ([502, 0].indexOf(xhr.status) !== -1 && cnf.warning) {
                     cnf.warning(cnf.error_retry);
                 } else if (xhr.status < 200 || xhr.status > 299) {
                     var text = xhr.statusText;
@@ -112,34 +115,33 @@
                 data: form,
                 success: upload_response => {
                     var new_start = start + chunk_size;
-                    if (new_start < size ) {
+                    if (new_start < size) {
                         attempts = cnf.attempts;
                         process(new_start);
                     } else {
                         console.debug("Upload completed.");
                         data.payload.inputs = JSON.parse(data.payload.inputs);
                         data.payload.inputs["files_0|file_data"] = {
-                            "session_id": session_id,
-                            "name": file.name
+                            session_id: session_id,
+                            name: file.name
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
-                            url:  `${Galaxy.root}api/tools`,
+                            url: `${Galaxy.root}api/tools`,
                             method: "POST",
                             data: data.payload,
-                            success: (tool_response) => {
+                            success: tool_response => {
                                 cnf.success(tool_response);
                             },
-                            error: (tool_response) => {
-                                var err_msg = tool_response &&
-                                              tool_response.responseJSON &&
-                                              tool_response.responseJSON.err_msg;
+                            error: tool_response => {
+                                var err_msg =
+                                    tool_response && tool_response.responseJSON && tool_response.responseJSON.err_msg;
                                 cnf.error(err_msg || cnf.error_tool);
                             }
                         });
                     }
                 },
-                warning: (upload_response) => {
+                warning: upload_response => {
                     if (--attempts > 0) {
                         console.debug("Retrying last chunk...");
                         cnf.warning(upload_response);
@@ -382,11 +384,13 @@
 
             // create and submit data
             var submitter = $.uploadpost;
-            if (file.chunk_mode &&
+            if (
+                file.chunk_mode &&
                 session &&
                 session.id &&
                 session.chunk_upload_size &&
-                session.chunk_upload_size > 0) {
+                session.chunk_upload_size > 0
+            ) {
                 submitter = $.uploadchunk;
             }
             submitter({
