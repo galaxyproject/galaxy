@@ -1,11 +1,10 @@
 import _l from "utils/localization";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jstorage";
+import * as WYMeditor from "exports-loader?WYMeditor!libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
-
-var WYMeditor = window.WYMeditor;
 
 var CONTROLS = {
     // Item types.
