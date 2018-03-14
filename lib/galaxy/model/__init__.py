@@ -2035,6 +2035,12 @@ class DatasetInstance(object):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
 
+    def link_to(self, path):
+        self.file_name = os.path.abspath(path)
+        # Since we are not copying the file into Galaxy's managed
+        # default file location, the dataset should never be purgable.
+        self.dataset.purgable = False
+
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
@@ -4067,7 +4073,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -4144,16 +4150,6 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
-    @property
-    def resource_parameters(self):
-        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
-        _resource_parameters = {}
-        for input_parameter in self.input_parameters:
-            if input_parameter.type == resource_type:
-                _resource_parameters[input_parameter.name] = input_parameter.value
-
-        return _resource_parameters
-
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -4201,7 +4197,7 @@ class WorkflowInvocationStep(Dictifiable):
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     @property
     def jobs(self):
@@ -4262,8 +4258,7 @@ class WorkflowRequestInputParameter(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
-        META_PARAMETERS='meta',
-        RESOURCE_PARAMETERS='resource',
+        META_PARAMETERS='meta',  #
     )
 
     def __init__(self, name=None, value=None, type=None):

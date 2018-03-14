@@ -1239,6 +1239,15 @@ mapping:
           operations on the remote end.  See the Galaxy nginx documentation for the
           corresponding nginx configuration.
 
+      chunk_upload_size:
+        type: int
+        default: 104857600
+        required: false
+        desc: |
+          Galaxy can upload user files in chunks without using nginx. Enable the chunk
+          uploader by specifying a chunk size larger than 0. The chunk size is specified
+          in bytes (default: 100MB).
+
       dynamic_proxy_manage:
         type: bool
         default: true
@@ -1816,6 +1825,18 @@ mapping:
         required: false
         desc: |
           Set maximum size of ngrams
+
+      tool_test_data_directories:
+        type: str
+        default: 'test-data'
+        required: false
+        desc: |
+          Set tool test data directory. The test framework sets this value to
+          'test-data,https://github.com/galaxyproject/galaxy-test-data.git' which will
+          cause Galaxy to clone down extra test data on the fly for certain tools
+          distributed with Galaxy but this is likely not appropriate for production systems.
+          Instead one can simply clone that repository directly and specify a path here
+          instead of a Git HTTP repository.
 
       id_secret:
         type: str
@@ -2517,29 +2538,6 @@ mapping:
           These fields will be presented to users in the tool forms and allow them to
           overwrite default job resources such as number of processors, memory and
           walltime.
-
-      workflow_resource_params_file:
-        type: str
-        default: config/workflow_resource_params_conf.xml
-        required: false
-        desc: |
-          Similar to the above parameter, workflows can describe parameters used to
-          influence scheduling of jobs within the workflow. This requires both a description
-          of the fields available (which defaults to the definitions in
-          job_resource_params_file if not set).
-
-      workflow_resource_params_mapper:
-        type: str
-        default: config/workflow_resource_mapper_conf.yml
-        required: false
-        desc: |
-          This parameter describes how to map users and workflows to a set of workflow
-          resource parameter to present (typically input IDs from workflow_resource_params_file).
-          If this this is a function reference it will be passed various inputs (workflow model
-          object and user) and it should produce a list of input IDs. If it is a path
-          it is expected to an XML or YAML file describing how to map group names to parameter
-          descriptions (additional types of mappings via these files could be implemented but
-          haven't yet - for instance using workflow tags to do the mapping).
 
       cache_user_job_count:
         type: bool

@@ -25,18 +25,6 @@ var View = Backbone.View.extend({
         $("body").append(this.$el);
         this._configure();
         this.render();
-        $(window).resize(() => {
-            self._refresh();
-        });
-    },
-
-    /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
-    _refresh: function(step_index) {
-        var margin =
-            _.reduce(this.$el.children(), (memo, child) => memo + $(child).outerHeight(), 0) -
-            this.$steps.height() +
-            90;
-        this.$steps.css("height", $(window).height() - margin);
     },
 
     /** Configures form/step options for each workflow step */
@@ -201,7 +189,6 @@ var View = Backbone.View.extend({
         this._renderParameters();
         this._renderHistory();
         this._renderUseCachedJob();
-        this._renderResourceParameters();
         _.each(this.steps, step => {
             self._renderStep(step);
         });
@@ -311,19 +298,6 @@ var View = Backbone.View.extend({
             ]
         });
         this._append(this.$steps, this.history_form.$el);
-    },
-    
-    /** Render Workflow Options */
-    _renderResourceParameters: function() {
-        this.workflow_resource_parameters_form = null;
-        if(!_.isEmpty(this.model.get('workflow_resource_parameters'))){
-            this.workflow_resource_parameters_form = new Form({
-                cls    : 'ui-portlet-narrow',
-                title  : '<b>Workflow Resource Options</b>',
-                inputs : this.model.get('workflow_resource_parameters')
-            });
-            this._append( this.$steps, this.workflow_resource_parameters_form.$el );
-        }
     },
 
     /** Render job caching option */
@@ -446,7 +420,6 @@ var View = Backbone.View.extend({
             }
             self.forms[step.index] = form;
             self._append(self.$steps, form.$el);
-            self._refresh();
             step.needs_refresh && self._refreshStep(step);
             form.portlet[!self.show_progress ? "enable" : "disable"]();
             self.show_progress &&
@@ -548,7 +521,6 @@ var View = Backbone.View.extend({
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
             history_id: !history_form_data["new_history|name"] ? this.model.get("history_id") : null,
-            resource_params: this.workflow_resource_parameters_form ? this.workflow_resource_parameters_form.data.create() : {},
             replacement_params: this.wp_form ? this.wp_form.data.create() : {},
             parameters: {},
             // Tool form will submit flat maps for each parameter

@@ -15,7 +15,7 @@ from six import string_types, StringIO
 from six.moves.urllib.parse import urlencode, urlparse
 from twill.other_packages._mechanize_dist import ClientForm
 
-from base.testcase import FunctionalTestCase  # noqa: I100,I202
+from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
 from galaxy.util import unicodify  # noqa: I201
 
 # Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?

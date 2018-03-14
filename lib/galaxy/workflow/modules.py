@@ -825,6 +825,9 @@ class ToolModule(WorkflowModule):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+        if not tool.is_workflow_compatible:
+            message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
+            raise Exception(message)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
@@ -843,7 +846,6 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
-        resource_parameters = invocation.resource_parameters
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
@@ -916,8 +918,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
-                completed_jobs=completed_jobs,
-                workflow_resource_parameters=resource_parameters
+                completed_jobs=completed_jobs
             )
             complete = True
         except PartialJobExecution as pje:

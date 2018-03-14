@@ -812,6 +812,11 @@ galaxy:
   # documentation for the corresponding nginx configuration.
   #nginx_upload_job_files_path: false
 
+  # Galaxy can upload user files in chunks without using nginx. Enable
+  # the chunk uploader by specifying a chunk size larger than 0. The
+  # chunk size is specified in bytes (default: 100MB).
+  #chunk_upload_size: 104857600
+
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
   # do this by default though you do need to install node+npm and do an
@@ -1166,6 +1171,15 @@ galaxy:
 
   # Set maximum size of ngrams
   #tool_ngram_maxsize: 4
+
+  # Set tool test data directory. The test framework sets this value to
+  # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
+  # which will cause Galaxy to clone down extra test data on the fly for
+  # certain tools distributed with Galaxy but this is likely not
+  # appropriate for production systems. Instead one can simply clone
+  # that repository directly and specify a path here instead of a Git
+  # HTTP repository.
+  #tool_test_data_directories: test-data
 
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should
@@ -1620,23 +1634,6 @@ galaxy:
   # them to overwrite default job resources such as number of
   # processors, memory and walltime.
   #job_resource_params_file: config/job_resource_params_conf.xml
-
-  # Similar to the above parameter, workflows can describe parameters
-  # used to influence scheduling of jobs within the workflow. This
-  # requires both a description of the fields available (which defaults
-  # to the definitions in job_resource_params_file if not set).
-  #workflow_resource_params_file: config/workflow_resource_params_conf.xml
-
-  # This parameter describes how to map users and workflows to a set of
-  # workflow resource parameter to present (typically input IDs from
-  # workflow_resource_params_file). If this this is a function reference
-  # it will be passed various inputs (workflow model object and user)
-  # and it should produce a list of input IDs. If it is a path it is
-  # expected to an XML or YAML file describing how to map group names to
-  # parameter descriptions (additional types of mappings via these files
-  # could be implemented but haven't yet - for instance using workflow
-  # tags to do the mapping).
-  #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
 
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the

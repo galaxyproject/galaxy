@@ -192,7 +192,7 @@ class BamNative(Binary):
     """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
-    file_ext = "bam_native"
+    file_ext = "unsorted.bam"
     sort_flag = None
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)

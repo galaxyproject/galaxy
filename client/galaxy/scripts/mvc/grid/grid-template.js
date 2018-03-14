@@ -93,7 +93,9 @@ export default {
             if (column.visible) {
                 tmpl += `<th id="${column.key}-header">`;
                 if (column.sortable) {
-                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${column.label}</a>`;
+                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${
+                        column.label
+                    }</a>`;
                 } else {
                     tmpl += column.label;
                 }

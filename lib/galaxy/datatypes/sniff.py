@@ -14,6 +14,7 @@ import tempfile
 import zipfile
 
 from six import text_type
+from six.moves.urllib.request import urlopen
 
 from galaxy import util
 from galaxy.util import compression_utils
@@ -37,6 +38,12 @@ def get_test_fname(fname):
     path, name = os.path.split(__file__)
     full_path = os.path.join(path, 'test', fname)
     return full_path
+
+
+def stream_url_to_file(path):
+    page = urlopen(path)  # page will be .close()ed in stream_to_file
+    temp_name = stream_to_file(page, prefix='url_paste', source_encoding=util.get_charset_from_http_headers(page.headers))
+    return temp_name
 
 
 def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
@@ -131,7 +138,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
         return (i, temp_name)
 
 
-def sep2tabs(fname, in_place=True, patt="\\s+"):
+def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
@@ -143,13 +150,18 @@ def sep2tabs(fname, in_place=True, patt="\\s+"):
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
-    fd, temp_name = tempfile.mkstemp()
+    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with os.fdopen(fd, "wt") as fp:
         i = None
         for i, line in enumerate(open(fname)):
-            line = line.rstrip('\r\n')
-            elems = regexp.split(line)
-            fp.write("%s\n" % '\t'.join(elems))
+            if line.endswith("\r"):
+                line = line.rstrip('\r')
+                elems = regexp.split(line)
+                fp.write("%s\r" % '\t'.join(elems))
+            else:
+                line = line.rstrip('\n')
+                elems = regexp.split(line)
+                fp.write("%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -332,7 +344,7 @@ def guess_ext(fname, sniff_order):
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
-    'bam_native'
+    'unsorted.bam'
     >>> fname = get_test_fname('test.idpDB')
     >>> guess_ext(fname, sniff_order)
     'idpdb'

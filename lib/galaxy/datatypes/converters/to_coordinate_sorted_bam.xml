@@ -12,7 +12,7 @@
     ]]>
     </command>
     <inputs>
-        <param format="sam,bam_native,qname_sorted.bam" name="input" type="data" label="Choose a BAM native or queryname sortedfile"/>
+        <param format="sam,unsorted.bam,qname_sorted.bam" name="input" type="data" label="Choose a BAM native or queryname sortedfile"/>
     </inputs>
     <outputs>
         <data format="bam" name="output"/>

@@ -133,7 +133,7 @@ export default Backbone.View.extend({
             });
         });
         $.uploadpost({
-            url: this.app.options.nginx_upload_path,
+            url: this.app.options.upload_path,
             data: this.app.toData(this.collection.filter()),
             success: function(message) {
                 self._eventSuccess(message);
