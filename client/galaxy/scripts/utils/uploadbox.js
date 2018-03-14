@@ -68,7 +68,7 @@
                 attempts: 70000,
                 timeout: 5000,
                 url: null,
-                error_file: "File not provied.",
+                error_file: "File not provided.",
                 error_attempt: "Maximum number of attempts reached.",
                 error_tool: "Tool submission failed."
             },
