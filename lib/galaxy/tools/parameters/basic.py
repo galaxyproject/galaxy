@@ -843,10 +843,10 @@ class SelectToolParameter(ToolParameter):
             return self.legal_values
 
     def from_json(self, value, trans, other_values={}):
-        if not value and not self.optional:
+        if value is None:
+            if self.optional:
+                return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
-        if not value:
-            return None
         legal_values = self.get_legal_values(trans, other_values)
         if len(list(legal_values)) == 0:
             if self.multiple:
@@ -1308,10 +1308,10 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        if not value and not self.optional:
+        if value is None:
+            if self.optional:
+                return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
-        if not value:
-            return None
         if len(list(legal_values)) == 0:
             if self.multiple:
                 if value == '':  # No option selected
