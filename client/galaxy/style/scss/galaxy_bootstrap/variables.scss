@@ -1,10 +1,6 @@
 // Everything is derived from $base-color
 // Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
 
-@function pxToRem($px) {
-    @return #{$px/16px}rem;
-}
-
 // Base color -- Based on the Galaxy masthead color
 $base-color-1: #2C3143;
 $base-color-2: lighten($base-color-1,25%);
@@ -126,19 +122,20 @@ $font-family-serif:       Georgia, "Times New Roman", Times, serif;
 $font-family-monospace:   Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base:        $font-family-sans-serif;
 
-$font-size-base:          12px; //JT 14px;
-$font-size-large:         ceil($font-size-base * 1.25); // ~18px
-$font-size-small:         ceil($font-size-base * 0.85); // ~12px
+$font-size-base:          .75rem;
+$font-size-large:         ceil($font-size-base * 1.25);
+$font-size-small:         ceil($font-size-base * 0.85);
 
-$font-size-h1:            floor($font-size-base * 2); // ~36px
-$font-size-h2:            floor($font-size-base * 1.75); // ~30px
-$font-size-h3:            ceil($font-size-base * 1.5); // ~24px
-$font-size-h4:            ceil($font-size-base * 1.25); // ~18px
+$font-size-h1:            floor($font-size-base * 2);
+$font-size-h2:            floor($font-size-base * 1.75);
+$font-size-h3:            ceil($font-size-base * 1.5);
+$font-size-h4:            ceil($font-size-base * 1.25);
 $font-size-h5:            $font-size-base;
-$font-size-h6:            ceil($font-size-base * 0.85); // ~12px
+$font-size-h6:            ceil($font-size-base * 0.85);
 
-$line-height-base:        1.428571429; // 20/12 //JT 1.428571429; // 20/14
-$line-height-computed:    floor($font-size-base * $line-height-base); // ~20px
+$line-height-base:        1.5; // for scaling, as a multiplier -- not concrete units.
+$line-height-computed:    floor($font-size-base * $line-height-base);
+$line-height-computed-px:    16px;
 
 $headings-font-family:    $font-family-base;
 $headings-font-weight:    800;
@@ -153,34 +150,33 @@ $icon-font-name:          "glyphicons-halflings-regular";
 
 // Components
 // -------------------------
-// Based on 14px font-size and 1@mixin 428 line-height (~20px to start)
 
-$padding-base-vertical:          4px; //JT 6px;
-$padding-base-horizontal:        10px; //JT 12px;
+$padding-base-vertical:          .25rem;
+$padding-base-horizontal:        .625rem;
 
-$padding-large-vertical:         8px; //JT 10px;
-$padding-large-horizontal:       14px; //JT 16px;
+$padding-large-vertical:         .5rem;
+$padding-large-horizontal:       .875rem;
 
-$padding-small-vertical:         3px; //JT 5px;
-$padding-small-horizontal:       8px; //JT 10px;
+$padding-small-vertical:         .1875rem;
+$padding-small-horizontal:       .5rem;
 
 $line-height-large:              1.33;
 $line-height-small:              1.5;
 
-$border-radius-base:             3px; //JT 4px;
-$border-radius-large:            5px; //JT px;
-$border-radius-small:            2px; //JT 3px;
+$border-radius-base:             .1875rem;
+$border-radius-large:            .3125rem;
+$border-radius-small:            .125rem;
 
 $component-active-bg:            $brand-primary;
 
-$caret-width-base:               4px;
-$caret-width-large:              5px;
+$caret-width-base:               .25rem;
+$caret-width-large:              .3125rem;
 
 // Tables
 // -------------------------
 
-$table-cell-padding:                 8px;
-$table-condensed-cell-padding:       5px;
+$table-cell-padding:                 .5rem;
+$table-condensed-cell-padding:       .3125rem;
 
 $table-bg:                           transparent; // overall background-color
 $table-bg-accent:                    #f9f9f9; // for striping
@@ -236,9 +232,9 @@ $input-border-focus:             #66afe9;
 $input-color-placeholder:        $gray-light;
 
 // JT
-$input-height-base:              ($line-height-computed + ($padding-base-vertical * 2) + 2);
-$input-height-large:             (floor($font-size-large * $line-height-large) + ($padding-large-vertical * 2) + 2);
-$input-height-small:             (floor($font-size-small * $line-height-small) + ($padding-small-vertical * 2) + 2);
+$input-height-base:              ($line-height-computed + ($padding-base-vertical * 2) + .125rem);
+$input-height-large:             (floor($font-size-large * $line-height-large) + ($padding-large-vertical * 2) + .125rem);
+$input-height-small:             (floor($font-size-small * $line-height-small) + ($padding-small-vertical * 2) + .125rem);
 // JT
 
 
@@ -336,14 +332,14 @@ $grid-float-breakpoint:     0px;
 // -------------------------
 
 // Basics of a navbar
-$navbar-height:                    pxToRem(33px);
+$navbar-height:                    33px; // 2.062500rem;
 $navbar-margin-bottom:             $line-height-computed;
 $navbar-default-color:             #777;
 $navbar-default-bg:                $gray-lighter; // JT #f8f8f8;
 $navbar-default-border:            darken($navbar-default-bg, $border-darken-percent);
 $navbar-border-radius:             $border-radius-base;
 $navbar-padding-horizontal:        floor($grid-gutter-width / 2);
-$navbar-padding-vertical:          (($navbar-height - $line-height-computed) / 2);
+$navbar-padding-vertical:          (($navbar-height - $line-height-computed-px) / 2);
 
 // Navbar links
 $navbar-default-link-color:                #777;
@@ -438,7 +434,7 @@ $pagination-disabled-color:            $gray-light;
 // Pager
 // -------------------------
 
-$pager-border-radius:                  15px;
+$pager-border-radius:                  0.937500rem;
 $pager-disabled-color:                 $gray-light;
 
 
