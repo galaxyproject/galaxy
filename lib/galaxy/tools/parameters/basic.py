@@ -848,7 +848,7 @@ class SelectToolParameter(ToolParameter):
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         legal_values = self.get_legal_values(trans, other_values)
-        if len(list(legal_values)) == 0:
+        if not legal_values:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -1322,7 +1322,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
             if self.optional:
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
-        if len(list(legal_values)) == 0:
+        if not legal_values:
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
