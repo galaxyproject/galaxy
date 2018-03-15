@@ -1,6 +1,10 @@
+import * as Backbone from "backbone";
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
+
+/* global Galaxy */
+/* global $ */
 
 /** Masthead **/
 var View = Backbone.View.extend({
@@ -85,14 +89,14 @@ var View = Backbone.View.extend({
         // DBTODO: Convert navbar to bs4 fixed-top
         return `
             <div id="masthead" class="navbar navbar-fixed-top navbar-dark bg-dark">
-                <div class="navbar-header">
-                    <div class="navbar-tabs"/>
-                </div>
                 <div class="navbar-brand">
                     <a class="navbar-brand-link">
                         <img class="navbar-brand-image"/>
                         <span class="navbar-brand-title"/>
                     </a>
+                </div>
+                <div class="navbar-header">
+                    <ul class="navbar-tabs"/>
                 </div>
                 <div class="quota-meter-container"/>
                 <div class="navbar-icons"/>
