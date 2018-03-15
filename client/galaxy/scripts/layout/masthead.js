@@ -82,21 +82,22 @@ var View = Backbone.View.extend({
 
     /** body template */
     _template: function() {
-        return (
-            '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse">' +
-            '<div class="navbar-header">' +
-            '<div class="navbar-tabs"/>' +
-            "</div>" +
-            '<div class="navbar-brand">' +
-            '<a class="navbar-brand-link">' +
-            '<img class="navbar-brand-image"/>' +
-            '<span class="navbar-brand-title"/>' +
-            "</a>" +
-            "</div>" +
-            '<div class="quota-meter-container"/>' +
-            '<div class="navbar-icons"/>' +
-            "</div>"
-        );
+        // DBTODO: Convert navbar to bs4 fixed-top
+        return `
+            <div id="masthead" class="navbar navbar-fixed-top navbar-dark bg-dark">
+                <div class="navbar-header">
+                    <div class="navbar-tabs"/>
+                </div>
+                <div class="navbar-brand">
+                    <a class="navbar-brand-link">
+                        <img class="navbar-brand-image"/>
+                        <span class="navbar-brand-title"/>
+                    </a>
+                </div>
+                <div class="quota-meter-container"/>
+                <div class="navbar-icons"/>
+            </div>
+            `;
     }
 });
 
