@@ -145,6 +145,10 @@ def selenium_test(f):
                 self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
+            except unittest.SkipTest:
+                dump_test_information(self, f.__name__)
+                # Don't retry if we have purposely decided to skip the test.
+                raise
             except Exception:
                 dump_test_information(self, f.__name__)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
