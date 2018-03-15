@@ -1,6 +1,10 @@
 // Everything is derived from $base-color
 // Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
 
+@function pxToRem($px) {
+    @return #{$px/16px}rem;
+}
+
 // Base color -- Based on the Galaxy masthead color
 $base-color-1: #2C3143;
 $base-color-2: lighten($base-color-1,25%);
@@ -332,7 +336,7 @@ $grid-float-breakpoint:     0px;
 // -------------------------
 
 // Basics of a navbar
-$navbar-height:                    33px;
+$navbar-height:                    pxToRem(33px);
 $navbar-margin-bottom:             $line-height-computed;
 $navbar-default-color:             #777;
 $navbar-default-bg:                $gray-lighter; // JT #f8f8f8;
