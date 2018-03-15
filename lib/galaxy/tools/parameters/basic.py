@@ -1097,7 +1097,7 @@ class ColumnListParameter(SelectToolParameter):
                 try:
                     int(v)
                 except ValueError:
-                    raise ValueError("Column indices can only be integers.")
+                    raise ValueError("Column index '%s' is not an integer." % v)
         return super(ColumnListParameter, self).from_json(value, trans, other_values)
 
     @staticmethod
