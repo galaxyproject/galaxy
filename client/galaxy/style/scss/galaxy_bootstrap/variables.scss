@@ -51,7 +51,7 @@ $panel-bg-color: #DFE5F9;
 
 $sat:   saturation($base-color);
 $luma:  luma($base-color);
-$light: lightness($base-color);
+$lightness: lightness($base-color);
 $tone:  desaturate($base-color,100%);
 
 // Standard boostrap variables begin here
@@ -78,13 +78,13 @@ $gray-lighter:           lighten(black, 93.5%); // #eee
 $brand-primary:         hsl(
                             hue($bs-primary),
                             (saturation($bs-info) + $sat + 20)/2,
-                            $light - 10
+                            $lightness - 10
                         );
 
 $brand-info:            hsl(
                             hue($bs-info),
                             (saturation($bs-info) + $sat + 20)/2,
-                            $light
+                            $lightness
                         );
 $brand-success:         hsl(
                             hue($bs-success),
