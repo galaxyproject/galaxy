@@ -681,8 +681,14 @@ class BaseVcf(Tabular):
     MetadataElement(name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[])
 
     def sniff(self, filename):
-        headers = get_headers(filename, '\n', count=1)
-        return headers[0][0].startswith("##fileformat=VCF")
+        # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
+        # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
+        # relies on get_headers() raising this exception.
+        try:
+            headers = get_headers(filename, '\n', count=1)
+            return headers[0][0].startswith("##fileformat=VCF")
+        except UnicodeDecodeError:
+            return False
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""

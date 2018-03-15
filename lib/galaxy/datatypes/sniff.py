@@ -481,15 +481,15 @@ def handle_compressed_file(
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
-            sniff_datatypes = filter(lambda d: d.file_ext in COMPRESSION_DATATYPES[compressed_type],
-                                     datatypes_registry.sniff_order)
-            for compressed_datatype in sniff_datatypes:
-                if compressed_datatype.sniff(filename):
-                    ext = compressed_datatype.file_ext
+            sniff_datatypes = filter(lambda d: getattr(d, 'compressed', False), datatypes_registry.sniff_order)
+            for datatype in sniff_datatypes:
+                if datatype.sniff(filename):
+                    ext = datatype.file_ext
+                    keep_compressed = True
                     break
-        if ext in COMPRESSED_EXTENSIONS:
-            # if a keep-compressed datatype is explicitly selected (or autodetected), honor the selection
-            keep_compressed = True
+        else:
+            datatype = datatypes_registry.get_datatype_by_extension(ext)
+            keep_compressed = getattr(datatype, 'compressed', False)
     # don't waste time decompressing if we sniff invalid contents
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
         fd, uncompressed = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
@@ -577,15 +577,6 @@ def handle_uploaded_dataset_file(
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
 DECOMPRESSION_FUNCTIONS = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 COMPRESSION_CHECK_FUNCTIONS = [('gz', check_gzip), ('bz2', check_bz2), ('zip', check_zip)]
-COMPRESSION_IS_FUNCTIONS = [('gz', is_gzip), ('bz2', is_bz2), ('zip', is_zip)]
-COMPRESSION_DATATYPES = dict(
-    gz=['bam', 'fasta.gz', 'fastq.gz', 'fastqsanger.gz', 'fastqillumina.gz', 'fastqsolexa.gz', 'fastqcssanger.gz'],
-    bz2=['fastq.bz2', 'fastqsanger.bz2', 'fastqillumina.bz2', 'fastqsolexa.bz2', 'fastqcssanger.bz2'],
-    zip=[],
-)
-COMPRESSED_EXTENSIONS = []
-for exts in COMPRESSION_DATATYPES.values():
-    COMPRESSED_EXTENSIONS.extend(exts)
 
 
 class InappropriateDatasetContentError(Exception):

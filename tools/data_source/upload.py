@@ -143,7 +143,7 @@ def add_file(dataset, registry, output_path):
             )
         except sniff.InappropriateDatasetContentError as exc:
             raise UploadProblemException(str(exc))
-        if compression_type and ext not in sniff.COMPRESSED_EXTENSIONS:
+        if compression_type:   # FIXME: got rid of COMPRESSED_EXTENSIONS, need to fix this condition: and ext not in sniff.COMPRESSED_EXTENSIONS:
             # strip compression extension from name
             dataset.name = dataset.name[::-1].replace(compression_type[::-1] + '.', '', 1)[::-1]
     elif dataset.file_type == 'auto':
