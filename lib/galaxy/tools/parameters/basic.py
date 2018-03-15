@@ -1122,8 +1122,12 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            # Columns can only be identified if metadata is available
-            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns') or not dataset.metadata.columns:
+            # Columns can only be identified if the dataset is ready and metadata is available
+            if not hasattr(dataset, 'state') or \
+                dataset.state != galaxy.model.Dataset.states.OK or \
+                not hasattr(dataset, 'metadata') or \
+                not hasattr(dataset.metadata, 'columns') or \
+                not dataset.metadata.columns:
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
