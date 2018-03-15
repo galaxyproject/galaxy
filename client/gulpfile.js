@@ -124,3 +124,4 @@ gulp.task("watch-style", function() {
 });
 
 gulp.task("default", ["scripts", "libs"]);
+gulp.task("staging", ["stage-libs", "fonts"]);
