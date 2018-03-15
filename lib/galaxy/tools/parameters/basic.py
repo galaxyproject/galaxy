@@ -907,7 +907,7 @@ class SelectToolParameter(ToolParameter):
 
     def get_initial_value(self, trans, other_values):
         options = list(self.get_options(trans, other_values))
-        if len(options) == 0 and trans.workflow_building_mode:
+        if len(options) == 0:
             return None
         value = [optval for _, optval, selected in options if selected]
         if len(value) == 0:
@@ -1378,7 +1378,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 recurse_options(initial_values, option['options'])
         # More working around dynamic options for workflow
         options = self.get_options(trans=trans, other_values=other_values)
-        if len(list(options)) == 0 and trans.workflow_building_mode:
+        if len(list(options)) == 0:
             return None
         initial_values = []
         recurse_options(initial_values, options)
