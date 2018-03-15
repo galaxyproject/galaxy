@@ -436,7 +436,7 @@ class JobContext(object):
             add_datasets_timer = ExecutionTimer()
             job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
             log.debug(
-                "(%s) Add dynamic collection datsets to history for output [%s] %s",
+                "(%s) Add dynamic collection datasets to history for output [%s] %s",
                 self.job.id,
                 name,
                 add_datasets_timer,

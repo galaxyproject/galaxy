@@ -132,7 +132,7 @@ class TestsDatasets:
 
 class BaseDatasetPopulator(object):
     """ Abstract description of API operations optimized for testing
-    Galaxy - implementations must implement _get and _post.
+    Galaxy - implementations must implement _get, _post and _delete.
     """
 
     def new_dataset(self, history_id, content=None, wait=False, **kwds):

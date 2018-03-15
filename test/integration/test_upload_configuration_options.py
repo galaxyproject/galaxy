@@ -497,8 +497,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "ftp_path": "subdir",
             "collection_type": "list",
         }
-        response = self.fetch_target(target)
-        self._assert_status_code_is(response, 200)
+        self.fetch_target(target, assert_ok=True)
         hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
         assert len(hdca["elements"]) == 3, hdca
         element0 = hdca["elements"][0]
@@ -519,8 +518,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "elements": elements,
             "collection_type": "list:list",
         }
-        response = self.fetch_target(target)
-        self._assert_status_code_is(response, 200)
+        self.fetch_target(target, assert_ok=True)
         hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
         assert len(hdca["elements"]) == 2, hdca
         element0 = hdca["elements"][0]
