@@ -1,9 +1,13 @@
-// bootstrap.scss modified for Galaxy
-// Galaxy modifications (override)
+// Bootstrap variables and core framework
 @import "../../../node_modules/bootstrap/scss/_functions.scss";
 @import "galaxy_bootstrap/variables.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+
+// Fontawesome configuration.
+$fa-font-path: "../images/fonts/";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+
+// Bootstrap-related style overrides
 @import "galaxy_bootstrap/overrides.scss";
 
 // Galaxy specific variables
