@@ -50,7 +50,7 @@ $panel-bg-color: #DFE5F9;
 }
 
 $sat:   saturation($base-color);
-$luma:  luma($base-color);
+//$luma:  luma($base-color);  Luma is dead to me.
 $lightness: lightness($base-color);
 $tone:  desaturate($base-color,100%);
 
@@ -86,20 +86,22 @@ $brand-info:            hsl(
                             (saturation($bs-info) + $sat + 20)/2,
                             $lightness
                         );
+
 $brand-success:         hsl(
                             hue($bs-success),
                             (saturation($bs-success) + $sat + 20)/2,
-                            (luma($bs-success) + $luma - 20)/2
+                            (lightness($bs-success) + $lightness - 20)/2
                         );
+
 $brand-warning:         hsl(
                             hue($bs-warning),
                             (saturation($bs-warning) + $sat + 20)/2,
-                            (luma($bs-warning) + $luma - 20)/2
+                            (lightness($bs-warning) + $lightness - 20)/2
                         );
 $brand-danger:          hsl(
                             hue($bs-danger),
                             (saturation($bs-danger) + $sat + 20)/2,
-                            (luma($bs-danger) + $luma + 10)/2
+                            (lightness($bs-danger) + $lightness + 10)/2
                         );
 
 // Scaffolding

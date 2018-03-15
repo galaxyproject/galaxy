@@ -9576,9 +9576,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     height: 21px;
     margin: 0px; }
   .upload-button .progress-bar-danger {
-    background: white; }
+    background: #fef3f3; }
   .upload-button .progress-bar-success {
-    background: white; }
+    background: #aaf0aa; }
   .upload-button .progress-bar-info {
     background: #FFFFCC; }
   .upload-button .progress-bar-notransition {
@@ -9856,7 +9856,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-error {
   -moz-border-radius: 0.1875rem;
   border-radius: 0.1875rem;
-  background: white;
+  background: #fef3f3;
   padding: 5px; }
 
 .ui-label {
@@ -9917,7 +9917,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     margin: 0px;
     margin-top: 2px; }
     .ui-button-default .progress .progress-bar {
-      background: #b3b3b3; }
+      background: #28d928; }
 
 .ui-button-icon {
   height: auto !important;
@@ -10540,12 +10540,12 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   padding: 2px; }
 
 .ui-dragover-danger {
-  border: 2px solid white;
+  border: 2px solid #fef3f3;
   background: white !important; }
 
 .ui-dragover-success {
-  border: 2px solid white;
-  background: white !important; }
+  border: 2px solid #aaf0aa;
+  background: #d6f8d6 !important; }
 
 .ui-limitloader {
   padding: 10px;
@@ -12208,18 +12208,18 @@ div.unified-panel-body-background {
   line-height: 30px;
   padding: 0px;
   padding-left: 26px;
-  background-color: white;
+  background-color: #fef3f3;
   background-image: url(error_small.png);
   background-repeat: no-repeat;
   background-position: 6px 50%; }
 
 .panel-warning-message {
   background-image: url(warn_small.png);
-  background-color: white; }
+  background-color: #fcdeb3; }
 
 .panel-done-message {
   background-image: url(ok_small.png);
-  background-color: white; }
+  background-color: #aaf0aa; }
 
 .panel-info-message {
   background-image: url(info_small.png);
@@ -12307,10 +12307,10 @@ div.unified-panel-body-background {
   background-color: #2b6190; }
 
 .quota-meter-bar-warn {
-  background-color: white; }
+  background-color: #b97e2b; }
 
 .quota-meter-bar-error {
-  background-color: white; }
+  background-color: #cc5d59; }
 
 .quota-meter-text {
   position: absolute;
@@ -12429,7 +12429,7 @@ div.repeat-group-item {
   margin-bottom: 10px; }
 
 div.form-row-error {
-  background: white; }
+  background: #fef3f3; }
 
 div.form-row label {
   font-weight: bold;
@@ -12811,7 +12811,7 @@ ul.manage-table-actions li {
   .state-progress .running {
     background: #FFFFCC; }
   .state-progress .ok {
-    background: white; }
+    background: #aaf0aa; }
   .state-progress .note {
     margin-left: 1em;
     position: absolute; }
@@ -12837,12 +12837,12 @@ ul.manage-table-actions li {
   background: #FFFFCC; }
 
 .state-color-ok {
-  border-color: #999999;
-  background: white; }
+  border-color: #1faf1f;
+  background: #aaf0aa; }
 
 .state-color-error {
-  border-color: #999999;
-  background: white; }
+  border-color: #ec3e39;
+  background: #fef3f3; }
 
 .state-color-deleted {
   border-color: #737373;
@@ -13406,12 +13406,12 @@ The `sprites` mixin generates identical output to the CSS template
     content: ""; }
 
 .has-job-state-mixin.state-ok, .state-ok.dataset, .state-ok.dataset-collection-element, .state-ok.history-content.dataset-collection, .has-job-state-mixin.state-failed_metadata, .state-failed_metadata.dataset, .state-failed_metadata.dataset-collection-element, .state-failed_metadata.history-content.dataset-collection {
-  background: white; }
+  background: #aaf0aa; }
   .has-job-state-mixin.state-ok .state-icon, .state-ok.dataset .state-icon, .state-ok.dataset-collection-element .state-icon, .state-ok.history-content.dataset-collection .state-icon, .has-job-state-mixin.state-failed_metadata .state-icon, .state-failed_metadata.dataset .state-icon, .state-failed_metadata.dataset-collection-element .state-icon, .state-failed_metadata.history-content.dataset-collection .state-icon {
     display: none; }
 
 .has-job-state-mixin.state-error, .state-error.dataset, .state-error.dataset-collection-element, .state-error.history-content.dataset-collection, .has-job-state-mixin.state-empty, .state-empty.dataset, .state-empty.dataset-collection-element, .state-empty.history-content.dataset-collection {
-  background: white; }
+  background: #fef3f3; }
 
 .has-job-state-mixin.state-upload, .state-upload.dataset, .state-upload.dataset-collection-element, .state-upload.history-content.dataset-collection {
   background: #c1edf9; }
