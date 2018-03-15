@@ -53,15 +53,17 @@ def contains_workflow_parameter(value, search=False):
         return True
     return False
 
+
 def is_runtime_value(value):
     return isinstance(value, RuntimeValue) or (isinstance(value, dict) and value.get('__class__') == 'RuntimeValue')
 
+
 def has_runtime_datasets(trans, value):
     for v in util.listify(value):
-        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-            (v.state != galaxy.model.Dataset.states.OK or hasattr(v, "implicit_conversion")):
-                return True
+        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and hasattr(v, "state") and (v.state != galaxy.model.Dataset.states.OK or hasattr(v, "implicit_conversion")):
+            return True
     return False
+
 
 def parse_dynamic_options(param, input_source):
     options_elem = input_source.parse_dynamic_options_elem()
@@ -1690,16 +1692,17 @@ class DataToolParameter(BaseDataToolParameter):
             rval = value
         else:
             rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(value)
-        if isinstance(rval, list):
-            values = rval
-        else:
-            values = [rval]
+        values = util.listify(rval)
+        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
         for v in values:
             if v:
                 if v.deleted:
                     raise ValueError("The previously selected dataset has been deleted.")
                 if hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ValueError("The previously selected dataset has entered an unusable state")
+                match = dataset_matcher.hda_match(v, check_security=False)
+                if match and match.implicit_conversion:
+                    v.implicit_conversion = True
         if not self.multiple:
             if len(values) > 1:
                 raise ValueError("More than one dataset supplied to single input dataset parameter.")
@@ -1707,11 +1710,6 @@ class DataToolParameter(BaseDataToolParameter):
                 rval = values[0]
             else:
                 raise ValueError("Invalid dataset supplied to single input dataset parameter.")
-        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
-        for hda in values:
-            match = dataset_matcher.hda_match(hda, check_security=False)
-            if match and match.implicit_conversion:
-                hda.implicit_conversion = True
         return rval
 
     def to_param_dict_string(self, value, other_values={}):
