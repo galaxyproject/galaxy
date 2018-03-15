@@ -1,5 +1,6 @@
 // bootstrap.scss modified for Galaxy
 // Galaxy modifications (override)
+@import "../../../node_modules/bootstrap/scss/_functions.scss";
 @import "galaxy_bootstrap/variables.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
