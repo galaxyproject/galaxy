@@ -843,13 +843,12 @@ class SelectToolParameter(ToolParameter):
             return self.legal_values
 
     def from_json(self, value, trans, other_values={}):
+        if not value and not self.optional:
+            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
+        if not value:
+            return None
         legal_values = self.get_legal_values(trans, other_values)
-        workflow_building_mode = trans.workflow_building_mode
-        for context_value in other_values.values():
-            if is_runtime_value(context_value):
-                workflow_building_mode = workflow_building_modes.ENABLED
-                break
-        if len(list(legal_values)) == 0 and workflow_building_mode:
+        if len(list(legal_values)) == 0:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -864,8 +863,6 @@ class SelectToolParameter(ToolParameter):
                         # use \r\n to separate lines.
                         value = value.split()
             return value
-        if (not legal_values or value is None) and self.optional:
-            return None
         if isinstance(value, list):
             if not self.multiple:
                 raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
@@ -1311,17 +1308,17 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        if len(list(legal_values)) == 0 and trans.workflow_building_mode:
+        if not value and not self.optional:
+            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
+        if not value:
+            return None
+        if len(list(legal_values)) == 0:
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
                 else:
                     value = value.split("\n")
             return value
-        if not value and not self.optional:
-            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
-        if not value:
-            return None
         if not isinstance(value, list):
             value = [value]
         if len(value) > 1 and not self.multiple:
