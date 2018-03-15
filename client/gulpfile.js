@@ -90,6 +90,12 @@ gulp.task("stage-libs", function(callback) {
     });
 });
 
+gulp.task("fonts", function() {
+    return gulp
+        .src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*")))
+        .pipe(gulp.dest("../static/images/fonts"));
+});
+
 gulp.task("libs", function() {
     return gulp
         .src(paths.libs)
