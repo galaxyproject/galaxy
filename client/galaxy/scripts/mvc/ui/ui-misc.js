@@ -198,28 +198,21 @@ export var TextSelect = Backbone.View.extend({
                 break;
         }
         this.select = new SelectClass.View(options);
-        this.model = this.select.model;
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
+        this.update(options.data);
     },
     value: function(new_val) {
-        var element = this._check() ? this.select : this.text;
+        var element = this.textmode ? this.text : this.select;
         return element.value(new_val);
     },
     update: function(options) {
+        var v = this.value();
+        this.textmode = !$.isArray(options) || options.length === 0;
+        this.text.$el[this.textmode ? "show" : "hide"]();
+        this.select.$el[this.textmode ? "hide" : "show"]();
         this.select.update(options);
-    },
-    render: function() {
-        var check = this._check();
-        this.select.$el[check ? 'show' : 'hide']();
-        this.text.$el[check ? 'hide' : 'show']();
-        return this;
-    },
-    _check: function() {
-        var data = this.model.get('data');
-        return $.isArray(data) && data.length > 0;
+        this.value(v);
     }
 });
 
