@@ -220,11 +220,11 @@ def _directory_to_items(directory):
             target = dir_elements[root]
         else:
             target = items
-        for dir in dirs:
+        for dir in sorted(dirs):
             dir_dict = {"name": dir, "elements": []}
             dir_elements[os.path.join(root, dir)] = dir_dict["elements"]
             target.append(dir_dict)
-        for file in files:
+        for file in sorted(files):
             target.append({"src": "path", "path": os.path.join(root, file)})
 
     return items
