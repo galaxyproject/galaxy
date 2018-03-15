@@ -181,7 +181,7 @@ export var Hidden = Backbone.View.extend({
     }
 });
 
-/** Creates switcher */
+/** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
         this.text = new Input(options);
@@ -206,15 +206,15 @@ export var TextSelect = Backbone.View.extend({
     },
     value: function(new_val) {
         var element = this._check() ? this.select : this.text;
-        return element.value(new_val)
+        return element.value(new_val);
     },
     update: function(options) {
         this.select.update(options);
     },
     render: function() {
-        var flag = this._check();
-        this.select.$el[flag ? 'show' : 'hide']();
-        this.text.$el[flag ? 'hide' : 'show']();
+        var check = this._check();
+        this.select.$el[check ? 'show' : 'hide']();
+        this.text.$el[check ? 'hide' : 'show']();
         return this;
     },
     _check: function() {

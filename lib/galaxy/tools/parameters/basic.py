@@ -866,8 +866,6 @@ class SelectToolParameter(ToolParameter):
             return value
         if (not legal_values or value is None) and self.optional:
             return None
-        if not legal_values:
-            raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
             if not self.multiple:
                 raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
@@ -1122,7 +1120,7 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             # Columns can only be identified if metadata is available
-            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns'):
+            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns') or not dataset.metadata.columns:
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
@@ -1329,8 +1327,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         if len(value) > 1 and not self.multiple:
             raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
         rval = []
-        if not legal_values:
-            raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         for val in value:
             if val not in legal_values:
                 raise ValueError("An invalid option was selected for %s, %r, please verify" % (self.name, val))
