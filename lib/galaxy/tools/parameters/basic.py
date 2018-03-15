@@ -53,10 +53,15 @@ def contains_workflow_parameter(value, search=False):
         return True
     return False
 
-
 def is_runtime_value(value):
     return isinstance(value, RuntimeValue) or (isinstance(value, dict) and value.get('__class__') == 'RuntimeValue')
 
+def has_runtime_datasets(trans, value):
+    for v in util.listify(value):
+        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+            (v.state != galaxy.model.Dataset.states.OK or hasattr(v, "implicit_conversion")):
+                return True
+    return False
 
 def parse_dynamic_options(param, input_source):
     options_elem = input_source.parse_dynamic_options_elem()
@@ -848,7 +853,12 @@ class SelectToolParameter(ToolParameter):
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         legal_values = self.get_legal_values(trans, other_values)
-        if not legal_values:
+        workflow_building_mode = trans.workflow_building_mode
+        for context_value in other_values.values():
+            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
+                workflow_building_mode = workflow_building_modes.ENABLED
+                break
+        if not legal_values and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -1113,7 +1123,7 @@ class ColumnListParameter(SelectToolParameter):
         dataset (if found).
         """
         # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref, None)
+        dataset = other_values.get(self.data_ref)
         # Check if a dataset is selected
         if not dataset:
             return []
@@ -1123,9 +1133,7 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             # Columns can only be identified if the dataset is ready and metadata is available
-            if not hasattr(dataset, 'state') or \
-                dataset.state != galaxy.model.Dataset.states.OK or \
-                not hasattr(dataset, 'metadata') or \
+            if not hasattr(dataset, 'metadata') or \
                 not hasattr(dataset.metadata, 'columns') or \
                 not dataset.metadata.columns:
                 return []
@@ -1699,6 +1707,11 @@ class DataToolParameter(BaseDataToolParameter):
                 rval = values[0]
             else:
                 raise ValueError("Invalid dataset supplied to single input dataset parameter.")
+        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
+        for hda in values:
+            match = dataset_matcher.hda_match(hda, check_security=False)
+            if match and match.implicit_conversion:
+                hda.implicit_conversion = True
         return rval
 
     def to_param_dict_string(self, value, other_values={}):
