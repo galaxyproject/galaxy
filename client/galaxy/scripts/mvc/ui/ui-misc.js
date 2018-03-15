@@ -181,6 +181,48 @@ export var Hidden = Backbone.View.extend({
     }
 });
 
+/** Creates switcher */
+export var TextSelect = Backbone.View.extend({
+    initialize: function(options) {
+        this.text = new Input(options);
+        var SelectClass = Select;
+        switch (options.display) {
+            case "checkboxes":
+                SelectClass = Checkbox;
+                break;
+            case "radio":
+                SelectClass = Radio;
+                break;
+            case "radiobutton":
+                SelectClass = RadioButton;
+                break;
+        }
+        this.select = new SelectClass.View(options);
+        this.model = this.select.model;
+        this.setElement($("<div/>").append(this.select.$el)
+                                   .append(this.text.$el));
+        this.listenTo(this.model, "change", this.render, this);
+        this.render();
+    },
+    value: function(new_val) {
+        var element = this._check() ? this.select : this.text;
+        return element.value(new_val)
+    },
+    update: function(options) {
+        this.select.update(options);
+    },
+    render: function() {
+        var flag = this._check();
+        this.select.$el[flag ? 'show' : 'hide']();
+        this.text.$el[flag ? 'hide' : 'show']();
+        return this;
+    },
+    _check: function() {
+        var data = this.model.get('data');
+        return $.isArray(data) && data.length > 0;
+    }
+});
+
 /** Creates a upload element input field */
 export var Upload = Backbone.View.extend({
     initialize: function(options) {
@@ -263,6 +305,7 @@ export default {
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
     Select: Select,
+    TextSelect: TextSelect,
     Hidden: Hidden,
     Slider: Slider,
     Drilldown: Drilldown
