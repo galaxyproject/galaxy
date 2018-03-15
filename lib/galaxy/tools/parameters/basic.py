@@ -1095,7 +1095,7 @@ class ColumnListParameter(SelectToolParameter):
         if value is not None:
             for v in util.listify(value):
                 try:
-                    int(value)
+                    int(v)
                 except ValueError:
                     raise ValueError("Column indices can only be integers.")
         return super(ColumnListParameter, self).from_json(value, trans, other_values)
