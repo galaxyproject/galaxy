@@ -8,9 +8,9 @@ import errno
 import logging
 import os
 import subprocess
-from distutils.version import LooseVersion
 from time import sleep
 
+import packaging.version
 import pulsar.core
 import yaml
 from pulsar.client import (
@@ -53,8 +53,8 @@ __all__ = (
 )
 
 MINIMUM_PULSAR_VERSIONS = {
-    '_default_': LooseVersion("0.7.0.dev3"),
-    'remote_metadata': LooseVersion("0.8.0"),
+    '_default_': packaging.version.parse("0.7.0.dev3"),
+    'remote_metadata': packaging.version.parse("0.8.0"),
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -613,8 +613,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def check_job_config(remote_job_config, check_features=None):
         check_features = check_features or {}
         # 0.6.0 was newest Pulsar version that did not report it's version.
-        pulsar_version = LooseVersion(remote_job_config.get('pulsar_version', "0.6.0"))
-        needed_version = LooseVersion("0.0.0")
+        pulsar_version = packaging.version.parse(remote_job_config.get('pulsar_version', "0.6.0"))
+        needed_version = packaging.version.parse("0.0.0")
         log.info("pulsar_version is %s" % pulsar_version)
         for feature in list(check_features.keys()) + ['_default_']:
             if pulsar_version < MINIMUM_PULSAR_VERSIONS[feature]:

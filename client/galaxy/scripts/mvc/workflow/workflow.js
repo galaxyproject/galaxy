@@ -4,6 +4,8 @@ import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
+import LoadingIndicator from "ui/loading-indicator";
+
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
     tagName: "tr", // name of (orphan) root tag in this.el
@@ -157,7 +159,7 @@ const WorkflowItemView = Backbone.View.extend({
 const WorkflowListView = Backbone.View.extend({
     title: _l("Workflows"),
     initialize: function() {
-        this.setElement("<div/>");
+        LoadingIndicator.markViewAsLoading(this);
         _.bindAll(this, "adjustActiondropdown");
         this.collection = new WORKFLOWS.WorkflowCollection();
         this.collection.fetch().done(this.render());

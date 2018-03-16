@@ -39,6 +39,7 @@ six==1.11.0
 Whoosh==2.7.4
 galaxy_sequence_utils==1.0.2
 h5py==2.7.1
+packaging==16.8
 
 # pykwalify and dependencies
 pykwalify==1.6.0

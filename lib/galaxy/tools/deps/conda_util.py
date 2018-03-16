@@ -7,8 +7,8 @@ import re
 import shutil
 import sys
 import tempfile
-from distutils.version import LooseVersion
 
+import packaging.version
 import six
 from six.moves import shlex_quote
 
@@ -118,7 +118,7 @@ class CondaContext(installable.InstallableContext):
         conda_meta_path = self._conda_meta_path
         # Perhaps we should call "conda info --json" and parse it but for now we are going
         # to assume the default.
-        conda_version = LooseVersion(CONDA_VERSION)
+        conda_version = packaging.version.parse(CONDA_VERSION)
         conda_build_available = False
         miniconda_version = "3"
 
@@ -131,7 +131,7 @@ class CondaContext(installable.InstallableContext):
                 version = package_parts[-2]
                 # build = package_parts[-1]
                 if package == "conda":
-                    conda_version = LooseVersion(version)
+                    conda_version = packaging.version.parse(version)
                 if package == "python" and version.startswith("2"):
                     miniconda_version = "2"
                 if package == "conda-build":
@@ -204,7 +204,7 @@ class CondaContext(installable.InstallableContext):
                         self.conda_prefix, self.conda_exec)
             return False
 
-    def exec_command(self, operation, args):
+    def exec_command(self, operation, args, stdout_path=None):
         """
         Execute the requested command.
 
@@ -219,17 +219,24 @@ class CondaContext(installable.InstallableContext):
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
         cmd_string = ' '.join(map(shlex_quote, cmd))
-        log.debug("Executing command: %s", cmd_string)
-        conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
+        kwds = dict()
         try:
-            return self.shell_exec(cmd, env=env)
+            if stdout_path:
+                kwds['stdout'] = open(stdout_path, 'w')
+                cmd_string += " > '%s'" % stdout_path
+            conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
+            log.debug("Executing command: %s", cmd_string)
+            return self.shell_exec(cmd, env=env, **kwds)
         except Exception:
             log.exception("Failed to execute command: %s", cmd_string)
             return 1
         finally:
-            shutil.rmtree(conda_exec_home, ignore_errors=True)
+            if kwds.get('stdout'):
+                kwds['stdout'].close()
+            if conda_exec_home:
+                shutil.rmtree(conda_exec_home, ignore_errors=True)
 
-    def exec_create(self, args, allow_local=True):
+    def exec_create(self, args, allow_local=True, stdout_path=None):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -240,7 +247,7 @@ class CondaContext(installable.InstallableContext):
             create_base_args.extend(["--use-local"])
         create_base_args.extend(self._override_channels_args)
         create_base_args.extend(args)
-        return self.exec_command("create", create_base_args)
+        return self.exec_command("create", create_base_args, stdout_path=stdout_path)
 
     def exec_remove(self, args):
         """
@@ -256,7 +263,7 @@ class CondaContext(installable.InstallableContext):
         remove_base_args.extend(args)
         return self.exec_command("env", remove_base_args)
 
-    def exec_install(self, args, allow_local=True):
+    def exec_install(self, args, allow_local=True, stdout_path=None):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -267,7 +274,7 @@ class CondaContext(installable.InstallableContext):
             install_base_args.append("--use-local")
         install_base_args.extend(self._override_channels_args)
         install_base_args.extend(args)
-        return self.exec_command("install", install_base_args)
+        return self.exec_command("install", install_base_args, stdout_path=stdout_path)
 
     def exec_clean(self, args=[], quiet=False):
         """
@@ -280,9 +287,10 @@ class CondaContext(installable.InstallableContext):
             "-y"
         ]
         clean_args = clean_base_args + args
+        stdout_path = None
         if quiet:
-            clean_args.extend([">", "/dev/null"])
-        return self.exec_command("clean", clean_args)
+            stdout_path = "/dev/null"
+        return self.exec_command("clean", clean_args, stdout_path=stdout_path)
 
     def export_list(self, name, path):
         """
@@ -290,8 +298,8 @@ class CondaContext(installable.InstallableContext):
         """
         return self.exec_command("list", [
             "--name", name,
-            "--export", ">", path
-        ])
+            "--export"
+        ], stdout_path=path)
 
     def env_path(self, env_name):
         return os.path.join(self.envs_path, env_name)
@@ -495,7 +503,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     search_cmd.append(conda_target.package)
     res = commands.execute(search_cmd)
     hits = json.loads(res).get(conda_target.package, [])
-    hits = sorted(hits, key=lambda hit: LooseVersion(hit['version']), reverse=True)
+    hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
 
     if len(hits) == 0:
         return (None, None)
@@ -545,6 +553,7 @@ def build_isolated_environment(
         conda_packages = [conda_packages]
 
     # Lots we could do in here, hashing, checking revisions, etc...
+    tempdir = None
     try:
         hash = hash_conda_packages(conda_packages)
         tempdir = tempfile.mkdtemp(prefix="jobdeps", suffix=hash)
@@ -564,8 +573,8 @@ def build_isolated_environment(
         # Adjust fix if they fix Conda - xref
         # - https://github.com/galaxyproject/galaxy/issues/3635
         # - https://github.com/conda/conda/issues/2035
-        offline_works = (conda_context.conda_version < LooseVersion("4.3")) or \
-                        (conda_context.conda_version >= LooseVersion("4.4"))
+        offline_works = (conda_context.conda_version < packaging.version.parse("4.3")) or \
+                        (conda_context.conda_version >= packaging.version.parse("4.4"))
         if offline_works:
             create_args.extend(["--offline"])
         else:
@@ -579,21 +588,23 @@ def build_isolated_environment(
             create_args.append("--copy")
         for export_path in export_paths:
             create_args.extend([
-                "--file", export_path, ">", "/dev/null"
+                "--file", export_path
             ])
 
+        stdout_path = None
         if quiet:
-            create_args.extend([">", "/dev/null"])
+            stdout_path = "/dev/null"
 
         if path is not None and os.path.exists(path):
-            exit_code = conda_context.exec_install(create_args)
+            exit_code = conda_context.exec_install(create_args, stdout_path=stdout_path)
         else:
-            exit_code = conda_context.exec_create(create_args)
+            exit_code = conda_context.exec_create(create_args, stdout_path=stdout_path)
 
         return (path or tempdir_name, exit_code)
     finally:
         conda_context.exec_clean(quiet=quiet)
-        shutil.rmtree(tempdir)
+        if tempdir is not None:
+            shutil.rmtree(tempdir)
 
 
 def requirement_to_conda_targets(requirement):

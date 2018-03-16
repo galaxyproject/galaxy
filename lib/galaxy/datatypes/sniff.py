@@ -337,7 +337,7 @@ def guess_ext(fname, sniff_order):
     'bam'
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
-    'bam_native'
+    'unsorted.bam'
     >>> fname = get_test_fname('test.idpDB')
     >>> guess_ext(fname, sniff_order)
     'idpdb'

@@ -45,7 +45,7 @@ extend(FeatureSlotter.prototype, {
 
         var draw_end = Math.ceil(feature[2] * this.w_scale);
         var f_name = feature[3];
-        var text_align;
+        //var text_align;
 
         // Update start, end drawing locations to include feature name.
         // Try to put the name on the left, if not, put on right.
@@ -55,10 +55,10 @@ extend(FeatureSlotter.prototype, {
             var text_len = this.measureText(f_name).width + (LABEL_SPACING + PACK_SPACING);
             if (draw_start - text_len >= 0) {
                 draw_start -= text_len;
-                text_align = "left";
+                //text_align = "left";
             } else {
                 draw_end += text_len;
-                text_align = "right";
+                //text_align = "right";
             }
         }
 
@@ -130,7 +130,7 @@ extend(FeatureSlotter.prototype, {
         // Loop through features to (a) find those that are not yet slotted and (b) update
         // those that are slotted if new information is availabe. For (a), features already
         // slotted (based on slotting from other tiles) will retain their current slot.
-        for (var i = 0, len = features.length; i < len; i++) {
+        for (let i = 0, len = features.length; i < len; i++) {
             feature = features[i];
             feature_uid = feature[0];
             var slotted_info = this.slots[feature_uid];
@@ -163,7 +163,7 @@ extend(FeatureSlotter.prototype, {
         // Slot unslotted features.
 
         // Do slotting.
-        for (var i = 0, len = undone.length; i < len; i++) {
+        for (let i = 0, len = undone.length; i < len; i++) {
             feature = features[undone[i]];
             feature_uid = feature[0];
             var draw_coords = this._get_draw_coords(feature);
