@@ -25,10 +25,7 @@ from galaxy.util.checkers import (
     check_gzip,
     check_html,
     check_zip,
-    is_bz2,
-    is_gzip,
     is_tar,
-    is_zip,
 )
 
 if sys.version_info < (3, 3):
