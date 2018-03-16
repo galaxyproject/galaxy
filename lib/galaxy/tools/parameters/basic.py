@@ -1137,7 +1137,7 @@ class ColumnListParameter(SelectToolParameter):
             # Columns can only be identified if the dataset is ready and metadata is available
             if not hasattr(dataset, 'metadata') or \
                 not hasattr(dataset.metadata, 'columns') or \
-                not dataset.metadata.columns:
+                    not dataset.metadata.columns:
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
