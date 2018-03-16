@@ -12067,15 +12067,6 @@ body.has-message-box.has-inactivity-box #left, body.has-message-box.has-inactivi
 body.has-message-box.has-inactivity-box #inactivebox {
   top: 64px; }
 
-.subnavbar {
-  border-bottom: solid #bfbfbf 1px;
-  border-top: solid #bfbfbf 1px;
-  padding: 5px;
-  color: #555; }
-  .subnavbar #gradient > {
-    background-image: linear-gradient(#FFFFFF, #FFFFFF 25%, #e6e6e6);
-    background-repeat: no-repeat; }
-
 .unified-panel-header {
   height: 30px;
   z-index: 1000;

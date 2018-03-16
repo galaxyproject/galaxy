@@ -15,7 +15,7 @@ var View = Backbone.View.extend({
         this.$navbarBrandLink = this.$(".navbar-brand-link");
         this.$navbarBrandImage = this.$(".navbar-brand-image");
         this.$navbarBrandTitle = this.$(".navbar-brand-title");
-        this.$navbarTabs = this.$(".navbar-tabs");
+        this.$navbarTabs = this.$(".navbar-nav");
         this.$quoteMeter = this.$(".quota-meter-container");
 
         // build tabs
@@ -86,22 +86,18 @@ var View = Backbone.View.extend({
 
     /** body template */
     _template: function() {
-        // DBTODO: Convert navbar to bs4 fixed-top
         return `
-            <div id="masthead" class="navbar navbar-fixed-top navbar-dark bg-dark">
+            <nav id="masthead" class="navbar navbar-expand fixed-top navbar-dark bg-dark">
                 <div class="navbar-brand">
                     <a class="navbar-brand-link">
                         <img class="navbar-brand-image"/>
                         <span class="navbar-brand-title"/>
                     </a>
                 </div>
-                <div class="navbar-header">
-                    <ul class="navbar-tabs"/>
-                </div>
+                <ul class="navbar-nav"/>
                 <div class="quota-meter-container"/>
                 <div class="navbar-icons"/>
-            </div>
-            `;
+            </nav>`;
     }
 });
 

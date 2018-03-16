@@ -326,7 +326,6 @@ var Tab = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         $(".tooltip").remove();
         this.$el.attr("id", this.model.id).css({
             visibility: (this.model.get("visible") && "visible") || "hidden"
@@ -366,36 +365,35 @@ var Tab = Backbone.View.extend({
                 .off()
                 .on("click", () => {
                     $("#dd-helper").hide();
-                    self.model.set("show_menu", false);
+                    this.model.set("show_menu", false);
                 });
         } else {
-            self.$menu.hide();
+            this.$menu.hide();
             $("#dd-helper").hide();
         }
         this.$menu.empty().removeClass("dropdown-menu");
         if (this.model.get("menu")) {
             _.each(this.model.get("menu"), menuItem => {
-                self.$menu.append(self._buildMenuItem(menuItem));
+                this.$menu.append(this._buildMenuItem(menuItem));
                 if (menuItem.divider) {
-                    self.$menu.append($("<li/>").addClass("divider"));
+                    this.$menu.append($("<li/>").addClass("divider"));
                 }
             });
-            self.$menu.addClass("dropdown-menu");
-            self.$toggle.append($("<b/>").addClass("caret"));
+            this.$menu.addClass("dropdown-menu");
+            this.$toggle.append($("<b/>").addClass("caret"));
         }
         return this;
     },
 
     /** Add new menu item */
     _buildMenuItem: function(options) {
-        var self = this;
         options = _.defaults(options || {}, {
             title: "",
             url: "",
             target: "_parent",
             noscratchbook: false
         });
-        options.url = self._formatUrl(options.url);
+        options.url = this._formatUrl(options.url);
         return $("<li/>").append(
             $("<a/>")
                 .attr("href", options.url)
@@ -403,7 +401,7 @@ var Tab = Backbone.View.extend({
                 .html(options.title)
                 .on("click", e => {
                     e.preventDefault();
-                    self.model.set("show_menu", false);
+                    this.model.set("show_menu", false);
                     if (options.onclick) {
                         options.onclick();
                     } else {
@@ -425,7 +423,6 @@ var Tab = Backbone.View.extend({
 
     /** Handle click event */
     _toggleClick: function(e) {
-        var self = this;
         var model = this.model;
         e.preventDefault();
         $(".tooltip").hide();
@@ -459,7 +456,7 @@ var Tab = Backbone.View.extend({
                 })
                 .popover("show");
             window.setTimeout(() => {
-                self.$toggle.popover("destroy");
+                this.$toggle.popover("destroy");
             }, 5000);
         }
     },
@@ -471,15 +468,14 @@ var Tab = Backbone.View.extend({
 
     /** body tempate */
     _template: function() {
-        return (
-            '<ul class="nav navbar-nav">' +
-            '<li class="dropdown">' +
-            '<a class="dropdown-toggle"/>' +
-            '<ul class="dropdown-menu"/>' +
-            '<div class="dropdown-note"/>' +
-            "</li>" +
-            "</ul>"
-        );
+        return `
+            <li class="nav-item dropdown">
+                <a class="nav-link">
+                    <a class="dropdown-toggle"/>
+                    <ul class="dropdown-menu"/>
+                    <div class="dropdown-note"/>
+                </li>
+            </li>`;
     }
 });
 
