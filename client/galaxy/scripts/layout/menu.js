@@ -1,8 +1,14 @@
 /** Masthead Collection **/
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import GenericNav from "layout/generic-nav-view";
 import Webhooks from "mvc/webhooks";
 import _l from "utils/localization";
 import Utils from "utils/utils";
+
+/* global Galaxy */
+/* global $ */
+
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -11,7 +17,6 @@ var Collection = Backbone.Collection.extend({
         }
     }),
     fetch: function(options) {
-        var self = this;
         options = options || {};
         this.reset();
 
@@ -117,6 +122,7 @@ var Collection = Backbone.Collection.extend({
                                 icon: webhook.config.icon,
                                 url: webhook.config.url,
                                 tooltip: webhook.config.tooltip,
+                                /*jslint evil: true */
                                 onclick: webhook.config.function && new Function(webhook.config.function)
                             };
 
@@ -138,7 +144,7 @@ var Collection = Backbone.Collection.extend({
         //
         // Admin.
         //
-        Galaxy.user.get("is_admin") &&
+        if (Galaxy.user.get("is_admin")) {
             this.add({
                 id: "admin",
                 title: _l("Admin"),
@@ -146,6 +152,7 @@ var Collection = Backbone.Collection.extend({
                 tooltip: _l("Administer this Galaxy"),
                 cls: "admin-only"
             });
+        }
 
         //
         // Help tab.
@@ -191,24 +198,27 @@ var Collection = Backbone.Collection.extend({
                 }
             ]
         };
-        options.terms_url &&
+        if (options.terms_url) {
             helpTab.menu.push({
                 title: _l("Terms and Conditions"),
                 url: options.terms_url,
                 target: "_blank"
             });
-        options.biostar_url &&
+        }
+        if (options.biostar_url) {
             helpTab.menu.unshift({
                 title: _l("Ask a question"),
                 url: "biostar/biostar_question_redirect",
                 target: "_blank"
             });
-        options.biostar_url &&
+        }
+        if (options.biostar_url) {
             helpTab.menu.unshift({
                 title: _l("Galaxy Biostar"),
                 url: options.biostar_url_redirect,
                 target: "_blank"
             });
+        }
         this.add(helpTab);
 
         //
@@ -291,9 +301,11 @@ var Collection = Backbone.Collection.extend({
             };
         }
         this.add(userTab);
-        var activeView = this.get(options.active_view);
-        activeView && activeView.set("active", true);
-        return new jQuery.Deferred().resolve().promise();
+        let activeView = this.get(options.active_view);
+        if (activeView) {
+            activeView.set("active", true);
+        }
+        return new $.Deferred().resolve().promise();
     }
 });
 
@@ -339,7 +351,9 @@ var Tab = Backbone.View.extend({
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
             .tooltip("destroy");
-        this.model.get("tooltip") && this.$toggle.tooltip({ placement: "bottom" });
+        if (this.model.get("tooltip")) {
+            this.$toggle.tooltip({ placement: "bottom" });
+        }
         this.$dropdown
             .removeClass()
             .addClass("dropdown")
@@ -362,7 +376,9 @@ var Tab = Backbone.View.extend({
         if (this.model.get("menu")) {
             _.each(this.model.get("menu"), menuItem => {
                 self.$menu.append(self._buildMenuItem(menuItem));
-                menuItem.divider && self.$menu.append($("<li/>").addClass("divider"));
+                if (menuItem.divider) {
+                    self.$menu.append($("<li/>").addClass("divider"));
+                }
             });
             self.$menu.addClass("dropdown-menu");
             self.$toggle.append($("<b/>").addClass("caret"));
@@ -397,6 +413,16 @@ var Tab = Backbone.View.extend({
         );
     },
 
+    buildLink: function(label, url) {
+        return $("<div/>")
+            .append(
+                $("<a/>")
+                    .attr("href", Galaxy.root + url)
+                    .html(label)
+            )
+            .html();
+    },
+
     /** Handle click event */
     _toggleClick: function(e) {
         var self = this;
@@ -404,36 +430,35 @@ var Tab = Backbone.View.extend({
         e.preventDefault();
         $(".tooltip").hide();
         model.trigger("dispatch", m => {
-            model.id !== m.id && m.get("menu") && m.set("show_menu", false);
+            if (model.id !== m.id && m.get("menu")) {
+                m.set("show_menu", false);
+            }
         });
         if (!model.get("disabled")) {
             if (!model.get("menu")) {
-                model.get("onclick") ? model.get("onclick")() : Galaxy.frame.add(model.attributes);
+                if (model.get("onclick")) {
+                    model.get("onclick")();
+                } else {
+                    Galaxy.frame.add(model.attributes);
+                }
             } else {
                 model.set("show_menu", true);
             }
         } else {
-            function buildLink(label, url) {
-                return $("<div/>")
-                    .append(
-                        $("<a/>")
-                            .attr("href", Galaxy.root + url)
-                            .html(label)
-                    )
-                    .html();
+            if (this.$toggle.popover) {
+                this.$toggle.popover("destroy");
             }
-            this.$toggle.popover && this.$toggle.popover("destroy");
             this.$toggle
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${buildLink("login", "user/login?use_panels=True")} or ${buildLink(
+                    content: `Please ${this.buildLink("login", "user/login?use_panels=True")} or ${this.buildLink(
                         "register",
                         "user/create?use_panels=True"
                     )} to use this feature.`
                 })
                 .popover("show");
-            setTimeout(() => {
+            window.setTimeout(() => {
                 self.$toggle.popover("destroy");
             }, 5000);
         }
