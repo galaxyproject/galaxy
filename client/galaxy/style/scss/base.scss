@@ -206,16 +206,6 @@ body.has-message-box.has-inactivity-box {
     }
 }
 
-.subnavbar {
-    #gradient > {
-        @include gradient-y-three-colors($white, $white, 25%, darken($white, 10%));
-    }
-    border-bottom: solid $border-default-color 1px;
-    border-top: solid $border-default-color 1px;
-    padding: 5px;
-    color: #555;
-}
-
 .unified-panel-header {
     @extend .unselectable;
     height: $panel_header_height;
@@ -488,6 +478,7 @@ div.unified-panel-body-background {
         border-bottom-color: gold;
     }
 }
+
 
 .quota-meter-container {
     position: absolute;
