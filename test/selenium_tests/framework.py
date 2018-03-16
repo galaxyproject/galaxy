@@ -136,6 +136,7 @@ def dump_test_information(self, name_prefix):
 
 @nottest
 def selenium_test(f):
+    test_name = f.__name__
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -145,10 +146,15 @@ def selenium_test(f):
                 self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
+            except unittest.SkipTest:
+                dump_test_information(self, test_name)
+                # Don't retry if we have purposely decided to skip the test.
+                raise
             except Exception:
-                dump_test_information(self, f.__name__)
+                dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
+                    print("Test function [%s] threw an exception, retrying. Failed attempts - %s." % (test_name, retry_attempts))
                 else:
                     raise
 
