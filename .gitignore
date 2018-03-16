@@ -129,6 +129,7 @@ static/maps
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
+client/galaxy/style/less/*
 
 # Documentation build files.
 doc/build
