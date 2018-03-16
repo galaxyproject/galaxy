@@ -143,9 +143,6 @@ def add_file(dataset, registry, output_path):
             )
         except sniff.InappropriateDatasetContentError as exc:
             raise UploadProblemException(str(exc))
-        if compression_type:   # FIXME: got rid of COMPRESSED_EXTENSIONS, need to fix this condition: and ext not in sniff.COMPRESSED_EXTENSIONS:
-            # strip compression extension from name
-            dataset.name = dataset.name[::-1].replace(compression_type[::-1] + '.', '', 1)[::-1]
     elif dataset.file_type == 'auto':
         # Link mode can't decompress anyway, so enable sniffing for keep-compressed datatypes even when auto_decompress
         # is enabled
@@ -178,8 +175,13 @@ def add_file(dataset, registry, output_path):
             stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
                       " manually")
 
-    # Move dataset
     datatype = registry.get_datatype_by_extension(ext)
+
+    # Strip compression extension from name
+    if compression_type and not getattr(datatype, 'compressed', False) and dataset.name.endswith('.' + compression_type):
+        dataset.name = dataset.name[:-len('.' + compression_type)]
+
+    # Move dataset
     if link_data_only:
         # Never alter a file that will not be copied to Galaxy's local file store.
         if datatype.dataset_content_needs_grooming(dataset.path):
