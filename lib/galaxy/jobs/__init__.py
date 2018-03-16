@@ -964,6 +964,11 @@ class JobWrapper(HasResourceParameters):
         )
         return tool_evaluator
 
+    def _fix_output_permissions(self):
+        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+            if os.path.exists(path):
+                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+
     def fail(self, message, exception=False, stdout="", stderr="", exit_code=None):
         """
         Indicate job failure by setting state and message on all output
@@ -1026,6 +1031,7 @@ class JobWrapper(HasResourceParameters):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
+        self._fix_output_permissions()
         self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
@@ -1435,10 +1441,7 @@ class JobWrapper(HasResourceParameters):
         # user).
         self.sa_session.flush()
 
-        # fix permissions
-        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
-            if os.path.exists(path):
-                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
