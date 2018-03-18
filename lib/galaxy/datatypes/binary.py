@@ -19,6 +19,8 @@ import h5py
 import pysam
 import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
+from rpy2.robjects.packages import importr
+from rpy2.rinterface import RRuntimeError
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -1294,6 +1296,54 @@ class RData(Binary):
                 return True
         except Exception:
             return False
+
+
+class RDS(Binary):
+    """RDS object, compressed R object
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.sce' )
+    >>> RDS().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.rds' )
+    >>> RDS().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'oxli_countgraph.oxlicg' )
+    >>> RDS().sniff( fname )
+    False
+    >>> fname = get_test_fname( 'sequence.csfasta' )
+    >>> RDS().sniff( fname )
+    False
+    """
+    file_ext = "rds"
+    class_name = None
+
+    def sniff(self, filename):
+        base = importr('base')
+        try:
+            fdat = base.readRDS(filename)
+        except RRuntimeError:
+            return False
+
+        if self.class_name == None:
+            return True
+
+        return fdat.isclass(self.class_name)
+
+
+class SingleCellExperiment(RDS):
+    """Specific class file for RDS, R data
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'test.sce' )
+    >>> SingleCellExperiment().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'test.rds' )
+    >>> SingleCellExperiment().sniff( fname )
+    False
+    """
+    file_ext = "sce"
+    class_name = "SingleCellExperiment"
 
 
 class OxliBinary(Binary):
