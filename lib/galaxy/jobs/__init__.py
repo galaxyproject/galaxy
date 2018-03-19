@@ -3,6 +3,7 @@ Support for running a tool in Galaxy via an internal job management system
 """
 import copy
 import datetime
+import errno
 import logging
 import os
 import pwd
@@ -831,6 +832,18 @@ class JobWrapper(HasResourceParameters):
     def get_version_string_path(self):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
+    def __prepare_upload_paramfile(self, tool_evaluator):
+        """Special case paramfile handling for the upload tool. Moves the paramfile to the working directory
+        """
+        new = os.path.join(self.working_directory, 'upload_params.json')
+        try:
+            shutil.move(tool_evaluator.param_dict['paramfile'], new)
+        except (OSError, IOError) as exc:
+            # It won't exist at the old path if setup was interrupted and tried again later
+            if exc.errno != errno.ENOENT or not os.path.exists(new):
+                raise
+        tool_evaluator.param_dict['paramfile'] = new
+
     def prepare(self, compute_environment=None):
         """
         Prepare the job to run by creating the working directory and the
@@ -854,6 +867,10 @@ class JobWrapper(HasResourceParameters):
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
 
         self.sa_session.flush()
+
+        # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
+        if job.tool_id == 'upload1':
+            self.__prepare_upload_paramfile(tool_evaluator)
 
         self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
@@ -947,6 +964,11 @@ class JobWrapper(HasResourceParameters):
         )
         return tool_evaluator
 
+    def _fix_output_permissions(self):
+        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+            if os.path.exists(path):
+                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+
     def fail(self, message, exception=False, stdout="", stderr="", exit_code=None):
         """
         Indicate job failure by setting state and message on all output
@@ -1009,6 +1031,7 @@ class JobWrapper(HasResourceParameters):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
+        self._fix_output_permissions()
         self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
@@ -1273,7 +1296,7 @@ class JobWrapper(HasResourceParameters):
                     if retry_internally and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
-                            extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)
+                            extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)[0]
                             dataset.extension = extension
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
@@ -1418,10 +1441,7 @@ class JobWrapper(HasResourceParameters):
         # user).
         self.sa_session.flush()
 
-        # fix permissions
-        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
-            if os.path.exists(path):
-                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.

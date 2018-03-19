@@ -116,6 +116,15 @@ class Data(object):
         self.composite_files = self.composite_files.copy()
         self.display_applications = odict()
 
+    @property
+    def validate_mode(self):
+        """Indicate that a sniffer should run, even if disabled.
+
+        Some sniffers (e.g. fastq.gz) work but are not enabled for certain reasons, but when running a sniffer to
+        "validate" a selected filetype, those sniffers should be enabled.
+        """
+        return os.environ.get('GALAXY_SNIFFER_VALIDATE_MODE', '0') == '1'
+
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         try:
@@ -751,6 +760,8 @@ class Text(Data):
     edam_format = "format_2330"
     file_ext = 'txt'
     line_class = 'line'
+
+    is_binary = False
 
     # Add metadata elements
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0)

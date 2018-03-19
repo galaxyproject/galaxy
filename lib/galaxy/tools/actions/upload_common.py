@@ -6,7 +6,7 @@ import socket
 import subprocess
 import tempfile
 from cgi import FieldStorage
-from json import dumps
+from json import dump, dumps
 
 from six import StringIO
 from sqlalchemy.orm import eagerload_all
@@ -308,10 +308,8 @@ def create_paramfile(trans, uploaded_datasets):
         except Exception as e:
             log.warning('Changing ownership of uploaded file %s failed: %s' % (path, str(e)))
 
-    # TODO: json_file should go in the working directory
-    json_file = tempfile.mkstemp()
-    json_file_path = json_file[1]
-    json_file = os.fdopen(json_file[0], 'w')
+    tool_params = []
+    json_file_path = None
     for uploaded_dataset in uploaded_datasets:
         data = uploaded_dataset.data
         if uploaded_dataset.type == 'composite':
@@ -321,14 +319,14 @@ def create_paramfile(trans, uploaded_datasets):
                 setattr(data.metadata, meta_name, meta_value)
             trans.sa_session.add(data)
             trans.sa_session.flush()
-            json = dict(file_type=uploaded_dataset.file_type,
-                        dataset_id=data.dataset.id,
-                        dbkey=uploaded_dataset.dbkey,
-                        type=uploaded_dataset.type,
-                        metadata=uploaded_dataset.metadata,
-                        primary_file=uploaded_dataset.primary_file,
-                        composite_file_paths=uploaded_dataset.composite_files,
-                        composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
+            params = dict(file_type=uploaded_dataset.file_type,
+                          dataset_id=data.dataset.id,
+                          dbkey=uploaded_dataset.dbkey,
+                          type=uploaded_dataset.type,
+                          metadata=uploaded_dataset.metadata,
+                          primary_file=uploaded_dataset.primary_file,
+                          composite_file_paths=uploaded_dataset.composite_files,
+                          composite_files=dict((k, v.__dict__) for k, v in data.datatype.get_composite_files(data).items()))
         else:
             try:
                 is_binary = uploaded_dataset.datatype.is_binary
@@ -352,31 +350,31 @@ def create_paramfile(trans, uploaded_datasets):
                 user_ftp_dir = None
             if user_ftp_dir and uploaded_dataset.path.startswith(user_ftp_dir):
                 uploaded_dataset.type = 'ftp_import'
-            json = dict(file_type=uploaded_dataset.file_type,
-                        ext=uploaded_dataset.ext,
-                        name=uploaded_dataset.name,
-                        dataset_id=data.dataset.id,
-                        dbkey=uploaded_dataset.dbkey,
-                        type=uploaded_dataset.type,
-                        is_binary=is_binary,
-                        link_data_only=link_data_only,
-                        uuid=uuid_str,
-                        to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
-                        auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
-                        purge_source=purge_source,
-                        space_to_tab=uploaded_dataset.space_to_tab,
-                        run_as_real_user=trans.app.config.external_chown_script is not None,
-                        check_content=trans.app.config.check_upload_content,
-                        path=uploaded_dataset.path)
+            params = dict(file_type=uploaded_dataset.file_type,
+                          ext=uploaded_dataset.ext,
+                          name=uploaded_dataset.name,
+                          dataset_id=data.dataset.id,
+                          dbkey=uploaded_dataset.dbkey,
+                          type=uploaded_dataset.type,
+                          is_binary=is_binary,
+                          link_data_only=link_data_only,
+                          uuid=uuid_str,
+                          to_posix_lines=getattr(uploaded_dataset, "to_posix_lines", True),
+                          auto_decompress=getattr(uploaded_dataset, "auto_decompress", True),
+                          purge_source=purge_source,
+                          space_to_tab=uploaded_dataset.space_to_tab,
+                          run_as_real_user=trans.app.config.external_chown_script is not None,
+                          check_content=trans.app.config.check_upload_content,
+                          path=uploaded_dataset.path)
             # TODO: This will have to change when we start bundling inputs.
             # Also, in_place above causes the file to be left behind since the
             # user cannot remove it unless the parent directory is writable.
             if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
                 _chown(uploaded_dataset.path)
-        json_file.write(dumps(json) + '\n')
-    json_file.close()
-    if trans.app.config.external_chown_script:
-        _chown(json_file_path)
+        tool_params.append(params)
+    with tempfile.NamedTemporaryFile(prefix='upload_params_', delete=False) as fh:
+        json_file_path = fh.name
+        dump(tool_params, fh)
     return json_file_path
 
 

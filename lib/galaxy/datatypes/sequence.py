@@ -16,7 +16,10 @@ import bx.align.maf
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.binary import (
+    Binary,
+    CompressedArchive
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     get_headers,
@@ -311,7 +314,7 @@ class Alignment(data.Text):
         raise NotImplementedError("Can't split generic alignment files")
 
 
-class FastaGz(Sequence, Binary):
+class FastaGz(Sequence, CompressedArchive):
     """Class representing a generic compressed FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta.gz"
@@ -319,7 +322,7 @@ class FastaGz(Sequence, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTA format"""
-        if not SNIFF_COMPRESSED_FASTAS:
+        if not SNIFF_COMPRESSED_FASTAS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
@@ -738,7 +741,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz(BaseFastq, Binary):
+class FastqGz(BaseFastq, CompressedArchive):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -746,7 +749,7 @@ class FastqGz(BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
@@ -776,7 +779,7 @@ class FastqCSSangerGz(FastqGz):
     file_ext = "fastqcssanger.gz"
 
 
-class FastqBz2(BaseFastq, Binary):
+class FastqBz2(BaseFastq, CompressedArchive):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
@@ -784,7 +787,7 @@ class FastqBz2(BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_bz2(filename):
             return False

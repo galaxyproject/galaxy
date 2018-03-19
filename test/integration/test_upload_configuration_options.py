@@ -246,7 +246,7 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
             self.history_id, 'file://%s/random-file' % TEST_DATA_DIRECTORY, file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
-        assert dataset["file_ext"] == "data", dataset
+        assert dataset["file_ext"] == "binary", dataset
 
     def test_gzipped_html_content_blocked_by_default(self):
         dataset = self.dataset_populator.new_dataset(
@@ -287,7 +287,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
             self.history_id, 'file://%s/1.sam.gz' % TEST_DATA_DIRECTORY, file_type="auto", auto_decompress=False, wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
-        assert dataset["file_ext"] == "data", dataset
+        assert dataset["file_ext"] == "binary", dataset
 
     def test_auto_decompress_on(self):
         dataset = self.dataset_populator.new_dataset(
