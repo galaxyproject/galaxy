@@ -1328,7 +1328,7 @@ class RDS(Binary):
         if self.class_name == None:
             return True
 
-        return fdat.isclass(self.class_name)
+        return tuple(fdat.rclass)[0] == self.class_name
 
 
 class SingleCellExperiment(RDS):
