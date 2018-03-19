@@ -662,7 +662,7 @@ class DistributedObjectStore(NestedObjectStore):
             # if this instance has been switched from a non-distributed to a
             # distributed object store, or if the object's store id is invalid,
             # try to locate the object
-            log.warning('The backend object store ID (%s) for %s object with ID %s is invalid'
+            log.debug('The backend object store ID (%s) for %s object with ID %s is invalid'
                         % (obj.object_store_id, obj.__class__.__name__, obj.id))
             for id, store in self.backends.items():
                 if store.exists(obj, **kwargs):
