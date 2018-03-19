@@ -15,7 +15,7 @@ Highlights
 **Web Server and Configuration**
   The default web server used by Galaxy has changed from Paste to `uWSGI <https://uwsgi-docs.readthedocs.io/>`__ and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``.
   To minimize the impact of this change on existing Galaxy instances, if a Galaxy has a ``galaxy.ini`` file configured, it will continue to use Paste by default unless additional steps are taken by the administrator.
-  Read more about the server, configuration, and documentation changes in the `uWSGI details`_ section of this document.
+  uWSGI is more production ready and allows Galaxy to scale better in its default configuration. Read more about the server, configuration, and documentation changes in the `uWSGI details`_ section of this document.
 
 **Dataset Collection Usability**
   This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
@@ -134,7 +134,6 @@ check for best practices. While there is no need to convert your configuration f
 been deprecated), you can run ``make config-convert-dry-run`` and ``make config-convert``
 to respectively test and perform the conversion of an ``ini`` configuration file to a YAML one.
 
-uWSGI is more production ready and allows Galaxy to scale better in its default configuration.
 In the future uWSGI will allow Galaxy to setup GIE proxies without additional configuration and use modern web technologies such as web sockets.
 
 These are big changes that affect many parts of Galaxy's administration documentation and makes
