@@ -55,12 +55,15 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and value.get('__class__') == 'RuntimeValue')
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") == "RuntimeValue")
 
 
 def has_runtime_datasets(trans, value):
     for v in util.listify(value):
-        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and hasattr(v, "state") and (v.state != galaxy.model.Dataset.states.OK or hasattr(v, "implicit_conversion")):
+        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+            ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
+                hasattr(v, "implicit_conversion")):
             return True
     return False
 
@@ -1700,11 +1703,12 @@ class DataToolParameter(BaseDataToolParameter):
             if v:
                 if v.deleted:
                     raise ValueError("The previously selected dataset has been deleted.")
-                if hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
+                elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ValueError("The previously selected dataset has entered an unusable state")
-                match = dataset_matcher.hda_match(v, check_security=False)
-                if match and match.implicit_conversion:
-                    v.implicit_conversion = True
+                elif hasattr(v, "dataset"):
+                    match = dataset_matcher.hda_match(v, check_security=False)
+                    if match and match.implicit_conversion:
+                        v.implicit_conversion = True
         if not self.multiple:
             if len(values) > 1:
                 raise ValueError("More than one dataset supplied to single input dataset parameter.")
