@@ -497,7 +497,7 @@
     <datatype extension="ncbi" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexus" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexusnon" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" subclass="true" display_in_upload="true"/>
+    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" display_in_upload="true"/>
     <datatype extension="phylipnon" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="pir" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="staden" type="galaxy.datatypes.data:Text" subclass="true"/>
