@@ -296,7 +296,7 @@ nginx did not support shared modules, and the upload module is not yet shared-co
 and complicated process, the Galaxy Committers team maintains (for some platforms) versions of nginx modified from their
 upstream package sources (APT, EPEL, etc.) to include the upload module:
 
-- [Ubuntu (PPA)](https://launchpad.net/~galaxyproject/+archive/ubuntu/nginx)
+- [Ubuntu (PPA)](https://launchpad.net/~galaxyproject/+archive/ubuntu/nginx) (Be sure to install `nginx-extras`, not `nginx`)
 - [Enterprise Linux](https://depot.galaxyproject.org/yum/)
 
 To contribute support for additional platforms, please see the [Galaxy
