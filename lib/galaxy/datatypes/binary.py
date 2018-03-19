@@ -19,8 +19,8 @@ import h5py
 import pysam
 import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
-from rpy2.robjects.packages import importr
 from rpy2.rinterface import RRuntimeError
+from rpy2.robjects.packages import importr
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -1325,7 +1325,7 @@ class RDS(Binary):
         except RRuntimeError:
             return False
 
-        if self.class_name == None:
+        if self.class_name is None:
             return True
 
         return tuple(fdat.rclass)[0] == self.class_name
