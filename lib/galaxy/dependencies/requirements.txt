@@ -67,3 +67,11 @@ pyparsing
 Fabric3
 paramiko
 ecdsa
+
+# OpendID Connect & OAuth2.0
+oauthlib
+pyjwkest
+PyJWT
+python-openid
+requests-oauthlib
+social_auth_core
