@@ -17,7 +17,7 @@
         > temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output']]>
     </command>
     <inputs>
-        <param format="bam" name="input" type="data" label="Choose BAM file"/>
+        <param format="bam,unsorted.bam" name="input" type="data" label="Choose BAM file"/>
     </inputs>
     <outputs>
         <data format="bigwig" name="output"/>

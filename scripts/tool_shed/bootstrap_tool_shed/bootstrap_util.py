@@ -124,7 +124,7 @@ def main(args):
 
 
 parser = optparse.OptionParser()
-parser.add_option('-c', '--config_file', dest='config', action='store', default='config/tool_shed.ini.sample')
+parser.add_option('-c', '--config_file', dest='config', action='store', default='config/tool_shed.yml.sample')
 parser.add_option('-e', '--execute', dest='method', action='store', default='check_db')
 (args, options) = parser.parse_args()
 

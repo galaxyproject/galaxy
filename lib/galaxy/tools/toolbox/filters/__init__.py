@@ -34,7 +34,7 @@ class FilterFactory(object):
         filters = deepcopy(self.default_filters)
         if trans.user:
             for name, value in trans.user.preferences.items():
-                if value.strip():
+                if value and value.strip():
                     user_filters = listify(value, do_strip=True)
                     category = ''
                     if name == 'toolbox_tool_filters':
@@ -44,7 +44,7 @@ class FilterFactory(object):
                     elif name == 'toolbox_label_filters':
                         category = "label"
                     if category:
-                        validate = getattr(trans.app.config, 'user_%s_filters' % category, [])
+                        validate = getattr(trans.app.config, 'user_tool_%s_filters' % category, [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
         else:
             if kwds.get("trackster", False):
@@ -73,7 +73,7 @@ class FilterFactory(object):
         else:
             # No module found, just load a function from this file or
             # one that has be explicitly imported.
-            function = getattr(globals(), filter_name.strip())
+            function = globals()[filter_name.strip()]
         return function
 
     def _import_filter(self, module_name, function_name):

@@ -12,6 +12,7 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from collections import OrderedDict
 from json import dumps
 
 import h5py
@@ -187,14 +188,12 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-@dataproviders.decorators.has_dataproviders
-class Bam(Binary):
-    """Class describing a BAM binary file"""
+class BamNative(CompressedArchive):
+    """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
-    file_ext = "bam"
-    track_type = "ReadTrack"
-    data_sources = {"data": "bai", "index": "bigwig"}
+    file_ext = "unsorted.bam"
+    sort_flag = None
 
     MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -217,79 +216,8 @@ class Bam(Binary):
         """
         pysam.merge('-O', 'BAM', output_file, *split_files)
 
-    def dataset_content_needs_grooming(self, file_name):
-        """
-        Check if file_name is a coordinate-sorted BAM file
-        """
-        # The best way to ensure that BAM files are coordinate-sorted and indexable
-        # is to actually index them.
-        index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
-        try:
-            # If pysam fails to index a file it will write to stderr,
-            # and this causes the set_meta script to fail. So instead
-            # we start another process and discard stderr.
-            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
-            with open(os.devnull, 'w') as devnull:
-                subprocess.check_call(cmd, stderr=devnull, shell=False)
-            needs_sorting = False
-        except subprocess.CalledProcessError:
-            needs_sorting = True
-        try:
-            os.unlink(index_name)
-        except Exception:
-            pass
-        return needs_sorting
-
-    def groom_dataset_content(self, file_name):
-        """
-        Ensures that the BAM file contents are sorted.  This function is called
-        on an output dataset after the content is initially generated.
-        """
-        # Use pysam to sort the BAM file
-        # This command may also creates temporary files <out.prefix>.%d.bam when the
-        # whole alignment cannot fit into memory.
-        # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
-        if not self.dataset_content_needs_grooming(file_name):
-            # Don't re-sort if already sorted
-            return
-        tmp_dir = tempfile.mkdtemp()
-        tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
-        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
-        slots = os.environ.get('GALAXY_SLOTS', 1)
-        try:
-            pysam.sort("-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name)
-        except Exception:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
-            raise
-        # Move samtools_created_sorted_file_name to our output dataset location
-        shutil.move(sorted_file_name, file_name)
-        # Remove temp file and empty temporary directory
-        os.rmdir(tmp_dir)
-
     def init_meta(self, dataset, copy_from=None):
         Binary.init_meta(self, dataset, copy_from=copy_from)
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.bam_index
-        if not index_file:
-            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
-        pysam.index(dataset.file_name, index_file.file_name)
-        dataset.metadata.bam_index = index_file
-        # Now use pysam with BAI index to determine additional metadata
-        try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb', index_filename=index_file.file_name)
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = bam_file.header
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = bam_file.header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = bam_file.header.get('HD', {}).get('VN', None)
-        except Exception:
-            # Per Dan, don't log here because doing so will cause datasets that
-            # fail metadata to end in the error state
-            pass
 
     def sniff(self, filename):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
@@ -301,6 +229,21 @@ class Bam(Binary):
             return False
         except Exception:
             return False
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        try:
+            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+            dataset.metadata.reference_names = list(bam_file.references)
+            dataset.metadata.reference_lengths = list(bam_file.lengths)
+            dataset.metadata.bam_header = OrderedDict((k, v) for k, v in bam_file.header.items())
+            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+        except Exception:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
+            pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -325,11 +268,40 @@ class Bam(Binary):
         file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
+    def groom_dataset_content(self, file_name):
+        """
+        Ensures that the BAM file contents are coordinate-sorted.  This function is called
+        on an output dataset after the content is initially generated.
+        """
+        # Use pysam to sort the BAM file
+        # This command may also creates temporary files <out.prefix>.%d.bam when the
+        # whole alignment cannot fit into memory.
+        # do this in a unique temp directory, because of possible <out.prefix>.%d.bam temp files
+        if not self.dataset_content_needs_grooming(file_name):
+            # Don't re-sort if already sorted
+            return
+        tmp_dir = tempfile.mkdtemp()
+        tmp_sorted_dataset_file_name_prefix = os.path.join(tmp_dir, 'sorted')
+        sorted_file_name = "%s.bam" % tmp_sorted_dataset_file_name_prefix
+        slots = os.environ.get('GALAXY_SLOTS', 1)
+        sort_args = []
+        if self.sort_flag:
+            sort_args = [self.sort_flag]
+        sort_args.extend(["-@%s" % slots, file_name, '-T', tmp_sorted_dataset_file_name_prefix, '-O', 'BAM', '-o', sorted_file_name])
+        try:
+            pysam.sort(*sort_args)
+        except Exception:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            raise
+        # Move samtools_created_sorted_file_name to our output dataset location
+        shutil.move(sorted_file_name, file_name)
+        # Remove temp file and empty temporary directory
+        os.rmdir(tmp_dir)
+
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
-        index_file = dataset.metadata.bam_index
         if not offset == -1:
             try:
-                with pysam.AlignmentFile(dataset.file_name, "rb", index_filename=index_file.file_name) as bamfile:
+                with pysam.AlignmentFile(dataset.file_name, "rb") as bamfile:
                     ck_size = 300  # 300 lines
                     ck_data = ""
                     header_line_count = 0
@@ -338,7 +310,7 @@ class Bam(Binary):
                         header_line_count = bamfile.text.count('\n')
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile) :
+                    for line_number, alignment in enumerate(bamfile):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
                         offset = bamfile.tell()
@@ -350,9 +322,14 @@ class Bam(Binary):
                             # Below code will remove spaces between each tag.
                             bamline_modified = ('\t').join(bamline.split()[:11] + [(' ').join(bamline.split()[11:])])
                             ck_data = "%s\n%s" % (ck_data, bamline_modified)
+                    else:
+                        # Nothing to enumerate; we've either offset to the end
+                        # of the bamfile, or there is no data. (possible with
+                        # header-only bams)
+                        offset = -1
             except Exception as e:
                 offset = -1
-                ck_data = "Could not display BAM file, error was:\n%s" % e.message
+                ck_data = "Could not display BAM file, error was:\n%s" % e
         else:
             ck_data = ''
             offset = -1
@@ -364,7 +341,7 @@ class Bam(Binary):
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size)
         elif to_ext or not preview:
-            return super(Bam, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
+            return super(BamNative, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
             column_names = dataset.metadata.column_names
             if not column_names:
@@ -381,6 +358,51 @@ class Bam(Binary):
                                        column_number=column_number,
                                        column_names=column_names,
                                        column_types=column_types)
+
+
+@dataproviders.decorators.has_dataproviders
+class Bam(BamNative):
+    """Class describing a BAM binary file"""
+    edam_format = "format_2572"
+    edam_data = "data_0863"
+    file_ext = "bam"
+    track_type = "ReadTrack"
+    data_sources = {"data": "bai", "index": "bigwig"}
+
+    def dataset_content_needs_grooming(self, file_name):
+        """
+        Check if file_name is a coordinate-sorted BAM file
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        index_name = tempfile.NamedTemporaryFile(prefix="bam_index").name
+        try:
+            # If pysam fails to index a file it will write to stderr,
+            # and this causes the set_meta script to fail. So instead
+            # we start another process and discard stderr.
+            cmd = ['python', '-c', "import pysam; pysam.index('%s', '%s')" % (file_name, index_name)]
+            with open(os.devnull, 'w') as devnull:
+                subprocess.check_call(cmd, stderr=devnull, shell=False)
+            needs_sorting = False
+        except subprocess.CalledProcessError:
+            needs_sorting = True
+        try:
+            os.unlink(index_name)
+        except Exception:
+            pass
+        return needs_sorting
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        # These metadata values are not accessible by users, always overwrite
+        super(Bam, self).set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        index_file = dataset.metadata.bam_index
+        if not index_file:
+            index_file = dataset.metadata.spec['bam_index'].param.new_file(dataset=dataset)
+        pysam.index(dataset.file_name, index_file.file_name)
+        dataset.metadata.bam_index = index_file
+
+    def sniff(self, file_name):
+        return super(Bam, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     # ------------- Dataproviders
     # pipe through samtools view
@@ -465,6 +487,59 @@ class Bam(Binary):
         return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
 
 
+class ProBam(Bam):
+    """Class describing a BAM binary file - extended for proteomics data"""
+    edam_format = "format_3826"
+    edam_data = "data_0863"
+    file_ext = "probam"
+
+
+class BamInputSorted(BamNative):
+
+    sort_flag = '-n'
+    file_ext = 'qname_input_sorted.bam'
+
+    """
+    A class for BAM files that can formally be unsorted or queryname sorted.
+    Alignments are either ordered based on the order with which the queries appear when producing the alignment,
+    or ordered by their queryname.
+    This notaby keeps alignments produced by paired end sequencing adjacent.
+    """
+
+    def sniff(self, file_name):
+        # We never want to sniff to this datatype
+        return False
+
+    def dataset_content_needs_grooming(self, file_name):
+        """
+        Groom if the file is coordinate sorted
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        with pysam.AlignmentFile(filename=file_name) as f:
+            # The only sure thing we know here is that the sort order can't be coordinate
+            return f.header.get('HD', {}).get('SO') == 'coordinate'
+
+
+class BamQuerynameSorted(BamInputSorted):
+    """A class for queryname sorted BAM files."""
+
+    sort_flag = '-n'
+    file_ext = "qname_sorted.bam"
+
+    def sniff(self, file_name):
+        return super(BamQuerynameSorted, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
+
+    def dataset_content_needs_grooming(self, file_name):
+        """
+        Check if file_name is a queryname-sorted BAM file
+        """
+        # The best way to ensure that BAM files are coordinate-sorted and indexable
+        # is to actually index them.
+        with pysam.AlignmentFile(filename=file_name) as f:
+            return f.header.get('HD', {}).get('SO') != 'queryname'
+
+
 class CRAM(Binary):
     file_ext = "cram"
     edam_format = "format_3462"
@@ -517,7 +592,7 @@ class CRAM(Binary):
             return False
 
 
-class BaseBcf(Binary):
+class BaseBcf(CompressedArchive):
     edam_format = "format_3020"
     edam_data = "data_3498"
 
@@ -929,7 +1004,7 @@ class SQlite(Binary):
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
             rslt = c.execute(tables_query).fetchall()
-            for table, sql in rslt:
+            for table, _ in rslt:
                 tables.append(table)
                 try:
                     col_query = 'SELECT * FROM %s LIMIT 0' % table
@@ -1550,25 +1625,22 @@ class SearchGuiArchive(CompressedArchive):
         super(SearchGuiArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
-                tempzip = zipfile.ZipFile(dataset.file_name)
-                if 'searchgui.properties' in tempzip.namelist():
-                    fh = tempzip.open('searchgui.properties')
-                    for line in fh:
-                        if line.startswith('searchgui.version'):
-                            version = line.split('=')[1].strip()
-                            dataset.metadata.searchgui_version = version
-                            dataset.metadata.searchgui_major_version = version.split('.')[0]
-                    fh.close()
-                tempzip.close()
+                with zipfile.ZipFile(dataset.file_name) as tempzip:
+                    if 'searchgui.properties' in tempzip.namelist():
+                        with tempzip.open('searchgui.properties') as fh:
+                            for line in fh:
+                                if line.startswith('searchgui.version'):
+                                    version = line.split('=')[1].strip()
+                                    dataset.metadata.searchgui_version = version
+                                    dataset.metadata.searchgui_major_version = version.split('.')[0]
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
         try:
             if filename and zipfile.is_zipfile(filename):
-                tempzip = zipfile.ZipFile(filename, 'r')
-                is_searchgui = 'searchgui.properties' in tempzip.namelist()
-                tempzip.close()
+                with zipfile.ZipFile(filename, 'r') as tempzip:
+                    is_searchgui = 'searchgui.properties' in tempzip.namelist()
                 return is_searchgui
         except Exception as e:
             log.warning('%s, sniff Exception: %s', self, e)

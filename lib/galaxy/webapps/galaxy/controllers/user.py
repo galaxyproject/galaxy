@@ -15,6 +15,7 @@ from sqlalchemy import (
     or_,
     true
 )
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     model,
@@ -485,6 +486,77 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    form_input_auto_focus=True,
                                    active_view="user")
 
+    def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
+                                              auto_create_groups=False, auto_assign_roles_to_groups_only=False):
+        for role_name in roles:
+            role = None
+            group = None
+            if auto_create_roles:
+                try:
+                    # first try to find the role
+                    role = trans.app.security_agent.get_role(role_name)
+                except NoResultFound:
+                    # or create it
+                    role, num_in_groups = trans.app.security_agent.create_role(
+                        role_name, "Auto created upon user registration", [], [],
+                        create_group_for_role=auto_create_groups)
+                    if auto_create_groups:
+                        trans.log_event("Created role and group for auto-registered user.")
+                    else:
+                        trans.log_event("Created role for auto-registered user.")
+            if auto_create_groups:
+                # only create a group if not existing yet
+                try:
+                    group = self.sa_session.query(trans.app.model.Group).filter(
+                        trans.app.model.Group.table.c.name == role_name).first()
+                except NoResultFound:
+                    group = self.model.Group(name=role_name)
+                    self.sa_session.add(group)
+                trans.app.security_agent.associate_user_group(user, group)
+
+            if auto_assign_roles_to_groups_only and group and role:
+                trans.log_event("Assigning role to group only")
+                trans.app.security_agent.associate_group_role(group, role)
+            elif not auto_assign_roles_to_groups_only and role:
+                trans.log_event("Assigning role to newly created user")
+                trans.app.security_agent.associate_user_role(user, role)
+
+    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
+        """
+        Does the autoregistration if enabled. Returns a message
+        """
+        skip_login_handling = cntrller == 'admin' and trans.user_is_admin()
+        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
+        user = None
+        success = False
+        if autoreg["auto_reg"]:
+            kwd['email'] = autoreg["email"]
+            kwd['username'] = autoreg["username"]
+            message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
+                                validate_publicname(trans, kwd['username'])]).rstrip()
+            if not message:
+                message, status, user, success = self.__register(trans, cntrller, False, no_redirect=skip_login_handling, **kwd)
+                if success:
+                    # The handle_user_login() method has a call to the history_set_default_permissions() method
+                    # (needed when logging in with a history), user needs to have default permissions set before logging in
+                    if not skip_login_handling:
+                        trans.handle_user_login(user)
+                        trans.log_event("User (auto) created a new account")
+                        trans.log_event("User logged in")
+                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                        self.__handle_role_and_group_auto_creation(
+                            trans, user, autoreg["attributes"]["roles"],
+                            auto_create_groups=autoreg["auto_create_groups"],
+                            auto_create_roles=autoreg["auto_create_roles"],
+                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
+                else:
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+            else:
+                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+        else:
+            message = "No such user or invalid password"
+        return message, status, user, success
+
     def __validate_login(self, trans, **kwd):
         """Validates numerous cases that might happen during the login time."""
         status = kwd.get('status', 'error')
@@ -499,26 +571,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
-            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
-            if autoreg[0]:
-                kwd['email'] = autoreg[1]
-                kwd['username'] = autoreg[2]
-                message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
-                                    validate_publicname(trans, kwd['username'])]).rstrip()
-                if not message:
-                    message, status, user, success = self.__register(trans, 'user', False, **kwd)
-                    if success:
-                        # The handle_user_login() method has a call to the history_set_default_permissions() method
-                        # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login(user)
-                        trans.log_event("User (auto) created a new account")
-                        trans.log_event("User logged in")
-                    else:
-                        message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-                else:
-                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-            else:
-                message = "No such user or invalid password"
+            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -670,12 +723,28 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        is_admin = cntrller == 'admin' and trans.user_is_admin
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        show_user_prepopulate_form = is_admin and trans.app.config.show_user_prepopulate_form
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
+        elif show_user_prepopulate_form and params.get('prepopulate_user_button', False):
+            # pre-populate the user through a provider like ldap
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
+            login = username if username else email
+            message, status, user, success = self.__autoregistration(trans, login, '', status, kwd,
+                                                                     no_password_check=True, cntrller=cntrller)
+            if success:
+                message = 'Prepopulated new user account (%s)' % escape(user.email)
+                trans.response.send_redirect(web.url_for(controller='admin',
+                                                         action='users',
+                                                         cntrller=cntrller,
+                                                         message=message,
+                                                         status=status))
         else:
             # check user is allowed to register
             message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
@@ -729,6 +798,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    email=email,
                                    username=transform_publicname(trans, username),
                                    subscribe_checked=subscribe_checked,
+                                   show_user_prepopulate_form=show_user_prepopulate_form,
                                    use_panels=use_panels,
                                    redirect=redirect,
                                    redirect_url=redirect_url,
@@ -737,7 +807,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    message=message,
                                    status=status)
 
-    def __register(self, trans, cntrller, subscribe_checked, **kwd):
+    def __register(self, trans, cntrller, subscribe_checked, no_redirect=False, **kwd):
         email = util.restore_text(kwd.get('email', ''))
         password = kwd.get('password', '')
         username = util.restore_text(kwd.get('username', ''))
@@ -762,13 +832,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                     except Exception:
                         log.exception('Subscribing to the mailing list has failed.')
                         error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
                 trans.handle_user_login(user)
                 trans.log_event("User created a new account")
                 trans.log_event("User logged in")
-            elif not error:
+            elif not error and not no_redirect:
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='users',
                                                          message='Created new user account (%s)' % user.email,
@@ -853,7 +924,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         Check whether token fits the user and then activate the user's account.
         """
         params = util.Params(kwd, sanitize=False)
-        email = unquote(params.get('email', None))
+        email = params.get('email', None)
+        if email is not None:
+            email = unquote(email)
         activation_token = params.get('activation_token', None)
 
         if email is None or activation_token is None:
@@ -862,6 +935,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         else:
             # Find the user
             user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+            if not user:
+                # Probably wrong email address
+                return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller="root", action="index")
             # If the user is active already don't try to activate
             if user.active is True:
                 return trans.show_ok_message("Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')

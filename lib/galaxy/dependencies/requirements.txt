@@ -1,7 +1,9 @@
-# packages with C extensions
-# numpy should be installed before bx to enable extra features in bx
+# bx-python and dependencies
 numpy
+python-lzo
 bx-python
+
+# packages with C extensions
 MarkupSafe
 PyYAML
 SQLAlchemy
@@ -10,11 +12,8 @@ pycrypto
 # Flexible BAM index naming is new to main pysam
 pysam>=0.13
 
-# Install python_lzo if you want to support indexed access to lzo-compressed
-# locally cached maf files via bx-python
-#python_lzo
-
 # pure Python packages
+bleach
 bz2file; python_version < '3.3'
 ipaddress; python_version < '3.3'
 boltons
@@ -24,7 +23,6 @@ docutils
 repoze.lru
 Routes
 WebOb
-WebHelpers
 Mako
 pytz
 Babel
@@ -35,9 +33,11 @@ Parsley
 six
 Whoosh
 galaxy_sequence_utils
+h5py
+packaging
 
 # Cheetah and dependencies
-Cheetah
+Cheetah3
 Markdown
 
 # BioBlend and dependencies
@@ -51,7 +51,7 @@ kombu
 
 # Pulsar requirements
 psutil
-pulsar-galaxy-lib>=0.7.0.dev4
+pulsar-galaxy-lib>=0.8.3
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate
@@ -65,6 +65,6 @@ svgwrite
 pyparsing
 
 # Fabric and dependencies
-Fabric
+Fabric3
 paramiko
 ecdsa

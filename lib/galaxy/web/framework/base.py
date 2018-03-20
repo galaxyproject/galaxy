@@ -2,6 +2,7 @@
 A simple WSGI application/framework.
 """
 import cgi  # For FieldStorage
+import io
 import logging
 import os.path
 import socket
@@ -19,6 +20,11 @@ from paste.response import HeaderDict
 from six.moves.http_cookies import SimpleCookie
 
 from galaxy.util import smart_str
+
+try:
+    file_types = (file, io.IOBase)
+except NameError:
+    file_types = (io.IOBase, )
 
 log = logging.getLogger(__name__)
 
@@ -226,15 +232,15 @@ class WebApplication(object):
         if callable(body):
             # Assume the callable is another WSGI application to run
             return body(environ, start_response)
-        elif isinstance(body, types.FileType):
-            # Stream the file back to the browser
-            return send_file(start_response, trans, body)
         elif isinstance(body, tarfile.ExFileObject):
             # Stream the tarfile member back to the browser
             body = iterate_file(body)
             start_response(trans.response.wsgi_status(),
                            trans.response.wsgi_headeritems())
             return body
+        elif isinstance(body, file_types):
+            # Stream the file back to the browser
+            return send_file(start_response, trans, body)
         else:
             start_response(trans.response.wsgi_status(),
                            trans.response.wsgi_headeritems())

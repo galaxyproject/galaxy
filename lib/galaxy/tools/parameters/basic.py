@@ -43,6 +43,8 @@ workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile('''\$\{.+?\}''')
 
+MAX_DEFAULT_COLUMNS = 999
+
 
 def contains_workflow_parameter(value, search=False):
     if not isinstance(value, string_types):
@@ -65,7 +67,7 @@ def parse_dynamic_options(param, input_source):
     return None
 
 
-class ToolParameter(object, Dictifiable):
+class ToolParameter(Dictifiable):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
@@ -519,11 +521,19 @@ class FileToolParameter(ToolParameter):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type(value) == dict:
-            upload_store = trans.app.config.nginx_upload_store
-            assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
-            # Check that the file is in the right location
-            local_filename = os.path.abspath(value['path'])
-            assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
+            if 'session_id' in value:
+                # handle api upload
+                session_id = value["session_id"]
+                upload_store = trans.app.config.new_file_path
+                if re.match('^[\w-]+$', session_id) is None:
+                    raise ValueError("Invald session id format.")
+                local_filename = os.path.abspath(os.path.join(upload_store, session_id))
+            else:
+                # handle nginx upload
+                upload_store = trans.app.config.nginx_upload_store
+                assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+                local_filename = os.path.abspath(value['path'])
+                assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -1114,18 +1124,21 @@ class ColumnListParameter(SelectToolParameter):
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
             # Columns can only be identified if metadata is available
-            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns') or not dataset.metadata.columns:
+            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns'):
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
-            if self.numerical:
+            # Valid column-based datasets contain at least 1 column if that column has not been
+            # specified we prepopulate the selector assuming that the datasets is not ready yet.
+            if dataset.metadata.columns is None:
+                this_column_list = [str(i) for i in range(1, MAX_DEFAULT_COLUMNS + 1)]
+            elif self.numerical:
                 # If numerical was requested, filter columns based on metadata
                 for i, col in enumerate(dataset.metadata.column_types):
                     if col == 'int' or col == 'float':
                         this_column_list.append(str(i + 1))
             else:
-                for i in range(0, dataset.metadata.columns):
-                    this_column_list.append(str(i + 1))
+                this_column_list = [str(i) for i in range(1, dataset.metadata.columns + 1)]
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
@@ -1621,7 +1634,7 @@ class DataToolParameter(BaseDataToolParameter):
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional:
-            raise ValueError("Specify a dataset of the required format / build.")
+            raise ValueError("Specify a dataset of the required format / build for parameter %s." % self.name)
         if value in [None, "None", '']:
             return None
         if isinstance(value, dict) and 'values' in value:

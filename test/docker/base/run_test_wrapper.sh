@@ -83,8 +83,16 @@ else
     GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI"
     TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI"
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
+    # This is a path baked inside of Docker it seems, so we should support both ini and
+    # YAML for some time.
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
+    if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
+        GALAXY_CONFIG_FILE=config/galaxy.yml.sample
+    fi
     TOOL_SHED_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/tool_shed.ini.sample}
+    if [ ! -f "$TOOL_SHED_CONFIG_FILE" ]; then
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.yml.sample
+    fi
     GALAXY_CONFIG_CHECK_MIGRATE_TOOLS=false
     GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
     GALAXY_CONFIG_FILE_PATH=${GALAXY_CONFIG_FILE_PATH:-/tmp/gx1}

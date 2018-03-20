@@ -6,7 +6,10 @@ import errno
 import imp
 import logging
 from functools import partial
-from grp import getgrgid
+try:
+    from grp import getgrgid
+except ImportError:
+    getgrgid = None
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -17,6 +20,7 @@ from os import (
 )
 from os.path import (
     abspath,
+    basename,
     dirname,
     exists,
     isabs,
@@ -27,11 +31,32 @@ from os.path import (
     relpath,
     sep as separator,
 )
-from pwd import getpwuid
+try:
+    from pwd import getpwuid
+except ImportError:
+    getpwuid = None
 
 from six import iteritems, string_types
-from six.moves import map, zip
+from six.moves import filter, map, zip
+
+WALK_MAX_DIRS = 10000
+
 log = logging.getLogger(__name__)
+
+
+def safe_path(path, whitelist=None):
+    """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the whitelist
+    of acceptable locations.
+
+    This function does not perform an existence check, thus, if the path does not exist, ``True`` is returned.
+
+    :type path:         string
+    :param path:        a path to check
+    :type whitelist:    comma separated list of strings
+    :param whitelist:   list of acceptable locations
+    :return:            ``True`` if ``path`` resolves to itself or a whitelisted location
+    """
+    return any(__contains(dirname(path), path, whitelist=whitelist))
 
 
 def safe_contains(prefix, path, whitelist=None):
@@ -89,11 +114,38 @@ def safe_relpath(path):
     return not (isabs(path) or normpath(path).startswith(pardir))
 
 
+def safe_walk(path, whitelist=None):
+    """Walk a path and return only the contents that are not symlinks outside the path.
+
+    Symbolic links are followed if a whitelist is provided. The path itself cannot be a symbolic link unless the pointed
+    to location is in the whitelist.
+
+    :type path:         string
+    :param path:        a directory to check for unsafe contents
+    :type whitelist:    list of strings
+    :param whitelist:   list of additional paths under which contents may be located
+    :rtype:             iterator
+    :returns:           Iterator of "safe" ``os.walk()`` tuples found under ``path``
+    """
+    _check = partial(safe_contains, path, whitelist=whitelist)
+    for i, elems in enumerate(walk(path, followlinks=bool(whitelist)), start=1):
+        dirpath, dirnames, filenames = elems
+        if whitelist and i % WALK_MAX_DIRS == 0:
+            raise RuntimeError(
+                'Breaking out of walk of %s after %s iterations (most likely infinite symlink recursion) at: %s' %
+                (path, WALK_MAX_DIRS, dirpath))
+        _prefix = partial(join, dirpath)
+        yield (dirpath,
+               map(basename, filter(_check, map(_prefix, dirnames))),
+               map(basename, filter(_check, map(_prefix, filenames))))
+
+
 def unsafe_walk(path, whitelist=None, username=None):
     """Walk a path and ensure that none of its contents are symlinks outside the path.
 
     It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
-    :func:`safe_contains`.
+    :func:`safe_contains`. This function is most useful for the case where you want to test whether a directory contains
+    safe paths, but do not want to actually walk the safe contents.
 
     :type path:         string
     :param path:        a directory to check for unsafe contents
@@ -119,6 +171,9 @@ def __path_permission_for_user(path, username):
     :type username:     string
     :param username:    a username matching the systems username
     """
+    if getpwuid is None:
+        raise NotImplementedError("This functionality is not implemented for Windows.")
+
     group_id_of_file = stat(path).st_gid
     file_owner = getpwuid(stat(path).st_uid)
     group_members = getgrgid(group_id_of_file).gr_mem
@@ -277,6 +332,7 @@ def __contains(prefix, path, whitelist=None):
     real = realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
     for wldir in whitelist or []:
+        # a path is under the whitelist if the relative path between it and the whitelist does not have to go up (..)
         yield not relpath(real, wldir).startswith(pardir)
 
 
@@ -293,7 +349,9 @@ def __splitext_ignore(path, ignore=None):
     ignore = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)
     if ext in ignore:
-        root, ext = __splitext_no_sep(path)
+        new_path = path[0:(-len(ext) - 1)]
+        root, ext = __splitext_no_sep(new_path)
+
     return (root, ext)
 
 
@@ -317,7 +375,7 @@ def __copy_self(names=__name__, parent=None):
     if isinstance(names, string_types):
         names = iter(names.split('.'))
     try:
-        name = names.next()
+        name = next(names)
     except StopIteration:
         return parent
     path = parent and parent.__path__
@@ -341,6 +399,7 @@ def __set_fxns_on(target, path_module):
 
 __pathfxns__ = (
     'abspath',
+    'basename',
     'exists',
     'isabs',
     'join',
@@ -358,5 +417,6 @@ __all__ = (
     'safe_contains',
     'safe_makedirs',
     'safe_relpath',
+    'safe_walk',
     'unsafe_walk',
 )

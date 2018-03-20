@@ -287,7 +287,7 @@ def get_workflow_from_dict(trans, workflow_dict, tools_metadata, repository_id, 
         if trans.webapp.name == 'galaxy':
             annotation = step_dict.get('annotation', '')
             if annotation:
-                annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+                annotation = sanitize_html(annotation)
                 new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
                 new_step_annotation.annotation = annotation
                 new_step_annotation.user = trans.user
@@ -398,7 +398,7 @@ def save_workflow(trans, workflow, workflow_dict=None):
     stored.latest_workflow = workflow
     stored.user = trans.user
     if workflow_dict and workflow_dict.get('annotation', ''):
-        annotation = sanitize_html(workflow_dict['annotation'], 'utf-8', 'text/html')
+        annotation = sanitize_html(workflow_dict['annotation'])
         new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
         new_annotation.annotation = annotation
         new_annotation.user = trans.user

@@ -1,11 +1,61 @@
 import _l from "utils/localization";
-/** This class renders the grid list. */
+import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
+/** This class renders the grid list. */
 import GridView from "mvc/grid/grid-view";
 import HistoryModel from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
+import LoadingIndicator from "ui/loading-indicator";
 
 var HistoryGridView = GridView.extend({
+    initialize: function(grid_config) {
+        this.ajaxQueue = new AjaxQueue.AjaxQueue();
+        GridView.prototype.initialize.call(this, grid_config);
+    },
+
+    init_grid_elements: function() {
+        const ajaxQueue = this.ajaxQueue;
+        ajaxQueue.stop();
+        GridView.prototype.init_grid_elements.call(this);
+        const fetchDetails = $.makeArray(
+            this.$el.find(".delayed-value-datasets_by_state").map((i, el) => {
+                return () => {
+                    const historyId = $(el).data("history-id");
+                    const url = `${
+                        Galaxy.root
+                    }api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
+                    const options = {};
+                    options.url = url;
+                    options.type = "GET";
+                    options.success = req => {
+                        const contentsStates = req["contents_states"];
+                        let stateHtml = "";
+                        for (let state of ["ok", "running", "queued", "new", "error"]) {
+                            const stateCount = contentsStates[state];
+                            if (stateCount) {
+                                stateHtml += `<div class="count-box state-color-${state}" title="Datasets in ${state} state">${stateCount}</div> `;
+                            }
+                        }
+                        const contentsActive = req["contents_active"];
+                        const deleted = contentsActive["deleted"];
+                        if (deleted) {
+                            stateHtml += `<div class="count-box state-color-deleted" title="Deleted datasets">${deleted}</div> `;
+                        }
+                        const hidden = contentsActive["hidden"];
+                        if (hidden) {
+                            stateHtml += `<div class="count-box state-color-hidden" title="Hidden datasets">${hidden}</div> `;
+                        }
+                        $(`.delayed-value-datasets_by_state[data-history-id='${historyId}']`).html(stateHtml);
+                        $(`.delayed-value-disk_size[data-history-id='${historyId}']`).html(req["nice_size"]);
+                    };
+                    var xhr = jQuery.ajax(options);
+                    return xhr;
+                };
+            })
+        );
+        fetchDetails.forEach(fn => ajaxQueue.add(fn));
+        ajaxQueue.start();
+    },
     _showCopyDialog: function(id) {
         var history = new HistoryModel.History({ id: id });
         history
@@ -55,7 +105,8 @@ var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
         var self = this;
-        this.setElement($("<div/>"));
+        LoadingIndicator.markViewAsLoading(this);
+
         this.model = new Backbone.Model();
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,

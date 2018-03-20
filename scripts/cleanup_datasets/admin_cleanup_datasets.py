@@ -53,6 +53,8 @@ from mako.template import Template
 from six.moves import configparser
 from sqlalchemy import and_, false
 
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+
 import galaxy.config
 import galaxy.model.mapping
 import galaxy.util

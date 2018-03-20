@@ -2210,7 +2210,7 @@ sanitizer to prevent Galaxy from escaping the result.
 ```xml
 <param name="feature_color" type="color" label="Default feature color" value="#ff00ff">
   <sanitizer>
-    <valid initial="string.letters,string.digits">
+    <valid initial="string.ascii_letters,string.digits">
       <add value="#" />
     </valid>
   </sanitizer>
@@ -2704,6 +2704,11 @@ deprecated and using the ``$__tool_directory__`` variable is superior.
         <xs:attribute name="oom_exit_code" type="xs:integer">
           <xs:annotation>
             <xs:documentation>Only used if ``detect_errors="exit_code", tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="use_shared_home" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>When running a job for this tool, do not isolate its $HOME directory within the job's directory - use either the shared_home_dir setting in Galaxy or the default $HOME specified in the job's default environment.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
@@ -3222,17 +3227,28 @@ replace the basic parameter sanitization with custom directives. This tag set is
 contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
 ``<mapping>`` tags.
 
+### Character presets
+
+The following presets can be used when specifying the valid characters: the
+[constants from the ``string`` Python3 module](https://docs.python.org/3/library/string.html#string-constants),
+plus ``default`` (equal to ``string.ascii_letters + string.digits + " -=_.()/+*^,:?!"``)
+and ``none`` (empty set).
+The ``string.letters``, ``string.lowercase`` and ``string.uppercase`` Python2
+constants are accepted for backward compatibility, but are aliased to the
+corresponding not locale-dependent constant (i.e. ``string.ascii_letters``,
+``string.ascii_lowercase`` and ``string.ascii_uppercase`` respectively).
+
 ### Examples
 
-This example replaces the invalid character default of ``X`` with the empty
-string (so invalid characters are effectively dropped instead of replaced with
-``X``) and indicates the only valid characters for this input are ASCII letters,
-ASCII digits, and ``_``.
+This example specifies to use the empty string as the invalid character (instead
+of the default ``X``, so invalid characters are effectively dropped instead of
+replaced with ``X``) and indicates that the only valid characters for this input
+are ASCII letters, digits, and ``_``.
 
 ```
 <param name="mystring" type="text" label="Say something interesting">
     <sanitizer invalid_char="">
-        <valid initial="string.letters,string.digits"><add value="_" /> </valid>
+        <valid initial="string.ascii_letters,string.digits"><add value="_" /> </valid>
     </sanitizer>
 </param>
 ```
@@ -3264,7 +3280,7 @@ input is sanitized at all (the default is ``true``).</xs:documentation>
     <xs:attribute name="invalid_char" type="xs:string" default="X">
       <xs:annotation>
         <xs:documentation xml:lang="en">The attribute specifies the character
-used as a replacement for invalid characters.</xs:documentation>
+used as a replacement for invalid characters (the default is ``X``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3286,7 +3302,8 @@ Contains ``<add>`` and ``<remove>`` tags.]]></xs:documentation>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This describes the initial characters to
-allow as valid, the default is ``string.letters + string.digits + " -=_.()/+*^,:?!"``</xs:documentation>
+allow as valid, specified as a character preset (as defined above). The default
+is the ``default`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3294,11 +3311,11 @@ allow as valid, the default is ``string.letters + string.digits + " -=_.()/+*^,:
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to add individual
 characters or preset lists of characters. Character must not be allowed as a
-valid input for the mapping to occur. Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Add target characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3316,7 +3333,7 @@ Preset lists include default and none as well as those available from string.* (
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Remove characters from the list of valid characters (e.g. ``string.printable``).</xs:documentation>
+        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3340,7 +3357,7 @@ Preset lists include default and none as well as those available from string.* (
     </xs:sequence>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
+        <xs:documentation xml:lang="en">Initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3933,6 +3950,11 @@ More information can be found on Planemo's documentation for
     <xs:attribute name="directory" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="recurse" type="xs:boolean" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format" type="xs:string" use="optional">
@@ -4898,14 +4920,14 @@ regular expressions can be found under
 
 A regular expression includes the following attributes:
 
-* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
+* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:
   * ``stdout``: the regular expression will be applied to stdout;
   * ``stderr``: the regular expression will be applied to stderr;
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
 * ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
 * ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
- * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
- * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+  * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
 
 The following is an example of regular expressions that may be used:

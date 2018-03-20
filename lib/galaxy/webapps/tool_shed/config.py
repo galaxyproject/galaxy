@@ -134,7 +134,7 @@ class Configuration(object):
         global_conf = kwargs.get('global_conf', None)
         global_conf_parser = configparser.ConfigParser()
         self.global_conf_parser = global_conf_parser
-        if global_conf and "__file__" in global_conf:
+        if global_conf and "__file__" in global_conf and ".yml" not in global_conf["__file__"]:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
         self.citation_cache_type = kwargs.get("citation_cache_type", "file")

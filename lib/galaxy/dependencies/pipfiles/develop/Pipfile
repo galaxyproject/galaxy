@@ -13,13 +13,14 @@ name = "pypi"
 [packages]
 
 NoseHTML = "*"
-twill = "==0.9.1"
+twill = {version = "==0.9.1", markers = "python_version < '3'"}
 mock = "*"
 selenium = "*"
 testfixtures = "*"
 watchdog = "*"
-"pygithub3" = "*"
+pygithub3 = {version = "*", markers = "python_version < '3'"}
 Sphinx = "*"
 sphinx_rtd_theme = "*"
 lxml = "*"
 recommonmark = "*"
+nodeenv = "*"

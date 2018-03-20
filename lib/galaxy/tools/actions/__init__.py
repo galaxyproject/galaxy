@@ -7,7 +7,8 @@ from six import string_types
 
 from galaxy import model
 from galaxy.exceptions import ObjectInvalid
-from galaxy.model import LibraryDatasetDatasetAssociation
+from galaxy.jobs.actions.post import ActionBox
+from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -36,7 +37,8 @@ class ToolAction(object):
     been converted and validated).
     """
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=True):
+    def execute(self, tool, trans, incoming=None, set_output_hid=True):
+        incoming = incoming or {}
         raise TypeError("Abstract method")
 
 
@@ -193,20 +195,39 @@ class DefaultToolAction(object):
         # Collect any input datasets from the incoming parameters
         inp_data = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
 
-        return history, inp_data, inp_dataset_collections
+        # grap tags from incoming HDAs
+        preserved_tags = {}
+        for data in inp_data.values():
+            if not data:
+                continue
 
-    def execute(self, tool, trans, incoming={}, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
+            for tag in [t for t in data.tags if t.user_tname == 'name']:
+                preserved_tags[tag.value] = tag
+
+        # grap tags from incoming HDCAs
+        for collection_pairs in inp_dataset_collections.values():
+            for collection, _ in collection_pairs:
+                # if sub-collection mapping, this will be an DC not an HDCA
+                # (e.g. part of collection not a collection instance) and thus won't have tags.
+                if hasattr(collection, "tags"):
+                    for tag in [t for t in collection.tags if t.user_tname == 'name']:
+                        preserved_tags[tag.value] = tag
+
+        return history, inp_data, inp_dataset_collections, preserved_tags
+
+    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        incoming = incoming or {}
         self._check_access(tool, trans)
         app = trans.app
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
@@ -216,7 +237,6 @@ class DefaultToolAction(object):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get("dbkey", "?")
-        preserved_tags = {}
         for name, data in reversed(inp_data.items()):
             if not data:
                 data = NoneDataset(datatypes_registry=app.datatypes_registry)
@@ -236,9 +256,6 @@ class DefaultToolAction(object):
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
                 incoming["%s|__identifier__" % name] = identifier
-
-            for tag in [t for t in data.tags if t.user_tname == 'name']:
-                preserved_tags[tag.value] = tag
 
         # Collect chromInfo dataset and add as parameters to incoming
         (chrom_info, db_dataset) = app.genome_builds.get_chrom_info(input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len')
@@ -273,6 +290,7 @@ class DefaultToolAction(object):
             incoming=incoming,
             params=wrapped_params.params,
             job_params=job_params,
+            tags=preserved_tags,
         )
 
         # Keep track of parent / child relationships, we'll create all the
@@ -325,8 +343,7 @@ class DefaultToolAction(object):
                 trans.sa_session.add(data)
                 if not completed_job:
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
-            for _, tag in preserved_tags.items():
-                data.tags.append(tag.copy())
+            data.copy_tags_to(preserved_tags)
 
             # Must flush before setting object store id currently.
             # TODO: optimize this.
@@ -430,7 +447,6 @@ class DefaultToolAction(object):
                     output_collections.create_collection(
                         output=output,
                         name=name,
-                        tags=preserved_tags,
                         **element_kwds
                     )
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
@@ -478,7 +494,6 @@ class DefaultToolAction(object):
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
-
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
 
         job_flush_timer = ExecutionTimer()
@@ -531,45 +546,62 @@ class DefaultToolAction(object):
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
+            if old_job.workflow_invocation_step:
+                replacement_dict = {}
+                for parameter in old_job.workflow_invocation_step.workflow_invocation.input_parameters:
+                    if parameter.type == WorkflowRequestInputParameter.types.REPLACEMENT_PARAMETERS:
+                        replacement_dict[parameter.name] = parameter.value
+                for pja in old_job.workflow_invocation_step.workflow_step.post_job_actions:
+                    # execute immediate actions here, with workflow context.
+                    if pja.action_type in ActionBox.immediate_actions:
+                        ActionBox.execute(trans.app, trans.sa_session, pja, current_job, replacement_dict)
             for p in old_job.parameters:
                 if p.name.endswith('|__identifier__'):
                     current_job.parameters.append(p.copy())
-            remapped_hdas = {}
-            input_hdcas = set()
+            remapped_hdas = self.__remap_data_inputs(old_job=old_job, current_job=current_job)
             for jtod in old_job.output_datasets:
                 for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                     if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
                             trans.user is None and job_to_remap.session_id == galaxy_session.id):
-                        if job_to_remap.state == job_to_remap.states.PAUSED:
-                            job_to_remap.state = job_to_remap.states.NEW
-                        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
-                            if hda.state == hda.states.PAUSED:
-                                hda.state = hda.states.NEW
-                                hda.info = None
-                        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
-                        remapped_hdas[jtod.dataset] = out_data[jtod.name]
-                        for jtidca in job_to_remap.input_dataset_collections:
-                            input_hdcas.add(jtidca.dataset_collection)
-                        old_dataset_id = jtod.dataset_id
-                        new_dataset_id = out_data[jtod.name].id
-                        input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
-                        for p in job_to_remap.parameters:
-                            p.value = json.dumps(input_values[p.name])
-                        jtid.dataset = out_data[jtod.name]
-                        jtid.dataset.hid = jtod.dataset.hid
-                        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
+                        self.__remap_parameters(job_to_remap, jtid, jtod, out_data)
                         trans.sa_session.add(job_to_remap)
                         trans.sa_session.add(jtid)
-                for hdca in input_hdcas:
-                    hdca.collection.replace_failed_elements(remapped_hdas)
-                    if hdca.implicit_collection_jobs:
-                        for job in hdca.implicit_collection_jobs.jobs:
-                            if job.job_id == old_job.id:
-                                job.job_id = current_job.id
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
+            for jtodc in old_job.output_dataset_collection_instances:
+                hdca = jtodc.dataset_collection_instance
+                hdca.collection.replace_failed_elements(remapped_hdas)
+                if hdca.implicit_collection_jobs:
+                    for job in hdca.implicit_collection_jobs.jobs:
+                        if job.job_id == old_job.id:
+                            job.job_id = current_job.id
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
+
+    def __remap_data_inputs(self, old_job, current_job):
+        """Record output datasets from old_job and build a dictionary that maps the old output HDAs to the new output HDAs."""
+        remapped_hdas = {}
+        old_output_datasets = {jtod.name: jtod.dataset for jtod in old_job.output_datasets}
+        for jtod in current_job.output_datasets:
+            remapped_hdas[old_output_datasets[jtod.name]] = jtod.dataset
+        return remapped_hdas
+
+    def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
+        if job_to_remap.state == job_to_remap.states.PAUSED:
+            job_to_remap.state = job_to_remap.states.NEW
+        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
+            if hda.state == hda.states.PAUSED:
+                hda.state = hda.states.NEW
+                hda.info = None
+        input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
+        old_dataset_id = jtod.dataset_id
+        new_dataset_id = out_data[jtod.name].id
+        input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
+        for p in job_to_remap.parameters:
+            p.value = json.dumps(input_values[p.name])
+        jtid.dataset = out_data[jtod.name]
+        jtid.dataset.hid = jtod.dataset.hid
+        log.info('Job %s input HDA %s remapped to new HDA %s' % (job_to_remap.id, jtod.dataset.id, jtid.dataset.id))
 
     def _wrapped_params(self, trans, tool, incoming, input_datasets=None):
         wrapped_params = WrappedParameters(trans, tool, incoming, input_datasets=input_datasets)
@@ -577,7 +609,7 @@ class DefaultToolAction(object):
 
     def _get_on_text(self, inp_data):
         input_names = []
-        for name, data in reversed(inp_data.items()):
+        for data in reversed(inp_data.values()):
             if getattr(data, "hid", None):
                 input_names.append('data %s' % data.hid)
 
@@ -728,7 +760,7 @@ class OutputCollections(object):
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags):
         self.trans = trans
         self.history = history
         self.tool = tool
@@ -741,8 +773,9 @@ class OutputCollections(object):
         self.job_params = job_params
         self.out_collections = {}
         self.out_collection_instances = {}
+        self.tags = tags
 
-    def create_collection(self, output, name, tags=None, **element_kwds):
+    def create_collection(self, output, name, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
         collection_type = output.structure.collection_type
@@ -760,7 +793,7 @@ class OutputCollections(object):
         if "elements" in element_kwds:
             elements = element_kwds["elements"]
             if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
-                for key, value in elements.items():
+                for value in elements.values():
                     # Either a HDA (if) or a DatasetCollection (the else)
                     if getattr(value, "history_content_type", None) == "dataset":
                         assert value.history is not None
@@ -796,7 +829,7 @@ class OutputCollections(object):
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
-                tags=tags,
+                tags=self.tags,
                 **element_kwds
             )
             # name here is name of the output element - not name

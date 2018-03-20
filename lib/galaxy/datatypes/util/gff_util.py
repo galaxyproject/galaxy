@@ -5,7 +5,6 @@ import copy
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
-from six import Iterator
 
 from galaxy.util.odict import odict
 
@@ -120,7 +119,7 @@ class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
         return interval
 
 
-class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed after bx-python library is ported to Python3
+class GFFReaderWrapper(NiceReaderWrapper):
     """
     Reader wrapper for GFF files.
 

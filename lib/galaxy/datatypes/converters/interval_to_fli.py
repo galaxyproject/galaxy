@@ -86,7 +86,6 @@ def main():
             }
 
     # Create sorted list of entries.
-    out = open(out_fname, 'w')
     max_len = 0
     entries = []
     for name in sorted(name_loc_dict.keys()):
@@ -97,10 +96,10 @@ def main():
         entries.append(entry)
 
     # Write padded entries.
-    out.write(str(max_len + 1).ljust(max_len) + '\n')
-    for entry in entries:
-        out.write(entry.ljust(max_len) + '\n')
-    out.close()
+    with open(out_fname, 'w') as out:
+        out.write(str(max_len + 1).ljust(max_len) + '\n')
+        for entry in entries:
+            out.write(entry.ljust(max_len) + '\n')
 
 
 if __name__ == '__main__':
