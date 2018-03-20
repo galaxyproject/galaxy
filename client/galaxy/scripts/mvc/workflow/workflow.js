@@ -1,10 +1,15 @@
 /** Workflow view */
 import * as mod_toastr from "libs/toastr";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 import LoadingIndicator from "ui/loading-indicator";
+
+/* global $ */
+/* global Galaxy */
 
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
@@ -107,14 +112,25 @@ const WorkflowItemView = Backbone.View.extend({
         const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
             show ? `checked="${show}"` : ""
         } value="${wfId}">`;
-        const trHtml = `<td><div class="dropdown"><button class="menubutton" type="button" data-toggle="dropdown">${_.escape(
-            this.model.get("name")
-        )}<span class="caret"></span></button>${this._templateActions()}</div></td><td><span><div class="${wfId} tags-display"></div></td><td>${
-            this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")
-        }</span></td><td>${this.model.get("number_of_steps")}</td><td>${
-            this.model.get("published") ? "Yes" : "No"
-        }</td><td>${checkboxHtml}</td>`;
-        return trHtml;
+        return `
+            <td>
+                <div class="dropdown">
+                    <button class="menubutton" type="button" data-toggle="dropdown">${_.escape(this.model.get("name"))}
+                        <span class="caret"></span>
+                    </button>
+                    ${this._templateActions()}
+                </div>
+            </td>
+            <td>
+                <div class="${wfId} tags-display">
+                </div>
+            </td>
+            <td>
+                ${this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")}
+            </td>
+            <td>${this.model.get("number_of_steps")}</td>
+            <td>${this.model.get("published") ? "Yes" : "No"}</td>
+            <td>${checkboxHtml}</td>`;
     },
 
     renderTagEditor: function() {
@@ -130,27 +146,23 @@ const WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
-            return `<ul class="dropdown-menu action-dpd"><li><a href="${Galaxy.root}workflow/editor?id=${
-                this.model.id
-            }">Edit</a></li><li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li><li><a href="${
-                Galaxy.root
-            }workflow/sharing?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
-                this.model.id
-            }/download?format=json-download">Download</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li><li><a href="${
-                Galaxy.root
-            }workflow/display_by_id?id=${
-                this.model.id
-            }">View</a></li><li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li></ul>`;
+            return `<ul class="dropdown-menu action-dpd">
+                        <li><a href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a></li>
+                        <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
+                        <li><a href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a></li>
+                        <li><a href="${Galaxy.root}api/workflows/${this.model.id}/download?format=json-download">Download</a></li>
+                        <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
+                        <li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li>
+                        <li><a href="${Galaxy.root}workflow/display_by_id?id=${this.model.id}">View</a></li>
+                        <li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li>
+                    </ul>`;
         } else {
-            return `<ul class="dropdown-menu action-dpd"><li><a href="${
-                Galaxy.root
-            }workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get(
-                "slug"
-            )}">View</a></li><li><a href="${Galaxy.root}workflows/run?id=${
-                this.model.id
-            }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
-                this.model.id
-            }" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
+            return `<ul class="dropdown-menu action-dpd">
+                        <li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get("slug")}">View</a></li>
+                        <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
+                        <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
+                        <li><a class="link-confirm-shared-${this.model.id}" href="${Galaxy.root}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
+                    </ul>`;
         }
     }
 });
