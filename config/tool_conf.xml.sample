@@ -95,7 +95,6 @@
     <tool file="maf/maf_by_block_number.xml" />
     <tool file="maf/maf_reverse_complement.xml" />
     <tool file="maf/maf_filter.xml" />
-    <tool file="extract/extract_genomic_dna.xml" />
   </section>
   <section id="bxops" name="Operate on Genomic Intervals" version="">
     <tool file="filters/wiggle_to_simple.xml" />
