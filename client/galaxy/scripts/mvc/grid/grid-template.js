@@ -92,8 +92,10 @@ export default {
         for (let column of options.columns) {
             if (column.visible) {
                 tmpl += `<th id="${column.key}-header">`;
-                if (column.href) {
-                    tmpl += `<a href="${column.href}" class="sort-link" sort_key="${column.key}">${column.label}</a>`;
+                if (column.sortable) {
+                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${
+                        column.label
+                    }</a>`;
                 } else {
                     tmpl += column.label;
                 }

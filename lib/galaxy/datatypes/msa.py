@@ -202,9 +202,8 @@ class Stockholm_1_0(Text):
         def _write_part_stockholm_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
 

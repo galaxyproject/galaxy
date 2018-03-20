@@ -58,7 +58,7 @@ class JobHandler(object):
         self.job_stop_queue.shutdown()
 
 
-class JobHandlerQueue(Monitors, object):
+class JobHandlerQueue(Monitors):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
     jobs to be runnable and dispatching to a JobRunner.

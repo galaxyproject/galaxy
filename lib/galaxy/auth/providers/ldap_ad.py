@@ -25,7 +25,7 @@ def _get_subs(d, k, params):
     return str(d[k]).format(**params)
 
 
-def _parse_ldap_options(ldap, options_unparsed):
+def _parse_ldap_options(options_unparsed):
     # Tag is defined in the XML but is empty
     if not options_unparsed:
         return []
@@ -42,26 +42,23 @@ def _parse_ldap_options(ldap, options_unparsed):
             log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" % opt)
             continue
 
+        if not key.startswith(prefix):
+            log.warning("LDAP authenticate: Invalid LDAP option '%s'. '%s' doesn't start with prefix '%s'", opt, key, prefix)
+            continue
         try:
-            pair = []
-            for n in (key, value):
-                if not n.startswith(prefix):
-                    raise ValueError
-
-                name = getattr(ldap, n)
-                pair.append(name)
-
-        except ValueError:
-            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' doesn't start with prefix %s", key, value, n, prefix)
-            continue
-
+            key = getattr(ldap, key)
         except AttributeError:
-            log.warning("LDAP authenticate: Invalid parameter pair %s=%s. '%s' is not available in module ldap", key, value, n)
+            log.warning("LDAP authenticate: Invalid LDAP option '%s'. '%s' is not available in module ldap", opt, key)
             continue
-
-        else:
-            log.debug("LDAP authenticate: Valid LDAP option pair %s=%s -> %s=%s", key, value, *pair)
-            ldap_options.append(pair)
+        if value.startswith(prefix):
+            try:
+                value = getattr(ldap, value)
+            except AttributeError:
+                log.warning("LDAP authenticate: Invalid LDAP option '%s'. '%s' is not available in module ldap", opt, value)
+                continue
+        pair = (key, value)
+        log.debug("LDAP authenticate: Valid LDAP option pair '%s' -> '%s=%s'", opt, *pair)
+        ldap_options.append(pair)
 
     return ldap_options
 
@@ -128,7 +125,7 @@ class LDAP(AuthProvider):
         except ConfigurationError:
             ldap_options = ()
         else:
-            ldap_options = _parse_ldap_options(ldap, ldap_options_raw)
+            ldap_options = _parse_ldap_options(ldap_options_raw)
 
         try:
             # setup connection

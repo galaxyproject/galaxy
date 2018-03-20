@@ -133,6 +133,12 @@ galaxy:
   # than 5 milliseconds.
   #slow_query_log_threshold: 0
 
+  # Enable's a per request sql debugging option. If this is set to true,
+  # append ?sql_debug=1 to web request URLs to enable detailed logging
+  # on the backend of SQL queries generated during that request. This is
+  # useful for debugging slow endpoints during development.
+  #enable_per_request_sql_debugging: false
+
   # By default, Galaxy will use the same database to track user data and
   # tool shed install data.  There are many situations in which it is
   # valuable to separate these - for instance bootstrapping fresh Galaxy
@@ -219,7 +225,7 @@ galaxy:
 
   # conda channels to enable by default (http://conda.pydata.org/docs
   # /custom-channels.html)
-  #conda_ensure_channels: 'iuc,bioconda,conda-forge,defaults,r'
+  #conda_ensure_channels: 'iuc,bioconda,conda-forge,defaults'
 
   # Set to True to instruct Galaxy to look for and install missing tool
   # dependencies before each job runs.
@@ -618,6 +624,14 @@ galaxy:
   # standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Default localization for Galaxy UI. Allowed values are listed at the
+  # end of client/galaxy/scripts/nls/locale.js. With the default value
+  # (auto), the locale will be automatically adjusted to the user's
+  # navigator language. Users can override this settings in their user
+  # preferences if the localization settings are enabled in
+  # user_preferences_extra_conf.yml
+  #default_locale: auto
+
   # URL (with schema http/https) of the Galaxy instance as accessible
   # within your local network - if specified used as a default by pulsar
   # file staging and Jupyter Docker container for communicating back
@@ -797,6 +811,11 @@ galaxy:
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
   #nginx_upload_job_files_path: false
+
+  # Galaxy can upload user files in chunks without using nginx. Enable
+  # the chunk uploader by specifying a chunk size larger than 0. The
+  # chunk size is specified in bytes (default: 100MB).
+  #chunk_upload_size: 104857600
 
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
@@ -990,6 +1009,13 @@ galaxy:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
+  # Sentry slow request logging.  Requests slower than the threshold
+  # indicated below will be sent as events to the configured Sentry
+  # server (above, sentry_dsn).  A value of '0' is disabled.  For
+  # example, you would set this to .005 to log all queries taking longer
+  # than 5 milliseconds.
+  #sentry_sloreq_threshold: 0
+
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
   # cause galaxy to log request timing and other statistics to the
@@ -1145,6 +1171,15 @@ galaxy:
 
   # Set maximum size of ngrams
   #tool_ngram_maxsize: 4
+
+  # Set tool test data directory. The test framework sets this value to
+  # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
+  # which will cause Galaxy to clone down extra test data on the fly for
+  # certain tools distributed with Galaxy but this is likely not
+  # appropriate for production systems. Instead one can simply clone
+  # that repository directly and specify a path here instead of a Git
+  # HTTP repository.
+  #tool_test_data_directories: test-data
 
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should

@@ -46,17 +46,22 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def precreate_dataset_collection_instance(self, trans, parent, name, implicit_inputs, implicit_output_name, structure):
+    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
-        dataset_collection = self.precreate_dataset_collection(structure)
+        dataset_collection = self.precreate_dataset_collection(structure, allow_unitialized_element=implicit_output_name is not None)
         instance = self._create_instance_for_collection(
             trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False
         )
         return instance
 
-    def precreate_dataset_collection(self, structure):
-        if structure.is_leaf or not structure.children_known:
-            return model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
+    def precreate_dataset_collection(self, structure, allow_unitialized_element=True):
+        has_structure = not structure.is_leaf and structure.children_known
+        if not has_structure and allow_unitialized_element:
+            dataset_collection = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
+        elif not has_structure:
+            collection_type_description = structure.collection_type_description
+            dataset_collection = model.DatasetCollection(populated=False)
+            dataset_collection.collection_type = collection_type_description.collection_type
         else:
             collection_type_description = structure.collection_type_description
             dataset_collection = model.DatasetCollection(populated=False)
@@ -67,7 +72,7 @@ class DatasetCollectionManager(object):
                 if substructure.is_leaf:
                     element = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
                 else:
-                    element = self.precreate_dataset_collection(substructure)
+                    element = self.precreate_dataset_collection(substructure, allow_unitialized_element=allow_unitialized_element)
 
                 element = model.DatasetCollectionElement(
                     element=element,
@@ -78,7 +83,7 @@ class DatasetCollectionManager(object):
             dataset_collection.elements = elements
             dataset_collection.element_count = len(elements)
 
-            return dataset_collection
+        return dataset_collection
 
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
@@ -215,10 +220,20 @@ class DatasetCollectionManager(object):
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
         return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
 
-    def delete(self, trans, instance_type, id):
+    def delete(self, trans, instance_type, id, recursive=False, purge=False):
         dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
+
+        if recursive:
+            for dataset in dataset_collection_instance.collection.dataset_instances:
+                self.hda_manager.error_unless_owner(dataset, user=trans.get_user(), current_history=trans.history)
+                if not dataset.deleted:
+                    dataset.deleted = True
+
+                if purge and not dataset.purged:
+                    self.hda_manager.purge(dataset)
+
         trans.sa_session.flush()
 
     def update(self, trans, instance_type, id, payload):

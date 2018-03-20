@@ -218,13 +218,23 @@ export default Backbone.View.extend({
             var $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
-                    window.location = `${options.url + (options.url.indexOf("?") == -1 ? "?" : "&")}use_panels=True`;
+                    window.location = this._build_url(options.url, { use_panels: true });
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }
             } else window.location = options.url;
         } else {
+            options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
             this.frames.add(options);
+        }
+    },
+
+    /** Url helper */
+    _build_url: function(url, options) {
+        if (url) {
+            url += url.indexOf("?") == -1 ? "?" : "&";
+            url += $.param(options, true);
+            return url;
         }
     }
 });

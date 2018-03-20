@@ -62,7 +62,7 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
         error_message = 'Error cloning repository: %s' % e
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % stdouterr
-        log.debug(error_message)
+        log.error(error_message)
         return False, error_message
 
 

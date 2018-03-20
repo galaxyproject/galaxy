@@ -11,6 +11,13 @@ var HDCAListItemEdit = _super.extend(
     /** @lends HDCAListItemEdit.prototype */ {
         /** logger used to record this.log messages, commonly set to console */
         //logger              : console,
+        /** set up: options */
+        initialize: function(attributes) {
+            _super.prototype.initialize.call(this, attributes);
+
+            /** allow user purge of dataset files? */
+            this.purgeAllowed = attributes.purgeAllowed || false;
+        },
 
         /** Override to return editable versions of the collection panels */
         _getFoldoutPanelClass: function() {
@@ -25,21 +32,44 @@ var HDCAListItemEdit = _super.extend(
             return _super.prototype._renderPrimaryActions.call(this).concat([this._renderDeleteButton()]);
         },
 
-        /** Render icon-button to delete this collection. */
         _renderDeleteButton: function() {
-            var deleted = this.model.get("deleted");
-            return faIconButton({
-                title: deleted ? _l("Dataset collection is already deleted") : _l("Delete"),
-                classes: "delete-btn",
-                faIcon: "fa-times",
-                disabled: deleted,
-                onclick: () => {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    this.$el.find(".icon-btn.delete-btn").trigger("mouseout");
-                    this.model["delete"]();
-                }
-            });
+            return $(`
+                <div class="dropdown">
+                    <a class="delete-btn icon-btn" title="${_l("Delete")}" data-toggle="dropdown">
+                        <span class="fa fa-times"></span>
+                    </a>
+                    <ul class="dropdown-menu pull-right" role="menu">
+                        <li>
+                            <a href="#" class="delete-collection">
+                                ${_l("Collection Only")}
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#" class="delete-collection-and-datasets">
+                                ${_l("Delete Datasets")}
+                            </a>
+                        </li>
+                        <li style="display: ${this.purgeAllowed ? "inherit" : "none"}">
+                            <a href="#" class="delete-collection-and-purge-datasets">
+                                ${_l("Permanently Delete Datasets")}
+                            </a>
+                        </li>
+                    </ul>
+                </div>`);
         },
+
+        // ......................................................................... misc
+        events: _.extend(_.clone(_super.prototype.events), {
+            "click .delete-collection": function(ev) {
+                this.model["delete"]();
+            },
+            "click .delete-collection-and-datasets": function(ev) {
+                this.model["delete"](true);
+            },
+            "click .delete-collection-and-purge-datasets": function(ev) {
+                this.model["delete"](true, true);
+            }
+        }),
 
         // ......................................................................... misc
         /** string rep */

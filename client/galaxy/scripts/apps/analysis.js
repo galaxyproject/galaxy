@@ -1,5 +1,6 @@
 import jQuery from "jquery";
 var $ = jQuery;
+import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -14,6 +15,7 @@ import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
 import HistoryImport from "components/HistoryImport.vue";
+import HistoryView from "components/HistoryView.vue";
 import HistoryList from "mvc/history/history-list";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -21,8 +23,12 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
+import Visualization from "mvc/visualization/visualization-view";
 import Citations from "components/Citations.vue";
+import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
+
+/* global Galaxy */
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -52,6 +58,8 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
+            "(/)visualizations/dataset_id=(:dataset_id)": "show_visualizations_selector",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import_workflow": "show_import_workflow",
             "(/)workflows/run(/)": "show_run",
@@ -62,6 +70,8 @@ window.app = function app(options, bootstrapped) {
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
+            "(/)histories/view": "show_history_view",
+            "(/)histories/show_structure": "show_history_structure",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
@@ -113,12 +123,35 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_visualizations_selector: function(dataset_id) {
+            this.page.display(
+                new Visualization.View({
+                    dataset_id: dataset_id
+                })
+            );
+        },
+
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`
+                    url_base: `${Galaxy.root}workflow/list_published`,
+                    active_tab: "shared"
                 })
             );
+        },
+
+        show_history_view: function() {
+            var historyInstance = Vue.extend(HistoryView);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+        },
+
+        show_history_structure: function() {
+            let displayStructureInstance = Vue.extend(DisplayStructure);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new displayStructureInstance({ propsData: { id: QueryStringParsing.get(" id: ") } }).$mount(vm);
         },
 
         show_histories: function(action_id) {
@@ -160,7 +193,8 @@ window.app = function app(options, bootstrapped) {
         show_openids: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}user/openids_list`
+                    url_base: `${Galaxy.root}user/openids_list`,
+                    active_tab: "user"
                 })
             );
         },
@@ -168,7 +202,8 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`
+                    url_base: `${Galaxy.root}dataset/list`,
+                    active_tab: "user"
                 })
             );
         },
@@ -302,6 +337,10 @@ window.app = function app(options, bootstrapped) {
 
     // render and start the router
     $(() => {
+        options.config = _.extend(options.config, {
+            hide_panels: Galaxy.params.hide_panels,
+            hide_masthead: Galaxy.params.hide_masthead
+        });
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,

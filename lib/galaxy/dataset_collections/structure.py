@@ -4,8 +4,6 @@ import logging
 
 import six
 
-from .type_description import map_over_collection_type
-
 log = logging.getLogger(__name__)
 
 
@@ -23,11 +21,8 @@ class Leaf(object):
     def clone(self):
         return self
 
-    def multiply(self, other_structure, uninitialized=False):
-        if not uninitialized:
-            return other_structure.clone()
-        else:
-            return UnitializedTree(other_structure.collection_type_description)
+    def multiply(self, other_structure):
+        return other_structure.clone()
 
     def sliced_collection_type(self, collection):
         return input
@@ -59,7 +54,7 @@ class UnitializedTree(BaseTree):
     def __len__(self):
         raise Exception("Unknown length")
 
-    def multiply(self, other_structure, uninitialized=False):
+    def multiply(self, other_structure):
         if other_structure.is_leaf:
             return self.clone()
 
@@ -130,38 +125,14 @@ class Tree(BaseTree):
     def __len__(self):
         return sum([len(c[1]) for c in self.children])
 
-    def element_identifiers_for_outputs(self, trans, outputs):
-        element_identifiers = []
-        elements_collection_type = None
-        for identifier, child in self.children:
-            if isinstance(child, Tree):
-                child_identifiers = child.element_identifiers_for_outputs(trans, outputs[0:len(child)])
-                child_identifiers["name"] = identifier
-                element_identifiers.append(child_identifiers)
-                elements_collection_type = child_identifiers["collection_type"]
-            else:
-                output_object = outputs[0]
-                element_identifiers.append(dict(name=identifier, __object__=output_object))
-                if hasattr(output_object, "collection_type"):
-                    elements_collection_type = output_object.collection_type
-
-            outputs = outputs[len(child):]
-
-        collection_type = map_over_collection_type(self.collection_type_description.rank_collection_type(), elements_collection_type)
-        return dict(
-            src="new_collection",
-            collection_type=collection_type,
-            element_identifiers=element_identifiers,
-        )
-
-    def multiply(self, other_structure, uninitialized=False):
+    def multiply(self, other_structure):
         if other_structure.is_leaf:
             return self.clone()
 
         new_collection_type = self.collection_type_description.multiply(other_structure.collection_type_description)
         new_children = []
         for (identifier, structure) in self.children:
-            new_children.append((identifier, structure.multiply(other_structure, uninitialized=uninitialized)))
+            new_children.append((identifier, structure.multiply(other_structure)))
 
         return Tree(new_children, new_collection_type)
 
@@ -173,24 +144,35 @@ class Tree(BaseTree):
         return "Tree[collection_type=%s,children=%s]" % (self.collection_type_description, ",".join(map(lambda identifier_and_element: "%s=%s" % (identifier_and_element[0], identifier_and_element[1]), self.children)))
 
 
-def tool_output_to_structure(get_sliced_input_collection_type, tool_output, collections_manager):
+def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
     if not tool_output.collection:
         tree = leaf
     else:
         collection_type_descriptions = collections_manager.collection_type_descriptions
         # Okay this is ToolCollectionOutputStructure not a Structure - different
         # concepts of structure.
-        if tool_output.dynamic_structure:
-            # Two cases collection_type_source and collection_type right?
-            tree = UnitializedTree(collection_type_descriptions.for_type_description("list"))  # list is obviously wrong...
+        structured_like = tool_output.structure.structured_like
+        collection_type = tool_output.structure.collection_type
+        if structured_like:
+            tree = get_sliced_input_collection_structure(structured_like)
+            if collection_type and tree.collection_type_description.collection_type != collection_type:
+                # See tool paired_collection_map_over_structured_like - type should
+                # override structured_like if they disagree.
+                tree = UnitializedTree(collection_type_descriptions.for_collection_type(collection_type))
         else:
-            structured_like = tool_output.structure.structured_like
-            if structured_like:
-                collection_type = get_sliced_input_collection_type(structured_like)
-            else:
-                collection_type = tool_output.structure.collection_type
-            tree = UnitializedTree(collection_type)
+            # Can't pre-compute the structure in this case, see if we can find a collection type.
+            if collection_type is None and tool_output.structure.collection_type_source:
+                collection_type = get_sliced_input_collection_structure(tool_output.structure.collection_type_source).collection_type_description.collection_type
 
+            if not collection_type:
+                raise Exception("Failed to determine collection type for mapping over output %s" % tool_output.name)
+
+            tree = UnitializedTree(collection_type_descriptions.for_collection_type(collection_type))
+
+    if not tree.children_known and tree.collection_type_description.collection_type == "paired":
+        # TODO: We don't need to return unitializedtree for pairs I think, we should build
+        # a paired tree for the known structure here.
+        pass
     return tree
 
 

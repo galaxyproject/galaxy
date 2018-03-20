@@ -50,10 +50,8 @@ class Amos(data.Text):
           }
           }
         """
-        isAmos = False
-        try:
-            fh = open(filename)
-            while not isAmos:
+        with open(filename) as fh:
+            while True:
                 line = fh.readline()
                 if not line:
                     break  # EOF
@@ -61,11 +59,8 @@ class Amos(data.Text):
                 if line:  # first non-empty line
                     if line.startswith('{'):
                         if re.match(r'{(RED|CTG|TLE)$', line):
-                            isAmos = True
-            fh.close()
-        except Exception:
-            pass
-        return isAmos
+                            return True
+        return False
 
 
 class Sequences(sequence.Fasta):
@@ -84,8 +79,7 @@ class Sequences(sequence.Fasta):
           CGACGAATGACAGGTCACGAATTTGGCGGGGATTA
         """
 
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -102,9 +96,6 @@ class Sequences(sequence.Fasta):
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a fasta header
-            fh.close()
-        except Exception:
-            pass
         return False
 
 
@@ -122,8 +113,7 @@ class Roadmaps(data.Text):
           ...
         """
 
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -139,9 +129,6 @@ class Roadmaps(data.Text):
                     return True
                 else:
                     break  # we found a non-empty line, but it's not a fasta header
-            fh.close()
-        except Exception:
-            pass
         return False
 
 
@@ -186,9 +173,8 @@ class Velvet(Html):
         try:
             efp = dataset.extra_files_path
             log_path = os.path.join(efp, 'Log')
-            f = open(log_path, 'r')
-            log_content = f.read(1000)
-            f.close()
+            with open(log_path, 'r') as f:
+                log_content = f.read(1000)
             log_msg = re.sub('/\S*/', '', log_content)
             log.debug("Velveth log info  %s" % log_msg)
             paired_end_reads = re.search('-(short|long)Paired', log_msg) is not None

@@ -135,6 +135,54 @@ class ToolsTestCase(api.ApiTestCase):
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
         return tool_info
 
+    @skip_without_tool("composite_output")
+    def test_test_data_filepath_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output", admin=True)
+        assert test_data_response.status_code == 404, test_data_response.json()
+
+    @skip_without_tool("composite_output")
+    def test_test_data_admin_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
+        assert test_data_response.status_code == 403, test_data_response.json()
+
+    @skip_without_tool("composite_output")
+    def test_test_data_composite_output(self):
+        test_data_response = self._get("tools/%s/test_data" % "composite_output")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 1
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 1, test_case
+        # input0 = next(iter(test_case["inputs"].values()))
+
+    @skip_without_tool("collection_two_paired")
+    def test_test_data_collection_two_paired(self):
+        test_data_response = self._get("tools/%s/test_data" % "collection_two_paired")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 2
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 3, test_case
+
+    @skip_without_tool("collection_nested_test")
+    def test_test_data_collection_nested(self):
+        test_data_response = self._get("tools/%s/test_data" % "collection_nested_test")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 2
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 1, test_case
+
+    @skip_without_tool("simple_constructs_y")
+    def test_test_data_yaml_tools(self):
+        test_data_response = self._get("tools/%s/test_data" % "simple_constructs_y")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 3
+
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
             hdca_id = self.__build_pair(history_id, ["123", "456"])
@@ -787,6 +835,22 @@ class ToolsTestCase(api.ApiTestCase):
         assert output1_content.startswith("chr1")
         assert output2_content.startswith("chr1")
 
+    @skip_without_tool("collection_creates_dynamic_list_of_pairs")
+    def test_map_over_with_discovered_output_collection_elements(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
+            inputs = {
+                "input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}
+            }
+            create = self._run('collection_creates_dynamic_list_of_pairs', history_id, inputs).json()
+            implicit_collections = create['implicit_collections']
+            self.assertEquals(len(implicit_collections), 1)
+            self.assertEquals(implicit_collections[0]['collection_type'], 'list:list:paired')
+            self.assertEquals(implicit_collections[0]['elements'][0]['object']['element_count'], None)
+            self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
+            hdca = self._get("histories/%s/contents/dataset_collections/%s" % (history_id, implicit_collections[0]['id'])).json()
+            self.assertEquals(hdca['elements'][0]['object']['elements'][0]['object']['elements'][0]['element_identifier'], 'forward')
+
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed"), "r").read()
         bed2_contents = open(self.get_filename("2.bed"), "r").read()
@@ -1246,6 +1310,44 @@ class ToolsTestCase(api.ApiTestCase):
         # TODO: Fix this error checking once switch over to new API decorator
         # on server.
         assert run_response.status_code >= 400
+
+    @skip_without_tool("__FILTER_FROM_FILE__")
+    def test_map_over_collection_structured_like(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "input": {'values': [dict(src="hdca", id=hdca_id)]},
+                "how|filter_source": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
+            }
+            self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            history_contents = self.dataset_populator._get_contents_request(history_id).json()
+            # We should have a final collection count of 3 (2 nested collections, plus the input collection)
+            new_collections = len([c for c in history_contents if c['history_content_type'] == 'dataset_collection']) - 1
+            assert new_collections == 2, "Expected to generate 4 new, filtered collections, but got %d collections" % new_collections
+            filtered_collection = history_contents[7]
+            assert filtered_collection['collection_type'] == 'list:list', filtered_collection
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_collection['hid'])
+            assert collection_details['element_count'] == 2
+            first_collection_level = collection_details['elements'][0]
+            assert first_collection_level['element_type'] == 'dataset_collection'
+            second_collection_level = first_collection_level['object']
+            assert second_collection_level['collection_type'] == 'list'
+            assert second_collection_level['elements'][0]['element_type'] == 'hda'
+
+    @skip_without_tool("collection_type_source")
+    def test_map_over_collection_type_source(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "input_collect": {'values': [dict(src="hdca", id=hdca_id)]},
+                "header": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
+            }
+            self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
+            assert collection_details['elements'][0]['object']['elements'][0]['element_type'] == 'hda'
 
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):

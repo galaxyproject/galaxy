@@ -108,9 +108,10 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
     webapp.add_client_route('/openids/list')
+    webapp.add_client_route('/visualizations/dataset_id={dataset_id}')
+    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
-    webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
@@ -122,6 +123,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
     webapp.add_client_route('/histories/permissions')
+    webapp.add_client_route('/histories/view')
+    webapp.add_client_route('/histories/show_structure')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -253,6 +256,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
+    webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
     webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
@@ -268,9 +272,13 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect('/api/tools/fetch', action='fetch', controller='tools', conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/all_requirements', action='all_requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/build', action='build', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
+    webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data_path', action='test_data_path', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
@@ -609,29 +617,17 @@ def populate_api_routes(webapp, app):
     # ===== WEBHOOKS API =====
     # ========================
 
-    webapp.mapper.connect('get_all',
+    webapp.mapper.connect('get_all_webhooks',
                           '/api/webhooks',
                           controller='webhooks',
-                          action='get_all',
-                          conditions=dict(method=["GET"]))
+                          action='all_webhooks',
+                          conditions=dict(method=['GET']))
 
-    webapp.mapper.connect('get_random',
-                          '/api/webhooks/{webhook_type}',
+    webapp.mapper.connect('get_webhook_data',
+                          '/api/webhooks/{webhook_id}/data',
                           controller='webhooks',
-                          action='get_random',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_all_by_type',
-                          '/api/webhooks/{webhook_type}/all',
-                          controller='webhooks',
-                          action='get_all_by_type',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('get_data',
-                          '/api/webhooks/{webhook_name}/get_data',
-                          controller='webhooks',
-                          action='get_data',
-                          conditions=dict(method=["GET"]))
+                          action='webhook_data',
+                          conditions=dict(method=['GET']))
 
     # =======================
     # ===== LIBRARY API =====
@@ -1007,9 +1003,10 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # If sentry logging is enabled, log here before propogating up to
     # the error middleware
     sentry_dsn = conf.get('sentry_dsn', None)
+    sentry_sloreq = float(conf.get('sentry_sloreq_threshold', 0))
     if sentry_dsn:
         from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn,))
+        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn, sentry_sloreq))
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -1052,6 +1049,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
+    if asbool(conf.get('enable_per_request_sql_debugging', False)):
+        from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
+        app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
 
 

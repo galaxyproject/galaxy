@@ -126,6 +126,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_per_request_sql_debugging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable's a per request sql debugging option. If this is set to
+    true, append ?sql_debug=1 to web request URLs to enable detailed
+    logging on the backend of SQL queries generated during that
+    request. This is useful for debugging slow endpoints during
+    development.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``install_database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,7 +332,7 @@
 :Description:
     conda channels to enable by default (http://conda.pydata.org/docs
     /custom-channels.html)
-:Default: ``iuc,bioconda,conda-forge,defaults,r``
+:Default: ``iuc,bioconda,conda-forge,defaults``
 :Type: str
 
 
@@ -1180,6 +1194,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``default_locale``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default localization for Galaxy UI. Allowed values are listed at
+    the end of client/galaxy/scripts/nls/locale.js. With the default
+    value (auto), the locale will be automatically adjusted to the
+    user's navigator language. Users can override this settings in
+    their user preferences if the localization settings are enabled in
+    user_preferences_extra_conf.yml
+:Default: ``auto``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1612,6 +1641,18 @@
     nginx documentation for the corresponding nginx configuration.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2069,6 +2110,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_sloreq_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sentry slow request logging.  Requests slower than the threshold
+    indicated below will be sent as events to the configured Sentry
+    server (above, sentry_dsn).  A value of '0' is disabled.  For
+    example, you would set this to .005 to log all queries taking
+    longer than 5 milliseconds.
+:Default: ``0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -2394,6 +2449,22 @@
     Set maximum size of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
 
 
 ~~~~~~~~~~~~~
@@ -3198,12 +3269,14 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    If (for example) you run on a cluster and your datasets (by
-    default, database/files/) are mounted read-only, this option will
-    override tool output paths to write outputs to the working
-    directory instead, and the job manager will move the outputs to
-    their proper place in the dataset directory on the Galaxy server
-    after the job completes.
+    This option will override tool output paths to write outputs to
+    the job working directory (instead of to the file_path) and the
+    job manager will move the outputs to their proper place in the
+    dataset directory on the Galaxy server after the job completes.
+    This is necessary (for example) if jobs run on a cluster and
+    datasets can not be created by the user running the jobs (e.g. if
+    the filesystem is mounted read-only or the jobs are run by a
+    different user than the galaxy user).
 :Default: ``false``
 :Type: bool
 
@@ -3263,8 +3336,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used to run the
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
 :Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
 :Type: str
@@ -3276,8 +3349,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used to kill
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
 :Default: ``sudo -E scripts/drmaa_external_killer.py``
 :Type: str
@@ -3289,8 +3362,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) this script is used transfer
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
 :Default: ``sudo -E scripts/external_chown_script.py``
@@ -3303,8 +3376,8 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://galaxyproject.org/admin/config/performance/cluster
-    /#submitting-jobs-as-the-real-user) Galaxy can extract the user
+    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    #submitting-jobs-as-the-real-user) Galaxy can extract the user
     name from the email address (actually the local-part before the @)
     or the username which are both stored in the Galaxy data base. The
     latter option is particularly useful for installations that get

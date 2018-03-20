@@ -180,7 +180,7 @@ var Node = Backbone.Model.extend({
         $(element).removeClass("toolForm-active");
     },
     set_tool_version: function() {
-        if (this.config_form) {
+        if (this.type === "tool" && this.config_form) {
             this.tool_version = this.config_form.version;
             this.content_id = this.config_form.id;
         }

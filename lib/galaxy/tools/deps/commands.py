@@ -1,19 +1,34 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
+import logging
 import os
 import subprocess
 import sys as _sys
 
+import six
 from six.moves import shlex_quote
 
-from galaxy.util import which
+from galaxy.util import (
+    unicodify,
+    which
+)
+
+log = logging.getLogger(__name__)
 
 STDOUT_INDICATOR = "-"
 
 
 def redirecting_io(sys=_sys):
-    """Predicate to determine if we are redicting I/O in process."""
+    """Predicate to determine if we are redicting stdout in process."""
     assert sys is not None
-    return not hasattr(sys.stdout, "fileno")
+    try:
+        # Need to explicitly call fileno() because sys.stdout could be a
+        # io.StringIO object, which has a fileno() method but only raises an
+        # io.UnsupportedOperation exception
+        sys.stdout.fileno()
+    except Exception:
+        return True
+    else:
+        return False
 
 
 def redirect_aware_commmunicate(p, sys=_sys):
@@ -22,9 +37,15 @@ def redirect_aware_commmunicate(p, sys=_sys):
     out, err = p.communicate()
     if redirecting_io(sys=sys):
         if out:
+            # We don't unicodify in Python2 because sys.stdout may be a
+            # cStringIO.StringIO object, which does not accept Unicode strings
+            if not six.PY2:
+                out = unicodify(out)
             sys.stdout.write(out)
             out = None
         if err:
+            if not six.PY2:
+                err = unicodify(err)
             sys.stderr.write(err)
             err = None
     return out, err
@@ -50,9 +71,10 @@ def shell_process(cmds, env=None, **kwds):
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds = dict(
-        shell=True,
-    )
+    popen_kwds = dict()
+    if isinstance(cmds, six.string_types):
+        log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
+        popen_kwds['shell'] = True
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
         popen_kwds["stdout"] = subprocess.PIPE
     if kwds.get("stderr", None) is None and redirecting_io(sys=sys):
@@ -109,13 +131,13 @@ def download_command(url, to=STDOUT_INDICATOR, quote_url=False):
     if which("wget"):
         download_cmd = ["wget", "-q"]
         if to == STDOUT_INDICATOR:
-            download_cmd += ["-O", STDOUT_INDICATOR, url]
+            download_cmd.extend(["-O", STDOUT_INDICATOR, url])
         else:
-            download_cmd += ["--recursive", "-O", to, url]
+            download_cmd.extend(["--recursive", "-O", to, url])
     else:
         download_cmd = ["curl", "-L", url]
         if to != STDOUT_INDICATOR:
-            download_cmd += ["-o", to]
+            download_cmd.extend(["-o", to])
     return download_cmd
 
 

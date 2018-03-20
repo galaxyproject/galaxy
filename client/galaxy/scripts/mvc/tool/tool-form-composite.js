@@ -25,18 +25,6 @@ var View = Backbone.View.extend({
         $("body").append(this.$el);
         this._configure();
         this.render();
-        $(window).resize(() => {
-            self._refresh();
-        });
-    },
-
-    /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
-    _refresh: function(step_index) {
-        var margin =
-            _.reduce(this.$el.children(), (memo, child) => memo + $(child).outerHeight(), 0) -
-            this.$steps.height() +
-            90;
-        this.$steps.css("height", $(window).height() - margin);
     },
 
     /** Configures form/step options for each workflow step */
@@ -432,7 +420,6 @@ var View = Backbone.View.extend({
             }
             self.forms[step.index] = form;
             self._append(self.$steps, form.$el);
-            self._refresh();
             step.needs_refresh && self._refreshStep(step);
             form.portlet[!self.show_progress ? "enable" : "disable"]();
             self.show_progress &&
@@ -598,7 +585,7 @@ var View = Backbone.View.extend({
                     if ($.isArray(response) && response.length > 0) {
                         self.$el.append($("<div/>", { id: "webhook-view" }));
                         var WebhookApp = new Webhooks.WebhookView({
-                            urlRoot: `${Galaxy.root}api/webhooks/workflow`,
+                            type: "workflow",
                             toolId: job_def.tool_id,
                             toolVersion: job_def.tool_version
                         });

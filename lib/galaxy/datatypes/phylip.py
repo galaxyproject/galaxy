@@ -7,12 +7,10 @@ Created on January. 05, 2018
 @githuborganization: C3BI
 Phylip datatype sniffer
 """
-
-from metadata import MetadataElement
-
 from galaxy import util
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.util import nice_size
+from .metadata import MetadataElement
 
 
 class Phylip(Text):

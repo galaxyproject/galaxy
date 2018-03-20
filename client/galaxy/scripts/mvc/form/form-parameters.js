@@ -224,9 +224,7 @@ export default Backbone.Model.extend({
         var self = this;
         return new SelectGenomeSpace.View({
             id: `field-${input_def.id}`,
-            onchange: function() {
-                self.app.trigger("change");
-            }
+            onchange: input_def.onchange
         });
     },
 

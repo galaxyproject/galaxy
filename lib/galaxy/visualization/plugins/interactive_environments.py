@@ -6,6 +6,7 @@ import shlex
 import stat
 import string
 import tempfile
+import time
 import uuid
 from itertools import product
 from subprocess import PIPE, Popen
@@ -442,7 +443,20 @@ class InteractiveEnvironmentRequest(object):
         """
         run_args = self.container_run_args(image, env_override, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
-        container_port = self._find_port_mapping(container.ports)
+        attempt = 0
+        container_ports = container.ports
+        while container_ports is None and attempt < 30:
+            # TODO: it would be better to do this in /interactive_environments/ready so the client doesn't block here,
+            # but _find_port_mapping needs certain non-persisted data (the port configured to be published) and the
+            # proxy manager doesn't have an update method, so that'd require bigger changes than I have the time for
+            # right now
+            attempt += 1
+            log.warning("Sleeping for 2 seconds while waiting for container %s ports", container.id)
+            time.sleep(2)
+            container_ports = container.ports
+        if container_ports is None:
+            raise Exception("Failed to determine ports for container '%s' after 30 attempts" % container.id)
+        container_port = self._find_port_mapping(container_ports)
         log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
         self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
             self.trans,

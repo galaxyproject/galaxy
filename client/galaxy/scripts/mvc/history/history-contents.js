@@ -5,11 +5,13 @@ import HISTORY_PREFS from "mvc/history/history-preferences";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
+import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
 
-var limitPerPageDefault = 500;
-try {
-    limitPerPageDefault = localStorage.getItem("historyContentsLimitPerPageDefault") || limitPerPageDefault;
-} catch (err) {}
+/* global Galaxy */
+/* global jQuery */
+
+const limitPerPageDefault = window.localStorage.getItem("historyContentsLimitPerPageDefault") || 500;
 
 //==============================================================================
 var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
@@ -72,7 +74,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             if (historyContent.attributes.history_content_type === "dataset_collection") {
                 var jobSourceType = historyContent.attributes.job_source_type;
                 var jobSourceId = historyContent.attributes.job_source_id;
-                if (jobSourceType) {
+                if (jobSourceType && this.jobStateSummariesCollection) {
                     this.jobStateSummariesCollection.add({
                         id: jobSourceId,
                         model: jobSourceType,
@@ -314,15 +316,14 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     /** fetch all the visible==false contents of this collection */
     fetchHidden: function(options) {
         options = options || {};
-        var self = this;
         options.filters = _.extend(options.filters, {
             visible: false
         });
         options.remove = false;
 
-        self.trigger("fetching-hidden", self);
-        return self.fetch(options).always(() => {
-            self.trigger("fetching-hidden-done", self);
+        this.trigger("fetching-hidden", this);
+        return this.fetch(options).always(() => {
+            this.trigger("fetching-hidden-done", this);
         });
     },
 
@@ -338,17 +339,16 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     // TODO: to batch
     /** helper that fetches using filterParams then calls save on each fetched using updateWhat as the save params */
     _filterAndUpdate: function(filterParams, updateWhat) {
-        var self = this;
-        var idAttribute = self.model.prototype.idAttribute;
+        var idAttribute = this.model.prototype.idAttribute;
         var updateArgs = [updateWhat];
 
-        return self.fetch({ filters: filterParams, remove: false }).then(fetched => {
+        return this.fetch({ filters: filterParams, remove: false }).then(fetched => {
             // convert filtered json array to model array
             fetched = fetched.reduce((modelArray, currJson, i) => {
-                var model = self.get(currJson[idAttribute]);
+                var model = this.get(currJson[idAttribute]);
                 return model ? modelArray.concat(model) : modelArray;
             }, []);
-            return self.ajaxQueue("save", updateArgs, fetched);
+            return this.ajaxQueue("save", updateArgs, fetched);
         });
     },
 
@@ -366,43 +366,44 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         ).deferred;
     },
 
+    _recursivelyFetch: function(options, detailKeys, deferred, limit, offset) {
+        offset = offset || 0;
+        var _options = _.extend(_.clone(options), {
+            view: "summary",
+            keys: detailKeys,
+            limit: limit,
+            offset: offset,
+            reset: offset === 0,
+            remove: false
+        });
+
+        _.defer(() => {
+            this.fetch
+                .call(this, _options)
+                .fail(deferred.reject)
+                .done(response => {
+                    deferred.notify(response, limit, offset);
+                    if (response.length !== limit) {
+                        this.allFetched = true;
+                        deferred.resolve(response, limit, offset);
+                    } else {
+                        this._recursivelyFetch(options, detailKeys, deferred, limit, offset + limit);
+                    }
+                });
+        });
+    },
+
     /** fetch contents' details in batches of limitPerCall - note: only get searchable details here */
     progressivelyFetchDetails: function(options) {
-        options = options || {};
-        var deferred = jQuery.Deferred();
-        var self = this;
-        var limit = options.limitPerCall || self.limitPerProgressiveFetch;
         // TODO: only fetch tags and annotations if specifically requested
-        var searchAttributes = HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes;
-        var detailKeys = searchAttributes.join(",");
-
-        function _recursivelyFetch(offset) {
-            offset = offset || 0;
-            var _options = _.extend(_.clone(options), {
-                view: "summary",
-                keys: detailKeys,
-                limit: limit,
-                offset: offset,
-                reset: offset === 0,
-                remove: false
-            });
-
-            _.defer(() => {
-                self.fetch
-                    .call(self, _options)
-                    .fail(deferred.reject)
-                    .done(response => {
-                        deferred.notify(response, limit, offset);
-                        if (response.length !== limit) {
-                            self.allFetched = true;
-                            deferred.resolve(response, limit, offset);
-                        } else {
-                            _recursivelyFetch(offset + limit);
-                        }
-                    });
-            });
-        }
-        _recursivelyFetch();
+        options = options || {};
+        let deferred = jQuery.Deferred();
+        this._recursivelyFetch(
+            options,
+            HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes.join(","),
+            deferred,
+            options.limitPerCall || this.limitPerProgressiveFetch
+        );
         return deferred;
     },
 

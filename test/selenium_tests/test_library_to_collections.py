@@ -30,9 +30,9 @@ class LibraryToCollectionsTestCase(SharedStateSeleniumTestCase):
     def setup_shared_state(self):
         self.admin_login()
         self.perform_upload(self.get_filename("1.bed"))
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(1, allowed_force_refreshes=1)
         self.perform_upload(self.get_filename("2.bed"))
-        self.wait_for_history()
+        self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
 
         self.name = self._get_random_name(prefix="testcontents")
 

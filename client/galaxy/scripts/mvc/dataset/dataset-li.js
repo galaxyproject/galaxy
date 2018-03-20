@@ -302,7 +302,7 @@ var DatasetListItemView = _super.extend(
             )}">
                         <span class="fa fa-floppy-o"></span>
                     </a>
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                    <ul class="dropdown-menu" role="menu">
                         <li>
                             <a href="${urls.download}">
                                 ${_l("Download dataset")}

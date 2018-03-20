@@ -294,6 +294,13 @@
                 width: 100px;
                 height: 86px;
             }
+            .ui-thumbnails-icon {
+                width: 100px;
+                height: 86px;
+                font-size: 4em;
+                padding: 20px 26px;
+                color: lighten(#25537b, 10%);
+            }
             .ui-thumbnails-description-title {
                 font-weight: bold;
             }
@@ -301,7 +308,18 @@
                 word-wrap: break-word;
             }
         }
-        .ui-thumbnail-current {
+        .ui-thumbnails-item:hover {
+            .ui-thumbnails-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-title {
+                text-decoration: underline;
+            }
+            .ui-thumbnails-description-text {
+                text-decoration: underline;
+            }
+        }
+        .ui-thumbnail-current-highlight {
             border-color:#66afe9;
             background-color:#EEEEFF;
             outline:0;
@@ -468,6 +486,9 @@
 
 .ui-form-composite {
     max-width: 900px;
+    height: 100%;
+    flex-direction: column;
+    display: flex;
     .ui-form-header {
         &:extend(h3);
         margin-top: 0px;
@@ -888,10 +909,6 @@
         float: right;
         width: ~'calc(100% - 76px)';
     }
-    .ui-gs-token-textbox {
-        float: right;
-        width: ~'calc(100% - 76px)';
-    }
     .ui-gs-browse-button {
         float: left;
         .ui-button-icon {
@@ -899,15 +916,9 @@
             margin-right: 5px;
         }
     }
-    .ui-gs-token-label {
-        margin-top: 5px;            
-        margin-left: 32px;
-        margin-right: 5px;
-        float: left;
-    }
-    .ui-gs-token-field {
-        clear: both;
-        padding-top: 5px;
+    .ui-gs-browse-field {
+        height: @input-height-base;
+        line-height: @line-height-base;
     }
 }
 

@@ -2035,6 +2035,12 @@ class DatasetInstance(object):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
 
+    def link_to(self, path):
+        self.file_name = os.path.abspath(path)
+        # Since we are not copying the file into Galaxy's managed
+        # default file location, the dataset should never be purgable.
+        self.dataset.purgable = False
+
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
@@ -2105,14 +2111,6 @@ class DatasetInstance(object):
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data(self)
-
-    def write_from_stream(self, stream):
-        """Writes data from a stream"""
-        self.datatype.write_from_stream(self, stream)
-
-    def set_raw_data(self, data):
-        """Saves the data on the disc"""
-        self.datatype.set_raw_data(self, data)
 
     def get_mime(self):
         """Returns the mime type of the data"""
@@ -2455,7 +2453,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None):
+    def copy(self, parent_id=None, copy_tags=None):
         """
         Create a copy of this HDA.
         """
@@ -2474,7 +2472,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         copied_from_history_dataset_association=self)
         # update init non-keywords as well
         hda.purged = self.purged
-
+        hda.copy_tags_to(copy_tags)
         object_session(self).add(hda)
         object_session(self).flush()
         hda.set_size()
@@ -2485,6 +2483,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             hda.set_peek()
         object_session(self).flush()
         return hda
+
+    def copy_tags_to(self, copy_tags=None):
+        if copy_tags is not None:
+            for tag in copy_tags.values():
+                copied_tag = tag.copy(cls=HistoryDatasetAssociationTagAssociation)
+                self.tags.append(copied_tag)
 
     def copy_attributes(self, new_dataset):
         new_dataset.hid = self.hid
@@ -4069,7 +4073,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -4193,7 +4197,7 @@ class WorkflowInvocationStep(Dictifiable):
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     @property
     def jobs(self):
@@ -4563,7 +4567,7 @@ class TransferJob(object):
         self.params = params
 
 
-class Tag (object):
+class Tag(object):
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
         self.type = type
@@ -4574,7 +4578,7 @@ class Tag (object):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
 
 
-class ItemTagAssociation (Dictifiable):
+class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
 
@@ -4599,35 +4603,35 @@ class ItemTagAssociation (Dictifiable):
         return new_ta
 
 
-class HistoryTagAssociation (ItemTagAssociation):
+class HistoryTagAssociation(ItemTagAssociation):
     pass
 
 
-class DatasetTagAssociation (ItemTagAssociation):
+class DatasetTagAssociation(ItemTagAssociation):
     pass
 
 
-class HistoryDatasetAssociationTagAssociation (ItemTagAssociation):
+class HistoryDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class LibraryDatasetDatasetAssociationTagAssociation (ItemTagAssociation):
+class LibraryDatasetDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class PageTagAssociation (ItemTagAssociation):
+class PageTagAssociation(ItemTagAssociation):
     pass
 
 
-class WorkflowStepTagAssociation (ItemTagAssociation):
+class WorkflowStepTagAssociation(ItemTagAssociation):
     pass
 
 
-class StoredWorkflowTagAssociation (ItemTagAssociation):
+class StoredWorkflowTagAssociation(ItemTagAssociation):
     pass
 
 
-class VisualizationTagAssociation (ItemTagAssociation):
+class VisualizationTagAssociation(ItemTagAssociation):
     pass
 
 
@@ -4757,7 +4761,7 @@ class DataManagerJobAssociation(object):
         self.data_manager_id = data_manager_id
 
 
-class UserPreference (object):
+class UserPreference(object):
     def __init__(self, name=None, value=None):
         self.name = name
         self.value = value
