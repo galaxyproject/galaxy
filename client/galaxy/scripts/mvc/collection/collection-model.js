@@ -65,7 +65,7 @@ var DatasetCollectionElementMixin = {
         // instead of this.id.
         const object = attributes.object;
         let elementId = this.elementId;
-        if(object) {
+        if (object) {
             elementId = attributes.object.id;
             delete attributes.object.id;
         }
