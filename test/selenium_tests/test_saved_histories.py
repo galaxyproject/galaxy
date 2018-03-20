@@ -329,7 +329,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         for row in grid.find_elements_by_tag_name('tr'):
             td = row.find_elements_by_tag_name('td')
             if td[1].text == history_name:
-                tags_cell = td[3]
+                tags_cell = td[4]
                 break
 
         if tags_cell is None:

@@ -143,9 +143,8 @@ class Ipynb(Json):
         if to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext, **kwd)
         else:
-            ofile_handle = tempfile.NamedTemporaryFile(delete=False)
-            ofilename = ofile_handle.name
-            ofile_handle.close()
+            with tempfile.NamedTemporaryFile(delete=False) as ofile_handle:
+                ofilename = ofile_handle.name
             try:
                 cmd = ['jupyter', 'nbconvert', '--to', 'html', '--template', 'full', dataset.file_name, '--output', ofilename]
                 subprocess.check_call(cmd)
@@ -259,7 +258,7 @@ class Biom1(Json):
 class Obo(Text):
     """
         OBO file format description
-        http://www.geneontology.org/GO.format.obo-1_2.shtml
+        https://owlcollab.github.io/oboformat/doc/GO.format.obo-1_2.html
     """
     edam_data = "data_0582"
     edam_format = "format_2549"
@@ -410,13 +409,12 @@ class SnpEffDb(Text):
     def getSnpeffVersionFromFile(self, path):
         snpeff_version = None
         try:
-            fh = gzip.open(path, 'rb')
-            buf = fh.read(100)
-            lines = buf.splitlines()
-            m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
-            if m:
-                snpeff_version = m.groups()[0] + m.groups()[1]
-            fh.close()
+            with gzip.open(path, 'rb') as fh:
+                buf = fh.read(100)
+                lines = buf.splitlines()
+                m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
+                if m:
+                    snpeff_version = m.groups()[0] + m.groups()[1]
         except Exception:
             pass
         return snpeff_version
@@ -523,15 +521,13 @@ class SnpSiftDbNSFP(Text):
                     if fname.endswith('.gz'):
                         dataset.metadata.bgzip = fname
                         try:
-                            fh = gzip.open(os.path.join(efp, fname), 'r')
-                            buf = fh.read(5000)
-                            lines = buf.splitlines()
-                            headers = lines[0].split('\t')
-                            dataset.metadata.annotation = headers[4:]
+                            with gzip.open(os.path.join(efp, fname), 'r') as fh:
+                                buf = fh.read(5000)
+                                lines = buf.splitlines()
+                                headers = lines[0].split('\t')
+                                dataset.metadata.annotation = headers[4:]
                         except Exception as e:
                             log.warning("set_meta fname: %s  %s" % (fname, str(e)))
-                        finally:
-                            fh.close()
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)

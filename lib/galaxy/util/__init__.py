@@ -625,7 +625,7 @@ def in_directory(file, directory, local_path_module=os.path):
     >>> safe_dir = os.path.join(base_dir, "user")
     >>> os.mkdir(safe_dir)
     >>> good_file = os.path.join(safe_dir, "1")
-    >>> with open(good_file, "w") as f: f.write("hello")
+    >>> with open(good_file, "w") as f: _ = f.write("hello")
     >>> in_directory(good_file, safe_dir)
     True
     >>> in_directory("/other/file/is/here.txt", safe_dir)

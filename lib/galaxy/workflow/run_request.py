@@ -45,17 +45,17 @@ class WorkflowRunConfig(object):
     def __init__(self, target_history,
                  replacement_dict,
                  copy_inputs_to_history=False,
-                 inputs={},
-                 param_map={},
+                 inputs=None,
+                 param_map=None,
                  allow_tool_state_corrections=False,
                  use_cached_job=False,
-                 resource_params={}):
+                 resource_params=None):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
-        self.inputs = inputs
-        self.param_map = param_map
-        self.resource_params = resource_params
+        self.inputs = inputs or {}
+        self.param_map = param_map or {}
+        self.resource_params = resource_params or {}
         self.allow_tool_state_corrections = allow_tool_state_corrections
         self.use_cached_job = use_cached_job
 
@@ -171,7 +171,8 @@ def _flatten_step_params(param_dict, prefix=""):
     return new_params
 
 
-def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
+def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
+    param_keys = param_keys or []
     history_name = payload.get('new_history_name', None)
     history_id = payload.get('history_id', None)
     history_param = payload.get('history', None)

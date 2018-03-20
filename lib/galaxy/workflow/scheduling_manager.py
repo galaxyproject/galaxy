@@ -220,7 +220,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.app.application_stack.register_postfork_function(self.request_monitor.start)
 
 
-class WorkflowRequestMonitor(Monitors, object):
+class WorkflowRequestMonitor(Monitors):
 
     def __init__(self, app, workflow_scheduling_manager):
         self.app = app

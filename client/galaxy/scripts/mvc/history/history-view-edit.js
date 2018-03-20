@@ -275,7 +275,11 @@ var HistoryViewEdit = _super.extend(
                     func: function() {
                         if (confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))) {
                             var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
-                            panel.getSelectedModels().ajaxQueue(action);
+                            const historyContents = panel.getSelectedModels();
+                            const selectedDatasets = historyContents.filter(
+                                c => c.get("history_content_type") == "dataset"
+                            );
+                            historyContents.ajaxQueue(action, {}, selectedDatasets);
                         }
                     }
                 });

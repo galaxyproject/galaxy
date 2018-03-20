@@ -32,7 +32,7 @@ var CollectionView = _super.extend(
         initialize: function(attributes) {
             _super.prototype.initialize.call(this, attributes);
             this.linkTarget = attributes.linkTarget || "_blank";
-
+            this.dragItems = true;
             this.hasUser = attributes.hasUser;
             /** A stack of panels that currently cover or hide this panel */
             this.panelStack = [];

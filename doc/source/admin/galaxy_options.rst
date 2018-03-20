@@ -126,6 +126,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_per_request_sql_debugging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable's a per request sql debugging option. If this is set to
+    true, append ?sql_debug=1 to web request URLs to enable detailed
+    logging on the backend of SQL queries generated during that
+    request. This is useful for debugging slow endpoints during
+    development.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``install_database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1629,6 +1643,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``dynamic_proxy_manage``
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2423,6 +2449,22 @@
     Set maximum size of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
 
 
 ~~~~~~~~~~~~~

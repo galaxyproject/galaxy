@@ -547,7 +547,7 @@ class AsynchronousJobState(JobState):
             self.cleanup_file_attributes.append(attribute)
 
 
-class AsynchronousJobRunner(Monitors, BaseJobRunner):
+class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
     thread to monitor the state of asynchronous jobs and submitting those jobs

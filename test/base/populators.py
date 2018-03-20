@@ -46,7 +46,7 @@ def flakey(method):
 def skip_without_tool(tool_id):
     """Decorate an API test method as requiring a specific tool.
 
-    Have test framework skip the test case is the tool is unavailable.
+    Have test framework skip the test case if the tool is unavailable.
     """
 
     def method_wrapper(method):
@@ -71,7 +71,7 @@ def skip_without_tool(tool_id):
 def skip_without_datatype(extension):
     """Decorate an API test method as requiring a specific datatype.
 
-    Have test framework skip the test case is the tool is unavailable.
+    Have test framework skip the test case if the datatype is unavailable.
     """
 
     def has_datatype(api_test_case):
@@ -132,7 +132,7 @@ class TestsDatasets:
 
 class BaseDatasetPopulator(object):
     """ Abstract description of API operations optimized for testing
-    Galaxy - implementations must implement _get and _post.
+    Galaxy - implementations must implement _get, _post and _delete.
     """
 
     def new_dataset(self, history_id, content=None, wait=False, **kwds):
@@ -148,17 +148,33 @@ class BaseDatasetPopulator(object):
             self.wait_for_tool_run(history_id, run_response, assert_ok=kwds.get('assert_ok', True))
         return run_response
 
+    def fetch(self, payload, assert_ok=True, timeout=DEFAULT_TIMEOUT):
+        tool_response = self._post("tools/fetch", data=payload)
+        if assert_ok:
+            job = self.check_run(tool_response)
+            self.wait_for_job(job["id"], timeout=timeout)
+
+            job = tool_response.json()["jobs"][0]
+            details = self.get_job_details(job["id"]).json()
+            assert details["state"] == "ok", details
+
+        return tool_response
+
     def wait_for_tool_run(self, history_id, run_response, timeout=DEFAULT_TIMEOUT, assert_ok=True):
-        run = run_response.json()
-        assert run_response.status_code == 200, run
-        job = run["jobs"][0]
+        job = self.check_run(run_response)
         self.wait_for_job(job["id"], timeout=timeout)
         self.wait_for_history(history_id, assert_ok=assert_ok, timeout=timeout)
         return run_response
 
+    def check_run(self, run_response):
+        run = run_response.json()
+        assert run_response.status_code == 200, run
+        job = run["jobs"][0]
+        return job
+
     def wait_for_history(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         try:
-            return wait_on_state(lambda: self._get("histories/%s" % history_id), assert_ok=assert_ok, timeout=timeout)
+            return wait_on_state(lambda: self._get("histories/%s" % history_id), desc="history state", assert_ok=assert_ok, timeout=timeout)
         except AssertionError:
             self._summarize_history(history_id)
             raise
@@ -166,22 +182,32 @@ class BaseDatasetPopulator(object):
     def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
         query_params = {"history_id": history_id}
 
-        def has_active_jobs():
+        def get_jobs():
             jobs_response = self._get("jobs", query_params)
             assert jobs_response.status_code == 200
-            active_jobs = [j for j in jobs_response.json() if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+            return jobs_response.json()
+
+        def has_active_jobs():
+            jobs = get_jobs()
+            active_jobs = [j for j in jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
 
             if len(active_jobs) == 0:
                 return True
             else:
                 return None
 
-        wait_on(has_active_jobs, "active jobs", timeout=timeout)
+        try:
+            wait_on(has_active_jobs, "active jobs", timeout=timeout)
+        except TimeoutAssertionError as e:
+            jobs = get_jobs()
+            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e.message)
+            raise TimeoutAssertionError(message)
+
         if assert_ok:
             return self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
 
     def wait_for_job(self, job_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
-        return wait_on_state(lambda: self.get_job_details(job_id), assert_ok=assert_ok, timeout=timeout)
+        return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
@@ -266,8 +292,8 @@ class BaseDatasetPopulator(object):
         else:
             return tool_response
 
-    def tools_post(self, payload):
-        tool_response = self._post("tools", data=payload)
+    def tools_post(self, payload, url="tools"):
+        tool_response = self._post(url, data=payload)
         return tool_response
 
     def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
@@ -362,7 +388,7 @@ class DatasetPopulator(BaseDatasetPopulator):
         self.galaxy_interactor._summarize_history(history_id)
 
     def wait_for_dataset(self, history_id, dataset_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
-        return wait_on_state(lambda: self._get("histories/%s/contents/%s" % (history_id, dataset_id)), assert_ok=assert_ok, timeout=timeout)
+        return wait_on_state(lambda: self._get("histories/%s/contents/%s" % (history_id, dataset_id)), desc="dataset state", assert_ok=assert_ok, timeout=timeout)
 
 
 class BaseWorkflowPopulator(object):
@@ -411,7 +437,7 @@ class BaseWorkflowPopulator(object):
 
     def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
-        return wait_on_state(lambda: self._get(url), timeout=timeout)
+        return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
 
     def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
         """ Wait for a workflow invocation to completely schedule and then history
@@ -463,6 +489,11 @@ class LibraryPopulator(object):
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
+        self.dataset_populator = DatasetPopulator(galaxy_interactor)
+
+    def get_libraries(self):
+        get_response = self.galaxy_interactor.get("libraries")
+        return get_response.json()
 
     def new_private_library(self, name):
         library = self.new_library(name)
@@ -514,6 +545,8 @@ class LibraryPopulator(object):
             "file_type": kwds.get("file_type", "auto"),
             "db_key": kwds.get("db_key", "?"),
         }
+        if kwds.get("link_data"):
+            create_data["link_data_only"] = "link_to_files"
 
         if upload_option == "upload_file":
             files = {
@@ -532,11 +565,13 @@ class LibraryPopulator(object):
         library = self.new_private_library(name)
         payload, files = self.create_dataset_request(library, **create_dataset_kwds)
         dataset = self.raw_library_contents_create(library["id"], payload, files=files).json()[0]
+        return self.wait_on_library_dataset(library, dataset)
 
+    def wait_on_library_dataset(self, library, dataset):
         def show():
             return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
 
-        wait_on_state(show, timeout=DEFAULT_TIMEOUT)
+        wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
     def raw_library_contents_create(self, library_id, payload, files={}):
@@ -562,6 +597,24 @@ class LibraryPopulator(object):
             library_dataset = show().json()
 
         return library, library_dataset
+
+    def get_library_contents_with_path(self, library_id, path):
+        all_contents_response = self.galaxy_interactor.get("libraries/%s/contents" % library_id)
+        api_asserts.assert_status_code_is(all_contents_response, 200)
+        all_contents = all_contents_response.json()
+        matching = [c for c in all_contents if c["name"] == path]
+        if len(matching) == 0:
+            raise Exception("Failed to find library contents with path [%s], contents are %s" % (path, all_contents))
+        get_response = self.galaxy_interactor.get(matching[0]["url"])
+        api_asserts.assert_status_code_is(get_response, 200)
+        return get_response.json()
+
+    def setup_fetch_to_folder(self, test_name):
+        history_id = self.dataset_populator.new_history()
+        library = self.new_private_library(test_name)
+        folder_id = library["root_folder_id"][1:]
+        destination = {"type": "library_folder", "library_folder_id": folder_id}
+        return history_id, library, destination
 
 
 class BaseDatasetCollectionPopulator(object):
@@ -739,7 +792,7 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
-def wait_on_state(state_func, skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
@@ -750,7 +803,11 @@ def wait_on_state(state_func, skip_states=["running", "queued", "new", "ready"],
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
-    return wait_on(get_state, desc="state", timeout=timeout)
+    try:
+        return wait_on(get_state, desc=desc, timeout=timeout)
+    except TimeoutAssertionError as e:
+        response = state_func()
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e.message, response.json()))
 
 
 class GiPostGetMixin:
@@ -815,9 +872,15 @@ def wait_on(function, desc, timeout=DEFAULT_TIMEOUT):
             timeout_message = "Timed out after %s seconds waiting on %s." % (
                 total_wait, desc
             )
-            assert False, timeout_message
+            raise TimeoutAssertionError(timeout_message)
         iteration += 1
         value = function()
         if value is not None:
             return value
         time.sleep(delta)
+
+
+class TimeoutAssertionError(AssertionError):
+
+    def __init__(self, message):
+        super(TimeoutAssertionError, self).__init__(message)

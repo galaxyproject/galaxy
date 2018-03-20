@@ -170,9 +170,8 @@ class SDF(GenericMolFile):
         def _write_part_sdf_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             sdf_records = _read_sdf_records(input_files[0])
@@ -259,9 +258,8 @@ class MOL2(GenericMolFile):
         def _write_part_mol2_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             mol2_records = _read_mol2_records(input_files[0])
@@ -332,9 +330,8 @@ class FPS(GenericMolFile):
         def _write_part_fingerprint_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             header_lines = []
@@ -369,19 +366,18 @@ class FPS(GenericMolFile):
         if not split_files:
             raise ValueError("No fps files given, %r, to merge into %s"
                              % (split_files, output_file))
-        out = open(output_file, "w")
-        first = True
-        for filename in split_files:
-            with open(filename) as handle:
-                for line in handle:
-                    if line.startswith('#'):
-                        if first:
+        with open(output_file, "w") as out:
+            first = True
+            for filename in split_files:
+                with open(filename) as handle:
+                    for line in handle:
+                        if line.startswith('#'):
+                            if first:
+                                out.write(line)
+                        else:
+                            # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
+                            first = False
                             out.write(line)
-                    else:
-                        # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
-                        first = False
-                        out.write(line)
-        out.close()
     merge = staticmethod(merge)
 
 
@@ -793,11 +789,10 @@ class CML(GenericXml):
         def _write_part_cml_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(header_lines)
-            part_file.writelines(accumulated_lines)
-            part_file.writelines(footer_line)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(header_lines)
+                part_file.writelines(accumulated_lines)
+                part_file.writelines(footer_line)
 
         try:
             cml_records = _read_cml_records(input_files[0])

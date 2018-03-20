@@ -25,18 +25,6 @@ var View = Backbone.View.extend({
         $("body").append(this.$el);
         this._configure();
         this.render();
-        $(window).resize(() => {
-            self._refresh();
-        });
-    },
-
-    /** Refresh height of scrollable div below header, handle scrolling by lazy loading steps */
-    _refresh: function(step_index) {
-        var margin =
-            _.reduce(this.$el.children(), (memo, child) => memo + $(child).outerHeight(), 0) -
-            this.$steps.height() +
-            90;
-        this.$steps.css("height", $(window).height() - margin);
     },
 
     /** Configures form/step options for each workflow step */
@@ -446,7 +434,6 @@ var View = Backbone.View.extend({
             }
             self.forms[step.index] = form;
             self._append(self.$steps, form.$el);
-            self._refresh();
             step.needs_refresh && self._refreshStep(step);
             form.portlet[!self.show_progress ? "enable" : "disable"]();
             self.show_progress &&

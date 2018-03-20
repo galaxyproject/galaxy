@@ -3,7 +3,7 @@ import logging
 from markupsafe import escape
 from six import string_types
 from six.moves.urllib.parse import unquote_plus
-from sqlalchemy import and_, false, func, null, true
+from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload, eagerload_all, undefer
 
 import galaxy.util
@@ -15,7 +15,8 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings
 )
-from galaxy.util import listify, nice_size, Params, parse_int, sanitize_text
+from galaxy.util import listify, Params, parse_int, sanitize_text
+from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
@@ -43,28 +44,13 @@ class NameColumn(grids.TextColumn):
 class HistoryListGrid(grids.Grid):
 
     # Custom column types
-    class DatasetsByStateColumn(grids.GridColumn):
+    class DelayedValueColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):
-            # States to show in column.
-            states_to_show = ('ok', 'running', 'queued', 'new', 'error')
+            return '<div class="delayed-value-%s" data-history-id="%s"><span class="fa fa-spinner fa-spin"></span></div>' % (self.key, trans.security.encode_id(history.id))
 
-            # Get dataset counts for each state in a state-count dictionary.
-            state_counts = dict((state, count) for state, count in
-                                trans.sa_session.query(model.Dataset.state, func.count(model.Dataset.state))
-                                .join(model.HistoryDatasetAssociation)
-                                .group_by(model.Dataset.state)
-                                .filter(model.HistoryDatasetAssociation.history_id == history.id,
-                                        model.HistoryDatasetAssociation.visible == true(),
-                                        model.HistoryDatasetAssociation.deleted == false(),
-                                        model.Dataset.state.in_(states_to_show)))
-
-            # Create HTML.
-            rval = ''
-            for state in states_to_show:
-                count = state_counts.get(state)
-                if count:
-                    rval += '<div class="count-box state-color-%s">%s</div> ' % (state, count)
-            return rval
+    class ItemCountColumn(grids.GridColumn):
+        def get_value(self, trans, grid, history):
+            return str(history.hid_counter - 1)
 
     class HistoryListNameColumn(NameColumn):
         def get_link(self, trans, grid, history):
@@ -90,17 +76,24 @@ class HistoryListGrid(grids.Grid):
                 query = query.order_by(self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc())
             return query
 
+    def build_initial_query(self, trans, **kwargs):
+        # Override to preload sharing information used when fetching data for grid.
+        query = super(HistoryListGrid, self).build_initial_query(trans, **kwargs)
+        query = query.options(undefer("users_shared_with_count"))
+        return query
+
     # Grid definition
     title = "Saved Histories"
     model_class = model.History
     default_sort_key = "-update_time"
     columns = [
         HistoryListNameColumn("Name", key="name", attach_popup=True, filterable="advanced"),
-        DatasetsByStateColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
+        ItemCountColumn("Items", key="item_count", sortable=False),
+        DelayedValueColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation,
                                    filterable="advanced", grid_name="HistoryListGrid"),
-        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
-        grids.GridColumn("Size on Disk", key="disk_size", format=nice_size, sortable=False),
+        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False, use_shared_with_count=True),
+        DelayedValueColumn("Size on Disk", key="disk_size", sortable=False),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         DeletedColumn("Status", key="deleted", filterable="advanced")
@@ -108,12 +101,12 @@ class HistoryListGrid(grids.Grid):
     columns.append(
         grids.MulticolFilterColumn(
             "search history names and tags",
-            cols_to_filter=[columns[0], columns[2]],
+            cols_to_filter=[columns[0], columns[3]],
             key="free-text-search", visible=False, filterable="standard")
     )
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
-        grids.GridOperation("View", allow_multiple=False, url_args=dict(action='view')),
+        grids.GridOperation("View", allow_multiple=False, url_args=dict(controller="", action="histories/view")),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Change Permissions", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/permissions")),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
@@ -484,6 +477,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             show_hidden=galaxy.util.string_as_bool(show_hidden))
 
     @web.expose
+    @web.json
     def display_structured(self, trans, id=None):
         """
         Display a history as a nested structure showing the jobs and workflow
@@ -500,11 +494,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = trans.sa_session.query(model.History).options(
             eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
         ).get(id)
-        assert history
-        # TODO: formalize to trans.show_error
-        assert (history.user and (history.user.id == trans.user.id) or
-                (history.id == trans.history.id) or
-                (trans.user_is_admin()))
+        if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
+                             (trans.history and history.id == trans.history.id) or
+                             trans.user_is_admin())):
+            return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
@@ -553,8 +546,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items.extend(wf_invocations.items())
         # Sort items by age
         items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        #
-        return trans.fill_template("history/display_structured.mako", items=items, history=history)
+        # logic taken from mako files
+        from galaxy.managers import hdas
+        hda_serializer = hdas.HDASerializer(trans.app)
+        hda_dicts = []
+        id_hda_dict_map = {}
+        for hda in history.active_datasets:
+            hda_dict = hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, view='detailed')
+            id_hda_dict_map[hda_dict['id']] = hda_dict
+            hda_dicts.append(hda_dict)
+
+        html_template = ''
+        for entity, children in items:
+            html_template += render_item(trans, entity, children)
+        return {
+            'name': history.name,
+            'history_json': hda_dicts,
+            'template': html_template
+        }
 
     @web.expose
     def structure(self, trans, id=None, **kwargs):
@@ -589,6 +598,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs)
 
     @web.expose
+    @web.json
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
         View a history. If a history is importable, then it is viewable by any user.
@@ -624,10 +634,15 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                              'Please contact a Galaxy administrator if the problem persists.')
             return trans.show_error_message(error_msg, use_panels=use_panels)
 
-        return trans.fill_template_mako("history/view.mako",
-            history=history_dictionary,
-            user_is_owner=user_is_owner, history_is_current=history_is_current,
-            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels)
+        return {
+            "history": history_dictionary,
+            "user_is_owner": user_is_owner,
+            "history_is_current": history_is_current,
+            "show_deleted": show_deleted,
+            "show_hidden": show_hidden,
+            "use_panels": use_panels,
+            "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge
+        }
 
     @web.require_login("use more than one Galaxy history")
     @web.expose
@@ -1111,7 +1126,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def purge_deleted_datasets(self, trans):
         count = 0
-        if trans.app.config.allow_user_dataset_purge:
+        if trans.app.config.allow_user_dataset_purge and trans.history:
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
@@ -1129,7 +1144,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     except Exception:
                         log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                 count += 1
-        return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+            return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+        return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
     def delete(self, trans, id, purge=False):

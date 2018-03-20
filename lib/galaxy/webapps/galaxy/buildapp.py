@@ -123,6 +123,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
     webapp.add_client_route('/histories/permissions')
+    webapp.add_client_route('/histories/view')
+    webapp.add_client_route('/histories/show_structure')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
     webapp.add_client_route('/datasets/error')
@@ -254,6 +256,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
+    webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
     webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
@@ -269,9 +272,13 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect('/api/tools/fetch', action='fetch', controller='tools', conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/all_requirements', action='all_requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/build', action='build', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
+    webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data_path', action='test_data_path', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
@@ -1042,6 +1049,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # api batch call processing middleware
     from galaxy.web.framework.middleware.batch import BatchMiddleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
+    if asbool(conf.get('enable_per_request_sql_debugging', False)):
+        from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
+        app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
 
 
