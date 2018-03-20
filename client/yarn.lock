@@ -6791,6 +6791,10 @@ pngparse@^1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/pngparse/-/pngparse-1.1.4.tgz#4831be035ed2ce5fd4fb5381e45101cfd60ea84e"
 
+popper.js@^1.14.1:
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.14.1.tgz#b8815e5cda6f62fc2042e47618649f75866e6753"
+
 popper@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/popper/-/popper-1.0.1.tgz#a3153910a01ce328a297cb241924afff0690837e"
