@@ -33,6 +33,8 @@ var CollectionView = _super.extend(
             _super.prototype.initialize.call(this, attributes);
             this.linkTarget = attributes.linkTarget || "_blank";
 
+            this.dragItems = true;
+
             this.hasUser = attributes.hasUser;
             /** A stack of panels that currently cover or hide this panel */
             this.panelStack = [];
