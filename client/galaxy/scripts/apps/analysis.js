@@ -1,5 +1,5 @@
-import jQuery from "jquery";
-var $ = jQuery;
+import $ from "jquery";
+import "bootstrap";
 import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
