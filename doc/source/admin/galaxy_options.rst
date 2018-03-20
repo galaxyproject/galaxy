@@ -2891,6 +2891,36 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~
+``enable_oidc``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables OpenID Connect (OIDC) support.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``oidc_config_file``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC configuration file.
+:Default: ``config/oidc_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC backends configuration file.
+:Default: ``config/oidc_backends_config.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``auth_config_file``
 ~~~~~~~~~~~~~~~~~~~~
