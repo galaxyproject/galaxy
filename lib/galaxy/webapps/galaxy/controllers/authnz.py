@@ -17,6 +17,10 @@ class OIDC(BaseUIController):
 
     @web.expose
     def login(self, trans, provider):
+        if not trans.app.config.enable_oidc:
+            msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
+            log.debug(msg)
+            return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
         return trans.response.send_redirect(web.url_for(redirect_uri))
 
