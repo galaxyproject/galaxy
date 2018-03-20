@@ -115,7 +115,7 @@ const WorkflowItemView = Backbone.View.extend({
         return `
             <td>
                 <div class="dropdown">
-                    <button class="menubutton" type="button" data-toggle="dropdown">${_.escape(this.model.get("name"))}
+                    <button class="btn btn-secondary dropdown-toggle" type="button">${_.escape(this.model.get("name"))}
                         <span class="caret"></span>
                     </button>
                     ${this._templateActions()}
@@ -146,18 +146,18 @@ const WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
-            return `<ul class="dropdown-menu action-dpd">
-                        <li><a href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a></li>
-                        <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
-                        <li><a href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a></li>
-                        <li><a href="${Galaxy.root}api/workflows/${this.model.id}/download?format=json-download">Download</a></li>
-                        <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li>
-                        <li><a href="${Galaxy.root}workflow/display_by_id?id=${this.model.id}">View</a></li>
-                        <li><a id="delete-workflow" style="cursor: pointer;">Delete</a></li>
-                    </ul>`;
+            return `<div class="dropdown-menu">
+                        <a class="dropdown-item" href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a>
+                        <a class="dropdown-item" href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a>
+                        <a class="dropdown-item" href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a>
+                        <a class="dropdown-item" href="${Galaxy.root}api/workflows/${this.model.id}/download?format=json-download">Download</a>
+                        <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
+                        <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
+                        <a class="dropdown-item" href="${Galaxy.root}workflow/display_by_id?id=${this.model.id}">View</a>
+                        <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
+                    </div>`;
         } else {
-            return `<ul class="dropdown-menu action-dpd">
+            return `<ul class="dropdown-menu">
                         <li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.get("slug")}">View</a></li>
                         <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
                         <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
@@ -249,11 +249,11 @@ const WorkflowListView = Backbone.View.extend({
         const templateActions = this._templateActionButtons();
         const tableTemplate = this._templateWorkflowTable();
         this.$el.html(header + templateActions + tableTemplate);
-        _(this.collection.models).each(item => {
+        _.each(this.collection.models, item => {
             // in case collection is not empty
             this.appendItem(item);
             this.confirmDelete(item);
-        }, this);
+        });
         const minQueryLength = 3;
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
