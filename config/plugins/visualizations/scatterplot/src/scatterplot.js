@@ -1,10 +1,15 @@
-import * as bootstrap from "bootstrap";
+import $ from "jquery";
 import * as Backbone from "backbone";
 import * as d3 from "d3";
+import * as _ from "underscore";
 import "jquery-ui-bundle";
-import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
+import "bootstrap";
 import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
 import "../../../../../client/galaxy/scripts/ui/pagination";
+import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
+
+window.$ = $;
+
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 
 /**
@@ -195,7 +200,7 @@ export function scatterplot(renderTo, config, data) {
         //console.log( 'grid.h.lines:', grid.h.lines );
         return grid;
     }
-    var grid = renderGrid();
+    renderGrid();
 
     //// .................................................................... datapoints
     var datapoints = content
@@ -256,7 +261,7 @@ export function scatterplot(renderTo, config, data) {
         $(".chart-info-box").remove();
         axis.redraw();
         _redrawDatapointsClipped();
-        grid = renderGrid();
+        renderGrid();
 
         $(svg.node()).trigger("zoom.scatterplot", {
             scale: zoom.scale(),
@@ -578,7 +583,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
             .save()
             .fail(function(xhr, status, message) {
                 console.error(xhr, status, message);
-                editor.trigger("save:error", view);
+                editor.trigger("save:error", this);
                 alert("Error loading data:\n" + xhr.responseText);
             })
             .then(function() {
@@ -756,7 +761,8 @@ ScatterplotConfigEditor.templates = {
  */
 var ScatterplotDisplay = Backbone.View.extend({
     initialize: function(attributes) {
-        (this.data = null), (this.dataset = attributes.dataset);
+        this.data = null;
+        this.dataset = attributes.dataset;
         this.lineCount = this.dataset.metadata_data_lines || null;
     },
 
@@ -766,8 +772,8 @@ var ScatterplotDisplay = Backbone.View.extend({
         var view = this,
             config = this.model.get("config"),
             //TODO: very tied to datasets - should be generalized eventually
-            baseUrl = window.parent && parent.galaxy_config ? parent.galaxy_config.root : "/",
-            xhr = jQuery.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
+            baseUrl = window.parent && window.parent.galaxy_config ? window.parent.galaxy_config.root : "/",
+            xhr = $.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
                 data_type: "raw_data",
                 provider: "dataset-column",
                 limit: config.pagination.perPage,
@@ -929,9 +935,9 @@ var ScatterplotDisplay = Backbone.View.extend({
         if (!this.data) {
             return;
         }
-        var view = this,
-            config = this.model.get("config"),
-            meanWorker = new Worker("worker-stats.js");
+        var view = this;
+        var config = this.model.get("config");
+        var meanWorker = new window.Worker("worker-stats.js");
         meanWorker.postMessage({
             data: this.data,
             keys: [config.xColumn, config.yColumn]
