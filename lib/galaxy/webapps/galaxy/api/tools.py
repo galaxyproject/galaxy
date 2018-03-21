@@ -370,7 +370,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def fetch(self, trans, payload, **kwd):
         """Adapt clean API to tool-constrained API.
         """
-        log.info("Keywords are %s" % payload)
         request_version = '1'
         history_id = payload.pop("history_id")
         clean_payload = {}
@@ -382,11 +381,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 files_payload[key] = value
                 continue
             clean_payload[key] = value
-        log.info("payload %s" % clean_payload)
         validate_and_normalize_targets(trans, clean_payload)
         clean_payload["check_content"] = trans.app.config.check_upload_content
         request = dumps(clean_payload)
-        log.info(request)
         create_payload = {
             'tool_id': "__DATA_FETCH__",
             'history_id': history_id,

@@ -165,9 +165,9 @@ def looks_like_a_tool_xml(path):
 
     if(checkers.check_binary(full_path) or
        checkers.check_image(full_path) or
-       checkers.check_gzip(full_path)[0] or
-       checkers.check_bz2(full_path)[0] or
-       checkers.check_zip(full_path)):
+       checkers.is_gzip(full_path) or
+       checkers.is_bz2(full_path) or
+       checkers.is_zip(full_path)):
         return False
 
     with open(path, "r") as f:

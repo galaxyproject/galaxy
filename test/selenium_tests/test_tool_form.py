@@ -85,8 +85,8 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
-    @flakey
     @selenium_test
+    @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")
         test_path_decoy = self.get_filename("1.txt")

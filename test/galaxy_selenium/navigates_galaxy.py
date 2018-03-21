@@ -43,7 +43,7 @@ WAIT_TYPES = Bunch(
     # Fade in, fade out, etc...
     UX_TRANSITION=WaitType("ux_transition", 5),
     # Toastr popup and dismissal, etc...
-    UX_POPUP=WaitType("ux_popup", 10),
+    UX_POPUP=WaitType("ux_popup", 15),
     # Creating a new history and loading it into the panel.
     DATABASE_OPERATION=WaitType("database_operation", 10),
     # Wait time for jobs to complete in default environment.
@@ -711,8 +711,8 @@ class NavigatesGalaxy(HasDriver):
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
-        self.wait_for_selector_absent_or_hidden(".ui-modal")
-        self.wait_for_selector_absent_or_hidden(".toast")
+        self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
+        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
     def workflow_index_open(self):
         self.home()

@@ -401,7 +401,7 @@ class GalaxyInteractorApi(object):
     def _summarize_history(self, history_id):
         if history_id is None:
             raise ValueError("_summarize_history passed empty history_id")
-        print("Problem in history with id %s - summary of datasets below." % history_id)
+        print("Problem in history with id %s - summary of history's datasets and jobs below." % history_id)
         try:
             history_contents = self.__contents(history_id)
         except Exception:
@@ -417,6 +417,7 @@ class GalaxyInteractorApi(object):
             if history_content['history_content_type'] == 'dataset_collection':
                 history_contents_json = self._get("histories/%s/contents/dataset_collections/%s" % (history_id, history_content["id"])).json()
                 print("| Dataset Collection: %s" % history_contents_json)
+                print("|")
                 continue
 
             try:
@@ -440,7 +441,23 @@ class GalaxyInteractorApi(object):
             except Exception:
                 print("| *TEST FRAMEWORK ERROR FETCHING JOB DETAILS*")
             print("|")
-        print(ERROR_MESSAGE_DATASET_SEP)
+        try:
+            jobs_json = self._get("jobs?history_id=%s" % history_id).json()
+            for job_json in jobs_json:
+                print(ERROR_MESSAGE_DATASET_SEP)
+                print("| Job %s" % job_json["id"])
+                print("| State: ")
+                print(self.format_for_summary(job_json.get("state", ""), "Job state is unknown."))
+                print("| Update Time:")
+                print(self.format_for_summary(job_json.get("update_time", ""), "Job update time is unknown."))
+                print("| Create Time:")
+                print(self.format_for_summary(job_json.get("create_time", ""), "Job create time is unknown."))
+                print("|")
+            print(ERROR_MESSAGE_DATASET_SEP)
+        except Exception:
+            print(ERROR_MESSAGE_DATASET_SEP)
+            print("*TEST FRAMEWORK FAILED TO FETCH HISTORY JOBS*")
+            print(ERROR_MESSAGE_DATASET_SEP)
 
     def format_for_summary(self, blob, empty_message, prefix="|  "):
         contents = "\n".join(["%s%s" % (prefix, line.strip()) for line in StringIO(blob).readlines() if line.rstrip("\n\r")])

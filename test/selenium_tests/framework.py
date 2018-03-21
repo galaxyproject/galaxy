@@ -110,33 +110,33 @@ def dump_test_information(self, name_prefix):
                 buf.write(content.encode("utf-8") if not raw else content)
 
         os.makedirs(target_directory)
-        self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-        write_file("page_source.txt", self.driver.page_source)
-        write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
         write_file("stacktrace.txt", traceback.format_exc())
-
         for snapshot in getattr(self, "snapshots", []):
             snapshot.write_to_error_directory(write_file)
 
+        # Try to use the Selenium driver to recover more debug information, but don't
+        # throw an exception if the connection is broken in some way.
+        try:
+            self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+            write_file("page_source.txt", self.driver.page_source)
+            write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+        except Exception:
+            print("Failed to use test driver to recover debug information from Selenium.")
+            write_file("selenium_exception.txt", traceback.format_exc())
+
         for log_type in ["browser", "driver"]:
-            full_log = self.driver.get_log(log_type)
-            trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
             try:
+                full_log = self.driver.get_log(log_type)
+                trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
                 write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
                 write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
                 continue
-        iframes = self.driver.find_elements_by_css_selector("iframe")
-        for iframe in iframes:
-            pass
-            # TODO: Dump content out for debugging in the future.
-            # iframe_id = iframe.get_attribute("id")
-            # if iframe_id:
-            #     write_file("iframe_%s" % iframe_id, "My content")
 
 
 @nottest
 def selenium_test(f):
+    test_name = f.__name__
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -146,10 +146,15 @@ def selenium_test(f):
                 self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
+            except unittest.SkipTest:
+                dump_test_information(self, test_name)
+                # Don't retry if we have purposely decided to skip the test.
+                raise
             except Exception:
-                dump_test_information(self, f.__name__)
+                dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
+                    print("Test function [%s] threw an exception, retrying. Failed attempts - %s." % (test_name, retry_attempts))
                 else:
                     raise
 

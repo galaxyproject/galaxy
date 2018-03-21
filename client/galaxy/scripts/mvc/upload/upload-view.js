@@ -169,7 +169,9 @@ export default Backbone.View.extend({
             var inputs = {
                 file_count: items.length,
                 dbkey: items[0].get("genome", "?"),
-                file_type: items[0].get("extension", "auto")
+                // sometimes extension set to "" in automated testing after first upload of
+                // a session. https://github.com/galaxyproject/galaxy/issues/5169
+                file_type: items[0].get("extension") || "auto"
             };
             for (var index in items) {
                 var it = items[index];

@@ -101,6 +101,7 @@ var Model = Backbone.Model.extend({
 /** View of the main user preference panel with links to individual user forms */
 var View = Backbone.View.extend({
     title: _l("User Preferences"),
+    active_tab: "user",
     initialize: function() {
         this.model = new Model();
         this.setElement("<div/>");
