@@ -625,7 +625,7 @@ def in_directory(file, directory, local_path_module=os.path):
     >>> safe_dir = os.path.join(base_dir, "user")
     >>> os.mkdir(safe_dir)
     >>> good_file = os.path.join(safe_dir, "1")
-    >>> with open(good_file, "w") as f: f.write("hello")
+    >>> with open(good_file, "w") as f: _ = f.write("hello")
     >>> in_directory(good_file, safe_dir)
     True
     >>> in_directory("/other/file/is/here.txt", safe_dir)
@@ -815,6 +815,22 @@ def xml_text(root, name=None):
         return text.strip()
     # No luck, return empty string
     return ''
+
+
+def parse_resource_parameters(resource_param_file):
+    """Code shared between jobs and workflows for reading resource parameter configuration files.
+
+    TODO: Allow YAML in addition to XML.
+    """
+    resource_parameters = {}
+    if os.path.exists(resource_param_file):
+        resource_definitions = parse_xml(resource_param_file)
+        resource_definitions_root = resource_definitions.getroot()
+        for parameter_elem in resource_definitions_root.findall("param"):
+            name = parameter_elem.get("name")
+            resource_parameters[name] = parameter_elem
+
+    return resource_parameters
 
 
 # asbool implementation pulled from PasteDeploy

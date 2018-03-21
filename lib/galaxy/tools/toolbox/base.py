@@ -58,9 +58,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # dictionary can instead hold multiple tools with different versions.
         self._tool_versions_by_id = {}
         self._workflows_by_id = {}
-        # Cache for toolbox to_dict calls. Invalidates on toolbox reload.
-        self._cached_to_dict_panel = None
-        self._cached_to_dict_all = None
+        # Cache for tool's to_dict calls specific to toolbox. Invalidates on toolbox reload.
+        self._tool_to_dict_cache = {}
+        self._tool_to_dict_cache_admin = {}
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
@@ -124,7 +124,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     raise
             except Exception:
                 log.exception("Error loading tools defined in config %s", config_filename)
-        log.debug("Reading tools from config files finshed %s", execution_timer)
+        log.debug("Reading tools from config files finished %s", execution_timer)
 
     def _init_tools_from_config(self, config_filename):
         """
@@ -927,52 +927,46 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if elt:
                 yield elt
 
+    def get_tool_to_dict(self, trans, tool):
+        """Return tool's to_dict.
+        Use cache if present, store to cache otherwise.
+        Note: The cached tool's to_dict is specific to the calls from toolbox.
+        """
+        if not trans.user_is_admin():
+            to_dict = self._tool_to_dict_cache.get(tool.id, None)
+            if not to_dict:
+                to_dict = tool.to_dict(trans, link_details=True)
+                self._tool_to_dict_cache[tool.id] = to_dict
+        else:
+            to_dict = self._tool_to_dict_cache_admin.get(tool.id, None)
+            if not to_dict:
+                to_dict = tool.to_dict(trans, link_details=True)
+                self._tool_to_dict_cache_admin[tool.id] = to_dict
+        return to_dict
+
     def to_dict(self, trans, in_panel=True, **kwds):
         """
         Create a dictionary representation of the toolbox.
-        Uses primitive cache for Galaxies without filters.
+        Uses primitive cache for toolbox-specific tool 'to_dict's.
         """
-        filters_enabled = self.check_for_filters(trans)
+        rval = []
         if in_panel:
-            if not filters_enabled and self._cached_to_dict_panel:
-                return self._cached_to_dict_panel
-            else:
-                panel_elts = list(self.tool_panel_contents(trans, **kwds))
-                rval = []
-                kwargs = dict(
-                    trans=trans,
-                    link_details=True
-                )
-                for elt in panel_elts:
+            panel_elts = list(self.tool_panel_contents(trans, **kwds))
+            for elt in panel_elts:
+                # Only use cache for objects that are Tools.
+                if hasattr(elt, "tool_type"):
+                    rval.append(self.get_tool_to_dict(trans, elt))
+                else:
+                    kwargs = dict(trans=trans, link_details=True, toolbox=self)
                     rval.append(elt.to_dict(**kwargs))
-                if not filters_enabled:
-                    self._cached_to_dict_panel = rval
         else:
-            if not filters_enabled and self._cached_to_dict_all:
-                return self._cached_to_dict_all
-            else:
-                filter_method = self._build_filter_method(trans)
-                tools = []
-                for id, tool in self._tools_by_id.items():
-                    tool = filter_method(tool, panel_item_types.TOOL)
-                    if not tool:
-                        continue
-                    tools.append(tool.to_dict(trans, link_details=True))
-                rval = tools
-                if not filters_enabled:
-                    self._cached_to_dict_all = rval
+            filter_method = self._build_filter_method(trans)
+            for id, tool in self._tools_by_id.items():
+                tool = filter_method(tool, panel_item_types.TOOL)
+                if not tool:
+                    continue
+                rval.append(self.get_tool_to_dict(trans, tool))
         return rval
-
-    def check_for_filters(self, trans):
-        filters_enabled = getattr(self.app.config, "tool_filters", False) or \
-            getattr(self.app.config, "tool_label_filters", False) or \
-            getattr(self.app.config, "tool_section_filters", False)
-        if not filters_enabled and trans.user:
-            for name, value in trans.user.preferences.items():
-                if name in ['toolbox_tool_filters', 'toolbox_section_filters', 'toolbox_label_filters']:
-                    filters_enabled = True
-                    break
-        return filters_enabled
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
         """ If tool with same lineage already in panel (or section) - find

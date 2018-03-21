@@ -15,6 +15,7 @@ var Collection = Backbone.Collection.extend({
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
+        this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
         this.model.url = `${Galaxy.root}api/histories/${history_id}/custom_builds_metadata`;

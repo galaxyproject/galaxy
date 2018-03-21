@@ -141,9 +141,10 @@ hyperlink in the tool menu.</xs:documentation>
       </xs:attribute>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
         <xs:annotation gxdocs:best_practices="tool-versions">
-          <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
-included in the tag. It allows for tool versioning and should be increased with each new version
-of the tool.</xs:documentation>
+          <xs:documentation xml:lang="en">This string allows for tool versioning
+and should be increased with each new version of the tool. The value should
+follow the [PEP 440](https://www.python.org/dev/peps/pep-0440/) specification.
+It defaults to ``1.0.0`` if it is not included in the tag.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="hidden" type="PermissiveBoolean" default="false">
@@ -2656,7 +2657,8 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 Name | Description
 ---- | -----------
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
-``\$GALAXY_MEMORY_MB`` | Amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$GALAXY_MEMORY_MB`` | Total amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$GALAXY_MEMORY_MB_PER_SLOT`` | Amount of memory per slot in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
@@ -4920,14 +4922,14 @@ regular expressions can be found under
 
 A regular expression includes the following attributes:
 
-* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
+* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:
   * ``stdout``: the regular expression will be applied to stdout;
   * ``stderr``: the regular expression will be applied to stderr;
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
 * ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
 * ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
- * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
- * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+  * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
 
 The following is an example of regular expressions that may be used:

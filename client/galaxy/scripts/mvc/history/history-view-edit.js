@@ -277,9 +277,8 @@ var HistoryViewEdit = _super.extend(
                             var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                             const historyContents = panel.getSelectedModels();
                             const selectedDatasets = historyContents.filter(
-                                c =>
-                                    c.get("history_content_type") == "dataset"
-                            )
+                                c => c.get("history_content_type") == "dataset"
+                            );
                             historyContents.ajaxQueue(action, {}, selectedDatasets);
                         }
                     }

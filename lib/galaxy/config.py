@@ -47,6 +47,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
     openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
@@ -395,6 +396,15 @@ class Configuration(object):
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
         self.maximum_workflow_jobs_per_scheduling_iteration = int(kwargs.get("maximum_workflow_jobs_per_scheduling_iteration", -1))
 
+        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
+        if not workflow_resource_params_mapper:
+            workflow_resource_params_mapper = None
+        elif ":" not in workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file
+            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+        # else: a Python a function!
+        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
@@ -440,6 +450,7 @@ class Configuration(object):
         self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
         self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
+        self.chunk_upload_size = int(kwargs.get('chunk_upload_size', 104857600))
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -466,6 +477,8 @@ class Configuration(object):
         self.tool_enable_ngram_search = kwargs.get("tool_enable_ngram_search", False)
         self.tool_ngram_minsize = kwargs.get("tool_ngram_minsize", 3)
         self.tool_ngram_maxsize = kwargs.get("tool_ngram_maxsize", 4)
+        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
+        self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Location for tool dependencies.
         use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
             parse_dependency_options(kwargs, self.root, self.dependency_resolvers_config_file)

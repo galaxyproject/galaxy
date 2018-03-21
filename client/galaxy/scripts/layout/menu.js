@@ -340,11 +340,13 @@ var Tab = Backbone.View.extend({
             .attr("title", this.model.get("tooltip"))
             .tooltip("destroy");
         this.model.get("tooltip") && this.$toggle.tooltip({ placement: "bottom" });
-        this.$dropdown
-            .removeClass()
-            .addClass("dropdown")
-            .addClass(this.model.get("disabled") && "disabled")
-            .addClass(this.model.get("active") && "active");
+        if(!this.model.get("menu")){
+            this.$dropdown
+                .removeClass()
+                .addClass("dropdown")
+                .addClass(this.model.get("disabled") && "disabled")
+                .addClass(this.model.get("active") && "active");
+        };
         if (this.model.get("menu") && this.model.get("show_menu")) {
             this.$menu.show();
             $("#dd-helper")

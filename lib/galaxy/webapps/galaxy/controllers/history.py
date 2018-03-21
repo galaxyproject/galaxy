@@ -16,6 +16,7 @@ from galaxy.model.item_attrs import (
     UsesItemRatings
 )
 from galaxy.util import listify, Params, parse_int, sanitize_text
+from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
@@ -105,7 +106,7 @@ class HistoryListGrid(grids.Grid):
     )
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
-        grids.GridOperation("View", allow_multiple=False, url_args=dict(action='view')),
+        grids.GridOperation("View", allow_multiple=False, url_args=dict(controller="", action="histories/view")),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
         grids.GridOperation("Change Permissions", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="histories/permissions")),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False),
@@ -476,6 +477,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             show_hidden=galaxy.util.string_as_bool(show_hidden))
 
     @web.expose
+    @web.json
     def display_structured(self, trans, id=None):
         """
         Display a history as a nested structure showing the jobs and workflow
@@ -492,11 +494,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = trans.sa_session.query(model.History).options(
             eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
         ).get(id)
-        assert history
-        # TODO: formalize to trans.show_error
-        assert (history.user and (history.user.id == trans.user.id) or
-                (history.id == trans.history.id) or
-                (trans.user_is_admin()))
+        if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
+                             (trans.history and history.id == trans.history.id) or
+                             trans.user_is_admin())):
+            return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
@@ -545,8 +546,24 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items.extend(wf_invocations.items())
         # Sort items by age
         items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        #
-        return trans.fill_template("history/display_structured.mako", items=items, history=history)
+        # logic taken from mako files
+        from galaxy.managers import hdas
+        hda_serializer = hdas.HDASerializer(trans.app)
+        hda_dicts = []
+        id_hda_dict_map = {}
+        for hda in history.active_datasets:
+            hda_dict = hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, view='detailed')
+            id_hda_dict_map[hda_dict['id']] = hda_dict
+            hda_dicts.append(hda_dict)
+
+        html_template = ''
+        for entity, children in items:
+            html_template += render_item(trans, entity, children)
+        return {
+            'name': history.name,
+            'history_json': hda_dicts,
+            'template': html_template
+        }
 
     @web.expose
     def structure(self, trans, id=None, **kwargs):
@@ -581,6 +598,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs)
 
     @web.expose
+    @web.json
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
         View a history. If a history is importable, then it is viewable by any user.
@@ -616,10 +634,15 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                              'Please contact a Galaxy administrator if the problem persists.')
             return trans.show_error_message(error_msg, use_panels=use_panels)
 
-        return trans.fill_template_mako("history/view.mako",
-            history=history_dictionary,
-            user_is_owner=user_is_owner, history_is_current=history_is_current,
-            show_deleted=show_deleted, show_hidden=show_hidden, use_panels=use_panels)
+        return {
+            "history": history_dictionary,
+            "user_is_owner": user_is_owner,
+            "history_is_current": history_is_current,
+            "show_deleted": show_deleted,
+            "show_hidden": show_hidden,
+            "use_panels": use_panels,
+            "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge
+        }
 
     @web.require_login("use more than one Galaxy history")
     @web.expose
@@ -1103,7 +1126,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def purge_deleted_datasets(self, trans):
         count = 0
-        if trans.app.config.allow_user_dataset_purge:
+        if trans.app.config.allow_user_dataset_purge and trans.history:
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
@@ -1121,7 +1144,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     except Exception:
                         log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                 count += 1
-        return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+            return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+        return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
     def delete(self, trans, id, purge=False):

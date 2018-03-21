@@ -620,7 +620,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 v.slug = v_slug
                 v.dbkey = v_dbkey
                 if v_annotation:
-                    v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
+                    v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
                 trans.sa_session.add(v)
                 trans.sa_session.flush()

@@ -15,12 +15,14 @@ from six.moves.urllib.parse import quote_plus
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
-from base.tool_shed_util import repository_installation_timeout  # noqa: I100,I201
-from functional.twilltestcase import TwillTestCase  # noqa: I100
+from functional.twilltestcase import TwillTestCase  # noqa: I100,I201
 from galaxy.web import security  # noqa: I201
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
 from . import common, test_db_util
+
+# Set a 10 minute timeout for repository installation.
+repository_installation_timeout = 600
 
 log = logging.getLogger(__name__)
 

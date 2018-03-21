@@ -5,6 +5,7 @@ import Utils from "utils/utils";
 import GridView from "mvc/grid/grid-view";
 import HistoryModel from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
+import LoadingIndicator from "ui/loading-indicator";
 
 var HistoryGridView = GridView.extend({
     initialize: function(grid_config) {
@@ -104,7 +105,14 @@ var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
         var self = this;
-        this.setElement($("<div/>"));
+        LoadingIndicator.markViewAsLoading(this);
+
+        if(options.action_id == "list_published"){
+            this.active_tab = "shared";
+        }
+        else if (options.action_id = "list"){
+            this.active_tab = "user";
+        }
         this.model = new Backbone.Model();
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,

@@ -269,6 +269,14 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         context['base_url'] = 'interactive_environments'
         super(InteractiveEnvironmentPlugin, self).__init__(app, path, name, config, context=context, **kwargs)
 
+    def _error_template(self, trans):
+        return trans.fill_template('message.mako',
+            message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
+                admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
+                    admin_mail=trans.app.config.error_email_to)
+                if trans.app.config.error_email_to else 'Galaxy administrator'),
+            status='error')
+
     def _render(self, render_vars, trans=None, embedded=None, **kwargs):
         """
         Override to add interactive environment specific template vars.
@@ -294,16 +302,15 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
                 request = self.INTENV_REQUEST_FACTORY(trans, self)
             except Exception:
                 log.exception("IE plugin request handling failed")
-                return trans.fill_template('message.mako',
-                    message='Loading the interactive environment failed, please contact the {admin_tag} for assistance'.format(
-                        admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
-                            admin_mail=trans.app.config.error_email_to)
-                        if trans.app.config.error_email_to else 'Galaxy administrator'),
-                    status='error')
+                return self._error_template(trans)
             render_vars["ie_request"] = request
 
         template_filename = self.config['entry_point']['file']
-        return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        try:
+            return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
+        except Exception:
+            log.exception("IE plugin template fill failed")
+            return self._error_template(trans)
 
 
 class ScriptVisualizationPlugin(VisualizationPlugin):
