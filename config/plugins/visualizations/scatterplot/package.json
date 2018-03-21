@@ -12,7 +12,7 @@
         "d3"
     ],
     "author": "Carl Eberhard",
-    "license": "BSD-4-Clause",
+    "license": "0BSD",
     "dependencies": {
         "babel-plugin-auto-import": "^0.7.1",
         "babel-preset-env": "^1.6.1",
