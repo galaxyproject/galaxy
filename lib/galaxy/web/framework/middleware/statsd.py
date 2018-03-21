@@ -30,7 +30,7 @@ class StatsdMiddleware(object):
                            "Please install the python statsd module to use this functionality.")
         self.application = application
         self.metric_infix = ''
-        if self.statsd_influxdb:
+        if statsd_influxdb:
             statsd_prefix = statsd_prefix.strip(',')
             self.metric_infix = ',path='
         self.statsd_client = statsd.StatsClient(statsd_host, statsd_port, prefix=statsd_prefix)
