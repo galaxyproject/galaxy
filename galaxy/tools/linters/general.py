@@ -1,5 +1,6 @@
 """This module contains a linting functions for general aspects of the tool."""
 import re
+
 import packaging.version
 
 ERROR_VERSION_MSG = "Tool version is missing or empty."
