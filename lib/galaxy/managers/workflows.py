@@ -36,6 +36,7 @@ from galaxy.workflow.modules import (
     ToolModule,
     WorkflowModuleInjector
 )
+from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
 from .base import decode_id
 
@@ -205,6 +206,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __init__(self, app):
         self.app = app
+        self._resource_mapper_function = get_resource_mapper_function(app)
 
     def build_workflow_from_dict(
         self,
@@ -432,13 +434,19 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model['messages'] = step.upgrade_messages
             step_models.append(step_model)
         return {
-            'id'                    : trans.app.security.encode_id(stored.id),
-            'history_id'            : trans.app.security.encode_id(trans.history.id) if trans.history else None,
-            'name'                  : stored.name,
-            'steps'                 : step_models,
-            'step_version_changes'  : step_version_changes,
-            'has_upgrade_messages'  : has_upgrade_messages
+            'id': trans.app.security.encode_id(stored.id),
+            'history_id': trans.app.security.encode_id(trans.history.id) if trans.history else None,
+            'name': stored.name,
+            'steps': step_models,
+            'step_version_changes': step_version_changes,
+            'has_upgrade_messages': has_upgrade_messages,
+            'workflow_resource_parameters': self._workflow_resource_parameters(trans, stored, workflow),
         }
+
+    def _workflow_resource_parameters(self, trans, stored, workflow):
+        """Get workflow scheduling resource parameters for this user and workflow or None if unconfigured.
+        """
+        return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
     def _workflow_to_dict_editor(self, trans, stored):
         workflow = stored.latest_workflow
