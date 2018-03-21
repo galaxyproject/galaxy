@@ -26,6 +26,7 @@ def load_job_template_from_file(jt, filename):
         if attr in data:
             setattr(jt, attr, data[attr])
 
+
 def load_job_template(jt, data):
     for attr in DRMAA_jobTemplate_attributes:
         if attr in data:
@@ -122,7 +123,7 @@ def set_user(uid, assign_all_groups):
 def main():
     userid, json_filename, assign_all_groups = validate_paramters()
     # load JSON job template data before changing the user
-    # then the pbs cluster_files_directory does not need to 
+    # then the pbs cluster_files_directory does not need to
     # be readable by all users
     json_file_exists(json_filename)
     with open(json_filename, 'r') as f:

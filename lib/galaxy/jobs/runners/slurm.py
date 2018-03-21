@@ -25,8 +25,8 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 # https://github.com/SchedMD/slurm/
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
-SLURM_MEMORY_ERRORS = { SLURM_MEMORY_LIMIT_EXCEEDED_MSG: 'This job was terminated because it used more memory than it was allocated.'}
-for w in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS: 
+SLURM_MEMORY_ERRORS = {SLURM_MEMORY_LIMIT_EXCEEDED_MSG: 'This job was terminated because it used more memory than it was allocated.'}
+for w in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS:
     SLURM_MEMORY_ERRORS[w] = 'This job was cancelled probably because it used more memory than it was allocated.'
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 
@@ -133,7 +133,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
-#                     check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
+                    # check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
                     check_memory_limit_msg = util.grep_tail(ajs.error_file, SLURM_MEMORY_ERRORS, 2048)
                     if check_memory_limit_msg:
                         log.info('(%s/%s) Job hit memory limit (SLURM state: CANCELLED)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
