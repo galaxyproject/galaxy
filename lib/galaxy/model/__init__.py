@@ -2004,6 +2004,9 @@ class DatasetInstance(object):
         self.parent_id = parent_id
         self.validation_errors = validation_errors
 
+    def update(self):
+        self.update_time = galaxy.model.orm.now.now()
+
     @property
     def ext(self):
         return self.extension
