@@ -193,7 +193,7 @@ uwsgi:
     # fix up signal handling
     die-on-term: true
     hook-master-start: unix_signal:2 gracefully_kill_them_all
-    hook-master-start: unix_signal:5 gracefully_kill_them_all
+    hook-master-start: unix_signal:15 gracefully_kill_them_all
 
     # listening options
     
@@ -398,7 +398,7 @@ $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --daemonize
 However, a better option to managing processes by hand is to use a process manager as documented in the [Starting and
 Stopping](#starting-and-stopping) section.
 
-#### uWSGI Minutiea
+#### uWSGI Minutiae
 
 **Threads**
 

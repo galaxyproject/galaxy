@@ -69,10 +69,9 @@ http {
     gzip on;
     gzip_http_version 1.1;
     gzip_vary on;
-    gzip_comp_level 4;
+    gzip_comp_level 6;
     gzip_proxied any;
     gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
-    gzip_comp_level 6;
     gzip_buffers 16 8k;
 
     # allow up to 3 minutes for Galaxy to respond to slow requests before timing out

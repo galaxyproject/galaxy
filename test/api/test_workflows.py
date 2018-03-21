@@ -1845,7 +1845,7 @@ test_data:
                 first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
                 second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
                 assert first_wf_output['file_name'] == second_wf_output['file_name'], \
-                    "first output :\n%s\nsecond output: %s" % (first_wf_output, second_wf_output)
+                    "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
@@ -1860,7 +1860,7 @@ test_data:
             run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id_one)
             self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
             workflow_request = run_jobs_summary.workflow_request
-            # We copy the inputs to a new history and re-reun the workflow
+            # We copy the inputs to a new history and re-run the workflow
             inputs = json.loads(workflow_request['inputs'])
             dataset_type = inputs['outer_input']['src']
             dataset_id = inputs['outer_input']['id']
