@@ -1,4 +1,9 @@
-import $ from "jquery";
+//import $ from "jquery";
+// TODO:  This manipulates whatever jquery is available -- needs restructuring,
+// or removal (jquery plugins are a bad design choice for us at this point)
+// It is *only* used in the scatterplot viz, so this is safe.
+/* global $ */
+
 //==============================================================================
 /** Column selection using the peek display as the control.
  *  Adds rows to the bottom of the peek with clickable areas in each cell

@@ -1,14 +1,16 @@
-import $ from "jquery";
+import "./jqglobals";
+// This is a really annoying hack to get bootstrap/jqui jquery bindings available correctly.
+/* global $ */
 import * as Backbone from "backbone";
 import * as d3 from "d3";
 import * as _ from "underscore";
-import "jquery-ui-bundle";
-import "bootstrap";
 import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
 import "../../../../../client/galaxy/scripts/ui/pagination";
+import "jquery-ui-bundle";
+import "bootstrap";
 import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
 
-window.$ = $;
+console.debug($);
 
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 
