@@ -10,8 +10,6 @@ import "jquery-ui-bundle";
 import "bootstrap";
 import * as VisualizationModel from "../../../../../client/galaxy/scripts/mvc/visualization/visualization-model";
 
-console.debug($);
-
 //TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
 
 /**
