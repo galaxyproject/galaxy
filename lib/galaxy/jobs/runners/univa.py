@@ -61,7 +61,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                  "std::bad_alloc",
                  "java.lang.OutOfMemoryError: Java heap space",
                  "Out of memory!"])
-            toolmemerrors = set(["Out of memory" ])  # data_manager_hisat2
+            toolmemerrors = set(["Out of memory"])  # data_manager_hisat2
             memviolation = util.grep_tail(ajs.error_file, memerrors | toolmemerrors, MEMORY_LIMIT_SCAN_SIZE)
 
 #             log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
@@ -107,7 +107,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             self.drmaa.JobState.SYSTEM_SUSPENDED: 0x21,
             self.drmaa.JobState.USER_SUSPENDED: 0x22,
             self.drmaa.JobState.DONE: 0x30,
-            self.drmaa.JobState.FAILED: 0x40 }
+            self.drmaa.JobState.FAILED: 0x40}
         return drmaa_job_state_order[staten] > drmaa_job_state_order[statep]
 
     def _get_drmaa_state_qstat(self, job_id, extinfo=set()):
