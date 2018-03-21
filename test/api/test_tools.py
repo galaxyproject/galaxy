@@ -456,7 +456,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("column_param")
     def test_column_legal_values(self):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='#col1\tcol2')
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='#col1\tcol2', wait=True)
         inputs = {
             'input1': {"src": "hda", "id": new_dataset1["id"]},
             'col': "' ; echo 'moo",
