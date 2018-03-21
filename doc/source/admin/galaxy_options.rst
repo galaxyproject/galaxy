@@ -71,7 +71,7 @@
     gone away", you will want to set this to some positive value (7200
     should work).
 :Default: ``-1``
-:Type: str
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -429,7 +429,7 @@
     scheme that may work in wider range of scenarios than the watchdog
     default.
 :Default: ``false``
-:Type: bool
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -594,7 +594,7 @@
     which will use a less efficient monitoring scheme that may work in
     wider range of scenarios than the watchdog default.
 :Default: ``false``
-:Type: bool
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~
@@ -1517,20 +1517,8 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``nginx_x_archive_files_base``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    nginx can make use of mod_zip to create zip files containing
-    multiple library files.  If using X-Accel-Redirect, this can be
-    the same value as that option.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~
@@ -1572,8 +1560,8 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1584,8 +1572,8 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1597,8 +1585,8 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1610,8 +1598,8 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~

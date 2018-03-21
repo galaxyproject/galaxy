@@ -752,12 +752,7 @@ galaxy:
   # Redirect.  This should be set to the path defined in the nginx
   # config as an internal redirect with access to Galaxy's data files
   # (see documentation linked above).
-  #nginx_x_accel_redirect_base: false
-
-  # nginx can make use of mod_zip to create zip files containing
-  # multiple library files.  If using X-Accel-Redirect, this can be the
-  # same value as that option.
-  #nginx_x_archive_files_base: false
+  #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
   # to disable gzipping of library .tar.gz and .zip archives, since the
@@ -779,24 +774,24 @@ galaxy:
   # in detail in the documentation linked above.  The upload store is a
   # temporary directory in which files uploaded by the upload module
   # will be placed.
-  #nginx_upload_store: false
+  #nginx_upload_store: null
 
   # This value overrides the action set on the file upload form, e.g.
   # the web path where the nginx_upload_module has been configured to
   # intercept upload requests.
-  #nginx_upload_path: false
+  #nginx_upload_path: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_store: false
+  #nginx_upload_job_files_store: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_path: false
+  #nginx_upload_job_files_path: null
 
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
