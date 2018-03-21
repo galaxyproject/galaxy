@@ -1109,12 +1109,6 @@ class ColumnListParameter(SelectToolParameter):
         if not value and self.accept_default:
             value = self.default_value or '1'
             return [value] if self.multiple else value
-        if value is not None:
-            for v in util.listify(value):
-                try:
-                    int(v)
-                except ValueError:
-                    raise ValueError("Column index '%s' is not an integer." % v)
         return super(ColumnListParameter, self).from_json(value, trans, other_values)
 
     @staticmethod
