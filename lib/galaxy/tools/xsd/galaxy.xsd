@@ -141,9 +141,10 @@ hyperlink in the tool menu.</xs:documentation>
       </xs:attribute>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
         <xs:annotation gxdocs:best_practices="tool-versions">
-          <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
-included in the tag. It allows for tool versioning and should be increased with each new version
-of the tool.</xs:documentation>
+          <xs:documentation xml:lang="en">This string allows for tool versioning
+and should be increased with each new version of the tool. The value should
+follow the [PEP 440](https://www.python.org/dev/peps/pep-0440/) specification.
+It defaults to ``1.0.0`` if it is not included in the tag.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="hidden" type="PermissiveBoolean" default="false">
