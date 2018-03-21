@@ -2,6 +2,7 @@ import contextlib
 import json
 import os
 import time
+import unittest
 from functools import wraps
 from operator import itemgetter
 
@@ -33,10 +34,11 @@ def flakey(method):
     def wrapped_method(test_case, *args, **kwargs):
         try:
             method(test_case, *args, **kwargs)
+        except unittest.SkipTest:
+            raise
         except Exception:
             if SKIP_FLAKEY_TESTS_ON_ERROR:
-                from nose.plugins.skip import SkipTest
-                raise SkipTest()
+                raise unittest.SkipTest("Error encountered during test marked as @flakey.")
             else:
                 raise
 

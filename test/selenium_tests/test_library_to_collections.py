@@ -1,4 +1,4 @@
-from base.populators import flakey
+import unittest
 
 from .framework import (
     selenium_test,
@@ -6,12 +6,12 @@ from .framework import (
 )
 
 
+@unittest.skip
 class LibraryToCollectionsTestCase(SeleniumTestCase):
 
     requires_admin = True
 
     @selenium_test
-    @flakey
     def test_list_creation(self):
         self.admin_login()
         self.perform_upload(self.get_filename("1.bed"))
