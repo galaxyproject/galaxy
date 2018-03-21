@@ -1,10 +1,11 @@
 {
-  "presets": ["env"],
-  "plugins": [[
-    "auto-import", {
-      "declarations": [
-        { "default": "$", "path": "jquery" }
-      ]
-    }
-  ]]
+    "presets": ["env"],
+    "plugins": [
+        [
+            "auto-import",
+            {
+                "declarations": [{ "default": "$", "path": "jquery" }, { "default": "jQuery", "path": "jquery" }]
+            }
+        ]
+    ]
 }
