@@ -143,8 +143,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             jobName=ajs.job_name,
             workingDirectory=job_wrapper.working_directory,
             outputPath=":%s" % ajs.output_file,
-            errorPath=":%s" % ajs.error_file
-            )
+            errorPath=":%s" % ajs.error_file )
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
         native_spec = job_destination.params.get('nativeSpecification', None)
