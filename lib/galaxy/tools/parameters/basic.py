@@ -853,10 +853,6 @@ class SelectToolParameter(ToolParameter):
             return self.legal_values
 
     def from_json(self, value, trans, other_values={}):
-        if value is None:
-            if self.optional:
-                return None
-            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         legal_values = self.get_legal_values(trans, other_values)
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
@@ -878,6 +874,10 @@ class SelectToolParameter(ToolParameter):
                         # use \r\n to separate lines.
                         value = value.split()
             return value
+        elif value is None:
+            if self.optional:
+                return None
+            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         elif not legal_values:
             raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
@@ -924,7 +924,7 @@ class SelectToolParameter(ToolParameter):
 
     def get_initial_value(self, trans, other_values):
         options = list(self.get_options(trans, other_values))
-        if len(options) == 0:
+        if not options:
             return None
         value = [optval for _, optval, selected in options if selected]
         if len(value) == 0:
@@ -1327,10 +1327,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        if value is None:
-            if self.optional:
-                return None
-            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         if not legal_values:
             if self.multiple:
                 if value == '':  # No option selected
@@ -1338,6 +1334,10 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 else:
                     value = value.split("\n")
             return value
+        elif value is None:
+            if self.optional:
+                return None
+            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         if not isinstance(value, list):
             value = [value]
         if len(value) > 1 and not self.multiple:
@@ -1397,7 +1397,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 recurse_options(initial_values, option['options'])
         # More working around dynamic options for workflow
         options = self.get_options(trans=trans, other_values=other_values)
-        if len(list(options)) == 0:
+        if not options:
             return None
         initial_values = []
         recurse_options(initial_values, options)
