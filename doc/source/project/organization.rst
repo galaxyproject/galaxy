@@ -101,13 +101,17 @@ two categories of changes:
 
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
+* Build artifacts for the current HEAD of the target branch.  (i.e. -- the
+  output of 'make client-production' or equivalent endpoints should they change
+  in the future).  Commits under this rule should *only* touch the /static/
+  directory.
 
 
 Release branches
 ================
 
 A *release branch* is created every few months from the ``dev`` branch of the
-Galaxy repository. A newly created release branch is in a *freezed* state until
+Galaxy repository. A newly created release branch is in a *frozen* state until
 the committers decide that it is ready for public consumption. At this point, a
 release tag will be assigned to a commit in the branch, changing the release
 state to *tagged*.
@@ -124,7 +128,7 @@ Votes on pull requests should take the form of
 `+1, 0, -1, and fractions <http://www.apache.org/foundation/voting.html>`_
 as outlined by the Apache Foundation.
 
-Pull requests modifying freezed and tagged release branches should be restricted
+Pull requests modifying frozen and tagged release branches should be restricted
 to bug fixes. Pull requests modifying tagged release branches require at least 2
 *+1* binding votes from someone other than the author of the pull request with
 no *-1* binding votes.
@@ -137,7 +141,7 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
 - Require binding *+1* votes from at least 25% of qualified *committers* with no
   *-1* binding votes.
 - Should be titled with the prefix *[PROCEDURES]* and tagged with
-  the *procedures* tag in Github.
+  the *procedures* tag in GitHub.
 - Should not be modified once open. If changes are needed, the pull request
   should be closed, re-opened with modifications, and votes reset.
 - Should be restricted to just modifying the procedures and generally should not
@@ -187,7 +191,7 @@ Reversions
 ----------
 
 A *-1* vote on any recently merged pull request requires an immediate
-reversion of the merged pull request. The backout of such a pull request
+reversion of the merged pull request. The back-out of such a pull request
 invokes a mandatory, minimum 72 hour, review period.
 
 - Recently merged pull requests are defined as a being within the past 168 hours (7
