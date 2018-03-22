@@ -21,6 +21,7 @@
         "d3": "^3.5.17",
         "jquery": "^3.2.1",
         "jquery-ui-bundle": "^1.12.1-migrate",
+        "parcel-bundler": "^1.6.2",
         "underscore": "^1.8.3"
     }
 }
