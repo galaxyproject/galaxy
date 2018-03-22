@@ -1,4 +1,5 @@
 <tool id="tool_provided_metadata_3" name="tool_provided_metadata_3">
+  <!-- Demonstrate setting datatype defined metadata for discovered datasets via galaxy.json for legacy tools (galaxy.json structure changes for profile >= 17.09 tools). -->
   <command>
     echo "1" > sample1.report.tsv;
     echo "2" > sample2.report.tsv;

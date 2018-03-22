@@ -10,6 +10,9 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 DEFAULT_BROWSER = "auto"
+LOGGING_PREFS = {
+    "browser": "ALL",
+}
 
 
 def get_local_driver(browser=DEFAULT_BROWSER):
@@ -29,7 +32,7 @@ def get_local_driver(browser=DEFAULT_BROWSER):
         "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
-    return driver_class()
+    return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
 
 
 def get_remote_driver(
@@ -42,7 +45,7 @@ def get_remote_driver(
         browser = "CHROME"
     assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "PHANTOMJS", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
-
+    desired_capabilities["loggingPrefs"] = LOGGING_PREFS
     executor = 'http://%s:%s/wd/hub' % (host, port)
     driver = webdriver.Remote(
         command_executor=executor,
@@ -76,7 +79,7 @@ def _which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 

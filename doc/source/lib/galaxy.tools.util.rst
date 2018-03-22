@@ -1,5 +1,5 @@
-galaxy.tools.util package
-=========================
+galaxy\.tools\.util package
+===========================
 
 .. automodule:: galaxy.tools.util
     :members:
@@ -16,8 +16,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.tools.util.maf_utilities module
---------------------------------------
+galaxy\.tools\.util\.maf\_utilities module
+------------------------------------------
 
 .. automodule:: galaxy.tools.util.maf_utilities
     :members:

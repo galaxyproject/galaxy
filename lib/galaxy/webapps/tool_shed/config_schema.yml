@@ -1,0 +1,387 @@
+type: map
+mapping:
+  uwsgi: !include uwsgi_schema.yml
+  tool_shed:
+    type: map
+    required: true
+    desc: |
+      Tool Shed configuration options.
+    mapping:
+      log_level:
+        type: str
+        default: DEBUG
+        required: false
+        desc: |
+          Verbosity of console log messages.  Acceptable values can be found here:
+          https://docs.python.org/2/library/logging.html#logging-levels
+      
+      database_connection:
+        type: str
+        default: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
+        required: false
+        desc: |
+          By default, the Tool Shed uses a SQLite database at 'database/community.sqlite'.  You
+          may use a SQLAlchemy connection string to specify an external database
+          instead.  This string takes many options which are explained in detail in the
+          config file documentation.
+      
+      hgweb_config_dir:
+        type: str
+        required: false
+        desc: |
+          Where the hgweb.config file is stored.
+          The default is the Galaxy installation directory.
+      
+      file_path:
+        type: str
+        default: database/community_files
+        required: false
+        desc: |
+          Where tool shed repositories are stored.
+      
+      new_file_path:
+        type: str
+        default: database/tmp
+        required: false
+        desc: |
+          Temporary storage for additional datasets,
+          this should be shared through the cluster
+      
+      builds_file_path:
+        type: str
+        default: tool-data/shared/ucsc/builds.txt
+        required: false
+        desc: |
+          File containing old-style genome builds
+      
+      pretty_datetime_format:
+        type: str
+        default: $locale (UTC)
+        required: false
+        desc: |
+          Format string used when showing date and time information.
+          The string may contain:
+          - the directives used by Python time.strftime() function (see
+            https://docs.python.org/2/library/time.html#time.strftime ),
+          - $locale (complete format string for the server locale),
+          - $iso8601 (complete format string as specified by ISO 8601 international
+            standard).
+      
+      toolshed_search_on:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          -- Repository and Tool search
+          Using the script located at scripts/build_ts_whoosh_index.py
+          you can generate search index and allow full text API searching over
+          the repositories and tools within the Tool Shed given that you specify
+          the following two config options.
+      
+      whoosh_index_dir:
+        type: str
+        default: database/toolshed_whoosh_indexes
+        required: false
+        desc: |
+          -- Repository and Tool search
+          Using the script located at scripts/build_ts_whoosh_index.py
+          you can generate search index and allow full text API searching over
+          the repositories and tools within the Tool Shed given that you specify
+          the following two config options.
+      
+      repo_name_boost:
+        type: float
+        default: 0.9
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      repo_description_boost:
+        type: float
+        default: 0.6
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      repo_long_description_boost:
+        type: float
+        default: 0.5
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      repo_homepage_url_boost:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      repo_remote_repository_url_boost:
+        type: float
+        default: 0.2
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      repo_owner_username_boost:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching repositories at /api/repositories:
+      
+      tool_name_boost:
+        type: float
+        default: 1.2
+        required: false
+        desc: |
+          For searching tools at /api/tools
+      
+      tool_description_boost:
+        type: float
+        default: 0.6
+        required: false
+        desc: |
+          For searching tools at /api/tools
+      
+      tool_help_boost:
+        type: float
+        default: 0.4
+        required: false
+        desc: |
+          For searching tools at /api/tools
+      
+      tool_repo_owner_username:
+        type: float
+        default: 0.3
+        required: false
+        desc: |
+          For searching tools at /api/tools
+      
+      ga_code:
+        type: str
+        required: false
+        desc: |
+          You can enter tracking code here to track visitor's behavior
+          through your Google Analytics account. Example: UA-XXXXXXXX-Y
+      
+      id_secret:
+        type: str
+        default: changethisinproductiontoo
+        required: false
+        desc: |
+          The Tool Shed encodes various internal values when these values will be output in
+          some format (for example, in a URL or cookie).  You should set a key to be
+          used by the algorithm that encodes and decodes these values.  It can be any
+          string.  If left unchanged, anyone could construct a cookie that would grant
+          them access to others' sessions.
+          One simple way to generate a value for this is with the shell command:
+            python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+      
+      use_remote_user:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          User authentication can be delegated to an upstream proxy server (usually
+          Apache).  The upstream proxy should set a REMOTE_USER header in the request.
+          Enabling remote user disables regular logins.  For more information, see:
+          https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+      
+      remote_user_secret:
+        type: str
+        default: changethisinproductiontoo
+        required: false
+        desc: |
+          If use_remote_user is enabled, anyone who can log in to the Galaxy host may
+          impersonate any other user by simply sending the appropriate header. Thus a
+          secret shared between the upstream proxy server, and Galaxy is required.
+          If anyone other than the Galaxy user is using the server, then apache/nginx
+          should pass a value in the header 'GX_SECRET' that is identical the one below
+      
+      debug:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Configuration for debugging middleware
+      
+      use_lint:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Check for WSGI compliance.
+      
+      use_printdebug:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Intercept print statements and show them on the returned page.
+      
+      use_interactive:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          NEVER enable this on a public site (even test or QA)
+      
+      admin_users:
+        type: str
+        required: false
+        desc: |
+          Administrative users - set this to a comma-separated list of valid Tool Shed
+          users (email addresses).  These users will have access to the Admin section
+          of the server, and will have access to create users, groups, roles,
+          libraries, and more.
+      
+      require_login:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Force everyone to log in (disable anonymous access)
+      
+      smtp_server:
+        type: str
+        default: smtp.your_tool_shed_server
+        required: false
+        desc: |
+          For use by email messages sent from the tool shed
+      
+      email_from:
+        type: str
+        default: your_tool_shed_email@server
+        required: false
+        desc: |
+          For use by email messages sent from the tool shed
+      
+      smtp_username:
+        type: str
+        required: false
+        desc: |
+          If your SMTP server requires a username and password, you can provide them
+          here (password in cleartext here, but if your server supports STARTTLS it
+          will be sent over the network encrypted).
+      
+      smtp_password:
+        type: str
+        required: false
+        desc: |
+          If your SMTP server requires a username and password, you can provide them
+          here (password in cleartext here, but if your server supports STARTTLS it
+          will be sent over the network encrypted).
+      
+      smtp_ssl:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If your SMTP server requires SSL from the beginning of the connection
+      
+      support_url:
+        type: str
+        default: https://wiki.galaxyproject.org/Support
+        required: false
+        desc: |
+          The URL linked by the "Support" link in the "Help" menu.
+      
+      mailing_join_addr:
+        type: str
+        default: galaxy-announce-join@bx.psu.edu
+        required: false
+        desc: |
+          Address to join mailing list
+      
+      use_heartbeat:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Write thread status periodically to 'heartbeat.log' (careful, uses disk
+           space rapidly!)
+      
+      use_profile:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Profiling middleware (cProfile based)
+      
+      enable_galaxy_flavor_docker_image:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable creation of Galaxy flavor Docker Image
+      
+      message_box_visible:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Show a message box under the masthead.
+      
+      message_box_content:
+        type: str
+        required: false
+        desc: |
+          Show a message box under the masthead.
+      
+      message_box_class:
+        type: str
+        default: info
+        required: false
+        desc: |
+          Show a message box under the masthead.
+      
+      static_enabled:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_cache_time:
+        type: int
+        default: 360
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_dir:
+        type: str
+        default: static/
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_images_dir:
+        type: str
+        default: static/images
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_favicon_dir:
+        type: str
+        default: static/favicon.ico
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_scripts_dir:
+        type: str
+        default: static/scripts/
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)
+      
+      static_style_dir:
+        type: str
+        default: static/style/blue
+        required: false
+        desc: |
+          Serving static files (needed if running standalone)

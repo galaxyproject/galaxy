@@ -1,5 +1,5 @@
-galaxy.web.framework.middleware package
-=======================================
+galaxy\.web\.framework\.middleware package
+==========================================
 
 .. automodule:: galaxy.web.framework.middleware
     :members:
@@ -9,72 +9,88 @@ galaxy.web.framework.middleware package
 Submodules
 ----------
 
-galaxy.web.framework.middleware.error module
---------------------------------------------
+galaxy\.web\.framework\.middleware\.batch module
+------------------------------------------------
+
+.. automodule:: galaxy.web.framework.middleware.batch
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.web\.framework\.middleware\.error module
+------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.error
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.profile module
-----------------------------------------------
+galaxy\.web\.framework\.middleware\.graphite module
+---------------------------------------------------
+
+.. automodule:: galaxy.web.framework.middleware.graphite
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.web\.framework\.middleware\.profile module
+--------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.profile
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.remoteuser module
--------------------------------------------------
+galaxy\.web\.framework\.middleware\.remoteuser module
+-----------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.remoteuser
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.request_id module
--------------------------------------------------
+galaxy\.web\.framework\.middleware\.request\_id module
+------------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.request_id
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.sentry module
----------------------------------------------
+galaxy\.web\.framework\.middleware\.sentry module
+-------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.sentry
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.static module
----------------------------------------------
+galaxy\.web\.framework\.middleware\.static module
+-------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.static
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.statsd module
----------------------------------------------
+galaxy\.web\.framework\.middleware\.statsd module
+-------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.statsd
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.translogger module
---------------------------------------------------
+galaxy\.web\.framework\.middleware\.translogger module
+------------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.translogger
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.web.framework.middleware.xforwardedhost module
------------------------------------------------------
+galaxy\.web\.framework\.middleware\.xforwardedhost module
+---------------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.xforwardedhost
     :members:

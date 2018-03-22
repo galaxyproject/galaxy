@@ -20,12 +20,19 @@ See bottom for instructions on how to add this resolver.
 """
 import logging
 from os import listdir
-from os.path import exists, getmtime, join
+from os.path import (
+    exists,
+    getmtime,
+    join
+)
 
+from . import (
+    Dependency,
+    NullDependency
+)
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver
-from ..resolvers import Dependency, NullDependency
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 MANUAL = "manual"
 PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
@@ -42,7 +49,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
         # Option to ignore owner and just use last modified time
         self.select_by_owner = str(kwds.get('select_by_owner', "true")).lower() != "false"
 
-    def _find_dep_versioned( self, name, version, type='package', **kwds ):
+    def _find_dep_versioned(self, name, version, type='package', **kwds):
         try:
             possibles = self._find_possible_dependencies(name, version, type)
             if len(possibles) == 0:
@@ -54,7 +61,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             else:
                 # Pick the preferred one
                 return self._select_preferred_dependency(possibles).dependency
-        except:
+        except Exception:
             log.exception("Unexpected error hunting for dependency '%s' '%s''%s'", name, version, type)
             return NullDependency(version=version, name=name)
 
@@ -64,10 +71,10 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
     def _find_possible_dependencies(self, name, version, type):
         possibles = []
         if exists(self.base_path):
-            path = join( self.base_path, name, version )
+            path = join(self.base_path, name, version)
             if exists(path):
                 # First try the way without owner/name/revision
-                package = self._galaxy_package_dep(path, version, name, True)
+                package = self._galaxy_package_dep(path, version, name, type, True)
                 if not isinstance(package, NullDependency):
                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, path)
                     possibles.append(CandidateDependency(package, path))
@@ -79,7 +86,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                             package_path = join(owner_path, package_name)
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)
-                                package = self._galaxy_package_dep(revision_path, version, name, True)
+                                package = self._galaxy_package_dep(revision_path, version, name, type, True)
                                 if not isinstance(package, NullDependency):
                                     log.debug("Found dependency '%s' '%s' '%s' at '%s'", name, version, type, revision_path)
                                     possibles.append(CandidateDependency(package, package_path, owner))
@@ -126,7 +133,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
             else:
                 #Pick the preferred one
                 return self._select_preferred_dependency(possibles, by_owner=False).dependency
-        except:
+        except Exception:
             log.exception("Unexpected error hunting for dependency '%s' default '%s'", name, type)
             return NullDependency(version=None, name=name)
     """
@@ -145,11 +152,11 @@ class CandidateDependency(Dependency):
         self.path = path
         self.owner = owner
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self):
         """
         Return shell commands to enable this dependency.
         """
-        return self.dependency.shell_commands( requirement )
+        return self.dependency.shell_commands()
 
 
 __all__ = ('UnlinkedToolShedPackageDependencyResolver', )

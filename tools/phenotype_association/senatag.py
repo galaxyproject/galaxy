@@ -25,7 +25,6 @@ from __future__ import print_function
 
 import heapq
 import os
-
 from getopt import getopt, GetoptError
 from sys import argv, exit, stderr
 

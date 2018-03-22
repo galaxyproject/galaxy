@@ -1,5 +1,5 @@
-tool_shed.utility_containers package
-====================================
+tool\_shed\.utility\_containers package
+=======================================
 
 .. automodule:: tool_shed.utility_containers
     :members:
@@ -9,8 +9,8 @@ tool_shed.utility_containers package
 Submodules
 ----------
 
-tool_shed.utility_containers.utility_container_manager module
--------------------------------------------------------------
+tool\_shed\.utility\_containers\.utility\_container\_manager module
+-------------------------------------------------------------------
 
 .. automodule:: tool_shed.utility_containers.utility_container_manager
     :members:

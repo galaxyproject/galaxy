@@ -19,14 +19,14 @@ import galaxy.model.mapping  # need to load this before we unpickle, in order to
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 
 logging.basicConfig()
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def __main__():
     """
     Argument: a JSON file
     """
-    file_path = sys.argv.pop( 1 )
+    file_path = sys.argv.pop(1)
     if not os.path.isfile(file_path):
         # Nothing to do - some splitters don't write a JSON file
         sys.exit(0)

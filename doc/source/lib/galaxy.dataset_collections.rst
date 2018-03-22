@@ -1,5 +1,5 @@
-galaxy.dataset_collections package
-==================================
+galaxy\.dataset\_collections package
+====================================
 
 .. automodule:: galaxy.dataset_collections
     :members:
@@ -16,48 +16,48 @@ Subpackages
 Submodules
 ----------
 
-galaxy.dataset_collections.builder module
------------------------------------------
+galaxy\.dataset\_collections\.builder module
+--------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.builder
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.matching module
-------------------------------------------
+galaxy\.dataset\_collections\.matching module
+---------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.matching
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.registry module
-------------------------------------------
+galaxy\.dataset\_collections\.registry module
+---------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.registry
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.structure module
--------------------------------------------
+galaxy\.dataset\_collections\.structure module
+----------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.structure
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.subcollections module
-------------------------------------------------
+galaxy\.dataset\_collections\.subcollections module
+---------------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.subcollections
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.dataset_collections.type_description module
---------------------------------------------------
+galaxy\.dataset\_collections\.type\_description module
+------------------------------------------------------
 
 .. automodule:: galaxy.dataset_collections.type_description
     :members:

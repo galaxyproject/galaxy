@@ -1,5 +1,5 @@
-galaxy.jobs.actions package
-===========================
+galaxy\.jobs\.actions package
+=============================
 
 .. automodule:: galaxy.jobs.actions
     :members:
@@ -9,8 +9,8 @@ galaxy.jobs.actions package
 Submodules
 ----------
 
-galaxy.jobs.actions.post module
--------------------------------
+galaxy\.jobs\.actions\.post module
+----------------------------------
 
 .. automodule:: galaxy.jobs.actions.post
     :members:

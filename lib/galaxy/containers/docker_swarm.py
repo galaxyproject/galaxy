@@ -34,6 +34,7 @@ class DockerSwarmInterface(DockerInterface):
         'manager_autostart': True,
     }
     publish_port_list_required = True
+    supports_volumes = False
 
     def validate_config(self):
         super(DockerSwarmInterface, self).validate_config()

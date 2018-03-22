@@ -14,8 +14,8 @@ import os.path
 import struct
 import sys
 import tempfile
+from collections import Mapping
 from math import isnan
-from UserDict import DictMixin
 
 import bx.wiggle
 from bx.binned_array import BinnedArray, FileBinnedArray
@@ -27,68 +27,75 @@ from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
 
 class PositionalScoresOnDisk:
     fmt = 'f'
-    fmt_size = struct.calcsize( fmt )
-    default_value = float( 'nan' )
+    fmt_size = struct.calcsize(fmt)
+    default_value = float('nan')
 
-    def __init__( self ):
-        self.file = tempfile.TemporaryFile( 'w+b' )
+    def __init__(self):
+        self.file = tempfile.TemporaryFile('w+b')
         self.length = 0
 
-    def __getitem__( self, i ):
+    def __getitem__(self, i):
         if i < 0:
             i = self.length + i
         if i < 0 or i >= self.length:
             return self.default_value
         try:
-            self.file.seek( i * self.fmt_size )
-            return struct.unpack( self.fmt, self.file.read( self.fmt_size ) )[0]
+            self.file.seek(i * self.fmt_size)
+            return struct.unpack(self.fmt, self.file.read(self.fmt_size))[0]
         except Exception as e:
             raise IndexError(e)
 
-    def __setitem__( self, i, value ):
+    def __setitem__(self, i, value):
         if i < 0:
             i = self.length + i
         if i < 0:
             raise IndexError('Negative assignment index out of range')
         if i >= self.length:
-            self.file.seek( self.length * self.fmt_size )
-            self.file.write( struct.pack( self.fmt, self.default_value ) * ( i - self.length ) )
+            self.file.seek(self.length * self.fmt_size)
+            self.file.write(struct.pack(self.fmt, self.default_value) * (i - self.length))
             self.length = i + 1
-        self.file.seek( i * self.fmt_size )
-        self.file.write( struct.pack( self.fmt, value ) )
+        self.file.seek(i * self.fmt_size)
+        self.file.write(struct.pack(self.fmt, value))
 
-    def __len__( self ):
+    def __len__(self):
         return self.length
 
-    def __repr__( self ):
+    def __repr__(self):
         i = 0
         repr = "[ "
-        for i in range( self.length ):
-            repr = "%s %s," % ( repr, self[i] )
-        return "%s ]" % ( repr )
+        for i in range(self.length):
+            repr = "%s %s," % (repr, self[i])
+        return "%s ]" % (repr)
 
 
-class FileBinnedArrayDir( DictMixin ):
+class FileBinnedArrayDir(Mapping):
     """
     Adapter that makes a directory of FileBinnedArray files look like
     a regular dict of BinnedArray objects.
     """
-    def __init__( self, dir ):
+    def __init__(self, dir):
         self.dir = dir
         self.cache = dict()
 
-    def __getitem__( self, key ):
+    def __getitem__(self, key):
         value = None
         if key in self.cache:
             value = self.cache[key]
         else:
-            fname = os.path.join( self.dir, "%s.ba" % key )
-            if os.path.exists( fname ):
-                value = FileBinnedArray( open( fname ) )
+            fname = os.path.join(self.dir, "%s.ba" % key)
+            if os.path.exists(fname):
+                with open(fname) as fh:
+                    value = FileBinnedArray(fh)
                 self.cache[key] = value
         if value is None:
-            raise KeyError( "File does not exist: " + fname )
+            raise KeyError("File does not exist: " + fname)
         return value
+
+    def __iter__(self):
+        raise NotImplementedError()
+
+    def __len__(self):
+        raise NotImplementedError()
 
 
 def stop_err(msg):
@@ -96,14 +103,14 @@ def stop_err(msg):
     sys.exit()
 
 
-def load_scores_wiggle( fname, chrom_buffer_size=3 ):
+def load_scores_wiggle(fname, chrom_buffer_size=3):
     """
     Read a wiggle file and return a dict of BinnedArray objects keyed
     by chromosome.
     """
     scores_by_chrom = dict()
     try:
-        for chrom, pos, val in bx.wiggle.Reader( UCSCOutWrapper( open( fname ) ) ):
+        for chrom, pos, val in bx.wiggle.Reader(UCSCOutWrapper(open(fname))):
             if chrom not in scores_by_chrom:
                 if chrom_buffer_size:
                     scores_by_chrom[chrom] = BinnedArray()
@@ -121,18 +128,18 @@ def load_scores_wiggle( fname, chrom_buffer_size=3 ):
     return scores_by_chrom
 
 
-def load_scores_ba_dir( dir ):
+def load_scores_ba_dir(dir):
     """
     Return a dict-like object (keyed by chromosome) that returns
     FileBinnedArray objects created from "key.ba" files in `dir`
     """
-    return FileBinnedArrayDir( dir )
+    return FileBinnedArrayDir(dir)
 
 
 def main():
 
     # Parse command line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
 
     try:
         score_fname = args[0]
@@ -140,39 +147,39 @@ def main():
         chrom_col = args[2]
         start_col = args[3]
         stop_col = args[4]
-        if len( args ) > 5:
-            out_file = open( args[5], 'w' )
+        if len(args) > 5:
+            out_file = open(args[5], 'w')
         else:
             out_file = sys.stdout
-        binned = bool( options.binned )
+        binned = bool(options.binned)
         mask_fname = options.mask
-    except:
+    except Exception:
         doc_optparse.exit()
 
     if score_fname == 'None':
-        stop_err( 'This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.' )
+        stop_err('This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.')
 
     try:
         chrom_col = int(chrom_col) - 1
         start_col = int(start_col) - 1
         stop_col = int(stop_col) - 1
-    except:
-        stop_err( 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.' )
+    except Exception:
+        stop_err('Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.')
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
-        stop_err( 'Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.' )
+        stop_err('Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.')
 
     if binned:
-        scores_by_chrom = load_scores_ba_dir( score_fname )
+        scores_by_chrom = load_scores_ba_dir(score_fname)
     else:
         try:
-            chrom_buffer = int( options.chrom_buffer )
-        except:
+            chrom_buffer = int(options.chrom_buffer)
+        except Exception:
             chrom_buffer = 3
-        scores_by_chrom = load_scores_wiggle( score_fname, chrom_buffer )
+        scores_by_chrom = load_scores_wiggle(score_fname, chrom_buffer)
 
     if mask_fname:
-        masks = binned_bitsets_from_file( open( mask_fname ) )
+        masks = binned_bitsets_from_file(open(mask_fname))
     else:
         masks = None
 
@@ -180,15 +187,15 @@ def main():
     first_invalid_line = 0
     invalid_line = ''
 
-    for i, line in enumerate( open( interval_fname )):
+    for i, line in enumerate(open(interval_fname)):
         valid = True
         line = line.rstrip('\r\n')
-        if line and not line.startswith( '#' ):
+        if line and not line.startswith('#'):
             fields = line.split()
 
             try:
-                chrom, start, stop = fields[chrom_col], int( fields[start_col] ), int( fields[stop_col] )
-            except:
+                chrom, start, stop = fields[chrom_col], int(fields[start_col]), int(fields[stop_col])
+            except Exception:
                 valid = False
                 skipped_lines += 1
                 if not invalid_line:
@@ -199,7 +206,7 @@ def main():
                 count = 0
                 min_score = 100000000
                 max_score = -100000000
-                for j in range( start, stop ):
+                for j in range(start, stop):
                     if chrom in scores_by_chrom:
                         try:
                             # Skip if base is masked
@@ -208,12 +215,12 @@ def main():
                                     continue
                             # Get the score, only count if not 'nan'
                             score = scores_by_chrom[chrom][j]
-                            if not isnan( score ):
+                            if not isnan(score):
                                 total += score
                                 count += 1
-                                max_score = max( score, max_score )
-                                min_score = min( score, min_score )
-                        except:
+                                max_score = max(score, max_score)
+                                min_score = min(score, min_score)
+                        except Exception:
                             continue
                 if count > 0:
                     avg = total / count
@@ -230,20 +237,20 @@ def main():
                 out_line.append(min_score)
                 out_line.append(max_score)
 
-                print("\t".join( map( str, out_line ) ), file=out_file)
+                print("\t".join(map(str, out_line)), file=out_file)
             else:
                 skipped_lines += 1
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
-        elif line.startswith( '#' ):
+        elif line.startswith('#'):
             # We'll save the original comments
             print(line, file=out_file)
 
     out_file.close()
 
     if skipped_lines > 0:
-        print('Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % ( skipped_lines, first_invalid_line, invalid_line ))
+        print('Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % (skipped_lines, first_invalid_line, invalid_line))
         if skipped_lines == i:
             print('Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.')
 

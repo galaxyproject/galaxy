@@ -67,4 +67,4 @@
     <br/>
 %endif
 
-${render_msg( 'To find out more information about Data Managers, please visit the <a href="https://wiki.galaxyproject.org/Admin/Tools/DataManagers" target="_blank">wiki.</a>', "info" ) }
+${render_msg( 'To find out more information about Data Managers, please visit the <a href="https://galaxyproject.org/admin/tools/data-managers/" target="_blank">wiki.</a>', "info" ) }

@@ -24,18 +24,16 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
     ${ self.bootstrap( **kwargs ) }
     <script type="text/javascript">
-        require([ 'require', 'galaxy' ], function( require, galaxy ){
-            //TODO: global...
-            window.Galaxy = new galaxy.GalaxyApp({
-                root    : '${h.url_for( "/" )}',
-                config  : ${ render_json( get_config_dict() )},
-                user    : ${ render_json( get_user_dict() )},
-            }, window.bootstrapped );
+        window.Galaxy = new window.bundleEntries.GalaxyApp.GalaxyApp({
+            root               : '${h.url_for( "/" )}',
+            config             : ${ render_json( get_config_dict() )},
+            user               : ${ render_json( get_user_dict() )},
+            session_csrf_token : '${ trans.session_csrf_token }'
+        }, window.bootstrapped );
 
-            %if app:
-                require([ '${app}' ]);
-            %endif
-        });
+        %if app:
+            require([ '${app}' ]);
+        %endif
     </script>
 </%def>
 
@@ -49,7 +47,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             controller = trans.webapp.api_controllers.get( 'configuration', None )
             if controller:
                 config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
-        except Exception, exc:
+        except Exception as exc:
             pass
         return config_dict
     %>
@@ -91,7 +89,7 @@ ${ h.dumps( get_config_dict() )}
             try:
                 usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
                 percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
-            except AssertionError, assertion:
+            except AssertionError as assertion:
                 # no history for quota_agent.get_usage assertion
                 pass
             return {
@@ -100,7 +98,7 @@ ${ h.dumps( get_config_dict() )}
                 'quota_percent'         : percent
             }
 
-        except Exception, exc:
+        except Exception as exc:
             pass
             #TODO: no logging available?
             #log.exception( exc )

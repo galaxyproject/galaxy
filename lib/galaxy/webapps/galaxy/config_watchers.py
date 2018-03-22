@@ -24,13 +24,25 @@ class ConfigWatchers(object):
         self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
         self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
-        self.tool_watcher = get_tool_watcher( self, app.config )
+        self.tool_watcher = get_tool_watcher(self, app.config)
         self.start()
 
     def start(self):
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
         [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
+
+    def shutdown(self):
+        self.tool_config_watcher.shutdown()
+        self.data_manager_config_watcher.shutdown()
+        self.tool_data_watcher.shutdown()
+        self.tool_watcher.shutdown()
+
+    def update_watch_data_table_paths(self):
+        if hasattr(self.tool_data_watcher, 'monitored_dirs'):
+            for tool_data_table_path in self.tool_data_paths:
+                if tool_data_table_path not in self.tool_data_watcher.monitored_dirs:
+                    self.tool_data_watcher.watch_directory(tool_data_table_path)
 
     @property
     def data_manager_configs(self):

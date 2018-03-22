@@ -1,4 +1,3 @@
-
 <!DOCTYPE HTML>
 <html>
     <!--js-app.mako-->
@@ -9,7 +8,12 @@
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
-        <title>Galaxy</title>
+        <title>
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+        </title>
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ## TODO: use loaders to move everything but the essentials below the fold
@@ -24,28 +28,31 @@
     </head>
 
     <body scroll="no" class="full-content">
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-            ## TODO: needed?
-            <div id="background"></div>
-
-            %if masthead:
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
-            ## a div below the masthead to show server messages set in galaxy.ini
-            <div id="messagebox" style="display: none;"></div>
-            ## a message displayed when the user has been inactive and needs to reactivate their account
-            <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
-            %endif
-
-        </div><!--end everything-->
-        <div id='dd-helper' style="display: none;"></div>
         ${ js_disabled_warning() }
 
         ## js libraries and bundled js app
         ${ h.js(
+            'libs/require',
             'bundled/libs.bundled',
             'bundled/' + js_app_name + '.bundled'
         )}
         <script type="text/javascript">
+            window.jQuery = window.jquery = window.$;
+            define( 'jquery', [], function(){ return window.$; })
+            require.config({
+                baseUrl: "${h.url_for('/static/scripts') }",
+                shim: {
+                    "libs/underscore": {
+                        exports: "_"
+                    },
+                    "libs/backbone": {
+                        deps: [ 'jquery', 'libs/underscore' ],
+                        exports: "Backbone"
+                    }
+                },
+                // cache busting using time server was restarted
+                urlArgs: 'v=${app.server_starttime}',
+            });
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }

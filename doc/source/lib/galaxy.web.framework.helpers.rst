@@ -1,5 +1,5 @@
-galaxy.web.framework.helpers package
-====================================
+galaxy\.web\.framework\.helpers package
+=======================================
 
 .. automodule:: galaxy.web.framework.helpers
     :members:
@@ -9,8 +9,8 @@ galaxy.web.framework.helpers package
 Submodules
 ----------
 
-galaxy.web.framework.helpers.grids module
------------------------------------------
+galaxy\.web\.framework\.helpers\.grids module
+---------------------------------------------
 
 .. automodule:: galaxy.web.framework.helpers.grids
     :members:

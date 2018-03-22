@@ -20,7 +20,7 @@ def convert_and_import_workflow(has_workflow, **kwds):
         if workflow_directory is None:
             workflow_directory = os.path.dirname(has_workflow)
         with open(workflow_path, "r") as f:
-            has_workflow = yaml.load(f)
+            has_workflow = yaml.safe_load(f)
 
     if workflow_directory is not None:
         workflow_directory = os.path.abspath(workflow_directory)

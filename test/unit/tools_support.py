@@ -11,32 +11,31 @@ from collections import defaultdict
 
 import galaxy.datatypes.registry
 import galaxy.model
-from galaxy.jobs import NoopQueue
-from galaxy.model import mapping
-from galaxy.tools import Tool
-from galaxy.tools.deps.containers import NullContainerFinder
+from galaxy.tools import create_tool_from_source
 from galaxy.tools.parser import get_tool_source
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.security import SecurityHelper
+from .unittest_utils import galaxy_mock
+
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
 galaxy.model.set_datatypes_registry(datatypes_registry)
 
 
-class UsesApp( object ):
+class UsesApp(object):
 
-    def setup_app( self, mock_model=True ):
+    def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = MockApp( self.test_directory, mock_model=mock_model )
+        self.app = galaxy_mock.MockApp()
+        self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
+        self.app.config.admin_users = "mary@example.com"
 
-    def tear_down_app( self ):
-        shutil.rmtree( self.test_directory )
+    def tear_down_app(self):
+        shutil.rmtree(self.test_directory)
 
 
 # Simple tool with just one text parameter and output.
-SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
+SIMPLE_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$version" profile="$profile">
     <command>echo "$param1" &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
@@ -49,7 +48,7 @@ SIMPLE_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$versio
 
 
 # A tool with data parameters (kind of like cat1) my favorite test tool :)
-SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$version">
+SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="${tool_id}" name="Test Tool" version="$version" profile="$profile">
     <command>cat "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
     <inputs>
         <param type="data" format="tabular" name="param1" value="" />
@@ -64,114 +63,46 @@ SIMPLE_CAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool" version="$ve
 '''
 
 
-class UsesTools( object ):
+class UsesTools(object):
 
     def _init_tool(
         self,
         tool_contents=SIMPLE_TOOL_CONTENTS,
         filename="tool.xml",
-        version="1.0"
+        version="1.0",
+        profile="16.01",
+        tool_id="test_tool",
+        extra_file_contents=None,
+        extra_file_path=None,
     ):
         self._init_app_for_tools()
-        self.tool_file = os.path.join( self.test_directory, filename )
-        contents_template = string.Template( tool_contents )
-        tool_contents = contents_template.safe_substitute( dict( version=version ) )
-        self.__write_tool( tool_contents )
-        return self.__setup_tool( )
+        self.tool_file = os.path.join(self.test_directory, filename)
+        contents_template = string.Template(tool_contents)
+        tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
+        self.__write_tool(tool_contents)
+        if extra_file_contents and extra_file_path:
+            self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
+        return self.__setup_tool()
 
-    def _init_app_for_tools( self ):
+    def _init_app_for_tools(self):
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
         self.app.job_config["get_job_tool_configurations"] = lambda ids: [Bunch(handler=Bunch())]
 
-    def __setup_tool( self ):
-        tool_source = get_tool_source( self.tool_file )
-        self.tool = Tool( self.tool_file, tool_source, self.app )
-        if getattr( self, "tool_action", None ):
+    def __setup_tool(self):
+        tool_source = get_tool_source(self.tool_file)
+        try:
+            self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
+        except Exception:
+            self.tool = None
+        if getattr(self, "tool_action", None and self.tool):
             self.tool.tool_action = self.tool_action
         return self.tool
 
-    def __write_tool( self, contents ):
-        open( self.tool_file, "w" ).write( contents )
-
-
-class MockApp( object ):
-
-    def __init__( self, test_directory, mock_model=True ):
-        # The following line is needed in order to create
-        # HistoryDatasetAssociations - ideally the model classes would be
-        # usable without the ORM infrastructure in place.
-        in_memomry_model = mapping.init( "/tmp", "sqlite:///:memory:", create_tables=True )
-
-        self.datatypes_registry = Bunch(
-            integrated_datatypes_configs='/galaxy/integrated_datatypes_configs.xml',
-            get_datatype_by_extension=lambda ext: Bunch(),
-        )
-
-        self.config = Bunch(
-            outputs_to_working_directory=False,
-            commands_in_new_shell=True,
-            new_file_path=os.path.join(test_directory, "new_files"),
-            tool_data_path=os.path.join(test_directory, "tools"),
-            root=os.path.join(test_directory, "galaxy"),
-            admin_users="mary@example.com",
-            len_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'chrom' ),
-            builds_file_path=os.path.join( 'tool-data', 'shared', 'ucsc', 'builds.txt.sample' ),
-            migrated_tools_config=os.path.join(test_directory, "migrated_tools_conf.xml"),
-            server_name="test_server",
-            preserve_python_environment="always",
-        )
-
-        # Setup some attributes for downstream extension by specific tests.
-        self.job_config = Bunch(
-            dynamic_params=None,
-        )
-
-        # Two ways to handle model layer, one is to stub out some objects that
-        # have an interface similar to real model (mock_model) and can keep
-        # track of 'persisted' objects in a map. The other is to use a real
-        # sqlalchemy layer but target an in memory database. Depending on what
-        # is being tested.
-        if mock_model:
-            # Create self.model to mimic app.model.
-            self.model = Bunch( context=MockContext() )
-            for module_member_name in dir( galaxy.model ):
-                module_member = getattr(galaxy.model, module_member_name)
-                if type( module_member ) == type:
-                    self.model[ module_member_name ] = module_member
-        else:
-            self.model = in_memomry_model
-        self.genome_builds = GenomeBuilds( self )
-        self.toolbox = None
-        self.object_store = None
-        self.security = SecurityHelper(id_secret="testing")
-        from galaxy.security import GalaxyRBACAgent
-        self.job_queue = NoopQueue()
-        self.security_agent = GalaxyRBACAgent( self.model )
-        self.tool_data_tables = {}
-        self.dataset_collections_service = None
-        self.container_finder = NullContainerFinder()
-        self.name = "galaxy"
-        self._toolbox_lock = MockLock()
-        self.tool_version_cache = Bunch(app=self,
-                                        tool_version_by_id={},
-                                        tool_version_by_tool_id={},
-                                        tool_id_to_parent_id={},
-                                        parent_id_to_tool_id={})
-
-    def wait_for_toolbox_reload(self, toolbox):
-        # TODO: If the tpm test case passes, does the operation really
-        # need to wait.
-        return True
-
-
-class MockLock( object ):
-    def __enter__(self):
-        pass
-
-    def __exit__(self, type, value, traceback):
-        pass
+    def __write_tool(self, contents, path=None):
+        path = path or self.tool_file
+        open(path, "w").write(contents)
 
 
 class MockContext(object):
@@ -179,7 +110,7 @@ class MockContext(object):
     def __init__(self, model_objects=None):
         self.expunged_all = False
         self.flushed = False
-        self.model_objects = model_objects or defaultdict( lambda: {} )
+        self.model_objects = model_objects or defaultdict(lambda: {})
         self.created_objects = []
         self.current = self
 
@@ -208,4 +139,4 @@ class MockQuery(object):
         return self.class_objects.get(id, None)
 
 
-__all__ = ( 'UsesApp', )
+__all__ = ('UsesApp', )

@@ -10,7 +10,6 @@ Build mulled images for requirements defined in a tool:
 """
 
 from galaxy.tools.parser import get_tool_source
-
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
@@ -32,7 +31,8 @@ def main(argv=None):
     tool_source = get_tool_source(args.tool)
     requirements, _ = tool_source.parse_requirements_and_containers()
     targets = requirements_to_mulled_targets(requirements)
-    mull_targets(targets, **args_to_mull_targets_kwds(args))
+    kwds = args_to_mull_targets_kwds(args)
+    mull_targets(targets, **kwds)
 
 
 def requirements_to_mulled_targets(requirements):

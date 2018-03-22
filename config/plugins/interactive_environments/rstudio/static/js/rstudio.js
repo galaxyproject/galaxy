@@ -1,3 +1,7 @@
+// Assumed globals we need to get rid of
+var IES = window.IES;
+var toastr = window.toastr;
+
 function message_failed_connection(){
     toastr.error(
         "Could not connect to RStudio. Please contact your administrator.",
@@ -14,11 +18,11 @@ function message_failed_connection(){
  * @param {String} notebook_access_url: the URL embeded in the page and loaded
  *
  */
-function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url, username){
+function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_url){
     // Test notebook_login_url for accessibility, executing the login+load function whenever
     // we've successfully connected to the IE.
-    test_ie_availability(notebook_pubkey_url, function(){
-        var payload = username + "\n" + ie_password;
+    IES.test_ie_availability(notebook_pubkey_url, function(){
+        var payload = "rstudio\nrstudio";
         $.ajax({
             type: 'GET',
             url: notebook_pubkey_url,
@@ -32,7 +36,6 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
                 console.log("Found " + exp +" and " + mod);
                 var rsa = new RSAKey();
                 rsa.setPublic(mod, exp);
-                console.log("Encrypting '" + username + "', '" + ie_password + "'");
                 var enc_hex = rsa.encrypt(payload);
                 var encrypted = hex2b64(enc_hex);
                 console.log("E: " + encrypted);
@@ -55,12 +58,15 @@ function load_notebook(notebook_login_url, notebook_access_url, notebook_pubkey_
                     },
                     // If that is successful, load the notebook
                     success: function(){
-                        append_notebook(notebook_access_url);
+                        IES.append_notebook(notebook_access_url);
                     },
                     error: function(jqxhr, status, error){
-                        message_failed_connection();
+                        // TODO: Uncomment when rstudio / nginx play nicely and
+                        // don't return http when we asked for HTTPS, thereby
+                        // issuing a mixed-content warning.
+                        //message_failed_connection();
                         // Do we want to try and load the notebook anyway? Just in case?
-                        append_notebook(notebook_access_url);
+                        IES.append_notebook(notebook_access_url);
                     }
                 });
             }

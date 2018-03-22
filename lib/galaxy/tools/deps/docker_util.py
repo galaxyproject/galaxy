@@ -28,7 +28,7 @@ class DockerVolume(object):
         self.from_path = path
         self.to_path = to_path or path
         if not DockerVolume.__valid_how(how):
-            raise ValueError("Invalid way to specify docker volume %s" % how)
+            raise ValueError("Invalid way to specify Docker volume %s" % how)
         self.how = how
 
     @staticmethod
@@ -41,7 +41,7 @@ class DockerVolume(object):
     @staticmethod
     def volume_from_str(as_str):
         if not as_str:
-            raise ValueError("Failed to parse docker volume from %s" % as_str)
+            raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
         kwds = dict(path=parts[0])
         if len(parts) == 2:
@@ -155,7 +155,9 @@ def build_docker_run_command(
     if terminal:
         command_parts.append("-t")
     for env_directive in env_directives:
-        command_parts.extend(["-e", shlex_quote(env_directive)])
+        # e.g. -e "GALAXY_SLOTS=$GALAXY_SLOTS"
+        # These are environment variable expansions so we don't quote these.
+        command_parts.extend(["-e", env_directive])
     for volume in volumes:
         command_parts.extend(["-v", shlex_quote(str(volume))])
     if volumes_from:
@@ -175,8 +177,13 @@ def build_docker_run_command(
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:
-            user = str(os.geteuid())
-        command_parts.extend(["-u", user])
+            # If future-us is ever in here and fixing this for docker-machine just
+            # use cwltool.docker_id - it takes care of this default nicely.
+            euid = os.geteuid()
+            egid = os.getgid()
+
+            user = "%d:%d" % (euid, egid)
+        command_parts.extend(["--user", user])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)

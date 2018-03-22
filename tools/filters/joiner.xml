@@ -1,6 +1,37 @@
-<tool id="join1" name="Join two Datasets" version="2.0.2">
+<tool id="join1" name="Join two Datasets" version="2.1.1">
   <description>side by side on a specified field</description>
-  <command interpreter="python">join.py $input1 $input2 $field1 $field2 $out_file1 $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file</command>
+  <requirements>
+    <requirement type="package" version="2.7.13">python</requirement>
+  </requirements>
+  <command detect_errors="aggressive">
+    python '$__tool_directory__/join.py' '$input1' '$input2' $field1 $field2 '$out_file1' $unmatched $partial --index_depth=3 --buffer=50000000 --fill_options_file=$fill_options_file $header
+  </command>
+  <configfiles>
+    <configfile name="fill_options_file">&lt;%
+import json
+%&gt;
+#set $__fill_options = {}
+#if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
+    #set $__fill_options['fill_unjoined_only'] = $fill_empty_columns['fill_columns_by'].value == 'fill_unjoined_only'
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
+        #set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
+    #else:
+        #set $__start_fill = ""
+    #end if
+    #set $__fill_options['file1_columns'] = [ __start_fill for i in range( int( $input1.metadata.columns ) ) ]
+    #set $__fill_options['file2_columns'] = [ __start_fill for i in range( int( $input2.metadata.columns ) ) ]
+    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
+        #for column_fill1 in $fill_empty_columns['do_fill_empty_columns']['column_fill1']:
+            #set $__fill_options['file1_columns'][ int( column_fill1['column_number1'].value ) - 1 ] = column_fill1['fill_value1'].value
+        #end for
+        #for column_fill2 in $fill_empty_columns['do_fill_empty_columns']['column_fill2']:
+            #set $__fill_options['file2_columns'][ int( column_fill2['column_number2'].value ) - 1 ] = column_fill2['fill_value2'].value
+        #end for
+    #end if
+#end if
+${json.dumps( __fill_options )}
+    </configfile>
+  </configfiles>
   <inputs>
     <param format="tabular" name="input1" type="data" label="Join"/>
     <param name="field1" label="using column" type="data_column" data_ref="input1" />
@@ -48,35 +79,13 @@
        </conditional>
      </when>
    </conditional>
+   <param name="header" type="select" label="Keep the header lines">
+     <option value="-H">Yes</option>
+     <option value="" selected="true">No</option>
+   </param>
   </inputs>
-  <configfiles>
-    <configfile name="fill_options_file">&lt;%
-import json
-%&gt;
-#set $__fill_options = {}
-#if $fill_empty_columns['fill_empty_columns_switch'] == 'fill_empty':
-    #set $__fill_options['fill_unjoined_only'] = $fill_empty_columns['fill_columns_by'].value == 'fill_unjoined_only'
-    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'single_fill_value':
-        #set $__start_fill = $fill_empty_columns['do_fill_empty_columns']['fill_value'].value
-    #else:
-        #set $__start_fill = ""
-    #end if
-    #set $__fill_options['file1_columns'] = [ __start_fill for i in range( int( $input1.metadata.columns ) ) ]
-    #set $__fill_options['file2_columns'] = [ __start_fill for i in range( int( $input2.metadata.columns ) ) ]
-    #if $fill_empty_columns['do_fill_empty_columns']['column_fill_type'] == 'fill_value_by_column':
-        #for column_fill1 in $fill_empty_columns['do_fill_empty_columns']['column_fill1']:
-            #set $__fill_options['file1_columns'][ int( column_fill1['column_number1'].value ) - 1 ] = column_fill1['fill_value1'].value
-        #end for
-        #for column_fill2 in $fill_empty_columns['do_fill_empty_columns']['column_fill2']:
-            #set $__fill_options['file2_columns'][ int( column_fill2['column_number2'].value ) - 1 ] = column_fill2['fill_value2'].value
-        #end for
-    #end if
-#end if
-${json.dumps( __fill_options )}
-    </configfile>
-  </configfiles>
   <outputs>
-     <data format="input" name="out_file1" metadata_source="input1" />
+     <data format_source="input1" name="out_file1" metadata_source="input1" />
   </outputs>
   <tests>
     <test>
@@ -128,6 +137,42 @@ ${json.dumps( __fill_options )}
       <param name="fill_value2" value="NoChrom"/>
       <output name="out_file1" file="joiner_out4.bed"/>
     </test>
+    <test>
+      <param name="input1" value="joiner_header_in1.tab"/>
+      <param name="input2" value="joiner_header_in2.tab"/>
+      <param name="field1" value="4"/>
+      <param name="field2" value="1"/>
+      <param name="unmatched" value=""/>
+      <param name="partial" value=""/>
+      <param name="header" value="-H"/>
+      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <output name="out_file1" file="joiner_out5.tab"/>
+    </test>
+    <test>
+      <param name="input1" value="joiner_header_in1.tab"/>
+      <param name="input2" value="joiner_header_in2.tab"/>
+      <param name="field1" value="4"/>
+      <param name="field2" value="1"/>
+      <param name="unmatched" value="Yes"/>
+      <param name="partial" value="Yes"/>
+      <param name="header" value="-H"/>
+      <param name="fill_empty_columns_switch" value="fill_empty"/>
+      <param name="fill_columns_by" value="fill_all"/>
+      <param name="column_fill_type" value="single_fill_value"/>
+      <param name="fill_value" value="."/>
+      <output name="out_file1" file="joiner_out6.tab"/>
+    </test>
+    <test>
+      <param name="input1" value="joiner_header_in1.tab"/>
+      <param name="input2" value="joiner_header_in2.tab"/>
+      <param name="field1" value="4"/>
+      <param name="field2" value="1"/>
+      <param name="unmatched" value=""/>
+      <param name="partial" value=""/>
+      <param name="header" value=""/>
+      <param name="fill_empty_columns_switch" value="no_fill"/>
+      <output name="out_file1" file="joiner_out7.tab"/>
+    </test>
   </tests>
   <help>
 
@@ -154,7 +199,7 @@ You may choose to include lines of your first input that do not join with your s
 
 Dataset1::
 
-  chr1 10 20 geneA 
+  chr1 10 20 geneA
   chr1 50 80 geneB
   chr5 10 40 geneL
 
@@ -177,4 +222,5 @@ Joining the 4th column of Dataset1 with the 1st column of Dataset2, while keepin
   chr5 10 40 geneL
 
 </help>
+<citations></citations>
 </tool>

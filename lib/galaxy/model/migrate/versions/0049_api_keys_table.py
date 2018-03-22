@@ -11,14 +11,14 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
 from galaxy.model.custom_types import TrimmedString
 
 now = datetime.datetime.utcnow
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
-APIKeys_table = Table( "api_keys", metadata,
-                       Column( "id", Integer, primary_key=True ),
-                       Column( "create_time", DateTime, default=now ),
-                       Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-                       Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
+APIKeys_table = Table("api_keys", metadata,
+                      Column("id", Integer, primary_key=True),
+                      Column("create_time", DateTime, default=now),
+                      Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+                      Column("key", TrimmedString(32), index=True, unique=True))
 
 
 def upgrade(migrate_engine):

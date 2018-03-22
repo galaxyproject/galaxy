@@ -10,11 +10,11 @@ from sqlalchemy import Column, MetaData, Table
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 # Column to add.
-params_col = Column( "params", TrimmedString(255), index=True )
+params_col = Column("params", TrimmedString(255), index=True)
 
 
 def upgrade(migrate_engine):
@@ -24,8 +24,8 @@ def upgrade(migrate_engine):
 
     # Add column to Job table.
     try:
-        Job_table = Table( "job", metadata, autoload=True )
-        params_col.create( Job_table, index_name="ix_job_params")
+        Job_table = Table("job", metadata, autoload=True)
+        params_col.create(Job_table, index_name="ix_job_params")
         assert params_col is Job_table.c.params
 
     except Exception:
@@ -38,7 +38,7 @@ def downgrade(migrate_engine):
 
     # Drop column from Job table.
     try:
-        Job_table = Table( "job", metadata, autoload=True )
+        Job_table = Table("job", metadata, autoload=True)
         params_col = Job_table.c.params
         params_col.drop()
     except Exception:

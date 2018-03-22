@@ -6,7 +6,7 @@
 # appropriate `apt-get/pip install` statements.
 ---
 -
-    image: erasche/docker-rstudio-notebook:16.10
+    image: erasche/docker-rstudio-notebook:17.01
     description: |
         If you've ever done R analysis, you probably used RStudio. This
         familiar R analysis software suite will let you explore your datasets

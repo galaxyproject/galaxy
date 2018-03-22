@@ -9,7 +9,17 @@ import re
 
 import galaxy.tools.deps.installable
 import galaxy.tools.deps.requirements
-
+from . import (
+    Dependency,
+    DependencyException,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    MappableDependencyResolver,
+    MultipleDependencyResolver,
+    NullDependency,
+    SpecificationPatternDependencyResolver,
+)
 from ..conda_util import (
     build_isolated_environment,
     cleanup_failed_install,
@@ -24,22 +34,33 @@ from ..conda_util import (
     is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
 )
-from ..resolvers import (
-    Dependency,
-    DependencyException,
-    DependencyResolver,
-    InstallableDependencyResolver,
-    ListableDependencyResolver,
-    MappableDependencyResolver,
-    MultipleDependencyResolver,
-    NullDependency,
-    SpecificationPatternDependencyResolver,
-)
 
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
-DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,r,defaults,conda-forge"
+# Conda channel order from highest to lowest, following the one used in
+# https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
+# adding `iuc` as first channel (for Galaxy-specific packages) and `r` as last
+# (for old R packages)
+DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,conda-forge,defaults"
+CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
+MAX_TRIES=3
+COUNT=0
+while [ $COUNT -lt $MAX_TRIES ]; do
+    . %s '%s' > conda_activate.log 2>&1
+    if [ $? -eq 0 ];then
+        break
+    else
+        let COUNT=COUNT+1
+        if [ $COUNT -eq $MAX_TRIES ];then
+            echo "Failed to activate conda environment! Error was:"
+            cat conda_activate.log
+            exit 1
+        fi
+        sleep 10s
+    fi
+done """
+
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +168,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
 
     def install_all(self, conda_targets):
         env = self.merged_environment_name(conda_targets)
-        return_code = install_conda_targets(conda_targets, env, conda_context=self.conda_context)
+        return_code = install_conda_targets(conda_targets, conda_context=self.conda_context, env_name=env)
         if return_code != 0:
             is_installed = False
         else:
@@ -376,7 +397,7 @@ class MergedCondaDependency(Dependency):
     def version(self):
         return self._version
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         if self._preserve_python_environment:
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
@@ -385,7 +406,7 @@ class MergedCondaDependency(Dependency):
                 self.environment_path,
             )
         else:
-            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
+            return CONDA_SOURCE_CMD % (
                 self.environment_path,
                 self.activate,
                 self.environment_path
@@ -430,9 +451,9 @@ class CondaDependency(Dependency):
     def build_environment(self):
         env_path, exit_code = build_isolated_environment(
             CondaTarget(self.name, self.version),
+            conda_context=self.conda_context,
             path=self.environment_path,
             copy=self.conda_context.copy_dependencies,
-            conda_context=self.conda_context,
         )
         if exit_code:
             if len(os.path.abspath(self.environment_path)) > 79:
@@ -442,7 +463,7 @@ class CondaDependency(Dependency):
                                           "You can try to shorten the path to the job_working_directory.")
             raise DependencyException("Conda dependency seemingly installed but failed to build job environment.")
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         if not self.cache_path:
             # Build an isolated environment if not using a cached dependency manager
             self.build_environment()
@@ -454,15 +475,15 @@ class CondaDependency(Dependency):
                 self.environment_path,
             )
         else:
-            return """[ "$CONDA_DEFAULT_ENV" = "%s" ] || . %s '%s' > conda_activate.log 2>&1 """ % (
+            return CONDA_SOURCE_CMD % (
                 self.environment_path,
                 self.activate,
                 self.environment_path
             )
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
 
 __all__ = ('CondaDependencyResolver', 'DEFAULT_ENSURE_CHANNELS')

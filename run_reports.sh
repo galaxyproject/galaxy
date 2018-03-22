@@ -9,16 +9,26 @@
 # argument to this will cause Galaxy's database and path parameters
 # from galaxy.ini to be copied over into reports.ini.
 
-cd `dirname $0`
+cd "$(dirname "$0")"
 
-./scripts/common_startup.sh --skip-samples
+GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
+GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}
+PID_FILE=$GALAXY_REPORTS_PID
+LOG_FILE=$GALAXY_REPORTS_LOG
 
-: ${GALAXY_VIRTUAL_ENV:=.venv}
+. ./scripts/common_startup_functions.sh
 
-if [ -d "$GALAXY_VIRTUAL_ENV" ];
+if [ "$1" = "--sync-config" ];
 then
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
+    python ./scripts/sync_reports_config.py
+    shift
 fi
+
+parse_common_args $@
+
+run_common_start_up
+
+setup_python
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     if [ -f reports_wsgi.ini ]; then
@@ -27,24 +37,16 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
         GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
     elif [ -f config/reports.ini ]; then
         GALAXY_REPORTS_CONFIG=config/reports.ini
-    else
-        GALAXY_REPORTS_CONFIG=config/reports.ini.sample
+    elif [ -f config/reports.yml ]; then
+        GALAXY_REPORTS_CONFIG=config/reports.yml
     fi
     export GALAXY_REPORTS_CONFIG
 fi
-
-GALAXY_REPORTS_PID=${GALAXY_REPORTS_PID:-reports_webapp.pid}
-GALAXY_REPORTS_LOG=${GALAXY_REPORTS_LOG:-reports_webapp.log}
 
 if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
 fi
 
-
-if [ "$1" = "--sync-config" ];
-then
-    python ./scripts/sync_reports_config.py
-    shift
-fi
-
-python ./scripts/paster.py serve "$GALAXY_REPORTS_CONFIG" --pid-file="$GALAXY_REPORTS_PID" --log-file="$GALAXY_REPORTS_LOG" $@
+find_server ${GALAXY_REPORTS_CONFIG:-none} reports
+echo "executing: $run_server $server_args"
+eval $run_server $server_args

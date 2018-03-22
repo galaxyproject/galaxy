@@ -1,5 +1,5 @@
-tool_shed.metadata package
-==========================
+tool\_shed\.metadata package
+============================
 
 .. automodule:: tool_shed.metadata
     :members:
@@ -9,16 +9,16 @@ tool_shed.metadata package
 Submodules
 ----------
 
-tool_shed.metadata.metadata_generator module
---------------------------------------------
+tool\_shed\.metadata\.metadata\_generator module
+------------------------------------------------
 
 .. automodule:: tool_shed.metadata.metadata_generator
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.metadata.repository_metadata_manager module
------------------------------------------------------
+tool\_shed\.metadata\.repository\_metadata\_manager module
+----------------------------------------------------------
 
 .. automodule:: tool_shed.metadata.repository_metadata_manager
     :members:

@@ -15,8 +15,8 @@ import sys
 
 import drmaa
 
-DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                                 'workingDirectory', 'jobName', 'email', 'project' ]
+DRMAA_jobTemplate_attributes = ['args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
+                                'workingDirectory', 'jobName', 'email', 'project']
 
 
 def load_job_template_from_file(jt, filename):
@@ -30,7 +30,7 @@ def load_job_template_from_file(jt, filename):
 def valid_numeric_userid(userid):
     try:
         uid = int(userid)
-    except:
+    except ValueError:
         return False
     try:
         pwd.getpwuid(uid)
@@ -51,7 +51,7 @@ def get_user_id_by_name(username):
 
 def json_file_exists(json_filename):
     if not os.path.exists(json_filename):
-        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % ( json_filename ) )
+        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % (json_filename))
         exit(1)
 
     return True
@@ -84,7 +84,8 @@ def validate_paramters():
 
 def set_user(uid, assign_all_groups):
     try:
-        # Get user's default group and set it to current process to make sure file permissions are inherited correctly
+        # Get user's default group and set it to current process to make sure
+        # file permissions are inherited correctly
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
         import grp
@@ -99,17 +100,17 @@ def set_user(uid, assign_all_groups):
 
     except OSError as e:
         if e.errno == errno.EPERM:
-            sys.stderr.write( "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid )
+            sys.stderr.write("error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid)
             exit(1)
         else:
             pass
 
     if os.getuid() == 0:
-        sys.stderr.write( "error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
+        sys.stderr.write("error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
         exit(1)
 
     if os.geteuid() == 0:
-        sys.stderr.write( "error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n" )
+        sys.stderr.write("error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
         exit(1)
 
 

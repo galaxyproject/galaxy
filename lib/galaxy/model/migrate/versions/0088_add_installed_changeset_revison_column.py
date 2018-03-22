@@ -11,13 +11,13 @@ from sqlalchemy import Column, MetaData, Table
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 
 metadata = MetaData()
 
@@ -26,10 +26,10 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
-    col = Column( "installed_changeset_revision", TrimmedString( 255 ) )
+    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
+    col = Column("installed_changeset_revision", TrimmedString(255))
     try:
-        col.create( ToolShedRepository_table )
+        col.create(ToolShedRepository_table)
         assert col is ToolShedRepository_table.c.installed_changeset_revision
     except Exception:
         log.exception("Adding installed_changeset_revision column to the tool_shed_repository table failed.")
@@ -42,13 +42,13 @@ def upgrade(migrate_engine):
         + "installed_changeset_revision AS installed_changeset_revision, " \
         + "changeset_revision AS changeset_revision " \
         + "FROM tool_shed_repository;"
-    tool_shed_repositories = migrate_engine.execute( cmd ).fetchall()
+    tool_shed_repositories = migrate_engine.execute(cmd).fetchall()
     update_count = 0
     for row in tool_shed_repositories:
         cmd = "UPDATE tool_shed_repository " \
             + "SET installed_changeset_revision = '%s' " % row.changeset_revision \
             + "WHERE changeset_revision = '%s';" % row.changeset_revision
-        migrate_engine.execute( cmd )
+        migrate_engine.execute(cmd)
         update_count += 1
     print("Updated the installed_changeset_revision column for ", update_count, " rows in the tool_shed_repository table.  ")
 
@@ -56,7 +56,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
+    ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
     try:
         ToolShedRepository_table.c.installed_changeset_revision.drop()
     except Exception:

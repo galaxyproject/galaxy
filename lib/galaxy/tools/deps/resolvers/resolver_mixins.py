@@ -1,14 +1,17 @@
 import os
 
+from . import (
+    Dependency,
+    NullDependency
+)
 from ..brew_exts import (
     build_env_statements,
     DEFAULT_HOMEBREW_ROOT,
     recipe_cellar_path,
 )
-from ..resolvers import Dependency, NullDependency
 
 
-class UsesHomebrewMixin:
+class UsesHomebrewMixin(object):
 
     def _init_homebrew(self, **kwds):
         cellar_root = kwds.get('cellar', None)
@@ -44,15 +47,15 @@ class UsesHomebrewMixin:
         return [n for n in names if os.path.isdir(os.path.join(recipe_base_path, n))]
 
 
-class UsesToolDependencyDirMixin:
+class UsesToolDependencyDirMixin(object):
 
     def _init_base_path(self, dependency_manager, **kwds):
-        self.base_path = os.path.abspath( kwds.get('base_path', dependency_manager.default_base_path) )
+        self.base_path = os.path.abspath(kwds.get('base_path', dependency_manager.default_base_path))
 
 
-class UsesInstalledRepositoriesMixin:
+class UsesInstalledRepositoriesMixin(object):
 
-    def _get_installed_dependency( self, name, type, version=None, **kwds ):
+    def _get_installed_dependency(self, name, type, version=None, **kwds):
         installed_tool_dependencies = kwds.get("installed_tool_dependencies") or []
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.name == name and installed_tool_dependency.type == type:
@@ -71,7 +74,7 @@ class HomebrewDependency(Dependency):
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         raw_commands = self.commands.replace("\n", ";")
         return raw_commands
 

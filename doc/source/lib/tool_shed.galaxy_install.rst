@@ -1,5 +1,5 @@
-tool_shed.galaxy_install package
-================================
+tool\_shed\.galaxy\_install package
+===================================
 
 .. automodule:: tool_shed.galaxy_install
     :members:
@@ -23,48 +23,48 @@ Subpackages
 Submodules
 ----------
 
-tool_shed.galaxy_install.dependency_display module
---------------------------------------------------
+tool\_shed\.galaxy\_install\.dependency\_display module
+-------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.dependency_display
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.galaxy_install.install_manager module
------------------------------------------------
+tool\_shed\.galaxy\_install\.install\_manager module
+----------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.install_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.galaxy_install.installed_repository_manager module
-------------------------------------------------------------
+tool\_shed\.galaxy\_install\.installed\_repository\_manager module
+------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.installed_repository_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.galaxy_install.repair_repository_manager module
----------------------------------------------------------
+tool\_shed\.galaxy\_install\.repair\_repository\_manager module
+---------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.repair_repository_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.galaxy_install.tool_migration_manager module
-------------------------------------------------------
+tool\_shed\.galaxy\_install\.tool\_migration\_manager module
+------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_migration_manager
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool_shed.galaxy_install.update_repository_manager module
----------------------------------------------------------
+tool\_shed\.galaxy\_install\.update\_repository\_manager module
+---------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.update_repository_manager
     :members:

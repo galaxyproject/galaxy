@@ -1,5 +1,5 @@
-galaxy.model.tool_shed_install package
-======================================
+galaxy\.model\.tool\_shed\_install package
+==========================================
 
 .. automodule:: galaxy.model.tool_shed_install
     :members:
@@ -16,8 +16,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.model.tool_shed_install.mapping module
----------------------------------------------
+galaxy\.model\.tool\_shed\_install\.mapping module
+--------------------------------------------------
 
 .. automodule:: galaxy.model.tool_shed_install.mapping
     :members:

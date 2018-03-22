@@ -1,5 +1,5 @@
-galaxy.webapps.reports package
-==============================
+galaxy\.webapps\.reports package
+================================
 
 .. automodule:: galaxy.webapps.reports
     :members:
@@ -16,24 +16,24 @@ Subpackages
 Submodules
 ----------
 
-galaxy.webapps.reports.app module
----------------------------------
+galaxy\.webapps\.reports\.app module
+------------------------------------
 
 .. automodule:: galaxy.webapps.reports.app
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.reports.buildapp module
---------------------------------------
+galaxy\.webapps\.reports\.buildapp module
+-----------------------------------------
 
 .. automodule:: galaxy.webapps.reports.buildapp
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.reports.config module
-------------------------------------
+galaxy\.webapps\.reports\.config module
+---------------------------------------
 
 .. automodule:: galaxy.webapps.reports.config
     :members:

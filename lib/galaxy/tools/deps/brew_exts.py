@@ -224,7 +224,7 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
                 'deps': deps_metadata
             }
             cellar_root = recipe_context.brew_context.homebrew_cellar
-            cellar_path = recipe_cellar_path( cellar_root, package, version )
+            cellar_path = recipe_cellar_path(cellar_root, package, version)
             v_metadata_path = os.path.join(cellar_path, "INSTALL_RECEIPT_VERSIONED.json")
             with open(v_metadata_path, "w") as f:
                 json.dump(metadata, f)
@@ -343,10 +343,10 @@ def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=
     for dep in deps:
         package = dep['name']
         version = dep['version']
-        dep_cellar_path = recipe_cellar_path( cellar_root, package, version )
-        handle_keg( dep_cellar_path )
+        dep_cellar_path = recipe_cellar_path(cellar_root, package, version)
+        handle_keg(dep_cellar_path)
 
-    handle_keg( cellar_path )
+    handle_keg(cellar_path)
     if not custom_only:
         if path_appends:
             actions.append(EnvAction(cellar_path, {"action": "prepend", "variable": "PATH", "value": ":".join(path_appends)}))
@@ -547,7 +547,7 @@ def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
-                return path + "/" + file
+            return path + "/" + file
 
     return None
 

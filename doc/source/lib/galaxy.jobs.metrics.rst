@@ -1,5 +1,5 @@
-galaxy.jobs.metrics package
-===========================
+galaxy\.jobs\.metrics package
+=============================
 
 .. automodule:: galaxy.jobs.metrics
     :members:
@@ -17,8 +17,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.jobs.metrics.formatting module
--------------------------------------
+galaxy\.jobs\.metrics\.formatting module
+----------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.formatting
     :members:

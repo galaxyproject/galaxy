@@ -17,10 +17,10 @@ import fileinput
 import os
 import sys
 
+import requests
 from six.moves.urllib.parse import urlencode
-from six.moves.urllib.request import urlopen
 
-import parse_builds
+import parse_builds  # noqa: I100,I202
 
 
 def getchrominfo(url, db):
@@ -36,9 +36,9 @@ def getchrominfo(url, db):
         "hgta_regionType": "",
         "position": "",
         "hgta_doTopSubmit": "get info"})
-    page = urlopen(URL)
-    for line in page:
-        line = line.rstrip( "\r\n" )
+    page = requests.get(URL).text
+    for line in page.split('\n'):
+        line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue
         fields = line.split("\t")
@@ -60,13 +60,13 @@ if __name__ == "__main__":
                 if line.startswith("#"):
                     continue
                 builds.append(line.split("\t")[0])
-        except:
+        except Exception:
             sys.exit("Bad input file.")
     else:
         try:
             for build in parse_builds.getbuilds("http://genome.cse.ucsc.edu/cgi-bin/das/dsn"):
                 builds.append(build[0])
-        except:
+        except Exception:
             sys.exit("Unable to retrieve builds.")
     for build in builds:
         if build == "?":

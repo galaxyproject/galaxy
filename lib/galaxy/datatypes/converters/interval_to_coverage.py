@@ -25,7 +25,7 @@ COVERAGE_METADATA = ('chromCol',
                      'reverseCol',)
 
 
-def main( interval, coverage ):
+def main(interval, coverage):
     """
     Uses a sliding window of partitions to count coverages.
     Every interval record adds its start and end to the partitions.  The result
@@ -68,8 +68,8 @@ def main( interval, coverage ):
             forward_covs[index] += forward
             reverse_covs[index] += reverse
         partitions.insert(end_index, record.end)
-        forward_covs.insert(end_index, forward_covs[end_index - 1] - forward )
-        reverse_covs.insert(end_index, reverse_covs[end_index - 1] - reverse )
+        forward_covs.insert(end_index, forward_covs[end_index - 1] - forward)
+        reverse_covs.insert(end_index, reverse_covs[end_index - 1] - reverse)
 
         if partitions:
             for partition in range(0, start_index):
@@ -94,8 +94,8 @@ def main( interval, coverage ):
                                forward=forward, reverse=reverse)
 
 
-class CoverageWriter( object ):
-    def __init__( self, out_stream=None, chromCol=0, positionCol=1, forwardCol=2, reverseCol=3 ):
+class CoverageWriter(object):
+    def __init__(self, out_stream=None, chromCol=0, positionCol=1, forwardCol=2, reverseCol=3):
         self.out_stream = out_stream
         self.reverseCol = reverseCol
         self.nlines = 0
@@ -108,7 +108,7 @@ class CoverageWriter( object ):
         else:
             self.template = "%(0)s\t%(1)s\t%(2)s\t%(3)s\n" % positions
 
-    def write(self, **kwargs ):
+    def write(self, **kwargs):
         if self.reverseCol < 0:
             kwargs['forward'] += kwargs['reverse']
         posgen = kwargs['position']
@@ -122,30 +122,30 @@ class CoverageWriter( object ):
 
 
 if __name__ == "__main__":
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
     try:
         chr_col_1, start_col_1, end_col_1, strand_col_1 = [int(x) - 1 for x in options.cols1.split(',')]
         chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x) - 1 for x in options.cols2.split(',')]
         in_fname, out_fname = args
-    except:
+    except Exception:
         doc_optparse.exception()
 
     # Sort through a tempfile first
-    temp_file = tempfile.NamedTemporaryFile(mode="r")
-    environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
-    subprocess.check_call(commandline, shell=True)
+    with tempfile.NamedTemporaryFile(mode="r") as temp_file:
+        environ['LC_ALL'] = 'POSIX'
+        subprocess.check_call([
+            'sort', '-f', '-n', '-k', chr_col_1 + 1, '-k', start_col_1 + 1, '-k', end_col_1 + 1, '-o', temp_file.name, in_fname
+        ])
 
-    coverage = CoverageWriter( out_stream=open(out_fname, "a"),
-                               chromCol=chr_col_2, positionCol=position_col_2,
-                               forwardCol=forward_col_2, reverseCol=reverse_col_2, )
-    temp_file.seek(0)
-    interval = io.NiceReaderWrapper( temp_file,
-                                     chrom_col=chr_col_1,
-                                     start_col=start_col_1,
-                                     end_col=end_col_1,
-                                     strand_col=strand_col_1,
-                                     fix_strand=True )
-    main( interval, coverage )
-    temp_file.close()
+        coverage = CoverageWriter(out_stream=open(out_fname, "a"),
+                                  chromCol=chr_col_2, positionCol=position_col_2,
+                                  forwardCol=forward_col_2, reverseCol=reverse_col_2, )
+        temp_file.seek(0)
+        interval = io.NiceReaderWrapper(temp_file,
+                                        chrom_col=chr_col_1,
+                                        start_col=start_col_1,
+                                        end_col=end_col_1,
+                                        strand_col=strand_col_1,
+                                        fix_strand=True)
+        main(interval, coverage)
     coverage.close()

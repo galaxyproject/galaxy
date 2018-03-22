@@ -1,11 +1,11 @@
 from galaxy.managers.context import (
     ProvidesAppContext,
-    ProvidesUserContext,
-    ProvidesHistoryContext
+    ProvidesHistoryContext,
+    ProvidesUserContext
 )
 
 
-class WorkRequestContext( ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext ):
+class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistoryContext):
     """ Stripped down implementation of Galaxy web transaction god object for
     work request handling outside of web threads - uses mix-ins shared with
     GalaxyWebTransaction to provide app, user, and history context convience
@@ -18,30 +18,34 @@ class WorkRequestContext( ProvidesAppContext, ProvidesUserContext, ProvidesHisto
     objects.
     """
 
-    def __init__( self, app, user=None, history=None, workflow_building_mode=False ):
+    def __init__(self, app, user=None, history=None, workflow_building_mode=False):
         self.app = app
         self.security = app.security
         self.__user = user
+        self.__user_current_roles = None
         self.__history = history
         self.api_inherit_admin = False
         self.workflow_building_mode = workflow_building_mode
 
-    def get_history( self, create=False ):
-        if create:
-            raise NotImplementedError( "Cannot create histories from a work request context." )
+    def get_history(self, create=False):
         return self.__history
 
-    def set_history( self ):
-        raise NotImplementedError( "Cannot change histories from a work request context." )
+    def set_history(self):
+        raise NotImplementedError("Cannot change histories from a work request context.")
 
-    history = property( get_history, set_history )
+    history = property(get_history, set_history)
 
-    def get_user( self ):
+    def get_user(self):
         """Return the current user if logged in or None."""
         return self.__user
 
-    def set_user( self, user ):
-        """Set the current user."""
-        raise NotImplementedError( "Cannot change users from a work request context." )
+    def get_current_user_roles(self):
+        if self.__user_current_roles is None:
+            self.__user_current_roles = super(WorkRequestContext, self).get_current_user_roles()
+        return self.__user_current_roles
 
-    user = property( get_user, set_user )
+    def set_user(self, user):
+        """Set the current user."""
+        raise NotImplementedError("Cannot change users from a work request context.")
+
+    user = property(get_user, set_user)

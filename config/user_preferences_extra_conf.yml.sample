@@ -1,0 +1,65 @@
+preferences:
+    # the key you can refer to
+    apollo_url_01:
+        # description that is displayed to the user
+        description: The URL to your personal Apollo instance
+        inputs:
+            # the content can be accessed by apollo_url_01.apollo_url
+            - name: apollo_url
+              label: Apollo URL
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: text
+              # by defaul all inputs are required
+              required: True
+            - name: apollo_text
+              label: Apollo Text
+              # type of input field that will be displayed to the user
+              # can be string or password
+              type: text
+              # by defaul all inputs are required
+              required: True
+
+    openstack_account:
+        description: Your own Open Stack account
+        inputs:
+            - name: username
+              label: Username
+              type: text
+              required: False
+            - name: url
+              label: Open Stack URL
+              type: text
+              required: True
+
+    webhook_overlay_search:
+        description: Configuration option for your search results
+        inputs:
+            - name: max_search_results
+              label: Maximum number of search results
+              type: text
+              required: False
+
+    use_cached_job:
+      description: Do you want to be able to re-use previously run jobs ?
+      inputs:
+        - name: use_cached_job_checkbox
+          label: Do you want to be able to re-use  equivalent jobs ?
+          type: boolean
+          checked: false
+          value: false
+          help: If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.
+
+    localization:
+        description: Localization
+        inputs:
+            - name: locale
+              label: Prefered language
+              type: select
+              required: False
+              options:
+                  - [Navigator default, auto]
+                  - [Chinese, zh]
+                  - [English, en]
+                  - [French, fr]
+                  - [Japanese, ja]

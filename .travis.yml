@@ -1,3 +1,4 @@
+sudo: false
 language: python
 python: 2.7
 os:
@@ -7,28 +8,36 @@ env:
   - TOX_ENV=py27-lint
   - TOX_ENV=py27-unit
   - TOX_ENV=qunit
-  - TOX_ENV=first_startup
-  - TOX_ENV=py27-lint-imports
-  - TOX_ENV=py27-lint-imports-include-list
-  - TOX_ENV=validate-test-tools
-  - TOX_ENV=py27-lint-docstring-include-list
+  - TOX_ENV=py27-first_startup
+  - TOX_ENV=py27-lint_docstring_include_list
+  - TOX_ENV=check_python_dependencies
 
 matrix:
   include:
-  - os: osx
-    env: TOX_ENV=first_startup
-    language: generic
-  - os: osx
-    env: TOX_ENV=py27-unit
-    language: generic
+    - env: TOX_ENV=validate_test_tools
+      addons:
+        apt:
+          packages:
+            - libxml2-utils
+    - env: TOX_ENV=check_py3_compatibility
+      addons:
+        apt:
+          packages:
+            - ack-grep
   allow_failures:
-  - env: TOX_ENV=py27-lint-imports
+    - env: TOX_ENV=check_python_dependencies
+
 
 install:
+  - set -e
   - pip install tox
-  - if [ "$TOX_ENV" == "validate-test-tools" ]; then sudo apt-get install libxml2-utils; fi
-  - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
-  - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.ini.sample upgrade"; fi
+  - |
+    if [ "$TOX_ENV" == "py27-first_startup" ]; then
+        sh scripts/common_startup.sh
+        wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
+        mv db_gx_rev_0127.sqlite database/universe.sqlite
+        sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
+    fi
 
 script: tox -e $TOX_ENV
 

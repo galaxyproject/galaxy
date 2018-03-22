@@ -172,10 +172,26 @@
         background: @state-default-bg;
         .state-icon {
             &:before {
-                content: @fa-var-exclamation-circle;
+                content: @fa-var-clock-o;
             }
         }
     }
+
+    &.state-loading {
+        background: @state-default-bg;
+        .state-icon {
+            .state-icon-running;
+        }
+    }
+
+}
+
+.blinking {
+  animation: blinker 500ms linear infinite;
+}
+
+@keyframes blinker {
+  50% { opacity: 0; }
 }
 
 // ---------------------------------------------------------------------------- datasets as list-items
@@ -247,16 +263,9 @@
             }
         }
 
-        //TODO: move these out
         .tags-display {
+            // Hidden by default; the interface toggles this.
             display: none;
-            .list-item .vertical-spacing;
-            .select2-container {
-                min-width: 0px;
-                .select2-choices {
-                    border-radius: 3px;
-                }
-            }
         }
         .annotation-display {
             display: none;

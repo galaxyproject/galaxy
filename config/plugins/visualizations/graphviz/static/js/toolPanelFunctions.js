@@ -1,8 +1,9 @@
 $(function() { // on dom ready
-
+	var showIn, showOut;
 
 	///// show/hide Labels
 	$('#nodeLabelCheck').change(function() {
+		var showNodeLabel;
 		if ($(this).is(":checked")) {
 
 			showNodeLabel = 'data(id)'; //.replace(/[^0-9\.]+/g, "")';  // change to label or name if needed
@@ -19,6 +20,7 @@ $(function() { // on dom ready
 	});
 
 	$('#linkLabelCheck').change(function() {
+		var showEdgeLabel;
 		if ($(this).is(":checked")) {
 			showEdgeLabel = "data(id)"; // change to label or name if needed
 		} else {
@@ -67,7 +69,6 @@ $(function() { // on dom ready
 	////////  highlighting incoming nodes
 
 	$('#showInNode').change(function() {
-
 		if ($('#showInNode').is(":checked")) {
 			showIn = true;
 			cy.nodes().on("tapend", highlightIn);
@@ -532,7 +533,7 @@ function expandNodes(selectedNode) {
 
 	var eles = allcy.nodes();
 
-	nodesToAdd = eles[selectedNodeId].outgoers();
+	var nodesToAdd = eles[selectedNodeId].outgoers();
 
 	showNodesToExpand(nodesToAdd);
 	cy.add(eles[selectedNodeId].outgoers());
@@ -570,7 +571,7 @@ function showNodesToExpand(toAdd) {
 // checkBox options
 
 function checkBoxes() {
-
+	var showIn;
 
 	if ($('#showInNode').is(":checked")) {
 		showIn = true;

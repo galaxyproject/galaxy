@@ -11,7 +11,7 @@ components based on their function.
 We assume you are familiar with setting up and managing a local installation of Galaxy.
 
 To learn more about the basics, please refer to:
-https://wiki.galaxyproject.org/Admin/GetGalaxy
+https://galaxyproject.org/admin/get-galaxy/
 
 To explore existing runners, please refer to:
 https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/jobs/runners
@@ -81,7 +81,7 @@ The input params are read from job\_conf.xml and passed to the runner by
 the Galaxy framework. Configuration of where to run jobs and external
 runner configuration is performed in the job\_conf.xml file. More
 information about job\_conf.xml is available
-`here <https://wiki.galaxyproject.org/Admin/Config/Jobs>`__.
+`here <https://galaxyproject.org/admin/config/jobs/>`__.
 
 Have a look at the sample job\_conf.xml:
 

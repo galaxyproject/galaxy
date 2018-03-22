@@ -3,7 +3,6 @@ import os.path
 import shutil
 import tempfile
 import unittest
-
 from math import isinf
 
 from galaxy.tools.parser.factory import get_tool_source
@@ -124,6 +123,10 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     source_file_name = "bwa.xml"
     source_contents = TOOL_XML_1
 
+    def test_tool_source_to_string(self):
+        # Previously this threw an Exception - test for regression.
+        str(self._tool_source)
+
     def test_version(self):
         assert self._tool_source.parse_version() == "1.0.1"
 
@@ -198,17 +201,17 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert len(tests) == 2
         test_dict = tests[0]
         inputs = test_dict["inputs"]
-        assert len(inputs) == 1
+        assert len(inputs) == 1, test_dict
         input1 = inputs[0]
-        assert input1[0] == "foo"
-        assert input1[1] == "5"
+        assert input1["name"] == "foo", input1
+        assert input1["value"] == "5"
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1[0] == 'out1'
-        assert output1[1] == 'moo.txt'
-        attributes1 = output1[2]
+        assert output1["name"] == 'out1'
+        assert output1["value"] == 'moo.txt'
+        attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
 
@@ -216,9 +219,9 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2[0] == 'out1'
-        assert output2[1] is None
-        attributes1 = output2[2]
+        assert output2["name"] == 'out1'
+        assert output2["value"] is None
+        attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
@@ -241,7 +244,8 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
-        assert len(regexes) == 2, regexes
+        # error:, exception: various memory exception...
+        assert len(regexes) > 2, regexes
 
     def test_sanitize_option(self):
         assert self._tool_source.parse_sanitize() is True
@@ -346,15 +350,15 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         inputs = test_dict["inputs"]
         assert len(inputs) == 1
         input1 = inputs[0]
-        assert input1[0] == "foo"
-        assert input1[1] == 5
+        assert input1["name"] == "foo"
+        assert input1["value"] == 5
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1[0] == 'out1'
-        assert output1[1] == 'moo.txt'
-        attributes1 = output1[2]
+        assert output1["name"] == 'out1'
+        assert output1["value"] == 'moo.txt'
+        attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
 
@@ -362,9 +366,9 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2[0] == 'out1'
-        assert output2[1] is None
-        attributes1 = output2[2]
+        assert output2["name"] == 'out1'
+        assert output2["value"] is None
+        attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
@@ -444,3 +448,14 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         action = self._tool_source.parse_action_module()
         assert action[0] == "galaxy.tools.actions.history_imp_exp"
         assert action[1] == "ExportHistoryToolAction"
+
+
+class CollectionTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_two_paired.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 2
+        assert len(tests[0]["inputs"]) == 3, tests[0]

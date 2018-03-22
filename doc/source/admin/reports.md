@@ -4,12 +4,12 @@ Galaxy includes a report tool that is separate from the main process but which g
 
 ## Setup on localhost
 
-The report tool takes its configuration settings from a file called reports.ini, which is located in the config subdirectory of the Galaxy distribution.
+The report tool takes its configuration settings from a file called `reports.yml`, which is located in the ``config/` subdirectory of the Galaxy distribution.
 
 Configuring the reports for your local setup is a case of:
 
-* Making a copy of `reports.ini.sample` called `reports.ini`.
-* Editing the `database_connection` parameter to match the one in your `galaxy.ini` file
+* Making a copy of ``reports.yml.sample`` called `reports.yml`.
+* Editing the `database_connection` parameter to match the one in your `galaxy.yml` file
 * Optionally, editing the `port` parameter (by default the tool uses port 9001)
 
 You should also set the 'salt' parameter `session_secret` if you intend to expose the reports via the web proxy (see below).
@@ -18,4 +18,4 @@ Then you can start the report server using `sh run_reports.sh` and view the repo
 
 ## Expose Outside
 
-To make your reports available from outside of the localhost using NGINX proxy server you can check out the [blogpost](http://galacticengineer.blogspot.co.uk/2015/06/exposing-galaxy-reports-via-nginx-in.html) by Peter Briggs.
+To make your reports available from outside of the localhost using NGINX proxy server you can check out the [blogpost](http://galacticengineer.blogspot.co.uk/2015/06/exposing-galaxy-reports-via-nginx-in.html) by Peter Briggs and the [Protect Galaxy Reports](https://galaxyproject.org/admin/config/nginx-proxy/#protect-galaxy-reports) section at the [Community Hub](https://galaxyproject.org).

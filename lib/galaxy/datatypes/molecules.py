@@ -1,17 +1,21 @@
 # -*- coding: utf-8 -*-
-
-from galaxy.datatypes import data
 import logging
-from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.data import get_file_peek
-from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.xml import GenericXml
-import subprocess
 import os
+import subprocess
 
+from galaxy.datatypes import (
+    data,
+    metadata
+)
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
+from galaxy.datatypes.sniff import (
+    get_headers,
+    iter_headers
+)
+from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.xml import GenericXml
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +33,7 @@ def count_special_lines(word, filename, invert=False):
         cmd.extend([word, filename])
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
@@ -44,25 +48,24 @@ def count_lines(filename, non_empty=False):
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
-    except:
+    except Exception:
         pass
     return 0
 
 
 class GenericMolFile(data.Text):
     """
-        abstract class for most of the molecule files
+    Abstract class for most of the molecule files.
     """
     MetadataElement(name="number_of_molecules", default=0, desc="Number of molecules", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -88,26 +91,53 @@ class SDF(GenericMolFile):
         """
         Try to guess if the file is a SDF2 file.
 
+        An SDfile (structure-data file) can contain multiple compounds.
+
+        Each compound starts with a block in V2000 or V3000 molfile format,
+        which ends with a line equal to 'M  END'.
+        This is followed by a non-structural data block, which ends with a line
+        equal to '$$$$'.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
         True
 
-        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> fname = get_test_fname('github88.v3k.sdf')
+        >>> SDF().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('chebi_57262.v3k.mol')
         >>> SDF().sniff(fname)
         False
         """
-        counter = count_special_lines("^M\s*END", filename) + count_special_lines("^\$\$\$\$", filename)
-        if counter > 0 and counter % 2 == 0:
-            return True
-        else:
-            return False
+        m_end_found = False
+        limit = 10000
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                idx += 1
+                line = line.rstrip('\n\r')
+                if idx < 4:
+                    continue
+                elif idx == 4:
+                    if len(line) != 39 or not(line.endswith(' V2000') or
+                            line.endswith(' V3000')):
+                        return False
+                elif not m_end_found:
+                    if line == 'M  END':
+                        m_end_found = True
+                elif line == '$$$$':
+                    return True
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -140,9 +170,8 @@ class SDF(GenericMolFile):
         def _write_part_sdf_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             sdf_records = _read_sdf_records(input_files[0])
@@ -176,10 +205,17 @@ class MOL2(GenericMolFile):
         >>> MOL2().sniff(fname)
         False
         """
-        if count_special_lines("@<TRIPOS>MOLECULE", filename) > 0:
-            return True
-        else:
-            return False
+        limit = 60
+        idx = 0
+        with open(filename) as in_file:
+            for line in in_file:
+                line = line.rstrip('\n\r')
+                if line == '@<TRIPOS>MOLECULE':
+                    return True
+                idx += 1
+                if idx == limit:
+                    break
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -222,9 +258,8 @@ class MOL2(GenericMolFile):
         def _write_part_mol2_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             mol2_records = _read_mol2_records(input_files[0])
@@ -295,9 +330,8 @@ class FPS(GenericMolFile):
         def _write_part_fingerprint_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
             header_lines = []
@@ -332,25 +366,24 @@ class FPS(GenericMolFile):
         if not split_files:
             raise ValueError("No fps files given, %r, to merge into %s"
                              % (split_files, output_file))
-        out = open(output_file, "w")
-        first = True
-        for filename in split_files:
-            with open(filename) as handle:
-                for line in handle:
-                    if line.startswith('#'):
-                        if first:
+        with open(output_file, "w") as out:
+            first = True
+            for filename in split_files:
+                with open(filename) as handle:
+                    for line in handle:
+                        if line.startswith('#'):
+                            if first:
+                                out.write(line)
+                        else:
+                            # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
+                            first = False
                             out.write(line)
-                    else:
-                        # line is no header and not a comment, we assume the first header is written to out and we set 'first' to False
-                        first = False
-                        out.write(line)
-        out.close()
     merge = staticmethod(merge)
 
 
 class OBFS(Binary):
     """OpenBabel Fastsearch format (fs)."""
-    file_ext = 'fs'
+    file_ext = 'obfs'
     composite_type = 'basic'
     allow_datatype_change = False
 
@@ -389,7 +422,7 @@ class OBFS(Binary):
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "OpenBabel Fastsearch Index"
 
     def display_data(self, trans, data, preview=False, filename=None,
@@ -433,7 +466,7 @@ class PHAR(GenericMolFile):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "pharmacophore"
         else:
             dataset.peek = 'file does not exist'
@@ -460,7 +493,7 @@ class PDB(GenericMolFile):
         >>> PDB().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = e = False
         for line in headers:
             section_name = line[0].strip()
@@ -486,7 +519,7 @@ class PDB(GenericMolFile):
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -513,7 +546,7 @@ class PDBQT(GenericMolFile):
         >>> PDBQT().sniff(fname)
         False
         """
-        headers = get_headers(filename, sep=' ', count=300)
+        headers = iter_headers(filename, sep=' ', count=300)
         h = t = c = s = k = False
         for line in headers:
             section_name = line[0].strip()
@@ -537,7 +570,7 @@ class PDBQT(GenericMolFile):
         if not dataset.dataset.purged:
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
         else:
             dataset.peek = 'file does not exist'
@@ -549,7 +582,7 @@ class grd(data.Text):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "grids for docking"
         else:
             dataset.peek = 'file does not exist'
@@ -583,12 +616,11 @@ class InChI(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -606,7 +638,7 @@ class InChI(Tabular):
         >>> InChI().sniff(fname)
         False
         """
-        inchi_lines = get_headers(filename, sep=' ', count=10)
+        inchi_lines = iter_headers(filename, sep=' ', count=10)
         for inchi in inchi_lines:
             if not inchi[0].startswith('InChI='):
                 return False
@@ -628,12 +660,11 @@ class SMILES(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -664,7 +695,7 @@ class SMILES(Tabular):
                     # if we have atoms, we have a molecule
                     if not len(pybel.readstring('smi', smiles).atoms) > 0:
                         return False
-                except:
+                except Exception:
                     # if convert fails its not a smiles string
                     return False
             return True
@@ -689,12 +720,11 @@ class CML(GenericXml):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
             if (dataset.metadata.number_of_molecules == 1):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = "%s molecules" % dataset.metadata.number_of_molecules
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -712,16 +742,13 @@ class CML(GenericXml):
         >>> CML().sniff(fname)
         True
         """
-        handle = open(filename)
-        line = handle.readline()
-        if line.strip() != '<?xml version="1.0"?>':
-            handle.close()
-            return False
-        line = handle.readline()
-        if line.strip().find('http://www.xml-cml.org/schema') == -1:
-            handle.close()
-            return False
-        handle.close()
+        with open(filename) as handle:
+            line = handle.readline()
+            if line.strip() != '<?xml version="1.0"?>':
+                return False
+            line = handle.readline()
+            if line.strip().find('http://www.xml-cml.org/schema') == -1:
+                return False
         return True
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -750,7 +777,7 @@ class CML(GenericXml):
                     if line.lstrip().startswith('<?xml version="1.0"?>') or \
                        line.lstrip().startswith('<cml xmlns="http://www.xml-cml.org/schema') or \
                        line.lstrip().startswith('</cml>'):
-                            continue
+                        continue
                     lines.append(line)
                     if line.lstrip().startswith('</molecule>'):
                         yield lines
@@ -762,11 +789,10 @@ class CML(GenericXml):
         def _write_part_cml_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(header_lines)
-            part_file.writelines(accumulated_lines)
-            part_file.writelines(footer_line)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(header_lines)
+                part_file.writelines(accumulated_lines)
+                part_file.writelines(footer_line)
 
         try:
             cml_records = _read_cml_records(input_files[0])

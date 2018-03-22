@@ -3,7 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-# A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
 show_help() {
@@ -19,13 +18,11 @@ cat <<EOF
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
 '${0##*/} -unit (test_path)'        for running unit tests on specified test path
-'${0##*/} -qunit'                   for running qunit JavaScript tests
-'${0##*/} -qunit testname'          for running single JavaScript test with given name
 '${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
 '${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 
 This wrapper script largely serves as a point documentation and convenience -
-most tests shipped with Galaxy can be run with nosetests or qunit directly.
+most tests shipped with Galaxy can be run with nosetests directly.
 
 The main test types are as follows:
 
@@ -42,7 +39,7 @@ The main test types are as follows:
 - Unit: These are Python unit tests either defined as doctests or inside of
    test/unit. These should generally not require a Galaxy instance and should
    quickly test just a component or a few components of Galaxy's backend code.
-- QUnit: These are JavaScript unit tests defined in test/qunit.
+- QUnit: These are JavaScript unit tests defined in client/galaxy/scripts/qunit.
 - Selenium: These are full stack tests meant to test the Galaxy UI with real
    browsers and are located in test/selenium_tests.
 - ToolShed: These are web tests that use the older Python web testing
@@ -78,6 +75,13 @@ Run all selenium tests (Under Linux using Docker):
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
     ./run_tests.sh -selenium test/selenium_tests/test_registration.py:RegistrationTestCase.test_reregister_username_fails
 
+Run a selenium test against a running server while watching client (fastest iterating on client tests):
+    ./run.sh & # run Galaxy on 8080
+    make client-watch & # watch for client changes
+    export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
+    . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
+    nosetests test/selenium_tests/test_workflow_editor.py:WorkflowEditorTestCase.test_data_input   
+
 Note About Selenium Tests:
 
 If using a local selenium driver such as a Chrome or Firefox based one
@@ -112,6 +116,20 @@ address Docker exposes localhost on to its child containers. This trick
 doesn't work on Mac OS X and so GALAXY_TEST_HOST will need to be crafted
 carefully ahead of time.
 
+For Selenium test cases a stack trace is usually insufficient to diagnose
+problems. For this reason, GALAXY_TEST_ERRORS_DIRECTORY is populated with
+a new directory of information for each failing test case. This information
+includes a screenshot, a stack trace, and the DOM of the currently rendered
+Galaxy instance. The new directories are created with names that include
+information about the failed test method name and the timestamp. By default,
+GALAXY_TEST_ERRORS_DIRECTORY will be set to database/errors.
+
+The Selenium tests seem to be subject to transient failures at a higher
+rate than the rest of the tests in Galaxy. Though this is unfortunate,
+they have more moving pieces so this is perhaps not surprising. One can
+set the GALAXY_TEST_SELENIUM_RETRIES to a number greater than 0 to
+automatically retry every failed test case the specified number of times.
+
 External Tests:
 
 A small subset of tests can be run against an existing Galaxy
@@ -143,6 +161,8 @@ Extra options:
  --external_master_key Master API key used to configure external tests.
  --external_user_key   User API used for external tests - not required if
                        external_master_key is specified.
+  --skip_flakey_fails  Skip flakey tests on error (sets
+                       GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1).
 
 Environment Variables:
 
@@ -170,7 +190,7 @@ GALAXY_TEST_SAVE                Location to save certain test files (such as
                                 tool outputs).
 GALAXY_TEST_EXTERNAL            Target an external Galaxy as part of testing.
 GALAXY_TEST_JOB_CONFIG_FILE     Job config file to use for the test.
-GALAXY_CONFIG_MASTER_KEY        Master or admin API key to use as part of
+GALAXY_CONFIG_MASTER_API_KEY    Master or admin API key to use as part of
                                 testing with GALAXY_TEST_EXTERNAL.
 GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with
                                 GALAXY_TEST_EXTERNAL.
@@ -196,6 +216,8 @@ GALAXY_TEST_FETCH_DATA          Fetch remote test data to
                                 command-line.
 GALAXY_TEST_DATA_REPO_CACHE     Where to cache remote test data to (default to
                                 test-data-cache).
+GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
+                                Skip tests annotated with @flakey on test errors.
 HTTP_ACCEPT_LANGUAGE            Defaults to 'en'
 GALAXY_TEST_NO_CLEANUP          Do not cleanup main test directory after tests,
                                 the deprecated option TOOL_SHED_TEST_NO_CLEANUP
@@ -235,29 +257,14 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-ensure_grunt_for_qunit() {
-    if ! exists "grunt";
-    then
-        PATH="$PATH:./test/qunit/node_modules/grunt/bin"
-        export PATH
-        if ! exists "grunt";
-        then
-            echo "Grunt not on path, cannot run these tests."
-            exit 1
-        fi
-    fi
-}
-
-
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:17.05.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
 structured_data_report_file=""
 with_framework_test_tools_arg=""
-
-driver="python"
+skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
 then
@@ -282,8 +289,10 @@ then
        shift
     fi
     MY_UID=$(id -u)
-    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
-    echo "Launching docker container for testing..."
+    # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
+    # locally before testing - you will need to do this also if using this script for Selenium testing.
+    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
+    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
@@ -341,6 +350,7 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
+          skip_client_build=""
           selenium_test=1;
           if [ $# -gt 1 ]; then
               selenium_script=$2
@@ -364,6 +374,11 @@ do
       -clean_pyc|--clean_pyc)
           find lib -iname '*pyc' -exec rm -rf {} \;
           find test -iname '*pyc' -exec rm -rf {} \;
+          shift
+          ;;
+      -skip_flakey_fails|--skip_flakey_fails)
+          GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1
+          export GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
           shift
           ;;
       -with_framework_test_tools|--with_framework_test_tools)
@@ -390,19 +405,6 @@ do
       -d|-data_managers|--data_managers)
           data_managers_test=1;
           shift 1
-          ;;
-      -j|-casperjs|--casperjs)
-          # TODO: Support running casper tests against existing
-          # Galaxy instances.
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          if [ $# -gt 1 ]; then
-              casperjs_test_name=$2
-              shift 2
-          else
-              shift 1
-          fi
-          report_file="run_casperjs_tests.html"
-          casperjs_test=1;
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -479,18 +481,6 @@ do
               shift 1
           fi
           ;;
-      -q|-qunit|--qunit)
-          # Requires grunt installed and dependencies configured see
-          # test/qunit/README.txt for more information.
-          driver="grunt"
-          gruntfile="./test/qunit/Gruntfile.js"
-          if [ $# -gt 1 ]; then
-              qunit_name=$2
-              shift 2
-          else
-              shift 1
-          fi
-          ;;
       --no_cleanup)
           GALAXY_TEST_NO_CLEANUP=1
           export GALAXY_TEST_NO_CLEANUP
@@ -549,7 +539,7 @@ if [ -z "$skip_common_startup" ]; then
             GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip --dev-wheels || exit 1
+    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
 fi
 
 GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
@@ -577,15 +567,6 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
-elif [ -n "$casperjs_test" ]; then
-    # TODO: Ensure specific versions of casperjs and phantomjs are
-    # available. Some option for leveraging npm to automatically
-    # install these dependencies would be nice as well.
-    if [ -n "$casperjs_test_name" ]; then
-        extra_args="test/casperjs/casperjs_runner.py:$casperjs_test_name"
-    else
-        extra_args="test/casperjs/casperjs_runner.py"
-    fi
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
 elif [ -n "$test_id" ]; then
@@ -601,39 +582,22 @@ else
     extra_args='--exclude="^get" functional'
 fi
 
-if [ "$driver" = "python" ]; then
-    if [ -n "$xunit_report_file" ]; then
-        xunit_args="--with-xunit --xunit-file $xunit_report_file"
-    else
-        xunit_args=""
-    fi
-    if [ -n "$structured_data_report_file" ]; then
-        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
-    else
-        structured_data_args=""
-    fi
-    if [ -n "$with_framework_test_tools_arg" ]; then
-        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-        export GALAXY_TEST_TOOL_CONF
-    fi
-    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
-    exit_status=$?
-    echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
-    exit ${exit_status}
+if [ -n "$xunit_report_file" ]; then
+    xunit_args="--with-xunit --xunit-file $xunit_report_file"
 else
-    ensure_grunt_for_qunit
-    if [ -n "$watch" ]; then
-        grunt_task="watch"
-    else
-        grunt_task=""
-    fi
-    if [ -n "$qunit_name" ]; then
-        grunt_args="--test=$qunit_name"
-    else
-        grunt_args=""
-    fi
-    # TODO: Exapnd javascript helpers to include setting up
-    # grunt deps in npm, "watch"ing directory, and running casper
-    # functional tests.
-    grunt --gruntfile=$gruntfile $grunt_task $grunt_args
+    xunit_args=""
 fi
+if [ -n "$structured_data_report_file" ]; then
+    structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
+else
+    structured_data_args=""
+fi
+if [ -n "$with_framework_test_tools_arg" ]; then
+    GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+    export GALAXY_TEST_TOOL_CONF
+fi
+python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+exit_status=$?
+echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+exit ${exit_status}
+

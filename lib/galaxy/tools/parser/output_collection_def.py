@@ -23,33 +23,66 @@ INPUT_DBKEY_TOKEN = "__input__"
 LEGACY_DEFAULT_DBKEY = None  # don't use __input__ for legacy default collection
 
 
-def dataset_collector_descriptions_from_elem( elem, legacy=True ):
-    primary_dataset_elems = elem.findall( "discover_datasets" )
-    if len(primary_dataset_elems) == 0 and legacy:
-        return [ DEFAULT_DATASET_COLLECTOR_DESCRIPTION ]
+def dataset_collector_descriptions_from_elem(elem, legacy=True):
+    primary_dataset_elems = elem.findall("discover_datasets")
+    num_discover_dataset_blocks = len(primary_dataset_elems)
+    if num_discover_dataset_blocks == 0 and legacy:
+        collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        return map( lambda elem: DatasetCollectionDescription( **elem.attrib ), primary_dataset_elems )
+        collectors = map(lambda elem: dataset_collection_description(**elem.attrib), primary_dataset_elems)
+
+    if num_discover_dataset_blocks > 1:
+        for collector in collectors:
+            if collector.discover_via == "tool_provided_metadata":
+                raise Exception("Cannot specify more than one discover dataset condition if any of them specify tool_provided_metadata.")
+
+    return collectors
 
 
-def dataset_collector_descriptions_from_list( discover_datasets_dicts ):
-    return map( lambda kwds: DatasetCollectionDescription( **kwds ), discover_datasets_dicts )
+def dataset_collector_descriptions_from_list(discover_datasets_dicts):
+    return map(lambda kwds: dataset_collection_description(**kwds), discover_datasets_dicts)
+
+
+def dataset_collection_description(**kwargs):
+    if asbool(kwargs.get("from_provided_metadata", False)):
+        for key in ["pattern", "sort_by"]:
+            if kwargs.get(key):
+                raise Exception("Cannot specify attribute [%s] if from_provided_metadata is True" % key)
+        return ToolProvidedMetadataDatasetCollection(**kwargs)
+    else:
+        return FilePatternDatasetCollectionDescription(**kwargs)
 
 
 class DatasetCollectionDescription(object):
 
-    def __init__( self, **kwargs ):
-        pattern = kwargs.get( "pattern", "__default__" )
-        if pattern in NAMED_PATTERNS:
-            pattern = NAMED_PATTERNS.get( pattern )
-        self.pattern = pattern
-        self.default_dbkey = kwargs.get( "dbkey", INPUT_DBKEY_TOKEN )
-        self.default_ext = kwargs.get( "ext", None )
+    def __init__(self, **kwargs):
+        self.default_dbkey = kwargs.get("dbkey", INPUT_DBKEY_TOKEN)
+        self.default_ext = kwargs.get("ext", None)
         if self.default_ext is None and "format" in kwargs:
-            self.default_ext = kwargs.get( "format" )
-        self.default_visible = asbool( kwargs.get( "visible", None ) )
-        self.directory = kwargs.get( "directory", None )
-        self.assign_primary_output = asbool( kwargs.get( 'assign_primary_output', False ) )
-        sort_by = kwargs.get( "sort_by", DEFAULT_SORT_BY )
+            self.default_ext = kwargs.get("format")
+        self.default_visible = asbool(kwargs.get("visible", None))
+        self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
+        self.directory = kwargs.get("directory", None)
+        self.recurse = False
+
+
+class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
+
+    discover_via = "tool_provided_metadata"
+
+
+class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
+
+    discover_via = "pattern"
+
+    def __init__(self, **kwargs):
+        super(FilePatternDatasetCollectionDescription, self).__init__(**kwargs)
+        pattern = kwargs.get("pattern", "__default__")
+        self.recurse = asbool(kwargs.get("recurse", False))
+        if pattern in NAMED_PATTERNS:
+            pattern = NAMED_PATTERNS.get(pattern)
+        self.pattern = pattern
+        sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
             self.sort_reverse = True
             sort_by = sort_by[len("reverse_"):]
@@ -70,6 +103,6 @@ class DatasetCollectionDescription(object):
         self.sort_comp = sort_comp
 
 
-DEFAULT_DATASET_COLLECTOR_DESCRIPTION = DatasetCollectionDescription(
+DEFAULT_DATASET_COLLECTOR_DESCRIPTION = FilePatternDatasetCollectionDescription(
     default_dbkey=LEGACY_DEFAULT_DBKEY,
 )
