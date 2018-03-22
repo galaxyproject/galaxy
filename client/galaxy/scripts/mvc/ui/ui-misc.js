@@ -188,18 +188,12 @@ export var Hidden = Backbone.View.extend({
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
         this.text = new Input(options);
-        var SelectClass = Select;
-        switch (options.display) {
-            case "checkboxes":
-                SelectClass = Checkbox;
-                break;
-            case "radio":
-                SelectClass = Radio;
-                break;
-            case "radiobutton":
-                SelectClass = RadioButton;
-                break;
+        var classes = {
+            "checkboxes": Checkbox,
+            "radio": Radio,
+            "radiobutton": RadioButton
         }
+        var SelectClass = classes[options.display] || Select;
         this.select = new SelectClass.View(options);
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));
