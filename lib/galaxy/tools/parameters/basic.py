@@ -62,7 +62,7 @@ def is_runtime_value(value):
 def has_runtime_datasets(trans, value):
     for v in util.listify(value):
         if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-            ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
+                ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
                 hasattr(v, "implicit_conversion")):
             return True
     return False
@@ -1135,7 +1135,7 @@ class ColumnListParameter(SelectToolParameter):
                 dataset = dataset.to_hda_representative()
             # Columns can only be identified if the dataset is ready and metadata is available
             if not hasattr(dataset, 'metadata') or \
-                not hasattr(dataset.metadata, 'columns') or \
+                    not hasattr(dataset.metadata, 'columns') or \
                     not dataset.metadata.columns:
                 return []
             # Build up possible columns for this dataset
