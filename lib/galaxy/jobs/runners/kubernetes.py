@@ -4,8 +4,9 @@ Offload jobs to a Kubernetes cluster.
 
 import logging
 import re
-from time import sleep
 from os import environ as os_environ
+from time import sleep
+
 
 from six import text_type
 
@@ -120,16 +121,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job.delete()
             while job.exists():
                 sleep(3)
-                log.debug("Waiting for job to be deleted "+k8s_job_name)
+                log.debug("Waiting for job to be deleted " + k8s_job_name)
             Job(self._pykube_api, k8s_job_obj).create()
         elif job.exists() and self._galaxy_instance_id:
             # The job exists and we trust the identifier.
-            log.debug("Matching job exists, but Job is trusted, so we simply use the existing one for "+k8s_job_name)
+            log.debug("Matching job exists, but Job is trusted, so we simply use the existing one for " + k8s_job_name)
             # We simply leave the k8s job to be handled later on by the check watched-items.
         else:
             # Creates the Kubernetes Job if it doesn't exist.
             job.create()
-
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
@@ -183,10 +183,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             if re.match("(?!-)[a-z\d-]{1,20}(?<!-)$", self.runner_params['k8s_galaxy_instance_id']):
                 return self.runner_params['k8s_galaxy_instance_id']
             else:
-                log.error("Galaxy instance '"+self.runner_params['k8s_galaxy_instance_id']+"' is either too long "
-                            + "(>20 characters) or it includes non DNS acceptable characters, ignoring it.")
+                log.error("Galaxy instance '" + self.runner_params['k8s_galaxy_instance_id'] + "' is either too long "
+                          + '(>20 characters) or it includes non DNS acceptable characters, ignoring it.')
         return None
-
 
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
@@ -563,7 +562,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO this needs to be implemented to override unimplemented base method
         job_id = job.get_job_runner_external_id()
-        log.debug("k8s trying to recover job: "+job_id)
+        log.debug("k8s trying to recover job: " + job_id)
         if job_id is None:
             self.put(job_wrapper)
             return
