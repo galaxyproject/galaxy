@@ -47,6 +47,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
     openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
@@ -390,6 +391,15 @@ class Configuration(object):
         self.parallelize_workflow_scheduling_within_histories = string_as_bool(kwargs.get('parallelize_workflow_scheduling_within_histories', 'False'))
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
         self.maximum_workflow_jobs_per_scheduling_iteration = int(kwargs.get("maximum_workflow_jobs_per_scheduling_iteration", -1))
+
+        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
+        if not workflow_resource_params_mapper:
+            workflow_resource_params_mapper = None
+        elif ":" not in workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file
+            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+        # else: a Python a function!
+        self.workflow_resource_params_mapper = workflow_resource_params_mapper
 
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
         self.pbs_application_server = kwargs.get('pbs_application_server', "")

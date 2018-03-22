@@ -7,6 +7,7 @@ class Job(object):
         self.input_datasets = []
         self.input_library_datasets = []
         self.param_values = dict()
+        self.parameters = []
 
     def get_param_values(self, app, ignore_errors=False):
         return self.param_values
@@ -16,6 +17,9 @@ class Job(object):
 
     def add_input_dataset(self, dataset):
         self.input_datasets.append(dataset)
+
+    def get_parameters(self):
+        return self.parameters
 
 
 class InputDataset(object):
@@ -75,14 +79,22 @@ class JobConfig(object):
         self.info = namedtuple('info', ['id', 'nativeSpec', 'runner'])
         self.tool_id = tool_id
         self.nativeSpec = params
-        self.default_id = "waffles_default"
+        self.default_id = "cluster_default"
         self.defNativeSpec = "-q test.q"
         self.defRunner = "drmaa"
         self.keys = {tool_id: self.info(self.tool_id, self.nativeSpec, self.defRunner),
-                     "waffles_default": self.info(self.default_id, self.defNativeSpec, self.defRunner), }
+                     "cluster_default": self.info(self.default_id, self.defNativeSpec, self.defRunner), }
 
     def get_destination(self, tool_id):
-        return self.keys[tool_id]
+        invalid_destinations = ["cluster-kow", "destinationf", "thig",
+                                "not_true_destination", "cluster_kow",
+                                "Destination_3_med", "fake_destination",
+                                "cluster_defaut", "even_lamerr_cluster",
+                                "no_such_dest"]
+        if tool_id in invalid_destinations:
+            return None
+        else:
+            return tool_id
 
 
 # JobMappingException mock=======================================

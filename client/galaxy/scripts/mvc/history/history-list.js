@@ -107,6 +107,12 @@ var View = Backbone.View.extend({
         var self = this;
         LoadingIndicator.markViewAsLoading(this);
 
+        if(options.action_id == "list_published"){
+            this.active_tab = "shared";
+        }
+        else if (options.action_id = "list"){
+            this.active_tab = "user";
+        }
         this.model = new Backbone.Model();
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,

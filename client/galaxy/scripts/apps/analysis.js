@@ -101,15 +101,20 @@ window.app = function app(options, bootstrapped) {
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
-            this.page.display(new FormWrapper.View(model.get(form_id)));
+            this.page.display(new FormWrapper.View(_.extend(
+                model.get(form_id),
+                {active_tab: "user"}
+            )));
         },
 
         show_visualizations: function(action_id) {
+            var activeTab = action_id=="list_published"?"shared":"visualization";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Visualizations",
-                    item: "visualization"
+                    item: "visualization",
+                    active_tab: activeTab
                 })
             );
         },
@@ -118,7 +123,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "visualizations/list"
+                    redirect: "visualizations/list",
+                    active_tab: "visualization"
                 })
             );
         },
@@ -201,11 +207,13 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_pages: function(action_id) {
+            var activeTab = action_id=="list_published"?"shared":"user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Pages",
-                    item: "page"
+                    item: "page",
+                    active_tab: activeTab
                 })
             );
         },
@@ -214,7 +222,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: "page/create",
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
         },
@@ -223,7 +232,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `page/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
         },
@@ -243,7 +253,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `workflow/create`,
-                    redirect: "workflow/editor"
+                    redirect: "workflow/editor",
+                    active_tab: "workflow"
                 })
             );
         },
@@ -319,14 +330,18 @@ window.app = function app(options, bootstrapped) {
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
-                    this.page.display(new ToolFormComposite.View(response));
+                    this.page.display(new ToolFormComposite.View(_.extend(
+                        response,
+                        {active_tab: "workflow"}
+                    )));
                 },
                 error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
-                        persistent: true
+                        persistent: true,
+                        active_tab: "workflow"
                     };
                     this.page.display(new Ui.Message(options));
                 }

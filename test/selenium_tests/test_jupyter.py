@@ -13,8 +13,8 @@ class JupyterTestCase(SeleniumTestCase):
 
     ensure_registered = True
 
-    @flakey
     @selenium_test
+    @flakey
     @managed_history
     def test_jupyter_launch(self):
         self._stage_test_data_and_launch()
@@ -29,8 +29,8 @@ class JupyterTestCase(SeleniumTestCase):
             finally:
                 self.driver.switch_to.default_content()
 
-    @flakey
     @selenium_test
+    @flakey
     @managed_history
     def test_jupyter_interaction(self):
         self._stage_test_data_and_launch()
