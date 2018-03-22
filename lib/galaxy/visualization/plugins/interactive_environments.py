@@ -261,7 +261,7 @@ class InteractiveEnvironmentRequest(object):
             return self.attr.container_interface.volume_class(
                 container_path,
                 host_path=host_path,
-                mode=kwds.get('mode'))
+                mode=kwds.get('mode', 'ro'))
 
     def _get_env_for_run(self, env_override=None):
         if env_override is None:

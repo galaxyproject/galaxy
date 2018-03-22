@@ -5,10 +5,18 @@ from __future__ import absolute_import
 
 import logging
 
+try:
+    import docker
+except ImportError:
+    docker = None
+
 from six import string_types
 from six.moves import shlex_quote
 
-from galaxy.containers import ContainerInterface
+from galaxy.containers import (
+    ContainerInterface,
+    pretty_format
+)
 from galaxy.containers.docker_decorators import (
     docker_columns,
     docker_json
@@ -22,11 +30,6 @@ from galaxy.exceptions import (
     ContainerImageNotFound,
     ContainerNotFound
 )
-
-try:
-    import docker
-except ImportError:
-    docker = None
 
 log = logging.getLogger(__name__)
 
@@ -185,28 +188,17 @@ class DockerCLIInterface(DockerInterface):
 
 
 class DockerAPIInterface(DockerInterface):
+
     container_type = 'docker'
 
-    # FIXME: these only work for CLI arg maps
-    option_map = {
-        # `run` options
-        'environment': {'type': 'list_of_kvpairs'},  # FIXME: can be list of kvpairs or dict
-        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'detach': {'flag': '--detach', 'type': 'boolean'},
-        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'cpus': {'flag': '--cpus', 'type': 'string'},
-        'memory': {'flag': '--memory', 'type': 'string'},
-    }
-    host_config_opts = {
-        # supported options that are part of the `host_config` param to `container_create()`, use a value of `None` if
-        # the expected option name is the same as the create_host_config() param
-        'auto_remove': None,
-        'publish_all_ports': None,
-        #'publish_port_random': this is a special case handled in _create_host_config()
-        'cpus': 'nano_cpus',
-        'mem': 'mem_limit',
+    # 'publish_port_random' and 'volumes' are special cases handled in _create_host_config()
+    host_config_option_map = {
+        'auto_remove': {},
+        'publish_all_ports': {},
+        'cpus': {'param': 'nano_cpus', 'map': lambda x: int(x * 1000000000)},
+        'memory': {'param': 'mem_limit'},
+        'binds': {},
+        'port_bindings': {},
     }
 
     def validate_config(self):
@@ -223,7 +215,67 @@ class DockerAPIInterface(DockerInterface):
             )
         return self.__client
 
+    @staticmethod
+    def _kwopt_to_param_names(map_spec, key):
+        params = []
+        if 'param' not in map_spec and 'params' not in map_spec:
+            params.append(key)
+        elif 'param' in map_spec:
+            params.append(map_spec['param'])
+        params.extend(map_spec.get('params', ()))
+        return params
+
+    @staticmethod
+    def _kwopt_to_params(map_spec, key, value):
+        params = {}
+        if 'map' in map_spec:
+            value = map_spec['map'](value)
+        for param in DockerAPIInterface._kwopt_to_param_names(map_spec, key):
+            params[param] = value
+        return params
+
+    def _create_docker_api_spec(self, option_map_name, spec_class, kwopts):
+        """Creates docker-py objects used as arguments to API methods.
+
+        This method modifies ``kwopts`` by removing options that match the spec.
+
+        :param  option_map_name:    Name of option map class variable (``_option_map`` is automatically appended)
+        :type   option_map_name:    str
+        :param  spec_class:         docker-py specification class or callable returning an instance
+        :type   spec_class:         :class:`docker.types.Resources`, :class:`docker.types.ContainerSpec`, etc. or
+                                    callable
+        :param  kwopts:             Keyword options passed to calling method (e.g. :method:`DockerInterface.run()`)
+        :type   kwopts:             dict
+        :returns:                   Instantiated ``spec_class`` object
+        :rtype:                     ``type(spec_class)``
+        """
+        option_map = getattr(self, option_map_name + '_option_map')
+        spec_kwopts = {}
+        # don't allow kwopts that start with _, those are reserved for "child" classes
+        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
+            map_spec = option_map[kwopt]
+            _v = kwopts.pop(kwopt)
+            spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, kwopt, _v))
+        # look for any child classes that need to be checked
+        for _sub_k in filter(lambda k: k.startswith('_') and 'spec_class' in option_map[k], option_map.keys()):
+            param = _sub_k.lstrip('_') + '_option_map'
+            _sub_v = self._create_docker_api_spec(param, option_map[_sub_k]['spec_class'], kwopts)
+            if _sub_v is not None:
+                spec_kwopts[param] = _sub_v
+        # override params with values defined in the config
+        for key in filter(lambda k: self._conf.get(k) is not None, option_map.keys()):
+            spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, self._conf[key]))
+        if spec_kwopts:
+            return spec_class(**spec_kwopts)
+        else:
+            return None
+
     def _volumes_to_native(self, volumes):
+        """Convert a list of volume definitions to the docker-py container creation method parameters.
+
+        :param  volumes:    List of volumes to translate
+        :type   volumes:    list of :class:`galaxy.containers.docker_model.DockerVolume`s
+        """
         paths = []
         binds = {}
         for v in volumes:
@@ -232,52 +284,52 @@ class DockerAPIInterface(DockerInterface):
             binds.update(bind)
         return (paths, binds)
 
-    def _create_host_config(self, **kwopts):
-        """Separate docker host config options from ``kwopts``.
+    def _create_host_config(self, kwopts):
+        """Build the host configuration parameter for docker-py container creation.
 
-        After this method, ``kwopts`` is modified to have the host config options removed
+        This method modifies ``kwopts`` by removing host config options and potentially setting the ``ports`` and
+        ``volumes`` keys.
 
-        Returns the return value of `docker.APIClient.create_host_config()`
+        :param  kwopts: Keyword options passed to calling method (e.g. :method:`DockerInterface.run()`)
+        :type   kwopts: dict
+        :returns:       The return value of `docker.APIClient.create_host_config()`
+        :rtype:         dict
         """
         host_config_kwopts = {}
         if 'publish_port_random' in kwopts:
-            host_config_kwopts['port_bindings'] = {int(kwopts.pop('publish_port_random')): None}
+            port = int(kwopts.pop('publish_port_random'))
+            kwopts['port_bindings'] = {port: None}
+            kwopts['ports'] = [port]
         if 'volumes' in kwopts:
             paths, binds = self._volumes_to_native(kwopts.pop('volumes'))
-            host_config_kwopts['binds'] = binds
+            kwopts['binds'] = binds
             kwopts['volumes'] = paths
-        for k in kwopts.keys():
-            if k in DockerAPIInterface.host_config_opts:
-                # FIXME
-                if k == 'cpus':
-                    kwopts[k] = int(kwopts[k] * 1000000000)
-                host_config_kwopts[DockerAPIInterface.host_config_opts.get(k) or k] = kwopts.pop(k)
-        return self._client.create_host_config(**host_config_kwopts)
+        return self._create_docker_api_spec('host_config', self._client.create_host_config, kwopts)
 
     #
     # docker subcommands
     #
 
-    def ps(self):
-        return self._client.containers()
-
     def run(self, command, image=None, **kwopts):
-        # the kwopts value format is docker's format, so there's nothing to transmogrify other than key names
+        image = image or self._default_image
+        command = command or None
         try:
-            ports = [int(kwopts.get('publish_port_random'))]
-        except (TypeError, ValueError):
-            ports = []
-        try:
+            log.debug("Creating docker container with image '%s' for command: %s", image, command)
+            host_config = self._create_host_config(kwopts)
+            log.debug("Docker container host configuration:\n%s", pretty_format(host_config))
+            log.debug("Docker container creation parameters:\n%s", pretty_format(kwopts))
             container = self._client.create_container(
-                image or self._default_image,
+                image,
                 command=command if command else None,
-                ports=ports,
-                host_config=self._create_host_config(**kwopts),
+                host_config=host_config,
+                **kwopts
             )
             container_id = container.get('Id')
+            log.debug("Starting container: %s", str(container_id))
             self._client.start(container=container_id)
             return DockerContainer.from_id(self, container_id)
         except Exception:
+            # FIXME: what exceptions can occur?
             raise
 
     def inspect(self, container_id):
