@@ -166,10 +166,6 @@ client-test: client ## Run qunit tests via Karma
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
 
-charts: node-deps ## Rebuild charts
-	cd client && yarn run build-charts
-
-
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout dev

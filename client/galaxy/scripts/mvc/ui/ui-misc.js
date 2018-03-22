@@ -47,6 +47,9 @@ export var Message = Backbone.View.extend({
                 fade: true
             }).set(options);
         this.listenTo(this.model, "change", this.render, this);
+        if (options && options.active_tab){
+            this.active_tab = options.active_tab;
+        }
         this.render();
     },
     update: function(options) {

@@ -7,6 +7,7 @@ var View = Backbone.View.extend({
         var self = this;
         this.setElement($("<div/>"));
         this.model = new Backbone.Model();
+        this.active_tab = "visualization";
         $.ajax({
             url: `${Galaxy.root}api/datasets/${options.dataset_id}`
         }).done(dataset => {

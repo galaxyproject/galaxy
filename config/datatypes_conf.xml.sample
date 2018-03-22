@@ -74,6 +74,7 @@
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="d3_hierarchy" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="true"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
@@ -343,7 +344,7 @@
     <datatype extension="bcf_uncompressed" type="galaxy.datatypes.binary:BcfUncompressed" mimetype="application/octet-stream">
       <converter file="bcf_uncompressed_to_bcf_converter.xml" target_datatype="bcf"/>
     </datatype>
-    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="false"/>
+    <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="wig" type="galaxy.datatypes.interval:Wiggle" display_in_upload="true" description="The wiggle format is line-oriented.  Wiggle data is preceded by a track definition line, which adds a number of options for controlling the default display of this track." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Wig">
       <converter file="wig_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="wiggle_to_simple_converter.xml" target_datatype="interval"/>
@@ -497,7 +498,7 @@
     <datatype extension="ncbi" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexus" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="nexusnon" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" subclass="true" display_in_upload="true"/>
+    <datatype extension="phylip" type="galaxy.datatypes.phylip:Phylip" display_in_upload="true"/>
     <datatype extension="phylipnon" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="pir" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="staden" type="galaxy.datatypes.data:Text" subclass="true"/>
