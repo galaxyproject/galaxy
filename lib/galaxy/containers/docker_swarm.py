@@ -5,18 +5,29 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy.containers import docker_swarm_manager
-from galaxy.containers.docker import DockerCLIInterface, DockerInterface
+try:
+    import docker
+except ImportError:
+    docker = None
+
+from galaxy.containers import (
+    docker_swarm_manager,
+    pretty_format
+)
+from galaxy.containers.docker import (
+    DockerAPIInterface,
+    DockerCLIInterface,
+    DockerInterface
+)
 from galaxy.containers.docker_decorators import docker_columns, docker_json
 from galaxy.containers.docker_model import (
     CPUS_CONSTRAINT,
     DockerNode,
     DockerService,
     DockerTask,
-    IMAGE_CONSTRAINT,
+    IMAGE_CONSTRAINT
 )
 from galaxy.exceptions import ContainerRunError
-
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +54,7 @@ class DockerSwarmInterface(DockerInterface):
     def run_in_container(self, command, image=None, **kwopts):
         """Run a service like a detached container
         """
-        kwopts['replicas'] = '1'
+        kwopts['replicas'] = 1
         kwopts['restart_condition'] = 'none'
         if kwopts.get('publish_all_ports', False):
             # not supported for services
@@ -73,7 +84,6 @@ class DockerSwarmInterface(DockerInterface):
                     "mode, volumes will not be passed (set 'ignore_volumes: "
                     "False' in containers config to fail instead): %s" % kwopts['volumes']
                 )
-                del kwopts['volumes']
             else:
                 raise ContainerRunError(
                     "'volumes' kwopt is set and not supported in Docker swarm "
@@ -82,6 +92,8 @@ class DockerSwarmInterface(DockerInterface):
                     image=image,
                     command=command
                 )
+        # ensure the volumes key is removed from kwopts
+        kwopts.pop('volumes', None)
         service = self.service_create(command, image=image, **kwopts)
         self._run_swarm_manager()
         return service
@@ -301,6 +313,71 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
         return self._run_docker(subcommand="inspect", args=task_id)
 
 
-class DockerSwarmAPIInterface(DockerSwarmCLIInterface):
+class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
 
     container_type = 'docker_swarm'
+    placement_option_map = {
+        'constraint': {'param': 'constraints'},
+    }
+    service_mode_option_map = {
+        'service_mode': {'param': 0, 'default': 'replicate'},
+        'replicas': {'default': 1},
+    }
+    endpoint_spec_option_map = {
+        'ports': {},
+    }
+    resources_option_map = {
+        'cpus': {'params': ('cpu_limit', 'cpu_reservation'), 'map': lambda x: int(x * 1000000000)},
+        'memory': {'params': ('mem_limit', 'mem_reservation')},
+    }
+    container_spec_option_map = {
+        'image': {'param': 0},
+        'command': {},
+        'environment': {'param': 'env'},
+        # FIXME: is our param name labels?
+        'labels': {},
+    }
+    restart_policy_option_map = {
+        'restart_condition': {'param': 'condition', 'default': 'none'},
+        'restart_delay': {'param': 'delay'},
+        'restart_max_attempts': {'param', 'max_attemps'},
+    }
+    task_template_option_map = {
+        '_container_spec': {'spec_class': docker.types.ContainerSpec, 'required': True},
+        '_restart_policy': {'spec_class': docker.types.RestartPolicy},
+        '_placement': {'spec_class': docker.types.Placement},
+    }
+
+    #
+    # docker subcommands
+    #
+
+    def service_create(self, command, image=None, **kwopts):
+        log.debug("Creating docker service with image '%s' for command: %s", image, command)
+        # FIXME: these should be class level vars
+        if ('service_create_image_constraint' in self._conf or 'service_create_cpus_constraint' in self._conf) and 'constraint' not in kwopts:
+            kwopts['constraint'] = []
+        # image is part of the container spec
+        kwopts['image'] = self._get_image(image)
+        if self._conf.service_create_image_constraint:
+            kwopts['constraint'].append((IMAGE_CONSTRAINT, '==', image))
+        if self._conf.service_create_cpus_constraint:
+            cpus = kwopts.get('reserve_cpus', kwopts.get('limit_cpus', '1'))
+            kwopts['constraint'].append((CPUS_CONSTRAINT, '==', cpus))
+        if 'publish_port_random' in kwopts:
+            kwopts['ports'] = {kwopts.pop('publish_port_random'): None}
+        #kwopts['resources'] = self._create_docker_api_spec('resources', docker.types.Resources, kwopts)
+        #kwopts['container_spec' = self._create_docker_api_spec('container_spec', docker.types.ContainerSpec, kwopts)
+        # handle types with positional parameters
+        service_mode = docker.types.ServiceMode(
+            kwopts.pop('service_mode', 'replicated'),
+            replicas=kwopts.pop('replicas', 1),
+        )
+        endpoint_spec = self._create_docker_api_spec('endpoint_spec', docker.types.EndpointSpec, kwopts)
+        task_template = self._create_docker_api_spec('task_template', docker.types.TaskTemplate, kwopts)
+        self.set_kwopts_name(kwopts)
+        log.debug("Docker service task template:\n%s", pretty_format(task_template))
+        log.debug("Docker service endpoint specification:\n%s", pretty_format(endpoint_spec))
+        log.debug("Docker service mode:\n%s", pretty_format(service_mode))
+        log.debug("Docker service creation parameters:\n%s", pretty_format(kwopts))
+        service_id = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
