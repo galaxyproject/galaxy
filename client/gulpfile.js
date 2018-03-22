@@ -20,6 +20,10 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
+    plugin_dirs: [
+        "../config/plugins/visualizations/**/*",
+        "!**node_modules**"
+    ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -45,6 +49,13 @@ var dev_mode = function() {
 
 var source_maps = function() {
     return dev_mode() || process.env.GXY_BUILD_SOURCEMAPS !== undefined;
+};
+
+var dist_stage = function(file) {
+    if (file.path.match(/scatterplot/g)) {
+        return true;
+    }
+    return false;
 };
 
 gulp.task("scripts", function() {
@@ -84,6 +95,13 @@ gulp.task("libs", function() {
         .src(paths.libs)
         .pipe(uglify())
         .pipe(gulp.dest("../static/scripts/libs/"));
+});
+
+gulp.task("plugins", function() {
+    return gulp
+        .src(paths.plugin_dirs)
+        //.pipe(gulp.dest("../static/plugins/"));
+        .pipe(gulpif(dist_stage, gulp.dest("../static/scripts/libs/")));
 });
 
 gulp.task("clean", function() {
