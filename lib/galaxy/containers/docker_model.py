@@ -5,7 +5,11 @@ from __future__ import absolute_import
 
 import logging
 
-from galaxy.containers import Container, ContainerPort
+from galaxy.containers import (
+    Container,
+    ContainerPort,
+    ContainerVolume
+)
 
 
 CPUS_LABEL = '_galaxy_cpus'
@@ -62,6 +66,33 @@ class DockerAttributeContainer(object):
             return default
 
 
+class DockerVolume(ContainerVolume):
+    @staticmethod
+    def from_str(cls, as_str):
+        if not as_str:
+            raise ValueError("Failed to parse Docker volume from %s" % as_str)
+        parts = as_str.split(":", 2)
+        kwds = dict(path=parts[0])
+        if len(parts) == 1:
+            pass  # auto-generated volume
+        elif len(parts) == 2:
+            if self._valid_mode(parts[1]):
+                kwds["mode"] = parts[1]
+            else:
+                kwds["host_path"] = parts[1]
+        elif len(parts) == 3:
+            kwds["host_path"] = parts[1]
+            kwds["mode"] = parts[2]
+        return cls(**kwds)
+
+    def __str__(self):
+        return ":".join(filter(lambda x: x is not None, (self.host_path, self.path, self.mode)))
+
+    def to_native(self):
+        host_path = self.host_path or self.path
+        return (self.path, {host_path: {'bind': self.path, 'mode': self.mode}})
+
+
 class DockerContainer(Container):
 
     def __init__(self, interface, id, name=None, inspect=None):
@@ -71,11 +102,11 @@ class DockerContainer(Container):
     @classmethod
     def from_id(cls, interface, id):
         inspect = interface.inspect(id)
-        return cls(interface, id, name=inspect[0]['Name'], inspect=inspect)
+        return cls(interface, id, name=inspect['Name'], inspect=inspect)
 
     @property
     def ports(self):
-        # [{
+        # {
         #     "NetworkSettings" : {
         #         "Ports" : {
         #             "3306/tcp" : [
@@ -86,10 +117,10 @@ class DockerContainer(Container):
         #             ]
         rval = []
         try:
-            port_mappings = self.inspect[0]['NetworkSettings']['Ports']
-        except (IndexError, KeyError) as exc:
+            port_mappings = self.inspect['NetworkSettings']['Ports']
+        except KeyError as exc:
             log.warning("Failed to get ports for container %s from `docker inspect` output at "
-                        "[0]['NetworkSettings']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
+                        "['NetworkSettings']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
             return None
         for port_name in port_mappings:
             for binding in port_mappings[port_name]:
@@ -109,7 +140,7 @@ class DockerContainer(Container):
             return 'localhost'
 
     def is_ready(self):
-        return self.inspect[0]['State']['Running']
+        return self.inspect['State']['Running']
 
     def __eq__(self, other):
         return self._id == other.id
@@ -137,7 +168,7 @@ class DockerService(Container):
         self._inspect = inspect
         self._tasks = []
         if inspect:
-            self._name = name or inspect[0]['Spec']['Name']
+            self._name = name or inspect['Spec']['Name']
             self._image = image or inspect[0]['Spec']['TaskTemplate']['ContainerSpec']['Image']
 
     @classmethod

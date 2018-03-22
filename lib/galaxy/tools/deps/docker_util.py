@@ -23,6 +23,7 @@ DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
 class DockerVolume(object):
+    # TODO: this class has been refactored in to `galaxy.containers`, things that use this should use that instead
 
     def __init__(self, path, to_path=None, how=DEFAULT_VOLUME_MOUNT_TYPE):
         self.from_path = path
@@ -60,6 +61,12 @@ class DockerVolume(object):
 
     def __str__(self):
         return ":".join([self.from_path, self.to_path, self.how])
+
+    def to_docker_api(self):
+        return {self.from_path: {
+            'bind': self.to_path,
+            'mode': self.how
+        }}
 
 
 def kill_command(

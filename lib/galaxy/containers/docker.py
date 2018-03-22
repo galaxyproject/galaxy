@@ -9,20 +9,35 @@ from six import string_types
 from six.moves import shlex_quote
 
 from galaxy.containers import ContainerInterface
-from galaxy.containers.docker_decorators import docker_columns, docker_json
-from galaxy.containers.docker_model import DockerContainer
-from galaxy.exceptions import ContainerCLIError, ContainerImageNotFound, ContainerNotFound
+from galaxy.containers.docker_decorators import (
+    docker_columns,
+    docker_json
+)
+from galaxy.containers.docker_model import (
+    DockerContainer,
+    DockerVolume
+)
+from galaxy.exceptions import (
+    ContainerCLIError,
+    ContainerImageNotFound,
+    ContainerNotFound
+)
 
+try:
+    import docker
+except ImportError:
+    docker = None
 
 log = logging.getLogger(__name__)
 
 
 class DockerInterface(ContainerInterface):
-
     container_class = DockerContainer
+    volume_class = DockerVolume
     conf_defaults = {
         'host': None,
         'force_tlsverify': False,
+        'auto_remove': True,
         'image': None,
         'cpus': None,
         'memory': None,
@@ -35,11 +50,18 @@ class DockerInterface(ContainerInterface):
         'detach': {'flag': '--detach', 'type': 'boolean'},
         'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
         'publish_port_random': {'flag': '--publish', 'type': 'string'},
+        'auto_remove': {'flag': '--rm', 'type': 'boolean'},
         'cpus': {'flag': '--cpus', 'type': 'string'},
         'memory': {'flag': '--memory', 'type': 'string'},
     }
 
+    @property
+    def _default_image(self):
+        assert self._conf.image is not None, "No default image for this docker interface"
+        return self._conf.image
+
     def run_in_container(self, command, image=None, **kwopts):
+        # FIXME: these containers_conf overrides should be defined as class vars
         for opt in ('cpus', 'memory'):
             if self._conf[opt]:
                 kwopts[opt] = self._conf[opt]
@@ -59,7 +81,7 @@ class DockerInterface(ContainerInterface):
         """
         try:
             inspect = self.image_inspect(image)
-            return inspect[0]['RepoDigests'][0]
+            return inspect['RepoDigests'][0]
         except ContainerImageNotFound:
             return image
 
@@ -69,6 +91,7 @@ class DockerInterface(ContainerInterface):
 
 
 class DockerCLIInterface(DockerInterface):
+
     container_type = 'docker_cli'
     conf_defaults = {
         'command_template': '{executable} {global_kwopts} {subcommand} {args}',
@@ -76,6 +99,7 @@ class DockerCLIInterface(DockerInterface):
     }
 
     def validate_config(self):
+        log.warning('The `docker_cli` interface is deprecated and will be removed in Galaxy 18.09, please use `docker`')
         super(DockerCLIInterface, self).validate_config()
         global_kwopts = []
         if self._conf.host:
@@ -114,22 +138,17 @@ class DockerCLIInterface(DockerInterface):
                     ))
         return self._stringify_kwopt_list(flag, l)
 
-    @property
-    def _default_image(self):
-        assert self._conf.image is not None, "No default image for this docker interface"
-        return self._conf.image
-
     def _run_docker(self, subcommand, args=None, verbose=False):
         command = self._docker_command.format(subcommand=subcommand, args=args or '')
         return self._run_command(command, verbose=verbose)
 
     #
-    # docker subcommands (reimplement in API class)
+    # docker subcommands
     #
 
     @docker_columns
-    def ps(self, container_id):
-        return self._run_docker(subcommand='ps', args=container_id)
+    def ps(self):
+        return self._run_docker(subcommand='ps')
 
     def run(self, command, image=None, **kwopts):
         args = '{kwopts} {image} {command}'.format(
@@ -143,8 +162,8 @@ class DockerCLIInterface(DockerInterface):
     @docker_json
     def inspect(self, container_id):
         try:
-            return self._run_docker(subcommand='inspect', args=container_id)
-        except ContainerCLIError as exc:
+            return self._run_docker(subcommand='inspect', args=container_id)[0]
+        except (IndexError, ContainerCLIError) as exc:
             msg = "Invalid container id: %s" % container_id
             if exc.stdout == '[]' and exc.stderr == 'Error: no such object: {container_id}'.format(container_id=container_id):
                 log.warning(msg)
@@ -155,8 +174,8 @@ class DockerCLIInterface(DockerInterface):
     @docker_json
     def image_inspect(self, image):
         try:
-            return self._run_docker(subcommand='image inspect', args=image)
-        except ContainerCLIError as exc:
+            return self._run_docker(subcommand='image inspect', args=image)[0]
+        except (IndexError, ContainerCLIError) as exc:
             msg = "%s not pulled, cannot get digest" % image
             if exc.stdout == '[]' and exc.stderr == 'Error: no such image: {image}'.format(image=image):
                 log.warning(msg, image)
@@ -165,7 +184,110 @@ class DockerCLIInterface(DockerInterface):
                 raise ContainerImageNotFound(msg, image=image)
 
 
-# TODO: implement
-class DockerAPIInterface(DockerCLIInterface):
-
+class DockerAPIInterface(DockerInterface):
     container_type = 'docker'
+
+    # FIXME: these only work for CLI arg maps
+    option_map = {
+        # `run` options
+        'environment': {'type': 'list_of_kvpairs'},  # FIXME: can be list of kvpairs or dict
+        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
+        'name': {'flag': '--name', 'type': 'string'},
+        'detach': {'flag': '--detach', 'type': 'boolean'},
+        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
+        'publish_port_random': {'flag': '--publish', 'type': 'string'},
+        'cpus': {'flag': '--cpus', 'type': 'string'},
+        'memory': {'flag': '--memory', 'type': 'string'},
+    }
+    host_config_opts = {
+        # supported options that are part of the `host_config` param to `container_create()`, use a value of `None` if
+        # the expected option name is the same as the create_host_config() param
+        'auto_remove': None,
+        'publish_all_ports': None,
+        #'publish_port_random': this is a special case handled in _create_host_config()
+        'cpus': 'nano_cpus',
+        'mem': 'mem_limit',
+    }
+
+    def validate_config(self):
+        assert docker is not None, "Docker module could not be imported, DockerAPIInterface unavailable"
+        super(DockerAPIInterface, self).validate_config()
+        self.__client = None
+
+    @property
+    def _client(self):
+        if not self.__client:
+            self.__client = docker.APIClient(
+                base_url=self._conf.host,
+                tls=self._conf.force_tlsverify,
+            )
+        return self.__client
+
+    def _volumes_to_native(self, volumes):
+        paths = []
+        binds = {}
+        for v in volumes:
+            path, bind = v.to_native()
+            paths.append(path)
+            binds.update(bind)
+        return (paths, binds)
+
+    def _create_host_config(self, **kwopts):
+        """Separate docker host config options from ``kwopts``.
+
+        After this method, ``kwopts`` is modified to have the host config options removed
+
+        Returns the return value of `docker.APIClient.create_host_config()`
+        """
+        host_config_kwopts = {}
+        if 'publish_port_random' in kwopts:
+            host_config_kwopts['port_bindings'] = {int(kwopts.pop('publish_port_random')): None}
+        if 'volumes' in kwopts:
+            paths, binds = self._volumes_to_native(kwopts.pop('volumes'))
+            host_config_kwopts['binds'] = binds
+            kwopts['volumes'] = paths
+        for k in kwopts.keys():
+            if k in DockerAPIInterface.host_config_opts:
+                # FIXME
+                if k == 'cpus':
+                    kwopts[k] = int(kwopts[k] * 1000000000)
+                host_config_kwopts[DockerAPIInterface.host_config_opts.get(k) or k] = kwopts.pop(k)
+        return self._client.create_host_config(**host_config_kwopts)
+
+    #
+    # docker subcommands
+    #
+
+    def ps(self):
+        return self._client.containers()
+
+    def run(self, command, image=None, **kwopts):
+        # the kwopts value format is docker's format, so there's nothing to transmogrify other than key names
+        try:
+            ports = [int(kwopts.get('publish_port_random'))]
+        except (TypeError, ValueError):
+            ports = []
+        try:
+            container = self._client.create_container(
+                image or self._default_image,
+                command=command if command else None,
+                ports=ports,
+                host_config=self._create_host_config(**kwopts),
+            )
+            container_id = container.get('Id')
+            self._client.start(container=container_id)
+            return DockerContainer.from_id(self, container_id)
+        except Exception:
+            raise
+
+    def inspect(self, container_id):
+        try:
+            return self._client.inspect_container(container_id)
+        except docker.errors.NotFound:
+            raise ContainerNotFound("Invalid container id: %s" % container_id, container_id=container_id)
+
+    def image_inspect(self, image):
+        try:
+            return self._client.inspect_image(image)
+        except docker.errors.NotFound:
+            raise ContainerImageNotFound("%s not pulled, cannot get digest" % image, image=image)

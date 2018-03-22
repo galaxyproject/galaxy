@@ -44,6 +44,39 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
     :vartype    hostport:   int
     """
 
+class ContainerVolume(with_metaclass(ABCMeta, object)):
+    default_mode = "rw"
+    valid_modes = frozenset(["ro", "rw"])
+
+    def __init__(self, path, host_path=None, mode=None):
+        self.path = path
+        self.host_path = host_path
+        self.mode = mode or self.default_mode
+        if not self.mode_is_valid:
+            raise ValueError("Invalid container volume mode: %s" % mode)
+
+    @abstractmethod
+    def from_str(cls, as_str):
+        """Classmethod to convert from this container type's string representation.
+
+        :param  as_str: string representation of volume
+        :type   as_str: str
+        """
+
+    @abstractmethod
+    def __str__(self):
+        """Return this container type's string representation of the volume.
+        """
+
+    @abstractmethod
+    def to_native(self):
+        """Return this container type's native representation of the volume.
+        """
+
+    @property
+    def mode_is_valid(self):
+        return self.mode in self.valid_modes
+
 
 class Container(with_metaclass(ABCMeta, object)):
 
@@ -107,9 +140,9 @@ class Container(with_metaclass(ABCMeta, object)):
 
 
 class ContainerInterface(with_metaclass(ABCMeta, object)):
-
     container_type = None
     container_class = None
+    volume_class = None
     conf_defaults = {
         'name_prefix': 'galaxy_',
     }

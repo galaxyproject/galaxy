@@ -255,7 +255,13 @@ class InteractiveEnvironmentRequest(object):
         return url
 
     def volume(self, host_path, container_path, **kwds):
-        return DockerVolume(host_path, container_path, **kwds)
+        if self.attr.container_interface is None:
+            return DockerVolume(host_path, container_path, **kwds)
+        else:
+            return self.attr.container_interface.volume_class(
+                container_path,
+                host_path=host_path,
+                mode=kwds.get('mode'))
 
     def _get_env_for_run(self, env_override=None):
         if env_override is None:
@@ -360,7 +366,7 @@ class InteractiveEnvironmentRequest(object):
             args['publish_port_random'] = self.attr.docker_connect_port
         return args
 
-    def _idsToVolumes(self, ids):
+    def _ids_to_volumes(self, ids):
         if len(ids.strip()) == 0:
             return []
 
@@ -500,12 +506,8 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
-        # Do not allow a None volumes
-        if not volumes:
-            volumes = []
-
         if additional_ids is not None:
-            volumes += self._idsToVolumes(additional_ids)
+            volumes += self._ids_to_volumes(additional_ids)
 
         if self.attr.container_interface is None:
             self._launch_legacy(image, env_override, volumes)
