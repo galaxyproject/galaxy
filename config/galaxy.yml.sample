@@ -1040,11 +1040,11 @@ galaxy:
   # between them within the same aggregator.
   #statsd_prefix: galaxy
 
-  # If you are using telegraf to collect these metrics and then sending them to
-  # InfluxDB, Galaxy can provide more nicely tagged metrics. Instead of sending
-  # prefix + dot-separated-path, Galaxy will send prefix with a tag path set to
-  # the page url
-  #statsd_influxdb: False
+  # If you are using telegraf to collect these metrics and then sneding
+  # them to InfluxDB, Galaxy can provide more nicely tagged metrics.
+  # Instead of sending prefix + dot-separated-path, Galaxy will send
+  # prefix with a tag path set to the page url
+  #statsd_influxdb: false
 
   # Log to graphite Graphite is an external statistics aggregator
   # (https://github.com/graphite-project/carbon) Enabling the following
