@@ -20,10 +20,7 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
-    plugin_dirs: [
-        "../config/plugins/visualizations/**/*",
-        "!(node_modules)"
-    ],
+    plugin_dirs: ["../config/plugins/**/static/**/*", "!../config/plugins/**/node_modules{,/**}"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -91,9 +88,7 @@ gulp.task("libs", function() {
 });
 
 gulp.task("plugins", function() {
-    return gulp
-        .src(paths.plugin_dirs)
-        .pipe(gulp.dest("../static/plugins/"));
+    return gulp.src(paths.plugin_dirs).pipe(gulp.dest("../static/plugins/"));
 });
 
 gulp.task("clean", function() {
