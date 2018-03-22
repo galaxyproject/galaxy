@@ -45,18 +45,6 @@ class DockerInterface(ContainerInterface):
         'cpus': None,
         'memory': None,
     }
-    option_map = {
-        # `run` options
-        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
-        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'detach': {'flag': '--detach', 'type': 'boolean'},
-        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'auto_remove': {'flag': '--rm', 'type': 'boolean'},
-        'cpus': {'flag': '--cpus', 'type': 'string'},
-        'memory': {'flag': '--memory', 'type': 'string'},
-    }
 
     @property
     def _default_image(self):
@@ -99,6 +87,18 @@ class DockerCLIInterface(DockerInterface):
     conf_defaults = {
         'command_template': '{executable} {global_kwopts} {subcommand} {args}',
         'executable': 'docker',
+    }
+    option_map = {
+        # `run` options
+        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
+        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
+        'name': {'flag': '--name', 'type': 'string'},
+        'detach': {'flag': '--detach', 'type': 'boolean'},
+        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
+        'publish_port_random': {'flag': '--publish', 'type': 'string'},
+        'auto_remove': {'flag': '--rm', 'type': 'boolean'},
+        'cpus': {'flag': '--cpus', 'type': 'string'},
+        'memory': {'flag': '--memory', 'type': 'string'},
     }
 
     def validate_config(self):
@@ -249,24 +249,36 @@ class DockerAPIInterface(DockerInterface):
         :returns:                   Instantiated ``spec_class`` object
         :rtype:                     ``type(spec_class)``
         """
-        option_map = getattr(self, option_map_name + '_option_map')
+        def _kwopt_to_arg(map_spec, key, value, param=None):
+            if isinstance(map_spec.get('param'), int):
+                spec_opts.append((map_spec.get('param'), value))
+            elif param is not None:
+                spec_kwopts[param] = value
+            else:
+                spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, value))
+        spec_opts = []
         spec_kwopts = {}
+        option_map = getattr(self, option_map_name + '_option_map')
         # don't allow kwopts that start with _, those are reserved for "child" classes
         for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
             map_spec = option_map[kwopt]
             _v = kwopts.pop(kwopt)
-            spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, kwopt, _v))
+            _kwopt_to_arg(map_spec, kwopt, _v)
         # look for any child classes that need to be checked
         for _sub_k in filter(lambda k: k.startswith('_') and 'spec_class' in option_map[k], option_map.keys()):
-            param = _sub_k.lstrip('_') + '_option_map'
-            _sub_v = self._create_docker_api_spec(param, option_map[_sub_k]['spec_class'], kwopts)
-            if _sub_v is not None:
-                spec_kwopts[param] = _sub_v
+            map_spec = option_map[_sub_k]
+            param = _sub_k.lstrip('_')
+            _sub_v = self._create_docker_api_spec(param, map_spec['spec_class'], kwopts)
+            if _sub_v is not None or map_spec.get('required') or isinstance(map_spec.get('param'), int):
+                _kwopt_to_arg(map_spec, None, _sub_v, param=param)
         # override params with values defined in the config
         for key in filter(lambda k: self._conf.get(k) is not None, option_map.keys()):
-            spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, self._conf[key]))
+            _kwopt_to_arg(map_spec, key, self._conf[key])
+        if spec_opts:
+            spec_opts = sorted(spec_opts, key=lambda x: x[0])
+            spec_opts = [i[1] for i in spec_opts]
         if spec_kwopts:
-            return spec_class(**spec_kwopts)
+            return spec_class(*spec_opts, **spec_kwopts)
         else:
             return None
 
