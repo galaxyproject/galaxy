@@ -205,6 +205,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+        self._try_setup_with_driver()
+
+    def _try_setup_with_driver(self):
         try:
             self.setup_with_driver()
         except Exception:
@@ -214,8 +217,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def setup_with_driver(self):
         """Override point that allows setting up data using self.driver and Selenium connection.
 
-        Using this instead of overriding will ensure debug data such as screenshots and stack traces
-        are dumped if there are problems with the setup.
+        Overriding this instead of setUp will ensure debug data such as screenshots and stack traces
+        are dumped if there are problems with the setup and it will be re-ran on test retries.
         """
 
     def tearDown(self):
@@ -264,6 +267,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def reset_driver_and_session(self):
         self.tear_down_driver()
         self.setup_driver_and_session()
+        self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
