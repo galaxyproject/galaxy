@@ -177,6 +177,9 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     postfork_functions = []
 
+    localhost_addrs = ('127.0.0.1', '[::1]')
+    bind_all_addrs = ('', '0.0.0.0', '[::]')
+
     @staticmethod
     def _get_config_file(confs, loader, section):
         """uWSGI allows config merging, in which case the corresponding config file option will be a list.
@@ -195,6 +198,49 @@ class UWSGIApplicationStack(MessageApplicationStack):
         else:
             conf = confs
         return conf
+
+    @staticmethod
+    def _socket_opt_to_str(opt, val):
+        listeners = []
+        try:
+            if val.startswith('='):
+                val = uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])]
+            proto = opt if opt != 'socket' else 'uwsgi'
+            if proto == 'uwsgi' and not ':' in val:
+                return 'uwsgi://' + val
+            else:
+                proto = proto + '://'
+                host, port = val.rsplit(':', 1)
+                port = ':' + port.split(',', 1)[0]
+            if host in UWSGIApplicationStack.bind_all_addrs:
+                host = UWSGIApplicationStack.localhost_addrs[0]
+            return proto + host + port
+        except (IndexError, AttributeError):
+            return '%s %s' % (opt, val)
+
+    @staticmethod
+    def _socket_opts():
+        for opt in filter(lambda x: x in uwsgi.opt, ('https', 'http', 'socket')):
+            val = uwsgi.opt[opt]
+            if isinstance(val, list):
+                for v in val:
+                    yield (opt, v)
+            else:
+                yield (opt, val)
+
+    @staticmethod
+    def _serving_on():
+        for opt, val in UWSGIApplicationStack._socket_opts():
+            yield UWSGIApplicationStack._socket_opt_to_str(opt, val)
+
+    @staticmethod
+    def log_startup():
+        msg = ['Startup is complete']
+        for s in UWSGIApplicationStack._serving_on():
+            msg.append('serving on ' + s)
+        if len(msg) == 1:
+            msg.append('serving on: unknown')
+        log.info('\n'.join(msg))
 
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None):
@@ -394,6 +440,7 @@ def _do_uwsgi_postfork():
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         log.debug('Calling postfork function: %s', f)
         f(*args, **kwargs)
+    UWSGIApplicationStack.log_startup()
 
 
 def _mule_fixup():
