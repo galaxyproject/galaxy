@@ -4,6 +4,7 @@ Interface to Docker
 from __future__ import absolute_import
 
 import logging
+import os
 
 try:
     import docker
@@ -39,6 +40,7 @@ class DockerInterface(ContainerInterface):
     volume_class = DockerVolume
     conf_defaults = {
         'host': None,
+        'tls': False,
         'force_tlsverify': False,
         'auto_remove': True,
         'image': None,
@@ -208,10 +210,23 @@ class DockerAPIInterface(DockerInterface):
 
     @property
     def _client(self):
+        # TODO: add cert options to containers conf
+        cert_path = os.environ.get('DOCKER_CERT_PATH') or None
+        if not cert_path:
+            cert_path = os.path.join(os.path.expanduser('~'), '.docker')
+        if self._conf.force_tlsverify or self._conf.tls:
+            tls_config = docker.tls.TLSConfig(
+                client_cert=(os.path.join(cert_path, 'cert.pem'),
+                             os.path.join(cert_path, 'key.pem')),
+                ca_cert=os.path.join(cert_path, 'ca.pem'),
+                verify=self._conf.force_tlsverify,
+            )
+        else:
+            tls_config = False
         if not self.__client:
             self.__client = docker.APIClient(
                 base_url=self._conf.host,
-                tls=self._conf.force_tlsverify,
+                tls=tls_config,
             )
         return self.__client
 
