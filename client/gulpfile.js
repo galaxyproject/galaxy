@@ -100,4 +100,4 @@ gulp.task("watch", function() {
     gulp.watch(paths.scripts, ["scripts"]);
 });
 
-gulp.task("default", ["scripts", "libs"]);
+gulp.task("default", ["scripts", "libs", "plugins"]);
