@@ -7,7 +7,6 @@ import argparse
 import json
 import logging
 import os
-import subprocess
 import sys
 import tarfile
 import time
@@ -21,6 +20,7 @@ import galaxy
 import galaxy.config
 from galaxy.model import mapping
 from galaxy.objectstore import build_object_store_from_config
+from galaxy.util import hash_util
 from galaxy.util.properties import load_app_properties
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
@@ -345,10 +345,8 @@ def main(argv):
         os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
-    sha = subprocess.check_output(['sha256sum', REPORT_BASE + '.tar.gz'])
+    sha = hash_util.memory_bound_hexdigest(hash_util.sha256, REPORT_BASE + ".tar.gz")
     _times.append(('hash_finish', time.time() - _start_time))
-    # Strip out to space
-    sha = sha[0:sha.index(' ')]
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
