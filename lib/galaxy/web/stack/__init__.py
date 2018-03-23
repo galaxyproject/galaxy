@@ -76,6 +76,9 @@ class ApplicationStack(object):
         self.config = config or (app and app.config)
         self.running = False
 
+    def log_startup(self):
+        log.info("Galaxy server instance '%s' is running" % self.app.config.server_name)
+
     def start(self):
         # TODO: with a stack config the pools could be parsed here
         pass
@@ -233,15 +236,6 @@ class UWSGIApplicationStack(MessageApplicationStack):
         for opt, val in UWSGIApplicationStack._socket_opts():
             yield UWSGIApplicationStack._socket_opt_to_str(opt, val)
 
-    @staticmethod
-    def log_startup():
-        msg = ['Startup is complete']
-        for s in UWSGIApplicationStack._serving_on():
-            msg.append('serving on ' + s)
-        if len(msg) == 1:
-            msg.append('serving on: unknown')
-        log.info('\n'.join(msg))
-
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None):
         kwds = {
@@ -339,6 +333,16 @@ class UWSGIApplicationStack(MessageApplicationStack):
         else:
             instance_id = uwsgi.mule_id()
         return instance_id
+
+    def log_startup(self):
+        msg = ["Galaxy server instance '%s' is running" % self.app.config.server_name]
+        # the last worker isn't guaranteed to start last, but it's the best shot
+        if not self._is_mule and self.instance_id == len(self.workers()):
+            for s in UWSGIApplicationStack._serving_on():
+                msg.append('serving on ' + s)
+            if len(msg) == 1:
+                msg.append('serving on unknown')
+        log.info('\n'.join(msg))
 
     def start(self):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
@@ -440,7 +444,6 @@ def _do_uwsgi_postfork():
     for f, args, kwargs in [t for t in UWSGIApplicationStack.postfork_functions]:
         log.debug('Calling postfork function: %s', f)
         f(*args, **kwargs)
-    UWSGIApplicationStack.log_startup()
 
 
 def _mule_fixup():
