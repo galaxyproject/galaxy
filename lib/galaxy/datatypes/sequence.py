@@ -1210,6 +1210,7 @@ class Genbank(data.Text):
 
         return False
 
+
 class GenbankGz(data.Text, CompressedArchive):
     """Class representing a generic compressed Genbank sequence"""
     edam_format = "format_1936"
@@ -1225,6 +1226,7 @@ class GenbankGz(data.Text, CompressedArchive):
             return False
         return data.Text.sniff(self, filename)
 
+
 class GbkGz(data.Text, CompressedArchive):
     """Class representing a generic compressed Genbank sequence"""
     edam_format = "format_1936"
@@ -1239,6 +1241,7 @@ class GbkGz(data.Text, CompressedArchive):
         if not is_gzip(filename):
             return False
         return data.Text.sniff(self, filename)
+
 
 class MemePsp(Sequence):
     """Class representing MEME Position Specific Priors"""
