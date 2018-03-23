@@ -189,7 +189,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         """
         conf = None
         if isinstance(confs, list):
-            gconfs = filter(lambda x: os.path.exists(x) and section in loader(open(x)), confs)
+            gconfs = [_ for _ in confs if os.path.exists(_) and section in loader(open(_))]
             if len(gconfs) == 1:
                 conf = gconfs[0]
             elif len(gconfs) == 0:
@@ -222,13 +222,14 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     @staticmethod
     def _socket_opts():
-        for opt in filter(lambda x: x in uwsgi.opt, ('https', 'http', 'socket')):
-            val = uwsgi.opt[opt]
-            if isinstance(val, list):
-                for v in val:
-                    yield (opt, v)
-            else:
-                yield (opt, val)
+        for opt in ('https', 'http', 'socket'):
+            if opt in uwsgi.opt:
+                val = uwsgi.opt[opt]
+                if isinstance(val, list):
+                    for v in val:
+                        yield (opt, v)
+                else:
+                    yield (opt, val)
 
     @staticmethod
     def _serving_on():
@@ -337,10 +338,12 @@ class UWSGIApplicationStack(MessageApplicationStack):
         msg = ["Galaxy server instance '%s' is running" % self.app.config.server_name]
         # the last worker isn't guaranteed to start last, but it's the best shot
         if not self._is_mule and self.instance_id == len(self.workers()):
+            # We use the same text printed by Paste to not break old scripts grepping for this line
+            msg.append('Starting server in PID %d.' % os.getpid())
             for s in UWSGIApplicationStack._serving_on():
                 msg.append('serving on ' + s)
             if len(msg) == 1:
-                msg.append('serving on unknown')
+                msg.append('serving on unknown URL')
         log.info('\n'.join(msg))
 
     def start(self):
