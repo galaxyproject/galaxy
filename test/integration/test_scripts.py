@@ -122,7 +122,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         config_file = self.write_config_file()
         grt_config_file = os.path.join(self.config_dir, "grt.yml")
         with open(grt_config_file, "w") as f:
-            yaml.dump({"grt": {"shared_toolbox": True}, "sanitization": {"tools": []}, "tool_params": {}}, f)
+            yaml.dump({"grt": {"share_toolbox": True}, "sanitization": {"tools": []}, "tool_params": {}}, f)
         self._scripts_check_output(script, ["-c", config_file, "-g", grt_config_file, "-r", self.config_dir])
         report_files = os.listdir(self.config_dir)
         json_files = [j for j in report_files if j.endswith(".json")]

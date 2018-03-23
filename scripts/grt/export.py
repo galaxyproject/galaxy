@@ -17,6 +17,7 @@ import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 import galaxy
+import galaxy.app
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import hash_util
@@ -180,7 +181,7 @@ def main(argv):
 
     annotate('init_start', 'Loading GRT configuration...')
     try:
-        with open(args.config) as handle:
+        with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')

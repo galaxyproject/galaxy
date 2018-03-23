@@ -28,7 +28,7 @@ def main(argv):
 
     logging.info('Loading GRT configuration...')
     try:
-        with open(args.config) as handle:
+        with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
