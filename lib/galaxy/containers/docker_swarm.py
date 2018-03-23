@@ -276,7 +276,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_json
     def service_inspect(self, service_id):
-        return self._run_docker(subcommand='service inspect', args=service_id)
+        return self._run_docker(subcommand='service inspect', args=service_id)[0]
 
     @docker_columns
     def service_ls(self, id=None, name=None):
@@ -320,7 +320,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         'constraint': {'param': 'constraints'},
     }
     service_mode_option_map = {
-        'service_mode': {'param': 0, 'default': 'replicate'},
+        'service_mode': {'param': 0, 'default': 'replicated'},
         'replicas': {'default': 1},
     }
     endpoint_spec_option_map = {
@@ -348,6 +348,14 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         '_placement': {'spec_class': docker.types.Placement},
     }
 
+    @staticmethod
+    def create_random_port_spec(port):
+        return {
+            'Protocol': 'tcp',
+            'PublishedPort': None,
+            'TargetPort': port,
+        }
+
     #
     # docker subcommands
     #
@@ -365,14 +373,12 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
             cpus = kwopts.get('reserve_cpus', kwopts.get('limit_cpus', '1'))
             kwopts['constraint'].append((CPUS_CONSTRAINT, '==', cpus))
         if 'publish_port_random' in kwopts:
-            kwopts['ports'] = {kwopts.pop('publish_port_random'): None}
-        #kwopts['resources'] = self._create_docker_api_spec('resources', docker.types.Resources, kwopts)
-        #kwopts['container_spec' = self._create_docker_api_spec('container_spec', docker.types.ContainerSpec, kwopts)
-        # handle types with positional parameters
-        service_mode = docker.types.ServiceMode(
-            kwopts.pop('service_mode', 'replicated'),
-            replicas=kwopts.pop('replicas', 1),
-        )
+            kwopts['ports'] = [DockerSwarmAPIInterface.create_random_port_spec(kwopts.pop('publish_port_random'))]
+        #service_mode = docker.types.ServiceMode(
+        #    kwopts.pop('service_mode', 'replicated'),
+        #    replicas=kwopts.pop('replicas', 1),
+        #)
+        service_mode = self._create_docker_api_spec('service_mode', docker.types.ServiceMode, kwopts)
         endpoint_spec = self._create_docker_api_spec('endpoint_spec', docker.types.EndpointSpec, kwopts)
         task_template = self._create_docker_api_spec('task_template', docker.types.TaskTemplate, kwopts)
         self.set_kwopts_name(kwopts)
@@ -380,4 +386,10 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         log.debug("Docker service endpoint specification:\n%s", pretty_format(endpoint_spec))
         log.debug("Docker service mode:\n%s", pretty_format(service_mode))
         log.debug("Docker service creation parameters:\n%s", pretty_format(kwopts))
-        service_id = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
+        service = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
+        service_id = service.get('ID')
+        log.debug('Created service: %s', service_id)
+        return DockerService.from_id(self, service_id)
+
+    def service_inspect(self, service_id):
+        return self._client.inspect_service(service_id)

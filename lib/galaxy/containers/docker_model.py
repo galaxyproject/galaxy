@@ -169,7 +169,7 @@ class DockerService(Container):
         self._tasks = []
         if inspect:
             self._name = name or inspect['Spec']['Name']
-            self._image = image or inspect[0]['Spec']['TaskTemplate']['ContainerSpec']['Image']
+            self._image = image or inspect['Spec']['TaskTemplate']['ContainerSpec']['Image']
 
     @classmethod
     def from_cli(cls, docker_interface, s, task_list):
@@ -202,7 +202,7 @@ class DockerService(Container):
         #         ]
         rval = []
         try:
-            port_mappings = self.inspect[0]['Endpoint']['Ports']
+            port_mappings = self.inspect['Endpoint']['Ports']
         except (IndexError, KeyError) as exc:
             log.warning("Failed to get ports for container %s from `docker service inspect` output at "
                         "[0]['Endpoint']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
@@ -255,13 +255,13 @@ class DockerService(Container):
     @property
     def image(self):
         if self._image is None:
-            self._image = self.inspect[0]['Spec']['TaskTemplate']['ContainerSpec']['Image']
+            self._image = self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Image']
         return self._image
 
     @property
     def cpus(self):
         try:
-            cpus = self.inspect[0]['Spec']['TaskTemplate']['Resources']['Limits']['NanoCPUs'] / 1000000000.0
+            cpus = self.inspect['Spec']['TaskTemplate']['Resources']['Limits']['NanoCPUs'] / 1000000000.0
             if cpus == int(cpus):
                 cpus = int(cpus)
             return cpus
@@ -270,7 +270,7 @@ class DockerService(Container):
 
     @property
     def constraints(self):
-        constraints = self.inspect[0]['Spec']['TaskTemplate']['Placement'].get('Constraints', [])
+        constraints = self.inspect['Spec']['TaskTemplate']['Placement'].get('Constraints', [])
         return DockerServiceConstraints.from_constraint_string_list(constraints)
 
     def in_state(self, desired, current):
