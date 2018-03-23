@@ -271,9 +271,14 @@ class DockerAPIInterface(DockerInterface):
                 spec_kwopts[param] = value
             else:
                 spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, value))
+        # TODO: make this cleaner
         spec_opts = []
         spec_kwopts = {}
         option_map = getattr(self, option_map_name + '_option_map')
+        # set defaults
+        for key in filter(lambda k: option_map[k].get('default'), option_map.keys()):
+            map_spec = option_map[key]
+            _kwopt_to_arg(map_spec, key, map_spec['default'])
         # don't allow kwopts that start with _, those are reserved for "child" classes
         for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
             map_spec = option_map[kwopt]
