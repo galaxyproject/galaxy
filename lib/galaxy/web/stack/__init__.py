@@ -204,12 +204,11 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     @staticmethod
     def _socket_opt_to_str(opt, val):
-        listeners = []
         try:
             if val.startswith('='):
                 val = uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])]
             proto = opt if opt != 'socket' else 'uwsgi'
-            if proto == 'uwsgi' and not ':' in val:
+            if proto == 'uwsgi' and ':' not in val:
                 return 'uwsgi://' + val
             else:
                 proto = proto + '://'
