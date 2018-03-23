@@ -349,8 +349,8 @@ class ChartVisualizationPlugin(ScriptVisualizationPlugin):
 
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
-    A visualiztion plugin that starts by loading a static html file defined
-    in the visualization's config file.
+    A visualization plugin that starts by loading a static html file defined in
+    the visualization's config file.
     """
     # TODO: these are not embeddable by their nature - update config
     # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case
