@@ -298,7 +298,10 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         try:
             self.driver.close()
         except Exception as e:
-            exception = e
+            if "cannot kill Chrome" in str(e):
+                print("Ignoring likely harmless error in Selenium shutdown %s" % e)
+            else:
+                exception = e
 
         try:
             self.display.stop()
