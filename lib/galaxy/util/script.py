@@ -17,12 +17,12 @@ or else to $GALAXY_ROOT/config/galaxy.ini if that exists). If this isn't set on 
 command line it can be set with the environment variable GALAXY_CONFIG_FILE.
 """
 
-ARG_HELP_CONFIG_SECTION = """
-Section containing application configuration in the target config file specified with
--c/--config-file. This defaults to 'galaxy' for YAML/JSON configuration files and 'main'
-with 'app:' prepended for INI. If this isn't set on the command line it can be set with
-the environment variable GALAXY_CONFIG_SECTION.
-"""
+# ARG_HELP_CONFIG_SECTION = """
+# Section containing application configuration in the target config file specified with
+# -c/--config-file. This defaults to 'galaxy' for YAML/JSON configuration files and 'main'
+# with 'app:' prepended for INI. If this isn't set on the command line it can be set with
+# the environment variable GALAXY_CONFIG_SECTION.
+# """
 
 
 def main_factory(description=None, actions=None, arguments=None, default_action=None):
@@ -71,7 +71,7 @@ def populate_config_args(parser):
                         help=ARG_HELP_CONFIG_FILE)
     parser.add_argument("--config-section",
                         default=os.environ.get('GALAXY_CONFIG_SECTION', None),
-                        help=ARG_HELP_CONFIG_SECTION)
+                        help=argparse.SUPPRESS)  # See ARG_HELP_CONFIG_SECTION comment above for unsuppressed details.
 
 
 def _arg_parser():
