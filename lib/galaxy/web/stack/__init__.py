@@ -336,10 +336,16 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     def log_startup(self):
         msg = ["Galaxy server instance '%s' is running" % self.app.config.server_name]
-        # the last worker isn't guaranteed to start last, but it's the best shot
-        if not self._is_mule and self.instance_id == len(self.workers()):
-            # We use the same text printed by Paste to not break old scripts grepping for this line
-            msg.append('Starting server in PID %d.' % os.getpid())
+        # Log the next messages when the first worker finishes starting. This
+        # may not be the first to finish (so Galaxy could be serving already),
+        # but it's a good approximation and gives the correct root_pid below
+        # when there is no master process.
+        if not self._is_mule and self.instance_id == 1:
+            # We use the same text printed by Paste to not break scripts
+            # grepping for this line. Here root_pid is the same that gets
+            # written to file when using the --pidfile option of uwsgi
+            root_pid = uwsgi.masterpid() or os.getpid()
+            msg.append('Starting server in PID %d.' % root_pid)
             for s in UWSGIApplicationStack._serving_on():
                 msg.append('serving on ' + s)
             if len(msg) == 1:
