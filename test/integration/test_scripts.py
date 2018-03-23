@@ -38,20 +38,26 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         cls._raw_config = config
 
     def test_helper(self):
+        script = "helper.py"
+        self._scripts_check_argparse_help(script)
+
         history_id = self.dataset_populator.new_history()
         dataset = self.dataset_populator.new_dataset(history_id, wait=True)
         dataset_id = dataset["id"]
         config_file = self.write_config_file()
-        output = self._scripts_check_output("helper.py", ["-c", config_file, "--decode-id", dataset_id])
+        output = self._scripts_check_output(script, ["-c", config_file, "--decode-id", dataset_id])
         assert "Decoded " in output
 
     def test_cleanup(self):
+        script = "cleanup_datasets/cleanup_datasets.py"
+        self._scripts_check_argparse_help(script)
+
         history_id = self.dataset_populator.new_history()
         delete_response = self.dataset_populator._delete("histories/%s" % history_id)
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
-        output = self._scripts_check_output("cleanup_datasets/cleanup_datasets.py", ["-c", config_file, "--days", "0", "--purge_histories"])
+        output = self._scripts_check_output(script, ["-c", config_file, "--days", "0", "--purge_histories"])
         print(output)
         history_response = self.dataset_populator._get("histories/%s" % history_id)
         assert history_response.status_code == 200
@@ -60,43 +66,56 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
     def test_pgcleanup(self):
         self._skip_if_not_postgres()
 
+        script = "cleanup_datasets/pgcleanup.py"
+        self._scripts_check_argparse_help(script)
+
         history_id = self.dataset_populator.new_history()
         delete_response = self.dataset_populator._delete("histories/%s" % history_id)
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
-        output = self._scripts_check_output("cleanup_datasets/pgcleanup.py", ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"])
+        output = self._scripts_check_output(script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"])
         print(output)
         history_response = self.dataset_populator._get("histories/%s" % history_id)
         assert history_response.status_code == 200
         assert history_response.json()["purged"] is True, history_response.json()
 
     def test_set_user_disk_usage(self):
+        script = "set_user_disk_usage.py"
+        self._scripts_check_argparse_help(script)
+
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.new_dataset(history_id, wait=True)
         config_file = self.write_config_file()
-        output = self._scripts_check_output("set_user_disk_usage.py", ["-c", config_file])
+        output = self._scripts_check_output(script, ["-c", config_file])
         # verify the script runs to completion without crashing
         assert "100% complete" in output, output
 
     def test_set_dataset_sizes(self):
+        script = "set_dataset_sizes.py"
+        self._scripts_check_argparse_help(script)
+
         # TODO: change the size of the dataset and verify this works.
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.new_dataset(history_id, wait=True)
         config_file = self.write_config_file()
-        output = self._scripts_check_output("set_dataset_sizes.py", ["-c", config_file])
+        output = self._scripts_check_output(script, ["-c", config_file])
         # verify the script runs to completion without crashing
         assert "Completed 100%" in output, output
 
     def test_populate_uuid(self):
+        script = "cleanup_datasets/populate_uuid.py"
+        self._scripts_check_argparse_help(script)
+
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.new_dataset(history_id, wait=True)
         config_file = self.write_config_file()
-        output = self._scripts_check_output("cleanup_datasets/populate_uuid.py", ["-c", config_file])
+        output = self._scripts_check_output(script, ["-c", config_file])
         assert "Complete" in output
 
     def test_grt_export(self):
-        self._scripts_check_argparse_help("grt/export.py")
+        script = "grt/export.py"
+        self._scripts_check_argparse_help(script)
 
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.new_dataset(history_id, wait=True)
@@ -104,7 +123,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         grt_config_file = os.path.join(self.config_dir, "grt.yml")
         with open(grt_config_file, "w") as f:
             yaml.dump({"grt": {"shared_toolbox": True}, "sanitization": {"tools": []}, "tool_params": {}}, f)
-        self._scripts_check_output("grt/export.py", ["-c", config_file, "-g", grt_config_file, "-r", self.config_dir])
+        self._scripts_check_output(script, ["-c", config_file, "-g", grt_config_file, "-r", self.config_dir])
         report_files = os.listdir(self.config_dir)
         json_files = [j for j in report_files if j.endswith(".json")]
         assert len(json_files) == 1, "Expected one json report file in [%s]" % json_files
@@ -121,13 +140,14 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._scripts_check_argparse_help("communication/communication_server.py")
 
     def test_secret_decoder_ring(self):
-        self._scripts_check_argparse_help("secret_decoder_ring.py")
+        script = "secret_decoder_ring.py"
+        self._scripts_check_argparse_help(script)
 
         config_file = self.write_config_file()
-        output = self._scripts_check_output("secret_decoder_ring.py", ["-c", config_file, "encode", "1"])
+        output = self._scripts_check_output(script, ["-c", config_file, "encode", "1"])
         encoded_id = output.strip()
 
-        output = self._scripts_check_output("secret_decoder_ring.py", ["-c", config_file, "decode", encoded_id])
+        output = self._scripts_check_output(script, ["-c", config_file, "decode", encoded_id])
         assert output.strip() == "1"
 
     def test_database_scripts(self):
