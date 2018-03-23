@@ -39,8 +39,8 @@ def app_properties_from_args(args, legacy_config_override=None):
 
 
 def config_file_from_args(args, legacy_config_override=None):
-    # FIXME: you can use galaxy.util.path.extensions for this
-    config_file = legacy_config_override or args.config_file or find_config_file(getattr(args, "app", "galaxy"))
+    app = getattr(args, "app", "galaxy")
+    config_file = legacy_config_override or args.config_file or find_config_file(app)
     return config_file
 
 
