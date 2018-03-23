@@ -20,7 +20,7 @@ def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-r', '--report-directory', help='Directory in which reports are stored',
                         default=os.path.abspath(os.path.join('.', 'reports')))
-    parser.add_argument('-c', '--config', help='Path to GRT config file',
+    parser.add_argument('-g', '--grt-config', help='Path to GRT config file',
                         default=default_config)
     parser.add_argument("-l", "--loglevel", choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help="Set the logging level", default='warning')

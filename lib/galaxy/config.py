@@ -861,6 +861,31 @@ def get_database_engine_options(kwargs, model_prefix=''):
     return rval
 
 
+def get_database_url(config):
+    if config.database_connection:
+        db_url = config.database_connection
+    else:
+        db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
+    return db_url
+
+
+def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
+    db_url = get_database_url(config)
+    from galaxy.model import mapping
+    model = mapping.init(
+        config.file_path,
+        db_url,
+        config.database_engine_options,
+        map_install_models=map_install_models,
+        database_query_profiling_proxy=config.database_query_profiling_proxy,
+        object_store=object_store,
+        trace_logger=trace_logger,
+        use_pbkdf2=config.get_bool('use_pbkdf2', True),
+        slow_query_log_threshold=config.slow_query_log_threshold
+    )
+    return model
+
+
 def configure_logging(config):
     """Allow some basic logging configuration to be read from ini file.
 
@@ -1004,10 +1029,7 @@ class ConfiguresGalaxyMixin:
         """
         Preconditions: object_store must be set on self.
         """
-        if self.config.database_connection:
-            db_url = self.config.database_connection
-        else:
-            db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
+        db_url = get_database_url(self.config)
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.
@@ -1036,17 +1058,12 @@ class ConfiguresGalaxyMixin:
                 install_database_options = self.config.install_database_engine_options
             verify_tools(self, install_db_url, config_file, install_database_options)
 
-        from galaxy.model import mapping
-        self.model = mapping.init(self.config.file_path,
-                                  db_url,
-                                  self.config.database_engine_options,
-                                  map_install_models=combined_install_database,
-                                  database_query_profiling_proxy=self.config.database_query_profiling_proxy,
-                                  object_store=self.object_store,
-                                  trace_logger=getattr(self, "trace_logger", None),
-                                  use_pbkdf2=self.config.get_bool('use_pbkdf2', True),
-                                  slow_query_log_threshold=self.config.slow_query_log_threshold)
-
+        self.model = init_models_from_config(
+            self.config,
+            map_install_models=combined_install_database,
+            object_store=self.object_store,
+            trace_logger=getattr(self, "trace_logger", None)
+        )
         if combined_install_database:
             log.info("Install database targetting Galaxy's database configuration.")
             self.install_model = self.model
