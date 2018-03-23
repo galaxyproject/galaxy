@@ -492,9 +492,6 @@
     <datatype extension="genbank.gz" type="galaxy.datatypes.sequence:GenbankGz" display_in_upload="true">
         <converter file="genbankgz_to_genbank.xml" target_datatype="genbank"/>
     </datatype>
-    <datatype extension="gbk.gz" type="galaxy.datatypes.sequence:GbkGz" display_in_upload="true">
-        <converter file="gbkgz_to_genbank.xml" target_datatype="genbank"/>
-    </datatype>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="ig" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="jackknifer" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -798,7 +795,6 @@
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
     <sniffer type="galaxy.datatypes.sequence:Genbank"/>
     <sniffer type="galaxy.datatypes.sequence:GenbankGz"/>
-    <sniffer type="galaxy.datatypes.sequence:GbkGz"/>
     <sniffer type="galaxy.datatypes.interval:Bed"/>
     <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
     <sniffer type="galaxy.datatypes.interval:Gtf"/>
