@@ -1618,6 +1618,16 @@ mapping:
           useful if you are running multiple Galaxy instances and want to segment
           statistics between them within the same aggregator.
 
+      statsd_influxdb:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If you are using telegraf to collect these metrics and then sending
+          them to InfluxDB, Galaxy can provide more nicely tagged metrics.
+          Instead of sending prefix + dot-separated-path, Galaxy will send
+          prefix with a tag path set to the page url
+
       graphite_host:
         type: str
         required: false

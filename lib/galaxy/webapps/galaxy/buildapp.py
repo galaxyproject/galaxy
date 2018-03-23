@@ -968,7 +968,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         app = wrap_if_allowed(app, stack, StatsdMiddleware,
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
-                                    conf.get('statsd_prefix', 'galaxy')))
+                                    conf.get('statsd_prefix', 'galaxy'),
+                                    conf.get('statsd_influxdb', False)))
         log.debug("Enabling 'statsd' middleware")
     # graphite request timing and profiling
     graphite_host = conf.get('graphite_host', None)

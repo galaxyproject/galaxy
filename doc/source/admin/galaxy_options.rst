@@ -2169,6 +2169,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``statsd_influxdb``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If you are using telegraf to collect these metrics and then
+    sending them to InfluxDB, Galaxy can provide more nicely tagged
+    metrics. Instead of sending prefix + dot-separated-path, Galaxy
+    will send prefix with a tag path set to the page url
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~
 ``graphite_host``
 ~~~~~~~~~~~~~~~~~

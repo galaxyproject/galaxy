@@ -637,6 +637,7 @@ class Configuration(object):
         self.statsd_host = kwargs.get('statsd_host', '')
         self.statsd_port = int(kwargs.get('statsd_port', 8125))
         self.statsd_prefix = kwargs.get('statsd_prefix', 'galaxy')
+        self.statsd_influxdb = string_as_bool(kwargs.get('statsd_influxdb', False))
         # Statistics and profiling with graphite
         self.graphite_host = kwargs.get('graphite_host', '')
         self.graphite_port = int(kwargs.get('graphite_port', 2003))
