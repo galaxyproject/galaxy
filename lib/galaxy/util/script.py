@@ -45,14 +45,15 @@ def main(argv=None):
     action_func(args, kwargs)
 
 
-def app_properties_from_args(args, legacy_config_override=None):
-    config_file = config_file_from_args(args, legacy_config_override=legacy_config_override)
-    app_properties = load_app_properties(config_file=config_file, config_section=args.config_section)
+def app_properties_from_args(args, legacy_config_override=None, app=None):
+    config_file = config_file_from_args(args, legacy_config_override=legacy_config_override, app=app)
+    config_section = getattr(args, "config_section", None)
+    app_properties = load_app_properties(config_file=config_file, config_section=config_section)
     return app_properties
 
 
-def config_file_from_args(args, legacy_config_override=None):
-    app = getattr(args, "app", "galaxy")
+def config_file_from_args(args, legacy_config_override=None, app=None):
+    app = app or getattr(args, "app", "galaxy")
     config_file = legacy_config_override or args.config_file or find_config_file(app)
     return config_file
 
