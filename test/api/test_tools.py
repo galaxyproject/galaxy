@@ -456,13 +456,18 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("column_param")
     def test_column_legal_values(self):
         history_id = self.dataset_populator.new_history()
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='#col1\tcol2', wait=True)
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='#col1\tcol2')
         inputs = {
             'input1': {"src": "hda", "id": new_dataset1["id"]},
             'col': "' ; echo 'moo",
         }
         response = self._run("column_param", history_id, inputs)
-        assert response.status_code != 200
+        # This needs to either fail at submit time or at job prepare time, but we have
+        # to make sure the job doesn't run.
+        if response.status_code == 200:
+            job = response.json()["jobs"][0]
+            final_job_state = self.dataset_populator.wait_for_job(job["id"])
+            assert final_job_state == "error"
 
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self):
