@@ -190,7 +190,7 @@ class DockerService(Container):
 
     @property
     def ports(self):
-        # [{
+        # {
         #     "Endpoint": {
         #         "Ports": [
         #             {
@@ -205,7 +205,7 @@ class DockerService(Container):
             port_mappings = self.inspect['Endpoint']['Ports']
         except (IndexError, KeyError) as exc:
             log.warning("Failed to get ports for container %s from `docker service inspect` output at "
-                        "[0]['Endpoint']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
+                        "['Endpoint']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
             return None
         for binding in port_mappings:
             rval.append(ContainerPort(
@@ -246,11 +246,18 @@ class DockerService(Container):
 
     @property
     def state(self):
-        """Return the state of the first task in the service."""
-        for task in self._tasks:
-            return task.state
-        else:
-            return None
+        """If one of this service's tasks is running, return that task state, otherwise, return the state of a
+        non-running task.
+
+        This is imperfect because it doesn't attempt to provide useful information for replicas > 1 tasks, but it suits
+        our purposes for now.
+        """
+        state = None
+        for task in self.tasks:
+            state = task.state
+            if task.in_state('running', 'running'):
+                break
+        return state
 
     @property
     def image(self):
@@ -273,13 +280,31 @@ class DockerService(Container):
         constraints = self.inspect['Spec']['TaskTemplate']['Placement'].get('Constraints', [])
         return DockerServiceConstraints.from_constraint_string_list(constraints)
 
-    def in_state(self, desired, current):
-        try:
-            for task in self._tasks:
-                assert task.in_state(desired, current)
-        except AssertionError:
-            return False
-        return True
+    @property
+    def tasks(self):
+        if not self._tasks:
+            self._tasks = []
+            for task in self._interface.service_tasks(self):
+                self.task_add(task)
+        return self._tasks
+
+    @property
+    def task_count(self):
+        return len(self.tasks)
+
+    def in_state(self, desired, current, tasks='any'):
+        """Indicate if one of this service's tasks matches the desired state.
+        """
+        for task in self.tasks:
+            if task.in_state(desired, current):
+                if tasks == 'any':
+                    # at least 1 task in desired state
+                    return True
+            elif tasks == 'all':
+                # at least 1 task not in desired state
+                return False
+        else:
+            return False if tasks == 'any' else True
 
     def constraint_add(self, name, op, value):
         self._interface.service_constraint_add(self.id, name, op, value)
@@ -370,14 +395,19 @@ class DockerServiceConstraints(DockerAttributeContainer):
 class DockerNode(object):
 
     def __init__(self, interface, id=None, name=None, status=None,
-                 availability=None, manager=False):
+                 availability=None, manager=False, inspect=None):
         self._interface = interface
         self._id = id
         self._name = name
         self._status = status
         self._availability = availability
         self._manager = manager
-        self._inspect = None
+        self._inspect = inspect
+        if inspect:
+            self._name = name or inspect['Description']['Hostname']
+            self._status = status or inspect['Status']['State']
+            self._availability = inspect['Spec']['Availability']
+            self._manager = manager or inspect['Spec']['Role'] == 'manager'
         self._tasks = []
 
     @classmethod
@@ -386,6 +416,14 @@ class DockerNode(object):
                    availability=n['AVAILABILITY'], manager=True if n['MANAGER STATUS'] else False)
         for task_dict in task_list:
             node.task_add(DockerTask.from_cli(docker_interface, task_dict, node=node))
+        return node
+
+    @classmethod
+    def from_id(cls, docker_interface, id):
+        inspect = interface.node_inspect(id)
+        node = cls(docker_interface, id, inspect=interface.node_inspect(id))
+        for task in interface.node_tasks(node):
+            node.task_add(task)
         return node
 
     def task_add(self, task):
@@ -400,6 +438,11 @@ class DockerNode(object):
         return self._name
 
     @property
+    def version(self):
+        # this changes on update so don't cache
+        return self._interface.node_inspect(self._id or self._name)['Version']['Index']
+
+    @property
     def inspect(self):
         if not self._inspect:
             self._inspect = self._interface.node_inspect(self._id or self._name)
@@ -411,11 +454,11 @@ class DockerNode(object):
 
     @property
     def cpus(self):
-        return self.inspect[0]['Description']['Resources']['NanoCPUs'] / 1000000000
+        return self.inspect['Description']['Resources']['NanoCPUs'] / 1000000000
 
     @property
     def labels(self):
-        labels = self.inspect[0]['Spec'].get('Labels', {}) or {}
+        labels = self.inspect['Spec'].get('Labels', {}) or {}
         return DockerNodeLabels.from_label_dictionary(labels)
 
     def label_add(self, label, value):
@@ -439,11 +482,15 @@ class DockerNode(object):
 
     @property
     def tasks(self):
+        if not self._tasks:
+            self._tasks = []
+            for task in self._interface.node_tasks(self):
+                self.task_add(task)
         return self._tasks
 
     @property
     def task_count(self):
-        return len(self._tasks)
+        return len(self.tasks)
 
     def in_state(self, status, availability):
         return self._status.lower() == status.lower() and self._availability.lower() == availability.lower()
@@ -543,6 +590,14 @@ class DockerTask(object):
                    desired_state=t['DESIRED STATE'], state=state, error=t['ERROR'],
                    ports=t['PORTS'], service=service, node=node)
 
+    @classmethod
+    def from_api(cls, docker_interface, t, service=None, node=None):
+        name = service.name + '.' + str(t['Slot']) if service is not None else t['ID']
+        image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin
+        return cls(docker_interface, id=t['ID'], name=name, image=image, desired_state=t['DesiredState'],
+                state=t['Status']['State'], ports=t['Status']['PortStatus'], error=t['Status']['Message'],
+                service=service, node=node)
+
     @property
     def id(self):
         return self._id
@@ -560,7 +615,7 @@ class DockerTask(object):
     @property
     def cpus(self):
         try:
-            cpus = self.inspect[0]['Spec']['Resources']['Reservations']['NanoCPUs'] / 1000000000.0
+            cpus = self.inspect['Spec']['Resources']['Reservations']['NanoCPUs'] / 1000000000.0
             if cpus == int(cpus):
                 cpus = int(cpus)
             return cpus
