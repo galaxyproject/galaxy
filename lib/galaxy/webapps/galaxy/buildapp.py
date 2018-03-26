@@ -1056,17 +1056,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
-    # wrap any static dirs for plugins
-    plugin_frameworks = plugin_frameworks or []
-    for framework in plugin_frameworks:
-        # invert control to each plugin for finding their own static dirs
-        for plugin in framework.plugins.values():
-            if plugin.serves_static:
-                plugin_url = '/plugins/' + plugin.static_url
-                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
-
     # URL mapper becomes the root webapp
     return urlmap
