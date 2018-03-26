@@ -168,7 +168,11 @@ class ToolsTestCase(api.ApiTestCase):
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
+            response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
+            implicit_collections = response["implicit_collections"]
+            self.assertEquals(len(implicit_collections), 2)
+            unzipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
+            assert unzipped_hdca["elements"][0]["element_type"] == "hda", unzipped_hdca
 
     def test_zip_inputs(self):
         with self.dataset_populator.test_history() as history_id:
