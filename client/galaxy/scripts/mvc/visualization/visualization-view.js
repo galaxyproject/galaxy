@@ -47,7 +47,7 @@ var View = Backbone.View.extend({
                     name: v.name,
                     keywords: v.keywords || [],
                     title: v.html,
-                    image_src: v.logo ? Galaxy.root + "static/" + v.logo : null,
+                    image_src: v.logo ? Galaxy.root + v.logo : null,
                     description: v.description || "No description available.",
                     regular: v.regular,
                     visualization: v

@@ -45,7 +45,7 @@ class ServesStaticPluginMixin(object):
         return os.path.join(self.path, 'static')
 
     def _build_static_url(self):
-        return '/'.join([self.base_url, 'static'])
+        return self.static_path.replace("./config", "./static")
 
 
 class ServesTemplatesPluginMixin(object):
@@ -169,12 +169,13 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
 
     # ---- non-public
     def _check_path(self, path):
-        return os.path.exists(os.path.join(self.path, path))
+        return os.path.exists(path)
 
     def _set_up_static_images(self):
-        default_path = 'static/logo.png'
-        if self._check_path(default_path):
-            self.config['logo'] = '/'.join(['plugins', self.base_url, default_path])
+        if self.serves_static:
+            logo_path = '/'.join([self.static_url, 'logo.png'])
+            if self._check_path(logo_path):
+                self.config['logo'] = logo_path
 
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
