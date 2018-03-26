@@ -1,6 +1,26 @@
 """
 Kind of fail save job control via the DRMAA API.
 Tested for UNIVA grid engine
+
+known bugs/problems: 
+- if a job runs longer than the time limits of the queue two things happen 
+  1. at the soft limit (s_rt) SIGUSR1 is sent to the job
+  2. at the hard limit (h_rt) SIGKILL is sent to the job
+  The second case is covered by the runner -- it's the same mechanism that
+  kills a job when the job time limit is reached. The first case is currently
+  not covered. The good thing is that most programs ignore SIGUSR1. For the 
+  others it seems that jobs are marked as failed (killed by the DRM) at random. 
+
+  Possible solutions: 
+  - configure the job destinations such that the queue limits are never reached. 
+    the time limits can be determined with 
+    `for i in `qconf -sql`; do qconf -sq $i | grep -E '(h|s)_rt'; done`
+
+  - extend the job runner to cover s_rt cases (some ideas):
+    * I'm unsure if the programs reaction to SIGUSR1 can be determined easily 
+      because it depends on the program. It seems that exit code is in most 
+      cases 10.
+    * The sheduler logs contains quite useful information.
 """
 import logging
 import re
@@ -446,9 +466,10 @@ class UnivaJobRunner(DRMAAJobRunner):
         information in the extinfo dict
         """
 #         log.debug("UnivaJobRunner._get_drmaa_state ({jobid}) {qw}".format(jobid=job_id, qw=waitqacct))
+        # initialize state as UNDETERMINED
         state = self.drmaa.JobState.UNDETERMINED
         # try to get the state with drmaa.job_status (does not work for jobs
-        # started as real user) or qstat (works only for jobs that are running)
+        # started as real user) or qstat (works only for jobs that are still running)
         try:
             # log.debug("UnivaJobRunner trying job_status ({jobid})".format(jobid=job_id))
             state = ds.job_status(job_id)
@@ -456,13 +477,15 @@ class UnivaJobRunner(DRMAAJobRunner):
             state = self._get_drmaa_state_qstat(job_id, extinfo)
 #         logging.debug("state %s" %(str(state)))
         # if the job is finished (in whatever state) get (additional) infos
-        # drmaa.wait or qacct
+        # drmaa.wait or qacct (oposed to job_status/qstat these methods work 
+        # only for finished jobs)
         if waitqacct and state in [self.drmaa.JobState.UNDETERMINED, self.drmaa.JobState.DONE, self.drmaa.JobState.FAILED]:
             try:
                 wstate = self._get_drmaa_state_wait(job_id, ds, extinfo)
             except DRMAAWaitUnusable:
                 # log.debug("DRMAAUniva: job {job_id} catched DRMAAWaitUnusable".format(job_id=job_id))
                 wstate = self._get_drmaa_state_qacct(job_id, extinfo)
+            # check if wait/qacct give more info than job_status/qstat
             if self._drmaa_state_is_refined(state, wstate):
                 # log.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
                 state = wstate
