@@ -1328,6 +1328,8 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
         if not legal_values:
+            if not trans.workflow_building_mode:
+                raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
