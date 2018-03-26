@@ -45,6 +45,7 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
     :vartype    hostport:   int
     """
 
+
 class ContainerVolume(with_metaclass(ABCMeta, object)):
     default_mode = "rw"
     valid_modes = frozenset(["ro", "rw"])

@@ -20,6 +20,12 @@ except ImportError:
     daemon = None
 
 try:
+    # remove this directory from sys.path to avoid `docker` module name conflict
+    sys.path.remove(os.path.dirname(__file__))
+except ValueError:
+    pass
+
+try:
     import galaxy   # noqa: F401 this is a test import
 except ImportError:
     sys.path.insert(0, os.path.abspath(os.path.join(
@@ -328,6 +334,9 @@ class SwarmState(object):
     def slots_delta(self, constraints, services, nodes):
         total = 0
         used = 0
+        if not self._cpus:
+            # there are no cpu constraints, so no calculation can be done
+            return 0, 0
         for node in nodes:
             used += sum([t.cpus for t in node.tasks]) / self._cpus
             total += node.cpus / self._cpus
@@ -419,7 +428,8 @@ class SwarmState(object):
 
 def main(argv=None, fork=False):
     if not daemon:
-        log.warning('The daemon module is required to use the swarm manager, install it with `pip install python-daemon`')
+        _configure_logging(None, {})
+        log.error('The daemon module is required to use the swarm manager, install it with `pip install python-daemon`')
         return
     if argv is None:
         argv = sys.argv[1:]
@@ -499,19 +509,22 @@ def _swarm_manager_conf(new_conf):
 
 def _configure_logging(args, conf):
     global log
-    if args.debug:
+    if args and args.debug:
         log_level = logging.DEBUG
     else:
         log_level = logging.getLevelName(conf.get('log_level', 'INFO').upper())
         assert int(log_level), 'invalid log level: %s' % conf['log_level']
     log = logging.getLogger(__name__)
+    gxlog = logging.getLogger('galaxy')
     log.setLevel(log_level)
+    gxlog.setLevel(log_level)
     log_format = conf.get('log_format', '%(name)s %(levelname)s %(asctime)s %(message)s')
     formatter = logging.Formatter(log_format)
     # file logging is handled by daemon
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     log.addHandler(handler)
+    gxlog.addHandler(handler)
 
 
 def _load_xdg_environment():

@@ -327,7 +327,6 @@ class DockerAPIInterface(DockerInterface):
         :returns:       The return value of `docker.APIClient.create_host_config()`
         :rtype:         dict
         """
-        host_config_kwopts = {}
         if 'publish_port_random' in kwopts:
             port = int(kwopts.pop('publish_port_random'))
             kwopts['port_bindings'] = {port: None}

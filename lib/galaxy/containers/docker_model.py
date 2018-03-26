@@ -67,7 +67,7 @@ class DockerAttributeContainer(object):
 
 
 class DockerVolume(ContainerVolume):
-    @staticmethod
+    @classmethod
     def from_str(cls, as_str):
         if not as_str:
             raise ValueError("Failed to parse Docker volume from %s" % as_str)
@@ -76,7 +76,7 @@ class DockerVolume(ContainerVolume):
         if len(parts) == 1:
             pass  # auto-generated volume
         elif len(parts) == 2:
-            if self._valid_mode(parts[1]):
+            if DockerVolume.valid_mode(parts[1]):
                 kwds["mode"] = parts[1]
             else:
                 kwds["host_path"] = parts[1]
@@ -172,12 +172,12 @@ class DockerService(Container):
             self._image = image or inspect['Spec']['TaskTemplate']['ContainerSpec']['Image']
 
     @classmethod
-    def from_cli(cls, docker_interface, s, task_list):
-        service = cls(docker_interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
+    def from_cli(cls, interface, s, task_list):
+        service = cls(interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
         for task_dict in task_list:
             if task_dict['NAME'].strip().startswith('\_'):
                 continue    # historical task
-            service.task_add(DockerTask.from_cli(docker_interface, task_dict, service=service))
+            service.task_add(DockerTask.from_cli(interface, task_dict, service=service))
         return service
 
     @classmethod
@@ -411,17 +411,17 @@ class DockerNode(object):
         self._tasks = []
 
     @classmethod
-    def from_cli(cls, docker_interface, n, task_list):
-        node = cls(docker_interface, id=n['ID'], name=n['HOSTNAME'], status=n['STATUS'],
+    def from_cli(cls, interface, n, task_list):
+        node = cls(interface, id=n['ID'], name=n['HOSTNAME'], status=n['STATUS'],
                    availability=n['AVAILABILITY'], manager=True if n['MANAGER STATUS'] else False)
         for task_dict in task_list:
-            node.task_add(DockerTask.from_cli(docker_interface, task_dict, node=node))
+            node.task_add(DockerTask.from_cli(interface, task_dict, node=node))
         return node
 
     @classmethod
-    def from_id(cls, docker_interface, id):
+    def from_id(cls, interface, id):
         inspect = interface.node_inspect(id)
-        node = cls(docker_interface, id, inspect=interface.node_inspect(id))
+        node = cls(interface, id, inspect=inspect)
         for task in interface.node_tasks(node):
             node.task_add(task)
         return node
@@ -584,19 +584,19 @@ class DockerTask(object):
         self._inspect = None
 
     @classmethod
-    def from_cli(cls, docker_interface, t, service=None, node=None):
+    def from_cli(cls, interface, t, service=None, node=None):
         state = t['CURRENT STATE'].split()[0]
-        return cls(docker_interface, id=t['ID'], name=t['NAME'], image=t['IMAGE'],
+        return cls(interface, id=t['ID'], name=t['NAME'], image=t['IMAGE'],
                    desired_state=t['DESIRED STATE'], state=state, error=t['ERROR'],
                    ports=t['PORTS'], service=service, node=node)
 
     @classmethod
-    def from_api(cls, docker_interface, t, service=None, node=None):
+    def from_api(cls, interface, t, service=None, node=None):
         name = service.name + '.' + str(t['Slot']) if service is not None else t['ID']
         image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin
-        return cls(docker_interface, id=t['ID'], name=name, image=image, desired_state=t['DesiredState'],
-                state=t['Status']['State'], ports=t['Status']['PortStatus'], error=t['Status']['Message'],
-                service=service, node=node)
+        return cls(interface, id=t['ID'], name=name, image=image, desired_state=t['DesiredState'],
+                   state=t['Status']['State'], ports=t['Status']['PortStatus'], error=t['Status']['Message'],
+                   service=service, node=node)
 
     @property
     def id(self):

@@ -166,7 +166,7 @@ class DockerSwarmInterface(DockerInterface):
         for node_dict in self.node_ls(id=id, name=name):
             node_id = node_dict['ID']
             node = DockerNode(self, node_id, inspect=node_dict)
-            if self._node_prefix and not node_name.startswith(self._node_prefix):
+            if self._node_prefix and not node.name.startswith(self._node_prefix):
                 continue
             yield node
 
@@ -458,7 +458,6 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
 
     def node_update(self, node_id, **kwopts):
         node = DockerNode.from_id(self, node_id)
-        version = node.version
         spec = node.inspect['Spec']
         if 'label_add' in kwopts:
             kwopts['labels'] = spec.get('Labels', {})
