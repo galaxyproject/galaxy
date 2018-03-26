@@ -1,0 +1,55 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+
+[packages]
+numpy = "*"
+bx-python = "*"
+MarkupSafe = "*"
+PyYAML = "*"
+SQLAlchemy = "*"
+SQLAlchemy-Utils = "*"
+Mercurial = {version = "*", markers = "python_version < '3'"}
+pycrypto = "*"
+uWSGI = "*"
+pysam = "*"
+bdbag = "*"
+bleach = "*"
+"bz2file" = {version = "*", markers = "python_version < '3.3'"}
+ipaddress = {version = "*", markers = "python_version < '3.3'"}
+boltons = "*"
+Paste = "*"
+docutils = "*"
+Routes = "*"
+WebOb = "*"
+Mako = "*"
+Babel = "*"
+Beaker = "*"
+dictobj = "*"
+nose = "*"
+Parsley = "*"
+six = "*"
+Whoosh = "*"
+galaxy_sequence_utils = "*"
+"h5py" = "*"
+pykwalify = "*"
+"Cheetah3" = "*"
+requests = "*"
+bioblend = "*"
+boto = "*"
+kombu = "*"
+psutil = "*"
+pulsar-galaxy-lib = "*"
+sqlalchemy-migrate = "*"
+sqlparse = "*"
+svgwrite = "*"
+pyparsing = "*"
+"Fabric3" = "*"
+paramiko = "*"
+python-genomespaceclient = "*"
+
+[requires]
+python_version = "2.7"
