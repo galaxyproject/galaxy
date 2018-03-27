@@ -514,7 +514,6 @@ class Configuration(object):
         self.upstream_gzip = string_as_bool(kwargs.get('upstream_gzip', False))
         self.apache_xsendfile = string_as_bool(kwargs.get('apache_xsendfile', False))
         self.nginx_x_accel_redirect_base = kwargs.get('nginx_x_accel_redirect_base', False)
-        self.nginx_x_archive_files_base = kwargs.get('nginx_x_archive_files_base', False)
         self.nginx_upload_store = kwargs.get('nginx_upload_store', False)
         self.nginx_upload_path = kwargs.get('nginx_upload_path', False)
         self.nginx_upload_job_files_store = kwargs.get('nginx_upload_job_files_store', False)
