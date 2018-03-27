@@ -311,13 +311,13 @@
                 {{ l("Hide original elements") }}:
                 <input type="checkbox" v-model="hideSourceItems" />
             </label>
-            <label class="rule-option rule-option-extension" v-if="elementsType !== 'datasets' && !mappingAsDict.file_type">
+            <label class="rule-option rule-option-extension" v-if="showFileTypeSelector">
                 {{ l("Type") }}:
                 <select2 name="extension" style="width: 120px" v-model="extension" v-if="extension">
                     <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
                 </select2>
             </label>
-            <label class="rule-option" v-if="elementsType !== 'datasets' && !mappingAsDict.dbkey">
+            <label class="rule-option" v-if="showGenomeSelector">
                 {{ l("Genome") }}:
                 <select2 id="genome-selector" style="width: 120px" v-model="genome" v-if="genome">
                     <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
@@ -338,8 +338,8 @@
                 <button @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn btn rule-btn-reset">
                     {{ l("Reset") }}
                 </button>
-                <button @click="createCollection" class="create-collection btn btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
-                    {{ elementsType == "datasets" ? l("Create") : l("Upload") }}
+                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
+                    {{ finishButtonTitle }}
                 </button>
             </option-buttons-div>
         </div>
@@ -722,8 +722,6 @@ export default {
     } else if(this.elementsType == "datasets") {
       mapping = [{"type": "list_identifiers", "columns": [1]}];
     } else {
-      // TODO: incorrect to ease testing, fix.    
-      // mapping = [{"type": "url", "columns": [0]}, {"type": "list_identifiers", "columns": [1]}, {"type": "paired_identifier", "columns": [3]}, {"type": "collection_name", "columns": [5]}];
       mapping = [];
     }
     return {
@@ -832,6 +830,30 @@ export default {
     }
   },
   computed: {
+    exisistingDatasets() {
+        const elementsType = this.elementsType;
+        return elementsType === "datasets";
+    },
+    showFileTypeSelector() {
+        return !this.exisistingDatasets && !this.mappingAsDict.file_type;
+    },
+    showGenomeSelector() {
+        return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
+    },
+    titleFinish() {
+        if(this.elementsType == "datasets") {
+            return _l("Create new collection from specified rules and datasets.");
+        } else {
+            return _l("Upload collection using specified rules.");
+        }
+    },
+    finishButtonTitle() {
+        if(this.elementsType == "datasets") {
+            return _l("Create");
+        } else {
+            return _l("Upload");
+        }
+    },
     hasActiveMappingEdit() {
         const has = _.any(_.values(this.mapping), (mapping) => mapping.editing);
         return has;
