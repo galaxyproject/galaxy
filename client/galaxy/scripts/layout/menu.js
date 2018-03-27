@@ -54,7 +54,7 @@ var Collection = Backbone.Collection.extend({
             menu: [
                 {
                     title: _l("Create Visualization"),
-                    url: "plugins"
+                    url: "visualizations"
                 },
                 {
                     title: _l("Interactive Environments"),
