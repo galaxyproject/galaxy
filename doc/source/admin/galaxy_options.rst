@@ -3435,6 +3435,38 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Similar to the above parameter, workflows can describe parameters
+    used to influence scheduling of jobs within the workflow. This
+    requires both a description of the fields available (which
+    defaults to the definitions in job_resource_params_file if not
+    set).
+:Default: ``config/workflow_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_mapper``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This parameter describes how to map users and workflows to a set
+    of workflow resource parameter to present (typically input IDs
+    from workflow_resource_params_file). If this this is a function
+    reference it will be passed various inputs (workflow model object
+    and user) and it should produce a list of input IDs. If it is a
+    path it is expected to an XML or YAML file describing how to map
+    group names to parameter descriptions (additional types of
+    mappings via these files could be implemented but haven't yet -
+    for instance using workflow tags to do the mapping).
+:Default: ``config/workflow_resource_mapper_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``cache_user_job_count``
 ~~~~~~~~~~~~~~~~~~~~~~~~
