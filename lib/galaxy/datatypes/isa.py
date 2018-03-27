@@ -7,37 +7,35 @@ See http://isa-tools.org
 
 from __future__ import print_function
 
-import re
 import os
+import re
 import os.path
 import sys
-import glob
 import json
 import shutil
-import zipfile
 import logging
+import zipfile
 import tarfile
 import tempfile
-import csv
+from cgi import escape
+from io import BytesIO
+from json import dumps
+
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import isatab
 from isatools import isajson
-from json import dumps
-from io import BytesIO
-from cgi import escape
+from isatools import isatab
 from galaxy import util
 from galaxy.datatypes import data
-from galaxy.datatypes import metadata
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy import model
+from galaxy.util.sanitize_html import sanitize_html
 
 # CONSTANTS {{{1
 ################################################################
 
 # Main files regex
-JSON_FILE_REGEX = re.compile(r"^.*\.json$", flags = re.IGNORECASE)
-INVESTIGATION_FILE_REGEX = re.compile(r"^i_\w+\.txt$", flags = re.IGNORECASE)
+JSON_FILE_REGEX = re.compile(r"^.*\.json$", flags=re.IGNORECASE)
+INVESTIGATION_FILE_REGEX = re.compile(r"^i_\w+\.txt$", flags=re.IGNORECASE)
 
 # The name of the ISA archive (compressed file) as saved inside Galaxy
 ISA_ARCHIVE_NAME = "archive"
@@ -70,7 +68,7 @@ logger.setLevel(logging.ERROR)
 ################################################################
 
 def utf8_text_file_open(path):
-    if sys.version_info[0] < 3: 
+    if sys.version_info[0] < 3:
         fp = open(path, 'rb')
     else:
         fp = open(path, 'r', newline='', encoding='utf8')
@@ -138,7 +136,7 @@ class _Isa(data.Data):
             # Get ISA archive older
             isa_files = os.listdir(isa_folder)
 
-            # Try to find main file 
+            # Try to find main file
             main_file = self._find_main_file_in_archive(isa_files)
 
             if main_file is None:
@@ -177,7 +175,7 @@ class _Isa(data.Data):
                 if found_file is None:
                     found_file = match.group()
                 else:
-                    raise Exception('More than one file match the pattern "', str(file_regex), '" to identify the investigation file')
+                    raise Exception('More than one file match the pattern "', str(self._main_file_regex), '" to identify the investigation file')
 
         return found_file
 
@@ -397,7 +395,7 @@ class _Isa(data.Data):
     # Set meta {{{2
     ################################################################
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """Set meta data information."""
         super(_Isa, self).set_meta(dataset, **kwd)
         self._set_dataset_name(dataset)
@@ -415,7 +413,6 @@ class _Isa(data.Data):
 
     # Display data {{{2
     ################################################################
-
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         """Downloads the ISA dataset if `preview` is `False`;
@@ -451,8 +448,8 @@ class _Isa(data.Data):
                 # Loop on all assays of this study
                 for assay in study.assays:
                     html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term # OntologyAnnotation
+                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
+                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
                     if assay.data_files is not None:
                         html += '<p>Data files:</p>'
@@ -479,7 +476,7 @@ class IsaTab(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaTab, self).__init__(main_file_regex = INVESTIGATION_FILE_REGEX, **kwd)
+        super(IsaTab, self).__init__(main_file_regex=INVESTIGATION_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################
@@ -504,7 +501,7 @@ class IsaJson(_Isa):
     ################################################################
 
     def __init__(self, **kwd):
-        super(IsaJson, self).__init__(main_file_regex = JSON_FILE_REGEX, **kwd)
+        super(IsaJson, self).__init__(main_file_regex=JSON_FILE_REGEX, **kwd)
 
     # Make investigation instance {{{2
     ################################################################
