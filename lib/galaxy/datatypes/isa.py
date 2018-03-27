@@ -7,16 +7,16 @@ See http://isa-tools.org
 
 from __future__ import print_function
 
-import os
-import re
-import os.path
-import sys
 import json
-import shutil
 import logging
-import zipfile
+import os
+import os.path
+import re
+import sys
+import shutil
 import tarfile
 import tempfile
+import zipfile
 from cgi import escape
 from io import BytesIO
 from json import dumps
@@ -25,9 +25,10 @@ from json import dumps
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
 from isatools import isajson
 from isatools import isatab
+
+from galaxy import model
 from galaxy import util
 from galaxy.datatypes import data
-from galaxy import model
 from galaxy.util.sanitize_html import sanitize_html
 
 # CONSTANTS {{{1
@@ -64,6 +65,7 @@ logger.propagate = False
 logger.addHandler(ch)
 logger.setLevel(logging.ERROR)
 
+
 # Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
 ################################################################
 
@@ -73,6 +75,7 @@ def utf8_text_file_open(path):
     else:
         fp = open(path, 'r', newline='', encoding='utf8')
     return fp
+
 
 # ISA class {{{1
 ################################################################
@@ -114,7 +117,7 @@ class _Isa(data.Data):
                 # XXX With this loop the dataset name is reset inside the history to the ISA archive ID. Why?
                 for attr, value in dataset.__dict__.iteritems():
                     if str(attr) == '_metadata_collection':
-                        datatype = value.parent.datatype
+                        datatype = value.parent.datatype  # noqa: F841
                 isa_folder = dataset.dataset.extra_files_path
 
         if isa_folder is None:
@@ -466,6 +469,7 @@ class _Isa(data.Data):
 
         return sanitize_html(html).encode('utf-8')
 
+
 # ISA-Tab class {{{1
 ################################################################
 
@@ -490,6 +494,7 @@ class IsaTab(_Isa):
         isa = parser.isa
 
         return isa
+
 
 # ISA-JSON class {{{1
 ################################################################
