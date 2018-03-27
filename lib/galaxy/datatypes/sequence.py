@@ -43,6 +43,7 @@ log = logging.getLogger(__name__)
 
 SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
 SNIFF_COMPRESSED_FASTAS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTA_SNIFFING", "0") == "1"
+SNIFF_COMPRESSED_GENBANKS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_GENBANK_SNIFFING", "0") == "1"
 
 
 class SequenceSplitLocations(data.Text):
@@ -1200,13 +1201,47 @@ class Genbank(data.Text):
     file_ext = "genbank"
 
     def sniff(self, filename):
+        """
+        Determine whether the file is in genbank format.
+        Works for compressed files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.genbank' )
+        >>> Genbank().sniff( fname )
+        True
+        """
+        compressed = is_gzip(filename)
+        if compressed and not isinstance(self, Binary):
+            return False
         try:
-            with open(filename, 'r') as handle:
-                return 'LOCUS ' == handle.read(6)
+            with compression_utils.get_fileobj(filename) as file:
+                return 'LOCUS ' == file.read(6)
         except Exception:
             pass
-
         return False
+
+
+class GenbankGz(Genbank, CompressedArchive):
+    """Class representing a compressed Genbank sequence"""
+    edam_format = "format_1936"
+    edam_data = "data_0849"
+    file_ext = "genbank.gz"
+    compressed = True
+
+    def sniff(self, filename):
+        """
+        Determines whether the file is in gzip-compressed Genbank format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.genbank.gz' )
+        >>> GenbankGz().sniff( fname )
+        True
+        """
+        if not SNIFF_COMPRESSED_GENBANKS and not self.validate_mode:
+            return False
+        if not is_gzip(filename):
+            return False
+        return Genbank.sniff(self, filename)
 
 
 class MemePsp(Sequence):
