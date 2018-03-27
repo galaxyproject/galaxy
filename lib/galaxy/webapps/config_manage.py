@@ -751,10 +751,11 @@ def _parse_option_value(option_value):
     if isinstance(option_value, OptionValue):
         option = option_value.option
         value = option_value.value
-        option = option_value.option
         # Hack to get nicer YAML values during conversion
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
+        elif option.get("type", "str") == "int":
+            value = int(value)
     else:
         value = option_value
         option = OPTION_DEFAULTS
