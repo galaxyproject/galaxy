@@ -107,10 +107,9 @@ var View = Backbone.View.extend({
         var self = this;
         LoadingIndicator.markViewAsLoading(this);
 
-        if(options.action_id == "list_published"){
+        if (options.action_id == "list_published") {
             this.active_tab = "shared";
-        }
-        else if (options.action_id = "list"){
+        } else if ((options.action_id = "list")) {
             this.active_tab = "user";
         }
         this.model = new Backbone.Model();

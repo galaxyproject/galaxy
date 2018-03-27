@@ -7,7 +7,7 @@ import logging
 
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
-from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     exceptions,
@@ -127,9 +127,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
-                eagerload("latest_workflow").undefer("step_count").lazyload("steps")).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
-                desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
+                joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("tags")).filter(
+                    filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
+                    desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
 
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
@@ -143,7 +144,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     break
             rval.append(item)
         for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).options(
-                eagerload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).filter_by(user=trans.user).filter(
+                joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("stored_workflow").joinedload("user")).options(
+                joinedload("stored_workflow").joinedload("tags")).filter_by(user=trans.user).filter(
                 trans.app.model.StoredWorkflow.deleted == false()).order_by(
                 desc(trans.app.model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})

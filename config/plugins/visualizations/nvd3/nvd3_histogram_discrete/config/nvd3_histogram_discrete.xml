@@ -10,6 +10,7 @@
     <specs>
         <expand macro="specs"/>
         <use_panels>no</use_panels>
+        <confirm>True</confirm>
     </specs>
     <groups>
         <expand macro="groups"/>

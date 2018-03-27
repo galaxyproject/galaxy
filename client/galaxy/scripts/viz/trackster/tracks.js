@@ -2493,7 +2493,7 @@ extend(Track.prototype, Drawable.prototype, {
                     Galaxy.modal.hide();
 
                     // Go to visualization.
-                    window.location.href = `${Galaxy.root}visualization/sweepster?${$.param({
+                    window.top.location.href = `${Galaxy.root}visualization/sweepster?${$.param({
                         dataset_id: track.dataset.id,
                         hda_ldda: track.dataset.get("hda_ldda"),
                         regions: JSON.stringify(new Backbone.Collection(regions).toJSON())

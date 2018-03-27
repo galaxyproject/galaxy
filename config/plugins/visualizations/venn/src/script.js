@@ -18,6 +18,7 @@ _.extend(window.bundleEntries || {}, {
             });
         };
         Datasets.request({
+            chart           : options.chart,
             dataset_id      : options.chart.get( 'dataset_id' ),
             dataset_groups  : options.chart.groups,
             success         : function( result ) {
