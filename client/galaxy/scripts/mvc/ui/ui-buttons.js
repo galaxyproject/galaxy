@@ -15,7 +15,7 @@ var ButtonDefault = Backbone.View.extend({
                 wait_cls: "btn btn-info",
                 disabled: false,
                 percentage: -1,
-                visible: true,
+                visible: true
             }).set(options);
         this.setElement(
             $("<button/>")

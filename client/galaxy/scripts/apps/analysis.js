@@ -101,14 +101,11 @@ window.app = function app(options, bootstrapped) {
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
-            this.page.display(new FormWrapper.View(_.extend(
-                model.get(form_id),
-                {active_tab: "user"}
-            )));
+            this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
         },
 
         show_visualizations: function(action_id) {
-            var activeTab = action_id=="list_published"?"shared":"visualization";
+            var activeTab = action_id == "list_published" ? "shared" : "visualization";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
@@ -207,7 +204,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_pages: function(action_id) {
-            var activeTab = action_id=="list_published"?"shared":"user";
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
@@ -330,10 +327,7 @@ window.app = function app(options, bootstrapped) {
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
-                    this.page.display(new ToolFormComposite.View(_.extend(
-                        response,
-                        {active_tab: "workflow"}
-                    )));
+                    this.page.display(new ToolFormComposite.View(_.extend(response, { active_tab: "workflow" })));
                 },
                 error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
