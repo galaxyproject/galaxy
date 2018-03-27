@@ -3,13 +3,14 @@ import re
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import build_sniff_from_prefix, get_headers
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
 
 
+@build_sniff_from_prefix
 class Smat(Text):
     file_ext = "smat"
 
@@ -27,7 +28,7 @@ class Smat(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         The use of ESTScan implies the creation of scores matrices which
         reflect the codons preferences in the studied organisms.  The
@@ -51,26 +52,27 @@ class Smat(Text):
         True
         """
         line_no = 0
-        with open(filename, "r") as fh:
-            for line in fh:
-                line_no += 1
-                if line_no > 10000:
-                    return True
-                if line_no == 1 and not line.startswith('FORMAT'):
-                    # The first line is always the start of a format section.
+        fh = file_prefix.string_io()
+        for line in fh:
+            line_no += 1
+            if line_no > 10000:
+                return True
+            if line_no == 1 and not line.startswith('FORMAT'):
+                # The first line is always the start of a format section.
+                return False
+            if not line.startswith('FORMAT'):
+                if line.find('\t') >= 0:
+                    # Smat files are not tabular.
                     return False
-                if not line.startswith('FORMAT'):
-                    if line.find('\t') >= 0:
-                        # Smat files are not tabular.
+                items = line.split()
+                if len(items) != 4:
+                    return False
+                for item in items:
+                    # Make sure each item is an integer.
+                    if re.match(r"[-+]?\d+$", item) is None:
                         return False
-                    items = line.split()
-                    if len(items) != 4:
-                        return False
-                    for item in items:
-                        # Make sure each item is an integer.
-                        if re.match(r"[-+]?\d+$", item) is None:
-                            return False
-        return True
+        # Ensure at least a few matching lines are found.
+        return line_no > 2
 
 
 # These commented classes are required by versions 1.0.0, 1.0.1 and 1.0.2 of the

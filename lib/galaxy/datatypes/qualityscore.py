@@ -3,7 +3,10 @@ Qualityscore class
 """
 import logging
 
-from . import data
+from . import (
+    data,
+    sniff
+)
 
 log = logging.getLogger(__name__)
 
@@ -17,6 +20,7 @@ class QualityScore(data.Text):
     file_ext = "qual"
 
 
+@sniff.build_sniff_from_prefix
 class QualityScoreSOLiD(QualityScore):
     """
     until we know more about quality score formats
@@ -24,7 +28,7 @@ class QualityScoreSOLiD(QualityScore):
     edam_format = "format_3610"
     file_ext = "qualsolid"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -34,34 +38,34 @@ class QualityScoreSOLiD(QualityScore):
         >>> QualityScoreSOLiD().sniff( fname )
         True
         """
-        with open(filename) as fh:
-            readlen = None
-            goodblock = 0
-            while True:
-                line = fh.readline()
-                if not line:
-                    if goodblock > 0:
+        fh = file_prefix.string_io()
+        readlen = None
+        goodblock = 0
+        while True:
+            line = fh.readline()
+            if not line:
+                if goodblock > 0:
+                    return True
+                else:
+                    break  # EOF
+            line = line.strip()
+            if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    try:
+                        [int(x) for x in line.split()]
+                        if not(readlen):
+                            readlen = len(line.split())
+                        assert len(line.split()) == readlen  # SOLiD reads should be of the same length
+                    except Exception:
+                        break
+                    goodblock += 1
+                    if goodblock > 10:
                         return True
-                    else:
-                        break  # EOF
-                line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
-                    if line.startswith('>'):
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith('>'):
-                            break
-                        try:
-                            [int(x) for x in line.split()]
-                            if not(readlen):
-                                readlen = len(line.split())
-                            assert len(line.split()) == readlen  # SOLiD reads should be of the same length
-                        except Exception:
-                            break
-                        goodblock += 1
-                        if goodblock > 10:
-                            return True
-                    else:
-                        break  # we found a non-empty line, but it's not a header
+                else:
+                    break  # we found a non-empty line, but it's not a header
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -71,6 +75,7 @@ class QualityScoreSOLiD(QualityScore):
         return QualityScore.set_meta(self, dataset, **kwd)
 
 
+@sniff.build_sniff_from_prefix
 class QualityScore454(QualityScore):
     """
     until we know more about quality score formats
@@ -78,7 +83,7 @@ class QualityScore454(QualityScore):
     edam_format = "format_3611"
     file_ext = "qual454"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -88,24 +93,24 @@ class QualityScore454(QualityScore):
         >>> QualityScore454().sniff( fname )
         True
         """
-        with open(filename) as fh:
-            while True:
-                line = fh.readline()
-                if not line:
-                    break  # EOF
-                line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
-                    if line.startswith('>'):
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith('>'):
-                            break
-                        try:
-                            [int(x) for x in line.split()]
-                        except Exception:
-                            break
-                        return True
-                    else:
-                        break  # we found a non-empty line, but it's not a header
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    try:
+                        [int(x) for x in line.split()]
+                    except Exception:
+                        break
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a header
         return False
 
 
