@@ -184,6 +184,35 @@ export var Hidden = Backbone.View.extend({
     }
 });
 
+/** Creates an input element which switches between select and text field */
+export var TextSelect = Backbone.View.extend({
+    initialize: function(options) {
+        this.text = new Input(options);
+        var classes = {
+            "checkboxes": Checkbox,
+            "radio": Radio,
+            "radiobutton": RadioButton
+        }
+        var SelectClass = classes[options.display] || Select;
+        this.select = new SelectClass.View(options);
+        this.setElement($("<div/>").append(this.select.$el)
+                                   .append(this.text.$el));
+        this.update(options.data);
+    },
+    value: function(new_val) {
+        var element = this.textmode ? this.text : this.select;
+        return element.value(new_val);
+    },
+    update: function(options) {
+        var v = this.value();
+        this.textmode = !$.isArray(options) || options.length === 0;
+        this.text.$el[this.textmode ? "show" : "hide"]();
+        this.select.$el[this.textmode ? "hide" : "show"]();
+        this.select.update(options);
+        this.value(v);
+    }
+});
+
 /** Creates a upload element input field */
 export var Upload = Backbone.View.extend({
     initialize: function(options) {
@@ -266,6 +295,7 @@ export default {
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
     Select: Select,
+    TextSelect: TextSelect,
     Hidden: Hidden,
     Slider: Slider,
     Drilldown: Drilldown
