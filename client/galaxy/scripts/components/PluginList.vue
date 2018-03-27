@@ -102,7 +102,11 @@ export default {
         },
         create: function(plugin) {
             let href = `${plugin.href}?dataset_id=${this.selected}`;
-            $("#galaxy_main").attr("src", href);
+            if (plugin.target == "_top") {
+                window.location.href = href;
+            } else {
+                $("#galaxy_main").attr("src", href);
+            }
         },
         match: function(plugin) {
             return !this.search ||
