@@ -14,6 +14,7 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils
 )
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -96,10 +97,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
     """
-    # AKA: MakoVisualizationPlugin
-    # config[ 'entry_point' ][ 'type' ] == 'mako'
-    # TODO: concept/name collision between plugin config and visualization config
-
     def __init__(self, app, path, name, config, context=None, **kwargs):
         context = context or {}
         self.app = app
@@ -146,7 +143,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'name'          : self.name,
             'html'          : self.config.get('name'),
             'description'   : self.config.get('description'),
-            'regular'       : self.config.get('regular'),
             'logo'          : self.config.get('logo'),
             'title'         : self.config.get('title'),
             'target'        : self.config.get('render_target', 'galaxy_main'),
@@ -155,8 +151,14 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),
             'specs'         : self.config.get('specs'),
-            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url])  # Todo: refactor so this isn't generated here
+            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url]),
+            'href'          : self._get_url()
         }
+
+    def _get_url(self):
+        if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
+            return url_for(controller='visualization', action=self.name)
+        return url_for('visualization_plugin', visualization_name=self.name)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
@@ -198,7 +200,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         # further parse config to resources (models, etc.) used in template based on registry config
         resources = self._config_to_resources(trans, config)
         render_vars.update(resources)
-
         return render_vars
 
     def _build_config(self, config, trans=None, **kwargs):
@@ -311,6 +312,9 @@ class InteractiveEnvironmentPlugin(VisualizationPlugin):
         except Exception:
             log.exception("IE plugin template fill failed")
             return self._error_template(trans)
+
+    def _get_url(self):
+        return url_for('interactive_environment_plugin', visualization_name=self.name)
 
 
 class ScriptVisualizationPlugin(VisualizationPlugin):

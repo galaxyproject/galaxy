@@ -9,7 +9,7 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");
         this.title = this.model.get("plural");
-        if (options && options.active_tab){
+        if (options && options.active_tab) {
             this.active_tab = options.active_tab;
         }
         $.ajax({
