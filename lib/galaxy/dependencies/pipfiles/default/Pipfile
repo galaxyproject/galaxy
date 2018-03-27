@@ -12,7 +12,7 @@ MarkupSafe = "*"
 PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
-Mercurial = {version = "*", markers = "python_version < '3'"}
+Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
 pycrypto = "*"
 uWSGI = "*"
 pysam = "*"
