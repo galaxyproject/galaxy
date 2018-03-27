@@ -120,6 +120,6 @@ uwsgi==2.0.17
 vine==1.1.4
 warlock==1.2.0
 webencodings==0.5.1
-webob==1.7.4
+webob==1.4.2
 whoosh==2.7.4
 wrapt==1.10.11
