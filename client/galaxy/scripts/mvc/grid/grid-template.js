@@ -175,8 +175,10 @@ export default {
                     // Check for row wrapping
                     tmpl += `<td ${nowrap}>`;
 
-                    // Link
-                    if (link) {
+                    // Determine cell content
+                    if (column.delayed) {
+                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                    } else if (link) {
                         if (options.operations.length !== 0) {
                             tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
                         }
