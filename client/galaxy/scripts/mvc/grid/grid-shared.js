@@ -1,12 +1,17 @@
 /** This class renders the grid list with shared section. */
 import GridView from "mvc/grid/grid-view";
+import LoadingIndicator from "ui/loading-indicator";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
-        this.setElement($("<div/>"));
+        LoadingIndicator.markViewAsLoading(this);
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");
         this.title = this.model.get("plural");
+        if (options && options.active_tab) {
+            this.active_tab = options.active_tab;
+        }
         $.ajax({
             url: `${Galaxy.root + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
             success: function(response) {

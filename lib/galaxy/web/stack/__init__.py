@@ -76,6 +76,9 @@ class ApplicationStack(object):
         self.config = config or (app and app.config)
         self.running = False
 
+    def log_startup(self):
+        log.info("Galaxy server instance '%s' is running" % self.app.config.server_name)
+
     def start(self):
         # TODO: with a stack config the pools could be parsed here
         pass
@@ -177,13 +180,16 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     postfork_functions = []
 
+    localhost_addrs = ('127.0.0.1', '[::1]')
+    bind_all_addrs = ('', '0.0.0.0', '[::]')
+
     @staticmethod
     def _get_config_file(confs, loader, section):
         """uWSGI allows config merging, in which case the corresponding config file option will be a list.
         """
         conf = None
         if isinstance(confs, list):
-            gconfs = filter(lambda x: os.path.exists(x) and section in loader(open(x)), confs)
+            gconfs = [_ for _ in confs if os.path.exists(_) and section in loader(open(_))]
             if len(gconfs) == 1:
                 conf = gconfs[0]
             elif len(gconfs) == 0:
@@ -195,6 +201,40 @@ class UWSGIApplicationStack(MessageApplicationStack):
         else:
             conf = confs
         return conf
+
+    @staticmethod
+    def _socket_opt_to_str(opt, val):
+        try:
+            if val.startswith('='):
+                val = uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])]
+            proto = opt if opt != 'socket' else 'uwsgi'
+            if proto == 'uwsgi' and ':' not in val:
+                return 'uwsgi://' + val
+            else:
+                proto = proto + '://'
+                host, port = val.rsplit(':', 1)
+                port = ':' + port.split(',', 1)[0]
+            if host in UWSGIApplicationStack.bind_all_addrs:
+                host = UWSGIApplicationStack.localhost_addrs[0]
+            return proto + host + port
+        except (IndexError, AttributeError):
+            return '%s %s' % (opt, val)
+
+    @staticmethod
+    def _socket_opts():
+        for opt in ('https', 'http', 'socket'):
+            if opt in uwsgi.opt:
+                val = uwsgi.opt[opt]
+                if isinstance(val, list):
+                    for v in val:
+                        yield (opt, v)
+                else:
+                    yield (opt, val)
+
+    @staticmethod
+    def _serving_on():
+        for opt, val in UWSGIApplicationStack._socket_opts():
+            yield UWSGIApplicationStack._socket_opt_to_str(opt, val)
 
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None):
@@ -293,6 +333,18 @@ class UWSGIApplicationStack(MessageApplicationStack):
         else:
             instance_id = uwsgi.mule_id()
         return instance_id
+
+    def log_startup(self):
+        msg = ["Galaxy server instance '%s' is running" % self.app.config.server_name]
+        # the last worker isn't guaranteed to start last, but it's the best shot
+        if not self._is_mule and self.instance_id == len(self.workers()):
+            # We use the same text printed by Paste to not break old scripts grepping for this line
+            msg.append('Starting server in PID %d.' % os.getpid())
+            for s in UWSGIApplicationStack._serving_on():
+                msg.append('serving on ' + s)
+            if len(msg) == 1:
+                msg.append('serving on unknown URL')
+        log.info('\n'.join(msg))
 
     def start(self):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.

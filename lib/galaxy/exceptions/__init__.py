@@ -170,17 +170,17 @@ class ConfigurationError(Exception):
     err_code = error_codes.CONFIG_ERROR
 
 
-class InconsistentDatabase (MessageException):
+class InconsistentDatabase(MessageException):
     status_code = 500
     err_code = error_codes.INCONSISTENT_DATABASE
 
 
-class InternalServerError (MessageException):
+class InternalServerError(MessageException):
     status_code = 500
     err_code = error_codes.INTERNAL_SERVER_ERROR
 
 
-class NotImplemented (MessageException):
+class NotImplemented(MessageException):
     status_code = 501
     err_code = error_codes.NOT_IMPLEMENTED
 

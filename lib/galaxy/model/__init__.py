@@ -111,6 +111,12 @@ class HasTags(object):
             tags_str_list.append(tag_str)
         return tags_str_list
 
+    def copy_tags_from(self, target_user, source):
+        for source_tag_assoc in source.tags:
+            new_tag_assoc = source_tag_assoc.copy()
+            new_tag_assoc.user = target_user
+            self.tags.append(new_tag_assoc)
+
 
 class HasName(object):
 
@@ -1404,7 +1410,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:
             self.copy_item_annotation(db_session, self.user, self, target_user, new_history)
-            new_history.copy_tags_from(target_user=target_user, source_history=self)
+            new_history.copy_tags_from(target_user=target_user, source=self)
 
         # Copy HDAs.
         if activatable:
@@ -1437,6 +1443,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
+                new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
         db_session.add(new_history)
@@ -1595,12 +1602,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
     def __collection_contents_iter(self, **kwds):
         return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
-
-    def copy_tags_from(self, target_user, source_history):
-        for src_shta in source_history.tags:
-            new_shta = src_shta.copy()
-            new_shta.user = target_user
-            self.tags.append(new_shta)
 
 
 class HistoryUserShareAssociation(object):
@@ -2004,6 +2005,9 @@ class DatasetInstance(object):
         self.parent_id = parent_id
         self.validation_errors = validation_errors
 
+    def update(self):
+        self.update_time = galaxy.model.orm.now.now()
+
     @property
     def ext(self):
         return self.extension
@@ -2034,6 +2038,12 @@ class DatasetInstance(object):
     def set_file_name(self, filename):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
+
+    def link_to(self, path):
+        self.file_name = os.path.abspath(path)
+        # Since we are not copying the file into Galaxy's managed
+        # default file location, the dataset should never be purgable.
+        self.dataset.purgable = False
 
     @property
     def extra_files_path(self):
@@ -2105,14 +2115,6 @@ class DatasetInstance(object):
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data(self)
-
-    def write_from_stream(self, stream):
-        """Writes data from a stream"""
-        self.datatype.write_from_stream(self, stream)
-
-    def set_raw_data(self, data):
-        """Saves the data on the disc"""
-        self.datatype.set_raw_data(self, data)
 
     def get_mime(self):
         """Returns the mime type of the data"""
@@ -2665,15 +2667,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
                  type_coerce(cls.id, types.Unicode)).label('type_id'))
-
-    def copy_tags_from(self, target_user, source_hda):
-        """
-        Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
-        """
-        for source_tag_assoc in source_hda.tags:
-            new_tag_assoc = source_tag_assoc.copy()
-            new_tag_assoc.user = target_user
-            self.tags.append(new_tag_assoc)
 
 
 class HistoryDatasetAssociationHistory(object):
@@ -3650,6 +3643,7 @@ class StoredWorkflow(HasTags, Dictifiable):
         self.workflows = []
 
     def copy_tags_from(self, target_user, source_workflow):
+        # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
             new_swta = src_swta.copy()
             new_swta.user = target_user
@@ -4075,7 +4069,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -4152,6 +4146,16 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
+    @property
+    def resource_parameters(self):
+        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+        _resource_parameters = {}
+        for input_parameter in self.input_parameters:
+            if input_parameter.type == resource_type:
+                _resource_parameters[input_parameter.name] = input_parameter.value
+
+        return _resource_parameters
+
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -4199,7 +4203,7 @@ class WorkflowInvocationStep(Dictifiable):
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Uknown output type encountered")
+            raise Exception("Unknown output type encountered")
 
     @property
     def jobs(self):
@@ -4260,7 +4264,8 @@ class WorkflowRequestInputParameter(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
-        META_PARAMETERS='meta',  #
+        META_PARAMETERS='meta',
+        RESOURCE_PARAMETERS='resource',
     )
 
     def __init__(self, name=None, value=None, type=None):
@@ -4569,7 +4574,7 @@ class TransferJob(object):
         self.params = params
 
 
-class Tag (object):
+class Tag(object):
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
         self.type = type
@@ -4580,7 +4585,7 @@ class Tag (object):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
 
 
-class ItemTagAssociation (Dictifiable):
+class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
 
@@ -4605,35 +4610,35 @@ class ItemTagAssociation (Dictifiable):
         return new_ta
 
 
-class HistoryTagAssociation (ItemTagAssociation):
+class HistoryTagAssociation(ItemTagAssociation):
     pass
 
 
-class DatasetTagAssociation (ItemTagAssociation):
+class DatasetTagAssociation(ItemTagAssociation):
     pass
 
 
-class HistoryDatasetAssociationTagAssociation (ItemTagAssociation):
+class HistoryDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class LibraryDatasetDatasetAssociationTagAssociation (ItemTagAssociation):
+class LibraryDatasetDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class PageTagAssociation (ItemTagAssociation):
+class PageTagAssociation(ItemTagAssociation):
     pass
 
 
-class WorkflowStepTagAssociation (ItemTagAssociation):
+class WorkflowStepTagAssociation(ItemTagAssociation):
     pass
 
 
-class StoredWorkflowTagAssociation (ItemTagAssociation):
+class StoredWorkflowTagAssociation(ItemTagAssociation):
     pass
 
 
-class VisualizationTagAssociation (ItemTagAssociation):
+class VisualizationTagAssociation(ItemTagAssociation):
     pass
 
 
@@ -4763,7 +4768,7 @@ class DataManagerJobAssociation(object):
         self.data_manager_id = data_manager_id
 
 
-class UserPreference (object):
+class UserPreference(object):
     def __init__(self, name=None, value=None):
         self.name = name
         self.value = value

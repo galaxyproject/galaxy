@@ -108,7 +108,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         js_options = self._get_js_options(trans)
         config = js_options['config']
         config.update(self._get_extended_config(trans))
-
         return self.template(trans, 'analysis', options=js_options)
 
     @web.expose

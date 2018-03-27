@@ -26,9 +26,8 @@ var View = Backbone.View.extend({
     },
 
     /** Add a new input element */
-    add: function(input) {
-        var input_def = jQuery.extend(true, {}, input);
-        input_def.id = input.id = Utils.uid();
+    add: function(input_def) {
+        input_def.id = Utils.uid();
         this.app.input_list[input_def.id] = input_def;
         switch (input_def.type) {
             case "conditional":

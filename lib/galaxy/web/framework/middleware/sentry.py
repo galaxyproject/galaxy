@@ -26,7 +26,7 @@ class Sentry(object):
     uncaught exceptions and send them to Sentry.
     """
 
-    def __init__(self, application, dsn, sloreq):
+    def __init__(self, application, dsn, sloreq=0):
         assert Client is not None, RAVEN_IMPORT_MESSAGE
         self.application = application
         self.client = None

@@ -8,7 +8,7 @@ from . import data
 log = logging.getLogger(__name__)
 
 
-class QualityScore (data.Text):
+class QualityScore(data.Text):
     """
     until we know more about quality score formats
     """
@@ -17,7 +17,7 @@ class QualityScore (data.Text):
     file_ext = "qual"
 
 
-class QualityScoreSOLiD (QualityScore):
+class QualityScoreSOLiD(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -34,8 +34,7 @@ class QualityScoreSOLiD (QualityScore):
         >>> QualityScoreSOLiD().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             readlen = None
             goodblock = 0
             while True:
@@ -63,9 +62,6 @@ class QualityScoreSOLiD (QualityScore):
                             return True
                     else:
                         break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except Exception:
-            pass
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -75,7 +71,7 @@ class QualityScoreSOLiD (QualityScore):
         return QualityScore.set_meta(self, dataset, **kwd)
 
 
-class QualityScore454 (QualityScore):
+class QualityScore454(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -92,8 +88,7 @@ class QualityScore454 (QualityScore):
         >>> QualityScore454().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
+        with open(filename) as fh:
             while True:
                 line = fh.readline()
                 if not line:
@@ -111,13 +106,10 @@ class QualityScore454 (QualityScore):
                         return True
                     else:
                         break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except Exception:
-            pass
         return False
 
 
-class QualityScoreSolexa (QualityScore):
+class QualityScoreSolexa(QualityScore):
     """
     until we know more about quality score formats
     """
@@ -125,7 +117,7 @@ class QualityScoreSolexa (QualityScore):
     file_ext = "qualsolexa"
 
 
-class QualityScoreIllumina (QualityScore):
+class QualityScoreIllumina(QualityScore):
     """
     until we know more about quality score formats
     """

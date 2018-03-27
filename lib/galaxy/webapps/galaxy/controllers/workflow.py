@@ -4,13 +4,13 @@ import base64
 import json
 import logging
 import os
-import sgmllib
 
 import requests
 from markupsafe import escape
+from six.moves.html_parser import HTMLParser
 from six.moves.http_client import HTTPConnection
 from sqlalchemy import and_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import eagerload, joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
 
 from galaxy import (
@@ -136,10 +136,14 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             url_args=dict(action="export_to_file")
         ),
     ]
+    num_rows_per_page = 50
+    use_paging = True
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching stored_workflow.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        # In addition to that - be sure to lazyload the latest_workflow - it isn't needed and it causes all
+        # of its steps to be eagerly loaded.
+        return trans.sa_session.query(self.model_class).join("user").options(lazyload("latest_workflow"), eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         # A public workflow is published, has a slug, and is not deleted.
@@ -149,16 +153,17 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             self.model_class.deleted == expression.false())
 
 
-# Simple SGML parser to get all content in a single tag.
-class SingleTagContentsParser(sgmllib.SGMLParser):
+# Simple HTML parser to get all content in a single tag.
+class SingleTagContentsParser(HTMLParser):
 
     def __init__(self, target_tag):
-        sgmllib.SGMLParser.__init__(self)
+        # Cannot use super() because HTMLParser is an old-style class in Python2
+        HTMLParser.__init__(self)
         self.target_tag = target_tag
         self.cur_tag = None
         self.tag_content = ""
 
-    def unknown_starttag(self, tag, attrs):
+    def handle_starttag(self, tag, attrs):
         """ Called for each start tag. """
         self.cur_tag = tag
 
@@ -400,7 +405,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored = self.get_stored_workflow(trans, id)
         if new_annotation:
             # Sanitize annotation before adding it.
-            new_annotation = sanitize_html(new_annotation, 'utf-8', 'text/html')
+            new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
             trans.sa_session.flush()
             return new_annotation
@@ -543,7 +548,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation, 'utf-8', 'text/html')
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
             # Persist
             session = trans.sa_session
@@ -569,7 +574,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation, 'utf-8', 'text/html')
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
 
             # Persist

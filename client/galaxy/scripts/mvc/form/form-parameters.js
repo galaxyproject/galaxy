@@ -84,23 +84,10 @@ export default Backbone.Model.extend({
         }
 
         // identify display type
-        var SelectClass = Ui.Select;
-        switch (input_def.display) {
-            case "checkboxes":
-                SelectClass = Ui.Checkbox;
-                break;
-            case "radio":
-                SelectClass = Ui.Radio;
-                break;
-            case "radiobutton":
-                SelectClass = Ui.RadioButton;
-                break;
-        }
-
-        // create select field
-        return new SelectClass.View({
+        return new Ui.TextSelect({
             id: `field-${input_def.id}`,
             data: data,
+            display: input_def.display,
             error_text: input_def.error_text || "No options available",
             readonly: input_def.readonly,
             multiple: input_def.multiple,
@@ -224,9 +211,7 @@ export default Backbone.Model.extend({
         var self = this;
         return new SelectGenomeSpace.View({
             id: `field-${input_def.id}`,
-            onchange: function() {
-                self.app.trigger("change");
-            }
+            onchange: input_def.onchange
         });
     },
 

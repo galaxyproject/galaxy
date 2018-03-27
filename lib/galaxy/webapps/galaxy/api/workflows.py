@@ -7,6 +7,7 @@ import logging
 
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     exceptions,
@@ -125,23 +126,27 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         user = trans.get_user()
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
-                desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
+        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+                joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("tags")).filter(
+                    filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
+                    desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
 
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
-            item['number_of_steps'] = len(wf.latest_workflow.steps)
+            item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf.id:
                     item['show_in_tool_panel'] = True
                     break
             rval.append(item)
-        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(
-                user=trans.user).join('stored_workflow').filter(
+        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).options(
+                joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("stored_workflow").joinedload("user")).options(
+                joinedload("stored_workflow").joinedload("tags")).filter_by(user=trans.user).filter(
                 trans.app.model.StoredWorkflow.deleted == false()).order_by(
                 desc(trans.app.model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
@@ -149,7 +154,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
-            item['number_of_steps'] = len(wf_sa.stored_workflow.latest_workflow.steps)
+            item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf_sa.id:

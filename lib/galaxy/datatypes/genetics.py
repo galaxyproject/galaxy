@@ -606,7 +606,6 @@ class RexpBase(Html):
     MetadataElement(name="pheno_path", desc="Path to phenotype data for this experiment", default="rexpression.pheno", visible=True)
     file_ext = 'rexpbase'
     html_table = None
-    is_binary = True
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
 

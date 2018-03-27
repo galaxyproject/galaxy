@@ -269,6 +269,16 @@ published_grids:
   selectors:
     search: '#input-free-text-search-filter'
 
+gies:
+  jupyter:
+    selectors:
+      body: 'body.notebook_app'
+      trusted_notification: '#notification_trusted'
+
+  selectors:
+    spinner: 'img#spinner'
+    iframe: 'body iframe[seamless="seamless"]'
+
 charts:
   selectors:
     visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class

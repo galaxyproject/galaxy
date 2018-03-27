@@ -18,6 +18,7 @@ import subprocess
 import sys
 from sys import platform as _platform
 
+from six.moves import shlex_quote
 try:
     import yaml
 except ImportError:
@@ -30,6 +31,7 @@ from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
@@ -46,6 +48,7 @@ DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
+CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: bgruening/busybox-bash:0.1
@@ -194,7 +197,7 @@ def mull_targets(
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
         '-set', "CHANNELS='%s'" % channels,
-        '-set', "TEST='%s'" % test,
+        '-set', "TEST=%s" % shlex_quote(test),
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
@@ -202,6 +205,8 @@ def mull_targets(
 
     if DEST_BASE_IMAGE:
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+    if CONDA_IMAGE:
+        involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if singularity:
@@ -235,7 +240,8 @@ def mull_targets(
             with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
-        ret = involucro_context.exec_command(involucro_args)
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
         if singularity:
             # we can not remove this folder as it contains the image wich is owned by root
             pass

@@ -9,7 +9,6 @@ import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 export default Backbone.View.extend({
     options: {
-        nginx_upload_path: "",
         ftp_upload_site: "n/a",
         default_genome: "?",
         default_extension: "auto",
@@ -170,7 +169,9 @@ export default Backbone.View.extend({
             var inputs = {
                 file_count: items.length,
                 dbkey: items[0].get("genome", "?"),
-                file_type: items[0].get("extension", "auto")
+                // sometimes extension set to "" in automated testing after first upload of
+                // a session. https://github.com/galaxyproject/galaxy/issues/5169
+                file_type: items[0].get("extension") || "auto"
             };
             for (var index in items) {
                 var it = items[index];

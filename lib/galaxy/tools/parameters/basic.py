@@ -55,7 +55,17 @@ def contains_workflow_parameter(value, search=False):
 
 
 def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (isinstance(value, dict) and value.get('__class__') == 'RuntimeValue')
+    return isinstance(value, RuntimeValue) or (isinstance(value, dict)
+        and value.get("__class__") == "RuntimeValue")
+
+
+def has_runtime_datasets(trans, value):
+    for v in util.listify(value):
+        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+                ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
+                hasattr(v, "implicit_conversion")):
+            return True
+    return False
 
 
 def parse_dynamic_options(param, input_source):
@@ -519,11 +529,19 @@ class FileToolParameter(ToolParameter):
         # Middleware or proxies may encode files in special ways (TODO: this
         # should be pluggable)
         if type(value) == dict:
-            upload_store = trans.app.config.nginx_upload_store
-            assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
-            # Check that the file is in the right location
-            local_filename = os.path.abspath(value['path'])
-            assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
+            if 'session_id' in value:
+                # handle api upload
+                session_id = value["session_id"]
+                upload_store = trans.app.config.new_file_path
+                if re.match('^[\w-]+$', session_id) is None:
+                    raise ValueError("Invald session id format.")
+                local_filename = os.path.abspath(os.path.join(upload_store, session_id))
+            else:
+                # handle nginx upload
+                upload_store = trans.app.config.nginx_upload_store
+                assert upload_store, "Request appears to have been processed by nginx_upload_module but Galaxy is not configured to recognize it."
+                local_filename = os.path.abspath(value['path'])
+                assert local_filename.startswith(upload_store), "Filename provided by nginx (%s) is not in correct directory (%s)." % (local_filename, upload_store)
             value = dict(filename=value["name"], local_filename=local_filename)
         return value
 
@@ -838,10 +856,12 @@ class SelectToolParameter(ToolParameter):
         legal_values = self.get_legal_values(trans, other_values)
         workflow_building_mode = trans.workflow_building_mode
         for context_value in other_values.values():
-            if is_runtime_value(context_value):
+            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
                 workflow_building_mode = workflow_building_modes.ENABLED
                 break
-        if len(list(legal_values)) == 0 and workflow_building_mode:
+        if not legal_values:
+            if not workflow_building_mode:
+                raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -856,10 +876,10 @@ class SelectToolParameter(ToolParameter):
                         # use \r\n to separate lines.
                         value = value.split()
             return value
-        if (not legal_values or value is None) and self.optional:
-            return None
-        if not legal_values:
-            raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
+        elif value is None:
+            if self.optional:
+                return None
+            raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         if isinstance(value, list):
             if not self.multiple:
                 raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
@@ -904,7 +924,7 @@ class SelectToolParameter(ToolParameter):
 
     def get_initial_value(self, trans, other_values):
         options = list(self.get_options(trans, other_values))
-        if len(options) == 0 and trans.workflow_building_mode:
+        if not options:
             return None
         value = [optval for _, optval, selected in options if selected]
         if len(value) == 0:
@@ -1104,7 +1124,7 @@ class ColumnListParameter(SelectToolParameter):
         dataset (if found).
         """
         # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref, None)
+        dataset = other_values.get(self.data_ref)
         # Check if a dataset is selected
         if not dataset:
             return []
@@ -1113,8 +1133,10 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, trans.app.model.HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
-            # Columns can only be identified if metadata is available
-            if not hasattr(dataset, 'metadata') or not hasattr(dataset.metadata, 'columns') or not dataset.metadata.columns:
+            # Columns can only be identified if the dataset is ready and metadata is available
+            if not hasattr(dataset, 'metadata') or \
+                    not hasattr(dataset.metadata, 'columns') or \
+                    not dataset.metadata.columns:
                 return []
             # Build up possible columns for this dataset
             this_column_list = []
@@ -1124,8 +1146,7 @@ class ColumnListParameter(SelectToolParameter):
                     if col == 'int' or col == 'float':
                         this_column_list.append(str(i + 1))
             else:
-                for i in range(0, dataset.metadata.columns):
-                    this_column_list.append(str(i + 1))
+                this_column_list = [str(i) for i in range(1, dataset.metadata.columns + 1)]
             # Take the intersection of these columns with the other columns.
             if column_list is None:
                 column_list = this_column_list
@@ -1306,24 +1327,24 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        if len(list(legal_values)) == 0 and trans.workflow_building_mode:
+        if not legal_values:
+            if not trans.workflow_building_mode:
+                raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
             if self.multiple:
                 if value == '':  # No option selected
                     value = None
                 else:
                     value = value.split("\n")
             return value
-        if not value and not self.optional:
+        elif value is None:
+            if self.optional:
+                return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
-        if not value:
-            return None
         if not isinstance(value, list):
             value = [value]
         if len(value) > 1 and not self.multiple:
             raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
         rval = []
-        if not legal_values:
-            raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         for val in value:
             if val not in legal_values:
                 raise ValueError("An invalid option was selected for %s, %r, please verify" % (self.name, val))
@@ -1378,7 +1399,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 recurse_options(initial_values, option['options'])
         # More working around dynamic options for workflow
         options = self.get_options(trans=trans, other_values=other_values)
-        if len(list(options)) == 0 and trans.workflow_building_mode:
+        if not options:
             return None
         initial_values = []
         recurse_options(initial_values, options)
@@ -1672,16 +1693,18 @@ class DataToolParameter(BaseDataToolParameter):
             rval = value
         else:
             rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(value)
-        if isinstance(rval, list):
-            values = rval
-        else:
-            values = [rval]
+        values = util.listify(rval)
+        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
         for v in values:
             if v:
                 if v.deleted:
                     raise ValueError("The previously selected dataset has been deleted.")
-                if hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
+                elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ValueError("The previously selected dataset has entered an unusable state")
+                elif hasattr(v, "dataset"):
+                    match = dataset_matcher.hda_match(v, check_security=False)
+                    if match and match.implicit_conversion:
+                        v.implicit_conversion = True
         if not self.multiple:
             if len(values) > 1:
                 raise ValueError("More than one dataset supplied to single input dataset parameter.")

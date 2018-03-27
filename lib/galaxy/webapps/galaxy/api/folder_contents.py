@@ -275,7 +275,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         from_hdca_id = payload.pop('from_hdca_id', None)
         ldda_message = payload.pop('ldda_message', '')
         if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message, 'utf-8')
+            ldda_message = util.sanitize_html.sanitize_html(ldda_message)
         try:
             if from_hda_id:
                 decoded_hda_id = self.decode_id(from_hda_id)

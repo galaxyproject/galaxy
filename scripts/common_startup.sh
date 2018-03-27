@@ -197,10 +197,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         if [ "$GIT_BRANCH" = "0" ]; then
             SKIP_CLIENT_BUILD=1
         else
-            # Compare hash.
-            githash=$(git rev-parse HEAD)
-            statichash=$(cat static/client_build_hash.txt)
-            if [ "$githash" = "$statichash" ]; then
+            # Check if anything has changed in client/ since the last build
+            if git diff --quiet $(cat static/client_build_hash.txt) -- client/; then
                 SKIP_CLIENT_BUILD=1
             else
                 echo "The Galaxy client is out of date and will be built now."

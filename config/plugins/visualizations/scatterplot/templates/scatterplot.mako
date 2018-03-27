@@ -26,10 +26,7 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 <script type="text/javascript">
 window.Galaxy = { root: '${ root }' };
 </script>
-${h.js( 'libs/jquery/jquery',
-        'libs/underscore',
-        'libs/d3')}
-${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.bundle.js' )}
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.js' )}
 
 <script type="text/javascript">
     function getModel(){
@@ -42,7 +39,6 @@ ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
     function getHDAJSON(){
         return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
     }
-    window.jQuery = window.jquery = window.$;
 </script>
 
 </head>
