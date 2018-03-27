@@ -143,12 +143,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     item['show_in_tool_panel'] = True
                     break
             rval.append(item)
-        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).options(
+        for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
+                model.StoredWorkflowUserShareAssociation.stored_workflow).options(
                 joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
                 joinedload("stored_workflow").joinedload("user")).options(
-                joinedload("stored_workflow").joinedload("tags")).filter_by(user=trans.user).filter(
-                trans.app.model.StoredWorkflow.deleted == false()).order_by(
-                desc(trans.app.model.StoredWorkflow.update_time)).all():
+                joinedload("stored_workflow").joinedload("tags")).filter(model.StoredWorkflowUserShareAssociation.user == trans.user).filter(
+                model.StoredWorkflow.deleted == false()).order_by(
+                desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for('workflow', id=encoded_id)
