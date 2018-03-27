@@ -13,7 +13,7 @@ DEFAULT_ACTION = None
 
 ARG_HELP_CONFIG_FILE = """
 Galaxy config file (defaults to $GALAXY_ROOT/config/galaxy.yml if that file exists
-or else to $GALAXY_ROOT/config/galaxy.ini if that exists). If this isn't set on the
+or else to ./config/galaxy.ini if that exists). If this isn't set on the
 command line it can be set with the environment variable GALAXY_CONFIG_FILE.
 """
 

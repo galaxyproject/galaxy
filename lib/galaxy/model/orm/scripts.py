@@ -121,7 +121,7 @@ def get_config(argv, use_argparse=True, cwd=None):
         if not config_file or get_ext(config_file, ignore='sample') == 'yaml':
             config_section = database_defaults.get('config_section', None)
         else:
-            # An .ini file - just let load_app_properties find app:main.
+            # Just use the default found by load_app_properties.
             config_section = None
     properties = load_app_properties(config_file=config_file, config_prefix=config_override, config_section=config_section)
 
