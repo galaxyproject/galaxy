@@ -12,14 +12,14 @@ import logging
 import os
 import os.path
 import re
-import sys
 import shutil
+import sys
 import tarfile
 import tempfile
 import zipfile
 from cgi import escape
 from io import BytesIO
-from json import dumps
+from json import dumps  # noqa: F401
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
