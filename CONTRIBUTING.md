@@ -69,9 +69,11 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
     see [the Galaxy security policies](SECURITY_POLICY.md) for information
     about responsibly disclosing security issues.
 
-* If your changes modify code - please ensure the resulting files
-  conform to Galaxy [style
-  guidelines](https://galaxyproject.org/develop/best-practices).
+* If your changes modify code please ensure the resulting files conform to
+  Galaxy [style guidelines](https://galaxyproject.org/develop/best-practices).
+
+* If you are working on Galaxy Client (the user interface -- javascript
+  styles), see more information in the [client readme](client/README.md).
 
 * Galaxy contains hundreds of tests of different types and complexity
   and running each is difficult and probably not reasonable at this
