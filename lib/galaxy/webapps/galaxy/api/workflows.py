@@ -4,6 +4,7 @@ API operations for Workflows
 from __future__ import absolute_import
 
 import logging
+import os
 
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
@@ -266,6 +267,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                              and will copy the outputs of the previously executed step.
         """
         ways_to_create = set([
+            'archive_source',
             'workflow_id',
             'installed_repository_file',
             'from_history_id',
@@ -285,7 +287,41 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             result = workflow_controller.import_workflow(trans=trans,
                                                          cntrller='api',
                                                          **payload)
-            return result
+
+        if 'archive_source' in payload:
+            archive_source = payload['archive_source']
+            archive_file = payload.get('archive_file')
+            archive_data = None
+            if archive_source:
+                try:
+                    archive_data = requests.get(url).text
+                except Exception as e:
+                    raise exceptions.MessageException("Failed to open URL: %s. Exception: %s" % (escape(url), escape(str(e))))
+            elif hasattr(archive_file, 'file'):
+                uploaded_file = archive_file.file
+                uploaded_file_name = uploaded_file.name
+                if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
+                    archive_data = uploaded_file.read()
+                else:
+                    raise exceptions.MessageException("You attempted to upload an empty file.")
+            else:
+                raise exceptions.MessageException("Please provide a url or file.")
+            if archive_data:
+                try:
+                    data = json.loads(archive_data)
+                except:
+                    raise exceptions.MessageException("The data content does not appear to be a Galaxy workflow.")
+                if not data:
+                    raise exceptions.MessageException("Imported, but this workflow contains cycles.")
+                workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=workflow_source)
+                workflow = workflow.latest_workflow
+                if workflow.has_errors:
+                    raise exceptions.MessageException("Imported, but some steps in this workflow have validation errors.")
+                elif workflow.has_cycles:
+                    raise exceptions.MessageException("Imported, but this workflow contains cycles.")
+            else:
+                raise exceptions.MessageException("No workflow data found.")
+            return {'message': "Workflow %s imported successfully." % escape(workflow.name)}
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -448,18 +484,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        workflow_dict = payload.get('workflow')
+        workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
-            new_workflow_name = payload.get('name') or workflow_dict.get('name')
+            new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name:
                 stored_workflow.name = sanitize_html(new_workflow_name)
 
-            if 'annotation' in payload:
-                newAnnotation = sanitize_html(payload['annotation'])
+            if 'annotation' in workflow_dict:
+                newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
 
-            if 'menu_entry' in payload or 'show_in_tool_panel' in workflow_dict:
-                if payload.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
+            if 'menu_entry' in workflow_dict or 'show_in_tool_panel' in workflow_dict:
+                if workflow_dict.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
                     menuEntry = model.StoredWorkflowMenuEntry()
                     menuEntry.stored_workflow = stored_workflow
                     trans.get_user().stored_workflow_menu_entries.append(menuEntry)

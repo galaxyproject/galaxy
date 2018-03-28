@@ -310,7 +310,7 @@ const WorkflowListView = Backbone.View.extend({
             Galaxy.root
         }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
             Galaxy.root
-        }workflows/import_workflow"></a></li></ul>`;
+        }workflows/import"></a></li></ul>`;
     },
 
     /** Template for workflow table */
