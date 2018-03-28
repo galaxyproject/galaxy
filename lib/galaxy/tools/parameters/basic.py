@@ -1606,7 +1606,9 @@ class DataToolParameter(BaseDataToolParameter):
         for name, conv_extension in input_source.parse_conversion_tuples():
             assert None not in [name, conv_extension], 'A name (%s) and type (%s) are required for explicit conversion' % (name, conv_extension)
             conv_type = tool.app.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
-            if conv_type is None:
+            if conv_type is None and not isinstance(tool.app, ValidationContext):
+                # We only raise an error if we're currently loading the tool.
+                # ValidationContext's are usually set up without access to datatypes
                 raise ValueError("Datatype class not found for extension '%s', which is used as 'type' attribute in conversion of data parameter '%s'" % (conv_type, self.name))
             self.conversions.append((name, conv_extension, [conv_type]))
 
