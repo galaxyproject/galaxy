@@ -14,7 +14,7 @@ nodejs.org and yarnpkg.com.
 The Galaxy client build has necessarily grown more complex in the past several
 years, but we're still trying to keep things as simple as possible for
 developers (everyone, really).  If you're having any trouble with building the
-client after following the instructions below please create an issue on Github
+client after following the instructions below please create an issue on GitHub
 or reach out for help directly on Gitter at
 https://gitter.im/galaxyproject/Lobby.
 

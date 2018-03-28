@@ -16,15 +16,15 @@ Hub](https://galaxyproject.org).
 If you have an idea for a feature to add or an approach for a bugfix, it is
 best to communicate with Galaxy developers early. The primary venue for this is
 the [GitHub issue tracker](https://github.com/galaxyproject/galaxy/issues).
-Browse through existing GitHub issues and and if one seems related, comment on
-it.  For more direct communication, Galaxy developers are generally available
-via [IRC](https://galaxyproject.org/get-involved),
+Browse through existing GitHub issues and if one seems related, comment on it.
+For more direct communication, Galaxy developers are generally available via
+[IRC](https://galaxyproject.org/get-involved),
 [Gitter](https://gitter.im/galaxyproject/Lobby) and on the [development mailing
 list](http://dev.list.galaxyproject.org).
 
 If you're looking to help but aren't sure where to start, we also maintain a
 [tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3Afriendliness%2Ffriendly)
-on Github for smaller issues we believe would make the best entry points for
+on GitHub for smaller issues we believe would make the best entry points for
 new developers.
 
 ## Reporting a new issue
@@ -71,7 +71,7 @@ If no existing Galaxy issue seems appropriate, a new issue can be opened using
 * If your changes modify code please ensure the resulting files conform to
   Galaxy [style guidelines](https://galaxyproject.org/develop/best-practices).
 
-* If you are working on the Galaxy Client (the user interface -- javascript,
+* If you are working on the Galaxy Client (the user interface -- JavaScript,
   styles, etc.), see more information in the [client readme](client/README.md).
 
 * Galaxy contains hundreds of tests of different types and complexity and
