@@ -9,7 +9,7 @@ var ButtonDefault = Backbone.View.extend({
                 id: Utils.uid(),
                 title: "",
                 icon: "",
-                cls: "btn btn-default",
+                cls: "btn btn-secondary",
                 wait: false,
                 wait_text: "Sending...",
                 wait_cls: "btn btn-info",

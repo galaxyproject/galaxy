@@ -1664,7 +1664,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     _l("Cancel"),
                     "</button>",
                     '<div class="create-other btn-group dropup">',
-                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    '<button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",

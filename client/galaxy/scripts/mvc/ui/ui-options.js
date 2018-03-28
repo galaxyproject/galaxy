@@ -253,7 +253,7 @@ RadioButton.View = Base.extend({
 
     /** Template for a single option */
     _templateOption: function(pair) {
-        var $el = $("<label/>").addClass("btn btn-default");
+        var $el = $("<label/>").addClass("btn btn-secondary");
         pair.icon &&
             $el.append(
                 $("<i/>")

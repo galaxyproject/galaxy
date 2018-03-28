@@ -1386,7 +1386,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</label>",
                 "</div>",
                 // create new folder button
-                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-default primary-button toolbtn-create-folder add-library-items add-library-items-folder toolbar-item" type="button">',
+                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder toolbar-item" type="button">',
                 '<span class="fa fa-plus"></span><span class="fa fa-folder"></span> Create Folder ',
                 "</button>",
                 // add datasets button
@@ -1413,7 +1413,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 "<% } else { %>",
-                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-default add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
+                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-secondary add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
                 '<span class="fa fa-plus"></span><span class="fa fa-file"></span>',
                 "</a>",
                 "<% } %>",

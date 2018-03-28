@@ -395,7 +395,7 @@ var FolderListView = Backbone.View.extend({
                 '<tbody id="folder_list_body">',
                 '<tr id="first_folder_item">',
                 "<td>",
-                '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-default btn-xs">..<a>',
+                '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-xs">..<a>',
                 "</td>",
                 "<td></td>",
                 "<td></td>",

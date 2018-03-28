@@ -142,7 +142,6 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     history: data,
                     view: this
                 }),
-                //'<button class="btn btn-default">Herp</button>',
                 this.controlsRightTemplate({
                     history: data,
                     view: this
@@ -212,7 +211,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             _l("Current History"),
             "</strong>",
             "<% } else { %>",
-            '<button class="switch-to btn btn-default">',
+            '<button class="switch-to btn btn-secondary">',
             _l("Switch to"),
             "</button>",
             "<% } %>",
@@ -227,7 +226,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             '<div class="pull-right">',
             "<% if( !data.history.purged ){ %>",
             '<div class="panel-menu btn-group">',
-            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
             '<span class="caret"></span>',
             "</button>",
             '<ul class="dropdown-menu pull-right" role="menu">',
@@ -1034,12 +1033,12 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         [
             '<div class="header flex-column-container">',
             '<div class="control-column control-column-left flex-column">',
-            '<button class="done btn btn-default" tabindex="1">',
+            '<button class="done btn btn-secondary" tabindex="1">',
             _l("Done"),
             "</button>",
             '<div id="search-histories" class="search-control"></div>',
             '<div id="search-datasets" class="search-control"></div>',
-            '<a class="open-more-options btn btn-default" tabindex="3">',
+            '<a class="open-more-options btn btn-secondary" tabindex="3">',
             '<span class="fa fa-ellipsis-h"></span>',
             "</a>",
             "</div>",
@@ -1049,7 +1048,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             "</div>",
             "</div>",
             '<div class="control-column control-column-right flex-column">',
-            '<button class="create-new btn btn-default" tabindex="4">',
+            '<button class="create-new btn btn-secondary" tabindex="4">',
             _l("Create new"),
             "</button> ",
             "</div>",
@@ -1088,7 +1087,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         [
             '<div class="more-options">',
             '<div class="order btn-group">',
-            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
             `${_l("Order histories by")} `,
             '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
             '<span class="caret"></span>',
