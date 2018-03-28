@@ -559,47 +559,34 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
-
         import_tools = util.string_as_bool(payload.get("import_tools", False))
         if import_tools and not trans.user_is_admin():
             raise exceptions.AdminRequiredException()
-
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
         # Galaxy will try to upgrade tool versions that don't match exactly during import,
         # this prevents that.
         exact_tools = util.string_as_bool(payload.get("exact_tools", False))
-
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-
         from_dict_kwds = dict(
             source="API",
             publish=publish,
             exact_tools=exact_tools,
         )
         workflow, missing_tool_tups = self._workflow_from_dict(trans, data, **from_dict_kwds)
-
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
             trans.sa_session.flush()
-
         # galaxy workflow newly created id
         workflow_id = workflow.id
         # api encoded, id
         encoded_id = trans.security.encode_id(workflow_id)
-
-        # return list
-        rval = []
-
         item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
-        rval.append(item)
-
-        #
         if import_tools:
             tools = {}
             for key in data['steps']:
