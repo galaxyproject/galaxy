@@ -278,6 +278,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
             raise exceptions.RequestParameterMissingException(message)
 
+        if 'installed_repository_file' in payload:
+            installed_repository_file = payload.get('installed_repository_file', '')
+            workflow_file = open(installed_repository_file, 'rb')
+            workflow_data = workflow_file.read()
+            workflow_file.close()
+            return self.__api_import_from_archive(workflow_data)
+
         if 'archive_source' in payload:
             archive_source = payload['archive_source']
             archive_file = payload.get('archive_file')
@@ -297,22 +304,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
-            if archive_data:
-                try:
-                    data = json.loads(archive_data)
-                except:
-                    raise exceptions.MessageException("The data content does not appear to be a Galaxy workflow.")
-                if not data:
-                    raise exceptions.MessageException("Imported, but this workflow contains cycles.")
-                workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=workflow_source)
-                workflow = workflow.latest_workflow
-                if workflow.has_errors:
-                    raise exceptions.MessageException("Imported, but some steps in this workflow have validation errors.")
-                elif workflow.has_cycles:
-                    raise exceptions.MessageException("Imported, but this workflow contains cycles.")
-            else:
-                raise exceptions.MessageException("No workflow data found.")
-            return {'message': "Workflow %s imported successfully." % escape(workflow.name)}
+            return self.__api_import_from_archive(archive_data)
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -546,6 +538,24 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if not tool or not tool.allow_user_access(user):
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
+
+    def __api_import_from_archive(self, archive_data):
+        if archive_data:
+            try:
+                data = json.loads(archive_data)
+            except:
+                raise exceptions.MessageException("The data content does not appear to be a Galaxy workflow.")
+            if not data:
+                raise exceptions.MessageException("Imported, but this workflow contains cycles.")
+            workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=workflow_source)
+            workflow = workflow.latest_workflow
+            if workflow.has_errors:
+                raise exceptions.MessageException("Imported, but some steps in this workflow have validation errors.")
+            elif workflow.has_cycles:
+                raise exceptions.MessageException("Imported, but this workflow contains cycles.")
+        else:
+            raise exceptions.MessageException("No workflow data found.")
+        return {'message': "Workflow %s imported successfully." % escape(workflow.name)}
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
