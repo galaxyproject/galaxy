@@ -14,6 +14,7 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import WorkflowImport from "components/WorkflowImport.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import HistoryList from "mvc/history/history-list";
@@ -61,8 +62,8 @@ window.app = function app(options, bootstrapped) {
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
             "(/)visualizations/(:action_id)": "show_visualizations",
-            "(/)workflows/import_workflow": "show_import_workflow",
-            "(/)workflows/run(/)": "show_run",
+            "(/)workflows/import": "show_workflows_import",
+            "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
@@ -256,12 +257,15 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
-        show_run: function() {
+        show_workflows_run: function() {
             this._loadWorkflow();
         },
 
-        show_import_workflow: function() {
-            this.page.display(new Workflows.ImportWorkflowView());
+        show_workflows_import: function() {
+            var workflowImportInstance = Vue.extend(WorkflowImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new workflowImportInstance().$mount(vm);
         },
 
         show_custom_builds: function() {
