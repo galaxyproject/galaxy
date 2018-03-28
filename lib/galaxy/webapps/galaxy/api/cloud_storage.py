@@ -69,12 +69,20 @@ class CloudStorageController(BaseAPIController):
         if obj is None:
             missing_arguments.append("object")
 
+        credentials = payload.get("credentials", None)
+        if credentials is None:
+            missing_arguments.append("credentials")
+
         if len(missing_arguments) > 0:
             trans.response.status = 400
             return {'status': 'error',
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
 
-        status, message = self.cloud_storage_manager.download(trans=trans, provider=provider, container=container, obj=obj)
+        status, message = self.cloud_storage_manager.download(trans=trans,
+                                                              provider=provider,
+                                                              container=container,
+                                                              obj=obj,
+                                                              credentials=credentials)
         trans.response.status = 200 if status == 'ok' else 500
         return {'status': status, 'message': message}
 
