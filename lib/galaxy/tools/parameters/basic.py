@@ -1044,7 +1044,6 @@ class ColumnListParameter(SelectToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         SelectToolParameter.__init__(self, tool, input_source)
-        self.tool = tool
         self.numerical = input_source.get_bool("numerical", False)
         self.optional = input_source.parse_optional(False)
         self.accept_default = input_source.get_bool("accept_default", False)
@@ -1438,9 +1437,9 @@ class BaseDataToolParameter(ToolParameter):
         super(BaseDataToolParameter, self).__init__(tool, input_source)
         self.refresh_on_change = True
 
-    def _datatypes_registry(self, trans, tool):
+    def _datatypes_registry(self, trans):
         # Find datatypes_registry
-        if tool is None:
+        if self.tool is None:
             if trans:
                 # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
                 # A handle to the transaction (and thus app) will be given by the module.
@@ -1451,14 +1450,14 @@ class BaseDataToolParameter(ToolParameter):
                 datatypes_registry = galaxy.datatypes.registry.Registry()
                 datatypes_registry.load_datatypes()
         else:
-            if isinstance(tool.app, ValidationContext):
+            if isinstance(self.tool.app, ValidationContext):
                 datatypes_registry = {}
             else:
-                datatypes_registry = tool.app.datatypes_registry
+                datatypes_registry = self.tool.app.datatypes_registry
         return datatypes_registry
 
-    def _parse_formats(self, trans, tool, input_source):
-        datatypes_registry = self._datatypes_registry(trans, tool)
+    def _parse_formats(self, trans, input_source):
+        datatypes_registry = self._datatypes_registry(trans)
         formats = []
         # Build list of classes for supported data formats
         self.extensions = input_source.get('format', 'data').split(",")
@@ -1581,7 +1580,7 @@ class DataToolParameter(BaseDataToolParameter):
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())
-        self._parse_formats(trans, tool, input_source)
+        self._parse_formats(trans, input_source)
         self.multiple = input_source.get_bool('multiple', False)
         self.min = input_source.get('min')
         self.max = input_source.get('max')
@@ -1784,7 +1783,7 @@ class DataToolParameter(BaseDataToolParameter):
         # create dictionary and fill default parameters
         d = super(DataToolParameter, self).to_dict(trans)
         extensions = self.extensions
-        datatypes_registry = self._datatypes_registry(trans, self.tool)
+        datatypes_registry = self._datatypes_registry(trans)
         all_edam_formats = datatypes_registry.edam_formats if hasattr(datatypes_registry, 'edam_formats') else {}
         all_edam_data = datatypes_registry.edam_data if hasattr(datatypes_registry, 'edam_formats') else {}
         edam_formats = [all_edam_formats.get(ext, None) for ext in extensions]
@@ -1857,7 +1856,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super(DataCollectionToolParameter, self).__init__(tool, input_source, trans)
-        self._parse_formats(trans, tool, input_source)
+        self._parse_formats(trans, input_source)
         collection_types = input_source.get("collection_type", None)
         if collection_types:
             collection_types = [t.strip() for t in collection_types.split(",")]
