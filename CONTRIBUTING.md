@@ -43,11 +43,8 @@ opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
 * Make sure you have a free [GitHub](https://github.com/) account.
 
 * Fork the [galaxy repository](https://github.com/galaxyproject/galaxy) on
-  GitHub to make your changes.  (While many Galaxy instances track
-  [galaxy-dist](https://bitbucket.org/galaxy/galaxy-dist), active development
-  happens in the galaxy GitHub repository and this is where pull requests
-  should be made).  To keep your copy up to date with respect to the main
-  repository, you need to frequently [sync your
+  GitHub to make your changes.  To keep your copy up to date with respect to
+  the main repository, you need to frequently [sync your
   fork](https://help.github.com/articles/syncing-a-fork/):
   ```
     $ git remote add upstream https://github.com/galaxyproject/galaxy
