@@ -14,21 +14,23 @@ Hub](https://galaxyproject.org).
 ## Before you Begin
 
 If you have an idea for a feature to add or an approach for a bugfix, it is
-best to communicate with Galaxy developers early. The most common venues for
-this are [GitHub issues](https://github.com/galaxyproject/galaxy/issues).
-Browse through existing GitHub issues and Trello cards and if one seems
-related, comment on it. We also maintain a
-[tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3Afriendliness%2Ffriendly)
-on Github for smaller issues we believe would make the best entry points for
-new developers.  Galaxy developers are generally available via
-[IRC](https://galaxyproject.org/get-involved),
+best to communicate with Galaxy developers early. The primary venue for this is
+the [GitHub issue tracker](https://github.com/galaxyproject/galaxy/issues).
+Browse through existing GitHub issues and and if one seems related, comment on
+it.  For more direct communication, Galaxy developers are generally available
+via [IRC](https://galaxyproject.org/get-involved),
 [Gitter](https://gitter.im/galaxyproject/Lobby) and on the [development mailing
 list](http://dev.list.galaxyproject.org).
 
+If you're looking to help but aren't sure where to start, we also maintain a
+[tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3Afriendliness%2Ffriendly)
+on Github for smaller issues we believe would make the best entry points for
+new developers.
+
 ## Reporting a new issue
 
-If no existing Galaxy issue/Trello card seems appropriate, a new issue can be
-opened using [this form](https://github.com/galaxyproject/galaxy/issues/new).
+If no existing Galaxy issue seems appropriate, a new issue can be opened using
+[this form](https://github.com/galaxyproject/galaxy/issues/new).
 
 ## How to Contribute
 
