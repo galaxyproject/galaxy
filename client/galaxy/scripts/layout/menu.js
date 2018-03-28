@@ -349,7 +349,7 @@ var Tab = Backbone.View.extend({
             .attr("target", this.model.get("target"))
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
-            .tooltip("destroy");
+            .tooltip("dispose");
         if (this.model.get("tooltip")) {
             this.$toggle.tooltip({ placement: "bottom" });
         }
