@@ -158,10 +158,10 @@ client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
 	@echo $(CLIENT_COMMIT_WARNING)
 
-client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
+client-production: node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
 	cd client && yarn run build-production
 
-client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment, and include sourcemaps to aid in debugging efforts.
+client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
 	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
