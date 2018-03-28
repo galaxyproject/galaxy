@@ -3,9 +3,12 @@ API operations for Workflows
 """
 from __future__ import absolute_import
 
+import json
 import logging
 import os
+import requests
 
+from markupsafe import escape
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
@@ -283,7 +286,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             workflow_file = open(installed_repository_file, 'rb')
             workflow_data = workflow_file.read()
             workflow_file.close()
-            return self.__api_import_from_archive(workflow_data)
+            return self.__api_import_from_archive(trans, workflow_data)
 
         if 'archive_source' in payload:
             archive_source = payload['archive_source']
@@ -291,20 +294,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             archive_data = None
             if archive_source:
                 try:
-                    archive_data = requests.get(url).text
+                    archive_data = requests.get(archive_source).text
                 except Exception as e:
                     raise exceptions.MessageException("Failed to open URL: %s. Exception: %s" % (escape(url), escape(str(e))))
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
-                    with open(uploaded_file, 'rb') as f:
-                        archive_data = f.read()
+                    archive_data = uploaded_file.read()
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a url or file.")
-            return self.__api_import_from_archive(archive_data)
+            return self.__api_import_from_archive(trans, archive_data)
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -539,15 +541,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
 
-    def __api_import_from_archive(self, archive_data):
+    def __api_import_from_archive(self, trans, archive_data, source=None):
         if archive_data:
             try:
                 data = json.loads(archive_data)
-            except:
+            except Exception as e:
                 raise exceptions.MessageException("The data content does not appear to be a Galaxy workflow.")
             if not data:
                 raise exceptions.MessageException("Imported, but this workflow contains cycles.")
-            workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=workflow_source)
+            workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
             workflow = workflow.latest_workflow
             if workflow.has_errors:
                 raise exceptions.MessageException("Imported, but some steps in this workflow have validation errors.")

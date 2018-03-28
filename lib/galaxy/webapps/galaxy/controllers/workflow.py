@@ -3,9 +3,7 @@ from __future__ import absolute_import
 import base64
 import json
 import logging
-import os
 
-import requests
 from markupsafe import escape
 from six.moves.html_parser import HTMLParser
 from six.moves.http_client import HTTPConnection
@@ -49,7 +47,6 @@ from galaxy.workflow.render import (
     STANDALONE_SVG_TEMPLATE,
     WorkflowCanvas
 )
-from tool_shed.util import encoding_util
 
 log = logging.getLogger(__name__)
 
