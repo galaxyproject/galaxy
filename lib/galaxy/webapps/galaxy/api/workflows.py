@@ -547,22 +547,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return tool
 
     def __api_import_from_archive(self, trans, archive_data, source=None):
-        if archive_data:
-            try:
-                data = json.loads(archive_data)
-            except Exception as e:
-                raise exceptions.MessageException("The data content does not appear to be a Galaxy workflow.")
-            if not data:
-                raise exceptions.MessageException("Imported, but this workflow contains cycles.")
-            workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
-            workflow = workflow.latest_workflow
-            if workflow.has_errors:
-                raise exceptions.MessageException("Imported, but some steps in this workflow have validation errors.")
-            elif workflow.has_cycles:
-                raise exceptions.MessageException("Imported, but this workflow contains cycles.")
-        else:
-            raise exceptions.MessageException("No workflow data found.")
-        return {'message': "Workflow %s imported successfully." % escape(workflow.name)}
+        try:
+            data = json.loads(archive_data)
+        except Exception as e:
+            raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+        if not data:
+            raise exceptions.MessageException("The data content is missing.")
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
+        workflow = workflow.latest_workflow
+        if workflow.has_errors:
+            return {"message": "Imported, but some steps in this workflow have validation errors.", "status": "error"}
+        elif len(workflow.steps) == 0:
+            return {"message": "Imported, but this workflow has no steps.", "status": "error"}
+        elif workflow.has_cycles:
+            return {"message": "Imported, but this workflow contains cycles.", "status": "error"}
+        return {"message": "Workflow '%s' imported successfully." % escape(workflow.name), "status": "success"}
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']

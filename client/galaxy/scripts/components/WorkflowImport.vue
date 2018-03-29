@@ -55,7 +55,7 @@ export default {
                 method: "POST"
             })
             .done(response => {
-                window.location = `${Galaxy.root}workflows/list?message=${response.message}&status=success`
+                window.location = `${Galaxy.root}workflows/list?message=${response.message}&status=${response.status}`
             })
             .fail(response => {
                 let message = response.responseJSON && response.responseJSON.err_msg;
