@@ -6,8 +6,8 @@ from __future__ import absolute_import
 import json
 import logging
 import os
-import requests
 
+import requests
 from markupsafe import escape
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
