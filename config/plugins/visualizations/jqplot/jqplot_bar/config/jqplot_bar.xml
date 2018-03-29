@@ -6,7 +6,7 @@
     </macros>
     <description>Renders a bar diagram using jqPlot hosted at http://www.jqplot.com.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" css="../jqplot_bar/static/script.css" load="jqplot_bar"/>
+    <entry_point entry_point_type="chart" src="script.js" css="script.css" load="jqplot_bar"/>
     <specs>
         <expand macro="specs"/>
     </specs>

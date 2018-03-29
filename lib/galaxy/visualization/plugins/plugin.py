@@ -32,7 +32,6 @@ class ServesStaticPluginMixin(object):
         self.serves_static = False
         if self._is_static_plugin():
             self.static_path = self._build_static_path()
-            self.static_url = self._build_static_url()
             self.serves_static = True
         return self.serves_static
 
@@ -43,10 +42,7 @@ class ServesStaticPluginMixin(object):
         return os.path.isdir(self._build_static_path())
 
     def _build_static_path(self):
-        return os.path.join(self.path, 'static')
-
-    def _build_static_url(self):
-        return self.static_path.replace("./config", "./static")
+        return os.path.join(self.path.replace('./config', './static'), 'static')
 
 
 class ServesTemplatesPluginMixin(object):
@@ -151,7 +147,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),
             'specs'         : self.config.get('specs'),
-            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url]),
             'href'          : self._get_url()
         }
 
@@ -170,14 +165,10 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         return copy.copy(visualization.latest_revision.config)
 
     # ---- non-public
-    def _check_path(self, path):
-        return os.path.exists(path)
-
     def _set_up_static_images(self):
         if self.serves_static:
-            logo_path = '/'.join([self.static_url, 'logo.png'])
-            if self._check_path(logo_path):
-                self.config['logo'] = logo_path
+            if os.path.exists(os.path.join(self.static_path, 'logo.png')):
+                self.config['logo'] = '/'.join([self.static_path, 'logo.png'])
 
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
@@ -340,6 +331,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
+        render_vars['static_url'] = url_for('/%s/' % self.static_path)
         render_vars.update(vars={})
         render_vars.update({
             "script_attributes" : self.config['entry_point']['attr']

@@ -1060,5 +1060,4 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
     urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
-    # URL mapper becomes the root webapp
     return urlmap

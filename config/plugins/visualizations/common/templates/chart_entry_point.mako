@@ -3,9 +3,9 @@
 <%def name="stylesheets()">
     ${h.css('jquery-ui/smoothness/jquery-ui')}
     ${h.css('base')}
-    <%css = script_attributes.get("css") %>
-    %if css is not None:
-        <link rel="stylesheet" href="${css}">
+    <%css_path = script_attributes.get("css") %>
+    %if css_path is not None:
+        <link rel="stylesheet" href="${static_url}${css_path}">
     %endif
 </%def>
 <%def name="javascripts()">
@@ -22,7 +22,8 @@
            'libs/jquery/jquery-ui',
            'bundled/libs.bundled',
            'bundled/chart.bundled')}
-    <script type="text/javascript" src="${script_attributes.get("src")}"></script>
+    <%src_path = script_attributes.get("src") %>
+    <script type="text/javascript" src="${static_url}${src_path}"></script>
     <script type="text/javascript">
         $(function() {
             var config = ${h.dumps(config)};

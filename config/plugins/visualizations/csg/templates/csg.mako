@@ -1,6 +1,6 @@
 <%
     root = h.url_for( "/" )
-    app_root = root + "plugins/visualizations/csg/static/"
+    app_root = root + "static/plugins/visualizations/csg/static/"
 %>
 
 <!DOCTYPE HTML>
