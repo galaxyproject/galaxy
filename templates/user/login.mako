@@ -80,12 +80,12 @@ def inherit(context):
         <div class="toolFormTitle">Login</div>
         <form name="login" id="login" action="${form_action}" method="post" >
             <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
-            <div class="form-row">
+            <div class="form-row flex-column">
                 <label>Username / Email Address:</label>
                 <input type="text" name="login" value="${login or ''| h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
-            <div class="form-row">
+            <div class="form-row flex-column">
                 <label>Password:</label>
                 <input type="password" name="password" value="" size="40"/>
                 <div class="toolParamHelp" style="clear: both;">
