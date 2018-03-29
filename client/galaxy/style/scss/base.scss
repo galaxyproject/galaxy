@@ -404,79 +404,76 @@ div.unified-panel-body-background {
 
 // Masthead
 #masthead {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    min-width:990px;
-    padding: 0;
-    margin-bottom: 0px;
-    .nav {
-        z-index: 15001;
-    }
-    .nav > li > a {
-        cursor: pointer;
-        text-decoration: none;
-        &:hover {
-            color: gold;
-        }
-    }
+//     position:absolute;
+//     top:0;
+//     left:0;
+//     width:100%;
+//     min-width:990px;
+     padding: 0;
+     margin-bottom: 0px;
+//     .nav {
+//         z-index: 15001;
+//     }
+//     .nav > li > a {
+//         cursor: pointer;
+//         text-decoration: none;
+//         &:hover {
+//             color: gold;
+//         }
+//     }
     .navbar-brand {
-        position: absolute;
-        left: 0;
-        top: 0;
-        font-family: verdana;
-        font-weight: bold;
-        font-size: 20px;
-        line-height: 1;
-        color: white;
-        // Override margin and padding due to shorter navbar height
-        padding: 5px 20px 12px;
-        margin-left: -15px;
-        z-index: 2000;
-        img {
-            display: inline;
-            width: 26px;
-            vertical-align: top;
-            margin-left: 0.35em;
-            border: none;
-        }
-        a {
-            color: white;
-            text-decoration: none;
-        }
-    }
-    .navbar-header {
-        position: relative;
-        right: -50%;
-        float: left;
-        .navbar-tabs {
-            display: block;
-            position: relative;
-            right: 50%;
-        }
-    }
-    .navbar-tabs {
-        .toggle {
-            color           : gold;
-        }
-        .dropdown-icon {
-            top             : 1px;
-            font-size       : 1.8em;
-        }
-        .dropdown-note {
-            font-weight     : bold;
-            font-size       : 10px;
-            position        : absolute;
-            left            : 35px;
-            top             : 20px;
-            color           : gold;
-        }
-    }
-    li.dropdown > a:hover .caret {
-        border-top-color: gold;
-        border-bottom-color: gold;
-    }
+         font-family: verdana;
+         font-weight: bold;
+         font-size: 20px;
+         line-height: 1;
+         color: white;
+         // Override margin and padding due to shorter navbar height
+         padding: 5px 20px 12px;
+         margin-left: -15px;
+//         z-index: 2000;
+         img {
+             display: inline;
+             width: 26px;
+             vertical-align: top;
+             margin-left: 0.35em;
+             border: none;
+         }
+         a {
+             color: white;
+             text-decoration: none;
+         }
+     }
+//     .navbar-header {
+//         position: relative;
+//         right: -50%;
+//         float: left;
+//         .navbar-tabs {
+//             display: block;
+//             position: relative;
+//             right: 50%;
+//         }
+//     }
+//     .navbar-tabs {
+//         .toggle {
+//             color           : gold;
+//         }
+//         .dropdown-icon {
+//             top             : 1px;
+//             font-size       : 1.8em;
+//         }
+//         .dropdown-note {
+//             font-weight     : bold;
+//             font-size       : 10px;
+//             position        : absolute;
+//             left            : 35px;
+//             top             : 20px;
+//             color           : gold;
+//         }
+//     }
+//     li.dropdown > a:hover .caret {
+//         border-top-color: gold;
+//         border-bottom-color: gold;
+//     }
 }
 
 

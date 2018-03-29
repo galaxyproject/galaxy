@@ -12217,32 +12217,16 @@ div.unified-panel-body-background {
   background-color: #c1edf9; }
 
 #masthead {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  min-width: 990px;
   padding: 0;
   margin-bottom: 0px; }
-  #masthead .nav {
-    z-index: 15001; }
-  #masthead .nav > li > a {
-    cursor: pointer;
-    text-decoration: none; }
-    #masthead .nav > li > a:hover {
-      color: gold; }
   #masthead .navbar-brand {
-    position: absolute;
-    left: 0;
-    top: 0;
     font-family: verdana;
     font-weight: bold;
     font-size: 20px;
     line-height: 1;
     color: white;
     padding: 5px 20px 12px;
-    margin-left: -15px;
-    z-index: 2000; }
+    margin-left: -15px; }
     #masthead .navbar-brand img {
       display: inline;
       width: 26px;
@@ -12252,29 +12236,6 @@ div.unified-panel-body-background {
     #masthead .navbar-brand a {
       color: white;
       text-decoration: none; }
-  #masthead .navbar-header {
-    position: relative;
-    right: -50%;
-    float: left; }
-    #masthead .navbar-header .navbar-tabs {
-      display: block;
-      position: relative;
-      right: 50%; }
-  #masthead .navbar-tabs .toggle {
-    color: gold; }
-  #masthead .navbar-tabs .dropdown-icon {
-    top: 1px;
-    font-size: 1.8em; }
-  #masthead .navbar-tabs .dropdown-note {
-    font-weight: bold;
-    font-size: 10px;
-    position: absolute;
-    left: 35px;
-    top: 20px;
-    color: gold; }
-  #masthead li.dropdown > a:hover .caret {
-    border-top-color: gold;
-    border-bottom-color: gold; }
 
 .quota-meter-container {
   position: absolute;
