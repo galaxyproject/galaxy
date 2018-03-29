@@ -1,7 +1,11 @@
-import _l from "utils/localization";
 /** Real-time Communication feature **/
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+import _l from "utils/localization";
 import Modal from "mvc/ui/ui-modal";
-var GenericNavView = Backbone.View.extend({
+/* global $ */
+
+export var CommunicationServerView = Backbone.View.extend({
     initialize: function() {
         this.modal = null;
     },
@@ -12,9 +16,9 @@ var GenericNavView = Backbone.View.extend({
         var host = window.Galaxy.config.communication_server_host;
 
         var port = window.Galaxy.config.communication_server_port;
-        var username = escape(window.Galaxy.user.attributes.username);
+        var username = _.escape(window.Galaxy.user.attributes.username);
 
-        var persistent_communication_rooms = escape(window.Galaxy.config.persistent_communication_rooms);
+        var persistent_communication_rooms = _.escape(window.Galaxy.config.persistent_communication_rooms);
 
         var query_string = `?username=${username}&persistent_communication_rooms=${persistent_communication_rooms}`;
 
@@ -38,7 +42,7 @@ var GenericNavView = Backbone.View.extend({
             $(".chat-modal").remove();
         }
         // creates a modal
-        GenericNavView.modal = new Modal.View({
+        CommunicationServerView.modal = new Modal.View({
             body: iframe_template,
             height: frame_height,
             width: frame_width,
@@ -48,7 +52,7 @@ var GenericNavView = Backbone.View.extend({
         });
 
         // shows modal
-        GenericNavView.modal.show();
+        CommunicationServerView.modal.show();
         $el_chat_modal_header = $(".chat-modal .modal-header");
         $el_chat_modal_body = $(".chat-modal .modal-body");
         // adjusts the css of bootstrap modal for chat
@@ -98,7 +102,3 @@ var GenericNavView = Backbone.View.extend({
         return navItem;
     }
 });
-
-export default {
-    GenericNavView: GenericNavView
-};

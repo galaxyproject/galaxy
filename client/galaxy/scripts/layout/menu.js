@@ -1,7 +1,7 @@
 /** Masthead Collection **/
 import * as Backbone from "backbone";
 import * as _ from "underscore";
-import GenericNav from "layout/generic-nav-view";
+import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import _l from "utils/localization";
 import Utils from "utils/utils";
@@ -23,7 +23,7 @@ var Collection = Backbone.Collection.extend({
         //
         // Chat server tab
         //
-        var extendedNavItem = new GenericNav.GenericNavView();
+        var extendedNavItem = new CommunicationServerView();
         this.add(extendedNavItem.render());
 
         //
