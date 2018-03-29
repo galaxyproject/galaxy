@@ -301,7 +301,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 try:
                     archive_data = requests.get(archive_source).text
                 except Exception as e:
-                    raise exceptions.MessageException("Failed to open URL: %s. Exception: %s" % (escape(archive_source), escape(str(e))))
+                    raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
