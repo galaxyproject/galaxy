@@ -12220,6 +12220,9 @@ div.unified-panel-body-background {
   padding: 0;
   margin-bottom: 0px; }
   #masthead .navbar-brand {
+    position: absolute;
+    left: 0;
+    top: 0;
     font-family: verdana;
     font-weight: bold;
     font-size: 20px;

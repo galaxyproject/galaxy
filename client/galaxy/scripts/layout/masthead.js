@@ -87,7 +87,7 @@ var View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return `
-            <nav id="masthead" class="navbar navbar-expand fixed-top navbar-dark bg-dark">
+            <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark bg-dark">
                 <div class="navbar-brand">
                     <a class="navbar-brand-link">
                         <img class="navbar-brand-image"/>
@@ -96,7 +96,6 @@ var View = Backbone.View.extend({
                 </div>
                 <ul class="navbar-nav"/>
                 <div class="quota-meter-container"/>
-                <div class="navbar-icons"/>
             </nav>`;
     }
 });
