@@ -563,6 +563,7 @@ class CRAM(Binary):
     def set_index_file(self, dataset, index_file):
         try:
             pysam.index(dataset.file_name, index_file.file_name)
+            return True
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
             return False
