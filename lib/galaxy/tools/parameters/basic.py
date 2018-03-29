@@ -35,7 +35,6 @@ from ..parameters import (
     history_query
 )
 from ..parser import get_input_source as ensure_input_source
-from ..repositories import ValidationContext
 
 log = logging.getLogger(__name__)
 
@@ -1044,7 +1043,6 @@ class ColumnListParameter(SelectToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         SelectToolParameter.__init__(self, tool, input_source)
-        self.tool = tool
         self.numerical = input_source.get_bool("numerical", False)
         self.optional = input_source.parse_optional(False)
         self.accept_default = input_source.get_bool("accept_default", False)
@@ -1437,36 +1435,30 @@ class BaseDataToolParameter(ToolParameter):
     def __init__(self, tool, input_source, trans):
         super(BaseDataToolParameter, self).__init__(tool, input_source)
         self.refresh_on_change = True
-
-    def _datatypes_registry(self, trans, tool):
         # Find datatypes_registry
-        if tool is None:
+        if self.tool is None:
             if trans:
                 # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
                 # A handle to the transaction (and thus app) will be given by the module.
-                datatypes_registry = trans.app.datatypes_registry
+                self.datatypes_registry = trans.app.datatypes_registry
             else:
                 # This occurs for things such as unit tests
                 import galaxy.datatypes.registry
-                datatypes_registry = galaxy.datatypes.registry.Registry()
-                datatypes_registry.load_datatypes()
+                self.datatypes_registry = galaxy.datatypes.registry.Registry()
+                self.datatypes_registry.load_datatypes()
         else:
-            if isinstance(tool.app, ValidationContext):
-                datatypes_registry = {}
-            else:
-                datatypes_registry = tool.app.datatypes_registry
-        return datatypes_registry
+            self.datatypes_registry = self.tool.app.datatypes_registry  # can be None if self.tool.app is a ValidationContext
 
-    def _parse_formats(self, trans, tool, input_source):
-        datatypes_registry = self._datatypes_registry(trans, tool)
-        formats = []
-        # Build list of classes for supported data formats
+    def _parse_formats(self, trans, input_source):
+        """
+        Build list of classes for supported data formats
+        """
         self.extensions = input_source.get('format', 'data').split(",")
-        normalized_extensions = [extension.strip().lower() for extension in self.extensions]
-        if datatypes_registry:
-            # Skip during validation since no datatypes are loaded
+        formats = []
+        if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
+            normalized_extensions = [extension.strip().lower() for extension in self.extensions]
             for extension in normalized_extensions:
-                datatype = datatypes_registry.get_datatype_by_extension(extension)
+                datatype = self.datatypes_registry.get_datatype_by_extension(extension)
                 if datatype is not None:
                     formats.append(datatype)
                 else:
@@ -1581,7 +1573,7 @@ class DataToolParameter(BaseDataToolParameter):
         # Add metadata validator
         if not input_source.get_bool('no_validation', False):
             self.validators.append(validation.MetadataValidator())
-        self._parse_formats(trans, tool, input_source)
+        self._parse_formats(trans, input_source)
         self.multiple = input_source.get_bool('multiple', False)
         self.min = input_source.get('min')
         self.max = input_source.get('max')
@@ -1605,10 +1597,11 @@ class DataToolParameter(BaseDataToolParameter):
         self.conversions = []
         for name, conv_extension in input_source.parse_conversion_tuples():
             assert None not in [name, conv_extension], 'A name (%s) and type (%s) are required for explicit conversion' % (name, conv_extension)
-            conv_type = tool.app.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
-            if conv_type is None:
-                raise ValueError("Datatype class not found for extension '%s', which is used as 'type' attribute in conversion of data parameter '%s'" % (conv_type, self.name))
-            self.conversions.append((name, conv_extension, [conv_type]))
+            if self.datatypes_registry:
+                conv_type = self.datatypes_registry.get_datatype_by_extension(conv_extension.lower())
+                if conv_type is None:
+                    raise ValueError("Datatype class not found for extension '%s', which is used as 'type' attribute in conversion of data parameter '%s'" % (conv_type, self.name))
+                self.conversions.append((name, conv_extension, [conv_type]))
 
     def match_collections(self, history, dataset_matcher, reduction=True):
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
@@ -1784,9 +1777,8 @@ class DataToolParameter(BaseDataToolParameter):
         # create dictionary and fill default parameters
         d = super(DataToolParameter, self).to_dict(trans)
         extensions = self.extensions
-        datatypes_registry = self._datatypes_registry(trans, self.tool)
-        all_edam_formats = datatypes_registry.edam_formats if hasattr(datatypes_registry, 'edam_formats') else {}
-        all_edam_data = datatypes_registry.edam_data if hasattr(datatypes_registry, 'edam_formats') else {}
+        all_edam_formats = self.datatypes_registry.edam_formats if hasattr(self.datatypes_registry, 'edam_formats') else {}
+        all_edam_data = self.datatypes_registry.edam_data if hasattr(self.datatypes_registry, 'edam_formats') else {}
         edam_formats = [all_edam_formats.get(ext, None) for ext in extensions]
         edam_data = [all_edam_data.get(ext, None) for ext in extensions]
 
@@ -1857,7 +1849,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def __init__(self, tool, input_source, trans=None):
         input_source = ensure_input_source(input_source)
         super(DataCollectionToolParameter, self).__init__(tool, input_source, trans)
-        self._parse_formats(trans, tool, input_source)
+        self._parse_formats(trans, input_source)
         collection_types = input_source.get("collection_type", None)
         if collection_types:
             collection_types = [t.strip() for t in collection_types.split(",")]
