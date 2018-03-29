@@ -4642,13 +4642,10 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def create_user(cls, *args, **kwargs):
-        # TODO: password is a required field for a galaxy user record. However, it should not be required
-        # if the user is authenticated by an external identity provider. Once this logic is incorporated
-        # in the galaxy user, the following argument setting should be removed.
-        kwargs['password'] = ''.join(
-            random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
         model = cls.user_model()
         instance = model(*args, **kwargs)
+        instance.set_password_cleartext(
+            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16)))
         cls.trans.sa_session.add(instance)
         cls.trans.sa_session.flush()
         return instance
