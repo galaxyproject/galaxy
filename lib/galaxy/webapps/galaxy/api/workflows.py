@@ -283,10 +283,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         if 'installed_repository_file' in payload:
             installed_repository_file = payload.get('installed_repository_file', '')
-            workflow_file = open(installed_repository_file, 'rb')
-            workflow_data = workflow_file.read()
-            workflow_file.close()
-            return self.__api_import_from_archive(trans, workflow_data)
+            if not os.path.exists(installed_repository_file):
+                raise exceptions.MessageException("Repository file '%s' not found.")
+            elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
+                workflow_data = None
+                with open(installed_repository_file, 'rb') as f:
+                    workflow_data = f.read()
+                return self.__api_import_from_archive(trans, workflow_data)
+            else:
+                raise exceptions.MessageException("You attempted to open an empty file.")
 
         if 'archive_source' in payload:
             archive_source = payload['archive_source']
@@ -305,7 +310,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
-                raise exceptions.MessageException("Please provide a url or file.")
+                raise exceptions.MessageException("Please provide a URL or file.")
             return self.__api_import_from_archive(trans, archive_data)
 
         if 'from_history_id' in payload:
