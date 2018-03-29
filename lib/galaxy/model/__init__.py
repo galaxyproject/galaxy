@@ -349,7 +349,7 @@ class User(object, Dictifiable):
         # maintain a list so that we don't double count
         dataset_ids = []
         total = 0
-        deleted= 0
+        deleted = 0
         # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session(self)
         for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
@@ -361,7 +361,7 @@ class User(object, Dictifiable):
                     total += hda.dataset.get_total_size()
                     if hda.deleted:
                         deleted += hda.dataset.get_total_size()
-        return (total,deleted)
+        return (total, deleted)
 
     def calculate_and_set_disk_usage(self):
         """

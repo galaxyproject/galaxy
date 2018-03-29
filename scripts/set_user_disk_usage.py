@@ -51,7 +51,7 @@ def quotacheck(sa_session, users, engine):
     else:
         new = pgcalc(sa_session, user.id, dryrun=args.dryrun)
     # yes, still a small race condition between here and the flush
-    print('old usage:', nice_size(current), '(active:', nice_size(current-deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
+    print('old usage:', nice_size(current), '(active:', nice_size(current - deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
     if new in (current, None):
         print('none')
     else:
