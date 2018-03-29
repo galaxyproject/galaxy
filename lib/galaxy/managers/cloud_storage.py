@@ -7,6 +7,8 @@ import random
 import logging
 import os
 from galaxy.managers import sharable
+from galaxy.util import Params
+from cgi import FieldStorage
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
@@ -34,7 +36,6 @@ class CloudStorageManager(sharable.SharableModelManager):
         aws_config = {'aws_access_key': credentials.get('access_key'),
                       'aws_secret_key': credentials.get('secret_key')}
         connection = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
-
         try:
             container_obj = connection.object_store.get(container)
             if container_obj is None:
@@ -50,7 +51,36 @@ class CloudStorageManager(sharable.SharableModelManager):
             "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
         staging_file = open(staging_file_name, "w+")
         key.save_content(staging_file)
-        pass
+
+        with open(staging_file_name, "r") as f:
+            content = f.read()
+            headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format(
+                'files_0|file_data', staging_file), }
+
+            input_file = FieldStorage(headers=headers)
+            input_file.file = input_file.make_file()
+            input_file.file.write(content)
+
+            inputs = {
+                'dbkey': '?',
+                'file_type': 'auto',
+                'files_0|type': 'upload_dataset',
+                'files_0|space_to_tab': None,
+                'files_0|to_posix_lines': 'Yes',
+                'files_0|file_data': input_file,
+            }
+
+            params = Params(inputs, sanitize=False)
+            incoming = params.__dict__
+            upload_tool = trans.app.toolbox.get_tool('upload1')
+            output = upload_tool.handle_input(trans, incoming, history=None)
+
+            hids = {}
+            job_errors = output.get('job_errors', [])
+            if job_errors:
+                raise ValueError('Cannot upload a dataset.')
+            else:
+                hids.update({staging_file: output['out_data'][0][1].hid})
 
     def upload(self, dataset, provider, container, obj):
         # TODO: implement the upload logic.
