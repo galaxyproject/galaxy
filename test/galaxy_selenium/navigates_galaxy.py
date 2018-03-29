@@ -795,10 +795,10 @@ class NavigatesGalaxy(HasDriver):
         return tags
 
     def workflow_import_submit_url(self, url):
-        form_element = self.wait_for_selector_visible("#center form")
-        url_element = form_element.find_element_by_css_selector("input[type='text']")
+        form_button = self.wait_for_selector_visible("#center input[type='button']")
+        url_element = self.find_element_by_css_selector("input[type='text']")
         url_element.send_keys(url)
-        self.click_submit(form_element)
+        form_button.click()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")

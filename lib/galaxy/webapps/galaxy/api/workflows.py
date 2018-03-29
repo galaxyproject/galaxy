@@ -300,7 +300,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if archive_source:
                 try:
                     archive_data = requests.get(archive_source).text
-                except Exception as e:
+                except Exception:
                     raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
@@ -549,7 +549,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_from_archive(self, trans, archive_data, source=None):
         try:
             data = json.loads(archive_data)
-        except Exception as e:
+        except Exception:
             raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
