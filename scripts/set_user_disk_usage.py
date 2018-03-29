@@ -42,7 +42,7 @@ def quotacheck(sa_session, users, engine):
     current = user.get_disk_usage()
     print(user.username, '<' + user.email + '>:', end=' ')
     if engine not in ('postgres', 'postgresql'):
-        new = user.calculate_disk_usage()
+        new, deleted = user.calculate_disk_usage()
         sa_session.refresh(user)
         # usage changed while calculating, do it again
         if user.get_disk_usage() != current:
@@ -51,7 +51,7 @@ def quotacheck(sa_session, users, engine):
     else:
         new = pgcalc(sa_session, user.id, dryrun=args.dryrun)
     # yes, still a small race condition between here and the flush
-    print('old usage:', nice_size(current), 'change:', end=' ')
+    print('old usage:', nice_size(current), '(active:', nice_size(current-deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
     if new in (current, None):
         print('none')
     else:
