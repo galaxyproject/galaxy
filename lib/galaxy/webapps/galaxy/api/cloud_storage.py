@@ -4,6 +4,7 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 
 import logging
 
+from galaxy import exceptions
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.managers import cloud_storage
@@ -58,8 +59,8 @@ class CloudStorageController(BaseAPIController):
                                'but received data of type `%s`.' % str(type(payload))}
 
         missing_arguments = []
-        history_id = payload.get("history_id", None)
-        if history_id is None:
+        encoded_history_id = payload.get("history_id", None)
+        if encoded_history_id is None:
             missing_arguments.append("history_id")
 
         provider = payload.get("provider", None)
@@ -82,6 +83,12 @@ class CloudStorageController(BaseAPIController):
             trans.response.status = 400
             return {'status': 'error',
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
+
+        try:
+            history_id = self.decode_id(encoded_history_id)
+        except exceptions.MalformedId as e:
+            trans.response.status = 400
+            return {'status': 'error', 'message': 'Invalid history ID. {}'.format(e)}
 
         status, message = self.cloud_storage_manager.download(trans=trans,
                                                               history_id=history_id,
