@@ -246,8 +246,8 @@ class DockerService(Container):
 
     @property
     def state(self):
-        """If one of this service's tasks is running, return that task state, otherwise, return the state of a
-        non-running task.
+	"""If one of this service's tasks desired state is running, return that task state, otherwise, return the state
+        of a non-running task.
 
         This is imperfect because it doesn't attempt to provide useful information for replicas > 1 tasks, but it suits
         our purposes for now.
@@ -255,9 +255,18 @@ class DockerService(Container):
         state = None
         for task in self.tasks:
             state = task.state
-            if task.in_state('running', 'running'):
+            if task.desired_state == 'running':
                 break
         return state
+
+    @property
+    def terminal(self):
+        """Same caveats as :meth:`state`.
+        """
+        for task in self.tasks:
+            if task.desired_state == 'running':
+                return False
+        return True
 
     @property
     def image(self):
@@ -282,6 +291,8 @@ class DockerService(Container):
 
     @property
     def tasks(self):
+        """A list of *all* tasks, including terminal ones.
+        """
         if not self._tasks:
             self._tasks = []
             for task in self._interface.service_tasks(self):
@@ -290,6 +301,8 @@ class DockerService(Container):
 
     @property
     def task_count(self):
+        """A count of *all* tasks, including terminal ones.
+        """
         return len(self.tasks)
 
     def in_state(self, desired, current, tasks='any'):
@@ -482,6 +495,8 @@ class DockerNode(object):
 
     @property
     def tasks(self):
+        """A list of *all* tasks, including terminal ones.
+        """
         if not self._tasks:
             self._tasks = []
             for task in self._interface.node_tasks(self):
@@ -489,7 +504,17 @@ class DockerNode(object):
         return self._tasks
 
     @property
+    def non_terminal_tasks(self):
+        r = []
+        for task in self.tasks:
+            if not task.terminal:
+                r.append(task)
+        return r
+
+    @property
     def task_count(self):
+        """A count of *all* tasks, including terminal ones.
+        """
         return len(self.tasks)
 
     def in_state(self, status, availability):
@@ -569,6 +594,15 @@ class DockerNodeLabels(DockerAttributeContainer):
 
 class DockerTask(object):
 
+    # these are the possible *current* state terminal states
+    terminal_states = (
+        'shutdown',  # this is normally only a desired state but I've seen a task with it as current as well
+        'complete',
+        'failed',
+        'rejected',
+        'orphaned',
+    )
+
     def __init__(self, interface, id=None, name=None, image=None, desired_state=None,
                  state=None, error=None, ports=None, service=None, node=None):
         self._interface = interface
@@ -592,7 +626,12 @@ class DockerTask(object):
 
     @classmethod
     def from_api(cls, interface, t, service=None, node=None):
-        name = service.name + '.' + str(t['Slot']) if service is not None else t['ID']
+        service = service or interface.service(id=t.get('ServiceID'))
+        node = node or interface.node(id=t.get('NodeID'))
+        if service:
+            name = service.name + '.' + str(t['Slot'])
+        else:
+            name = t['ID']
         image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin
         return cls(interface, id=t['ID'], name=name, image=image, desired_state=t['DesiredState'],
                    state=t['Status']['State'], ports=t['Status']['PortStatus'], error=t['Status']['Message'],
@@ -625,6 +664,18 @@ class DockerTask(object):
     @property
     def state(self):
         return ('%s-%s' % (self._desired_state, self._state)).lower()
+
+    @property
+    def current_state(self):
+        return self._state.lower()
+
+    @property
+    def desired_state(self):
+        return self._desired_state.lower()
+
+    @property
+    def terminal(self):
+        return self.desired_state == 'shutdown' and self.current_state in self.terminal_states
 
     def in_state(self, desired, current):
         return self._desired_state.lower() == desired.lower() and self._state.lower() == current.lower()

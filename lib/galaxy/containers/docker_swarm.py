@@ -170,7 +170,7 @@ class DockerSwarmInterface(DockerInterface):
                 continue
             yield node
 
-    def node(self, name):
+    def node(self, id=None, name=None):
         try:
             return self.nodes(id=id, name=name).next()
         except StopIteration:
@@ -198,6 +198,9 @@ class DockerSwarmInterface(DockerInterface):
     def services_completed(self):
         return self.services_in_state('Shutdown', 'Complete', tasks='all')
 
+    def services_terminal(self):
+        return [s for s in self.services() if s.terminal]
+
     def nodes_active(self):
         return self.nodes_in_state('Ready', 'Active')
 
@@ -209,12 +212,16 @@ class DockerSwarmInterface(DockerInterface):
     #
 
     def services_clean(self):
-        cleaned_services = []
-        services = [x for x in self.services_completed()]  # returns a generator, should probably fix this
-        if services:
-            cleaned_service_ids = self.service_rm([x.id for x in services])
-            cleaned_services = filter(lambda x: x.id in cleaned_service_ids, services)
-        return cleaned_services
+        cleaned_service_ids = []
+        completed_services = list(self.services_completed())  # returns a generator, should probably fix this
+        if completed_services:
+            cleaned_service_ids.extend(self.service_rm([x.id for x in completed_services]))
+        terminal_services = list(self.services_terminal())
+        for service in terminal_services:
+            log.warning('cleaned service in abnormal terminal state: %s (%s). state: %s', service.name, service.id, service.state)
+        if terminal_services:
+            cleaned_service_ids.extend(self.service_rm([x.id for x in terminal_services]))
+        return filter(lambda x: x.id in cleaned_service_ids, completed_services + terminal_services)
 
 
 class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
@@ -375,7 +382,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         '_placement': {'spec_class': docker.types.Placement},
     }
     node_spec_option_map = {
-        'availability': {'param', 'Availability'},
+        'availability': {'param': 'Availability'},
         'name': {'param': 'Name'},
         'role': {'param': 'Role'},
         'labels': {'param': 'Labels'},

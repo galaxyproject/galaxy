@@ -166,13 +166,19 @@ class SwarmManager(object):
             self._state.clean_services(cleaned_services)
             log.info("cleaned services: %s", ', '.join([x.id for x in cleaned_services]))
 
-    def _log_state(self):
-        if self._last_log < (time.time() - self._log_interval):
-            services = self._docker_interface.services()
-            nodes = self._docker_interface.nodes()
-            log.info('current service states: %s', ', '.join(['%s: %s' % (x.name, x.state) for x in services]))
-            log.info('current node states: %s', ', '.join(['%s: %s' % (x.name, x.state) for x in nodes]))
-            # TODO: log services waiting due to limits, idle nodes alive due to limits
+    def _log_state(self, now=False):
+        # TODO: log services waiting due to limits, idle nodes alive due to limits
+        if now or (self._last_log < (time.time() - self._log_interval)):
+            services = list(self._docker_interface.services())
+            nodes = list(self._docker_interface.nodes())
+            terminal = [s for s in services if s.terminal]
+            log.info('%s nodes, %s services (%s are terminal)', len(nodes), len(services), len(terminal))
+            if terminal:
+                service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
+                log.info('terminal services: %s', ', '.join(service_strs) or 'none')
+            for node in nodes:
+                task_strs = ['%s (state: %s)' % (t.name, t.state) for t in node.non_terminal_tasks]
+                log.info('node %s (%s) state: %s, non-terminal tasks: %s', node.name, node.id, node.state, ', '.join(task_strs) or 'none')
             self._last_log = time.time()
 
     def _terminate_if_idle(self):
@@ -338,7 +344,7 @@ class SwarmState(object):
             # there are no cpu constraints, so no calculation can be done
             return 0, 0
         for node in nodes:
-            used += sum([t.cpus for t in node.tasks]) / self._cpus
+            used += sum([t.cpus for t in node.non_terminal_tasks]) / self._cpus
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
@@ -468,7 +474,18 @@ def _run_swarm_manager(args):
             swarm_manager_conf['terminate_when_idle'] = False
         else:
             log.info("running in the foreground")
-        pidfile.acquire()
+        try:
+            pidfile.acquire()
+        except lockfile.AlreadyLocked:
+            pid = pidfile.read_pid()
+            try:
+                os.kill(pid, 0)
+                log.warning("swarm manager is already running in pid %s", pid)
+                return
+            except OSError:
+                log.warning("removing stale lockfile: %s", pidfile.path)
+                pidfile.break_lock()
+                pidfile.acquire()
         try:
             _swarm_manager(swarm_manager_conf, docker_interface)
         finally:
