@@ -43,6 +43,7 @@ class CloudStorageController(BaseAPIController):
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
+            *   history_id: the (encoded) id of history to which the object should be downloaded to.
 
 
         :param kwargs:
@@ -57,6 +58,10 @@ class CloudStorageController(BaseAPIController):
                                'but received data of type `%s`.' % str(type(payload))}
 
         missing_arguments = []
+        history_id = payload.get("history_id", None)
+        if history_id is None:
+            missing_arguments.append("history_id")
+
         provider = payload.get("provider", None)
         if provider is None:
             missing_arguments.append("provider")
@@ -79,6 +84,7 @@ class CloudStorageController(BaseAPIController):
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
 
         status, message = self.cloud_storage_manager.download(trans=trans,
+                                                              history_id=history_id,
                                                               provider=provider,
                                                               container=container,
                                                               obj=obj,
