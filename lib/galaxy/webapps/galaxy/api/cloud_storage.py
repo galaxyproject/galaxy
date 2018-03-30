@@ -5,8 +5,8 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 import logging
 
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
 from galaxy.managers import cloud_storage
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
