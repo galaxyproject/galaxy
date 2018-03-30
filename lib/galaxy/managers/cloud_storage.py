@@ -2,13 +2,14 @@
 Manager and serializer for cloud-based storages.
 """
 
-import string
-import random
 import logging
 import os
+import random
+import string
+from cgi import FieldStorage
+
 from galaxy.managers import sharable
 from galaxy.util import Params
-from cgi import FieldStorage
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
