@@ -29,7 +29,7 @@ class CloudStorageManager(sharable.SharableModelManager):
     def __init__(self, app, *args, **kwargs):
         super(CloudStorageManager, self).__init__(app, *args, **kwargs)
 
-    def download(self, trans, provider, container, obj, credentials):
+    def download(self, trans, history_id, provider, container, obj, credentials):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
@@ -73,7 +73,8 @@ class CloudStorageManager(sharable.SharableModelManager):
             params = Params(inputs, sanitize=False)
             incoming = params.__dict__
             upload_tool = trans.app.toolbox.get_tool('upload1')
-            output = upload_tool.handle_input(trans, incoming, history=None)
+            history = trans.sa_session.query(trans.app.model.History).get(history_id)
+            output = upload_tool.handle_input(trans, incoming, history=history)
 
             hids = {}
             job_errors = output.get('job_errors', [])
