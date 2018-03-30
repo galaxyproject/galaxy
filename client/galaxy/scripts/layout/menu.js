@@ -341,7 +341,6 @@ var Tab = Backbone.View.extend({
             });
         this.$toggle
             .html(this.model.get("title") || "")
-            .removeClass()
             .addClass("dropdown-toggle")
             .addClass(this.model.get("cls"))
             .addClass(this.model.get("icon") && `dropdown-icon fa ${this.model.get("icon")}`)
@@ -470,11 +469,9 @@ var Tab = Backbone.View.extend({
     _template: function() {
         return `
             <li class="nav-item dropdown">
-                <a class="nav-link">
-                    <a class="dropdown-toggle"/>
-                    <ul class="dropdown-menu"/>
-                    <div class="dropdown-note"/>
-                </li>
+                <a class="nav-link dropdown-toggle"/>
+                <ul class="dropdown-menu"/>
+                <div class="dropdown-note"/>
             </li>`;
     }
 });
