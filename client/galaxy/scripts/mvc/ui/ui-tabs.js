@@ -106,7 +106,7 @@ export var View = Backbone.View.extend({
             $(this._template_tab(options))
                 .show()
                 .tooltip({
-                    title: options.tooltip,
+                    title: options.tooltip || '',
                     placement: "bottom",
                     container: self.$el
                 })
