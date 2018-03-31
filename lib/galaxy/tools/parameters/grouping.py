@@ -92,7 +92,8 @@ class Repeat(Group):
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
             for input in self.inputs.values():
-                rval_dict[input.name] = input.value_to_basic(d[input.name], app)
+                if input.name in d:
+                    rval_dict[input.name] = input.value_to_basic(d[input.name], app)
             rval.append(rval_dict)
         return rval
 
@@ -280,24 +281,29 @@ class UploadDataset(Group):
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
             for input in self.inputs.values():
-                rval_dict[input.name] = input.value_to_basic(d[input.name], app)
+                if input.name in d:
+                    rval_dict[input.name] = input.value_to_basic(d[input.name], app)
             rval.append(rval_dict)
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
         rval = []
         for i, d in enumerate(value):
-            rval_dict = {}
-            # If the special __index__ key is not set, create it (for backward
-            # compatibility)
-            rval_dict['__index__'] = d.get('__index__', i)
-            # Restore child inputs
-            for input in self.inputs.values():
-                if ignore_errors and input.name not in d:  # this wasn't tested
-                    rval_dict[input.name] = input.get_initial_value(None, d)
-                else:
-                    rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
-            rval.append(rval_dict)
+            try:
+                rval_dict = {}
+                # If the special __index__ key is not set, create it (for backward
+                # compatibility)
+                rval_dict['__index__'] = d.get('__index__', i)
+                # Restore child inputs
+                for input in self.inputs.values():
+                    if ignore_errors and input.name not in d:  # this wasn't tested
+                        rval_dict[input.name] = input.get_initial_value(None, d)
+                    else:
+                        rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
+                rval.append(rval_dict)
+            except Exception as e:
+                if not ignore_errors:
+                    raise e
         return rval
 
     def get_file_count(self, trans, context):
