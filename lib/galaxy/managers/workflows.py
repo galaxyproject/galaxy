@@ -216,7 +216,7 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         publish=False,
         create_stored_workflow=True,
-        exact_tools=False,
+        exact_tools=True,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
