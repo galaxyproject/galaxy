@@ -1,5 +1,7 @@
 /** This renders the content of the ftp popup **/
 import Utils from "utils/utils";
+import UploadUtils from "mvc/upload/upload-utils";
+
 export default Backbone.View.extend({
     initialize: function(options) {
         var self = this;
@@ -36,18 +38,16 @@ export default Backbone.View.extend({
         this.$content.hide();
         this.$warning.hide();
         this.$help.hide();
-        $.ajax({
-            url: `${Galaxy.root}api/remote_files`,
-            method: "GET",
-            success: function(ftp_files) {
+        UploadUtils.getRemoteFiles(
+            function(ftp_files) {
                 self.model.set("ftp_files", ftp_files);
                 self._index();
                 self._renderTable();
             },
-            error: function() {
+            function() {
                 self._renderTable();
             }
-        });
+        );
     },
 
     /** Fill table with ftp entries */
