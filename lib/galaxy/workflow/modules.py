@@ -625,7 +625,7 @@ class ToolModule(WorkflowModule):
     def from_workflow_step(Class, trans, step, **kwds):
         tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
         tool_version = step.tool_version
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version)
+        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -1048,12 +1048,12 @@ class WorkflowModuleFactory(object):
         assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]" % (type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step):
+    def from_workflow_step(self, trans, step, **kwargs):
         """
         Return module initializd from the WorkflowStep object `step`.
         """
         type = step.type
-        return self.module_types[type].from_workflow_step(trans, step)
+        return self.module_types[type].from_workflow_step(trans, step, **kwargs)
 
 
 def is_tool_module_type(module_type):
