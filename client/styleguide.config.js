@@ -37,10 +37,14 @@ module.exports = {
   webpackConfig,
   sections: [
     {
+      name: 'Galaxy Styles',
+      content: './galaxy/docs/galaxy-styles.md'
+    },
+    {
       name: 'Basic Bootstrap Styles',
       content: './galaxy/docs/bootstrap.md'
     },
-    // This will require additional configuration  
+    // This will require additional configuration
     // {
     //   name: 'Components',
     //   content: 'galaxy/scripts/components/**/*.vue'
