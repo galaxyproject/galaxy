@@ -160,7 +160,8 @@ class Section(Group):
     def value_to_basic(self, value, app):
         rval = {}
         for input in self.inputs.values():
-            rval[input.name] = input.value_to_basic(value[input.name], app)
+            if input.name in value:  # parameter might be absent in unverified workflow
+                rval[input.name] = input.value_to_basic(value[input.name], app)
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
