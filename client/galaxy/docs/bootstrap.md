@@ -99,3 +99,57 @@ Disabled
    <button type="button" class="btn btn-primary btn-sm">Small button</button>
  </div>
 ```
+
+## Alerts
+
+```
+<div class="alert alert-dismissable alert-warning">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <h4>Warning!</h4>
+  <p>Best check yo self, you're not looking too good. Nulla vitae elit libero, a pharetra augue. Praesent commodo cursus magna, <a href="#" class="alert-link">vel scelerisque nisl consectetur et</a>.</p>
+</div>
+```
+
+```
+<div class="alert alert-dismissable alert-danger">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Oh snap!</strong> <a href="#" class="alert-link">Change a few things up</a> and try submitting again.
+</div>
+```
+
+```
+<div class="alert alert-dismissable alert-success">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Well done!</strong> You successfully read <a href="#" class="alert-link">this important alert message</a>.
+</div>
+```
+
+```
+<div class="alert alert-dismissable alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Heads up!</strong> This <a href="#" class="alert-link">alert needs your attention</a>, but it's not super important.
+</div>
+```
+
+## Badges
+
+```
+<div>
+  <span class="badge badge-default">Default</span>
+  <span class="badge badge-primary">Primary</span>
+  <span class="badge badge-success">Success</span>
+  <span class="badge badge-warning">Warning</span>
+  <span class="badge badge-danger">Danger</span>
+  <span class="badge badge-info">Info</span>
+</div>
+```
+
+```
+<div class="">
+  <ul class="nav nav-pills">
+    <li class="active"><a href="#">Home <span class="badge">42</span></a></li>
+    <li><a href="#">Profile <span class="badge-pill"></span></a></li>
+    <li><a href="#">Messages <span class="badge-pill">3</span></a></li>
+  </ul>
+</div>
+```
