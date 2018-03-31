@@ -378,7 +378,7 @@ class WorkflowContentsManager(UsesAnnotations):
         errors = {}
         for step in workflow.steps:
             try:
-                module_injector.inject(step, steps=workflow.steps)
+                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
             except exceptions.ToolMissingException:
                 if step.tool_id not in missing_tools:
                     missing_tools.append(step.tool_id)

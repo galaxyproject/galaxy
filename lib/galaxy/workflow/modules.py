@@ -1132,7 +1132,7 @@ class WorkflowModuleInjector(object):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step, step_args=None, steps=None):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
         """ Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -1151,7 +1151,7 @@ class WorkflowModuleInjector(object):
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step)
+        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
