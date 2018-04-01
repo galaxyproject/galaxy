@@ -194,20 +194,18 @@
                                     <span class="fa fa-times" @click="removeMapping(map.index)"></span>
                                 </column-selector>
                             </div>
-                            <div class="buttons">
-                                <div class="btn-group" v-if="unmappedTargets.length > 0">
-                                  <button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
+                            <div class="buttons btn-group pull-right rule-edit-buttons" v-if="unmappedTargets.length > 0">
+                                <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
-                                  </button>
-                                  <ul class="dropdown-menu" role="menu">
+                                </button>
+                                <ul class="dropdown-menu" role="menu">
                                     <li v-for="target in unmappedTargets"
                                         v-bind:index="target"
                                         v-bind:key="target">
                                       <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')" @click="addIdentifier(target)">{{ mappingTargets()[target].label }}</a>
                                     </li>
-                                  </ul>
-                                </div>
-                               <button type="button" class="ui-button-default btn btn-default rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">Okay</button>
+                                </ul>
+                                <button type="button" class="btn btn-default btn-primary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
@@ -235,7 +233,7 @@
                                                     @remove="removeMapping(index)"
                                                     @edit="displayRuleType = 'mapping'"
                                                     v-on:mouseover.native="map.columns.forEach((col) => highlightColumn(col))"
-                                                    v-on:mouseout.native="map.columns.forEach((col) =>unhighlightColumn(col))"
+                                                    v-on:mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                                     :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="#" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
@@ -677,11 +675,17 @@ const RuleComponent = {
     template: `
     <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
         <slot></slot>
-        <div class="buttons" style="margin: 5px; height: 25px;">
-           <button type="button" class="ui-button-default btn btn-default rule-editor-ok" @click="okay">Okay</button>
-           <button type="button" class="ui-button-default btn rule-editor-cancel" @click="cancel">Cancel</button>
+        <div class="buttons pull-right rule-edit-buttons">
+           <button type="button" class="btn rule-editor-cancel" @click="cancel">{{ cancelLabel }}</button>
+           <button type="button" class="btn btn-default btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
         </div>
     </div>`,
+    data: function() {
+        return {
+            applyLabel: _l("Apply"),
+            cancelLabel: _l("Cancel"),
+        };
+    },
     props: {
         ruleType: {
             type: String,
@@ -1529,6 +1533,10 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+  .rule-edit-buttons {
+     margin: 5px;
+     height: 25px;
   }
   .rules {
     flex-grow: 1;
