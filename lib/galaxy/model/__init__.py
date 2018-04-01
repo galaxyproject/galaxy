@@ -407,8 +407,10 @@ class User(object, Dictifiable):
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 0
                     elif not hda.deleted and hda.history.deleted:
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 1
-                    else:
+                    elif hda.deleted and not hda.history.deleted:
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 2
+                    else:
+                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 3
                     if dataset_ids[str(hda.dataset.id)] == 3:    # remove mis-count
                         deleted_usage -= hda.dataset.get_total_size()
 
