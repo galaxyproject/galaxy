@@ -426,7 +426,7 @@ class User(object, Dictifiable):
         if db_session.get_bind().dialect.name not in ('postgres', 'postgresql'):
             done = False
             while not done:
-                new, deleted = self.calculate_disk_usage()
+                new = self.calculate_disk_usage()
                 db_session.refresh(self)
                 # make sure usage didn't change while calculating
                 # set done if it has not, otherwise reset current and iterate again.
