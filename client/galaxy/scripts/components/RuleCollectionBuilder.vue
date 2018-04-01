@@ -190,7 +190,9 @@
                                     :col-headers="colHeaders"
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
-                                    :value-as-list="true" />
+                                    :value-as-list="true">
+                                    <span class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                </column-selector>
                             </div>
                             <div class="buttons">
                                 <div class="btn-group" v-if="unmappedTargets.length > 0">
@@ -421,10 +423,12 @@ const ColumnSelector = {
                 <select2 :value="target" @input="handleInput" :multiple="multiple">
                     <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
                 </select2>
+                <slot></slot>
             </label>
         </div>
         <div class="rule-column-selector" v-else>
-            {{ label }} 
+            {{ label }}
+            <slot></slot>
             <ol>
                 <li v-for="(targetEl, index) in target"
                     v-bind:index="index"
