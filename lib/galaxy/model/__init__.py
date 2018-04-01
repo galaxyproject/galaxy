@@ -397,19 +397,19 @@ class User(object, Dictifiable):
                     elif not hda.deleted and hda.history.deleted:  # possible
                         dataset_ids[str(hda.dataset.id)] = 1
                         deleted_usage += hda.dataset.get_total_size()
-                    elif hda.deleted and not hda.history.deleted: # possible
+                    elif hda.deleted and not hda.history.deleted:  # possible
                         dataset_ids[str(hda.dataset.id)] = 2
                         deleted_usage += hda.dataset.get_total_size()
-                    else:                                        # impossible
+                    else:                                         # impossible
                         dataset_ids[str(hda.dataset.id)] = 3
-                else:                                            # repeat count
+                else:                                             # repeat count
                     if hda.deleted and hda.history.deleted:
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 0
                     elif not hda.deleted and hda.history.deleted:
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 1
                     else:
                         dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 2
-                    if dataset_ids[str(hda.dataset.id)] == 3:   # remove mis-count
+                    if dataset_ids[str(hda.dataset.id)] == 3:    # remove mis-count
                         deleted_usage -= hda.dataset.get_total_size()
 
         return deleted_usage
