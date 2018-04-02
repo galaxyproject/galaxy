@@ -11,16 +11,6 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <specs>
-        <tag>svg</tag>
-        <use_panels>yes</use_panels>
-        <zoomable>true</zoomable>
-        <exports>
-            <exports>pdf</exports>
-            <exports>png</exports>
-            <exports>svg</exports>
-        </exports>
-    </specs>
     <groups>
         <input>
             <label>Provide a label</label>

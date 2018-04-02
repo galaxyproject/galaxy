@@ -1,6 +1,7 @@
 {
   "presets": ["env"],
   "moduleIds": true,
+  "plugins": ["transform-vue-template"],
   "ignore": [
     "i18n.js",
     "utils/localization.js",

@@ -9,6 +9,7 @@
     <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" load="jqplot_histogram"/>
     <specs>
         <expand macro="specs"/>
+        <confirm>True</confirm>
     </specs>
     <groups>
         <expand macro="groups"/>

@@ -37,6 +37,7 @@
     </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bcf' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bcf" />
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json"/>
+    <datatype extension="sra" type="galaxy.datatypes.binary:Sra" mimetype="application/octet-stream" display_in_upload="true" description="A binary file archive format from the NCBI Sequence Read Archive with a '.sra' file extension." description_url="http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://galaxyproject.org/learn/datatypes/#bed">
     </datatype>
     <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
@@ -45,5 +46,7 @@
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
   </registration>
 </datatypes>

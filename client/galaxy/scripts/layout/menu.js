@@ -48,6 +48,33 @@ var Collection = Backbone.Collection.extend({
         });
 
         //
+        // Visualization tab.
+        //
+        this.add({
+            id: "visualization",
+            title: _l("Visualize"),
+            url: "visualizations/list",
+            tooltip: _l("Visualize datasets"),
+            disabled: !Galaxy.user.id,
+            menu: [
+                {
+                    title: _l("Create Visualization"),
+                    url: "visualizations"
+                },
+                {
+                    title: _l("Interactive Environments"),
+                    url: "visualization/gie_list",
+                    target: "galaxy_main"
+                },
+                {
+                    title: _l("Saved Visualizations"),
+                    url: "visualizations/list",
+                    target: "_frame"
+                }
+            ]
+        });
+
+        //
         // 'Shared Items' or Libraries tab.
         //
         this.add({
@@ -75,34 +102,6 @@ var Collection = Backbone.Collection.extend({
                 {
                     title: _l("Pages"),
                     url: "pages/list_published"
-                }
-            ]
-        });
-
-        //
-        // Visualization tab.
-        //
-        this.add({
-            id: "visualization",
-            title: _l("Visualization"),
-            url: "visualizations/list",
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("New Track Browser"),
-                    url: "visualization/trackster",
-                    target: "_frame"
-                },
-                {
-                    title: _l("Saved Visualizations"),
-                    url: "visualizations/list",
-                    target: "_frame"
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
                 }
             ]
         });
@@ -283,18 +282,23 @@ var Collection = Backbone.Collection.extend({
                         divider: true
                     },
                     {
-                        title: _l("Saved Histories"),
-                        url: "histories/list",
-                        target: "_top"
-                    },
-                    {
                         title: _l("Saved Datasets"),
                         url: "datasets/list",
                         target: "_top"
                     },
                     {
+                        title: _l("Saved Histories"),
+                        url: "histories/list",
+                        target: "_top"
+                    },
+                    {
                         title: _l("Saved Pages"),
                         url: "pages/list",
+                        target: "_top"
+                    },
+                    {
+                        title: _l("Saved Visualizations"),
+                        url: "visualizations/list",
                         target: "_top"
                     }
                 ]
@@ -352,11 +356,13 @@ var Tab = Backbone.View.extend({
         if (this.model.get("tooltip")) {
             this.$toggle.tooltip({ placement: "bottom" });
         }
-        this.$dropdown
-            .removeClass()
-            .addClass("dropdown")
-            .addClass(this.model.get("disabled") && "disabled")
-            .addClass(this.model.get("active") && "active");
+        if (!this.model.get("menu")) {
+            this.$dropdown
+                .removeClass()
+                .addClass("dropdown")
+                .addClass(this.model.get("disabled") && "disabled")
+                .addClass(this.model.get("active") && "active");
+        }
         if (this.model.get("menu") && this.model.get("show_menu")) {
             this.$menu.show();
             $("#dd-helper")

@@ -201,8 +201,13 @@ def command_list(command, command_args=[], **kwds):
 
 
 def command_shell(command, command_args=[], **kwds):
-    """Return Docker command as a string for a shell."""
-    return argv_to_str(command_list(command, command_args, **kwds))
+    """Return Docker command as a string for a shell or command-list."""
+    cmd = command_list(command, command_args, **kwds)
+    to_str = kwds.get("to_str", True)
+    if to_str:
+        return argv_to_str(cmd)
+    else:
+        return cmd
 
 
 def _docker_prefix(

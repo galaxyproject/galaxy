@@ -295,6 +295,7 @@ class Grid(object):
                 'sortable'          : column.sortable,
                 'label'             : column.label,
                 'filterable'        : column.filterable,
+                'delayed'           : column.delayed,
                 'is_text'           : isinstance(column, TextColumn),
                 'extra'             : extra
             })
@@ -402,7 +403,8 @@ class GridColumn(object):
     def __init__(self, label, key=None, model_class=None, method=None, format=None,
                  link=None, attach_popup=False, visible=True, nowrap=False,
                  # Valid values for filterable are ['standard', 'advanced', None]
-                 filterable=None, sortable=True, label_id_prefix=None, target=None):
+                 filterable=None, sortable=True, label_id_prefix=None, target=None,
+                 delayed=False):
         """Create a grid column."""
         self.label = label
         self.key = key
@@ -415,6 +417,7 @@ class GridColumn(object):
         self.attach_popup = attach_popup
         self.visible = visible
         self.filterable = filterable
+        self.delayed = delayed
         # Column must have a key to be sortable.
         self.sortable = (self.key is not None and sortable)
         self.label_id_prefix = label_id_prefix or ''
@@ -422,7 +425,7 @@ class GridColumn(object):
     def get_value(self, trans, grid, item):
         if self.method:
             value = getattr(grid, self.method)(trans, item)
-        elif self.key:
+        elif self.key and hasattr(item, self.key):
             value = getattr(item, self.key)
         else:
             value = None

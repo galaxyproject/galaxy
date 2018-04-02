@@ -64,7 +64,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         self.assertEqual(trackster.name, 'trackster')
         self.assertEqual(trackster.path, os.path.join(expected_plugins_path, 'trackster'))
         self.assertEqual(trackster.base_url, '/'.join([plugin_mgr.base_url, trackster.name]))
-        self.assertFalse(trackster.serves_static)
+        self.assertTrue(trackster.serves_static)
         self.assertFalse(trackster.serves_templates)
 
     def test_plugin_load(self):
