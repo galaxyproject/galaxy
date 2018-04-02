@@ -184,12 +184,16 @@ class SwarmManager(object):
                 log.info('node %s (%s) state: %s, %s tasks (%s terminal)', node.name, node.id, node.state,
                          len(node.tasks), len([t for t in node.tasks if t.terminal]))
                 for task in node.tasks:
-                    env_str = ''
-                    if envs.get(task.service.id):
-                        env_str = ' [' + ', '.join(envs.get(task.service.id, [])) + ']'
-                    log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
-                             task.service.name, task.service.id, task.slot, task.id, env_str, task.state,
-                             task.current_state_time)
+                    if not task.service:
+                        log.warning('node %s (%s) task %s (%s) has no service! state: %s %s', node.name, node.id,
+                                    task.slot, task.id, task.state, task.current_state_time)
+                    else:
+                        env_str = ''
+                        if envs.get(task.service.id):
+                            env_str = ' [' + ', '.join(envs.get(task.service.id, [])) + ']'
+                        log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
+                                 task.service.name, task.service.id, task.slot, task.id, env_str, task.state,
+                                 task.current_state_time)
             self._last_log = time.time()
 
     def _terminate_if_idle(self):

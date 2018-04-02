@@ -527,7 +527,9 @@ class DockerNode(object):
     def non_terminal_tasks(self):
         r = []
         for task in self.tasks:
-            if not task.terminal:
+            # ensure the task has a service - it is possible for "phantom" tasks to exist (service is removed, no
+            # container is running, but the task still shows up in the node's task list)
+            if not task.terminal and task.service is not None:
                 r.append(task)
         return r
 
