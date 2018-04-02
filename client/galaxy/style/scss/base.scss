@@ -826,7 +826,7 @@ button {
     padding-left: 52px;
     background-image: url(error_large.png);
     background-repeat: no-repeat;
-    background-position: 10px 8px;
+    background-position: 10px 5px;
     .messagerow {
         padding: 10px 20px;
     }
@@ -880,7 +880,7 @@ button {
     //background-color: $error_message_bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
-    background-position: 5px 5px;
+    background-position: 5px 6px;
 }
 
 .errormessage,
@@ -1369,6 +1369,7 @@ a.action-button {
     }
 
     &.popup .menubutton-label {
+        margin: -5px 0;
         border-right: solid $btn-default-border 1px;
         padding-right: 6px;
     }
@@ -1376,11 +1377,12 @@ a.action-button {
     &.popup,
     &.popup.split {
         padding-right: 18px;
+        @include caret();
         &:after {
-            top: 45%;
-            position: absolute;
-            right: 6px;
-            @include caret();
+            margin-left: 0.5rem;
+            // top: 45%;
+            // position: absolute;
+            // right: 6px;
         }
     }
 }

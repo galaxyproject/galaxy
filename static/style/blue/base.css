@@ -12732,7 +12732,7 @@ input[type="password"] {
   padding-left: 52px;
   background-image: url(error_large.png);
   background-repeat: no-repeat;
-  background-position: 10px 8px; }
+  background-position: 10px 5px; }
   .errormessagelarge .messagerow, .error-modal .modal-content .messagerow,
   .warningmessagelarge .messagerow,
   .donemessagelarge .messagerow,
@@ -12778,7 +12778,7 @@ input[type="password"] {
   min-height: 15px;
   background-image: url(error_small.png);
   background-repeat: no-repeat;
-  background-position: 5px 5px; }
+  background-position: 5px 6px; }
 
 .warningmessage,
 .warningmessagesmall,
@@ -13137,27 +13137,26 @@ a.action-button {
     overflow: hidden;
     text-overflow: ellipsis; }
   .menubutton.popup .menubutton-label {
+    margin: -5px 0;
     border-right: solid #bfbfbf 1px;
     padding-right: 6px; }
   .menubutton.popup, .menubutton.popup.split {
     padding-right: 18px; }
+    .menubutton.popup::after, .menubutton.popup.split::after {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      margin-left: 0.255em;
+      vertical-align: 0.255em;
+      content: "";
+      border-top: 0.3em solid;
+      border-right: 0.3em solid transparent;
+      border-bottom: 0;
+      border-left: 0.3em solid transparent; }
+    .menubutton.popup:empty::after, .menubutton.popup.split:empty::after {
+      margin-left: 0; }
     .menubutton.popup:after, .menubutton.popup.split:after {
-      top: 45%;
-      position: absolute;
-      right: 6px; }
-      .menubutton.popup:after::after, .menubutton.popup.split:after::after {
-        display: inline-block;
-        width: 0;
-        height: 0;
-        margin-left: 0.255em;
-        vertical-align: 0.255em;
-        content: "";
-        border-top: 0.3em solid;
-        border-right: 0.3em solid transparent;
-        border-bottom: 0;
-        border-left: 0.3em solid transparent; }
-      .menubutton.popup:after:empty::after, .menubutton.popup.split:after:empty::after {
-        margin-left: 0; }
+      margin-left: 0.5rem; }
 
 .menubutton.background-none {
   background: none; }
