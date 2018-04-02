@@ -33,15 +33,42 @@ class CloudManager(sharable.SharableModelManager):
 
     def _configure_provider(self, provider, credentials):
         supported_providers = "{aws, azure}"
+        missing_credentials = []
         if provider == 'aws':
-            config = {'aws_access_key': credentials.get('access_key'),
-                      'aws_secret_key': credentials.get('secret_key')}
+            access = credentials.get('access_key', None)
+            if access is None:
+                missing_credentials.append('access_key')
+            secret = credentials.get('secret_key', None)
+            if secret is None:
+                missing_credentials.append('secret_key')
+            if len(missing_credentials) > 0:
+                return "400", "The following required key(s) are missing from the provided credentials object: " \
+                              "{}".format(missing_credentials), None
+
+            config = {'aws_access_key': access,
+                      'aws_secret_key': secret}
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
-            config = {'azure_subscription_id': credentials.get('subscription_id'),
-                      'azure_client_id': credentials.get('client_id'),
-                      'azure_secret': credentials.get('secret'),
-                      'azure_tenant': credentials.get('tenant')}
+            subscription = credentials.get('subscription_id', None)
+            if subscription is None:
+                missing_credentials.append('subscription_id')
+            client = credentials.get('client_id', None)
+            if client is None:
+                missing_credentials.append('client_id')
+            secret = credentials.get('secret', None)
+            if secret is None:
+                missing_credentials.append('secret')
+            tenant = credentials.get('tenant', None)
+            if tenant is None:
+                missing_credentials.append('tenant')
+            if len(missing_credentials) > 0:
+                return "400", "The following required key(s) are missing from the provided credentials object: " \
+                              "{}".format(missing_credentials), None
+
+            config = {'azure_subscription_id': subscription,
+                      'azure_client_id': client,
+                      'azure_secret': secret,
+                      'azure_tenant': tenant}
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         else:
             return "400", "Unrecognized provider '{}'; the following are the supported providers: {}.".format(
