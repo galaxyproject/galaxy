@@ -189,7 +189,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
         if pip list --format=columns | grep "psycopg2[\(\ ]*2.7.3" > /dev/null; then
             echo "An older version of psycopg2 (non-binary, version 2.7.3) has been detected.  Galaxy now uses psycopg2-binary, which will be installed after removing psycopg2."
-            pip uninstall -y psycopg2==2.7.3
+            pip uninstall -y psycopg2 psycopg2-binary
         fi
         echo "$GALAXY_CONDITIONAL_DEPENDENCIES" | pip install -r /dev/stdin --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     fi
