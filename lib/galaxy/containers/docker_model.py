@@ -10,6 +10,7 @@ from galaxy.containers import (
     ContainerPort,
     ContainerVolume
 )
+from galaxy.util import pretty_print_time_interval
 
 
 CPUS_LABEL = '_galaxy_cpus'
@@ -174,6 +175,7 @@ class DockerService(Container):
         self._name = name
         self._image = image
         self._inspect = inspect
+        self._env = {}
         self._tasks = []
         if inspect:
             self._name = name or inspect['Spec']['Name']
@@ -266,6 +268,16 @@ class DockerService(Container):
             if task.desired_state == 'running':
                 break
         return state
+
+    @property
+    def env(self):
+        if not self._env:
+            for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
+                try:
+                    self._env.update([env_str.split('=', 1)])
+                except ValueError:
+                    self._env[env_str] = None
+        return self._env
 
     @property
     def terminal(self):
@@ -660,6 +672,22 @@ class DockerTask(object):
         return self._inspect
 
     @property
+    def slot(self):
+        return self.inspect['Slot']
+
+    @property
+    def node(self):
+        if not self._node:
+            self._node = self._interface.node(id=self.inspect['NodeID'])
+        return self._node
+
+    @property
+    def service(self):
+        if not self._service:
+            self._service = self._interface.service(id=self.inspect['ServiceID'])
+        return self._service
+
+    @property
     def cpus(self):
         try:
             cpus = self.inspect['Spec']['Resources']['Reservations']['NanoCPUs'] / 1000000000.0
@@ -676,6 +704,12 @@ class DockerTask(object):
     @property
     def current_state(self):
         return self._state.lower()
+
+    @property
+    def current_state_time(self):
+        # Docker API returns a stamp w/ higher second precision than Python takes
+        stamp = self.inspect['Status']['Timestamp']
+        return pretty_print_time_interval(time=stamp[:stamp.index('.')+7], precise=True, utc=stamp[-1] == 'Z')
 
     @property
     def desired_state(self):

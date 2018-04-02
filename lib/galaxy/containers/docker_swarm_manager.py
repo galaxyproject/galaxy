@@ -63,6 +63,7 @@ SWARM_MANAGER_CONF_DEFAULTS = {
     'command_retries': 0,
     'command_retry_wait': 10,
     'terminate_when_idle': True,
+    'log_environment_variables': [],
 }
 log = logging.getLogger(__name__)
 
@@ -172,13 +173,23 @@ class SwarmManager(object):
             services = list(self._docker_interface.services())
             nodes = list(self._docker_interface.nodes())
             terminal = [s for s in services if s.terminal]
-            log.info('%s nodes, %s services (%s are terminal)', len(nodes), len(services), len(terminal))
+            envs = {}
+            for service in services:
+                envs[service.id] = ['%s=%s' % (k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
+            log.info('%s nodes, %s services (%s terminal)', len(nodes), len(services), len(terminal))
             if terminal:
                 service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
                 log.info('terminal services: %s', ', '.join(service_strs) or 'none')
             for node in nodes:
-                task_strs = ['%s (state: %s)' % (t.name, t.state) for t in node.non_terminal_tasks]
-                log.info('node %s (%s) state: %s, non-terminal tasks: %s', node.name, node.id, node.state, ', '.join(task_strs) or 'none')
+                log.info('node %s (%s) state: %s, %s tasks (%s terminal)', node.name, node.id, node.state,
+                         len(node.tasks), len([t for t in node.tasks if t.terminal]))
+                for task in node.tasks:
+                    env_str = ''
+                    if envs.get(task.service.id):
+                        env_str = ' [' + ', '.join(envs.get(task.service.id, [])) + ']'
+                    log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
+                             task.service.name, task.service.id, task.slot, task.id, env_str, task.state,
+                             task.current_state_time)
             self._last_log = time.time()
 
     def _terminate_if_idle(self):
