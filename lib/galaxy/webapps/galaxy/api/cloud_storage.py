@@ -53,8 +53,8 @@ class CloudStorageController(BaseAPIController):
         :return: True/False if the given object is successfully downloaded from the cloud-based storage.
         """
         if not isinstance(payload, dict):
-            trans.response.status = 400
-            return {'status': 'error',
+            trans.response.status = "400"
+            return {'status': "400",
                     'message': 'Invalid payload data type. The payload is expected to be a dictionary, '
                                'but received data of type `%s`.' % str(type(payload))}
 
@@ -80,15 +80,15 @@ class CloudStorageController(BaseAPIController):
             missing_arguments.append("credentials")
 
         if len(missing_arguments) > 0:
-            trans.response.status = 400
-            return {'status': 'error',
+            trans.response.status = "400"
+            return {'status': "400",
                     'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            trans.response.status = 400
-            return {'status': 'error', 'message': 'Invalid history ID. {}'.format(e)}
+            trans.response.status = "400"
+            return {'status': "400", 'message': 'Invalid history ID. {}'.format(e)}
 
         status, message = self.cloud_storage_manager.download(trans=trans,
                                                               history_id=history_id,
@@ -96,7 +96,7 @@ class CloudStorageController(BaseAPIController):
                                                               container=container,
                                                               obj=obj,
                                                               credentials=credentials)
-        trans.response.status = 200 if status == 'ok' else 500
+        trans.response.status = status
         return {'status': status, 'message': message}
 
     @web.expose_api

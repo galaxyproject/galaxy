@@ -40,11 +40,11 @@ class CloudStorageManager(sharable.SharableModelManager):
         try:
             container_obj = connection.object_store.get(container)
             if container_obj is None:
-                return 400, "The container `{}` not found.".format(container)
+                return "400", "The container `{}` not found.".format(container)
         except Exception:
             msg = "Could not get the container `{}`".format(container)
             log.exception(msg)
-            return 400, msg
+            return "400", msg
 
         key = container_obj.get(obj)
         staging_file_name = os.path.abspath(os.path.join(
@@ -83,6 +83,7 @@ class CloudStorageManager(sharable.SharableModelManager):
                 raise ValueError('Cannot upload a dataset.')
             else:
                 hids.update({staging_file: output['out_data'][0][1].hid})
+        return "200", 'The dataset is downloaded successfully.'
 
     def upload(self, dataset, provider, container, obj):
         # TODO: implement the upload logic.
