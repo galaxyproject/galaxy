@@ -1454,6 +1454,10 @@ ul.dropdown-menu {
         background: inherit;
         border-color: transparent;
     }
+
+    li {
+        @extend .dropdown-item;
+    }
 }
 
 .popup-arrow {

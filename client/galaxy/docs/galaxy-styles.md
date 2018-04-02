@@ -60,6 +60,26 @@ All the crazy permutations of menu button...
 </a>
 ```
 
+## Popup menus
+
+These are the classes for the menu itself, normally floating, so placed inside
+a relative element.
+
+```
+<div style="position: relative; height: 12rem;">
+<div class="popmenu-wrapper" style="top: 0;">
+  <ul class="dropdown-menu">
+    <li class="head"><a>Heading one</a></li>
+    <li>An item</li>
+    <li>Another item</li>
+    <li class="head"><a>Heading two</a></li>
+    <li>Third item</li>
+    <li>Last item</li>
+  </ul>
+</div>
+</div>
+```
+
 ## Tables
 
 Tables using the .grid class
