@@ -3,47 +3,47 @@
 /****************************************************************************/
 
 .ac_results {
-	padding: 0px;
-	border: 1px solid black;
-	background-color: white;
-	overflow: hidden;
-	z-index: 99999;
+    padding: 0px;
+    border: 1px solid black;
+    background-color: white;
+    overflow: hidden;
+    z-index: 99999;
 }
 
 .ac_results ul {
-	width: 100%;
-	list-style-position: outside;
-	list-style: none;
-	padding: 0;
-	margin: 0;
+    width: 100%;
+    list-style-position: outside;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .ac_results li {
-	padding: 2px 5px;
-	cursor: default;
-	display: block;
-	/* 
+    padding: 2px 5px;
+    cursor: default;
+    display: block;
+    /* 
 	if width will be 100% horizontal scrollbar will apear 
 	when scroll mode will be used
 	*/
-	/*width: 100%;*/
+    /*width: 100%;*/
     /* font: menu; */
-	font-size: 12px;
-	/* 
+    font-size: 12px;
+    /* 
 	it is very important, if line-height not setted or setted 
 	in relative units scroll will be broken in firefox
 	*/
-	line-height: 16px;
-	overflow: hidden;
+    line-height: 16px;
+    overflow: hidden;
 }
 
 .ac_loading {
-	background: white url('indicator.gif') right center no-repeat;
+    background: white url("indicator.gif") right center no-repeat;
 }
 
 .ac_odd {
-	background-color: #fff; /* #eee */
-	margin-left: 0.3em;
+    background-color: #fff; /* #eee */
+    margin-left: 0.3em;
 }
 
 .ac_even {
@@ -51,8 +51,8 @@
 }
 
 .ac_over {
-	background-color: #0A246A;
-	color: white;
+    background-color: #0a246a;
+    color: white;
 }
 
 .ac_header {
@@ -68,14 +68,12 @@
     width: 100%;
 }
 
-.individual-tag-area
-{
+.individual-tag-area {
     cursor: pointer;
     border: 1px dotted transparent;
 }
 
-.individual-tag-area:hover 
-{
+.individual-tag-area:hover {
     border: 1px dotted #999999;
 }
 
@@ -83,9 +81,8 @@
     background-color: white;
 }
 
-.toggle-link 
-{
-    font-weight: normal;  
+.toggle-link {
+    font-weight: normal;
     padding: 0.3em;
     margin-bottom: 1em;
     width: 100%;
@@ -101,31 +98,27 @@
     margin: 0.2em;
     border: solid #bbb 1px;
     padding: 0.1em 0.5em 0.1em 0.5em;
-    -moz-border-radius: .5em;
-    -webkit-border-radius: .5em;
-    border-radius: .5em;
-    background:#eee;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    border-radius: 0.5em;
+    background: #eee;
 }
 
-.tag-button img
-{
+.tag-button img {
     padding-left: 0.4em;
 }
 
-.tag-button .tag-name:hover
-{
+.tag-button .tag-name:hover {
     color: black;
 }
 
-.add-tag-button
-{
+.add-tag-button {
     margin-bottom: 0.3em;
     vertical-align: middle;
     padding: 0.3em;
 }
 
-.add-tag-button:hover
-{
+.add-tag-button:hover {
     cursor: pointer;
 }
 
@@ -136,13 +129,10 @@
     resize: none;
 }
 
-.delete-tag-img
-{
-    
+.delete-tag-img {
     margin-left: 0.3em;
 }
 
-.active-tag-name
-{
+.active-tag-name {
     font-weight: bold;
 }

@@ -1,5 +1,5 @@
 /* Z-indexes for levels used in viz; overlay level is shown above base level. */
-$base-index:    1;
+$base-index: 1;
 $overlay-index: $base-index + 1;
 $track-header-height: 16px;
 $min-track-height: ($track-header-height + 4);
@@ -24,9 +24,9 @@ $separator-color: #888;
 
 .trackster-nav {
     padding: 0 0;
-    color:#333;
-    font-weight:bold;
-    background:#cccccc;
+    color: #333;
+    font-weight: bold;
+    background: #cccccc;
     display: inline-block;
     top: -2em;
     background: transparent;
@@ -55,8 +55,9 @@ $separator-color: #888;
     }
 }
 
-#zoom-in, #zoom-out {
-    display:inline-block;
+#zoom-in,
+#zoom-out {
+    display: inline-block;
     height: 16px;
     width: 16px;
     margin-bottom: -3px;
@@ -87,7 +88,7 @@ $separator-color: #888;
 
 .intro {
     z-index: $overlay-index;
-/*    margin-top: 200px;*/
+    /*    margin-top: 200px;*/
     margin-left: auto;
     margin-right: auto;
     color: #555;
@@ -95,10 +96,10 @@ $separator-color: #888;
     font-size: 16px;
 
     .action-button {
-        background-color: #CCC;
+        background-color: #ccc;
         margin-top: 10px;
         padding: 1em;
-        text-decoration:underline;
+        text-decoration: underline;
     }
 }
 
@@ -111,8 +112,8 @@ $separator-color: #888;
 .overview-viewport {
     position: relative;
     height: 14px;
-/*    border-top: solid #666 1px;*/
-/*    border-bottom: solid #aaa 1px;*/
+    /*    border-top: solid #666 1px;*/
+    /*    border-bottom: solid #aaa 1px;*/
     background: white;
     margin: 0;
 }
@@ -153,7 +154,7 @@ $separator-color: #888;
     position: absolute;
     margin-top: 0px;
     height: 14px;
-    background: #C1C9E5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+    background: #c1c9e5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
     border: solid #666 1px;
 }
 
@@ -175,7 +176,7 @@ $separator-color: #888;
 .group-handle {
     cursor: move;
     float: left;
-    background: #eee url('../images/tracks/block.png');
+    background: #eee url("../images/tracks/block.png");
     width: 12px;
     height: 12px;
 }
@@ -205,7 +206,7 @@ $separator-color: #888;
 
     /* Make header opaque when focused on. */
     &:hover {
-        background-color: #DDDDDD;
+        background-color: #dddddd;
     }
 
     // Truncate long track names.
@@ -227,7 +228,7 @@ $separator-color: #888;
 }
 
 .tiles {
-    background: url('../images/tracks/diag_bg.gif');
+    background: url("../images/tracks/diag_bg.gif");
     position: relative;
     overflow: hidden;
 }
@@ -262,15 +263,15 @@ $separator-color: #888;
     border-bottom: 1px solid $separator-color;
 
     &.error {
-        background: #ECB4AF;
+        background: #ecb4af;
     }
 
     &.nodata {
-        background: #EEEEEE;
+        background: #eeeeee;
     }
 
     &.pending {
-        background: #FFFFCC;
+        background: #ffffcc;
     }
 }
 
@@ -313,10 +314,9 @@ $separator-color: #888;
     }
 
     .track-content {
-       border: none;
-       background: white;
+        border: none;
+        background: white;
     }
-
 }
 
 .reference-track {
@@ -362,7 +362,8 @@ input {
     }
 }
 
-.dynamic-tool, .filters {
+.dynamic-tool,
+.filters {
     padding-top: ($track-header-height + 2);
     padding-bottom: 0.5em;
     margin-left: 0.25em;
@@ -404,7 +405,7 @@ input {
     float: left;
     width: 40%;
     position: relative;
-    padding-top:2px;
+    padding-top: 2px;
 }
 
 .tool-name {
@@ -434,7 +435,7 @@ input {
 }
 
 .track-icons {
-    float: left
+    float: left;
 }
 
 // Defines icons that change from black/white to normal on hover. Note that the images
@@ -442,10 +443,10 @@ input {
 // TODO: make images into spritemap.
 @mixin icon-hover-mixin($name) {
     &.#{$name} {
-        background: transparent url('../images/fugue/${name}-bw.png') no-repeat;
+        background: transparent url("../images/fugue/${name}-bw.png") no-repeat;
 
         &:hover {
-            background: transparent url('../images/fugue/${name}.png') no-repeat;
+            background: transparent url("../images/fugue/${name}.png") no-repeat;
         }
     }
 }
@@ -466,22 +467,24 @@ input {
     @include icon-hover-mixin(layer-transparent);
 }
 
-.remove-icon, .overview-close {
+.remove-icon,
+.overview-close {
     background: transparent url(../images/fugue/cross-small-bw.png) no-repeat;
 }
 
-.icon-button.remove-icon:hover, .overview-close:hover {
+.icon-button.remove-icon:hover,
+.overview-close:hover {
     background: transparent url(../images/fugue/cross-circle.png) no-repeat;
 }
 
 .child-track-icon {
-    background:url('../images/fugue/arrow-000-small-bw.png') no-repeat;
+    background: url("../images/fugue/arrow-000-small-bw.png") no-repeat;
     width: 30px;
     cursor: move;
 }
 
 .track-resize {
-    background: white url('../images/visualization/draggable_vertical.png') no-repeat top center;
+    background: white url("../images/visualization/draggable_vertical.png") no-repeat top center;
     position: absolute;
     right: 3px;
     bottom: -4px;
@@ -492,12 +495,12 @@ input {
 }
 
 .bookmark {
-    background:white;
-    border:solid #999 1px;
-    border-right:none;
-    margin:0.5em;
-    margin-right:0;
-    padding:0.5em;
+    background: white;
+    border: solid #999 1px;
+    border-right: none;
+    margin: 0.5em;
+    margin-right: 0;
+    padding: 0.5em;
 
     .position {
         font-weight: bold;
@@ -505,7 +508,7 @@ input {
 }
 
 .delete-icon-container {
-    float:right;
+    float: right;
 }
 
 /*

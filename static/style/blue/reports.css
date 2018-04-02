@@ -49,7 +49,8 @@
   font-size: 7px;
   text-anchor: end; }
 
-.axis path, .axis line {
+.axis path,
+.axis line {
   fill: none;
   stroke: #000;
   shape-rendering: preserveAspectRatio; }
@@ -61,14 +62,15 @@
 .chart .title {
   fill: black;
   font-size: 15px;
-  font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
+  font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
   font-weight: 800;
   line-height: 1.1; }
 
 .chart .ax_title {
   fill: black; }
 
-.hr_container, .dy_container {
+.hr_container,
+.dy_container {
   position: relative;
   z-index: 2;
   display: inline-block;
@@ -97,7 +99,11 @@
 .tool_tip text {
   fill: white; }
 
-#back_button, #next_button, #curr_button, .miss_pages, .page_button {
+#back_button,
+#next_button,
+#curr_button,
+.miss_pages,
+.page_button {
   position: relative;
   float: left;
   height: 24px;
@@ -162,7 +168,7 @@
   border-radius: 11px;
   background-color: #ebd9b2;
   text-align: center;
-  opacity: 0.0;
+  opacity: 0;
   z-index: 0; }
 
 .half_width {
@@ -186,7 +192,8 @@
   border-spacing: 5px;
   border-collapse: separate; }
 
-.lastAccessForm, .diskUsageForm {
+.lastAccessForm,
+.diskUsageForm {
   width: 70%;
   margin-left: auto;
   margin-right: auto;

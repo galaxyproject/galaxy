@@ -45,7 +45,7 @@
   margin-left: 0.3em; }
 
 .ac_over {
-  background-color: #0A246A;
+  background-color: #0a246a;
   color: white; }
 
 .ac_header {
@@ -85,9 +85,9 @@
   margin: 0.2em;
   border: solid #bbb 1px;
   padding: 0.1em 0.5em 0.1em 0.5em;
-  -moz-border-radius: .5em;
-  -webkit-border-radius: .5em;
-  border-radius: .5em;
+  -moz-border-radius: 0.5em;
+  -webkit-border-radius: 0.5em;
+  border-radius: 0.5em;
   background: #eee; }
 
 .tag-button img {

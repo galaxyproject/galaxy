@@ -1,14 +1,14 @@
-$icon-btn-size:     22px;
-$icon-btn-margin:   2px;
-$icon-btn-color:    $btn-default-color;
+$icon-btn-size: 22px;
+$icon-btn-margin: 2px;
+$icon-btn-color: $btn-default-color;
 
-$icon-btn-bg:       $btn-default-bg;
-$icon-btn-border:   $btn-default-border;
+$icon-btn-bg: $btn-default-bg;
+$icon-btn-border: $btn-default-border;
 
 .icon-btn {
-    display : inline-block;
-    height  : $icon-btn-size;
-    width   : $icon-btn-size;
+    display: inline-block;
+    height: $icon-btn-size;
+    width: $icon-btn-size;
     font-size: 125%;
 
     // center the icon
@@ -19,7 +19,7 @@ $icon-btn-border:   $btn-default-border;
     border-radius: 3px;
     border: 1px solid $icon-btn-border;
     background-color: $icon-btn-bg;
-    color           : $icon-btn-color;
+    color: $icon-btn-color;
 
     cursor: pointer;
 
@@ -33,8 +33,8 @@ $icon-btn-border:   $btn-default-border;
 
 .icon-btn.disabled {
     background-color: transparent;
-    color: #BBB;
-    border-color: #BBB;
+    color: #bbb;
+    border-color: #bbb;
 }
 
 .icon-btn-group {

@@ -16,16 +16,15 @@ $fa-font-path: "../images/fonts";
 $white: #fff;
 $black: #000;
 
-
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
     @extend .fa;
 }
 
 @import "select2.scss";
- /* fix for zero width select2 - remove when fixed there */
+/* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
-     min-width: 256px;
+    min-width: 256px;
 }
 
 // galaxy sub-components
@@ -42,11 +41,11 @@ $black: #000;
 
 // Mixins
 @mixin user-select($select) {
-  -webkit-touch-callout:#{$select};
-  @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
-  #{$pre + user-select}: #{$select};
-  }
-  #{user-select}: #{$select};
+    -webkit-touch-callout: #{$select};
+    @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
+        #{$pre + user-select}: #{$select};
+    }
+    #{user-select}: #{$select};
 }
 
 .unselectable {
@@ -54,7 +53,7 @@ $black: #000;
 }
 
 .parent-width {
-	//TODO: check out box-sizing w/ bs4
+    //TODO: check out box-sizing w/ bs4
     //@include box-sizing(border-box);
     width: 100%;
     *width: 90%;
@@ -73,7 +72,7 @@ $black: #000;
     @include clearfix();
 }
 
-body  {
+body {
     background: $base-bg;
     color: $base-text-color;
     margin: 10px;
@@ -111,10 +110,10 @@ $panel_footer_height: 25px;
 }
 
 #messagebox {
-    position:absolute;
+    position: absolute;
     top: $navbar-height + $layout_top_padding + 1;
-    left:0;
-    width:100%;
+    left: 0;
+    width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
     border-bottom: solid #999 1px;
@@ -123,10 +122,10 @@ $panel_footer_height: 25px;
 }
 
 #inactivebox {
-    position:absolute;
+    position: absolute;
     top: $navbar-height + $layout_top_padding + 1;
-    left:0;
-    width:100%;
+    left: 0;
+    width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
     border-bottom: solid #999 1px;
@@ -136,27 +135,35 @@ $panel_footer_height: 25px;
 
 // Panels
 
-#left, #left-border, #center, #right-border, #right {
+#left,
+#left-border,
+#center,
+#right-border,
+#right {
     position: absolute;
     top: $navbar-height + $layout_top_padding + 1;
     bottom: 0px;
     overflow: hidden;
     background: #fff;
 }
-#left, #center, #right, #left-border, #right-border {
+#left,
+#center,
+#right,
+#left-border,
+#right-border {
     // border-top: solid $border-default-color 1px;
 }
-#left  {
+#left {
     left: 0px;
     width: 250px;
     z-index: 200;
     border-right: solid $layout-border-color 1px;
 }
-#left-border  {
+#left-border {
     left: 250px;
 }
-#center  {
-    left:250 + $border-default-color_padding;
+#center {
+    left: 250 + $border-default-color_padding;
     right: 250 + $border-default-color_padding;
     overflow: hidden;
     z-index: 1;
@@ -179,7 +186,7 @@ $panel_footer_height: 25px;
         }
     }
 }
-#right-border  {
+#right-border {
     right: 250px;
 }
 #right {
@@ -190,15 +197,24 @@ $panel_footer_height: 25px;
 }
 
 // If the message box or inactivity box is visible
-body.has-message-box, body.has-inactivity-box {
-    #left, #left-border, #center, #right-border, #right {
+body.has-message-box,
+body.has-inactivity-box {
+    #left,
+    #left-border,
+    #center,
+    #right-border,
+    #right {
         top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
     }
 }
 
 // If both are visible
 body.has-message-box.has-inactivity-box {
-    #left, #left-border, #center, #right-border, #right {
+    #left,
+    #left-border,
+    #center,
+    #right-border,
+    #right {
         top: 2 * $panel-message-height + $navbar-height + $layout_top_padding + 1;
     }
     #inactivebox {
@@ -210,7 +226,7 @@ body.has-message-box.has-inactivity-box {
     @extend .unselectable;
     height: $panel_header_height;
     z-index: 1000;
-    text-shadow: rgba(255,255,255,.8) 0 1px 0;
+    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
     background: $navbar-default-bg;
     border-bottom: solid $layout-border-color 1px;
     margin: 0;
@@ -275,10 +291,10 @@ body.has-message-box.has-inactivity-box {
     font-size: 4/3em;
     @extend .fa-icon;
     &:before {
-        content:'\f053';
+        content: "\f053";
     }
     &.hidden:before {
-        content:'\f054';
+        content: "\f054";
     }
     z-index: 201;
     cursor: pointer;
@@ -301,11 +317,11 @@ body.has-message-box.has-inactivity-box {
         right: 0;
         border-right: none;
         border-left: solid $border-default-color 1px;
-        &.right:before{
-            content:'\f054';
+        &.right:before {
+            content: "\f054";
         }
         &.right.hidden:before {
-            content:'\f053';
+            content: "\f053";
         }
     }
 }
@@ -326,7 +342,8 @@ div.unified-panel-body-background {
     background: none repeat scroll 0 0 $panel-bg-color;
 }
 
-#left > div.unified-panel-body, #right > div.unified-panel-body {
+#left > div.unified-panel-body,
+#right > div.unified-panel-body {
     bottom: $panel_footer_height;
     overflow: auto;
 }
@@ -336,7 +353,8 @@ div.unified-panel-body-background {
     text-decoration: none;
     display: inline-block;
     cursor: pointer;
-    margin: -1px; padding: 1px;
+    margin: -1px;
+    padding: 1px;
     margin-top: -0.2em;
     // border: solid #999 1px;
     padding-right: 0.5em;
@@ -344,7 +362,7 @@ div.unified-panel-body-background {
     // Fade to maroon on hover
     &:hover {
         color: maroon;
-        @include transition(color .25s linear);
+        @include transition(color 0.25s linear);
     }
     // Bootstrap style span caret needs positioning
     .caret {
@@ -372,8 +390,10 @@ div.unified-panel-body-background {
 
 // Messages for message box, slightly different style
 
-.panel-error-message, .panel-warning-message, .panel-done-message, .panel-info-message
-{
+.panel-error-message,
+.panel-warning-message,
+.panel-done-message,
+.panel-info-message {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
@@ -384,101 +404,97 @@ div.unified-panel-body-background {
     background-position: 6px 50%;
 }
 
-.panel-warning-message
-{
+.panel-warning-message {
     background-image: url(warn_small.png);
     background-color: $state-warning-bg;
 }
 
-.panel-done-message
-{
+.panel-done-message {
     background-image: url(ok_small.png);
     background-color: $state-success-bg;
 }
 
-.panel-info-message
-{
+.panel-info-message {
     background-image: url(info_small.png);
     background-color: $state-info-bg;
 }
 
 // Masthead
 #masthead {
-//     position:absolute;
-//     top:0;
-//     left:0;
-//     width:100%;
-//     min-width:990px;
-     padding: 0;
-     margin-bottom: 0px;
-//     .nav {
-//         z-index: 15001;
-//     }
-//     .nav > li > a {
-//         cursor: pointer;
-//         text-decoration: none;
-//         &:hover {
-//             color: gold;
-//         }
-//     }
+    //     position:absolute;
+    //     top:0;
+    //     left:0;
+    //     width:100%;
+    //     min-width:990px;
+    padding: 0;
+    margin-bottom: 0px;
+    //     .nav {
+    //         z-index: 15001;
+    //     }
+    //     .nav > li > a {
+    //         cursor: pointer;
+    //         text-decoration: none;
+    //         &:hover {
+    //             color: gold;
+    //         }
+    //     }
     .navbar-brand {
-         position: absolute;
-         left: 0;
-         top: 0;
-         font-family: verdana;
-         font-weight: bold;
-         font-size: 20px;
-         line-height: 1;
-         color: white;
-         // Override margin and padding due to shorter navbar height
-         padding: 5px 20px 12px;
-         margin-left: -15px;
-//         z-index: 2000;
-         img {
-             display: inline;
-             width: 26px;
-             vertical-align: top;
-             margin-left: 0.35em;
-             border: none;
-         }
-         a {
-             color: white;
-             text-decoration: none;
-         }
-     }
-//     .navbar-header {
-//         position: relative;
-//         right: -50%;
-//         float: left;
-//         .navbar-tabs {
-//             display: block;
-//             position: relative;
-//             right: 50%;
-//         }
-//     }
-//     .navbar-tabs {
-//         .toggle {
-//             color           : gold;
-//         }
-//         .dropdown-icon {
-//             top             : 1px;
-//             font-size       : 1.8em;
-//         }
-//         .dropdown-note {
-//             font-weight     : bold;
-//             font-size       : 10px;
-//             position        : absolute;
-//             left            : 35px;
-//             top             : 20px;
-//             color           : gold;
-//         }
-//     }
-//     li.dropdown > a:hover .caret {
-//         border-top-color: gold;
-//         border-bottom-color: gold;
-//     }
+        position: absolute;
+        left: 0;
+        top: 0;
+        font-family: verdana;
+        font-weight: bold;
+        font-size: 20px;
+        line-height: 1;
+        color: white;
+        // Override margin and padding due to shorter navbar height
+        padding: 5px 20px 12px;
+        margin-left: -15px;
+        //         z-index: 2000;
+        img {
+            display: inline;
+            width: 26px;
+            vertical-align: top;
+            margin-left: 0.35em;
+            border: none;
+        }
+        a {
+            color: white;
+            text-decoration: none;
+        }
+    }
+    //     .navbar-header {
+    //         position: relative;
+    //         right: -50%;
+    //         float: left;
+    //         .navbar-tabs {
+    //             display: block;
+    //             position: relative;
+    //             right: 50%;
+    //         }
+    //     }
+    //     .navbar-tabs {
+    //         .toggle {
+    //             color           : gold;
+    //         }
+    //         .dropdown-icon {
+    //             top             : 1px;
+    //             font-size       : 1.8em;
+    //         }
+    //         .dropdown-note {
+    //             font-weight     : bold;
+    //             font-size       : 10px;
+    //             position        : absolute;
+    //             left            : 35px;
+    //             top             : 20px;
+    //             color           : gold;
+    //         }
+    //     }
+    //     li.dropdown > a:hover .caret {
+    //         border-top-color: gold;
+    //         border-bottom-color: gold;
+    //     }
 }
-
 
 .quota-meter-container {
     position: absolute;
@@ -528,44 +544,45 @@ div.unified-panel-body-background {
 // ==== Tool form styles ====
 
 div.metadataForm {
-    border:solid #aaaaaa 1px;
+    border: solid #aaaaaa 1px;
 }
 
 div.metadataFormTitle {
-    font-weight:bold;
-    padding:5px;
-    padding-left:10px;
-    padding-right:10px;
-    background:#cccccc;
-    background-repeat:repeat-x;
-    background-position:top;
-    border-bottom:solid #aaaaaa 1px;
+    font-weight: bold;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: #cccccc;
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid #aaaaaa 1px;
 }
 
 div.metadataFormBody {
-    background:#FFFFFF;
-    padding:5px 0;
+    background: #ffffff;
+    padding: 5px 0;
 }
 
 div.metadataFormBody div.metadataFormTitle {
-    background:transparent;
-    border:none;
-    font-weight:bold;
-    border-bottom:solid #dcb790 1px;
-    margin-bottom:5px;
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid #dcb790 1px;
+    margin-bottom: 5px;
 }
 
 div.metadataFormDisabled div.metadataFormTitle {
-    background:#eee;
-    border-color:#999;
+    background: #eee;
+    border-color: #999;
 }
 
 div.metadataFormDisabled {
-    border-color:#999;
+    border-color: #999;
 }
 
 div.metadataHelpBody {
-    width:100%;overflow:auto;
+    width: 100%;
+    overflow: auto;
 }
 
 div.titleRow {
@@ -620,25 +637,27 @@ div.toolHelpBody {
     }
 }
 
-div.form, div.toolForm {
+div.form,
+div.toolForm {
     border: solid $form-border 1px;
     @include border-radius($panel-border-radius);
 }
 
-div.form-title, div.toolFormTitle {
+div.form-title,
+div.toolFormTitle {
     // font-size: $font-size-base * 1.25;
     // line-height: $line-height-base * 1.5;
     padding: 5px 10px;
     background: $form-heading-bg;
     border-bottom: solid $form-border 1px;
-    word-wrap:break-word;
+    word-wrap: break-word;
 }
 
 div.form-body {
     padding: 5px 0;
 }
 
-div.form-row  {
+div.form-row {
     padding: 5px 10px;
 }
 
@@ -659,7 +678,7 @@ div.form-row-error {
 div.form-row label {
     font-weight: bold;
     display: block;
-    margin-bottom: .2em;
+    margin-bottom: 0.2em;
 }
 
 div.form-row label.inline {
@@ -684,7 +703,8 @@ div.form-row-error-message {
     padding: 3px 0;
 }
 
-.form-row .help, .toolParamHelp {
+.form-row .help,
+.toolParamHelp {
     color: #666;
     a {
         color: #666;
@@ -711,18 +731,26 @@ select {
     line-height: $line-height-base;
 }
 
-select, input, textarea {
+select,
+input,
+textarea {
     font: inherit;
 }
 
 .form-row {
-    select, textarea, input[type="text"], input[type="file"], input[type="password"] {
+    select,
+    textarea,
+    input[type="text"],
+    input[type="file"],
+    input[type="password"] {
         // -webkit-box-sizing: border-box;
         max-width: 90%;
     }
 }
 
-textarea, input[type="text"], input[type="password"] {
+textarea,
+input[type="text"],
+input[type="password"] {
     font-size: $font-size-base;
     line-height: $line-height-base;
     border: 1px solid $input-border;
@@ -730,7 +758,8 @@ textarea, input[type="text"], input[type="password"] {
 }
 
 // Always style buttons and submits as bootstrap buttons
-input[type="submit"], button {
+input[type="submit"],
+button {
     @extend .btn;
     @extend .btn-secondary;
     // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
@@ -740,24 +769,24 @@ input[type="submit"], button {
 }
 
 .search-query {
-  display: inline-block;
-  padding: 4px;
-  font-size: $font-size-base;
-  line-height: $line-height-base;
-  color: $gray;
-  border: 1px solid $input-border;
-  padding-left: 14px !important;
-  padding-right: 14px;
-  margin-bottom: 0; // remove the default margin on all inputs
-  @include border-radius(14px);
-  max-width: auto;
+    display: inline-block;
+    padding: 4px;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+    color: $gray;
+    border: 1px solid $input-border;
+    padding-left: 14px !important;
+    padding-right: 14px;
+    margin-bottom: 0; // remove the default margin on all inputs
+    @include border-radius(14px);
+    max-width: auto;
 }
 .search-query:focus {
-  border-color: darken(rgba(82,168,236,.8),15%);
-  $shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(82,168,236,.6);
-  @include box-shadow($shadow);
-  outline: 0;
-  outline: thin dotted \9; /* IE6-8 */
+    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
+    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+    @include box-shadow($shadow);
+    outline: 0;
+    outline: thin dotted \9; /* IE6-8 */
 }
 
 .search-spinner {
@@ -785,7 +814,13 @@ input[type="submit"], button {
 
 // Messages
 
-.errormessagelarge, .warningmessagelarge, .donemessagelarge, .infomessagelarge, .ui-form-help .error, .ui-form-help .warning, .ui-form-help .note {
+.errormessagelarge,
+.warningmessagelarge,
+.donemessagelarge,
+.infomessagelarge,
+.ui-form-help .error,
+.ui-form-help .warning,
+.ui-form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
@@ -821,12 +856,22 @@ input[type="submit"], button {
 
 .screencastBox {
     padding-left: 10px;
-    border-color: #AAAA66;
-    background-color: #FFFFCC;
+    border-color: #aaaa66;
+    background-color: #ffffcc;
     background-image: none;
 }
 
-.errormessage, .warningmessage, .donemessage, .infomessage, .errormessagesmall, .warningmessagesmall, .donemessagesmall, .infomessagesmall, .ui-form-help .error, .ui-form-help .warning, .ui-form-help .note {
+.errormessage,
+.warningmessage,
+.donemessage,
+.infomessage,
+.errormessagesmall,
+.warningmessagesmall,
+.donemessagesmall,
+.infomessagesmall,
+.ui-form-help .error,
+.ui-form-help .warning,
+.ui-form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
@@ -838,26 +883,38 @@ input[type="submit"], button {
     background-position: 5px 5px;
 }
 
-.errormessage, .errormessagesmall, .ui-form-help .error {
+.errormessage,
+.errormessagesmall,
+.ui-form-help .error {
     @extend .alert-danger;
 }
 
-.warningmessage, .warningmessagesmall, .ui-form-help .warning {
+.warningmessage,
+.warningmessagesmall,
+.ui-form-help .warning {
     @extend .alert-warning;
     background-image: url(warn_small.png);
 }
 
-.donemessage, .donemessagesmall {
+.donemessage,
+.donemessagesmall {
     @extend .alert-success;
     background-image: url(ok_small.png);
 }
 
-.infomessage, .infomessagesmall, .ui-form-help .note {
+.infomessage,
+.infomessagesmall,
+.ui-form-help .note {
     @extend .alert-info;
     background-image: url(info_small.png);
 }
 
-.errormark, .warningmark, .donemark, .infomark, .ok_bgr, .err_bgr {
+.errormark,
+.warningmark,
+.donemark,
+.infomark,
+.ok_bgr,
+.err_bgr {
     padding-left: 20px;
     min-height: 15px;
     background: url(error_small.png) no-repeat;
@@ -871,7 +928,8 @@ input[type="submit"], button {
     background-image: url(ok_small.png);
 }
 
-.infomark, .ok_bgr {
+.infomark,
+.ok_bgr {
     background-image: url(info_small.png);
 }
 
@@ -917,7 +975,8 @@ table.colored {
     border-bottom: solid $table-border-color 1px;
 }
 
-table.colored td, table.colored th {
+table.colored td,
+table.colored th {
     text-align: left;
     padding: 5px;
     line-height: $line-height-base;
@@ -943,8 +1002,8 @@ table.colored tr.odd_row {
 div.debug {
     margin: 10px;
     padding: 5px;
-    background: #FFFF99;
-    border: solid #FFFF33 1px;
+    background: #ffff99;
+    border: solid #ffff33 1px;
     color: black;
 }
 
@@ -967,8 +1026,8 @@ div.debug {
 }
 .grid tbody td {
     line-height: $line-height-base;
-    border-top: solid #DDDDDD 1px;
-    border-bottom: solid #DDDDDD 1px;
+    border-top: solid #dddddd 1px;
+    border-bottom: solid #dddddd 1px;
     padding: 5px;
 }
 .grid tbody td:empty {
@@ -988,13 +1047,13 @@ div.debug {
     white-space: nowrap;
 }
 .grid tfoot td {
-    background-color: #F8F8F8;
-    border-top: solid #DDDDDD 1px;
-    border-bottom: solid #DDDDDD 1px;
+    background-color: #f8f8f8;
+    border-top: solid #dddddd 1px;
+    border-bottom: solid #dddddd 1px;
     padding: 5px;
 }
 .grid .current {
-    background-color: #EEEEFF;
+    background-color: #eeeeff;
 }
 
 // Pulled out of grid base
@@ -1007,18 +1066,20 @@ div.debug {
     display: inline-block;
 }
 .text-filter-val {
-    border: solid 1px #AAAAAA;
+    border: solid 1px #aaaaaa;
     padding: 1px 2px 1px 3px;
     margin-right: 5px;
-    -moz-border-radius: .5em;
-    -webkit-border-radius: .5em;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
     font-style: italic;
 }
-.page-link a, .inactive-link {
+.page-link a,
+.inactive-link {
     padding: 0px 7px 0px 7px;
     color: #555;
 }
-.inactive-link, .current-filter {
+.inactive-link,
+.current-filter {
     font-weight: bold;
     color: #000;
 }
@@ -1047,7 +1108,6 @@ div.debug {
     height: 18px;
     vertical-align: middle;
     margin-left: 2px;
-
 }
 .search-box-input {
     border: 0;
@@ -1064,36 +1124,35 @@ div.debug {
     // border: 1px solid #aaa;
 }
 .gray-background {
-    background-color: #DDDDDD;
+    background-color: #dddddd;
 }
 .loading-elt-overlay {
-    background-color : white;
-    opacity : 0.5;
-    width : 100%;
-    height : 100%;
-    z-index : 14000;
-    position : fixed;
+    background-color: white;
+    opacity: 0.5;
+    width: 100%;
+    height: 100%;
+    z-index: 14000;
+    position: fixed;
     display: none;
 }
-
 
 div.odd_row {
     background: $table-bg-accent;
 }
 
 #footer {
-  display: none;
+    display: none;
 }
 
 // Tool panel stuff
 
 // Extra label colors
 .label-beta {
-  @extend .badge-warning;
+    @extend .badge-warning;
 }
 
 .label-new {
-  @extend .badge-info;
+    @extend .badge-info;
 }
 
 .sm-label-pad {
@@ -1146,7 +1205,6 @@ ul.manage-table-actions li {
         margin-left: 1em;
         position: absolute;
     }
-
 }
 
 // State colors
@@ -1199,15 +1257,15 @@ ul.manage-table-actions li {
 }
 
 .state-fg-new {
-    color: #FFB030;
+    color: #ffb030;
 }
 
 .state-fg-upload {
-    color: #D090D0;
+    color: #d090d0;
 }
 
 .state-fg-waiting {
-    color: #E8C060;
+    color: #e8c060;
 }
 
 .state-fg-queued {
@@ -1215,19 +1273,19 @@ ul.manage-table-actions li {
 }
 
 .state-fg-running {
-    color: #AAAA66;
+    color: #aaaa66;
 }
 
 .state-fg-ok {
-    color: #66AA66;
+    color: #66aa66;
 }
 
 .state-fg-error {
-    color: #AA6666;
+    color: #aa6666;
 }
 
 .state-fg-deleted {
-    color: #3399FF;
+    color: #3399ff;
 }
 
 // Button styles
@@ -1240,8 +1298,8 @@ a.btn {
     text-decoration: none;
 }
 .action-button {
-	@extend .btn;
-	@extend .btn-secondary;
+    @extend .btn;
+    @extend .btn-secondary;
 }
 a.action-button {
     color: $btn-default-color;
@@ -1250,7 +1308,6 @@ a.action-button {
 .action-button > img {
     vertical-align: middle;
 }
-
 
 //.action-button > * {
 //    vertical-align: middle;
@@ -1273,8 +1330,12 @@ a.action-button {
     @extend .btn;
     @extend .btn-secondary;
 
-    &:hover { @extend .btn.hover !optional; }
-    &:active { @extend .btn.active; }
+    &:hover {
+        @extend .btn.hover !optional;
+    }
+    &:active {
+        @extend .btn.active;
+    }
 
     display: inline-block;
     cursor: pointer;
@@ -1293,14 +1354,15 @@ a.action-button {
         text-decoration: none;
     }
 
-    .menubutton-label, > label {
+    .menubutton-label,
+    > label {
         position: relative;
         display: inline-block;
         border-right: none;
         text-decoration: none;
         text-align: left;
         // The following properties truncate the text and force the button to have one line
-        max-height: 2*$line-height-base;
+        max-height: 2 * $line-height-base;
         line-height: $line-height-base;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1311,7 +1373,8 @@ a.action-button {
         padding-right: 6px;
     }
 
-    &.popup, &.popup.split {
+    &.popup,
+    &.popup.split {
         padding-right: 18px;
         &:after {
             top: 45%;
@@ -1357,7 +1420,6 @@ a.action-button {
 
 // Galaxy popup menus
 div.popmenu-wrapper {
-
     position: absolute;
     top: 100%;
     z-index: 20000;
@@ -1378,7 +1440,7 @@ ul.dropdown-menu {
     }
     li.head > a {
         // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255,255,255,.5);
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
@@ -1409,43 +1471,42 @@ div.permissionContainer {
 // Styles for areas of text content
 
 .text-content {
-
     hr {
-            display:block;
-            background:black;
-            color:black;
-            width:100%;
-            height:1px;
-            border:none;
-            background:#aaa;
-            color:#aaa;
+        display: block;
+        background: black;
+        color: black;
+        width: 100%;
+        height: 1px;
+        border: none;
+        background: #aaa;
+        color: #aaa;
     }
 
-    table
-    {
-            border-collapse:collapse;
-            border-top:1px solid #ccc;
-            border-left:1px solid #ccc;
+    table {
+        border-collapse: collapse;
+        border-top: 1px solid #ccc;
+        border-left: 1px solid #ccc;
     }
 
     blockquote {
-            color:#666;
+        color: #666;
     }
 
     fieldset {
-            border-color:#ccc;
-            border:1px solid #ccc;
+        border-color: #ccc;
+        border: 1px solid #ccc;
     }
 
-    th,td {
-            border-bottom:1px solid #ddd;
-            border-right:1px solid #ccc;
+    th,
+    td {
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ccc;
     }
 
-    th,td {
-            padding:.8em;
+    th,
+    td {
+        padding: 0.8em;
     }
-
 }
 
 .preserve-text-breaks {
@@ -1454,7 +1515,7 @@ div.permissionContainer {
 
 // Icon buttons.
 
-.icon-button  {
+.icon-button {
     width: 16px;
     height: 16px;
     display: block;
@@ -1462,7 +1523,7 @@ div.permissionContainer {
     margin-left: 2px;
     // Allow alt text for screen readers
     text-indent: 20px;
-    background-repeat:no-repeat;
+    background-repeat: no-repeat;
     background-position: 0px 0px;
     padding: 0;
 }
@@ -1478,12 +1539,12 @@ div.permissionContainer {
     // Fade to maroon on hover
     &:hover {
         color: maroon;
-        @include transition(color .25s linear);
+        @include transition(color 0.25s linear);
     }
 }
 
 .editable-text {
-    cursor:pointer;
+    cursor: pointer;
 }
 
 .editable-text:hover {
@@ -1491,41 +1552,40 @@ div.permissionContainer {
     border: dotted #999999 1px;
 }
 
-.icon-button.multiinput{
-    background:url(../images/documents-stack.png) no-repeat;
-    cursor:pointer;
-    float:none;
-    display:inline-block;
-    margin-left:10px;
+.icon-button.multiinput {
+    background: url(../images/documents-stack.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
 }
 
-.icon-button.multiinput.disabled{
-    background:url(../images/documents-stack-faded.png) no-repeat;
-    cursor:pointer;
+.icon-button.multiinput.disabled {
+    background: url(../images/documents-stack-faded.png) no-repeat;
+    cursor: pointer;
 }
 
-
-.icon-button.link{
-    background:url(../images/silk/link.png) no-repeat;
-    cursor:pointer;
-    float:none;
-    display:inline-block;
-    margin-left:10px;
+.icon-button.link {
+    background: url(../images/silk/link.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
 }
 
-.icon-button.link-broken{
-    background:url(../images/silk/link_break.png) no-repeat;
-    cursor:pointer;
-    float:none;
-    display:inline-block;
-    margin-left:10px;
+.icon-button.link-broken {
+    background: url(../images/silk/link_break.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
 }
 
-.workflow-invocation-complete{
-    border:solid 1px #6A6;
-    border-left-width:5px;
-    margin:10px 0;
-    padding-left:5px;
+.workflow-invocation-complete {
+    border: solid 1px #6a6;
+    border-left-width: 5px;
+    margin: 10px 0;
+    padding-left: 5px;
 }
 
 // ============================================================================ History
@@ -1544,19 +1604,16 @@ div.permissionContainer {
 @import "ui/pagination.scss";
 @import "ui/error-modal.scss";
 
-
 // ==== Tool menu styles
 
-.toolMenuContainer
-{
+.toolMenuContainer {
     color: $base-text-color;
     background: $side-panel-bg;
     min-height: 100%;
     padding: 35px 10px;
 }
 
-div.toolSectionPad
-{
+div.toolSectionPad {
     margin: 0;
     padding: 0;
     height: 5px;
@@ -1567,63 +1624,57 @@ div.toolSectionWrapper {
     margin-bottom: 5px;
 }
 
-div.toolSectionDetailsInner
-{
-  margin-left: 5px;
-  margin-right: 5px;
+div.toolSectionDetailsInner {
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
-div.toolSectionTitle
-{
-  font-weight: bold;
+div.toolSectionTitle {
+    font-weight: bold;
 }
 
-div.toolPanelLabel
-{
-  padding-top: 10px;
-  padding-bottom: 5px;
-  font-weight: bold;
-  color: gray;
-  text-transform: uppercase;
+div.toolPanelLabel {
+    padding-top: 10px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    color: gray;
+    text-transform: uppercase;
 }
 
-div.toolTitle
-{
-  padding-top: 5px;
-  padding-bottom: 5px;
-  margin-left: 16px;
-  margin-right: 10px;
-  display: list-item;
-  list-style: square outside;
-  .labels {
-    float: right;
-    margin-left: 2px;
-  }
+div.toolTitle {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+    .labels {
+        float: right;
+        margin-left: 2px;
+    }
 }
 
 div a.tool-link {
-	text-decoration: none;
-	display: block;
+    text-decoration: none;
+    display: block;
 
-	span.tool-old-link {
-		text-decoration: underline;
-	}
+    span.tool-old-link {
+        text-decoration: underline;
+    }
 }
 
-div.toolSectionBody div.toolPanelLabel
-{
-  padding-top: 5px;
-  padding-bottom: 5px;
-  margin-left: 16px;
-  margin-right: 10px;
-  display: list-item;
-  list-style: none outside;
+div.toolSectionBody div.toolPanelLabel {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: none outside;
 }
 
-div.toolTitleNoSection
-{
-  padding-bottom: 5px;
-  font-weight: bold;
+div.toolTitleNoSection {
+    padding-bottom: 5px;
+    font-weight: bold;
 }
 
 #tool-search {
@@ -1636,43 +1687,42 @@ div.toolTitleNoSection
 
 // Dataset Display Styles
 
-#loading_indicator{
-    position:fixed;
-    right:10px;
-    top:10px;
-    height:32px;
-    width:32px;
-    display:none;
-    background:url(largespinner.gif);
+#loading_indicator {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    height: 32px;
+    width: 32px;
+    display: none;
+    background: url(largespinner.gif);
 }
 
-#content_table td{
-    text-align:right;
-    white-space:nowrap;
-    padding:2px 10px;
+#content_table td {
+    text-align: right;
+    white-space: nowrap;
+    padding: 2px 10px;
 }
 
-#content_table th{
-    white-space:nowrap;
-    padding:2px 10px;
+#content_table th {
+    white-space: nowrap;
+    padding: 2px 10px;
 }
 
-#content_table td.stringalign{
-    text-align:left;
+#content_table td.stringalign {
+    text-align: left;
 }
 
-#content_table .dark_row{
-    background-color: #DDD;
+#content_table .dark_row {
+    background-color: #ddd;
 }
 
-#content_table th{
-    background-color: #AAA;
+#content_table th {
+    background-color: #aaa;
 }
 
 // ==== Integrated tool form styles
 
-.toolMenuAndView .toolForm
-{
+.toolMenuAndView .toolForm {
     float: left;
     background-color: white;
     margin: 10px;
@@ -1699,14 +1749,14 @@ div.toolTitleNoSection
     }
 }
 
-.icon-button.general-question{
+.icon-button.general-question {
     background: url(question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
-.icon-button.tag-question{
+.icon-button.tag-question {
     background: url(question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
@@ -1839,17 +1889,17 @@ div.toolTitleNoSection
 }
 
 // password complexity monitor
-#change_password, #registrationForm {
+#change_password,
+#registrationForm {
     .progress {
-        width:200px;
+        width: 200px;
         margin-left: 20px;
     }
     .progress-bar {
-        color:black;
-        text-align:left;
+        color: black;
+        text-align: left;
     }
 }
-
 
 // workflow
 .wf {
@@ -1867,7 +1917,6 @@ div.toolTitleNoSection
     font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
 }
 
-
 .wf-nodata {
     padding-left: 1%;
 }
@@ -1881,26 +1930,26 @@ div.toolTitleNoSection
 }
 
 .hidden_description_layer {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(200, 200, 200, 0.6);
-  visibility: hidden;
-  opacity: 0;
-  font-size: 2.0em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(200, 200, 200, 0.6);
+    visibility: hidden;
+    opacity: 0;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-  /* transition effect. not necessary */
-  transition: opacity .2s, visibility .2s;
+    /* transition effect. not necessary */
+    transition: opacity 0.2s, visibility 0.2s;
 }
 
 .hidden_description_layer.dragover {
-  visibility: visible;
-  opacity: 1;
+    visibility: visible;
+    opacity: 1;
 }
 
 /* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
@@ -1918,5 +1967,5 @@ div.toolTitleNoSection
 
 /* For Vue */
 [v-cloak] {
-    display:none;
+    display: none;
 }

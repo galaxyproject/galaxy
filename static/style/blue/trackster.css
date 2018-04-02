@@ -37,7 +37,8 @@
   .nav-controls input {
     margin: 0 5px; }
 
-#zoom-in, #zoom-out {
+#zoom-in,
+#zoom-out {
   display: inline-block;
   height: 16px;
   width: 16px;
@@ -71,7 +72,7 @@
   text-align: center;
   font-size: 16px; }
   .intro .action-button {
-    background-color: #CCC;
+    background-color: #ccc;
     margin-top: 10px;
     padding: 1em;
     text-decoration: underline; }
@@ -122,7 +123,7 @@
   position: absolute;
   margin-top: 0px;
   height: 14px;
-  background: #C1C9E5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+  background: #c1c9e5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
   border: solid #666 1px; }
 
 .viewport-canvas {
@@ -164,7 +165,7 @@
   margin: 2px;
   /* Make header opaque when focused on. */ }
   .track-header:hover {
-    background-color: #DDDDDD; }
+    background-color: #dddddd; }
   .track-header .track-name {
     max-width: 200px;
     white-space: nowrap;
@@ -204,11 +205,11 @@
   position: relative;
   border-bottom: 1px solid #888; }
   .track.error {
-    background: #ECB4AF; }
+    background: #ecb4af; }
   .track.nodata {
-    background: #EEEEEE; }
+    background: #eeeeee; }
   .track.pending {
-    background: #FFFFCC; }
+    background: #ffffcc; }
 
 .track-content {
   text-align: center;
@@ -271,7 +272,8 @@ input {
   input.color-input {
     float: left; }
 
-.dynamic-tool, .filters {
+.dynamic-tool,
+.filters {
   padding-top: 18px;
   padding-bottom: 0.5em;
   margin-left: 0.25em; }
@@ -396,10 +398,12 @@ input {
   .icon-button.layer-transparent:hover {
     background: transparent url("../images/fugue/${name}.png") no-repeat; }
 
-.remove-icon, .overview-close {
+.remove-icon,
+.overview-close {
   background: transparent url(../images/fugue/cross-small-bw.png) no-repeat; }
 
-.icon-button.remove-icon:hover, .overview-close:hover {
+.icon-button.remove-icon:hover,
+.overview-close:hover {
   background: transparent url(../images/fugue/cross-circle.png) no-repeat; }
 
 .child-track-icon {

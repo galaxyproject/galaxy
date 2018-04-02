@@ -15,7 +15,7 @@
         .params {
             padding: 0px 8px 0px 8px;
             //display: table;
-            
+
             .param,
             .input {
                 //display: table-row;
@@ -38,7 +38,7 @@
         }
 
         .list-panel {
-            padding : 0px;
+            padding: 0px;
             .list-items {
                 border: 0px;
                 border-radius: 0px;
@@ -47,7 +47,6 @@
                     border-radius: 0px;
                     border-top: 1px solid $border-default-color;
                     &:last-child {
-
                     }
                 }
             }

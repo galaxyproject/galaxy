@@ -26,7 +26,8 @@
   .embedded-item table.annotated-item {
     width: 100%;
     border-collapse: collapse; }
-  .embedded-item table.annotated-item td, .embedded-item th {
+  .embedded-item table.annotated-item td,
+  .embedded-item th {
     padding: 0; }
   .embedded-item table.annotated-item .annotation {
     padding-left: 2em;
@@ -39,20 +40,20 @@
   padding: 5px 10px 10px 10px; }
 
 .embedded-item.history {
-  background-color: #C1C9E5; }
+  background-color: #c1c9e5; }
 
 .embedded-item.dataset {
-  background-color: #CFC; }
+  background-color: #cfc; }
   .embedded-item.dataset .item-content {
     padding: 5px; }
 
 .embedded-item.workflow {
-  background-color: #FBDDB3; }
+  background-color: #fbddb3; }
   .embedded-item.workflow .item-content {
     padding: 5px; }
 
 .embedded-item.visualization {
-  background-color: #BBBBBB; }
+  background-color: #bbbbbb; }
   .embedded-item.visualization .item-content {
     overflow: hidden;
     height: 100%; }
