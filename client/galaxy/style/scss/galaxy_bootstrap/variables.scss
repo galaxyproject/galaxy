@@ -37,18 +37,7 @@ $sat:  saturation($base-color);
 $luma: luma($base-color);
 $tone: desaturate($base-color,100%);
 
-// Standard boostrap variables begin here
-
-//
-// Variables
-// --------------------------------------------------
-
-
-// Global values
-// --------------------------------------------------
-
 // Grays
-// -------------------------
 
 // These are from Boostrap 2/3 but are used in Galaxy styles
 $gray-darker:            lighten(black, 13.5%); // #222
@@ -106,7 +95,7 @@ $brand-danger: saturate(lighten($galaxy-bs3-danger, 10%), 30%);
 $theme-colors: ();
 $theme-colors: map-merge((
     "primary":    $brand-primary,
-    "secondary":  $gray-600,
+    "secondary":  $gray-300,
     "success":    $brand-success,
     "info":       $brand-info,
     "warning":    $brand-warning,

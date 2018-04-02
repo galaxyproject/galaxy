@@ -41,21 +41,23 @@ Used for providing feedback inline.
 ```
 
 ```
-<a href="#" class=action-button>An anchor with .action-button</a>
+<a href="#" class="action-button">An anchor with .action-button</a>
 ```
 
 All the crazy permutations of menu button...
 
 ```
-<a href="#" class=action-button>An anchor with .menu-button</a>
+<a href="#" class="menubutton">An anchor with .menu-button</a>
 ```
 
 ```
-<a href="#" class=action-button>An anchor with .menu-button.popup</a>
+<a href="#" class="menubutton popup">An anchor with .menu-button.popup</a>
 ```
 
 ```
-<a href="#" class=action-button>An anchor with .menu-button.popup.split</a>
+<a href="#" class="menubutton popup split">
+  <a class="menubutton-label">An anchor with .menu-button.popup.split</a>
+</a>
 ```
 
 ## Tables
