@@ -17,8 +17,8 @@ from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
 from galaxy.containers import build_container_interfaces
+from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
-from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
@@ -491,7 +491,7 @@ class InteractiveEnvironmentRequest(object):
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
+        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
         :param volumes: dictionary of docker volume mounts
 
         """

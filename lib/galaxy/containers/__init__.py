@@ -47,14 +47,13 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
 
 
 class ContainerVolume(with_metaclass(ABCMeta, object)):
-    default_mode = "rw"
     valid_modes = frozenset(["ro", "rw"])
 
     def __init__(self, path, host_path=None, mode=None):
         self.path = path
         self.host_path = host_path
-        self.mode = mode or self.default_mode
-        if not self.mode_is_valid:
+        self.mode = mode
+        if mode and not self.mode_is_valid:
             raise ValueError("Invalid container volume mode: %s" % mode)
 
     @abstractmethod

@@ -69,15 +69,23 @@ class DockerAttributeContainer(object):
 class DockerVolume(ContainerVolume):
     @classmethod
     def from_str(cls, as_str):
+        """Construct an instance from a string as would be passed to `docker run --volume`.
+
+        A string in the format ``<host_path>:<mode>`` is supported for legacy purposes even though it is not valid
+        Docker volume syntax.
+        """
         if not as_str:
             raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
         kwds = dict(path=parts[0])
         if len(parts) == 1:
-            pass  # auto-generated volume
+            # auto-generated volume
+            kwds["host_path"] = kwds.pop("path")
         elif len(parts) == 2:
-            if DockerVolume.valid_mode(parts[1]):
+            # /host_path:mode is not (or is no longer?) valid Docker volume syntax
+            if parts[1] in DockerVolume.valid_modes:
                 kwds["mode"] = parts[1]
+                kwds["host_path"] = kwds["path"]
             else:
                 kwds["host_path"] = parts[1]
         elif len(parts) == 3:
