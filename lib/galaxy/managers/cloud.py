@@ -25,6 +25,8 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+SUPPORTED_PROVIDERS = "{aws, azure}"
+
 
 class CloudManager(sharable.SharableModelManager):
 
@@ -32,7 +34,6 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     def _configure_provider(self, provider, credentials):
-        supported_providers = "{aws, azure}"
         missing_credentials = []
         if provider == 'aws':
             access = credentials.get('access_key', None)
@@ -72,7 +73,7 @@ class CloudManager(sharable.SharableModelManager):
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         else:
             return "400", "Unrecognized provider '{}'; the following are the supported providers: {}.".format(
-                provider, supported_providers), None
+                provider, SUPPORTED_PROVIDERS), None
 
         try:
             if connection.authenticate():
