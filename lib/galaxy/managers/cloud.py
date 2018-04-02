@@ -82,6 +82,7 @@ class CloudManager(sharable.SharableModelManager):
                 raise ValueError('Cannot upload a dataset.')
             else:
                 hids.update({staging_file: output['out_data'][0][1].hid})
+        os.remove(staging_file_name)
         return "200", 'The dataset is downloaded successfully.'
 
     def upload(self, dataset, provider, container, obj):
