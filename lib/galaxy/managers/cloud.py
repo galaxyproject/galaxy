@@ -13,6 +13,7 @@ from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.cloud.interfaces.exceptions import *
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
@@ -30,13 +31,28 @@ class CloudManager(sharable.SharableModelManager):
     def __init__(self, app, *args, **kwargs):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
+    def _configure_provider(self, provider, credentials):
+        if provider == 'aws':
+            aws_config = {'aws_access_key': credentials.get('access_key'),
+                          'aws_secret_key': credentials.get('secret_key')}
+            connection = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+        else:
+            return "400", "Unrecognized provider '{}'.".format(provider), None
+
+        try:
+            if connection.authenticate():
+                return "200", "", connection
+        except ProviderConnectionException as e:
+            return "400", "Could not authenticate to the '{}' provider. {}".format(provider, e), None
+
+
     def download(self, trans, history_id, provider, container, obj, credentials):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        aws_config = {'aws_access_key': credentials.get('access_key'),
-                      'aws_secret_key': credentials.get('secret_key')}
-        connection = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+        status, msg, connection = self._configure_provider(provider, credentials)
+        if status != "200":
+            return status, msg
         try:
             container_obj = connection.object_store.get(container)
             if container_obj is None:
