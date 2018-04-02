@@ -256,7 +256,7 @@ class DockerService(Container):
 
     @property
     def state(self):
-	"""If one of this service's tasks desired state is running, return that task state, otherwise, return the state
+        """If one of this service's tasks desired state is running, return that task state, otherwise, return the state
         of a non-running task.
 
         This is imperfect because it doesn't attempt to provide useful information for replicas > 1 tasks, but it suits
@@ -711,7 +711,7 @@ class DockerTask(object):
     def current_state_time(self):
         # Docker API returns a stamp w/ higher second precision than Python takes
         stamp = self.inspect['Status']['Timestamp']
-        return pretty_print_time_interval(time=stamp[:stamp.index('.')+7], precise=True, utc=stamp[-1] == 'Z')
+        return pretty_print_time_interval(time=stamp[:stamp.index('.') + 7], precise=True, utc=stamp[-1] == 'Z')
 
     @property
     def desired_state(self):

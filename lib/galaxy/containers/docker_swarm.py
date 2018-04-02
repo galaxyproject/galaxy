@@ -8,7 +8,12 @@ import logging
 try:
     import docker
 except ImportError:
-    docker = None
+    from galaxy.util.bunch import Bunch
+    docker = Bunch(types=Bunch(
+        ContainerSpec=None,
+        RestartPolicy=None,
+        Placement=None,
+    ))
 
 from galaxy.containers import (
     docker_swarm_manager,
@@ -404,7 +409,6 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
             return {'name': name}
         return None
 
-    #
     #
     # docker subcommands
     #
