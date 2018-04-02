@@ -10538,7 +10538,7 @@ vue-styleguidist@^1.6.1:
     webpack-dev-server "^2.9.7"
     webpack-merge "^4.1.1"
 
-vue-template-compiler@^2.4.2, vue-template-compiler@^2.5.16:
+vue-template-compiler@2.5.16, vue-template-compiler@^2.4.2:
   version "2.5.16"
   resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.5.16.tgz#93b48570e56c720cdf3f051cc15287c26fbd04cb"
   dependencies:
@@ -10570,13 +10570,9 @@ vue-webpack-loaders@^1.0.5:
     vue-style-loader "^3.0.1"
     vue-template-compiler "^2.4.2"
 
-vue@^2.4.2:
+vue@2.5.16, vue@^2.4.2:
   version "2.5.16"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.16.tgz#07edb75e8412aaeed871ebafa99f4672584a0085"
-
-vue@^2.5.9:
-  version "2.5.13"
-  resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.13.tgz#95bd31e20efcf7a7f39239c9aa6787ce8cf578e1"
 
 vuex@^3.0.0:
   version "3.0.1"
