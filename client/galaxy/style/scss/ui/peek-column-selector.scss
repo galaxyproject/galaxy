@@ -48,7 +48,7 @@
 }
 
 .peek-column-selector .control td:hover .button {
-    background-color: #EEE;
+    background-color: #eee;
     border: 1px solid black;
     cursor: pointer;
     color: black;
@@ -57,9 +57,9 @@
 .peek-column-selector .control td.disabled .button,
 .peek-column-selector .control td.disabled:hover .button {
     background-color: transparent;
-    border: 1px solid #CCC;
+    border: 1px solid #ccc;
     cursor: not-allowed;
-    color: #CCC;
+    color: #ccc;
 }
 
 .peek-column-selector .control td.selected .button {

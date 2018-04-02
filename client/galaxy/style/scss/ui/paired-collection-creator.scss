@@ -1,6 +1,5 @@
 // ======================================================================== all types
 .collection-creator {
-
     height: 100%;
     overflow: hidden;
 
@@ -9,7 +8,8 @@
     -ms-user-select: none;
 
     // ------------------------------------------------------------------------ general
-    ol, li {
+    ol,
+    li {
         list-style: none;
         padding: 0;
         margin: 0;
@@ -18,7 +18,7 @@
         padding: 0px 8px 0px 8px;
     }
     .btn {
-        border-color: #BFBFBF;
+        border-color: #bfbfbf;
     }
 
     .vertically-spaced {
@@ -131,7 +131,7 @@
         .title-info {
             color: grey;
             &:before {
-                content: ' - ';
+                content: " - ";
             }
         }
     }
@@ -177,7 +177,8 @@
                     //text-decoration: underline;
                     //text-decoration-style: dashed;
                 }
-                ul, li {
+                ul,
+                li {
                     list-style: circle;
                     margin-left: 16px;
                 }
@@ -210,7 +211,6 @@
         .reverse-column .column-title {
             text-align: right;
         }
-
     }
 
     // ------------------------------------------------------------------------ middle
@@ -249,7 +249,7 @@
                 margin-left: 34px;
                 margin-right: 34px;
                 border: 2px solid grey;
-                background: #AFF1AF;
+                background: #aff1af;
 
                 span {
                     display: inline-block;
@@ -262,7 +262,7 @@
                     &:after {
                         margin-left: 8px;
                         font-family: FontAwesome;
-                        content: '\f061';
+                        content: "\f061";
                     }
                 }
                 .pair-name-column {
@@ -277,7 +277,7 @@
                     &:before {
                         margin-right: 8px;
                         font-family: FontAwesome;
-                        content: '\f060';
+                        content: "\f060";
                     }
                 }
             }
@@ -331,7 +331,7 @@
             height: 8px;
             cursor: ns-resize;
             &:before {
-                content: '...';
+                content: "...";
             }
             line-height: 2px;
             text-align: center;
@@ -376,8 +376,8 @@
             background: transparent;
             font-size: 120%;
             &:hover {
-                border-color: #BFBFBF;
-                background: #DEDEDE;
+                border-color: #bfbfbf;
+                background: #dedede;
             }
         }
         .empty-message {
@@ -385,16 +385,16 @@
         }
     }
     .element-drop-placeholder {
-        width   : 60px;
-        height  : 3px;
-        margin : 2px 0px 0px 14px;
-        background : black;
+        width: 60px;
+        height: 3px;
+        margin: 2px 0px 0px 14px;
+        background: black;
         &:before {
             float: left;
             font-size: 120%;
             margin: -9px 0px 0px -8px;
             font-family: FontAwesome;
-            content: '\f0da';
+            content: "\f0da";
         }
         &:last-child {
             margin-bottom: 8px;
@@ -425,7 +425,7 @@
             }
             .collection-name-prompt.validation-warning:before {
                 //TODO: localize (somehow)
-                content: '(required)';
+                content: "(required)";
                 margin-right: 4px;
                 color: red;
             }
@@ -449,7 +449,6 @@
 
 // ======================================================================== list
 .collection-creator.list-collection-creator {
-
     .footer {
         margin-top: 8px;
     }
@@ -477,7 +476,7 @@
     .collection-element {
         height: 32px;
         margin: 2px 4px 0px 4px;
-        opacity: 1.0;
+        opacity: 1;
         border: 1px solid lightgrey;
         border-radius: 3px;
         padding: 0 8px 0 8px;
@@ -519,7 +518,7 @@
         }
     }
     .element-drop-placeholder {
-        margin-left : 8px;
+        margin-left: 8px;
         &:before {
             margin: -8.5px 0px 0px -8px;
         }
@@ -564,7 +563,7 @@
     .collection-element {
         height: 32px;
         margin: 2px 4px 0px 4px;
-        opacity: 1.0;
+        opacity: 1;
         border: 1px solid lightgrey;
         border-radius: 3px;
         padding: 0 8px 0 8px;
@@ -584,7 +583,7 @@
         }
         .identifier {
             &:after {
-                content: ':';
+                content: ":";
                 margin-right: 6px;
             }
         }
@@ -608,4 +607,3 @@
         margin-bottom: 8px;
     }
 }
-

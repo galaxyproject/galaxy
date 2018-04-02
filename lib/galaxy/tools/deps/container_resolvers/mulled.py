@@ -53,19 +53,19 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
-    command = build_docker_images_command(truncate=True, sudo=False)
-    images_and_versions = subprocess.check_output(command).strip().split('\n')
-    images_and_versions = [line.split()[0:2] for line in images_and_versions[1:]]
+    command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+    images_and_versions = subprocess.check_output(command).strip().splitlines()
+    images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
     def output_line_to_image(line):
-        image_name, version = line.split(" ", 1)
+        image_name, version = line[0], line[1]
         identifier = "%s:%s" % (image_name, version)
         image = identifier_to_cached_target(identifier, hash_func, namespace=namespace)
         return image
 
     # TODO: Sort on build ...
-    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions.splitlines())]
+    raw_images = [output_line_to_image(_) for _ in filter(name_filter, images_and_versions)]
     return [i for i in raw_images if i is not None]
 
 
@@ -124,7 +124,7 @@ def list_cached_mulled_images_from_path(directory, hash_func="v2"):
 
 def get_filter(namespace):
     prefix = "quay.io/" if namespace is None else "quay.io/%s" % namespace
-    return lambda name: name.startswith(prefix) and name.count("/") == 2
+    return lambda name: name[0].startswith(prefix) and name[0].count("/") == 2
 
 
 def find_best_matching_cached_image(targets, cached_images, hash_func):

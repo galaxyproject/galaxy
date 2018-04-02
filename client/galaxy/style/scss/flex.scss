@@ -1,5 +1,5 @@
 // ------------------------------------ prefix mixin
-@mixin vendor-prefix-property($property, $value){
+@mixin vendor-prefix-property($property, $value) {
     #{"-webkit-" + $property}: $value;
     // -moz-${property}: $value;
     #{"-ms-" + $property}: $value;
@@ -49,7 +49,7 @@
 
 // ------------------------------------ convenience versions
 // has a fixed height header
-@mixin two-rows-header($header-height){
+@mixin two-rows-header($header-height) {
     @extend flex-vertical-container;
 
     > * {
@@ -64,7 +64,7 @@
 }
 
 // has a fixed height header and footer
-@mixin three-rows-header-footer($header-height, $footer-height){
+@mixin three-rows-header-footer($header-height, $footer-height) {
     @include two-rows-header($header-height);
     > .footer {
         @extend flex-column;

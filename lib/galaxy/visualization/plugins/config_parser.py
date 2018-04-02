@@ -64,9 +64,6 @@ class VisualizationsConfigParser(object):
         if not returned['name']:
             raise ParsingException('Visualization needs a name attribute.')
 
-        # a regular visualization for a certain datatype is highlighted in the ui
-        returned['regular'] = xml_tree.get('regular', False)
-
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
             log.info('Visualizations plugin disabled: %s. Skipping...', returned['name'])

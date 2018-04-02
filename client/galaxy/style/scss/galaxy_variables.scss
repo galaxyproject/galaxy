@@ -5,8 +5,8 @@ $base-bg: $white;
 $base-text-color: $black;
 $header-text-color: $base-text-color;
 
-$side-panel-bg: lighten(black,95%);
-$layout-border-color: darken($border-default-color,15%);
+$side-panel-bg: lighten(black, 95%);
+$layout-border-color: darken($border-default-color, 15%);
 
 $form-heading-bg: $complement-color-3;
 $form-border: $complement-color-3;
@@ -23,11 +23,11 @@ $state-default-border: $border-default-color;
 $state-upload-border: $state-info-border;
 $state-upload-bg: $state-info-bg;
 
-$state-paused-border: #6666AA;
+$state-paused-border: #6666aa;
 $state-paused-bg: #d9edf7;
 
-$state-running-border: #AAAA66;
-$state-running-bg: #FFFFCC;
+$state-running-border: #aaaa66;
+$state-running-bg: #ffffcc;
 
 // $state-deleted-border: #330066;
 // $state-deleted-bg: #3399FF;

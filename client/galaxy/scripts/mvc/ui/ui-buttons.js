@@ -14,7 +14,8 @@ var ButtonDefault = Backbone.View.extend({
                 wait_text: "Sending...",
                 wait_cls: "btn btn-info",
                 disabled: false,
-                percentage: -1
+                percentage: -1,
+                visible: true
             }).set(options);
         this.setElement(
             $("<button/>")
@@ -36,6 +37,7 @@ var ButtonDefault = Backbone.View.extend({
             .addClass(options.disabled && "disabled")
             .attr("id", options.id)
             .attr("disabled", options.disabled)
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
                 $(".tooltip").hide();
@@ -60,12 +62,12 @@ var ButtonDefault = Backbone.View.extend({
 
     /** Show button */
     show: function() {
-        this.$el.show();
+        this.model.set("visible", true);
     },
 
     /** Hide button */
     hide: function() {
-        this.$el.hide();
+        this.model.set("visible", false);
     },
 
     /** Disable button */
@@ -101,6 +103,7 @@ var ButtonLink = ButtonDefault.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: Utils.uid(),
+                visible: true,
                 title: "",
                 icon: "",
                 cls: ""
@@ -122,6 +125,7 @@ var ButtonLink = ButtonDefault.extend({
                 target: options.target || "_top",
                 disabled: options.disabled
             })
+            .css("display", options.visible ? "inline-block" : "none")
             .tooltip({ placement: "bottom" })
             .off("click")
             .on("click", () => {
@@ -141,6 +145,7 @@ var ButtonCheck = Backbone.View.extend({
                 title: "Select/Unselect all",
                 icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
                 value: 0,
+                visible: true,
                 onchange: function() {}
             }).set(options);
         this.setElement(
@@ -157,6 +162,7 @@ var ButtonCheck = Backbone.View.extend({
         var options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
                 self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
@@ -196,6 +202,7 @@ var ButtonIcon = ButtonDefault.extend({
                 id: Utils.uid(),
                 title: "",
                 icon: "",
+                visible: true,
                 cls: "ui-button-icon",
                 disabled: false
             }).set(options);
@@ -217,6 +224,7 @@ var ButtonIcon = ButtonDefault.extend({
             .removeClass()
             .addClass(options.cls)
             .addClass(options.disabled && "disabled")
+            .css("display", options.visible ? "inline-block" : "none")
             .attr("disabled", options.disabled)
             .attr("id", options.id)
             .off("click")

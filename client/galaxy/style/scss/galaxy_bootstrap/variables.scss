@@ -2,13 +2,13 @@
 // Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
 
 // Base color -- Based on the Galaxy masthead color
-$base-color-1: #2C3143;
-$base-color-2: lighten($base-color-1,25%);
-$base-color-3: lighten($base-color-1,50%);
+$base-color-1: #2c3143;
+$base-color-2: lighten($base-color-1, 25%);
+$base-color-3: lighten($base-color-1, 50%);
 
-$complement-color-1: spin($base-color-1,180);
-$complement-color-2: spin($base-color-2,180);
-$complement-color-3: spin($base-color-3,180);
+$complement-color-1: spin($base-color-1, 180);
+$complement-color-2: spin($base-color-2, 180);
+$complement-color-3: spin($base-color-3, 180);
 
 $base-color: $base-color-2;
 
@@ -18,37 +18,36 @@ $border-default-color: lighten(black, 75%);
 // When making borders for components with other colors, how much to darken
 $border-darken-percent: 40%;
 
-$panel-bg-color: #DFE5F9;
+$panel-bg-color: #dfe5f9;
 
 // Derived variables used below
 
 @function luma($color) {
+    $r: red($color) / 255;
+    $g: green($color) / 255;
+    $b: blue($color) / 255;
 
-  $r: red($color)/255;
-  $g: green($color)/255;
-  $b: blue($color)/255;
-
-  // Taken from https://github.com/less/less.js/blob/master/lib/less/tree/color.js#L54
-  // This replicates the color values originally dervied with less and boostrap 2.
-  @return ( 0.2126 * $r + 0.7152 * $g + 0.0722 * $b ) * 100;
+    // Taken from https://github.com/less/less.js/blob/master/lib/less/tree/color.js#L54
+    // This replicates the color values originally dervied with less and boostrap 2.
+    @return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) * 100;
 }
 
-$sat:  saturation($base-color);
+$sat: saturation($base-color);
 $luma: luma($base-color);
-$tone: desaturate($base-color,100%);
+$tone: desaturate($base-color, 100%);
 
 // Grays
 
 // These are from Boostrap 2/3 but are used in Galaxy styles
-$gray-darker:            lighten(black, 13.5%); // #222
-$gray-dark:              lighten(black, 20%);   // #333
-$gray:                   lighten(black, 33.5%); // #555
-$gray-light:             lighten(black, 60%);   // #999
-$gray-lighter:           lighten(black, 93.5%); // #eee
+$gray-darker: lighten(black, 13.5%); // #222
+$gray-dark: lighten(black, 20%); // #333
+$gray: lighten(black, 33.5%); // #555
+$gray-light: lighten(black, 60%); // #999
+$gray-lighter: lighten(black, 93.5%); // #eee
 
 // ... and these come from Bootstrap 4 _variables.scss
 // FIXME: reconcile the grays 👽
-$white:    #fff !default;
+$white: #fff !default;
 $gray-100: #f8f9fa !default;
 $gray-200: #e9ecef !default;
 $gray-300: #dee2e6 !default;
@@ -58,7 +57,7 @@ $gray-600: #868e96 !default;
 $gray-700: #495057 !default;
 $gray-800: #343a40 !default;
 $gray-900: #212529 !default;
-$black:    #000 !default;
+$black: #000 !default;
 
 // Brand colors
 // -------------------------
@@ -93,84 +92,87 @@ $brand-danger: saturate(lighten($galaxy-bs3-danger, 10%), 30%);
 // they use a map called $theme-colors, so here we override that
 
 $theme-colors: ();
-$theme-colors: map-merge((
-    "primary":    $brand-primary,
-    "secondary":  $gray-300,
-    "success":    $brand-success,
-    "info":       $brand-info,
-    "warning":    $brand-warning,
-    "danger":     $brand-danger,
-    "light":      $gray-100,
-    "dark":       $gray-800
-  ), $theme-colors);
+$theme-colors: map-merge(
+    (
+        "primary": $brand-primary,
+        "secondary": $gray-600,
+        "success": $brand-success,
+        "info": $brand-info,
+        "warning": $brand-warning,
+        "danger": $brand-danger,
+        "light": $gray-100,
+        "dark": $gray-800
+    ),
+    $theme-colors
+);
 
 // This is the default but we need to use it here.
 $theme-color-interval: 5% !default;
 
 // Alerts and states
 
-$alert-bg-level:                    -13 !default;
-$alert-border-level:                -6 !default;
-$alert-color-level:                 8 !default;
+$alert-bg-level: -13 !default;
+$alert-border-level: -6 !default;
+$alert-color-level: 8 !default;
 
 // These are not Bootstrap styles but are used extensively in Galaxy. This
 // duplicated the way that Bootstrap 4 alerts are derived.
 
-$state-warning-text:             theme-color-level('warning', $alert-color-level);
-$state-warning-bg:               theme-color-level('warning', $alert-bg-level);
-$state-warning-border:           theme-color-level('warning', $alert-border-level);
+$state-warning-text: theme-color-level("warning", $alert-color-level);
+$state-warning-bg: theme-color-level("warning", $alert-bg-level);
+$state-warning-border: theme-color-level("warning", $alert-border-level);
 
-$state-danger-text:             theme-color-level('danger', $alert-color-level);
-$state-danger-bg:               theme-color-level('danger', $alert-bg-level);
-$state-danger-border:           theme-color-level('danger', $alert-border-level);
+$state-danger-text: theme-color-level("danger", $alert-color-level);
+$state-danger-bg: theme-color-level("danger", $alert-bg-level);
+$state-danger-border: theme-color-level("danger", $alert-border-level);
 
-$state-info-text:             theme-color-level('info', $alert-color-level);
-$state-info-bg:               theme-color-level('info', $alert-bg-level);
-$state-info-border:           theme-color-level('info', $alert-border-level);
+$state-info-text: theme-color-level("info", $alert-color-level);
+$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-border: theme-color-level("info", $alert-border-level);
 
-$state-success-text:             theme-color-level('success', $alert-color-level);
-$state-success-bg:               theme-color-level('success', $alert-bg-level);
-$state-success-border:           theme-color-level('success', $alert-border-level);
+$state-success-text: theme-color-level("success", $alert-color-level);
+$state-success-bg: theme-color-level("success", $alert-bg-level);
+$state-success-border: theme-color-level("success", $alert-border-level);
 
 // Body text and link colors
 
-$body-bg:               $white;
-$text-color:            $gray-dark;
+$body-bg: $white;
+$text-color: $gray-dark;
 
-$link-color:            #303030;
-$link-hover-color:      darken($link-color, 15%);
+$link-color: #303030;
+$link-hover-color: darken($link-color, 15%);
 
 // Fonts and sizes
 
-$font-family-sans-serif:  "Lucida Grande",verdana,arial,helvetica,sans-serif; //JT "Helvetica Neue", Helvetica, Arial, sans-serif;
-$font-family-serif:       Georgia, "Times New Roman", Times, serif;
-$font-family-monospace:   Monaco, Menlo, Consolas, "Courier New", monospace;
-$font-family-base:        $font-family-sans-serif;
+$font-family-sans-serif: "Lucida Grande", verdana, arial, helvetica, sans-serif; //JT "Helvetica Neue", Helvetica, Arial, sans-serif;
+$font-family-serif: Georgia, "Times New Roman", Times, serif;
+$font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
+$font-family-base: $font-family-sans-serif;
 
-$font-size-base:          .75rem; // default 1rem
+$font-size-base: 0.75rem; // default 1rem
 
-$h1-font-size:            floor($font-size-base * 2); // default 2.5
-$h2-font-size:            floor($font-size-base * 1.75); // default 2
-$h3-font-size:            ceil($font-size-base * 1.5); // default 1.75
-$h4-font-size:            ceil($font-size-base * 1.25); // default 1.5
-$h5-font-size:            $font-size-base; // default 1.25
-$h6-font-size:            ceil($font-size-base * 0.85); // default 1
+$h1-font-size: floor($font-size-base * 2); // default 2.5
+$h2-font-size: floor($font-size-base * 1.75); // default 2
+$h3-font-size: ceil($font-size-base * 1.5); // default 1.75
+$h4-font-size: ceil($font-size-base * 1.25); // default 1.5
+$h5-font-size: $font-size-base; // default 1.25
+$h6-font-size: ceil($font-size-base * 0.85); // default 1
 
 // This is the default for $line-height-base, but we use $line-height-computed
 // in base.css, that should be removed.
-$line-height-base:        1.5; // for scaling, as a multiplier -- not concrete units.
-$line-height-computed:    floor($font-size-base * $line-height-base);
-$line-height-computed-px:    16px;
+$line-height-base: 1.5; // for scaling, as a multiplier -- not concrete units.
+$line-height-computed: floor($font-size-base * $line-height-base);
+$line-height-computed-px: 16px;
 
-$headings-font-weight:    800; // default 500
-$headings-line-height:    1.1; // default 1.2
+$headings-font-weight: 800; // default 500
+$headings-line-height: 1.1; // default 1.2
 
 // Iconography
 
 // These are no longer specified in Bootstrap 4's variable
 
-$icon-font-path:          "../fonts/";
-$icon-font-name:          "glyphicons-halflings-regular";
+$icon-font-path: "../fonts/";
+$icon-font-name: "glyphicons-halflings-regular";
 
 // BOOTSTRAP 4 STYLE REFACTORING BREAK POINT
 // Anything that is actually used should be moved above this line and
@@ -182,39 +184,38 @@ $icon-font-name:          "glyphicons-halflings-regular";
 // Components
 // -------------------------
 
-$padding-base-vertical:          .25rem;
-$padding-base-horizontal:        .625rem;
+$padding-base-vertical: 0.25rem;
+$padding-base-horizontal: 0.625rem;
 
-$line-height-large:              1.33;
-$line-height-small:              1.5;
+$line-height-large: 1.33;
+$line-height-small: 1.5;
 
-$border-radius-base:             .1875rem;
-$border-radius-large:            .3125rem;
-$border-radius-small:            .125rem;
+$border-radius-base: 0.1875rem;
+$border-radius-large: 0.3125rem;
+$border-radius-small: 0.125rem;
 
 // Tables
 // -------------------------
 
-$table-bg:                           transparent; // overall background-color
-$table-bg-accent:                    #f9f9f9; // for striping
-$table-bg-hover:                     #f5f5f5;
-$table-bg-active:                    $table-bg-hover;
+$table-bg: transparent; // overall background-color
+$table-bg-accent: #f9f9f9; // for striping
+$table-bg-hover: #f5f5f5;
+$table-bg-active: $table-bg-hover;
 
-$table-border-color:                 $border-default-color; // table and cell border
-
+$table-border-color: $border-default-color; // table and cell border
 
 // Buttons
 // -------------------------
 
-$btn-default-color:              #333;
-$btn-default-bg:                 darken($white,5%);
-$btn-default-border:             $border-default-color;
+$btn-default-color: #333;
+$btn-default-bg: darken($white, 5%);
+$btn-default-border: $border-default-color;
 
 // Forms
 // -------------------------
 
-$input-bg:                       $white;
-$input-bg-disabled:              $gray-lighter;
+$input-bg: $white;
+$input-bg-disabled: $gray-lighter;
 
 // COMPONENT VARIABLES
 // --------------------------------------------------
@@ -224,116 +225,114 @@ $input-bg-disabled:              $gray-lighter;
 // Used for a bird's eye view of components dependent on the z-axis
 // Try to avoid customizing these :)
 
-$zindex-navbar:            1000;
-$zindex-dropdown:          1000;
-$zindex-popover:           1010;
-$zindex-tooltip:           1030;
-$zindex-navbar-fixed:      1030;
-$zindex-modal-background:  1040;
-$zindex-modal:             1050;
+$zindex-navbar: 1000;
+$zindex-dropdown: 1000;
+$zindex-popover: 1010;
+$zindex-tooltip: 1030;
+$zindex-navbar-fixed: 1030;
+$zindex-modal-background: 1040;
+$zindex-modal: 1050;
 
 // Grid system
 // --------------------------------------------------
 
 // Number of columns in the grid system
-$grid-columns:              12;
+$grid-columns: 12;
 // Padding, to be divided by two and applied to the left and right of all columns
-$grid-gutter-width:         30px;
+$grid-gutter-width: 30px;
 // Point at which the navbar stops collapsing
-$grid-float-breakpoint:     0px;
+$grid-float-breakpoint: 0px;
 
 // Navbar
 // -------------------------
 
 // Basics of a navbar
-$navbar-height:                    33px; // 2.062500rem;
-$navbar-margin-bottom:             $line-height-base;
-$navbar-default-color:             #777;
-$navbar-default-bg:                $gray-lighter; // JT #f8f8f8;
-$navbar-default-border:            darken($navbar-default-bg, $border-darken-percent);
-$navbar-border-radius:             $border-radius-base;
-$navbar-padding-horizontal:        floor($grid-gutter-width / 2);
-$navbar-padding-vertical:          (($navbar-height - $line-height-computed-px) / 2);
+$navbar-height: 33px; // 2.062500rem;
+$navbar-margin-bottom: $line-height-base;
+$navbar-default-color: #777;
+$navbar-default-bg: $gray-lighter; // JT #f8f8f8;
+$navbar-default-border: darken($navbar-default-bg, $border-darken-percent);
+$navbar-border-radius: $border-radius-base;
+$navbar-padding-horizontal: floor($grid-gutter-width / 2);
+$navbar-padding-vertical: (($navbar-height - $line-height-computed-px) / 2);
 
 // Navbar links
-$navbar-default-link-color:                #777;
-$navbar-default-link-hover-color:          #333;
-$navbar-default-link-hover-bg:             transparent;
-$navbar-default-link-active-color:         #555;
-$navbar-default-link-active-bg:            darken($navbar-default-bg, 6.5%);
-$navbar-default-link-disabled-color:       #ccc;
-$navbar-default-link-disabled-bg:          transparent;
+$navbar-default-link-color: #777;
+$navbar-default-link-hover-color: #333;
+$navbar-default-link-hover-bg: transparent;
+$navbar-default-link-active-color: #555;
+$navbar-default-link-active-bg: darken($navbar-default-bg, 6.5%);
+$navbar-default-link-disabled-color: #ccc;
+$navbar-default-link-disabled-bg: transparent;
 
 // Navbar brand label
-$navbar-default-brand-color:               $navbar-default-link-color;
-$navbar-default-brand-hover-color:         darken($navbar-default-link-color, 10%);
-$navbar-default-brand-hover-bg:            transparent;
+$navbar-default-brand-color: $navbar-default-link-color;
+$navbar-default-brand-hover-color: darken($navbar-default-link-color, 10%);
+$navbar-default-brand-hover-bg: transparent;
 
 // Navbar toggle
-$navbar-default-toggle-hover-bg:           #ddd;
-$navbar-default-toggle-icon-bar-bg:        #ccc;
-$navbar-default-toggle-border-color:       #ddd;
-
+$navbar-default-toggle-hover-bg: #ddd;
+$navbar-default-toggle-icon-bar-bg: #ccc;
+$navbar-default-toggle-border-color: #ddd;
 
 // Inverted navbar
 //
 // Reset inverted navbar basics
-$navbar-inverse-color:                      $gray-light;
-$navbar-inverse-bg:                         darken($base-color,25%); //JT #222;
-$navbar-inverse-border:                     darken($navbar-inverse-bg, 10%);
+$navbar-inverse-color: $gray-light;
+$navbar-inverse-bg: darken($base-color, 25%); //JT #222;
+$navbar-inverse-border: darken($navbar-inverse-bg, 10%);
 
 // Inverted navbar links
-$navbar-inverse-link-color:                 $gray-light;
-$navbar-inverse-link-hover-color:           $white;
-$navbar-inverse-link-hover-bg:              transparent;
-$navbar-inverse-link-active-color:          $navbar-inverse-link-hover-color;
-$navbar-inverse-link-active-bg:             darken($navbar-inverse-bg, 10%);
-$navbar-inverse-link-disabled-color:        #666;
-$navbar-inverse-link-disabled-bg:           transparent;
+$navbar-inverse-link-color: $gray-light;
+$navbar-inverse-link-hover-color: $white;
+$navbar-inverse-link-hover-bg: transparent;
+$navbar-inverse-link-active-color: $navbar-inverse-link-hover-color;
+$navbar-inverse-link-active-bg: darken($navbar-inverse-bg, 10%);
+$navbar-inverse-link-disabled-color: #666;
+$navbar-inverse-link-disabled-bg: transparent;
 
 // Inverted navbar brand label
-$navbar-inverse-brand-color:                $navbar-inverse-link-color;
-$navbar-inverse-brand-hover-color:          $white;
-$navbar-inverse-brand-hover-bg:             transparent;
+$navbar-inverse-brand-color: $navbar-inverse-link-color;
+$navbar-inverse-brand-hover-color: $white;
+$navbar-inverse-brand-hover-bg: transparent;
 
 // Inverted navbar toggle
-$navbar-inverse-toggle-hover-bg:            #333;
-$navbar-inverse-toggle-icon-bar-bg:         $white;
-$navbar-inverse-toggle-border-color:        #333;
-
+$navbar-inverse-toggle-hover-bg: #333;
+$navbar-inverse-toggle-icon-bar-bg: $white;
+$navbar-inverse-toggle-border-color: #333;
 
 // Navs
 // -------------------------
 
-$nav-link-padding:                          $padding-base-vertical $padding-base-horizontal; //JT 10px 15px;
+$nav-link-padding: $padding-base-vertical $padding-base-horizontal; //JT 10px 15px;
 
 // Panels
 // -------------------------
-$panel-bg:                    $white;
-$panel-inner-border:          $border-default-color;
-$panel-border-radius:         $border-radius-base;
-$panel-footer-bg:             #f5f5f5;
+$panel-bg: $white;
+$panel-inner-border: $border-default-color;
+$panel-border-radius: $border-radius-base;
+$panel-footer-bg: #f5f5f5;
 
-$panel-default-text:          $gray-dark;
-$panel-default-border:        $border-default-color;
-$panel-default-heading-bg:    #f5f5f5;
+$panel-default-text: $gray-dark;
+$panel-default-border: $border-default-color;
+$panel-default-heading-bg: #f5f5f5;
 
-$panel-primary-text:          $white;
-$panel-primary-border:        $brand-primary;
-$panel-primary-heading-bg:    $brand-primary;
+$panel-primary-text: $white;
+$panel-primary-border: $brand-primary;
+$panel-primary-heading-bg: $brand-primary;
 
-$panel-success-text:          $state-success-text;
-$panel-success-border:        $state-success-border;
-$panel-success-heading-bg:    $state-success-bg;
+$panel-success-text: $state-success-text;
+$panel-success-border: $state-success-border;
+$panel-success-heading-bg: $state-success-bg;
 
-$panel-warning-text:          $state-warning-text;
-$panel-warning-border:        $state-warning-border;
-$panel-warning-heading-bg:    $state-warning-bg;
+$panel-warning-text: $state-warning-text;
+$panel-warning-border: $state-warning-border;
+$panel-warning-heading-bg: $state-warning-bg;
 
-$panel-danger-text:           $state-danger-text;
-$panel-danger-border:         $state-danger-border;
-$panel-danger-heading-bg:     $state-danger-bg;
+$panel-danger-text: $state-danger-text;
+$panel-danger-border: $state-danger-border;
+$panel-danger-heading-bg: $state-danger-bg;
 
-$panel-info-text:             $state-info-text;
-$panel-info-border:           $state-info-border;
-$panel-info-heading-bg:       $state-info-bg;
+$panel-info-text: $state-info-text;
+$panel-info-border: $state-info-border;
+$panel-info-heading-bg: $state-info-bg;

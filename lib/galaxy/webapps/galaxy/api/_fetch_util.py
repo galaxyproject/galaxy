@@ -24,7 +24,7 @@ ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
 def validate_and_normalize_targets(trans, payload):
     """Validate and normalize all src references in fetch targets.
 
-    - Normalize ftp_import and server_dir src entries into simple path entires
+    - Normalize ftp_import and server_dir src entries into simple path entries
       with the relevant paths resolved and permissions / configuration checked.
     - Check for file:// URLs in items src of "url" and convert them into path
       src items - after verifying path pastes are allowed and user is admin.

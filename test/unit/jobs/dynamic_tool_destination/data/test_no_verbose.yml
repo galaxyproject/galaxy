@@ -6,6 +6,6 @@ tools:
         lower_bound: 1 KB
         upper_bound: Infinity
         destination: Destination1
-    default_destination: waffles_default
-default_destination: waffles_default
+    default_destination: cluster_default
+default_destination: cluster_default
 verbose: False

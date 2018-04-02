@@ -11,7 +11,10 @@ label {
   overflow: auto !important; }
   .library_style_container .fa {
     font-size: 12px; }
-  .library_style_container .fa-globe, .library_style_container .fa-shield, .library_style_container .fa-key, .library_style_container .fa-ban {
+  .library_style_container .fa-globe,
+  .library_style_container .fa-shield,
+  .library_style_container .fa-key,
+  .library_style_container .fa-ban {
     font-size: initial;
     margin-left: 0.6em; }
   .library_style_container .libraryRow {
@@ -22,9 +25,11 @@ label {
     font-style: italic; }
   .library_style_container div.libraryItemBody {
     padding: 4px 4px 2px 4px; }
-  .library_style_container li.folderRow, .library_style_container li.datasetRow {
+  .library_style_container li.folderRow,
+  .library_style_container li.datasetRow {
     border-top: solid 1px spin(#a8afc6, 180); }
-  .library_style_container li.folderRow:hover, .library_style_container li.datasetRow:hover {
+  .library_style_container li.folderRow:hover,
+  .library_style_container li.datasetRow:hover {
     background-color: #f9f9f9; }
   .library_style_container td.right-center {
     vertical-align: middle !important;
@@ -38,7 +43,7 @@ label {
   .library_style_container .library_table th {
     border-bottom: 2px solid #5f6990 !important; }
   .library_style_container .library_table a {
-    color: #0A143D; }
+    color: #0a143d; }
     .library_style_container .library_table a:hover {
       color: maroon; }
   .library_style_container tr.light td {
@@ -54,7 +59,9 @@ label {
     color: white; }
   .library_style_container a.dark {
     color: white; }
-  .library_style_container .dataset_table tr, .library_style_container .dataset_table th, .library_style_container .dataset_table td {
+  .library_style_container .dataset_table tr,
+  .library_style_container .dataset_table th,
+  .library_style_container .dataset_table td {
     border: none; }
   .library_style_container .dataset_table .dataset-first-column {
     width: 30%; }
@@ -74,7 +81,8 @@ label {
       margin-right: 0.2em; }
     .library_style_container #library_toolbar .toolbar-item {
       margin-left: 0.5em; }
-  .library_style_container #libraries_element button, .library_style_container #folder_items_element button {
+  .library_style_container #libraries_element button,
+  .library_style_container #folder_items_element button {
     margin-left: 0.5em; }
   .library_style_container .right-float {
     float: right; }
@@ -97,7 +105,8 @@ label {
 .modal-content .library_selected_history_content ul {
   list-style-type: none; }
 
-.modal-content .library-collection-type-select, .modal-content .library-collection-history-select {
+.modal-content .library-collection-type-select,
+.modal-content .library-collection-history-select {
   margin-left: auto;
   margin-right: auto;
   width: 200px;

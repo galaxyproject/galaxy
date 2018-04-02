@@ -1,4 +1,4 @@
-.embedded-item { 
+.embedded-item {
     margin: 0em auto;
     width: 90%;
     -moz-border-radius: 0.5em;
@@ -30,8 +30,8 @@
 
     p {
         background: inherit;
-        margin-top:0;
-        margin-bottom:0;
+        margin-top: 0;
+        margin-bottom: 0;
     }
 
     table.annotated-item {
@@ -39,7 +39,8 @@
         border-collapse: collapse;
     }
 
-    table.annotated-item td,th {
+    table.annotated-item td,
+    th {
         padding: 0;
     }
 
@@ -59,25 +60,25 @@
 }
 
 .embedded-item.history {
-    background-color: #C1C9E5;
+    background-color: #c1c9e5;
 }
 
 .embedded-item.dataset {
-    background-color: #CFC;
+    background-color: #cfc;
     .item-content {
         padding: 5px;
     }
 }
 
-.embedded-item.workflow { 
-    background-color: #FBDDB3;
+.embedded-item.workflow {
+    background-color: #fbddb3;
     .item-content {
         padding: 5px;
     }
 }
 
 .embedded-item.visualization {
-    background-color: #BBBBBB;
+    background-color: #bbbbbb;
     .item-content {
         overflow: hidden;
         height: 100%;

@@ -6,8 +6,6 @@
         .ui-button-icon {
             display: block;
             margin-right: 5px;
-        }
-        .ui-button-icon {
             background: white;
             color: #666;
             border-color: white;
@@ -15,9 +13,9 @@
                 font-size: 1.2em;
                 line-height: 1.2em;
             }
-        }
-        .ui-button-icon.charts-fullscreen-button {
-            display: none;
+            .fa-check-square {
+                color: $panel-success-text;
+            }
         }
     }
     .charts-center {
@@ -37,7 +35,7 @@
                 position: relative;
                 margin-left: 5px;
                 top: -1px;
-                font-size: 1.0em;
+                font-size: 1em;
                 display: inline;
             }
             .icon {
@@ -100,7 +98,8 @@
             .portlet-content {
                 padding: 0px;
             }
-            .ui-table-section, .ui-portlet-panel .portlet-content {
+            .ui-table-section,
+            .ui-portlet-panel .portlet-content {
                 padding-left: 5px;
             }
         }
@@ -111,13 +110,6 @@
     .charts-buttons {
         position: absolute;
         right: 0px;
-        .ui-button-icon,
-        .ui-button-menu {
-            display: none;
-        }
-        .ui-button-icon.charts-fullscreen-button {
-            display: block;
-        }
     }
     .charts-center {
         width: 100%;

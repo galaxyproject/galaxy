@@ -15,7 +15,7 @@ and symbols are sorted in lexigraphical order.
 '''
 import optparse
 
-from bx.tabular.io import Comment
+from bx.tabular.io import Comment, Header
 
 from galaxy.datatypes.util.gff_util import convert_gff_coords_to_bed, GFFReaderWrapper, read_unordered_gtf
 
@@ -40,7 +40,7 @@ def main():
             in_reader = read_unordered_gtf(open(in_fname, 'r'))
 
         for feature in in_reader:
-            if isinstance(feature, Comment):
+            if isinstance(feature, (Header, Comment)):
                 continue
 
             for name in feature.attributes:

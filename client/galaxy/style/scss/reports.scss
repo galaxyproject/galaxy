@@ -1,6 +1,5 @@
 // ############################################################# Reports Webapp
 
-
 // ======================================================== Left ==============
 .reports-panel-container {
     position: absolute;
@@ -29,14 +28,14 @@
 }
 
 .jqstooltip {
-        -webkit-box-sizing: content-box;
-        -moz-box-sizing: content-box;
-        box-sizing: content-box;
-    }
+    -webkit-box-sizing: content-box;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+}
 
 // ======================================================== Sorting ===========
 .dir_arrow {
-    visibility: hidden
+    visibility: hidden;
 }
 
 // ======================================================== Home page =========
@@ -64,7 +63,8 @@
     text-anchor: end;
 }
 
-.axis path, .axis line {
+.axis path,
+.axis line {
     fill: none;
     stroke: #000;
     shape-rendering: preserveAspectRatio;
@@ -78,7 +78,7 @@
 .chart .title {
     fill: black;
     font-size: 15px;
-    font-family: "Lucida Grande",verdana,arial,helvetica,sans-serif;
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
     font-weight: 800;
     line-height: 1.1;
 }
@@ -87,7 +87,8 @@
     fill: black;
 }
 
-.hr_container, .dy_container {
+.hr_container,
+.dy_container {
     position: relative;
     z-index: 2;
     display: inline-block;
@@ -103,12 +104,12 @@
     display: block;
     overflow-x: auto;
     overflow-y: hidden;
-    white-space: nowrap
+    white-space: nowrap;
 }
 
 .trim {
-    position:relative;
-    height:10px;
+    position: relative;
+    height: 10px;
     top: 50px;
     background: #ebd9b2;
     color: #000;
@@ -122,7 +123,11 @@
 
 // ======================================================== Paging ============
 // ------------------------------------ Pages ---------------------------------
-#back_button, #next_button, #curr_button, .miss_pages, .page_button {
+#back_button,
+#next_button,
+#curr_button,
+.miss_pages,
+.page_button {
     position: relative;
     float: left;
     height: 24px;
@@ -198,14 +203,13 @@
     border-radius: 11px;
     background-color: #ebd9b2;
     text-align: center;
-    opacity: 0.0;
+    opacity: 0;
     z-index: 0;
 }
 
-
 // ======================================================== Misc. =============
 .half_width {
-    width: 50%
+    width: 50%;
 }
 .third_width {
     width: 30%;
@@ -228,7 +232,8 @@
     border-collapse: separate;
 }
 
-.lastAccessForm, .diskUsageForm {
+.lastAccessForm,
+.diskUsageForm {
     width: 70%;
     margin-left: auto;
     margin-right: auto;

@@ -1,30 +1,31 @@
 .navbar-fixed-top .navbar-brand {
-  font-family: Verdana;
-  font-weight: bold;
-  font-size: 160%;
+    font-family: Verdana;
+    font-weight: bold;
+    font-size: 160%;
 }
 
 // Don't wrap text inside pre
 pre {
-  overflow: auto;
-  word-wrap: normal;
-  white-space: pre;
+    overflow: auto;
+    word-wrap: normal;
+    white-space: pre;
 }
 
 .btn.hover {
-    $btn:hover();
+    $btn: hover();
 }
 
 // Allow text in buttons to wrap
 .btn {
-  white-space: normal;
+    white-space: normal;
 }
 
 .dropdown-menu {
     max-width: auto;
 }
 
-input[type="checkbox"],input[type="radio"] {
+input[type="checkbox"],
+input[type="radio"] {
     margin-left: 0.5ex;
     margin-right: 0.5ex;
 }
@@ -36,14 +37,14 @@ input[type="checkbox"],input[type="radio"] {
 }
 
 .pagination {
-  > .active > a {
-    background-color: #ebd9b2;
-    color: black;
-    &:hover {
-      color: black;
-      background-color: #ebd9b2;
+    > .active > a {
+        background-color: #ebd9b2;
+        color: black;
+        &:hover {
+            color: black;
+            background-color: #ebd9b2;
+        }
     }
-  }
 }
 /*
 
@@ -73,32 +74,32 @@ NOTE: these styles do not currently work.
 
 // Scroll modal body.
 .modal-body {
-  overflow: auto;
+    overflow: auto;
 }
 
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {
-  margin-bottom: 15px;
+    margin-bottom: 15px;
 }
 
 // Don't make blockquotes very large since they're often used in the toolform
 // and this does not look nice to have a quoted portion of a tool's help
 // documentation be rendered 150% larger.
 div.ui-form-help {
-  blockquote {
-    p {
-      font-size: inherit;
-      font-weight: inherit;
-      line-height: inherit;
+    blockquote {
+        p {
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+        }
     }
-  }
 }
 
 // pre styling
 pre.code {
-  white-space: pre-wrap;
-  background: #1d1f21;
-  color: white;
-  padding: 1em;
+    white-space: pre-wrap;
+    background: #1d1f21;
+    color: white;
+    padding: 1em;
 }

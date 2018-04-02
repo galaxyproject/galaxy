@@ -15,7 +15,7 @@
     .prompt {
         margin-right: 8px;
         &:after {
-            content: ':';
+            content: ":";
         }
         &:empty {
             display: none;
@@ -34,13 +34,13 @@
         .subtitle {
             color: grey;
             &:before {
-                content: '-';
+                content: "-";
                 margin: 0px 4px 0px 4px;
             }
             i {
                 font-style: normal;
                 &:not(:last-child):after {
-                    content: ', ';
+                    content: ", ";
                 }
             }
         }
@@ -91,4 +91,3 @@
         font-size: 120%;
     }
 }
-

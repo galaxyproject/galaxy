@@ -261,7 +261,7 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                var url = Galaxy.root + "visualizations/dataset_id=" + this.model.get("id");
+                var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
                 return $("<a/>")
                     .addClass("visualization-link icon-btn")
                     .attr("href", url)

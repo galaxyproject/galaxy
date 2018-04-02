@@ -16,11 +16,11 @@
                 font-weight: bold;
             }
         }
-        .subtitle:not(:empty){
+        .subtitle:not(:empty) {
             min-height: 15px;
             margin: -4px 0px 8px;
-            span+span:before {
-                content: ', ';
+            span + span:before {
+                content: ", ";
             }
         }
         .history-size {
@@ -51,7 +51,8 @@
         }
 
         //TODO: move these out
-        .tags-display, .annotation-display {
+        .tags-display,
+        .annotation-display {
             display: none;
             margin-bottom: 8px;
             .prompt {
@@ -63,14 +64,14 @@
                 color: #555;
             }
             .prompt:after {
-                content: ':';
+                content: ":";
             }
         }
         .annotation-display {
             .annotation {
                 background: white;
                 border-radius: 3px;
-                border: 1px solid fadeout( $layout-border-color, 50% );
+                border: 1px solid fadeout($layout-border-color, 50%);
                 padding: 4px;
                 white-space: pre-wrap;
                 overflow: auto;
@@ -83,7 +84,7 @@
                 font-style: italic;
                 color: grey;
                 //TODO: move out for localization
-                content : 'Click here to edit annotation';
+                content: "Click here to edit annotation";
             }
             textarea {
                 margin: 0px 0px 2px 0px;
@@ -206,12 +207,12 @@
         .title-bar {
             .title {
                 .hid:after {
-                    content: ':';
+                    content: ":";
                 }
             }
         }
         div.nametags {
-            max-height:26px;
+            max-height: 26px;
             overflow-y: auto;
             span.badge {
                 display: inline-block;
@@ -221,7 +222,6 @@
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------- collapsed history controls
 // compact the history controls when scrolling away from the top
@@ -257,7 +257,6 @@
     }
 }
 
-
 // ---------------------------------------------------------------------------- added class for wider display
 // since these are rendered *within parts* of other pages, we need something more than a media query
 .history-panel.wide {
@@ -268,7 +267,6 @@
     }
 }
 
-
 // ---------------------------------------------------------------------------- collections nested in histories
 .history-panel {
     .dataset-collection {
@@ -277,7 +275,6 @@
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------- annotated-history-panel
 .annotated-history-panel {
@@ -338,7 +335,6 @@
         }
     }
 
-
     & > .list-items {
         width: 100%;
         border-bottom: 1px solid lightgrey;
@@ -349,7 +345,6 @@
     }
 }
 
-
 // ---------------------------------------------------------------------------- embedded in pages
 .embedded-item.display.history .annotated-history-panel {
     & > .controls {
@@ -359,10 +354,8 @@
     }
 }
 
-
 // ---------------------------------------------------------------------------- current-history-panel
 .current-history-panel {
-
     & > .controls .list-pagination {
         // text a bit smaller for all
         font-size: 90%;
@@ -371,14 +364,13 @@
         }
     }
 
-    // .current-content is added to dataset/collection when displayed/edited/visualized, etc@mixin 
+    // .current-content is added to dataset/collection when displayed/edited/visualized, etc@mixin
     //  (roughly: when it's being used in the center panel)
     .list-item.history-content.current-content {
         //TODO: Galaxy's 'bs-primary' color - not sure where this is defined
-        border-left: 5px solid #4E5777;
+        border-left: 5px solid #4e5777;
     }
 }
-
 
 // ---------------------------------------------------------------------------- analyze data page - right panel
 #right.history-right-panel {
@@ -387,12 +379,12 @@
         .unified-panel-header-inner {
             .panel-header-buttons {
                 .panel-header-button {
-                    display : inline-block;
-                    height  : $icon-btn-size;
-                    width   : $icon-btn-size;
-                    text-align  : center;
-                    line-height : $icon-btn-size - 3;
-                    font-size   : 1.2em;
+                    display: inline-block;
+                    height: $icon-btn-size;
+                    width: $icon-btn-size;
+                    text-align: center;
+                    line-height: $icon-btn-size - 3;
+                    font-size: 1.2em;
                     padding: 0px;
                     &:not(:last-child) {
                         margin-right: 2px;
@@ -494,7 +486,7 @@
                 width: 100%;
                 height: 26px;
             }
-            input[type=checkbox] {
+            input[type="checkbox"] {
                 margin-top: 1px;
             }
         }
@@ -592,17 +584,17 @@
         // current history
         &:first-child {
             position: fixed;
-            z-index : 10;
+            z-index: 10;
 
             // visually differentiate the current history
             .history-panel {
                 border: 1px solid black;
-                box-shadow: 4px 4px 4px rgba( 96, 96, 96, 0.3 );
+                box-shadow: 4px 4px 4px rgba(96, 96, 96, 0.3);
             }
         }
         &:nth-child(2) {
             // push the column after the current away from the left (since it's fixed)
-            margin-left: ( $mph-column_width + $mph-column_gap );
+            margin-left: ($mph-column_width + $mph-column_gap);
         }
         &:last-child {
             margin-right: 0px;
@@ -613,7 +605,7 @@
 
         .panel-controls {
             width: 100%;
-            height: ( $mph-controls_height + 4 );
+            height: ($mph-controls_height + 4);
             border-radius: 3px;
             background-color: white;
             text-align: center;
@@ -660,8 +652,8 @@
             & > .controls .subtitle {
                 min-height: 15px;
                 margin: -4px 0px 8px;
-                span+span:before {
-                    content: ', ';
+                span + span:before {
+                    content: ", ";
                 }
             }
 

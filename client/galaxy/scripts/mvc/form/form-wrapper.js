@@ -6,6 +6,9 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model(options);
         this.url = this.model.get("url");
         this.redirect = this.model.get("redirect");
+        if (options && options.active_tab) {
+            this.active_tab = options.active_tab;
+        }
         this.setElement("<div/>");
         this.render();
     },

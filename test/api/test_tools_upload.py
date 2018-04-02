@@ -83,31 +83,36 @@ class ToolsUploadTestCase(api.ApiTestCase):
     def test_rdata_not_decompressed(self):
         # Prevent regression of https://github.com/galaxyproject/galaxy/issues/753
         rdata_path = TestDataResolver().get_filename("1.RData")
-        rdata_metadata = self._upload_and_get_details(open(rdata_path, "rb"), file_type="auto")
+        with open(rdata_path, "rb") as fh:
+            rdata_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEquals(rdata_metadata["file_ext"], "rdata")
 
     @skip_without_datatype("csv")
     def test_csv_upload(self):
         csv_path = TestDataResolver().get_filename("1.csv")
-        csv_metadata = self._upload_and_get_details(open(csv_path, "rb"), file_type="csv")
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, file_type="csv")
         self.assertEquals(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
         csv_path = TestDataResolver().get_filename("1.csv")
-        csv_metadata = self._upload_and_get_details(open(csv_path, "rb"), file_type="auto")
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEquals(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
-        csv_metadata = self._upload_and_get_details(open(csv_path, "rb"), api="fetch", ext="csv", to_posix_lines=True)
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="csv", to_posix_lines=True)
         self.assertEquals(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
-        csv_metadata = self._upload_and_get_details(open(csv_path, "rb"), api="fetch", ext="auto", to_posix_lines=True)
+        with open(csv_path, "rb") as fh:
+            csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
         self.assertEquals(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("velvet")

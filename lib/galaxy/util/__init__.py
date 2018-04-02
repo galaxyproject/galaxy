@@ -817,6 +817,22 @@ def xml_text(root, name=None):
     return ''
 
 
+def parse_resource_parameters(resource_param_file):
+    """Code shared between jobs and workflows for reading resource parameter configuration files.
+
+    TODO: Allow YAML in addition to XML.
+    """
+    resource_parameters = {}
+    if os.path.exists(resource_param_file):
+        resource_definitions = parse_xml(resource_param_file)
+        resource_definitions_root = resource_definitions.getroot()
+        for parameter_elem in resource_definitions_root.findall("param"):
+            name = parameter_elem.get("name")
+            resource_parameters[name] = parameter_elem
+
+    return resource_parameters
+
+
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])

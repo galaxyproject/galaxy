@@ -9,14 +9,14 @@
 
     .info-section {
         border-radius: 3px;
-        border: 1px solid fadeout( $layout-border-color, 70% );
+        border: 1px solid fadeout($layout-border-color, 70%);
         padding: 4px;
     }
 
-    $spacing-top     : 6px;
-    $spacing-right   : 10px;
-    $spacing-bottom  : 6px;
-    $spacing-left    : 8px;
+    $spacing-top: 6px;
+    $spacing-right: 10px;
+    $spacing-bottom: 6px;
+    $spacing-left: 8px;
     .padded {
         padding: $spacing-top $spacing-right $spacing-bottom $spacing-left;
     }
@@ -50,8 +50,8 @@
         width: 32px;
         height: 32px;
         //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 0px -( $spacing-bottom ) 0px;
-        padding: ( $spacing-top + 2 ) 0px 2px ( $spacing-left - 1 );
+        margin: 0px 0px - ($spacing-bottom) 0px;
+        padding: ($spacing-top + 2) 0px 2px ($spacing-left - 1);
         font-size: 80%;
         color: $btn-default-color;
         cursor: pointer;
@@ -76,7 +76,7 @@
             word-break: break-all;
             line-height: 16px;
         }
-//TODO: show keyboard/tab focus for keyboard users
+        //TODO: show keyboard/tab focus for keyboard users
         //&:focus {
         //    color: maroon;
         //}
@@ -122,7 +122,7 @@
             @extend .help-text;
         }
         .prompt:after {
-            content: ':';
+            content: ":";
             margin-right: 4px;
         }
     }
@@ -130,7 +130,6 @@
 
 // ---------------------------------------------------------------------------- generic panel list (of list-items)
 .list-panel {
-
     overflow: hidden;
     // overflow-x: hidden;
 
