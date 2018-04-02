@@ -55,8 +55,7 @@ class CloudStorageManager(sharable.SharableModelManager):
 
         with open(staging_file_name, "r") as f:
             content = f.read()
-            headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format(
-                'files_0|file_data', staging_file), }
+            headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
 
             input_file = FieldStorage(headers=headers)
             input_file.file = input_file.make_file()
