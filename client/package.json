@@ -27,14 +27,11 @@
     "jquery.cookie": "^1.4.1",
     "latex-parser": "^0.6.2",
     "latex-to-unicode-converter": "^0.5.0",
-    "node-sass": "^4.8.3",
     "popper.js": "^1.14.1",
     "raven-js": "^3.17.0",
     "requirejs": "2",
-    "sass-loader": "^6.0.7",
     "underscore": "^1.8.3",
-    "vue": "^2.5.9",
-    "vue-styleguidist": "^1.6.1"
+    "vue": "^2.5.9"
   },
   "scripts": {
     "watch": "gulp staging && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
@@ -87,13 +84,16 @@
     "karma-polyfill": "^1.0.0",
     "karma-qunit": "^1.2.1",
     "karma-webpack": "^2.0.6",
+    "node-sass": "^4.8.3",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
     "prettier": "^1.10.1",
     "qunitjs": "^2.4.1",
+    "sass-loader": "^6.0.7",
     "sinon": "^4.1.2",
-    "vue-loader": "^13.5.0",
-    "vue-template-compiler": "^2.5.9",
+    "vue-loader": "^14.2.2",
+    "vue-styleguidist": "^1.6.1",
+    "vue-template-compiler": "^2.5.16",
     "webpack": "^3.10.0"
   }
 }
