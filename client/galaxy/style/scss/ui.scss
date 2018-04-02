@@ -694,7 +694,7 @@ $ui-margin-horizontal-large: 10px;
 .ui-input {
     width: 100%;
     display: block;
-    height: $input-height-base;
+    height: $input-height;
     padding: $padding-base-vertical $ui-margin-horizontal !important;
     font-size: $font-size-base;
     line-height: $line-height-base;
@@ -918,7 +918,7 @@ $ui-margin-horizontal-large: 10px;
         }
     }
     .ui-gs-browse-field {
-        height: $input-height-base;
+        height: $input-height;
         line-height: $line-height-base;
     }
 }
