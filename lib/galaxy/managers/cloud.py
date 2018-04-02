@@ -25,10 +25,10 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-class CloudStorageManager(sharable.SharableModelManager):
+class CloudManager(sharable.SharableModelManager):
 
     def __init__(self, app, *args, **kwargs):
-        super(CloudStorageManager, self).__init__(app, *args, **kwargs)
+        super(CloudManager, self).__init__(app, *args, **kwargs)
 
     def download(self, trans, history_id, provider, container, obj, credentials):
         if CloudProviderFactory is None:

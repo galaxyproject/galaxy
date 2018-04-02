@@ -6,25 +6,25 @@ import logging
 
 from galaxy import exceptions
 from galaxy import web
-from galaxy.managers import cloud_storage
+from galaxy.managers import cloud
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
 
-class CloudStorageController(BaseAPIController):
+class CloudController(BaseAPIController):
     """
     RESTfull controller for interaction with Amazon S3.
     """
 
     def __init__(self, app):
-        super(CloudStorageController, self).__init__(app)
-        self.cloud_storage_manager = cloud_storage.CloudStorageManager(app)
+        super(CloudController, self).__init__(app)
+        self.cloud_manager = cloud.CloudManager(app)
 
     @web.expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud_storage
+        * GET /api/cloud
             Lists cloud-based containers (e.g., S3 bucket, Azure blob) user has defined.
         :param trans:
         :param kwargs:
@@ -37,7 +37,7 @@ class CloudStorageController(BaseAPIController):
     @web.expose_api
     def download(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud_storage/download
+        * POST /api/cloud/download
             Downloads a given object from a given cloud-based container.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -90,19 +90,19 @@ class CloudStorageController(BaseAPIController):
             trans.response.status = "400"
             return {'status': "400", 'message': 'Invalid history ID. {}'.format(e)}
 
-        status, message = self.cloud_storage_manager.download(trans=trans,
-                                                              history_id=history_id,
-                                                              provider=provider,
-                                                              container=container,
-                                                              obj=obj,
-                                                              credentials=credentials)
+        status, message = self.cloud_manager.download(trans=trans,
+                                                      history_id=history_id,
+                                                      provider=provider,
+                                                      container=container,
+                                                      obj=obj,
+                                                      credentials=credentials)
         trans.response.status = status
         return {'status': status, 'message': message}
 
     @web.expose_api
     def upload(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud_storage/upload
+        * POST /api/cloud/upload
             Uploads a given dataset to a given cloud-based container.
         :param trans:
         :param payload:
