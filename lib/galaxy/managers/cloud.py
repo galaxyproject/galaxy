@@ -32,12 +32,20 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     def _configure_provider(self, provider, credentials):
+        supported_providers = "{aws, azure}"
         if provider == 'aws':
-            aws_config = {'aws_access_key': credentials.get('access_key'),
-                          'aws_secret_key': credentials.get('secret_key')}
-            connection = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+            config = {'aws_access_key': credentials.get('access_key'),
+                      'aws_secret_key': credentials.get('secret_key')}
+            connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
+        elif provider == "azure":
+            config = {'azure_subscription_id': credentials.get('subscription_id'),
+                      'azure_client_id': credentials.get('client_id'),
+                      'azure_secret': credentials.get('secret'),
+                      'azure_tenant': credentials.get('tenant')}
+            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         else:
-            return "400", "Unrecognized provider '{}'.".format(provider), None
+            return "400", "Unrecognized provider '{}'; the following are the supported providers: {}.".format(
+                provider, supported_providers), None
 
         try:
             if connection.authenticate():
