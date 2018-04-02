@@ -138,5 +138,4 @@ class CloudManager(sharable.SharableModelManager):
         return "200", 'The dataset is downloaded successfully.'
 
     def upload(self, dataset, provider, container, obj):
-        # TODO: implement the upload logic.
-        pass
+        raise NotImplementedError

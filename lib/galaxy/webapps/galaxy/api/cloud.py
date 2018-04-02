@@ -109,4 +109,5 @@ class CloudController(BaseAPIController):
         :param kwargs:
         :return:
         """
-        pass
+        trans.response.status = 501
+        return 'Not Implemented'
