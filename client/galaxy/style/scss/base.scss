@@ -1960,7 +1960,7 @@ div.toolTitleNoSection {
 
 /* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
 .tags-display {
-    @extend .list-item.vertical-spacing !optional;
+    @extend %vertical-spacing;
     .select2-container {
         max-height: 80px;
         overflow: auto;
