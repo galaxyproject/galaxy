@@ -1077,6 +1077,9 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         except Exception:
             raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
 
+        if data is None:
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+
         if check_ownership:
             # Verify ownership.
             user = trans.get_user()
