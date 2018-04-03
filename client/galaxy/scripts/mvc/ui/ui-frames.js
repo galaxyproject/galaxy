@@ -50,7 +50,7 @@ var FrameView = Backbone.View.extend({
                         option.onclick(self);
                     })
                     .tooltip({
-                        title: option.tooltip,
+                        title: option.tooltip || "",
                         placement: "bottom"
                     });
             }

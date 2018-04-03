@@ -71,7 +71,7 @@ var Base = Backbone.View.extend({
                     $(self._templateOption(option))
                         .addClass("ui-option")
                         .tooltip({
-                            title: option.tooltip,
+                            title: option.tooltip || "",
                             placement: "bottom"
                         })
                 );
