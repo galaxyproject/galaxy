@@ -57,11 +57,16 @@
     }
 
     // a series of vertical elements that will expand to fill available space
+    // Tried to drop the important here but we have divs with classes of the form:
+    //    flex-column-container scroll-container flex-row
+    // and flex-row specifies a row direction with important. I was unable to separate
+    // this into two separate divs and get the styling right but that'd probably be a
+    // better way to go longer term.
     &.flex-row-container,
     .flex-row-container {
-        -webkit-flex-direction: column;
-        -ms-flex-direction: column;
-        flex-direction: column;
+        -webkit-flex-direction: column !important;
+        -ms-flex-direction: column !important;
+        flex-direction: column !important;
     }
     .flex-row {
         -webkit-flex: 1 auto;
