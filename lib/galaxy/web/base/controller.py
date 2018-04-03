@@ -1078,7 +1078,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
 
         if data is None:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:
             # Verify ownership.
