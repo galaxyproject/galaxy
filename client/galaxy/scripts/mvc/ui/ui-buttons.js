@@ -46,7 +46,7 @@ var ButtonDefault = Backbone.View.extend({
                 $(".tooltip").hide();
                 options.onclick && !this.disabled && options.onclick();
             })
-            .tooltip({ title: options.tooltip || '', placement: "bottom" });
+            .tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
         this.$progress_bar.addClass("progress-bar").css({ width: `${options.percentage}%` });
         this.$icon.removeClass().addClass("icon fa");

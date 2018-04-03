@@ -189,14 +189,17 @@ export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
         this.text = new Input(options);
         var classes = {
-            "checkboxes": Checkbox,
-            "radio": Radio,
-            "radiobutton": RadioButton
-        }
+            checkboxes: Checkbox,
+            radio: Radio,
+            radiobutton: RadioButton
+        };
         var SelectClass = classes[options.display] || Select;
         this.select = new SelectClass.View(options);
-        this.setElement($("<div/>").append(this.select.$el)
-                                   .append(this.text.$el));
+        this.setElement(
+            $("<div/>")
+                .append(this.select.$el)
+                .append(this.text.$el)
+        );
         this.update(options.data);
     },
     value: function(new_val) {
