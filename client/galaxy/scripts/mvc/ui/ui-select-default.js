@@ -205,7 +205,7 @@ var View = Backbone.View.extend({
                         ${_.reduce(
                             filteredTags.slice(0, 5),
                             (memo, tag) => {
-                                return `${memo}&nbsp;<div class="badge badge-primary">${_.escape(tag)}</div>`;
+                                return `${memo}&nbsp;<div class="badge badge-primary badge-tags">${_.escape(tag)}</div>`;
                             },
                             ""
                         )}

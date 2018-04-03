@@ -1,5 +1,5 @@
 function _templateNametag(tag) {
-    return `<span class="badge badge-primary">${_.escape(tag.slice(5))}</span>`;
+    return `<span class="badge badge-primary badge-tags">${_.escape(tag.slice(5))}</span>`;
 }
 
 function nametagTemplate(historyItem) {

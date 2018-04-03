@@ -107,7 +107,7 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
             var renderedArray = [];
             _.each(tags, tag => {
                 tag = tag.indexOf("name:") == 0 ? tag.slice(5) : tag;
-                var renderString = `<span class="badge badge-primary">${tag}</span>`;
+                var renderString = `<span class="badge badge-primary badge-tags">${tag}</span>`;
                 renderedArray.push(renderString);
             });
             if (renderedArray.length === 0) {
