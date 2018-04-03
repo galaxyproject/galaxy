@@ -946,13 +946,13 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+            workflow_button = workflow_row.find_element_by_css_selector(".dropdown .btn")
             workflow_button.click()
 
         click_option()
 
-        menu_element = self.wait_for_selector_visible("ul.action-dpd")
-        menu_options = menu_element.find_elements_by_css_selector("li a")
+        menu_element = self.wait_for_selector_visible(".dropdown.show")
+        menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:

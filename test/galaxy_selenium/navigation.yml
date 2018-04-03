@@ -99,7 +99,7 @@ history_panel:
     selectors:
       show_button: '#current-history-panel .actions .show-selectors-btn'
       action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu.open'
+      action_menu: '.list-action-menu ul.dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"
