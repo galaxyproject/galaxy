@@ -153,6 +153,8 @@
 
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
+        margin-left: 6px;
+        margin-right: 6px;
     }
     .form-row-clear {
         clear: both;
