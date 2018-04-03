@@ -13355,6 +13355,10 @@ div.permissionContainer {
 .list-item .vertical-spacing, .list-panel .vertical-spacing, .dataset .details .summary .dbkey:after, .dataset .details .summary, .dataset .details .actions:not(:last-child), .dataset .details .annotation-display, .dataset .details .display-applications .display-application:last-child, .dataset .details .dataset-peek, .tags-display {
   margin-bottom: 8px; }
 
+.list-item .help-text, .list-item .details .prompt, .dataset .details .summary .datatype .value:after {
+  font-weight: normal;
+  color: #555; }
+
 .list-item {
   border: 1px solid #bfbfbf; }
   .list-item .padded, .list-item .title-bar {

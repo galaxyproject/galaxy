@@ -253,7 +253,7 @@
             }
             .datatype .value:after {
                 content: ",";
-                @extend .list-item.help-text !optional;
+                @extend %help-text;
                 margin-right: 4px;
             }
             .dbkey:after {

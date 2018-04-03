@@ -2,13 +2,18 @@
 
 %info-section {
     border-radius: 3px;
-    border: 1px solid fade-out($layout-border-color, .70);
+    border: 1px solid fade-out($layout-border-color, 0.7);
     padding: 4px;
 }
 
 $vertical-gap: 8px;
 %vertical-spacing {
     margin-bottom: $vertical-gap;
+}
+
+%help-text {
+    font-weight: normal;
+    color: #555;
 }
 
 .list-item {
@@ -48,6 +53,7 @@ $vertical-gap: 8px;
     }
 
     .help-text {
+        @extend %help-text;
         font-weight: normal;
         color: #555;
     }
