@@ -1364,20 +1364,17 @@ boom@5.x.x:
   dependencies:
     hoek "4.x.x"
 
-bootstrap-tour@^0.12.0:
+"bootstrap-tour@https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140":
   version "0.12.0"
-  resolved "https://registry.yarnpkg.com/bootstrap-tour/-/bootstrap-tour-0.12.0.tgz#c56eb48debe9cf788378a20184ef5a761b13b650"
+  resolved "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140"
   dependencies:
-    bootstrap "~3"
-    jquery ">=1.8"
+    bootstrap ">=4.0.0-beta"
+    jquery "^3.0.0"
+    popper.js "^1.12.3"
 
-bootstrap@^4.0.0:
+bootstrap@>=4.0.0-beta, bootstrap@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-4.0.0.tgz#ceb03842c145fcc1b9b4e15da2a05656ba68469a"
-
-bootstrap@~3:
-  version "3.3.7"
-  resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-3.3.7.tgz#5a389394549f23330875a3b150656574f8a9eb71"
 
 boxen@^0.5.1:
   version "0.5.1"
@@ -5463,7 +5460,7 @@ jquery@2:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-2.2.4.tgz#2c89d6889b5eac522a7eea32c14521559c6cbf02"
 
-jquery@>=1.8:
+jquery@^3.0.0:
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.3.1.tgz#958ce29e81c9790f31be7792df5d4d95fc57fbca"
 
@@ -7520,6 +7517,10 @@ pngjs2@^1.2.0:
 pngparse@^1.1.4:
   version "1.1.4"
   resolved "https://registry.yarnpkg.com/pngparse/-/pngparse-1.1.4.tgz#4831be035ed2ce5fd4fb5381e45101cfd60ea84e"
+
+popper.js@^1.12.3:
+  version "1.14.2"
+  resolved "https://registry.yarnpkg.com/popper.js/-/popper.js-1.14.2.tgz#066e8e1613e65e69ba050f4b78e7bd4c8d54e443"
 
 popper.js@^1.14.1:
   version "1.14.1"
