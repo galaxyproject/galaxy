@@ -149,7 +149,7 @@ Nametags/Hashtags display from History
 
 ```
 <div class="nametags" title="" data-original-title="2 nametags">
-    <span class="label label-info">tagone</span>
-    <span class="label label-info">tagtwo</span>
+    <span class="badge badge-info">tagone</span>
+    <span class="badge badge-info">tagtwo</span>
 </div>
 ```
