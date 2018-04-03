@@ -502,11 +502,7 @@ class Registry(object):
 
     def get_datatype_by_extension(self, ext):
         """Returns a datatype object based on an extension"""
-        try:
-            builder = self.datatypes_by_extension[ext]
-        except KeyError:
-            builder = None
-        return builder
+        return self.datatypes_by_extension.get(ext, None)
 
     def change_datatype(self, data, ext):
         data.extension = ext
