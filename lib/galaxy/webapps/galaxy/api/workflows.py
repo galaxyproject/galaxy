@@ -277,9 +277,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'shared_workflow_id',
             'workflow',
         ])
-        if len(ways_to_create.intersection(payload)) != 1:
+
+        if len(ways_to_create.intersection(payload)) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
-            raise exceptions.RequestParameterMissingException(message)
+                raise exceptions.RequestParameterMissingException(message)
+
+        if len(ways_to_create.intersection(payload)) > 1:
+            message = "Only one parameter among - %s - must be specified" % ", ".join(ways_to_create)
+                raise exceptions.RequestParameterInvalidException(message)
 
         if 'installed_repository_file' in payload:
             installed_repository_file = payload.get('installed_repository_file', '')

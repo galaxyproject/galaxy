@@ -796,7 +796,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_import_submit_url(self, url):
         form_button = self.wait_for_selector_visible("#center input[type='button']")
-        url_element = self.find_element_by_css_selector("input[type='text']")
+        url_element = self.wait_for_selector_visible("#center input[type='text']")
         url_element.send_keys(url)
         form_button.click()
 
