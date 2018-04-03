@@ -13,7 +13,7 @@ from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-    from cloudbridge.cloud.interfaces.exceptions import *
+    from cloudbridge.cloud.interfaces.exceptions import ProviderConnectionException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
@@ -80,7 +80,6 @@ class CloudManager(sharable.SharableModelManager):
                 return "200", "", connection
         except ProviderConnectionException as e:
             return "400", "Could not authenticate to the '{}' provider. {}".format(provider, e), None
-
 
     def download(self, trans, history_id, provider, container, obj, credentials):
         if CloudProviderFactory is None:
