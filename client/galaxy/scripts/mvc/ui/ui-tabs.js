@@ -144,16 +144,16 @@ export var View = Backbone.View.extend({
     _template: function() {
         return $("<div/>")
             .addClass("ui-tabs tabbable tabs-left")
-            .append($("<ul/>").addClass("tab-navigation nav nav-tabs"))
+            .append($("<ul/>").attr("style", "display: flex").addClass("tab-navigation nav nav-tabs"))
             .append($("<div/>").addClass("tab-content"));
     },
 
     /** Tab template */
     _template_tab: function(options) {
         var $tmpl = $("<li/>")
-            .addClass("tab-element")
+            .addClass("tab-element nav-item")
             .attr("id", `tab-${options.id}`)
-            .append($("<a/>").attr("id", `tab-title-link-${options.id}`));
+            .append($("<a/>").addClass("nav-link").attr("id", `tab-title-link-${options.id}`));
         var $href = $tmpl.find("a");
         options.icon &&
             $href.append(
