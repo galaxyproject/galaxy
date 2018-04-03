@@ -1,11 +1,15 @@
-import _l from "utils/localization";
 /**
  *  This is the primary galaxy tours definition, currently only used for
  *  rendering a tour menu.
  */
+import _l from "utils/localization";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+/* global $ */
+/* global Galaxy */
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
-import "libs/bootstrap-tour";
+import "bootstrap-tour";
 let Tour = window.Tour;
 
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
@@ -49,7 +53,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
 var tour_opts = {
     storage: window.sessionStorage,
     onEnd: function() {
-        sessionStorage.removeItem("activeGalaxyTour");
+        window.sessionStorage.removeItem("activeGalaxyTour");
     },
     delay: 150, // Attempts to make it look natural
     orphan: true
@@ -175,7 +179,7 @@ export var ToursView = Backbone.View.extend({
 
 export function giveTourWithData(data) {
     let hookedTourData = hooked_tour_from_data(data);
-    sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
+    window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
     let tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
     // Always clean restart, since this is a new, explicit execution.
@@ -193,7 +197,7 @@ export function giveTourById(tour_id) {
 }
 
 export function activeGalaxyTourRunner() {
-    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
+    var et = JSON.parse(window.sessionStorage.getItem("activeGalaxyTour"));
     if (et) {
         et = hooked_tour_from_data(et);
         if (et && et.steps) {

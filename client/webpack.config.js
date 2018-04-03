@@ -23,7 +23,7 @@ var commonLibs = [
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
     "bootstrap",
-    "libs/bootstrap-tour",
+    "bootstrap-tour",
     "vue",
     // mvc
     "libs/underscore",
