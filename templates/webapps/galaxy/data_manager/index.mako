@@ -7,7 +7,7 @@
     ${render_msg( message, status )}
 %endif
 
-<h2>Data Manager</h2>
+<h2 id="data-managers-title">Data Manager</h2>
 
 %if view_only:
     <p>Not implemented</p>

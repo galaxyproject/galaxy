@@ -790,6 +790,9 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def admin_open(self):
+        self.components.masthead.admin.wait_for_and_click()
+
     def libraries_open(self):
         self.home()
         self.click_masthead_shared_data()

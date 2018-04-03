@@ -5,7 +5,7 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
+<div class="toolForm" id="display-applications-grid">
     <div class="toolFormTitle">There are currently ${len( display_applications )} <a class="icon-btn" href="${ h.url_for( controller='admin', action='reload_display_application' ) }" title="Reload all display applications" data-placement="bottom">
                         <span class="fa fa-refresh"></span>
                     </a> display applications loaded.</div>

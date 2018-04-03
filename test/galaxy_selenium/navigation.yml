@@ -49,6 +49,7 @@ masthead:
     visualization: 'Visualization'
     help: 'Help'
     user: 'User'
+    admin: 'Admin'
 
     # user menu
     register: 'Register'
@@ -229,6 +230,37 @@ tour:
       next: '${_} button[data-role="next"]'
       previous: '${_} button[data-role="prev"]'
       end: '${_} button[data-role="end"]'
+
+admin:
+
+  index:
+    selectors:
+      datatypes: '#admin-link-datatypes'
+      data_tables: '#admin-link-data-tables'
+      display_applications: '#admin-link-display-applications'
+      jobs: '#admin-link-jobs'
+      local_data: '#admin-link-local-data'
+      users: '#admin-link-users'
+      quotas: '#admin-link-quotas'
+      groups: '#admin-link-groups'
+      roles: '#admin-link-roles'
+      api_keys: '#admin-link-api-keys'
+      impersonate: '#admin-link-impersonate'
+
+  selectors:
+    # TODO: place betters IDS or something on this in these grids in the DOM
+    datatypes_grid: '#datatypes-grid'
+    data_tables_grid: '#data-tables-grid'
+    display_applications_grid: '#display-applications-grid'
+    update_jobs: 'form[name="jobs"]'
+    data_managers_title: '#data-managers-title'
+    users_grid: '#users-grid'
+    users_grid_create_button: '.manage-table-actions .action-button'
+    groups_grid_create_button: '.manage-table-actions .action-button'
+    registration_form: 'form[name="registration"]'
+    groups_grid: '#groups-grid'
+    roles_grid: '#roles-grid'
+    groups_create_view: '#create-group'
 
 libraries:
 
