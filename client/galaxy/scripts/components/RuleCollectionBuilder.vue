@@ -1859,7 +1859,7 @@ export default {
                 this.$nextTick(function() {
                     const fullWidth = $(".rule-builder-body").width();
                     hotTable.updateSettings({
-                        width: fullWidth - 270
+                        width: fullWidth - 280
                     });
                 });
             }
@@ -2205,7 +2205,7 @@ export default {
     padding: 5px;
 }
 .rules-container-vertical {
-    width: 270px;
+    width: 280px;
     height: 400px;
 }
 .rules-container-horizontal {
