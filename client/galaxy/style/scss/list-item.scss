@@ -1,23 +1,25 @@
 // ---------------------------------------------------------------------------- generic panel list items
 
-.info-section {
+%info-section {
     border-radius: 3px;
     border: 1px solid fade-out($layout-border-color, .70);
     padding: 4px;
 }
 
+$vertical-gap: 8px;
+%vertical-spacing {
+    margin-bottom: $vertical-gap;
+}
+
 .list-item {
     border: 1px solid $border-default-color;
 
-    $vertical-gap: 8px;
     .vertical-spacing {
-        margin-bottom: $vertical-gap;
+        @extend %vertical-spacing;
     }
 
     .info-section {
-        border-radius: 3px;
-        border: 1px solid fade-out($layout-border-color, .70);
-        padding: 4px;
+        @extend %info-section;
     }
 
     $spacing-top: 6px;
@@ -140,10 +142,8 @@
     overflow: hidden;
     // overflow-x: hidden;
 
-    //TODO: duplicated
-    $vertical-gap: 8px;
     .vertical-spacing {
-        margin-bottom: $vertical-gap;
+        @extend %vertical-spacing;
     }
 
     .controls {

@@ -13347,19 +13347,16 @@ div.permissionContainer {
     margin: 0px;
     border-radius: 3px; }
 
-.info-section, .dataset .details .summary .info, .dataset .details .summary .job-error-text, .dataset .details .annotation-display .annotation {
+.list-item .info-section, .dataset .details .summary .info, .dataset .details .summary .job-error-text, .dataset .details .annotation-display .annotation {
   border-radius: 3px;
   border: 1px solid rgba(153, 153, 153, 0.3);
   padding: 4px; }
 
+.list-item .vertical-spacing, .list-panel .vertical-spacing, .dataset .details .summary .dbkey:after, .dataset .details .summary, .dataset .details .actions:not(:last-child), .dataset .details .annotation-display, .dataset .details .display-applications .display-application:last-child, .dataset .details .dataset-peek {
+  margin-bottom: 8px; }
+
 .list-item {
   border: 1px solid #bfbfbf; }
-  .list-item .vertical-spacing {
-    margin-bottom: 8px; }
-  .list-item .info-section, .list-item .dataset .details .summary .info, .dataset .details .summary .list-item .info, .list-item .dataset .details .summary .job-error-text, .dataset .details .summary .list-item .job-error-text, .list-item .dataset .details .annotation-display .annotation, .dataset .details .annotation-display .list-item .annotation {
-    border-radius: 3px;
-    border: 1px solid rgba(153, 153, 153, 0.3);
-    padding: 4px; }
   .list-item .padded, .list-item .title-bar {
     padding: 6px 10px 6px 8px; }
   .list-item .warnings:not(:empty) {
@@ -13425,8 +13422,6 @@ div.permissionContainer {
 
 .list-panel {
   overflow: hidden; }
-  .list-panel .vertical-spacing {
-    margin-bottom: 8px; }
   .list-panel .controls > *:not(:empty) {
     margin-bottom: 8px; }
   .list-panel .controls .name {

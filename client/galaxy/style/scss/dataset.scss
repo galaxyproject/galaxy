@@ -259,22 +259,22 @@
             .dbkey:after {
                 content: " ";
                 display: block;
-                @extend .list-item.vertical-spacing !optional;
+                @extend %vertical-spacing;
             }
             .info {
-                @extend .info-section;
+                @extend %info-section;
                 overflow: auto;
                 .value {
                     white-space: pre-line;
                 }
             }
             .job-error-text {
-                @extend .info-section;
+                @extend %info-section;
                 overflow: auto;
                 white-space: pre;
             }
             // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
-            @extend .list-item.vertical-spacing !optional;
+            @extend %vertical-spacing;
         }
 
         .actions {
@@ -301,7 +301,7 @@
                 }
             }
             &:not(:last-child) {
-                @extend .list-item.vertical-spacing !optional;
+                @extend %vertical-spacing;
             }
         }
 
@@ -311,9 +311,9 @@
         }
         .annotation-display {
             display: none;
-            @extend .list-item.vertical-spacing !optional;
+            @extend %vertical-spacing;
             .annotation {
-                @extend .info-section;
+                @extend %info-section;
                 //white-space: pre-line;
                 white-space: pre-wrap;
                 overflow: auto;
@@ -338,7 +338,7 @@
 
         .display-applications {
             .display-application:last-child {
-                @extend .list-item.vertical-spacing !optional;
+                @extend %vertical-spacing;
             }
         }
 
@@ -351,7 +351,7 @@
         }
 
         .dataset-peek {
-            @extend .list-item.vertical-spacing !optional;
+            @extend %vertical-spacing;
             width: 100%;
             margin: 0px;
             border-radius: 3px;

@@ -1331,7 +1331,7 @@ a.action-button {
     @extend .btn-secondary;
 
     &:hover {
-        @extend .btn.hover !optional;
+        @extend .btn:hover;
     }
     &:active {
         @extend .btn.active;
