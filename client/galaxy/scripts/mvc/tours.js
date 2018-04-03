@@ -5,11 +5,12 @@
 import _l from "utils/localization";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
+import "bootstrap-tour";
+
 /* global $ */
 /* global Galaxy */
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
-import "bootstrap-tour";
 let Tour = window.Tour;
 
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
