@@ -32,9 +32,9 @@ export var View = Backbone.View.extend({
         var id = this.model.get("current");
         id = this.$(`#${id}`).length > 0 ? id : this.first();
         if (id) {
-            this.$nav.children().removeClass("active");
+            this.$nav.find(".nav-link.active").removeClass("active");
             this.$content.children().removeClass("active");
-            this.$(`#tab-${id}`).addClass("active");
+            this.$(`#tab-${id} .nav-link`).addClass("active");
             this.$(`#${id}`).addClass("active");
         }
         this.$el[this.model.get("visible") ? "fadeIn" : "fadeOut"]("fast");
