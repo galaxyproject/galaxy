@@ -429,9 +429,9 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
-            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.wait_for_visible(self.navigation.masthead.selectors.user_email)
+                user_email_element = self.components.masthead.user_email.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]

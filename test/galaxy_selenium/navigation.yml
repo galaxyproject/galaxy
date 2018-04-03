@@ -29,11 +29,12 @@ masthead:
 
     user:
       type: xpath
-      selector: '//ul[@id="user"]'
+      selector: '//li[@id="user"]'
 
+    user_menu: 'li#user ul.dropdown-menu'
     workflow:
       type: xpath
-      selector: '//ul[@id="workflow"]'
+      selector: '//li[@id="workflow"]'
 
     user_email:
       type: xpath
