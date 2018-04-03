@@ -294,22 +294,20 @@ var HistoryViewEdit = _super.extend(
             return [
                 {
                     html: _l("Build Dataset List"),
-                    func: function() {
-                        panel.buildCollection("list");
-                    }
+                    func: () => panel.buildCollection("list")
                 },
                 // TODO: Only show quick pair if two things selected.
                 {
                     html: _l("Build Dataset Pair"),
-                    func: function() {
-                        panel.buildCollection("paired");
-                    }
+                    func: () => panel.buildCollection("paired")
                 },
                 {
                     html: _l("Build List of Dataset Pairs"),
-                    func: function() {
-                        panel.buildCollection("list:paired");
-                    }
+                    func: () => panel.buildCollection("list:paired")
+                },
+                {
+                    html: _l("Build Collection from Rules"),
+                    func: () => panel.buildCollection("rules")
                 }
             ];
         },
@@ -325,6 +323,8 @@ var HistoryViewEdit = _super.extend(
                 createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
             } else if (collectionType == "list:paired") {
                 createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+            } else if (collectionType.startsWith("rules")) {
+                createFunc = LIST_COLLECTION_CREATOR.createCollectionViaRules;
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
