@@ -22,6 +22,9 @@ pre {
 
 .dropdown-menu {
     max-width: auto;
+    .dropdown-item {
+        text-decoration: none;
+    }
 }
 
 input[type="checkbox"],

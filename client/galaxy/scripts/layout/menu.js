@@ -318,22 +318,25 @@ var Tab = Backbone.View.extend({
     initialize: function(options) {
         this.model = options.model;
         this.setElement(this._template());
-        this.$dropdown = this.$(".dropdown");
-        this.$toggle = this.$(".dropdown-toggle");
+        this.$link = this.$(".nav-link");
         this.$menu = this.$(".dropdown-menu");
         this.$note = this.$(".dropdown-note");
         this.listenTo(this.model, "change", this.render, this);
     },
 
     events: {
-        "click .dropdown-toggle": "_toggleClick"
+        "click .nav-link": "_toggleClick"
     },
 
     render: function() {
         $(".tooltip").remove();
-        this.$el.attr("id", this.model.id).css({
-            visibility: (this.model.get("visible") && "visible") || "hidden"
-        });
+        this.$el.removeClass()
+                .addClass(this.model.get("disabled") && "disabled")
+                .addClass(this.model.get("active") && "active")
+                .addClass(this.model.get("menu") && "dropdown")
+                .attr("id", this.model.id).css({
+                    visibility: (this.model.get("visible") && "visible") || "hidden"
+                });
         this.model.set("url", this._formatUrl(this.model.get("url")));
         this.$note
             .html(this.model.get("note") || "")
@@ -343,25 +346,18 @@ var Tab = Backbone.View.extend({
             .css({
                 display: (this.model.get("show_note") && "block") || "none"
             });
-        this.$toggle
+        this.$link
             .html(this.model.get("title") || "")
-            .addClass("dropdown-toggle")
             .addClass(this.model.get("cls"))
             .addClass(this.model.get("icon") && `dropdown-icon fa ${this.model.get("icon")}`)
+            .addClass(this.model.get("menu") && "dropdown-toggle")
             .addClass(this.model.get("toggle") && "toggle")
             .attr("target", this.model.get("target"))
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
             .tooltip("dispose");
         if (this.model.get("tooltip")) {
-            this.$toggle.tooltip({ placement: "bottom" });
-        }
-        if (!this.model.get("menu")) {
-            this.$dropdown
-                .removeClass()
-                .addClass("dropdown")
-                .addClass(this.model.get("disabled") && "disabled")
-                .addClass(this.model.get("active") && "active");
+            this.$link.tooltip({ placement: "bottom" });
         }
         if (this.model.get("menu") && this.model.get("show_menu")) {
             this.$menu.show();
@@ -376,16 +372,16 @@ var Tab = Backbone.View.extend({
             this.$menu.hide();
             $("#dd-helper").hide();
         }
-        this.$menu.empty().removeClass("dropdown-menu");
+        this.$menu.empty().removeClass();
         if (this.model.get("menu")) {
             _.each(this.model.get("menu"), menuItem => {
                 this.$menu.append(this._buildMenuItem(menuItem));
                 if (menuItem.divider) {
-                    this.$menu.append($("<li/>").addClass("divider"));
+                    this.$menu.append($("<div/>").addClass("dropdown-divider"));
                 }
             });
             this.$menu.addClass("dropdown-menu");
-            this.$toggle.append($("<b/>").addClass("caret"));
+            this.$link.append($("<b/>").addClass("caret"));
         }
         return this;
     },
@@ -399,21 +395,19 @@ var Tab = Backbone.View.extend({
             noscratchbook: false
         });
         options.url = this._formatUrl(options.url);
-        return $("<li/>").append(
-            $("<a/>")
-                .attr("href", options.url)
-                .attr("target", options.target)
-                .html(options.title)
-                .on("click", e => {
-                    e.preventDefault();
-                    this.model.set("show_menu", false);
-                    if (options.onclick) {
-                        options.onclick();
-                    } else {
-                        Galaxy.frame.add(options);
-                    }
-                })
-        );
+        return $("<a/>").addClass("dropdown-item")
+                        .attr("href", options.url)
+                        .attr("target", options.target)
+                        .html(options.title)
+                        .on("click", e => {
+                            e.preventDefault();
+                            this.model.set("show_menu", false);
+                            if (options.onclick) {
+                                options.onclick();
+                            } else {
+                                Galaxy.frame.add(options);
+                            }
+                        });
     },
 
     buildLink: function(label, url) {
@@ -447,10 +441,10 @@ var Tab = Backbone.View.extend({
                 model.set("show_menu", true);
             }
         } else {
-            if (this.$toggle.popover) {
-                this.$toggle.popover("destroy");
+            if (this.$link.popover) {
+                this.$link.popover("destroy");
             }
-            this.$toggle
+            this.$link
                 .popover({
                     html: true,
                     placement: "bottom",
@@ -461,7 +455,7 @@ var Tab = Backbone.View.extend({
                 })
                 .popover("show");
             window.setTimeout(() => {
-                this.$toggle.popover("destroy");
+                this.$link.popover("destroy");
             }, 5000);
         }
     },
@@ -474,9 +468,9 @@ var Tab = Backbone.View.extend({
     /** body tempate */
     _template: function() {
         return `
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle"/>
-                <ul class="dropdown-menu"/>
+            <li class="nav-item">
+                <a class="nav-link"/>
+                <div class="dropdown-menu"/>
                 <div class="dropdown-note"/>
             </li>`;
     }

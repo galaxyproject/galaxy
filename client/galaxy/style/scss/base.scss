@@ -421,23 +421,15 @@ div.unified-panel-body-background {
 
 // Masthead
 #masthead {
-    //     position:absolute;
-    //     top:0;
-    //     left:0;
-    //     width:100%;
-    //     min-width:990px;
     padding: 0;
     margin-bottom: 0px;
-    //     .nav {
-    //         z-index: 15001;
-    //     }
-    //     .nav > li > a {
-    //         cursor: pointer;
-    //         text-decoration: none;
-    //         &:hover {
-    //             color: gold;
-    //         }
-    //     }
+    .nav-link {
+        cursor: pointer;
+        text-decoration: $navbar-default-link-text-decoration;
+        &:hover {
+            color: $navbar-default-link-hover-color;
+        }
+    }
     .navbar-brand {
         position: absolute;
         left: 0;
@@ -450,15 +442,14 @@ div.unified-panel-body-background {
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
-        //         z-index: 2000;
-        img {
+        .navbar-brand-image {
             display: inline;
             width: 26px;
             vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
-        a {
+        .navbar-brand-title {
             color: white;
             text-decoration: none;
         }

@@ -88,12 +88,10 @@ var View = Backbone.View.extend({
     _template: function() {
         return `
             <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark bg-dark">
-                <div class="navbar-brand">
-                    <a class="navbar-brand-link">
-                        <img class="navbar-brand-image"/>
-                        <span class="navbar-brand-title"/>
-                    </a>
-                </div>
+                <a class="navbar-brand">
+                    <img class="navbar-brand-image"/>
+                    <span class="navbar-brand-title"/>
+                </a>
                 <ul class="navbar-nav"/>
                 <div class="quota-meter-container"/>
             </nav>`;
