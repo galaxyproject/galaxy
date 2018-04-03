@@ -115,7 +115,9 @@ const WorkflowItemView = Backbone.View.extend({
         return `
             <td>
                 <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">${_.escape(this.model.get("name"))}
+                    <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">${_.escape(
+                        this.model.get("name")
+                    )}
                         <span class="caret"></span>
                     </button>
                     ${this._templateActions()}
