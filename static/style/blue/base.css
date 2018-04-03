@@ -8763,7 +8763,8 @@ button, .action-button, .menubutton {
 input[type="checkbox"],
 input[type="radio"] {
   margin-left: 0.5ex;
-  margin-right: 0.5ex; }
+  margin-right: 0.5ex;
+  float: left; }
 
 .modal-dialog {
   width: 690px;
@@ -10594,7 +10595,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   width: 100%; }
   .ui-radiobutton label {
     height: auto;
-    line-height: 1em; }
+    line-height: 1.5em; }
   .ui-radiobutton i {
     padding-right: 5px;
     font-size: 1.1em; }
@@ -13346,13 +13347,18 @@ div.permissionContainer {
     margin: 0px;
     border-radius: 3px; }
 
+.info-section, .dataset .details .summary .info, .dataset .details .summary .job-error-text, .dataset .details .annotation-display .annotation {
+  border-radius: 3px;
+  border: 1px solid rgba(153, 153, 153, 0.3);
+  padding: 4px; }
+
 .list-item {
   border: 1px solid #bfbfbf; }
   .list-item .vertical-spacing {
     margin-bottom: 8px; }
-  .list-item .info-section {
+  .list-item .info-section, .list-item .dataset .details .summary .info, .dataset .details .summary .list-item .info, .list-item .dataset .details .summary .job-error-text, .dataset .details .summary .list-item .job-error-text, .list-item .dataset .details .annotation-display .annotation, .dataset .details .annotation-display .list-item .annotation {
     border-radius: 3px;
-    border: 1px solid fadeout(#999, 70%);
+    border: 1px solid rgba(153, 153, 153, 0.3);
     padding: 4px; }
   .list-item .padded, .list-item .title-bar {
     padding: 6px 10px 6px 8px; }

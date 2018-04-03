@@ -1,4 +1,11 @@
 // ---------------------------------------------------------------------------- generic panel list items
+
+.info-section {
+    border-radius: 3px;
+    border: 1px solid fade-out($layout-border-color, .70);
+    padding: 4px;
+}
+
 .list-item {
     border: 1px solid $border-default-color;
 
@@ -9,7 +16,7 @@
 
     .info-section {
         border-radius: 3px;
-        border: 1px solid fadeout($layout-border-color, 70%);
+        border: 1px solid fade-out($layout-border-color, .70);
         padding: 4px;
     }
 

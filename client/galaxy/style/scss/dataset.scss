@@ -262,14 +262,14 @@
                 @extend .list-item.vertical-spacing !optional;
             }
             .info {
-                @extend .list-item.info-section !optional;
+                @extend .info-section;
                 overflow: auto;
                 .value {
                     white-space: pre-line;
                 }
             }
             .job-error-text {
-                @extend .list-item.info-section !optional;
+                @extend .info-section;
                 overflow: auto;
                 white-space: pre;
             }
@@ -313,7 +313,7 @@
             display: none;
             @extend .list-item.vertical-spacing !optional;
             .annotation {
-                @extend .list-item.info-section !optional;
+                @extend .info-section;
                 //white-space: pre-line;
                 white-space: pre-wrap;
                 overflow: auto;
