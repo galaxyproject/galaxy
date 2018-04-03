@@ -44,13 +44,19 @@ class CloudController(BaseAPIController):
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
-            *   history_id: the (encoded) id of history to which the object should be downloaded to.
-
+            *   history_id:    the (encoded) id of history to which the object should be downloaded to.
+            *   provider:      the name of cloud-based resource provided (e.g., 'aws' or 'azure').
+            *   container:     is the name of container from which data should be downloaded (e.g., a bucket name on AWS S3).
+            *   object:        is the name of an object to be downloaded.
+            *   credentials:   is a dictionary containing all the credentials required to authenticated to the
+            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
         :param kwargs:
 
-        :rtype:  boolean
-        :return: True/False if the given object is successfully downloaded from the cloud-based storage.
+        :rtype:  dictionary
+        :return: a dictionary with the following keys:
+            *   status:     HTTP status code (e.g., "200" if the provided object is successfully downloaded to Galaxy).
+            *   message:    a description complementary to the status code.
         """
         if not isinstance(payload, dict):
             trans.response.status = "400"
