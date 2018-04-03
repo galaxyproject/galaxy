@@ -39,7 +39,7 @@
             margin-top: 4px;
             .back {
                 span {
-                    @extend .fa-lg !optional;
+                    @extend .fa-lg;
                     margin-right: 4px;
                     font-weight: bold;
                 }
