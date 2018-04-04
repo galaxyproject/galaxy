@@ -267,7 +267,6 @@ var ButtonMenu = ButtonDefault.extend({
         this.setElement(
             $("<div/>").append(
                 (this.$root = $("<div/>")
-                    .append((this.$icon = $("<i/>")))
                     .append((this.$title = $("<span/>"))))
             )
         );
@@ -296,15 +295,10 @@ var ButtonMenu = ButtonDefault.extend({
                 e.preventDefault();
                 options.onclick && options.onclick();
             });
-        this.$icon
-            .removeClass()
-            .addClass("icon fa")
-            .addClass(options.icon);
         this.$title
             .removeClass()
             .addClass("title")
             .html(options.title);
-        options.icon && options.title && this.$icon.addClass("ui-margin-right");
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
