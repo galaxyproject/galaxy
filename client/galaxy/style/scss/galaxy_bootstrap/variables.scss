@@ -188,16 +188,13 @@ $padding-base-vertical: 0.25rem;
 $padding-base-horizontal: 0.625rem;
 
 $line-height-large: 1.33;
-$line-height-small: 1.5;
 
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
-$border-radius-small: 0.125rem;
 
 // Tables
 // -------------------------
 
-$table-bg: transparent; // overall background-color
 $table-bg-accent: #f9f9f9; // for striping
 $table-bg-hover: #f5f5f5;
 $table-bg-active: $table-bg-hover;
@@ -226,12 +223,6 @@ $input-bg-disabled: $gray-lighter;
 // Try to avoid customizing these :)
 
 $zindex-navbar: 1000;
-$zindex-dropdown: 1000;
-$zindex-popover: 1010;
-$zindex-tooltip: 1030;
-$zindex-navbar-fixed: 1030;
-$zindex-modal-background: 1040;
-$zindex-modal: 1050;
 
 // Grid system
 // --------------------------------------------------
@@ -266,42 +257,12 @@ $navbar-default-link-disabled-color: #ccc;
 $navbar-default-link-disabled-bg: transparent;
 $navbar-default-link-text-decoration: none;
 
-// Navbar brand label
-$navbar-default-brand-color: $navbar-default-link-color;
-$navbar-default-brand-hover-color: darken($navbar-default-link-color, 10%);
-$navbar-default-brand-hover-bg: transparent;
-
 // Navbar toggle
 $navbar-default-toggle-hover-bg: #ddd;
 $navbar-default-toggle-icon-bar-bg: #ccc;
 $navbar-default-toggle-border-color: #ddd;
 
-// Inverted navbar
 //
-// Reset inverted navbar basics
-$navbar-inverse-color: $gray-light;
-$navbar-inverse-bg: darken($base-color, 25%); //JT #222;
-$navbar-inverse-border: darken($navbar-inverse-bg, 10%);
-
-// Inverted navbar links
-$navbar-inverse-link-color: $gray-light;
-$navbar-inverse-link-hover-color: $white;
-$navbar-inverse-link-hover-bg: transparent;
-$navbar-inverse-link-active-color: $navbar-inverse-link-hover-color;
-$navbar-inverse-link-active-bg: darken($navbar-inverse-bg, 10%);
-$navbar-inverse-link-disabled-color: #666;
-$navbar-inverse-link-disabled-bg: transparent;
-
-// Inverted navbar brand label
-$navbar-inverse-brand-color: $navbar-inverse-link-color;
-$navbar-inverse-brand-hover-color: $white;
-$navbar-inverse-brand-hover-bg: transparent;
-
-// Inverted navbar toggle
-$navbar-inverse-toggle-hover-bg: #333;
-$navbar-inverse-toggle-icon-bar-bg: $white;
-$navbar-inverse-toggle-border-color: #333;
-
 // Navs
 // -------------------------
 

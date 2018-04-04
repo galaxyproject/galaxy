@@ -4097,7 +4097,7 @@ button.close {
 
 .tooltip {
   position: absolute;
-  z-index: 1030;
+  z-index: 1070;
   display: block;
   margin: 0;
   font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
@@ -4182,7 +4182,7 @@ button.close {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1010;
+  z-index: 1060;
   display: block;
   max-width: 276px;
   font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
