@@ -8759,6 +8759,8 @@ button, .action-button, .menubutton {
 
 .dropdown-menu {
   max-width: auto; }
+  .dropdown-menu .dropdown-item, ul.dropdown-menu li {
+    text-decoration: none; }
 
 input[type="checkbox"],
 input[type="radio"] {
@@ -12448,6 +12450,11 @@ div.unified-panel-body-background {
 #masthead {
   padding: 0;
   margin-bottom: 0px; }
+  #masthead .nav-link {
+    cursor: pointer;
+    text-decoration: none; }
+    #masthead .nav-link:hover {
+      color: gold; }
   #masthead .navbar-brand {
     position: absolute;
     left: 0;
@@ -12459,13 +12466,13 @@ div.unified-panel-body-background {
     color: white;
     padding: 5px 20px 12px;
     margin-left: -15px; }
-    #masthead .navbar-brand img {
+    #masthead .navbar-brand .navbar-brand-image {
       display: inline;
       width: 26px;
       vertical-align: top;
       margin-left: 0.35em;
       border: none; }
-    #masthead .navbar-brand a {
+    #masthead .navbar-brand .navbar-brand-title {
       color: white;
       text-decoration: none; }
 
