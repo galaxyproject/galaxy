@@ -442,6 +442,7 @@ div.unified-panel-body-background {
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
+        text-decoration: none;
         .navbar-brand-image {
             display: inline;
             width: 26px;
@@ -451,7 +452,6 @@ div.unified-panel-body-background {
         }
         .navbar-brand-title {
             color: white;
-            text-decoration: none;
         }
     }
     //     .navbar-header {

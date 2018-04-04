@@ -12475,7 +12475,8 @@ div.unified-panel-body-background {
     line-height: 1;
     color: white;
     padding: 5px 20px 12px;
-    margin-left: -15px; }
+    margin-left: -15px;
+    text-decoration: none; }
     #masthead .navbar-brand .navbar-brand-image {
       display: inline;
       width: 26px;
@@ -12483,8 +12484,7 @@ div.unified-panel-body-background {
       margin-left: 0.35em;
       border: none; }
     #masthead .navbar-brand .navbar-brand-title {
-      color: white;
-      text-decoration: none; }
+      color: white; }
 
 .quota-meter-container {
   position: absolute;
