@@ -211,7 +211,7 @@ var LibraryToolbarView = Backbone.View.extend({
                                         '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
                                     '</div>',
                                     '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
-                                        '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
+                                        '<button id="create_new_library_btn" class="primary-button btn-sm" type="button"><span class="fa fa-plus"></span> New Library</button>',
                                     "</span>",
                                 "<% } %>", // end admins
                         "</form>",
