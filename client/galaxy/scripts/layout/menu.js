@@ -319,8 +319,8 @@ var Tab = Backbone.View.extend({
         this.model = options.model;
         this.setElement(this._template());
         this.$link = this.$(".nav-link");
+        this.$note = this.$(".nav-note");
         this.$menu = this.$(".dropdown-menu");
-        this.$note = this.$(".dropdown-note");
         this.listenTo(this.model, "change", this.render, this);
     },
 
@@ -343,15 +343,17 @@ var Tab = Backbone.View.extend({
         this.$note
             .html(this.model.get("note") || "")
             .removeClass()
-            .addClass("dropdown-note")
+            .addClass("nav-note")
             .addClass(this.model.get("note_cls"))
             .css({
                 display: (this.model.get("show_note") && "block") || "none"
             });
         this.$link
             .html(this.model.get("title") || "")
+            .removeClass()
+            .addClass("nav-link")
             .addClass(this.model.get("cls"))
-            .addClass(this.model.get("icon") && `dropdown-icon fa ${this.model.get("icon")}`)
+            .addClass(this.model.get("icon") && `nav-icon fa ${this.model.get("icon")}`)
             .addClass(this.model.get("menu") && "dropdown-toggle")
             .addClass(this.model.get("toggle") && "toggle")
             .attr("target", this.model.get("target"))
@@ -473,8 +475,8 @@ var Tab = Backbone.View.extend({
         return `
             <li class="nav-item">
                 <a class="nav-link"/>
+                <div class="nav-note"/>
                 <div class="dropdown-menu"/>
-                <div class="dropdown-note"/>
             </li>`;
     }
 });

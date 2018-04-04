@@ -423,11 +423,28 @@ div.unified-panel-body-background {
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    .nav-link {
-        cursor: pointer;
-        text-decoration: $navbar-default-link-text-decoration;
-        &:hover {
-            color: $navbar-default-link-hover-color;
+    .navbar-nav {
+        .nav-link {
+            cursor: pointer;
+            text-decoration: $navbar-default-link-text-decoration;
+            &:hover {
+                color: $navbar-default-link-hover-color;
+            }
+            &.nav-icon {
+                font-size: 1.7em;
+            }
+            &.toggle {
+                color: gold;
+            }
+        }
+        .nav-note {
+            font-weight: bold;
+            font-size: 10px;
+            position: relative;
+            left: 30px;
+            top: -15px;
+            color: gold;
+            height: 0px;
         }
     }
     .navbar-brand {
@@ -454,37 +471,6 @@ div.unified-panel-body-background {
             color: white;
         }
     }
-    //     .navbar-header {
-    //         position: relative;
-    //         right: -50%;
-    //         float: left;
-    //         .navbar-tabs {
-    //             display: block;
-    //             position: relative;
-    //             right: 50%;
-    //         }
-    //     }
-    //     .navbar-tabs {
-    //         .toggle {
-    //             color           : gold;
-    //         }
-    //         .dropdown-icon {
-    //             top             : 1px;
-    //             font-size       : 1.8em;
-    //         }
-    //         .dropdown-note {
-    //             font-weight     : bold;
-    //             font-size       : 10px;
-    //             position        : absolute;
-    //             left            : 35px;
-    //             top             : 20px;
-    //             color           : gold;
-    //         }
-    //     }
-    //     li.dropdown > a:hover .caret {
-    //         border-top-color: gold;
-    //         border-bottom-color: gold;
-    //     }
 }
 
 .quota-meter-container {
