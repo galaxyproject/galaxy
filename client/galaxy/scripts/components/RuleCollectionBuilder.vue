@@ -323,7 +323,7 @@
                     <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
                 </select2>
             </label>
-            <label class="rule-option pull-right" v-if="mappingAsDict.list_identifiers && !mappingAsDict.collection_name">
+            <label class="rule-option pull-right" v-if="showCollectionNameInput">
                 {{ l("Name") }}:
                 <input class="collection-name" style="width: 260px" 
                 :placeholder="namePlaceholder" v-model="collectionName" />
@@ -847,6 +847,9 @@ export default {
     },
     showGenomeSelector() {
         return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
+    },
+    showCollectionNameInput() {
+        return this.importType == "collections" && !this.mappingAsDict.collection_name;
     },
     titleFinish() {
         if(this.elementsType == "datasets") {
