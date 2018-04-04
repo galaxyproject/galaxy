@@ -330,13 +330,15 @@ var Tab = Backbone.View.extend({
 
     render: function() {
         $(".tooltip").remove();
-        this.$el.removeClass()
-                .addClass(this.model.get("disabled") && "disabled")
-                .addClass(this.model.get("active") && "active")
-                .addClass(this.model.get("menu") && "dropdown")
-                .attr("id", this.model.id).css({
-                    visibility: (this.model.get("visible") && "visible") || "hidden"
-                });
+        this.$el
+            .removeClass()
+            .addClass(this.model.get("disabled") && "disabled")
+            .addClass(this.model.get("active") && "active")
+            .addClass(this.model.get("menu") && "dropdown")
+            .attr("id", this.model.id)
+            .css({
+                visibility: (this.model.get("visible") && "visible") || "hidden"
+            });
         this.model.set("url", this._formatUrl(this.model.get("url")));
         this.$note
             .html(this.model.get("note") || "")
@@ -395,19 +397,20 @@ var Tab = Backbone.View.extend({
             noscratchbook: false
         });
         options.url = this._formatUrl(options.url);
-        return $("<a/>").addClass("dropdown-item")
-                        .attr("href", options.url)
-                        .attr("target", options.target)
-                        .html(options.title)
-                        .on("click", e => {
-                            e.preventDefault();
-                            this.model.set("show_menu", false);
-                            if (options.onclick) {
-                                options.onclick();
-                            } else {
-                                Galaxy.frame.add(options);
-                            }
-                        });
+        return $("<a/>")
+            .addClass("dropdown-item")
+            .attr("href", options.url)
+            .attr("target", options.target)
+            .html(options.title)
+            .on("click", e => {
+                e.preventDefault();
+                this.model.set("show_menu", false);
+                if (options.onclick) {
+                    options.onclick();
+                } else {
+                    Galaxy.frame.add(options);
+                }
+            });
     },
 
     buildLink: function(label, url) {
