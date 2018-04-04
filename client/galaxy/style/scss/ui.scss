@@ -111,6 +111,7 @@ $ui-margin-horizontal-large: 10px;
     }
     .modal-backdrop {
         z-index: -1;
+        opacity: 0.5;
     }
     .modal-body {
         position: static;
