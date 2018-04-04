@@ -31,7 +31,7 @@ masthead:
       type: xpath
       selector: '//li[@id="user"]'
 
-    user_menu: 'li#user ul.dropdown-menu'
+    user_menu: 'li#user .dropdown-menu'
     workflow:
       type: xpath
       selector: '//li[@id="workflow"]'
