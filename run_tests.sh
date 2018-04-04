@@ -542,12 +542,9 @@ if [ -z "$skip_common_startup" ]; then
     ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
 fi
 
-GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
-if [ -z "$skip_venv" -a -d "$GALAXY_VIRTUAL_ENV" ];
-then
-    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
+. ./scripts/common_startup_functions.sh
+
+setup_python
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
