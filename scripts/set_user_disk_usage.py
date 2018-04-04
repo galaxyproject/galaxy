@@ -8,7 +8,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
-from galaxy.model.util import pgcalc
+from galaxy.model.util import pgcalc, pgcalc_deleted
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -51,6 +51,7 @@ def quotacheck(sa_session, users, engine):
             return quotacheck(sa_session, user, engine)
     else:
         new = pgcalc(sa_session, user.id, dryrun=args.dryrun)
+        deleted = pgcalc_deleted(sa_session, user.id)
     # yes, still a small race condition between here and the flush
     print('old usage:', nice_size(current), '(active:', nice_size(current - deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
     if new in (current, None):
