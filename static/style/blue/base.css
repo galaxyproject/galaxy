@@ -4097,7 +4097,7 @@ button.close {
 
 .tooltip {
   position: absolute;
-  z-index: 1030;
+  z-index: 1070;
   display: block;
   margin: 0;
   font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
@@ -4182,7 +4182,7 @@ button.close {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 1010;
+  z-index: 1060;
   display: block;
   max-width: 276px;
   font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
@@ -12442,11 +12442,23 @@ div.unified-panel-body-background {
 #masthead {
   padding: 0;
   margin-bottom: 0px; }
-  #masthead .nav-link {
+  #masthead .navbar-nav .nav-link {
     cursor: pointer;
     text-decoration: none; }
-    #masthead .nav-link:hover {
+    #masthead .navbar-nav .nav-link:hover {
       color: gold; }
+    #masthead .navbar-nav .nav-link.nav-icon {
+      font-size: 1.7em; }
+    #masthead .navbar-nav .nav-link.toggle {
+      color: gold; }
+  #masthead .navbar-nav .nav-note {
+    font-weight: bold;
+    font-size: 10px;
+    position: relative;
+    left: 30px;
+    top: -15px;
+    color: gold;
+    height: 0px; }
   #masthead .navbar-brand {
     position: absolute;
     left: 0;
@@ -12667,12 +12679,14 @@ input,
 textarea {
   font: inherit; }
 
-.form-row select,
-.form-row textarea,
-.form-row input[type="text"],
-.form-row input[type="file"],
-.form-row input[type="password"] {
-  max-width: 90%; }
+.form-row {
+  display: block; }
+  .form-row select,
+  .form-row textarea,
+  .form-row input[type="text"],
+  .form-row input[type="file"],
+  .form-row input[type="password"] {
+    max-width: 90%; }
 
 textarea,
 input[type="text"],

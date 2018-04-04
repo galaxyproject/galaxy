@@ -27,7 +27,7 @@
         top: 0px;
         left: 0px;
         opacity: 0.5;
-        background: $navbar-inverse-bg;
+        background: darken($base-color, 25%);
         border: 1px solid $navbar-default-border;
     }
 
