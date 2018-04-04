@@ -194,8 +194,8 @@
                                     <span class="fa fa-times" @click="removeMapping(map.index)"></span>
                                 </column-selector>
                             </div>
-                            <div class="buttons btn-group pull-right rule-edit-buttons" v-if="unmappedTargets.length > 0">
-                                <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;">
+                            <div class="buttons btn-group pull-right rule-edit-buttons">
+                                <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <ul class="dropdown-menu" role="menu">
