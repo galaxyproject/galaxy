@@ -306,22 +306,22 @@ h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-compos
   color: inherit; }
 
 h1, .h1 {
-  font-size: 1rem; }
+  font-size: 1.5rem; }
 
 h2, .h2 {
-  font-size: 1rem; }
+  font-size: 1.3125rem; }
 
 h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header, .h3 {
-  font-size: 2rem; }
+  font-size: 1.125rem; }
 
 h4, .h4 {
-  font-size: 1rem; }
+  font-size: 0.9375rem; }
 
 h5, .h5 {
   font-size: 0.75rem; }
 
 h6, .h6 {
-  font-size: 1rem; }
+  font-size: 0.6375rem; }
 
 .lead {
   font-size: 0.9375rem;
@@ -8768,6 +8768,11 @@ input[type="radio"] {
   margin-right: 0.5ex;
   float: left; }
 
+.badge-tags {
+  background-color: #3189a3;
+  padding: 0.2em 0.6em 0.3em;
+  border-radius: 0.15rem; }
+
 .modal-dialog {
   width: 690px;
   max-width: 900px; }
@@ -9757,7 +9762,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   border-radius: 0.1875rem; }
   .upload-button .progress {
     height: 21px;
-    margin: 0px; }
+    margin: 0px;
+    font-size: 0.75rem;
+    background-color: #f5f5f5; }
   .upload-button .progress-bar-danger {
     background: #f9c7c6; }
   .upload-button .progress-bar-success {
@@ -10080,7 +10087,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     border: none !important;
     padding-bottom: 0px !important; }
   .ui-modal .modal-backdrop, .ui-modal-styled .modal-backdrop {
-    z-index: -1; }
+    z-index: -1;
+    opacity: 0.5; }
   .ui-modal .modal-body, .ui-modal-styled .modal-body {
     position: static; }
   .ui-modal .modal-footer .buttons, .ui-modal-styled .modal-footer .buttons {
@@ -10243,9 +10251,11 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   margin-bottom: 0px; }
   .ui-table-striped th {
     text-align: center;
-    white-space: nowrap; }
+    white-space: nowrap;
+    padding: 0.5rem; }
   .ui-table-striped td {
-    margin: 0px; }
+    margin: 0px;
+    padding: 0.5rem; }
     .ui-table-striped td .ui-button-icon {
       line-height: 1.2em; }
 
