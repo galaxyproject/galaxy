@@ -26,7 +26,7 @@ def pgcalc(sa_session, id, dryrun=False):
                     SET disk_usage = (%s)
                     WHERE id = :id
                     RETURNING disk_usage;""" % sql_calc
-    if dryrun: 
+    if dryrun:
         r = sa_session.execute(sql_calc, {'id': id})
     else:
         r = sa_session.execute(sql_update, {'id': id})
