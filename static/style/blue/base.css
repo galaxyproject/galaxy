@@ -12697,12 +12697,14 @@ input,
 textarea {
   font: inherit; }
 
-.form-row select,
-.form-row textarea,
-.form-row input[type="text"],
-.form-row input[type="file"],
-.form-row input[type="password"] {
-  max-width: 90%; }
+.form-row {
+  display: block; }
+  .form-row select,
+  .form-row textarea,
+  .form-row input[type="text"],
+  .form-row input[type="file"],
+  .form-row input[type="password"] {
+    max-width: 90%; }
 
 textarea,
 input[type="text"],
