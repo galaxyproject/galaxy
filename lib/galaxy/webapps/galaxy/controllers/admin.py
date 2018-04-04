@@ -96,6 +96,7 @@ class UserListGrid(grids.Grid):
 
     # Grid definition
     title = "Users"
+    title_id = "users-grid"
     model_class = model.User
     default_sort_key = "email"
     columns = [
@@ -196,6 +197,7 @@ class RoleListGrid(grids.Grid):
 
     # Grid definition
     title = "Roles"
+    title_id = "roles-grid"
     model_class = model.Role
     default_sort_key = "name"
     columns = [
@@ -286,6 +288,7 @@ class GroupListGrid(grids.Grid):
 
     # Grid definition
     title = "Groups"
+    title_id = "groups-grid"
     model_class = model.Group
     default_sort_key = "name"
     columns = [
@@ -1269,7 +1272,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.Role.table.c.name):
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
-                'title'  : 'Create Group',
+                'title'    : 'Create Group',
+                'title_id' : 'create-group',
                 'inputs' : [{
                     'name'  : 'name',
                     'label' : 'Name'

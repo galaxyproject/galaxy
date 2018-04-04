@@ -21,7 +21,7 @@
     sorted_datatypes = sort_by_attr( datatypes, 'extension' )
 %>
 
-<div class="toolForm">
+<div class="toolForm" id="datatypes-grid">
     <div class="toolFormTitle">Current data types registry contains ${len( sorted_datatypes )} data types</div>
     <div class="toolFormBody">
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">

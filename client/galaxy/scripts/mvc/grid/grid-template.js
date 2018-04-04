@@ -40,7 +40,11 @@ export default {
     grid_header: function(options) {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
-            tmpl += `<h2>${options.title}</h2>`;
+            let id_str = "";
+            if(options.title_id) {
+                id_str +=` id="${options.title_id}"`;
+            }
+            tmpl += `<h2${id_str}>${options.title}</h2>`;
         }
         if (options.global_actions) {
             tmpl += '<ul class="manage-table-actions">';
