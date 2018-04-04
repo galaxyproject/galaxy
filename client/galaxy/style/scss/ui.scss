@@ -687,6 +687,23 @@ $ui-margin-horizontal-large: 10px;
 .ui-popover {
     max-width: 700px;
     display: none;
+    opacity: 1;
+    margin-top: 0.5rem;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1010;
+    display: none;
+    padding: 1px;
+    text-align: left;
+    background-color: #FFFFFF;
+    background-clip: padding-box;
+    border: 1px solid #ccc;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 0.25rem;
+    -webkit-box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.2);
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.2);
+    white-space: normal;
     .popover-close {
         position: absolute;
         right: 10px;
@@ -695,7 +712,17 @@ $ui-margin-horizontal-large: 10px;
         cursor: pointer;
     }
     .popover-title {
-        padding: 4px 10px;
+        margin: 0;
+        padding: 0.5em 1rem;
+        font-size: inherit;
+        font-weight: normal;
+        line-height: 1rem;
+        background-color: #f7f7f7;
+        border-bottom: 1px solid #ebebeb;
+        border-radius: 0.25rem 0.25rem 0 0;
+    }
+    .popover-content {
+        padding: 0.6em 1rem;
     }
 }
 
