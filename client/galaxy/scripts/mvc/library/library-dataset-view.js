@@ -621,12 +621,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -789,12 +789,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -916,12 +916,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -1022,12 +1022,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
