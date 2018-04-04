@@ -353,9 +353,11 @@ $ui-margin-horizontal-large: 10px;
     th {
         text-align: center;
         white-space: nowrap;
+        padding: 0.5rem;
     }
     td {
         margin: 0px;
+        padding: 0.5rem;
         .ui-button-icon {
             line-height: 1.2em;
         }
