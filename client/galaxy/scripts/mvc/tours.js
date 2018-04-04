@@ -15,20 +15,24 @@ let Tour = window.Tour;
 
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
 
-var tourpage_template = `<h2>Galaxy Tours</h2>
-<p>This page presents a list of interactive tours available on this Galaxy server.
-Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
+const TOURPAGE_TEMPLATE = `
+    <h2>Galaxy Tours</h2>
+    <p>This page presents a list of interactive tours available on this Galaxy server.
+    Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
 
-<div class="col-12 btn-group" role="group" aria-label="Tag selector">
-    <% _.each(tourtagorder, function(tag) { %>
-    <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
-        <%- tag %>
-    </button>
-    <% }); %>
+<div class="row mb-3">
+    <div class="col-12 btn-group" role="group" aria-label="Tag selector">
+        <% _.each(tourtagorder, function(tag) { %>
+        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
+            <%- tag %>
+        </button>
+        <% }); %>
+    </div>
 </div>
 
 <% _.each(tourtagorder, function(tourtagkey) { %>
-<div tag="<%- tourtagkey %>" style="display: block;">
+<div tag="<%- tourtagkey %>" class="row mb-3">
+    <div class="col-12">
     <% var tourtag = tourtags[tourtagkey]; %>
     <h4>
         <%- tourtag.name %>
@@ -48,6 +52,7 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
         </li>
     <% }); %>
     </ul>
+    </div>
 </div>
 <% }); %>`;
 
@@ -129,7 +134,7 @@ export var ToursView = Backbone.View.extend({
     },
 
     render: function() {
-        var tpl = _.template(tourpage_template);
+        var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
         _.each(this.model.models, tour => {
