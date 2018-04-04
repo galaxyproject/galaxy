@@ -12,7 +12,7 @@ var View = Backbone.View.extend({
         var self = this;
         this.options = options;
         this.setElement(this._template());
-        this.$navbarBrandLink = this.$(".navbar-brand-link");
+        this.$navbarBrandLink = this.$(".navbar-brand");
         this.$navbarBrandImage = this.$(".navbar-brand-image");
         this.$navbarBrandTitle = this.$(".navbar-brand-title");
         this.$navbarTabs = this.$(".navbar-nav");
