@@ -1371,29 +1371,23 @@ var FolderToolbarView = Backbone.View.extend({
     templateToolBar: function() {
         return _.template(
             [
-                // container start
-                '<div class="library_style_container">',
-                // toolbar start
-                '<div id="library_toolbar">',
-                '<form class="form-inline" role="form">',
-                "<span><strong>DATA LIBRARIES</strong></span>",
-                // paginator will append here
-                '<span class="library-paginator folder-paginator"></span>',
-                // include deleted checkbox
-                '<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">',
-                "<label>",
-                '<input type="checkbox" class="include-deleted-datasets-chk">include deleted</input>',
-                "</label>",
-                "</div>",
-                // create new folder button
-                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder toolbar-item" type="button">',
-                '<span class="fa fa-plus"></span><span class="fa fa-folder"></span> Create Folder ',
-                "</button>",
-                // add datasets button
-                "<% if(mutiple_add_dataset_options) { %>",
-                '<div class="btn-group add-library-items add-library-items-datasets toolbar-item" style="display:none;">',
+                '<div class="library_style_container">', // container start
+                '<div class="d-flex align-items-center mb-2">',
+                '<span class="mr-1">DATA LIBRARIES</span>',
+                '<div class="d-flex align-items-center folder-paginator" />', // paginator will append here
+                '<div id="library_toolbar">', // toolbar start
+                '<form class="form-inline">',
+                    '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
+                        '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
+                        '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
+                    '</div>',
+                    '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
+                        '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
+                    '</button>',
+                '<% if(mutiple_add_dataset_options) { %>', // add datasets button
+                '<div class="btn-group add-library-items add-library-items-datasets mr-1" style="display:none;">',
                 '<button title="Add Datasets to Current Folder" id="" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
-                '<span class="fa fa-plus"></span><span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
+                '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
                 "</button>",
                 '<ul class="dropdown-menu" role="menu">',
                 '<li><a href="#folders/<%= id %>/import/history"> from History</a></li>',
@@ -1418,7 +1412,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</a>",
                 "<% } %>",
                 // import to history button
-                '<div class="btn-group toolbar-item">',
+                '<div class="btn-group mr-1">',
                 '<button title="Import to history" type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
                 '<span class="fa fa-book"></span> To History <span class="caret"></span>',
                 "</button>",
@@ -1428,7 +1422,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 // download button
-                '<div class="btn-group dataset-manipulation toolbar-item" style="display:none; ">',
+                '<div class="btn-group dataset-manipulation mr-1" style="display:none; ">',
                 '<button title="Download items as archive" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-save"></span> Download <span class="caret"></span>',
                 "</button>",
@@ -1439,11 +1433,16 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 // delete button
-                '<button data-toggle="tooltip" data-placement="top" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation toolbar-item" style="display:none;" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">',
                 '<span class="fa fa-trash"></span> Delete',
                 "</button>",
-                // help button
-                '<span class="right-float" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
+                '<span class="mr-1" data-toggle="tooltip" data-placement="top" title="Show location details">', // location button
+                '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">',
+                '<span class="fa fa-info-circle"></span>',
+                '&nbsp;Details',
+                '</button>',
+                '</span>',
+                '<span class="" data-toggle="tooltip" data-placement="top" title="See this screen annotated">', // help button
                 '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                 '<span class="fa fa-question-circle"></span>',
@@ -1451,22 +1450,12 @@ var FolderToolbarView = Backbone.View.extend({
                 "</button>",
                 "</a>",
                 "</span>",
-                // location button
-                '<span class="right-float" data-toggle="tooltip" data-placement="top" title="Show location details">',
-                '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo toolbar-item" type="button">',
-                '<span class="fa fa-info-circle"></span>',
-                "&nbsp;Details",
-                "</button>",
-                "</span>",
-                // toolbar end
-                "</div>",
                 "</form>",
-                // folder contents will append here
-                '<div id="folder_items_element" />',
-                // paginator will append here
-                '<div class="folder-paginator paginator-bottom" />',
-                // container end
-                "</div>"
+                "</div>", // toolbar end
+                '</div>', // end flex
+                '<div id="folder_items_element" />', // folder contents will append here
+                '<div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />', // paginator will append here
+                "</div>" // container end
             ].join("")
         );
     },
@@ -1789,7 +1778,7 @@ var FolderToolbarView = Backbone.View.extend({
     templatePaginator: function() {
         return _.template(
             [
-                '<ul class="pagination pagination-sm">',
+                '<ul class="pagination mr-1">',
                 "<% if ( ( show_page - 1 ) > 0 ) { %>",
                 "<% if ( ( show_page - 1 ) > page_count ) { %>", // we are on higher page than total page count
                 '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
@@ -1813,10 +1802,10 @@ var FolderToolbarView = Backbone.View.extend({
                 '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } %>",
                 "</ul>",
-                "<span>",
+                '<span class="mr-1">',
                 ' <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>',
                 "</span>",
-                "<span>",
+                '<span class="mr-1">',
                 " <%- total_items_count %> total",
                 "</span>"
             ].join("")

@@ -104,29 +104,11 @@
     .roles-selection {
         width: 66%;
     }
-    #library_toolbar {
-        margin-bottom: 0.5em;
-        span {
-            margin-right: 0.2em;
-        }
-        .toolbar-item {
-            margin-left: 0.5em;
-        }
-    }
     #libraries_element,
     #folder_items_element {
         button {
             margin-left: 0.5em;
         }
-    }
-    .right-float {
-        float: right;
-    }
-    .pagination-sm {
-        height: 15px;
-    }
-    .library-paginator {
-        margin-left: 2em;
     }
     .import-type-switch {
         text-decoration: underline;
@@ -134,13 +116,6 @@
     .libimport-select-none,
     .libimport-select-all {
         margin-left: 0.5em;
-    }
-    .paginator-bottom {
-        width: 27em;
-        margin-left: auto;
-        margin-right: auto;
-        margin-top: 2em;
-        margin-bottom: 2em;
     }
 }
 
