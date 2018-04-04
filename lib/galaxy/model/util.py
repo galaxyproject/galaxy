@@ -26,7 +26,7 @@ def pgcalc(sa_session, id, dryrun=False):
                     SET disk_usage = (%s)
                     WHERE id = :id
                     RETURNING disk_usage;""" % sql_calc
-    if dryrun:  
+    if dryrun: 
         r = sa_session.execute(sql_calc, {'id': id})
     else:
         r = sa_session.execute(sql_update, {'id': id})
@@ -47,7 +47,7 @@ def pgcalc_deleted(sa_session, id):
                         WHERE user_id = :id
                             AND purged = false;"""
     for history_id, history_deleted in sa_session.execute(query_history, {'id': id}).fetchall():
-        query_hda_dataset = """SELECT hda.deleted, d.id, d.deleted, d.file_size 
+        query_hda_dataset = """SELECT hda.deleted, d.id, d.deleted, d.file_size
                     FROM history_dataset_association hda
                         JOIN dataset d ON hda.dataset_id = d.id
                             WHERE hda.history_id = :history_id
