@@ -1,6 +1,6 @@
 <template>
     <state-div v-if="state == 'build'">
-        <!-- Different instructions if building up from individual datasets vs. 
+        <!-- Different instructions if building up from individual datasets vs.
              initial data import. -->
         <div class="header flex-row no-flex" v-if="ruleView == 'source'">
             The is an advanced setting, below is a raw JSON description of the rules to apply to the tabular data used. The alternative graphical editor is recommended for most usages.
@@ -182,7 +182,7 @@
                                  v-for="map in mapping"
                                  v-bind:index="map.index"
                                  v-bind:key="map.type">
-                                <column-selector 
+                                <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
                                     :target.sync="map.columns"
@@ -205,7 +205,7 @@
                                     </li>
                                   </ul>
                                 </div>
-                               <button type="button" class="ui-button-default btn btn-default rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">Okay</button>
+                               <button type="button" class="ui-button-default btn btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">Okay</button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
@@ -276,8 +276,8 @@
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
                                   </ul>
-                                </div> 
-                            </div>                               
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -325,7 +325,7 @@
             </label>
             <label class="rule-option pull-right" v-if="mappingAsDict.list_identifiers && !mappingAsDict.collection_name">
                 {{ l("Name") }}:
-                <input class="collection-name" style="width: 260px" 
+                <input class="collection-name" style="width: 260px"
                 :placeholder="namePlaceholder" v-model="collectionName" />
             </label>
             <option-buttons-div>
@@ -1112,7 +1112,7 @@ const ColumnSelector = {
             </label>
         </div>
         <div class="rule-column-selector" v-else>
-            {{ label }} 
+            {{ label }}
             <ol>
                 <li v-for="(targetEl, index) in target"
                     v-bind:index="index"
@@ -1360,7 +1360,7 @@ const RuleComponent = {
     <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
         <slot></slot>
         <div class="buttons" style="margin: 5px; height: 25px;">
-           <button type="button" class="ui-button-default btn btn-default rule-editor-ok" @click="okay">Okay</button>
+           <button type="button" class="ui-button-default btn btn-secondary rule-editor-ok" @click="okay">Okay</button>
            <button type="button" class="ui-button-default btn rule-editor-cancel" @click="cancel">Cancel</button>
         </div>
     </div>`,
