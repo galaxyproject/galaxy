@@ -186,15 +186,9 @@ export var Hidden = Backbone.View.extend({
 
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function(options, select) {
         this.text = new Input(options);
-        var classes = {
-            "checkboxes": Checkbox,
-            "radio": Radio,
-            "radiobutton": RadioButton
-        }
-        var SelectClass = classes[options.display] || Select;
-        this.select = new SelectClass.View(options);
+        this.select = select;
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));
         this.update(options.data);
