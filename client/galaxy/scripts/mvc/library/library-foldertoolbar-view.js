@@ -140,7 +140,7 @@ var FolderToolbarView = Backbone.View.extend({
             $(".logged-dataset-manipulation").hide();
             $(".dataset-manipulation").hide();
         }
-        this.$el.find("[data-toggle]").tooltip();
+        this.$el.find('[data-toggle="tooltip"]').tooltip();
     },
 
     createFolderFromModal: function(event) {
@@ -1381,39 +1381,40 @@ var FolderToolbarView = Backbone.View.extend({
                 '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
                 '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
                 "</div>",
-                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
+                '<button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
                 '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
                 "</button>",
                 "<% if(mutiple_add_dataset_options) { %>", // add datasets button
-                '<div class="btn-group add-library-items add-library-items-datasets mr-1" style="display:none;">',
-                '<button title="Add Datasets to Current Folder" id="" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
+
+                '<div data-toggle="tooltip" data-placement="right" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">',
+                '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
                 "</button>",
-                '<ul class="dropdown-menu" role="menu">',
-                '<li><a href="#folders/<%= id %>/import/history"> from History</a></li>',
-                "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
-                '<li><a href="#folders/<%= id %>/import/userdir"> from User Directory</a></li>',
-                "<% } %>",
-                "<% if(Galaxy.config.allow_library_path_paste) { %>",
-                '<li class="divider"></li>',
-                '<li class="dropdown-header">Admins only</li>',
-                "<% if(Galaxy.config.library_import_dir !== null) { %>",
-                '<li><a href="#folders/<%= id %>/import/importdir">from Import Directory</a></li>',
-                "<% } %>",
-                "<% if(Galaxy.config.allow_library_path_paste) { %>",
-                '<li><a href="#folders/<%= id %>/import/path">from Path</a></li>',
-                "<% } %>",
-                "<% } %>",
-                "</ul>",
+                '<div class="dropdown-menu">',
+                    '<a class="dropdown-item" href="#folders/<%= id %>/import/history"> from History</a>',
+                    "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
+                    '<a class="dropdown-item" href="#folders/<%= id %>/import/userdir"> from User Directory</a>',
+                    "<% } %>",
+                    "<% if(Galaxy.config.allow_library_path_paste || Galaxy.config.library_import_dir !== null) { %>",
+                    '<h5 class="dropdown-header">Admins only</h5>',
+                    "<% if(Galaxy.config.library_import_dir !== null) { %>",
+                    '<a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>',
+                    "<% } %>",
+                    "<% if(Galaxy.config.allow_library_path_paste) { %>",
+                    '<a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>',
+                    "<% } %>",
+                    "<% } %>",
                 "</div>",
+                "</div>",
+
                 "<% } else { %>",
                 '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-secondary add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
                 '<span class="fa fa-plus"></span><span class="fa fa-file"></span>',
                 "</a>",
                 "<% } %>",
                 // import to history button
-                '<div class="btn-group mr-1">',
-                '<button title="Import to history" type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
+                '<div data-toggle="tooltip" data-placement="right" title="Import to history" class="dropdown mr-1">',
+                '<button type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
                 '<span class="fa fa-book"></span> To History <span class="caret"></span>',
                 "</button>",
                 '<ul class="dropdown-menu" role="menu">',
@@ -1422,8 +1423,8 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 // download button
-                '<div class="btn-group dataset-manipulation mr-1" style="display:none; ">',
-                '<button title="Download items as archive" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
+                '<div data-toggle="tooltip" data-placement="right" title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">',
+                '<button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-save"></span> Download <span class="caret"></span>',
                 "</button>",
                 '<ul class="dropdown-menu" role="menu">',
@@ -1433,16 +1434,16 @@ var FolderToolbarView = Backbone.View.extend({
                 "</ul>",
                 "</div>",
                 // delete button
-                '<button data-toggle="tooltip" data-placement="top" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">',
+                '<button data-toggle="tooltip" data-placement="right" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">',
                 '<span class="fa fa-trash"></span> Delete',
                 "</button>",
-                '<span class="mr-1" data-toggle="tooltip" data-placement="top" title="Show location details">', // location button
+                '<span class="mr-1" data-toggle="tooltip" data-placement="right" title="Show location details">', // location button
                 '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">',
                 '<span class="fa fa-info-circle"></span>',
                 "&nbsp;Details",
                 "</button>",
                 "</span>",
-                '<span class="" data-toggle="tooltip" data-placement="top" title="See this screen annotated">', // help button
+                '<span class="" data-toggle="tooltip" data-placement="right" title="See this screen annotated">', // help button
                 '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                 '<span class="fa fa-question-circle"></span>',
@@ -1607,8 +1608,6 @@ var FolderToolbarView = Backbone.View.extend({
         return _.template(
             [
                 '<div id="file_browser_modal">',
-                '<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder ignoring their folder structure.</div>',
-                '<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>',
                 '<div style="margin-bottom:1em;">',
                 '<label title="Switch to selecting files" class="radio-inline import-type-switch">',
                 '<input type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked"> Choose Files',
@@ -1617,6 +1616,8 @@ var FolderToolbarView = Backbone.View.extend({
                 '<input type="radio" name="jstree-radio" value="jstree-disable-files"> Choose Folders',
                 "</label>",
                 "</div>",
+                '<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder ignoring their folder structure.</div>',
+                '<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>',
                 '<div style="margin-bottom:1em;">',
                 '<label class="checkbox-inline jstree-preserve-structure" style="display:none;">',
                 '<input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">',

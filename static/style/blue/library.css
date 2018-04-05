@@ -7,7 +7,7 @@ label {
 .library_style_container {
   width: 95%;
   margin: auto;
-  margin-top: 2em;
+  margin-top: 1em;
   overflow: auto !important; }
   .library_style_container .fa {
     font-size: 12px; }

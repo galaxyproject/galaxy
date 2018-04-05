@@ -78,7 +78,7 @@ var LibraryView = Backbone.View.extend({
                 mod_toastr.error("An error occurred while attempting to fetch library permissions.");
             });
 
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip();
         //hack to show scrollbars
         $("#center").css("overflow", "auto");
     },

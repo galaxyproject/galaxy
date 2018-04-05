@@ -10880,7 +10880,7 @@ label {
 .library_style_container {
   width: 95%;
   margin: auto;
-  margin-top: 2em;
+  margin-top: 1em;
   overflow: auto !important; }
   .library_style_container .fa, .library_style_container .fa-icon, .library_style_container .panel-collapse, .library_style_container #search-clear-btn, .library_style_container .state-icon {
     font-size: 12px; }

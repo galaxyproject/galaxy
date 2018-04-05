@@ -42,7 +42,7 @@ const GroupDetailView = Backbone.View.extend({
     render: function() {
         const template = this.templateRow();
         this.$el.html(template({ group: this.model }));
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip();
         $("#center").css("overflow", "auto");
     },
 

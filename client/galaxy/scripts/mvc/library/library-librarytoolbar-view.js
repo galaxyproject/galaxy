@@ -210,16 +210,12 @@ var LibraryToolbarView = Backbone.View.extend({
                 '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
                 '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
                 "</div>",
-                '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
-                '<button id="create_new_library_btn" class="primary-button btn-sm" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                "</span>",
+                '<button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="btn btn-secondary" type="button"><span class="fa fa-plus"></span> New Library</button>',
                 "<% } %>", // end admins
                 "</form>",
-                '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
-                '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
-                '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
+                '<a data-toggle="tooltip" data-placement="top" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
+                '<button class="btn btn-secondary" type="button"><span class="fa fa-question-circle"></span> Help</button>',
                 "</a>",
-                "</span>",
                 "</div>", // end flex
                 '<div id="libraries_element" />', // table with libraries will append here
                 "</div>" // end library_style_container
