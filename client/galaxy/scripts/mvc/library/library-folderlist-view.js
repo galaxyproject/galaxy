@@ -367,14 +367,13 @@ var FolderListView = Backbone.View.extend({
     templateFolder: function() {
         return _.template(
             [
-                // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 "<% _.each(path, function(path_item) { %>",
                 "<% if (path_item[0] != id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are in this folder"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are in this folder"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -395,7 +394,7 @@ var FolderListView = Backbone.View.extend({
                 '<tbody id="folder_list_body">',
                 '<tr id="first_folder_item">',
                 "<td>",
-                '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-xs">..<a>',
+                '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-sm">..<a>',
                 "</td>",
                 "<td></td>",
                 "<td></td>",

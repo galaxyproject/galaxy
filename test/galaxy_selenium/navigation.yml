@@ -93,7 +93,7 @@ history_panel:
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
       rerun_button: '${_} .icon-btn.rerun-btn'
-      nametags: '${_} .nametags .label'
+      nametags: '${_} .nametags .badge-tags'
 
   multi_operations:
     selectors:

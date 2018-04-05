@@ -10871,32 +10871,14 @@ label {
     width: 100%; }
   .library_style_container .roles-selection {
     width: 66%; }
-  .library_style_container #library_toolbar {
-    margin-bottom: 0.5em; }
-    .library_style_container #library_toolbar span {
-      margin-right: 0.2em; }
-    .library_style_container #library_toolbar .toolbar-item {
-      margin-left: 0.5em; }
   .library_style_container #libraries_element button,
   .library_style_container #folder_items_element button {
     margin-left: 0.5em; }
-  .library_style_container .right-float {
-    float: right; }
-  .library_style_container .pagination-sm {
-    height: 15px; }
-  .library_style_container .library-paginator {
-    margin-left: 2em; }
   .library_style_container .import-type-switch {
     text-decoration: underline; }
   .library_style_container .libimport-select-none,
   .library_style_container .libimport-select-all {
     margin-left: 0.5em; }
-  .library_style_container .paginator-bottom {
-    width: 27em;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 2em;
-    margin-bottom: 2em; }
 
 .modal-content .library_selected_history_content ul {
   list-style-type: none; }
@@ -12691,12 +12673,14 @@ input,
 textarea {
   font: inherit; }
 
-.form-row select,
-.form-row textarea,
-.form-row input[type="text"],
-.form-row input[type="file"],
-.form-row input[type="password"] {
-  max-width: 90%; }
+.form-row {
+  display: block; }
+  .form-row select,
+  .form-row textarea,
+  .form-row input[type="text"],
+  .form-row input[type="file"],
+  .form-row input[type="password"] {
+    max-width: 90%; }
 
 textarea,
 input[type="text"],

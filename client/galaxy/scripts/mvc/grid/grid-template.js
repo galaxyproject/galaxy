@@ -1,5 +1,9 @@
 // dependencies
 import Utils from "utils/utils";
+import * as _ from "underscore";
+
+/* global $ */
+
 // grid view templates
 export default {
     // template
@@ -8,11 +12,22 @@ export default {
         if (options.embedded) {
             tmpl = this.grid_header(options) + this.grid_table(options);
         } else {
-            tmpl = `<div class="loading-elt-overlay"></div><table><tr><td width="75%">${this.grid_header(
-                options
-            )}</td><td></td><td></td></tr><tr><td width="100%" id="grid-message" valign="top"></td><td></td><td></td></tr></table>${this.grid_table(
-                options
-            )}`;
+            tmpl = `
+                <div class="loading-elt-overlay"></div>
+                <table>
+                    <tr>
+                        <td width="75%">${this.grid_header(options)}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td width="100%" id="grid-message" valign="top"></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                ${this.grid_table(options)}
+            `;
         }
 
         // add info text
@@ -156,7 +171,7 @@ export default {
                     var target = column_settings.target;
 
                     // unescape value
-                    if (jQuery.type(value) === "string") {
+                    if ($.type(value) === "string") {
                         value = value.replace(/\/\//g, "/");
                     }
 
@@ -458,7 +473,7 @@ export default {
             var column_filter = filters[column_key];
             if (column_filter) {
                 // identify type
-                var type = jQuery.type(column_filter);
+                var type = $.type(column_filter);
 
                 // single filter value
                 if (type == "string") {

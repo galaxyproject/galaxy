@@ -938,7 +938,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        workflow_button = row_element.find_element_by_css_selector(".dropdown-toggle")
         return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
@@ -951,7 +951,7 @@ class NavigatesGalaxy(HasDriver):
 
         click_option()
 
-        menu_element = self.wait_for_selector_visible(".dropdown.show")
+        menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
         for menu_option in menu_options:
@@ -972,7 +972,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1244,12 +1244,20 @@ class NavigatesGalaxy(HasDriver):
 
     def tour_wait_for_clickable_element(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_selector_clickable(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
+        element = wait.until(
+            sizzle.sizzle_selector_clickable(selector),
+            timeout_message,
+        )
         return element
 
     def tour_wait_for_element_present(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_presence_of_selector(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
+        element = wait.until(
+            sizzle.sizzle_presence_of_selector(selector),
+            timeout_message,
+        )
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):
