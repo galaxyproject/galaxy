@@ -15,6 +15,8 @@ except ImportError:
         Placement=None,
     ))
 
+import requests
+
 from galaxy.containers import (
     docker_swarm_manager,
     pretty_format
@@ -250,13 +252,6 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
         'availability': {'flag': '--availability', 'type': 'string'},
     }
 
-    def _filter_by_id_or_name(self, id, name):
-        if id:
-            return '--filter id={}'.format(id)
-        elif name:
-            return '--filter name={}'.format(name)
-        return None
-
     #
     # docker object generators
     #
@@ -401,14 +396,6 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
             'TargetPort': port,
         }
 
-    @staticmethod
-    def filter_by_id_or_name(id, name):
-        if id:
-            return {'id': id}
-        elif name:
-            return {'name': name}
-        return None
-
     #
     # docker subcommands
     #
@@ -435,16 +422,24 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         log.debug("Docker service endpoint specification:\n%s", pretty_format(endpoint_spec))
         log.debug("Docker service mode:\n%s", pretty_format(service_mode))
         log.debug("Docker service creation parameters:\n%s", pretty_format(kwopts))
-        service = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
+        try:
+            service = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
+        except requests.exceptions.ReadTimeout:
+            log.error('Caught request read timeout while creating service %s, checking to see if service was created',
+                      kwopts['name'])
+            services = self.service_ls(name=kwopts['name'])
+            if not services:
+                raise
+            service = services[0]
         service_id = service.get('ID')
-        log.debug('Created service: %s', service_id)
+        log.debug('Created service: %s (%s)', kwopts['name'], service_id)
         return DockerService.from_id(self, service_id)
 
     def service_inspect(self, service_id):
         return self._client.inspect_service(service_id)
 
     def service_ls(self, id=None, name=None):
-        return self._client.services(filters=DockerSwarmAPIInterface.filter_by_id_or_name(id, name))
+        return self._client.services(filters=self._filter_by_id_or_name(id, name))
 
     # roughly `docker service ps`
     def service_ps(self, service_id):
@@ -461,7 +456,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         return self._client.inspect_node(node_id)
 
     def node_ls(self, id=None, name=None):
-        return self._client.nodes(filters=DockerSwarmAPIInterface.filter_by_id_or_name(id, name))
+        return self._client.nodes(filters=self._filter_by_id_or_name(id, name))
 
     # roughly `docker node ps`
     def node_ps(self, node_id):

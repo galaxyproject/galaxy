@@ -5,12 +5,14 @@ from __future__ import absolute_import
 
 import logging
 import os
+from time import sleep
 
 try:
     import docker
 except ImportError:
     docker = None
 
+import requests.exceptions
 from six import string_types
 from six.moves import shlex_quote
 
@@ -119,6 +121,13 @@ class DockerCLIInterface(DockerInterface):
             args='{args}'
         )
 
+    def _filter_by_id_or_name(self, id, name):
+        if id:
+            return '--filter id={}'.format(id)
+        elif name:
+            return '--filter name={}'.format(name)
+        return None
+
     def _stringify_kwopt_docker_volumes(self, flag, val):
         """The docker API will take a volumes argument in many formats, try to
         deal with that for the command line
@@ -152,8 +161,8 @@ class DockerCLIInterface(DockerInterface):
     #
 
     @docker_columns
-    def ps(self):
-        return self._run_docker(subcommand='ps')
+    def ps(self, id=None, name=None):
+        return self._run_docker(subcommand='ps', args=self._filter_by_id_or_name(id, name))
 
     def run(self, command, image=None, **kwopts):
         args = '{kwopts} {image} {command}'.format(
@@ -187,6 +196,74 @@ class DockerCLIInterface(DockerInterface):
                 return []
             else:
                 raise ContainerImageNotFound(msg, image=image)
+
+
+class DockerAPIClient(object):
+    """Wraps a ``docker.APIClient`` to catch exceptions.
+    """
+    exception_retry_time = 5
+    client_handler_map = {
+        'create_container': 'write_client_handler',
+        'create_service': 'write_client_handler',
+    }
+
+    @staticmethod
+    def _qualname(f):
+        return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
+
+    @staticmethod
+    def default_client_handler(f, *args, **kwargs):
+        exc = None
+        tries = 0
+        catch_read_timeout = kwargs.pop('catch_read_timeout', True)
+        while True:
+            retry = DockerAPIClient.exception_retry_time
+            try:
+                r = f(*args, **kwargs)
+                if tries:
+                    log.info('%s() succeeded after %s tries',
+                        DockerAPIClient._qualname(f),
+                        tries,
+                    )
+                return r
+            except requests.exceptions.ConnectionError as exc:
+                pass
+            except requests.exceptions.ReadTimeout as exc:
+                if not catch_read_timeout:
+                    raise
+                retry = 0
+            except docker.errors.APIError as exc:
+                if exc.response.status_code not in (503,):
+                    raise
+            tries += 1
+            log.error("Caught exception on %s() (attempt: %s), will retry in %s seconds: %s: %s",
+                DockerAPIClient._qualname(f),
+                tries,
+                retry,
+                exc.__class__.__name__,
+                exc,
+            )
+            sleep(retry)
+
+    @staticmethod
+    def write_client_handler(f, *args, **kwargs):
+        # if doing a create/update, we don't want to submit that request again if it succeeded
+        kwargs['catch_read_timeout'] = False
+        return DockerAPIClient.default_client_handler(f, *args, **kwargs)
+
+    def __init__(self, *args, **kwargs):
+        self.__client = docker.APIClient(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        cattr = getattr(self.__client, attr)
+        if callable(cattr):
+            def wrapped(*args, **kwargs):
+                handler_name = DockerAPIClient.client_handler_map.get(attr, 'default_client_handler')
+                handler = getattr(DockerAPIClient, handler_name)
+                return handler(cattr, *args, **kwargs)
+            return wrapped
+        else:
+            return cattr
 
 
 class DockerAPIInterface(DockerInterface):
@@ -224,11 +301,19 @@ class DockerAPIInterface(DockerInterface):
         else:
             tls_config = False
         if not self.__client:
-            self.__client = docker.APIClient(
+            self.__client = DockerAPIClient(
                 base_url=self._conf.host,
                 tls=tls_config,
             )
         return self.__client
+
+    @staticmethod
+    def _filter_by_id_or_name(id, name):
+        if id:
+            return {'id': id}
+        elif name:
+            return {'name': name}
+        return None
 
     @staticmethod
     def _kwopt_to_param_names(map_spec, key):
@@ -341,27 +426,35 @@ class DockerAPIInterface(DockerInterface):
     # docker subcommands
     #
 
+    def ps(self, id=None, name=None, running=True):
+        return self._client.containers(all=not running, filters=self._filter_by_id_or_name(id, name))
+
     def run(self, command, image=None, **kwopts):
         image = image or self._default_image
         command = command or None
+        log.debug("Creating docker container with image '%s' for command: %s", image, command)
+        host_config = self._create_host_config(kwopts)
+        log.debug("Docker container host configuration:\n%s", pretty_format(host_config))
+        log.debug("Docker container creation parameters:\n%s", pretty_format(kwopts))
         try:
-            log.debug("Creating docker container with image '%s' for command: %s", image, command)
-            host_config = self._create_host_config(kwopts)
-            log.debug("Docker container host configuration:\n%s", pretty_format(host_config))
-            log.debug("Docker container creation parameters:\n%s", pretty_format(kwopts))
             container = self._client.create_container(
                 image,
                 command=command if command else None,
                 host_config=host_config,
                 **kwopts
             )
-            container_id = container.get('Id')
-            log.debug("Starting container: %s", str(container_id))
-            self._client.start(container=container_id)
-            return DockerContainer.from_id(self, container_id)
-        except Exception:
-            # FIXME: what exceptions can occur?
-            raise
+        except requests.exceptions.ReadTimeout:
+            log.error('Caught request read timeout while creating container %s, checking to see if container was '
+                      'created', kwopts['name'])
+            containers = self.ps(name=kwopts['name'], running=False)
+            if not containers:
+                raise
+            container = containers[0]
+        container_id = container.get('Id')
+        log.debug("Starting container: %s (%s)", kwopts['name'], str(container_id))
+        # start can safely be run more than once
+        self._client.start(container=container_id)
+        return DockerContainer.from_id(self, container_id)
 
     def inspect(self, container_id):
         try:
