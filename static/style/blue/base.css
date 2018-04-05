@@ -10144,6 +10144,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-button-menu .dropdown-item, .ui-button-menu ul.dropdown-menu li, ul.dropdown-menu .ui-button-menu li {
   text-align: left; }
 
+.ui-button-menu .dropdown-toggle::after {
+  display: none; }
+
 .ui-button-icon-plain {
   border: none !important;
   background: none !important;
