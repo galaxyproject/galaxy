@@ -12950,6 +12950,9 @@ div.debug {
   border: solid #ffff33 1px;
   color: black; }
 
+.grid-table {
+  width: 100%; }
+
 .grid-header {
   padding-bottom: 1em; }
 

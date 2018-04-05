@@ -8,13 +8,13 @@ import * as _ from "underscore";
 export default {
     // template
     grid: function(options) {
-        var tmpl = "";
+        let tmpl;
         if (options.embedded) {
             tmpl = this.grid_header(options) + this.grid_table(options);
         } else {
             tmpl = `
                 <div class="loading-elt-overlay"></div>
-                <table>
+                <table class="grid-table">
                     <tr>
                         <td width="75%">${this.grid_header(options)}</td>
                         <td></td>
