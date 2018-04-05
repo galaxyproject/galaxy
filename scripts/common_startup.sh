@@ -182,7 +182,7 @@ if [ $SET_VENV -eq 1 -a -z "$VIRTUAL_ENV" -a -z "$CONDA_DEFAULT_ENV" ]; then
 fi
 
 # this shouldn't happen, but check just in case
-if [ -z "$VIRTUAL_ENV" -a "$CONDA_DEFAULT_ENV" = "base" ]; then
+if [ -z "$VIRTUAL_ENV" ] && [ "$CONDA_DEFAULT_ENV" = "base" -o "$CONDA_DEFAULT_ENV" = "root" ]; then
     echo "ERROR: Conda is in 'base' environment, refusing to continue"
     exit 1
 fi
