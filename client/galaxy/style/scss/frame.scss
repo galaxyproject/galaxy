@@ -1,3 +1,5 @@
+$frame-default-border: darken($gray-lighter, $border-darken-percent);
+
 .galaxy-frame {
     .corner {
         -moz-border-radius: $border-radius-large;
@@ -28,7 +30,7 @@
         left: 0px;
         opacity: 0.5;
         background: darken($base-color, 25%);
-        border: 1px solid $navbar-default-border;
+        border: 1px solid $frame-default-border;
     }
 
     /*
@@ -59,7 +61,7 @@
         overflow: hidden;
         position: absolute;
         background: $white;
-        border: 1px solid $navbar-default-border;
+        border: 1px solid $frame-default-border;
         -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
 
         .f-content {

@@ -426,9 +426,9 @@ div.unified-panel-body-background {
     .navbar-nav {
         .nav-link {
             cursor: pointer;
-            text-decoration: $navbar-default-link-text-decoration;
+            text-decoration: none;
             &:hover {
-                color: $navbar-default-link-hover-color;
+                color: gold;
             }
             &.nav-icon {
                 font-size: 1.7em;
