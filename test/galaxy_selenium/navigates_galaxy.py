@@ -1244,12 +1244,20 @@ class NavigatesGalaxy(HasDriver):
 
     def tour_wait_for_clickable_element(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_selector_clickable(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
+        element = wait.until(
+            sizzle.sizzle_selector_clickable(selector),
+            timeout_message,
+        )
         return element
 
     def tour_wait_for_element_present(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_presence_of_selector(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
+        element = wait.until(
+            sizzle.sizzle_presence_of_selector(selector),
+            timeout_message,
+        )
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):
