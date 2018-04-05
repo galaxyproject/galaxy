@@ -86,13 +86,11 @@ export default Backbone.View.extend({
                 if (upload_ext) {
                     if (upload_ext.extension_popup.visible) {
                         upload_ext.extension_popup.hide();
-                    }
-                    else {
+                    } else {
                         upload_ext.extension_popup.remove();
                         this._makeUploadExtensionsPopover(e);
                     }
-                }
-                else {
+                } else {
                     this._makeUploadExtensionsPopover(e);
                 }
             })

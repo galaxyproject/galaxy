@@ -196,33 +196,33 @@ var LibraryToolbarView = Backbone.View.extend({
         return _.template(
             [
                 '<div class="library_style_container">',
-                    '<div class="d-flex align-items-center mb-2">',
-                        '<a class="mr-1" href="#" data-toggle="tooltip" data-placement="top" title="Go to first page">DATA LIBRARIES</a>',
-                        '<div class="d-flex align-items-center library-paginator mr-1" />', // paginator will append here
-                        '<form class="form-inline mr-1">',
-                            '<input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">',
-                                "<% if(admin_user === true) { %>", // only admins
-                                    '<div class="form-check mr-1">',
-                                        '<input class="form-check-input" id="include_deleted_chk" type="checkbox">',
-                                        '<label class="form-check-label" for="include_deleted_chk">include deleted</label>',
-                                    '</div>',
-                                    '<div class="form-check mr-1">',
-                                        '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
-                                        '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
-                                    '</div>',
-                                    '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
-                                        '<button id="create_new_library_btn" class="primary-button btn-sm" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                                    "</span>",
-                                "<% } %>", // end admins
-                        "</form>",
-                        '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
-                            '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
-                            '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
-                            "</a>",
-                        "</span>",
-                    "</div>", // end flex
+                '<div class="d-flex align-items-center mb-2">',
+                '<a class="mr-1" href="#" data-toggle="tooltip" data-placement="top" title="Go to first page">DATA LIBRARIES</a>',
+                '<div class="d-flex align-items-center library-paginator mr-1" />', // paginator will append here
+                '<form class="form-inline mr-1">',
+                '<input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">',
+                "<% if(admin_user === true) { %>", // only admins
+                '<div class="form-check mr-1">',
+                '<input class="form-check-input" id="include_deleted_chk" type="checkbox">',
+                '<label class="form-check-label" for="include_deleted_chk">include deleted</label>',
+                "</div>",
+                '<div class="form-check mr-1">',
+                '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
+                '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
+                "</div>",
+                '<span data-toggle="tooltip" data-placement="top" title="Create New Library">',
+                '<button id="create_new_library_btn" class="primary-button btn-sm" type="button"><span class="fa fa-plus"></span> New Library</button>',
+                "</span>",
+                "<% } %>", // end admins
+                "</form>",
+                '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
+                '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
+                '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
+                "</a>",
+                "</span>",
+                "</div>", // end flex
                 '<div id="libraries_element" />', // table with libraries will append here
-                '</div>' // end library_style_container
+                "</div>" // end library_style_container
             ].join("")
         );
     },

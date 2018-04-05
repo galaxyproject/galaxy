@@ -696,13 +696,13 @@ $ui-margin-horizontal-large: 10px;
     display: none;
     padding: 1px;
     text-align: left;
-    background-color: #FFFFFF;
+    background-color: #ffffff;
     background-clip: padding-box;
     border: 1px solid #ccc;
-    border: 1px solid rgba(0,0,0,0.2);
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 0.25rem;
-    -webkit-box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.2);
-    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.2);
+    -webkit-box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
     white-space: normal;
     .popover-close {
         position: absolute;
@@ -738,7 +738,8 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.popover .arrow, .popover .arrow::after {
+.popover .arrow,
+.popover .arrow::after {
     position: absolute;
     display: block;
     width: 0;
@@ -754,7 +755,7 @@ $ui-margin-horizontal-large: 10px;
         margin-left: -0.65rem;
         border-top-width: 0;
         border-bottom-color: #999;
-        border-bottom-color: rgba(0,0,0,0.25);
+        border-bottom-color: rgba(0, 0, 0, 0.25);
         top: -0.72rem;
     }
     .arrow::after {
@@ -762,7 +763,7 @@ $ui-margin-horizontal-large: 10px;
         top: 0.05rem;
         margin-left: -0.6rem;
         border-top-width: 0;
-        border-bottom-color: #FFFFFF;
+        border-bottom-color: #ffffff;
     }
 }
 

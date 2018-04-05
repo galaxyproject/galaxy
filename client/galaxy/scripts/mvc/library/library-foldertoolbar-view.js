@@ -1377,14 +1377,14 @@ var FolderToolbarView = Backbone.View.extend({
                 '<div class="d-flex align-items-center folder-paginator" />', // paginator will append here
                 '<div id="library_toolbar">', // toolbar start
                 '<form class="form-inline">',
-                    '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
-                        '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
-                        '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
-                    '</div>',
-                    '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
-                        '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
-                    '</button>',
-                '<% if(mutiple_add_dataset_options) { %>', // add datasets button
+                '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
+                '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
+                '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
+                "</div>",
+                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-secondary primary-button toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
+                '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
+                "</button>",
+                "<% if(mutiple_add_dataset_options) { %>", // add datasets button
                 '<div class="btn-group add-library-items add-library-items-datasets mr-1" style="display:none;">',
                 '<button title="Add Datasets to Current Folder" id="" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
@@ -1439,9 +1439,9 @@ var FolderToolbarView = Backbone.View.extend({
                 '<span class="mr-1" data-toggle="tooltip" data-placement="top" title="Show location details">', // location button
                 '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">',
                 '<span class="fa fa-info-circle"></span>',
-                '&nbsp;Details',
-                '</button>',
-                '</span>',
+                "&nbsp;Details",
+                "</button>",
+                "</span>",
                 '<span class="" data-toggle="tooltip" data-placement="top" title="See this screen annotated">', // help button
                 '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
@@ -1452,7 +1452,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</span>",
                 "</form>",
                 "</div>", // toolbar end
-                '</div>', // end flex
+                "</div>", // end flex
                 '<div id="folder_items_element" />', // folder contents will append here
                 '<div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />', // paginator will append here
                 "</div>" // container end
