@@ -68,37 +68,43 @@ run_common_start_up() {
     ./scripts/common_startup.sh $common_startup_args || exit 1
 }
 
+conda_activate() {
+    : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+    echo "Activating Conda environment: $GALAXY_CONDA_ENV"
+    # Dash is actually supported by 4.4, but not with `. /path/to/activate`, only `conda activate`, which we
+    # can't load unless we know the path to <conda_root>/etc/profile.d/conda.sh
+    if ! command -v source >/dev/null; then
+        echo "WARNING: Your shell is not supported with Conda, attempting to use Conda env"
+        echo "         '$GALAXY_CONDA_ENV' with manual environment setup. To avoid this"
+        echo "         message, use a supported shell or activate the environment before"
+        echo "         starting Galaxy."
+        PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
+        CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
+        CONDA_PREFIX="$(get_conda_root_path)"
+    else
+        source activate "$GALAXY_CONDA_ENV"
+    fi
+}
+
 setup_python() {
     # If there is a .venv/ directory, assume it contains a virtualenv that we
     # should run this instance in.
     : ${GALAXY_VIRTUAL_ENV:=.venv}
     # $GALAXY_CONDA_ENV isn't set here to avoid running the version check if not using Conda
-    # Ensure $CONDA_EXE is set
-    set_conda_exe
     if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ]; then
         [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
         echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
         . "$GALAXY_VIRTUAL_ENV/bin/activate"
-    elif [ -n "$CONDA_EXE" -a -z "$skip_venv" ] && \
-         check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}; then
-        # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
-        REPLACE_PIP=0
-        [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-        if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
-            echo "Activating Conda environment: $GALAXY_CONDA_ENV"
-            # Dash is actually supported by 4.4, but not with `. /path/to/activate`, only `conda activate`, which we
-            # can't load unless we know the path to <conda_root>/etc/profile.d/conda.sh
-			if ! command -v source >/dev/null; then
-				echo "WARNING: Your shell is not supported with Conda, attempting to use environment"
-				echo "         '$GALAXY_CONDA_ENV' with manual environment setup. To avoid this"
-				echo "         message, use a supported shell or activate the environment before"
-				echo "         starting Galaxy."
-                PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
-                CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
-                CONDA_PREFIX="$(get_conda_root_path)"
-			else
-				source activate "$GALAXY_CONDA_ENV"
-			fi
+    elif [ -z "$skip_venv" ]; then
+        set_conda_exe
+        if [ -n "$CONDA_EXE" ] && \
+                check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}; then
+            # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
+            REPLACE_PIP=0
+            [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
+            if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
+                conda_activate
+            fi
         fi
     fi
 
@@ -158,8 +164,9 @@ get_galaxy_major_version() {
 # to the `conda` script in the base environment. Thus in Conda 4.4, it may not be possible to locate `conda` even if you
 # are using Conda.
 set_conda_exe() {
+    [ -z "$_CONDA_EXE_SET" ] || return 0
     if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' || \
-       python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
+            python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
         : ${CONDA_EXE:=$(command -v conda)}
         if [ -z "$CONDA_EXE" ]; then
             echo "WARNING: \`python\` is from conda, but the \`conda\` command cannot be found."
@@ -176,8 +183,9 @@ set_conda_exe() {
                 PATH="$(dirname $CONDA_EXE):$PATH"
             fi
         else
-            echo "Using conda at: $CONDA_EXE"
+            echo "Found conda at: $CONDA_EXE"
         fi
+        _CONDA_EXE_SET=1
     fi
 }
 

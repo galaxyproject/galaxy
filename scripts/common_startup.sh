@@ -12,7 +12,6 @@ for arg in "$@"; do
     fi
 done
 
-USE_CONDA=0
 DEV_WHEELS=0
 FETCH_WHEELS=1
 CREATE_VENV=1
@@ -47,10 +46,10 @@ RMFILES="
     lib/pkg_resources.pyc
 "
 
-# return true if $1 is in $VIRTUAL_ENV else false
-in_venv() {
+# return true if $1 is in $2 else false
+in_dir() {
     case $1 in
-        $VIRTUAL_ENV*)
+        $2*)
             return 0
             ;;
         ''|*)
@@ -59,16 +58,14 @@ in_venv() {
     esac
 }
 
+# return true if $1 is in $VIRTUAL_ENV else false
+in_venv() {
+    in_dir "$1" "$VIRTUAL_ENV"
+}
+
 # return true if $1 is in $CONDA_PREFIX else false
 in_conda_env() {
-    case $1 in
-        $CONDA_PREFIX*)
-            return 0
-            ;;
-        ''|*)
-            return 1
-            ;;
-    esac
+    in_dir "$1" "$CONDA_PREFIX"
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
@@ -120,13 +117,13 @@ fi
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
-# Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not exist,
-# virtualenv will not be used. setup_python calls this as well but in this case we need it done beforehand.
-set_conda_exe
-
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
     then
+        # Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not
+        # exist, virtualenv will not be used. setup_python calls this as well but in this case we need it done
+        # beforehand.
+        set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
             echo "Found Conda, virtualenv will not be used."
             echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
@@ -184,6 +181,7 @@ if [ $SET_VENV -eq 1 -a -z "$VIRTUAL_ENV" -a -z "$CONDA_DEFAULT_ENV" ]; then
     exit 1
 fi
 
+# this shouldn't happen, but check just in case
 if [ -z "$VIRTUAL_ENV" -a "$CONDA_DEFAULT_ENV" = "base" ]; then
     echo "ERROR: Conda is in 'base' environment, refusing to continue"
     exit 1
