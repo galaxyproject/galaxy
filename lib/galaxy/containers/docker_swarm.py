@@ -17,10 +17,7 @@ except ImportError:
 
 import requests
 
-from galaxy.containers import (
-    docker_swarm_manager,
-    pretty_format
-)
+from galaxy.containers import docker_swarm_manager
 from galaxy.containers.docker import (
     DockerAPIInterface,
     DockerCLIInterface,
@@ -35,6 +32,7 @@ from galaxy.containers.docker_model import (
     IMAGE_CONSTRAINT
 )
 from galaxy.exceptions import ContainerRunError
+from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
 
@@ -418,10 +416,10 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         endpoint_spec = self._create_docker_api_spec('endpoint_spec', docker.types.EndpointSpec, kwopts)
         task_template = self._create_docker_api_spec('task_template', docker.types.TaskTemplate, kwopts)
         self.set_kwopts_name(kwopts)
-        log.debug("Docker service task template:\n%s", pretty_format(task_template))
-        log.debug("Docker service endpoint specification:\n%s", pretty_format(endpoint_spec))
-        log.debug("Docker service mode:\n%s", pretty_format(service_mode))
-        log.debug("Docker service creation parameters:\n%s", pretty_format(kwopts))
+        log.debug("Docker service task template:\n%s", safe_dumps_formatted(task_template))
+        log.debug("Docker service endpoint specification:\n%s", safe_dumps_formatted(endpoint_spec))
+        log.debug("Docker service mode:\n%s", safe_dumps_formatted(service_mode))
+        log.debug("Docker service creation parameters:\n%s", safe_dumps_formatted(kwopts))
         try:
             service = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
         except requests.exceptions.ReadTimeout:

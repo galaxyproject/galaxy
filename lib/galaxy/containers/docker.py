@@ -16,10 +16,7 @@ import requests.exceptions
 from six import string_types
 from six.moves import shlex_quote
 
-from galaxy.containers import (
-    ContainerInterface,
-    pretty_format
-)
+from galaxy.containers import ContainerInterface
 from galaxy.containers.docker_decorators import (
     docker_columns,
     docker_json
@@ -33,6 +30,7 @@ from galaxy.exceptions import (
     ContainerImageNotFound,
     ContainerNotFound
 )
+from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
 
@@ -426,8 +424,8 @@ class DockerAPIInterface(DockerInterface):
         command = command or None
         log.debug("Creating docker container with image '%s' for command: %s", image, command)
         host_config = self._create_host_config(kwopts)
-        log.debug("Docker container host configuration:\n%s", pretty_format(host_config))
-        log.debug("Docker container creation parameters:\n%s", pretty_format(kwopts))
+        log.debug("Docker container host configuration:\n%s", safe_dumps_formatted(host_config))
+        log.debug("Docker container creation parameters:\n%s", safe_dumps_formatted(kwopts))
         try:
             container = self._client.create_container(
                 image,

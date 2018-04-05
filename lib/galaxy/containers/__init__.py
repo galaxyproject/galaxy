@@ -5,7 +5,6 @@ from __future__ import absolute_import
 
 import errno
 import inspect
-import json
 import logging
 import shlex
 import subprocess
@@ -348,21 +347,6 @@ def parse_containers_config(containers_config_file):
         else:
             raise
     return conf
-
-
-def pretty_format(obj):
-    """Attempt to format an object for display.
-
-    Intended for API versions of the interface to provide a readable log output when performing operations similar to
-    formatted CLI commands.
-
-    If serialization fails, the object's string representation will be returned instead.
-    """
-    try:
-        return json.dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
-    except TypeError:
-        log.warning("JSON serialization failed for object: %s", str(obj))
-        return str(obj)
 
 
 def _get_interface_modules():

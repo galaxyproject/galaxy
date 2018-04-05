@@ -85,6 +85,18 @@ def safe_dumps(*args, **kwargs):
     return dumped
 
 
+def safe_dumps_formatted(obj):
+    """Attempt to format an object for display.
+
+    If serialization fails, the object's string representation will be returned instead.
+    """
+    try:
+        return safe_dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
+    except TypeError:
+        log.warning("JSON serialization failed for object: %s", str(obj))
+        return str(obj)
+
+
 # Methods for handling JSON-RPC
 
 def validate_jsonrpc_request(request, regular_methods, notification_methods):
