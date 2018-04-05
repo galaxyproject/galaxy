@@ -221,10 +221,7 @@ class DockerAPIClient(object):
             try:
                 r = f(*args, **kwargs)
                 if tries:
-                    log.info('%s() succeeded after %s tries',
-                        DockerAPIClient._qualname(f),
-                        tries,
-                    )
+                    log.info('%s() succeeded after %s tries', DockerAPIClient._qualname(f), tries)
                 return r
             except requests.exceptions.ConnectionError as exc:
                 pass
@@ -237,12 +234,7 @@ class DockerAPIClient(object):
                     raise
             tries += 1
             log.error("Caught exception on %s() (attempt: %s), will retry in %s seconds: %s: %s",
-                DockerAPIClient._qualname(f),
-                tries,
-                retry,
-                exc.__class__.__name__,
-                exc,
-            )
+                      DockerAPIClient._qualname(f), tries, retry, exc.__class__.__name__, exc)
             sleep(retry)
 
     @staticmethod
