@@ -363,7 +363,7 @@
             //TODO: there doesn't seem to be a way to pad text-only peeks (binary data, etc.)
             th {
                 color: white;
-                background: $panel-primary-heading-bg;
+                background: $brand-primary;
             }
             table,
             th,
@@ -385,7 +385,7 @@ pre.peek {
     overflow: auto;
     th {
         color: white;
-        background: $panel-primary-heading-bg;
+        background: $brand-primary;
     }
     table,
     th,
