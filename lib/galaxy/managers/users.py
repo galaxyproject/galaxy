@@ -257,6 +257,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             'is_admin',
             'total_disk_usage',
             'nice_total_disk_usage',
+            'deleted_disk_usage',
             'quota_percent',
             'quota',
             'deleted',
@@ -279,13 +280,11 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             'create_time'   : self.serialize_date,
             'update_time'   : self.serialize_date,
             'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
-
             'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
-
             'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
+            'deleted_disk_usage' : lambda i, k, **c: int(i.calculate_deleted_disk_usage()),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
             'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
-
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
         })
 

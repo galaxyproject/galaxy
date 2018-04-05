@@ -1,5 +1,6 @@
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import UTILS from "utils/utils";
 
 var logNamespace = "user";
 //==============================================================================
@@ -25,7 +26,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             _.extend(this.options, options);
 
             //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
-            this.listenTo(this.model, "change:quota_percent change:total_disk_usage", this.render);
+            this.listenTo(this.model, "change:quota_percent change:total_disk_usage change:deleted_disk_usage", this.render);
         },
 
         /** Re-load user model data from the api */
@@ -121,7 +122,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             }
 
             this.$el.html(meterHtml);
-            this.$el.find(".quota-meter-text").tooltip();
+            this.$el.find(".quota-meter-text").tooltip({ placement: "bottom" });
             return this;
         },
 
@@ -133,7 +134,10 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 '%"></div>',
                 '<div class="quota-meter-text" data-placement="left" style="top: 6px"',
                 data.nice_total_disk_usage
-                    ? ` title="Using ${data.nice_total_disk_usage}.  This value is recalculated when you log out.">`
+                    ? ` title="Using ${data.nice_total_disk_usage}` +
+                        (data.deleted_disk_usage
+                            ? ` (deleted: ${UTILS.bytesToString(data.deleted_disk_usage, true, 2)})`
+                             : "") + `.  These values are recalculated when you log out.">`
                     : ">",
                 _l("Using"),
                 " ",
