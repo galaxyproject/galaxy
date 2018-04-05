@@ -767,6 +767,26 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
+.popover.top {
+    margin-top: -0.6rem;
+    .arrow {
+        left: 50%;
+        margin-left: -0.65rem;
+        border-width: 0.4rem;
+        border-bottom-width: 0;
+        border-top-color: #999;
+        border-top-color: rgba(0,0,0,0.25);
+        bottom: -0.65rem;
+    }
+    .arrow::after {
+        content: " ";
+        bottom: 0.05rem;
+        margin-left: -0.6rem;
+        border-bottom-width: 0;
+        border-top-color: #FFFFFF;
+    }
+}
+
 // input elements
 .ui-input {
     width: 100%;
