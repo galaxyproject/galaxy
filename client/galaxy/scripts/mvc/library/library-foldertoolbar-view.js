@@ -1465,7 +1465,7 @@ var FolderToolbarView = Backbone.View.extend({
         return _.template(
             [
                 "<div>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 '<th style="width: 25%;">library</th>',
                 "<th></th>",
@@ -1499,7 +1499,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</tr>",
                 "</tbody>",
                 "</table>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 '<th style="width: 25%;">folder</th>',
                 "<th></th>",

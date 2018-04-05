@@ -238,7 +238,7 @@ var LibraryListView = Backbone.View.extend({
                 "</div>",
                 "<% }%>",
                 "<% } else{ %>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 '<th style="width:30%;">',
                 '<a class="sort-libraries-link" title="Click to reverse order" href="#">',

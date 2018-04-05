@@ -639,7 +639,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // TABLE START
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
                 '<td><%= _.escape(item.get("name")) %></td>',
@@ -802,7 +802,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>',
                 // DATASET START
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>',
                 '<td><%= _.escape(ldda.get("name")) %></td>',
@@ -927,7 +927,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 "</ol>",
 
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
                 '<td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>',

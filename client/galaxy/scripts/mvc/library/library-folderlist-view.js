@@ -379,7 +379,7 @@ var FolderListView = Backbone.View.extend({
                 "</ol>",
 
                 // FOLDER CONTENT
-                '<table data-library-id="<%- parent_library_id  %>" class="grid table table-condensed">',
+                '<table data-library-id="<%- parent_library_id  %>" class="grid table table-sm">',
                 "<thead>",
                 '<th class="button_heading"></th>',
                 '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
