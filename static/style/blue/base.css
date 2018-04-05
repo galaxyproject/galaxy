@@ -10144,6 +10144,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-button-menu .dropdown-item, .ui-button-menu ul.dropdown-menu li, ul.dropdown-menu .ui-button-menu li {
   text-align: left; }
 
+.ui-button-menu .dropdown-toggle::after {
+  display: none; }
+
 .ui-button-icon-plain {
   border: none !important;
   background: none !important;
@@ -10602,15 +10605,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     float: left;
     top: 8px;
     left: 10px; }
-
-.ui-radiobutton {
-  width: 100%; }
-  .ui-radiobutton label {
-    height: auto;
-    line-height: 1.5em; }
-  .ui-radiobutton i {
-    padding-right: 5px;
-    font-size: 1.1em; }
 
 .ui-button-check {
   cursor: pointer;

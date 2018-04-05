@@ -196,6 +196,9 @@ $ui-margin-horizontal-large: 10px;
     .dropdown-item {
         text-align: left;
     }
+    .dropdown-toggle::after {
+        display: none;
+    }
 }
 
 .ui-button-icon-plain {
@@ -801,19 +804,6 @@ $ui-margin-horizontal-large: 10px;
         float: left;
         top: 8px;
         left: 10px;
-    }
-}
-
-.ui-radiobutton {
-    width: 100%;
-    label {
-        height: auto;
-        line-height: 1.5em;
-    }
-
-    i {
-        padding-right: $ui-margin-horizontal;
-        font-size: 1.1em;
     }
 }
 
