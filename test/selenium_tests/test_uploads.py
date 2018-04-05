@@ -220,7 +220,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_4_3_basic_rules")
         self.rule_builder_sort("A", screenshot_name="rules_example_4_4_sort")
 
-        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/$&.fasta", screenshot_name="rules_example_4_5_url")
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.fasta", screenshot_name="rules_example_4_5_url")
         self.screenshot("rules_example_4_6_url_built")
         self.rule_builder_set_mapping("list-identifiers", "A")
         self.rule_builder_set_mapping("url", "C")
@@ -257,7 +257,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_5_3_initial_rules")
         self.rule_builder_add_value("fasta", screenshot_name="rules_example_5_4_fasta")
         self.rule_builder_add_value("UP000052092 FASTA")
-        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/$&.gff", screenshot_name="rules_example_5_5_url")
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.gff", screenshot_name="rules_example_5_5_url")
         self.rule_builder_add_value("gff3")
         self.rule_builder_add_value("UP000052092 GFF3")
         self._scroll_to_end_of_table()

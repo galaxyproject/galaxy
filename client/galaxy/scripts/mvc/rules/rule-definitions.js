@@ -1,4 +1,5 @@
 import _l from "utils/localization";
+import pyre from "pyre-to-regexp";
 
 const multiColumnsToString = function(targetColumns, colHeaders) {
     if (targetColumns.length == 0) {
@@ -15,13 +16,14 @@ const multiColumnsToString = function(targetColumns, colHeaders) {
 const applyRegex = function(regex, target, data, replacement, groupCount) {
     let regExp;
     try {
-        regExp = RegExp(regex);
+        regExp = pyre(String(regex));
     } catch (error) {
         return { error: `Invalid regular expression specified.` };
     }
     let failedCount = 0;
     function newRow(row) {
         const source = row[target];
+        const match = regExp.exec(source);
         if (!replacement) {
             const match = regExp.exec(source);
             if (!match) {
@@ -39,7 +41,7 @@ const applyRegex = function(regex, target, data, replacement, groupCount) {
                 return row.concat([match[0]]);
             }
         } else {
-            return row.concat([source.replace(regExp, replacement)]);
+            return row.concat([regExp.pyreReplace(match[0], replacement)]);
         }
     }
     data = data.map(newRow);
@@ -73,7 +75,7 @@ const RULES = {
             // https://github.com/kgryte/regex-basename-posix/blob/master/lib/index.js
             //const re = /^(?:\/?|)(?:[\s\S]*?)((?:\.{1,2}|[^\/]+?|)(?:\.[^.\/]*|))(?:[\/]*)$/;
             // https://stackoverflow.com/questions/8376525/get-value-of-a-string-after-a-slash-in-javascript
-            const re = /[^/]*$/;
+            const re = "[^/]*$";
             const target = rule.target_column;
             return applyRegex(re, target, data);
         }
@@ -325,8 +327,10 @@ const RULES = {
             rule.invert = component.addFilterRegexInvert;
         },
         apply: (rule, data, sources) => {
+            const regex = String(rule.expression);
+            var regExp;
             try {
-                regExp = RegExp(regex);
+                regExp = pyre(regex);
             } catch (error) {
                 return { error: `Invalid regular expression specified.` };
             }

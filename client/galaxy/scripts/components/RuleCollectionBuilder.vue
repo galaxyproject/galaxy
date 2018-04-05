@@ -1471,7 +1471,7 @@ export default {
               this.addColumnRegexGroupCount = 1;
           }
           if (val == "replacement") {
-              this.addColumnRegexReplacement = "$&";
+              this.addColumnRegexReplacement = "\0";
           }
       },
   },
