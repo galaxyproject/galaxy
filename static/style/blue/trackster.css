@@ -223,23 +223,23 @@
 .loading {
   min-height: 100px; }
 
-.tag-track {
+.label-track {
   font-size: 10px;
   border: none;
   padding: 0;
   margin: 0;
   height: 1.5em;
   overflow: hidden; }
-  .tag-track .tag-container {
+  .label-track .label-container {
     position: relative;
     height: 1.3em; }
-  .tag-track .pos-label {
+  .label-track .pos-label {
     position: absolute;
     border-left: solid #999 1px;
     padding: 1px;
     padding-bottom: 2px;
     display: inline-block; }
-  .tag-track .track-content {
+  .label-track .track-content {
     border: none;
     background: white; }
 
