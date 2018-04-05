@@ -6,8 +6,9 @@ $base-color-1: #2c3143;
 $base-color-2: lighten($base-color-1, 25%);
 $base-color-3: lighten($base-color-1, 50%);
 
-$complement-color-1: spin($base-color-1, 180);
-$complement-color-2: spin($base-color-2, 180);
+// DB: 1, 2 currently unused
+//$complement-color-1: spin($base-color-1, 180);
+//$complement-color-2: spin($base-color-2, 180);
 $complement-color-3: spin($base-color-3, 180);
 
 $base-color: $base-color-2;
@@ -34,7 +35,8 @@ $panel-bg-color: #dfe5f9;
 
 $sat: saturation($base-color);
 $luma: luma($base-color);
-$tone: desaturate($base-color, 100%);
+// DB: Tone is unused
+//$tone: desaturate($base-color, 100%);
 
 // Grays
 
@@ -145,7 +147,7 @@ $link-hover-color: darken($link-color, 15%);
 // Fonts and sizes
 
 $font-family-sans-serif: "Lucida Grande", verdana, arial, helvetica, sans-serif; //JT "Helvetica Neue", Helvetica, Arial, sans-serif;
-$font-family-serif: Georgia, "Times New Roman", Times, serif;
+//$font-family-serif: Georgia, "Times New Roman", Times, serif;
 $font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base: $font-family-sans-serif;
 
@@ -194,10 +196,6 @@ $border-radius-large: 0.3125rem;
 
 // Tables
 // -------------------------
-
-$table-bg-accent: #f9f9f9; // for striping
-$table-bg-hover: #f5f5f5;
-$table-bg-active: $table-bg-hover;
 
 $table-border-color: $border-default-color; // table and cell border
 

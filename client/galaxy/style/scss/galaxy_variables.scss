@@ -3,7 +3,6 @@
 
 $base-bg: $white;
 $base-text-color: $black;
-$header-text-color: $base-text-color;
 
 $side-panel-bg: lighten(black, 95%);
 $layout-border-color: darken($border-default-color, 15%);
@@ -13,6 +12,8 @@ $form-border: $complement-color-3;
 
 $table-heading-bg: $complement-color-3;
 $table-border: $complement-color-3;
+$table-bg-accent: #f9f9f9; // for striping
+
 
 // Additional state colors
 
@@ -23,6 +24,7 @@ $state-paused-bg: #d9edf7;
 
 $state-running-border: #aaaa66;
 $state-running-bg: #ffffcc;
+
 
 @import "theme/blue.scss";
 
