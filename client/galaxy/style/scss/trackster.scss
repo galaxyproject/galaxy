@@ -443,10 +443,10 @@ input {
 // TODO: make images into spritemap.
 @mixin icon-hover-mixin($name) {
     &.#{$name} {
-        background: transparent url("../images/fugue/${name}-bw.png") no-repeat;
+        background: transparent url("../images/fugue/#{$name}-bw.png") no-repeat;
 
         &:hover {
-            background: transparent url("../images/fugue/${name}.png") no-repeat;
+            background: transparent url("../images/fugue/#{$name}.png") no-repeat;
         }
     }
 }
