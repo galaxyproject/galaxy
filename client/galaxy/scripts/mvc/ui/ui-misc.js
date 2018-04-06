@@ -189,9 +189,21 @@ export var TextSelect = Backbone.View.extend({
     initialize: function(options, select) {
         this.text = new Input(options);
         this.select = select;
+        this.model = this.select.model;
+        this.on("change", () => {
+            if (this.model.get("onchange")) {
+                this.model.get("onchange")(this.value());
+            }
+        });
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));
         this.update(options.data);
+    },
+    wait: function() {
+        this.select.wait();
+    },
+    unwait: function() {
+        this.select.unwait();
     },
     value: function(new_val) {
         var element = this.textmode ? this.text : this.select;
