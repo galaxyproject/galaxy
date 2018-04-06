@@ -670,23 +670,39 @@ class DockerTask(object):
     @property
     def inspect(self):
         if not self._inspect:
-            self._inspect = self._interface.task_inspect(self._id)
+            try:
+                self._inspect = self._interface.task_inspect(self._id)
+            except docker.errors.NotFound:
+                # This shouldn't be possible, appears to be some kind of Swarm bug (the node claims to have a task that
+                # does not actually exist anymore, nor does its service exist).
+                log.error('Task could not be inspected because Docker claims it does not exist: %s (%s)',
+                          self.name, self.id)
+                return None
         return self._inspect
 
     @property
     def slot(self):
-        return self.inspect['Slot']
+        try:
+            return self.inspect['Slot']
+        except TypeError:
+            return None
 
     @property
     def node(self):
         if not self._node:
-            self._node = self._interface.node(id=self.inspect['NodeID'])
+            try:
+                self._node = self._interface.node(id=self.inspect['NodeID'])
+            except TypeError:
+                return None
         return self._node
 
     @property
     def service(self):
         if not self._service:
-            self._service = self._interface.service(id=self.inspect['ServiceID'])
+            try:
+                self._service = self._interface.service(id=self.inspect['ServiceID'])
+            except TypeError:
+                return None
         return self._service
 
     @property
@@ -696,6 +712,8 @@ class DockerTask(object):
             if cpus == int(cpus):
                 cpus = int(cpus)
             return cpus
+        except TypeError:
+            return None
         except KeyError:
             return 0
 
@@ -705,21 +723,32 @@ class DockerTask(object):
 
     @property
     def current_state(self):
-        return self._state.lower()
+        try:
+            return self._state.lower()
+        except TypeError:
+            log.warning("Current state of %s (%s) is not a string: %s", self.name, self.id, str(self._state))
+            return None
 
     @property
     def current_state_time(self):
         # Docker API returns a stamp w/ higher second precision than Python takes
-        stamp = self.inspect['Status']['Timestamp']
+        try:
+            stamp = self.inspect['Status']['Timestamp']
+        except TypeError:
+            return None
         return pretty_print_time_interval(time=stamp[:stamp.index('.') + 7], precise=True, utc=stamp[-1] == 'Z')
 
     @property
     def desired_state(self):
-        return self._desired_state.lower()
+        try:
+            return self._desired_state.lower()
+        except TypeError:
+            log.warning("Desired state of %s (%s) is not a string: %s", self.name, self.id, str(self._desired_state))
+            return None
 
     @property
     def terminal(self):
         return self.desired_state == 'shutdown' and self.current_state in self.terminal_states
 
     def in_state(self, desired, current):
-        return self._desired_state.lower() == desired.lower() and self._state.lower() == current.lower()
+        return self.desired_state == desired.lower() and self.current_state == current.lower()
