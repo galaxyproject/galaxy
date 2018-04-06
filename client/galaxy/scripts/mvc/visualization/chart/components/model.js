@@ -8,9 +8,9 @@ export default Backbone.Model.extend({
         date: null,
         state: "",
         state_info: "",
-        modified: false,
+        modified: true,
         dataset_id: "",
-        dataset_id_job: ""
+        dataset_id_job: null
     },
 
     initialize: function(options, viz_options) {
@@ -89,15 +89,16 @@ export default Backbone.Model.extend({
                 }
                 console.debug("model::save() - Saving failed.");
             });
-        console.debug("model::save() - Saved with configuration:");
-        console.debug(this.chart_last);
+        console.debug("model::save() - Saving with configuration.");
     },
 
     /** Load nested models/collections from packed dictionary */
     load: function(chart_parsed) {
         var d = chart_parsed || this.chart_dict;
-        console.debug("model::load() - Attempting to load with configuration:");
-        console.debug(d);
+        if (d) {
+            console.debug("model::load() - Attempting to load with configuration:");
+            console.debug(d);
+        }
         this.reset();
         if (d && d.attributes) {
             this.set(d.attributes);
@@ -109,9 +110,11 @@ export default Backbone.Model.extend({
             this.trigger("load");
             console.debug("model::load() - Loading chart model " + d.attributes.type + ".");
             return true;
+        } else {
+            this.set("modified", true);
+            this.trigger("load");
+            console.debug("model::load() - Visualization attributes unavailable.");
+            return false;
         }
-        this.trigger("load");
-        console.debug("model::load() - Visualization attributes unavailable.");
-        return false;
     }
 });

@@ -5,6 +5,9 @@ import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
 import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
+import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
+import Vue from "vue";
+
 import "ui/hoverhighlight";
 
 var logNamespace = "collections";
@@ -1011,17 +1014,11 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         }
     });
 
-//=============================================================================
-/** Create a modal and load its body with the given CreatorClass creator type
- *  @returns {Deferred} resolved when creator has built a collection.
- */
-var collectionCreatorModal = function _collectionCreatorModal(elements, options, CreatorClass) {
-    var deferred = jQuery.Deferred();
-    var modal = Galaxy.modal || new UI_MODAL.View();
-    var creator;
+const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
+    const deferred = jQuery.Deferred();
+    const modal = Galaxy.modal || new UI_MODAL.View();
 
-    options = _.defaults(options || {}, {
-        elements: elements,
+    const creatorOptions = _.defaults(options || {}, {
         oncancel: function() {
             modal.hide();
             deferred.reject("cancelled");
@@ -1032,18 +1029,67 @@ var collectionCreatorModal = function _collectionCreatorModal(elements, options,
         }
     });
 
-    creator = new CreatorClass(options);
-    modal.show({
-        title: options.title || _l("Create a collection"),
-        body: creator.$el,
-        width: "80%",
-        height: "100%",
-        closing_events: true
-    });
-    creator.render();
-    window._collectionCreator = creator;
+    const showEl = function(el) {
+        modal.show({
+            title: options.title || _l("Create a collection"),
+            body: el,
+            width: "80%",
+            height: "100%",
+            closing_events: true
+        });
+    };
 
-    //TODO: remove modal header
+    return { deferred, creatorOptions, showEl };
+};
+
+//=============================================================================
+/** Create a modal and load its body with the given CreatorClass creator type
+ *  @returns {Deferred} resolved when creator has built a collection.
+ */
+var collectionCreatorModal = function _collectionCreatorModal(elements, options, CreatorClass) {
+    options = _.defaults(options || {}, {
+        elements: elements
+    });
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    var creator = new CreatorClass(creatorOptions);
+    showEl(creator.$el);
+    creator.render();
+    return deferred;
+};
+
+var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
+    elements,
+    elementsType,
+    importType,
+    options
+) {
+    let title;
+    if (importType == "datasets") {
+        title = _l("Build Rules for Uploading Datasets");
+    } else if (elementsType == "datasets") {
+        title = _l("Build Rules for Creating Collection");
+    } else {
+        title = _l("Build Rules for Uploading Collections");
+    }
+    options = _.defaults(options || {}, {
+        title: title
+    });
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
+    var vm = document.createElement("div");
+    showEl(vm);
+    new ruleCollectionBuilderInstance({
+        propsData: {
+            initialElements: elements,
+            elementsType: elementsType,
+            importType: importType,
+            ftpUploadSite: options.ftpUploadSite,
+            creationFn: options.creationFn,
+            oncancel: options.oncancel,
+            oncreate: options.oncreate,
+            defaultHideSourceItems: options.defaultHideSourceItems
+        }
+    }).$mount(vm);
     return deferred;
 };
 
@@ -1059,15 +1105,14 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal(elements, 
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
 function createListCollection(contents, defaultHideSourceItems) {
-    var elements = contents.toJSON();
+    const elements = contents.toJSON();
 
-    var promise = listCollectionCreatorModal(elements, {
+    const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function(elements, name, hideSourceItems) {
             elements = elements.map(element => ({
                 id: element.id,
                 name: element.name,
-
                 //TODO: this allows for list:list even if the filter above does not - reconcile
                 src: element.history_content_type === "dataset" ? "hda" : "hdca"
             }));
@@ -1078,12 +1123,50 @@ function createListCollection(contents, defaultHideSourceItems) {
     return promise;
 }
 
+function createCollectionViaRules(selection, defaultHideSourceItems) {
+    let elements, elementsType, importType;
+    if (!selection.selectionType) {
+        // Have HDAs from the history panel.
+        elements = selection.toJSON();
+        elementsType = "datasets";
+        importType = "collections";
+    } else {
+        const hasNonWhitespaceChars = RegExp(/[^\s]/);
+        // Have pasted data, data from a history dataset, or FTP list.
+        const lines = selection.content
+            .split(/[\n\r]/)
+            .filter(line => line.length > 0 && hasNonWhitespaceChars.exec(line));
+
+        // Really poor tabular parser - we should get a library for this or expose options? I'm not
+        // sure.
+        let hasTabs = false;
+        if (lines.length > 0) {
+            const firstLine = lines[0];
+            if (firstLine.indexOf("\t") >= 0) {
+                hasTabs = true;
+            }
+        }
+        const regex = hasTabs ? /\t/ : /\s+/;
+        elements = lines.map(line => line.split(regex));
+        elementsType = selection.selectionType;
+        importType = selection.dataType || "collections";
+    }
+    const promise = ruleBasedCollectionCreatorModal(elements, elementsType, importType, {
+        ftpUploadSite: selection.ftpUploadSite,
+        defaultHideSourceItems: defaultHideSourceItems,
+        creationFn: function(elements, collectionType, name, hideSourceItems) {
+            return selection.createHDCA(elements, collectionType, name, hideSourceItems);
+        }
+    });
+    return promise;
+}
+
 //==============================================================================
 export default {
     DatasetCollectionElementView: DatasetCollectionElementView,
     ListCollectionCreator: ListCollectionCreator,
-
     collectionCreatorModal: collectionCreatorModal,
     listCollectionCreatorModal: listCollectionCreatorModal,
-    createListCollection: createListCollection
+    createListCollection: createListCollection,
+    createCollectionViaRules: createCollectionViaRules
 };

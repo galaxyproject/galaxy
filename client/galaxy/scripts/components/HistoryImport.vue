@@ -7,7 +7,7 @@
             </div>
         </div>
         <div class="portlet-content">
-            <div v-if="errormessage" class="ui-message alert alert-danger">
+            <div v-if="errormessage" class="ui-message ui-show alert alert-danger">
                 {{ errormessage }}
             </div>
             <div class="portlet-body">
@@ -57,7 +57,7 @@ export default {
 };
 </script>
 <style>
-.ui-message {
+.ui-show {
     display: block;
 }
 </style>

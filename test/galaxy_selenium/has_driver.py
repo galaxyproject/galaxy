@@ -173,6 +173,9 @@ class HasDriver:
     def send_escape(self, element):
         element.send_keys(Keys.ESCAPE)
 
+    def send_backspace(self, element):
+        element.send_keys(Keys.BACKSPACE)
+
     def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
             timeout = self.timeout_for(**kwds)

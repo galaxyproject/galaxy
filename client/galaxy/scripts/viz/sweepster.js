@@ -874,7 +874,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.location = "${h.url_for( controller='visualization', action='list' )}";
+                        window.top.location = `${Galaxy.root}visualizations/list`;
                     }
                 }
             ],

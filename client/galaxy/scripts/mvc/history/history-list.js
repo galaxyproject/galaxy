@@ -20,7 +20,7 @@ var HistoryGridView = GridView.extend({
         const fetchDetails = $.makeArray(
             this.$el.find(".delayed-value-datasets_by_state").map((i, el) => {
                 return () => {
-                    const historyId = $(el).data("history-id");
+                    const historyId = $(el).data("id");
                     const url = `${
                         Galaxy.root
                     }api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
@@ -45,8 +45,8 @@ var HistoryGridView = GridView.extend({
                         if (hidden) {
                             stateHtml += `<div class="count-box state-color-hidden" title="Hidden datasets">${hidden}</div> `;
                         }
-                        $(`.delayed-value-datasets_by_state[data-history-id='${historyId}']`).html(stateHtml);
-                        $(`.delayed-value-disk_size[data-history-id='${historyId}']`).html(req["nice_size"]);
+                        $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
+                        $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req["nice_size"]);
                     };
                     var xhr = jQuery.ajax(options);
                     return xhr;
@@ -73,7 +73,7 @@ var HistoryGridView = GridView.extend({
             });
     },
     /** Add an operation to the items menu */
-    _add_operation: function(popup, operation, item) {
+    add_operation: function(popup, operation, item) {
         var self = this;
         var settings = item.operation_config[operation.label];
         if (operation.label == "Copy") {
@@ -81,23 +81,7 @@ var HistoryGridView = GridView.extend({
                 self._showCopyDialog(id);
             };
         }
-        if (settings.allowed && operation.allow_popup) {
-            popup.addItem({
-                html: operation.label,
-                href: settings.url_args,
-                target: settings.target,
-                confirmation_text: operation.confirm,
-                func: function(e) {
-                    e.preventDefault();
-                    var label = $(e.target).html();
-                    if (operation.onclick) {
-                        operation.onclick(item.encode_id);
-                    } else {
-                        self.execute(this.findItemByHtml(label));
-                    }
-                }
-            });
-        }
+        GridView.prototype.add_operation.call(this, popup, operation, item);
     }
 });
 
@@ -107,10 +91,9 @@ var View = Backbone.View.extend({
         var self = this;
         LoadingIndicator.markViewAsLoading(this);
 
-        if(options.action_id == "list_published"){
+        if (options.action_id == "list_published") {
             this.active_tab = "shared";
-        }
-        else if (options.action_id = "list"){
+        } else if ((options.action_id = "list")) {
             this.active_tab = "user";
         }
         this.model = new Backbone.Model();

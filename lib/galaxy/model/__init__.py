@@ -115,6 +115,12 @@ class HasTags(object):
             tags_str_list.append(tag_str)
         return tags_str_list
 
+    def copy_tags_from(self, target_user, source):
+        for source_tag_assoc in source.tags:
+            new_tag_assoc = source_tag_assoc.copy()
+            new_tag_assoc.user = target_user
+            self.tags.append(new_tag_assoc)
+
 
 class HasName(object):
 
@@ -1420,7 +1426,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:
             self.copy_item_annotation(db_session, self.user, self, target_user, new_history)
-            new_history.copy_tags_from(target_user=target_user, source_history=self)
+            new_history.copy_tags_from(target_user=target_user, source=self)
 
         # Copy HDAs.
         if activatable:
@@ -1453,6 +1459,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
+                new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
         db_session.add(new_history)
@@ -1611,12 +1618,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
     def __collection_contents_iter(self, **kwds):
         return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
-
-    def copy_tags_from(self, target_user, source_history):
-        for src_shta in source_history.tags:
-            new_shta = src_shta.copy()
-            new_shta.user = target_user
-            self.tags.append(new_shta)
 
 
 class HistoryUserShareAssociation(object):
@@ -2019,6 +2020,9 @@ class DatasetInstance(object):
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
+
+    def update(self):
+        self.update_time = galaxy.model.orm.now.now()
 
     @property
     def ext(self):
@@ -2679,15 +2683,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
                  type_coerce(cls.id, types.Unicode)).label('type_id'))
-
-    def copy_tags_from(self, target_user, source_hda):
-        """
-        Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
-        """
-        for source_tag_assoc in source_hda.tags:
-            new_tag_assoc = source_tag_assoc.copy()
-            new_tag_assoc.user = target_user
-            self.tags.append(new_tag_assoc)
 
 
 class HistoryDatasetAssociationHistory(object):
@@ -3664,6 +3659,7 @@ class StoredWorkflow(HasTags, Dictifiable):
         self.workflows = []
 
     def copy_tags_from(self, target_user, source_workflow):
+        # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
             new_swta = src_swta.copy()
             new_swta.user = target_user

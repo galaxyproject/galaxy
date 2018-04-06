@@ -150,6 +150,7 @@ export default Backbone.View.extend({
         this.portlet = new Portlet.View({
             icon: options.icon,
             title: options.title,
+            title_id: options.title_id,
             cls: options.cls,
             operations: !options.hide_operations && options.operations,
             buttons: options.buttons,

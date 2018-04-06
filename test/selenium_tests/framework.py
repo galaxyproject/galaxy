@@ -205,6 +205,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+        self._try_setup_with_driver()
+
+    def _try_setup_with_driver(self):
         try:
             self.setup_with_driver()
         except Exception:
@@ -214,8 +217,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def setup_with_driver(self):
         """Override point that allows setting up data using self.driver and Selenium connection.
 
-        Using this instead of overriding will ensure debug data such as screenshots and stack traces
-        are dumped if there are problems with the setup.
+        Overriding this instead of setUp will ensure debug data such as screenshots and stack traces
+        are dumped if there are problems with the setup and it will be re-ran on test retries.
         """
 
     def tearDown(self):
@@ -249,21 +252,38 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if more for creating a set of images to augment automated testing with manual human inspection
         after a test or test suite has executed.
         """
+        target = self._screenshot_path(label)
+        if target is None:
+            return
+
+        self.driver.save_screenshot(target)
+
+    def write_screenshot_directory_file(self, label, content):
+        target = self._screenshot_path(label, ".txt")
+        if target is None:
+            return
+
+        with open(target, "w") as f:
+            f.write(content)
+
+    def _screenshot_path(self, label, extension=".png"):
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
             return
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
             os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
-        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + ".png")
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d.png" % (label, copy))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
             copy += 1
-        self.driver.save_screenshot(target)
+
+        return target
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
         self.setup_driver_and_session()
+        self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
@@ -298,7 +318,10 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         try:
             self.driver.close()
         except Exception as e:
-            exception = e
+            if "cannot kill Chrome" in str(e):
+                print("Ignoring likely harmless error in Selenium shutdown %s" % e)
+            else:
+                exception = e
 
         try:
             self.display.stop()

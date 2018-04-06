@@ -66,7 +66,7 @@ class ConditionalDependencies(object):
         except Exception:
             return False
 
-    def check_psycopg2(self):
+    def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith("postgres")
 
     def check_mysql_python(self):

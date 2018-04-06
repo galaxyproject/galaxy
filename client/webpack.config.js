@@ -62,8 +62,17 @@ let buildconfig = {
     module: {
         rules: [
             {
+                test: /\.vue$/,
+                loader: "vue-loader",
+                options: {
+                    loaders: {
+                        js: "babel-loader"
+                    }
+                }
+            },
+            {
                 test: /\.js$/,
-                exclude: [/(node_modules|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(vue-handsontable-official)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -78,10 +87,6 @@ let buildconfig = {
                         options: "$"
                     }
                 ]
-            },
-            {
-                test: /\.vue$/,
-                loader: "vue-loader"
             }
         ]
     },

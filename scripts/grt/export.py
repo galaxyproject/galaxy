@@ -7,7 +7,6 @@ import argparse
 import json
 import logging
 import os
-import subprocess
 import sys
 import tarfile
 import time
@@ -18,41 +17,33 @@ import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 import galaxy
+import galaxy.app
 import galaxy.config
-from galaxy.model import mapping
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.properties import load_app_properties
+from galaxy.util import hash_util
+from galaxy.util.script import app_properties_from_args, config_file_from_args, populate_config_args
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def _init(config, need_app=False):
-    if config.startswith('/'):
-        config_file = os.path.abspath(config)
-    else:
-        config_file = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, config))
-
-    properties = load_app_properties(ini_file=config_file)
+def _init(args, need_app=False):
+    properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
         logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.ini")
 
     if need_app:
+        config_file = config_file_from_args(args)
         app = galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()})
     else:
         app = None
 
+    model = galaxy.config.init_models_from_config(config, object_store=object_store)
     return (
-        mapping.init(
-            config.file_path,
-            config.database_connection,
-            create_tables=False,
-            object_store=object_store
-        ),
+        model,
         object_store,
-        config.database_connection.split(':')[0],
         config,
         app
     )
@@ -167,7 +158,7 @@ def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-r', '--report-directory', help='Directory to store reports in',
                         default=os.path.abspath(os.path.join('.', 'reports')))
-    parser.add_argument('-c', '--config', help='Path to GRT config file',
+    parser.add_argument('-g', '--grt-config', help='Path to GRT config file',
                         default=default_config)
     parser.add_argument("-l", "--loglevel", choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help="Set the logging level", default='warning')
@@ -175,6 +166,7 @@ def main(argv):
                         help="Batch size for sql queries")
     parser.add_argument("-m", "--max-records", type=int, default=0,
                         help="Maximum number of records to include in a single report. This option should ONLY be used when reporting historical data. Setting this may require running GRT multiple times to capture all historical logs.")
+    populate_config_args(parser)
 
     args = parser.parse_args()
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
@@ -189,7 +181,7 @@ def main(argv):
 
     annotate('init_start', 'Loading GRT configuration...')
     try:
-        with open(args.config) as handle:
+        with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
@@ -209,7 +201,7 @@ def main(argv):
         last_job_sent = -1
 
     annotate('galaxy_init', 'Loading Galaxy...')
-    model, object_store, engine, gxconfig, app = _init(config['galaxy_config'], need_app=config['grt']['share_toolbox'])
+    model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
     sa_session = model.context.current
@@ -345,10 +337,8 @@ def main(argv):
         os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
-    sha = subprocess.check_output(['sha256sum', REPORT_BASE + '.tar.gz'])
+    sha = hash_util.memory_bound_hexdigest(hash_util.sha256, REPORT_BASE + ".tar.gz")
     _times.append(('hash_finish', time.time() - _start_time))
-    # Strip out to space
-    sha = sha[0:sha.index(' ')]
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:

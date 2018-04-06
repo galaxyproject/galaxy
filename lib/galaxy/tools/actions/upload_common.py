@@ -173,11 +173,11 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
                                                     history=history,
                                                     create_dataset=True,
                                                     sa_session=trans.sa_session)
+    trans.sa_session.add(hda)
     if state:
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    trans.sa_session.add(hda)
     trans.sa_session.flush()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
     permissions = trans.app.security_agent.history_get_default_permissions(history)

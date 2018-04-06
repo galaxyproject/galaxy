@@ -2,7 +2,7 @@ FROM ubuntu:16.04
 MAINTAINER John Chilton <jmchilton@gmail.com>
 
 ARG CHROME_VERSION="google-chrome-stable"
-ARG CHROME_DRIVER_VERSION="latest"
+ARG CHROME_DRIVER_VERSION="2.35"
 
 # TODO: merge with first ENV statement.
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -46,7 +46,8 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             locales \
             xvfb \
             ${CHROME_VERSION:-google-chrome-stable} \
-            wget zlib1g-dev nodejs && \
+            wget zlib1g-dev nodejs \
+            libnss3 libgconf-2-4 && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN npm install -g grunt grunt-cli

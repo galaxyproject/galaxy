@@ -54,12 +54,12 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('buffer-size', {
-        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. Increase it up to 65535.""",
-        'default': 4096,
+        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. We recommend at least 16384.""",
+        'default': 16384,
         'type': 'int',
     }),
     ('processes', {
-        'desc': """Number of web server (worker) processes to fork after the application has loaded.""",
+        'desc': """Number of web server (worker) processes to fork after the application has loaded. If this is set to greater than 1, thunder-lock likely should be enabled below.""",
         'default': 1,
         'type': 'int',
     }),
@@ -104,6 +104,11 @@ UWSGI_OPTIONS = OrderedDict([
         'desc': """The entry point which returns the web application (e.g. Galaxy, Reports, etc.) that you are loading.""",
         'default': '$uwsgi_module',
         'type': 'str',
+    }),
+    ('thunder-lock', {
+        'desc': """It is usually a good idea to set this to ``true`` if processes is greater than 1.""",
+        'default': False,
+        'type': 'bool',
     }),
     ('die-on-term', {
         'desc': """Cause uWSGI to respect the traditional behavior of dying on SIGTERM (its default is to brutally reload workers)""",
@@ -756,10 +761,11 @@ def _parse_option_value(option_value):
     if isinstance(option_value, OptionValue):
         option = option_value.option
         value = option_value.value
-        option = option_value.option
         # Hack to get nicer YAML values during conversion
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
+        elif option.get("type", "str") == "int":
+            value = int(value)
     else:
         value = option_value
         option = OPTION_DEFAULTS
