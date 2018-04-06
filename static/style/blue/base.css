@@ -10589,7 +10589,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     bottom: 0.05rem;
     margin-left: -0.6rem;
     border-bottom-width: 0;
-    border-top-color: #FFFFFF; }
+    border-top-color: #ffffff; }
 
 .ui-input, .ui-form-element .ui-form-preview, .ui-form-element-disabled .ui-form-preview, .ui-input-basic, .ui-select select, .ui-select .select2-container .select2-choice, .ui-textarea, .ui-options .ui-options-list, .ui-form-slider .ui-form-slider-text, .ui-select .select2-container-multi .select2-choices {
   width: 100%;
