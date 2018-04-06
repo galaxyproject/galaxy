@@ -365,7 +365,6 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         'image': {'param': 0},
         'command': {},
         'environment': {'param': 'env'},
-        # FIXME: is our param name labels?
         'labels': {},
     }
     restart_policy_option_map = {
@@ -375,6 +374,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
     }
     task_template_option_map = {
         '_container_spec': {'spec_class': docker.types.ContainerSpec, 'required': True},
+        '_resources': {'spec_class': docker.types.Resources},
         '_restart_policy': {'spec_class': docker.types.RestartPolicy},
         '_placement': {'spec_class': docker.types.Placement},
     }
@@ -398,19 +398,25 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
     #
 
     def service_create(self, command, image=None, **kwopts):
+        # TODO: some of this should probably move to run_in_container when the CLI interface is removed
         log.debug("Creating docker service with image '%s' for command: %s", image, command)
-        # FIXME: these should be class level vars
-        if ('service_create_image_constraint' in self._conf or 'service_create_cpus_constraint' in self._conf) and 'constraint' not in kwopts:
-            kwopts['constraint'] = []
+        # insert run kwopts from config
+        for opt in self.conf_run_kwopts:
+            if self._conf[opt]:
+                kwopts[opt] = self._conf[opt]
         # image is part of the container spec
         kwopts['image'] = self._get_image(image)
+        # service constraints
+        kwopts['constraint'] = kwopts.get('constraint', [])
         if self._conf.service_create_image_constraint:
-            kwopts['constraint'].append((IMAGE_CONSTRAINT, '==', image))
+            kwopts['constraint'].append((IMAGE_CONSTRAINT + '==' + image))
         if self._conf.service_create_cpus_constraint:
             cpus = kwopts.get('reserve_cpus', kwopts.get('limit_cpus', '1'))
-            kwopts['constraint'].append((CPUS_CONSTRAINT, '==', cpus))
+            kwopts['constraint'].append((CPUS_CONSTRAINT + '==' + cpus))
+        # ports
         if 'publish_port_random' in kwopts:
             kwopts['ports'] = [DockerSwarmAPIInterface.create_random_port_spec(kwopts.pop('publish_port_random'))]
+        # create specs
         service_mode = self._create_docker_api_spec('service_mode', docker.types.ServiceMode, kwopts)
         endpoint_spec = self._create_docker_api_spec('endpoint_spec', docker.types.EndpointSpec, kwopts)
         task_template = self._create_docker_api_spec('task_template', docker.types.TaskTemplate, kwopts)
@@ -464,7 +470,7 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         spec = node.inspect['Spec']
         if 'label_add' in kwopts:
             kwopts['labels'] = spec.get('Labels', {})
-            kwopts['labels'].update(kwopts.pop('labels_add'))
+            kwopts['labels'].update(kwopts.pop('label_add'))
         spec.update(self._create_docker_api_spec('node_spec', dict, kwopts))
         return self._client.update_node(node.id, node.version, node_spec=spec)
 

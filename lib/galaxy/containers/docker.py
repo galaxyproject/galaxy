@@ -49,6 +49,11 @@ class DockerInterface(ContainerInterface):
         'cpus': None,
         'memory': None,
     }
+    # These values are inserted into kwopts for run commands
+    conf_run_kwopts = (
+        'cpus',
+        'memory',
+    )
 
     @property
     def _default_image(self):
@@ -56,8 +61,7 @@ class DockerInterface(ContainerInterface):
         return self._conf.image
 
     def run_in_container(self, command, image=None, **kwopts):
-        # FIXME: these containers_conf overrides should be defined as class vars
-        for opt in ('cpus', 'memory'):
+        for opt in self.conf_run_kwopts:
             if self._conf[opt]:
                 kwopts[opt] = self._conf[opt]
         self.set_kwopts_name(kwopts)
@@ -231,8 +235,9 @@ class DockerAPIClient(object):
             if r:
                 log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
                 return r
-            elif max_tries > 0 and tries > max_tries:
+            elif max_tries > 0 and tries >= max_tries:
                 log.error("Maximum number of attempts (%s) exceeded", max_tries)
+                return r
             else:
                 tries += 1
                 of = " of %s" % max_tries if max_tries > 0 else ""
@@ -312,6 +317,10 @@ class DockerAPIInterface(DockerInterface):
 
     @staticmethod
     def _kwopt_to_param_names(map_spec, key):
+        """For a given containers lib method parameter name, return the matching docker-py parameter name(s).
+
+        See :meth:`_create_docker_api_spec`.
+        """
         params = []
         if 'param' not in map_spec and 'params' not in map_spec:
             params.append(key)
@@ -322,6 +331,11 @@ class DockerAPIInterface(DockerInterface):
 
     @staticmethod
     def _kwopt_to_params(map_spec, key, value):
+        """For a given containers lib method parameter name and value, return the matching docker-py parameters with
+        values set (including transformation with an optional map function).
+
+        See :meth:`_create_docker_api_spec`.
+        """
         params = {}
         if 'map' in map_spec:
             value = map_spec['map'](value)
@@ -330,54 +344,108 @@ class DockerAPIInterface(DockerInterface):
         return params
 
     def _create_docker_api_spec(self, option_map_name, spec_class, kwopts):
-        """Creates docker-py objects used as arguments to API methods.
+        """Create docker-py objects used as arguments to docker-py methods.
 
         This method modifies ``kwopts`` by removing options that match the spec.
+
+        An option map is a class-level variable with name ``<map_name>_option_map`` and is a dict with format:
+
+        .. code-block:: python
+
+            sample_option_map = {
+                'containers_lib_option_name': {
+                    'param': docker_lib_positional_argument_int or 'docker_lib_keyword_argument_name',
+                    'params': like 'param' but an iterable containing multiple docker lib params to set,
+                    'default': default value,
+                    'map': function with with to transform the value,
+                    'required': True if this param is required, else False (default),
+                },
+                '_spec_param': {
+                    'spec_class': class of param value,
+                }
+            }
+
+        All members of the mapping value are optional.
+
+        For example, a spec map for (some of) the possible values of the :class:`docker.types.TaskTemplate`, which is
+        used as the ``task_template`` argument to :meth:`docker.APIClient.create_service`, and the possible values of
+        the :class`:docker.types.ContainerSpec`, which is used as the ``container_spec`` argument to the
+        ``TaskTemplate``  would be:
+
+        .. code-block:: python
+
+            task_template_option_map = {
+                # TaskTemplate's 'container_spec' param is a ContainerSpec
+                '_container_spec': {
+                    'spec_class': docker.types.ContainerSpec,
+                    'required': True
+                }
+            }
+            container_spec_option_map = {
+                'image': {'param': 0},      # positional argument 0 to ContainerSpec()
+                'command': {},              # 'command' keyword argument to ContainerSpec()
+                'environment': {            # 'env' keyword argument to ContainerSpec(), 'environment' keyword argument
+                    'param': 'env'          #   to ContainerInterface.run_in_container()
+                },
+            }
+
+        Thus, calling ``DockerInterface.run_in_contaner('true', image='busybox', environment={'FOO': 'foo'}`` will
+        essentially do this (for example, if using Docker Swarm mode):
+
+        .. code-block:: python
+
+            container_spec = docker.types.ContainerSpec('busybox', command='true', env={'FOO': 'foo'})
+            task_template = docker.types.TaskTemplate(container_spec=container_spec)
+            docker.APIClient().create_service(task_template)
 
         :param  option_map_name:    Name of option map class variable (``_option_map`` is automatically appended)
         :type   option_map_name:    str
         :param  spec_class:         docker-py specification class or callable returning an instance
         :type   spec_class:         :class:`docker.types.Resources`, :class:`docker.types.ContainerSpec`, etc. or
                                     callable
-        :param  kwopts:             Keyword options passed to calling method (e.g. :method:`DockerInterface.run()`)
+        :param  kwopts:             Keyword options passed to calling method (e.g.
+                                    :meth:`DockerInterface.run_in_container`)
         :type   kwopts:             dict
         :returns:                   Instantiated ``spec_class`` object
         :rtype:                     ``type(spec_class)``
         """
         def _kwopt_to_arg(map_spec, key, value, param=None):
+            # determines whether the given param is a positional or keyword argument in docker-py and adds it to the
+            # list of arguments
             if isinstance(map_spec.get('param'), int):
                 spec_opts.append((map_spec.get('param'), value))
             elif param is not None:
                 spec_kwopts[param] = value
             else:
                 spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, value))
-        # TODO: make this cleaner
+        # positional arguments
         spec_opts = []
+        # keyword arguments
         spec_kwopts = {}
+        # retrieve the option map for the docker-py object we're creating
         option_map = getattr(self, option_map_name + '_option_map')
         # set defaults
         for key in filter(lambda k: option_map[k].get('default'), option_map.keys()):
             map_spec = option_map[key]
             _kwopt_to_arg(map_spec, key, map_spec['default'])
-        # don't allow kwopts that start with _, those are reserved for "child" classes
+        # don't allow kwopts that start with _, those are reserved for "child" object params
         for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, kwopts.keys()):
             map_spec = option_map[kwopt]
             _v = kwopts.pop(kwopt)
             _kwopt_to_arg(map_spec, kwopt, _v)
-        # look for any child classes that need to be checked
+        # find any child objects that need to be created and recurse to create them
         for _sub_k in filter(lambda k: k.startswith('_') and 'spec_class' in option_map[k], option_map.keys()):
             map_spec = option_map[_sub_k]
             param = _sub_k.lstrip('_')
             _sub_v = self._create_docker_api_spec(param, map_spec['spec_class'], kwopts)
             if _sub_v is not None or map_spec.get('required') or isinstance(map_spec.get('param'), int):
                 _kwopt_to_arg(map_spec, None, _sub_v, param=param)
-        # override params with values defined in the config
-        for key in filter(lambda k: self._conf.get(k) is not None, option_map.keys()):
-            _kwopt_to_arg(map_spec, key, self._conf[key])
+        # sort positional args and make into a flat tuple
         if spec_opts:
             spec_opts = sorted(spec_opts, key=lambda x: x[0])
             spec_opts = [i[1] for i in spec_opts]
-        if spec_kwopts:
+        # create spec object
+        if spec_opts or spec_kwopts:
             return spec_class(*spec_opts, **spec_kwopts)
         else:
             return None
