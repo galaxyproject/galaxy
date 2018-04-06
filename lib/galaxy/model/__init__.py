@@ -4644,8 +4644,7 @@ class UserAuthnzToken(UserMixin):
     def create_user(cls, *args, **kwargs):
         model = cls.user_model()
         instance = model(*args, **kwargs)
-        instance.set_password_cleartext(
-            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16)))
+        instance.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 16)))
         cls.trans.sa_session.add(instance)
         cls.trans.sa_session.flush()
         return instance
