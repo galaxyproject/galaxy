@@ -4,6 +4,7 @@ Docker Swarm mode interface
 from __future__ import absolute_import
 
 import logging
+from functools import partial
 
 try:
     import docker
@@ -14,8 +15,6 @@ except ImportError:
         RestartPolicy=None,
         Placement=None,
     ))
-
-import requests
 
 from galaxy.containers import docker_swarm_manager
 from galaxy.containers.docker import (
@@ -420,15 +419,15 @@ class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
         log.debug("Docker service endpoint specification:\n%s", safe_dumps_formatted(endpoint_spec))
         log.debug("Docker service mode:\n%s", safe_dumps_formatted(service_mode))
         log.debug("Docker service creation parameters:\n%s", safe_dumps_formatted(kwopts))
-        try:
-            service = self._client.create_service(task_template, mode=service_mode, endpoint_spec=endpoint_spec, **kwopts)
-        except requests.exceptions.ReadTimeout:
-            log.error('Caught request read timeout while creating service %s, checking to see if service was created',
-                      kwopts['name'])
-            services = self.service_ls(name=kwopts['name'])
-            if not services:
-                raise
-            service = services[0]
+        success_test = partial(self._first, self.service_ls, name=kwopts['name'])
+        # this can raise exceptions, if necessary we could wrap them in a more generic "creation failed" exception class
+        service = self._client.create_service(
+            task_template,
+            mode=service_mode,
+            endpoint_spec=endpoint_spec,
+            success_test=success_test,
+            max_tries=5,
+            **kwopts)
         service_id = service.get('ID')
         log.debug('Created service: %s (%s)', kwopts['name'], service_id)
         return DockerService.from_id(self, service_id)

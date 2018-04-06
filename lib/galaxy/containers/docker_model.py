@@ -5,6 +5,12 @@ from __future__ import absolute_import
 
 import logging
 
+try:
+    import docker
+except ImportError:
+    from galaxy.util.bunch import Bunch
+    docker = Bunch(errors=Bunch(NotFound=None))
+
 from galaxy.containers import (
     Container,
     ContainerPort,

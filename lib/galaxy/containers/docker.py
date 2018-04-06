@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import logging
 import os
+from functools import partial
 from time import sleep
 
 try:
@@ -199,11 +200,9 @@ class DockerCLIInterface(DockerInterface):
 class DockerAPIClient(object):
     """Wraps a ``docker.APIClient`` to catch exceptions.
     """
+
     exception_retry_time = 5
-    client_handler_map = {
-        'create_container': 'write_client_handler',
-        'create_service': 'write_client_handler',
-    }
+    client_handler_map = {}
 
     @staticmethod
     def _qualname(f):
@@ -213,33 +212,31 @@ class DockerAPIClient(object):
     def default_client_handler(f, *args, **kwargs):
         exc = None
         tries = 0
-        catch_read_timeout = kwargs.pop('catch_read_timeout', True)
+        success_test = kwargs.pop('success_test', lambda: False)
+        max_tries = kwargs.pop('max_tries', -1)
         while True:
-            retry = DockerAPIClient.exception_retry_time
+            retry_time = DockerAPIClient.exception_retry_time
             try:
                 r = f(*args, **kwargs)
                 if tries:
                     log.info('%s() succeeded after %s tries', DockerAPIClient._qualname(f), tries)
                 return r
-            except requests.exceptions.ConnectionError as exc:
+            except (requests.exceptions.ConnectionError, docker.errors.APIError) as exc:
                 pass
             except requests.exceptions.ReadTimeout as exc:
-                if not catch_read_timeout:
-                    raise
-                retry = 0
-            except docker.errors.APIError as exc:
-                if exc.response.status_code not in (503,):
-                    raise
-            tries += 1
-            log.error("Caught exception on %s() (attempt: %s), will retry in %s seconds: %s: %s",
-                      DockerAPIClient._qualname(f), tries, retry, exc.__class__.__name__, exc)
-            sleep(retry)
-
-    @staticmethod
-    def write_client_handler(f, *args, **kwargs):
-        # if doing a create/update, we don't want to submit that request again if it succeeded
-        kwargs['catch_read_timeout'] = False
-        return DockerAPIClient.default_client_handler(f, *args, **kwargs)
+                retry_time = 0
+            log.warning("Caught exception on %s(): %s: %s", DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
+            r = success_test()
+            if r:
+                log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
+                return r
+            elif max_tries > 0 and tries > max_tries:
+                log.error("Maximum number of attempts (%s) exceeded", max_tries)
+            else:
+                tries += 1
+                of = " of %s" % max_tries if max_tries > 0 else ""
+                log.error("Retrying in %s seconds (attempt: %s%s)", retry_time, tries, of)
+                sleep(retry_time)
 
     def __init__(self, *args, **kwargs):
         self.__client = docker.APIClient(*args, **kwargs)
@@ -296,6 +293,13 @@ class DockerAPIInterface(DockerInterface):
                 tls=tls_config,
             )
         return self.__client
+
+    @staticmethod
+    def _first(f, *args, **kwargs):
+        try:
+            return f(*args, **kwargs)[0]
+        except IndexError:
+            return None
 
     @staticmethod
     def _filter_by_id_or_name(id, name):
@@ -426,20 +430,16 @@ class DockerAPIInterface(DockerInterface):
         host_config = self._create_host_config(kwopts)
         log.debug("Docker container host configuration:\n%s", safe_dumps_formatted(host_config))
         log.debug("Docker container creation parameters:\n%s", safe_dumps_formatted(kwopts))
-        try:
-            container = self._client.create_container(
-                image,
-                command=command if command else None,
-                host_config=host_config,
-                **kwopts
-            )
-        except requests.exceptions.ReadTimeout:
-            log.error('Caught request read timeout while creating container %s, checking to see if container was '
-                      'created', kwopts['name'])
-            containers = self.ps(name=kwopts['name'], running=False)
-            if not containers:
-                raise
-            container = containers[0]
+        success_test = partial(self._first, self.ps, name=kwopts['name'], running=False)
+        # this can raise exceptions, if necessary we could wrap them in a more generic "creation failed" exception class
+        container = self._client.create_container(
+            image,
+            command=command if command else None,
+            host_config=host_config,
+            success_test=success_test,
+            max_tries=5,
+            **kwopts
+        )
         container_id = container.get('Id')
         log.debug("Starting container: %s (%s)", kwopts['name'], str(container_id))
         # start can safely be run more than once
