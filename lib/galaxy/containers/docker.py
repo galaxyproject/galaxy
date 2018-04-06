@@ -226,7 +226,11 @@ class DockerAPIClient(object):
                 if tries:
                     log.info('%s() succeeded after %s tries', DockerAPIClient._qualname(f), tries)
                 return r
-            except (requests.exceptions.ConnectionError, docker.errors.APIError) as exc:
+            except requests.exceptions.ConnectionError as exc:
+                pass
+            except docker.errors.APIError as exc:
+                if exc.response.status_code < 500:
+                    raise
                 pass
             except requests.exceptions.ReadTimeout as exc:
                 retry_time = 0
