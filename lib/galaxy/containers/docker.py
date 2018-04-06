@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 
 class DockerInterface(ContainerInterface):
+
     container_class = DockerContainer
     volume_class = DockerVolume
     conf_defaults = {

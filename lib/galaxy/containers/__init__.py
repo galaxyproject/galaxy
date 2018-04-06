@@ -46,6 +46,7 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
 
 
 class ContainerVolume(with_metaclass(ABCMeta, object)):
+
     valid_modes = frozenset(["ro", "rw"])
 
     def __init__(self, path, host_path=None, mode=None):
@@ -140,6 +141,7 @@ class Container(with_metaclass(ABCMeta, object)):
 
 
 class ContainerInterface(with_metaclass(ABCMeta, object)):
+
     container_type = None
     container_class = None
     volume_class = None
