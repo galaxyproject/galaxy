@@ -99,7 +99,7 @@ const RULES = {
             let rownum = rule.start;
             function newRow(row) {
                 const newRow = row.slice();
-                newRow.push(rownum);
+                newRow.push(String(rownum));
                 rownum += 1;
                 return newRow;
             }
