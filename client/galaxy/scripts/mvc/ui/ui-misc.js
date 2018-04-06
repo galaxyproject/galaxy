@@ -187,11 +187,15 @@ export var Hidden = Backbone.View.extend({
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
-        this.text = new Input(options);
         this.select = options.select;
         this.model = this.select.model;
+        this.text = new Input({
+            onchange: this.model.get("onchange")
+        });
         this.on("change", () => {
-            this.select.trigger("change");
+            if (this.model.get("onchange")) {
+                this.model.get("onchange")(this.value());
+            }
         });
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));

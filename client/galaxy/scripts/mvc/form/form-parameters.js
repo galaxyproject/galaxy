@@ -102,10 +102,7 @@ export default Backbone.Model.extend({
             individual: input_def.individual,
             searchable: input_def.flavor !== "workflow"
         });
-        return input_def.textable ? new Ui.TextSelect({
-            select: select,
-            onchange: input_def.onchange
-        }) : select;
+        return input_def.textable ? new Ui.TextSelect({select: select}) : select;
     },
 
     /** Drill down options field */
