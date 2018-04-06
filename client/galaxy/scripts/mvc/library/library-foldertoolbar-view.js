@@ -1443,8 +1443,8 @@ var FolderToolbarView = Backbone.View.extend({
                 "&nbsp;Details",
                 "</button>",
                 "</span>",
-                '<span class="" data-toggle="tooltip" data-placement="right" title="See this screen annotated">', // help button
-                '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
+                '<span data-toggle="tooltip" data-placement="right" title="See this screen annotated">', // help button
+                '<a class="library-help-button" href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                 '<span class="fa fa-question-circle"></span>',
                 "&nbsp;Help",
