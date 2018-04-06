@@ -160,8 +160,13 @@ client-format: node-deps ## Reformat client code
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
-client-test: client ## Run qunit tests via Karma
-	cd client && yarn run test
+_client-test-mocha:  ## Run mocha tests via karma
+	cd client && GALAXY_TEST_FRAMEWORK=mocha yarn run test
+
+_client-test-qunit:  ## Run qunit tests via karma
+	cd client && GALAXY_TEST_FRAMEWORK=qunit yarn run test
+
+client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
