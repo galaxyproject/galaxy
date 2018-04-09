@@ -13,6 +13,7 @@ except ImportError:
     docker = Bunch(types=Bunch(
         ContainerSpec=None,
         RestartPolicy=None,
+        Resources=None,
         Placement=None,
     ))
 
