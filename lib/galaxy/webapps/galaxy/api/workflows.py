@@ -316,7 +316,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
-            return self.__api_import_from_archive(trans, archive_data)
+            return self.__api_import_from_archive(trans, archive_data, "uploaded file")
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
