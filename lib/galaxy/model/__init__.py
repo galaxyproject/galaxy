@@ -243,6 +243,14 @@ class User(Dictifiable):
             self.password = new_secure_hash(text_type=cleartext)
         self.last_password_change = datetime.now()
 
+    def set_random_password(self, length=16):
+        """
+        Sets user password to a random string of the given length.
+        :return: void
+        """
+        self.set_password_cleartext(
+            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length)))
+
     def check_password(self, cleartext):
         """
         Check if `cleartext` matches user password when hashed.
@@ -4640,7 +4648,7 @@ class UserAuthnzToken(UserMixin):
     def create_user(cls, *args, **kwargs):
         model = cls.user_model()
         instance = model(*args, **kwargs)
-        instance.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 16)))
+        instance.set_random_password()
         cls.trans.sa_session.add(instance)
         cls.trans.sa_session.flush()
         return instance
