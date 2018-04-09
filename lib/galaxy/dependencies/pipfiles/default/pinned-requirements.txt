@@ -5,7 +5,7 @@ babel==2.5.3
 bagit==1.6.4
 bcrypt==3.1.4
 bdbag==1.2.4
-beaker==1.9.0
+beaker==1.9.1
 bioblend==0.10.0
 bleach==2.1.3
 boltons==18.0.0
@@ -14,7 +14,7 @@ bunch==1.0.1
 bx-python==0.8.1
 bz2file==0.98; python_version < '3.3'
 certifi==2018.1.18
-cffi==1.11.5; platform_python_implementation != 'PyPy'
+cffi==1.11.5
 chardet==3.0.4
 cheetah3==3.1.0
 cliff==2.11.0
@@ -33,6 +33,7 @@ enum34==1.1.6
 fabric3==1.14.post1
 funcsigs==1.0.2; python_version == '2.7' or python_version == '2.6'
 functools32==3.2.3.post2; python_version == '2.7'
+future==0.16.0
 futures==3.2.0; python_version == '2.7' or python_version == '2.6'
 galaxy-sequence-utils==1.1.2
 globus-sdk==1.3.0
@@ -81,6 +82,8 @@ py2-ipaddress==3.4.1
 pyasn1==0.4.2
 pycparser==2.18
 pycrypto==2.6.1
+pycryptodomex==3.6.0
+pyjwkest==1.4.0
 pyjwt==1.6.1
 pykwalify==1.6.1
 pynacl==1.2.1
