@@ -285,8 +285,7 @@ RadioButton.View = Base.extend({
     /** Main template function */
     _template: function() {
         return $("<div/>")
-            .addClass("btn-group btn-group-toggle")
-            .attr("data-toggle", "buttons");
+            .addClass("btn-group ui-radiobutton");
     }
 });
 
