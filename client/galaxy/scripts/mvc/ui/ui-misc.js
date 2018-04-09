@@ -187,17 +187,25 @@ export var Hidden = Backbone.View.extend({
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
-        this.text = new Input(options);
-        var classes = {
-            "checkboxes": Checkbox,
-            "radio": Radio,
-            "radiobutton": RadioButton
-        }
-        var SelectClass = classes[options.display] || Select;
-        this.select = new SelectClass.View(options);
+        this.select = options.select;
+        this.model = this.select.model;
+        this.text = new Input({
+            onchange: this.model.get("onchange")
+        });
+        this.on("change", () => {
+            if (this.model.get("onchange")) {
+                this.model.get("onchange")(this.value());
+            }
+        });
         this.setElement($("<div/>").append(this.select.$el)
                                    .append(this.text.$el));
-        this.update(options.data);
+        this.update(this.model.get("data"));
+    },
+    wait: function() {
+        this.select.wait();
+    },
+    unwait: function() {
+        this.select.unwait();
     },
     value: function(new_val) {
         var element = this.textmode ? this.text : this.select;
