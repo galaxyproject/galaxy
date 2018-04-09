@@ -750,8 +750,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """
         message = ""
         status = "done"
-        workflow_text = kwd.get('workflow_text', '')
-        workflow_source = kwd.get('workflow_source', 'uploaded file')
+        workflow_text = kwd.get('workflow_text')
+        workflow_source = kwd.get('workflow_source')
         if workflow_text:
             # Convert incoming workflow data from json
             try:
