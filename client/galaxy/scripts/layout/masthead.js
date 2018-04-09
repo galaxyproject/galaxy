@@ -87,9 +87,9 @@ var View = Backbone.View.extend({
         return this;
     },
 
-    highlight: function(tab_id) {
-        this.collection.forEach(function(model, index) {
-            model.set("active", model.id == tab_id);
+    highlight: function(id) {
+        this.collection.forEach(function(model) {
+            model.set("active", model.id == id);
         });
     },
 
