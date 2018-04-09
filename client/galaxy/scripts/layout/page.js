@@ -31,7 +31,8 @@ var View = Backbone.View.extend({
                 view.allow_title_display = true;
             }
             if (view.active_tab) {
-                Utils.setActiveTab(view.active_tab);
+                $("#masthead .dropdown.active").removeClass("active");
+                $("#" + view.active_tab + ">.dropdown").addClass("active");
             }
             self.center.display(view);
         };
