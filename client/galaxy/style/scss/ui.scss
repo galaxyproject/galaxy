@@ -895,6 +895,17 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
+.ui-radiobutton {
+    top: -2px;
+    input {
+        display: none;
+    }
+    label {
+        padding: 2px 10px;
+        margin: 0px;
+    }
+ }
+
 .ui-button-check {
     .icon {
         font-size: 1.2em;
