@@ -305,10 +305,6 @@ var Collection = Backbone.Collection.extend({
             };
         }
         this.add(userTab);
-        let activeView = this.get(options.active_view);
-        if (activeView) {
-            activeView.set("active", true);
-        }
         return new $.Deferred().resolve().promise();
     }
 });

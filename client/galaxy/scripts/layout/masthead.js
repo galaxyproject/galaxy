@@ -34,6 +34,9 @@ var View = Backbone.View.extend({
             })
             .fetch(this.options);
 
+        // highlight initial active view
+        this.highlight(options.active_view);
+
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
             collection: this.collection
@@ -82,6 +85,12 @@ var View = Backbone.View.extend({
         this.$navbarBrandImage.attr("src", this.options.logo_src);
         this.quotaMeter.render();
         return this;
+    },
+
+    highlight: function(tab_id) {
+        this.collection.forEach(function(model, index) {
+            model.set("active", model.id == tab_id);
+        });
     },
 
     /** body template */
