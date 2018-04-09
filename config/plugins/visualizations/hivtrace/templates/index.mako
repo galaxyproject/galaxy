@@ -1,3 +1,7 @@
+<%
+    app_root = "/static/plugins/visualizations/hivtrace/static/"
+%>
+
 <html lang='en'>
 
 <head>
@@ -6,10 +10,10 @@
   <title>HIV-TRACE</title>
 
   <!-- Latest compiled and minified CSS -->
-  <link href="/static/scripts/libs/hivtrace/hivtrace.css" rel="stylesheet">
+  ${h.stylesheet_link(app_root + 'hivtrace.css' )}
 
   <!-- Latest compiled and minified JavaScript -->
-  <script src="/static/scripts/libs/hivtrace/vendor.js"></script>
+  ${h.javascript_link( app_root +  "vendor.js" )}
 
   <style>
     .navbar {
@@ -351,7 +355,7 @@
 <img class="hidden" id="hyphy-chart-image" />
 <canvas class="hidden" id="hyphy-chart-canvas"></canvas>
 
-<script src="/static/scripts/libs/hivtrace/hivtrace.js"></script>
+${h.javascript_link(app_root +  "hivtrace.js")}
 
 <script>
 
