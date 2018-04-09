@@ -207,6 +207,7 @@ class DockerAPIClient(object):
     """
 
     exception_retry_time = 5
+    default_max_tries = 10
     client_handler_map = {}
 
     @staticmethod
@@ -214,39 +215,45 @@ class DockerAPIClient(object):
         return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
 
     @staticmethod
+    def should_retry_request(response_code):
+        return response_code >= 500 or response_code in (404, 408, 409, 429)
+
+    @staticmethod
     def default_client_handler(f, *args, **kwargs):
-        exc = None
-        tries = 0
         success_test = kwargs.pop('success_test', lambda: False)
-        max_tries = kwargs.pop('max_tries', -1)
-        while True:
+        max_tries = kwargs.pop('max_tries', DockerAPIClient.default_max_tries)
+        for tries in range(1, max_tries + 1):
             retry_time = DockerAPIClient.exception_retry_time
+            exc = None
             try:
                 r = f(*args, **kwargs)
-                if tries:
-                    log.info('%s() succeeded after %s tries', DockerAPIClient._qualname(f), tries)
+                if tries > 1:
+                    log.info('%s() succeeded on attempt %s', DockerAPIClient._qualname(f), tries)
                 return r
             except requests.exceptions.ConnectionError as exc:
                 pass
             except docker.errors.APIError as exc:
-                if exc.response.status_code < 500:
+                if not DockerAPIClient.should_retry_request(exc.response.status_code):
                     raise
                 pass
             except requests.exceptions.ReadTimeout as exc:
                 retry_time = 0
-            log.warning("Caught exception on %s(): %s: %s", DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
-            r = success_test()
-            if r:
-                log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
-                return r
-            elif max_tries > 0 and tries >= max_tries:
-                log.error("Maximum number of attempts (%s) exceeded", max_tries)
-                return r
-            else:
-                tries += 1
-                of = " of %s" % max_tries if max_tries > 0 else ""
-                log.error("Retrying in %s seconds (attempt: %s%s)", retry_time, tries, of)
-                sleep(retry_time)
+            finally:
+                # this is inside the finally context so we can do a bare raise when we give up (so the real stack for
+                # the exception is raised)
+                if exc is not None:
+                    log.warning("Caught exception on %s(): %s: %s",
+                                DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
+                    r = success_test()
+                    if r:
+                        log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
+                        return r
+                    elif tries >= max_tries:
+                        log.error("Maximum number of attempts (%s) exceeded", max_tries)
+                        raise
+                    else:
+                        log.error("Retrying in %s seconds (attempt: %s of %s)", retry_time, tries, max_tries)
+                        sleep(retry_time)
 
     def __init__(self, *args, **kwargs):
         self.__client = docker.APIClient(*args, **kwargs)
