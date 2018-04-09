@@ -78,7 +78,7 @@ var FolderToolbarView = Backbone.View.extend({
             id: this.options.id,
             is_admin: false,
             is_anonym: true,
-            mutiple_add_dataset_options: false
+            multiple_add_dataset_options: false
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
@@ -88,7 +88,7 @@ var FolderToolbarView = Backbone.View.extend({
                 Galaxy.config.allow_library_path_paste !== false ||
                 Galaxy.config.library_import_dir !== null
             ) {
-                template_defaults.mutiple_add_dataset_options = true;
+                template_defaults.multiple_add_dataset_options = true;
             }
         }
         this.$el.html(toolbar_template(template_defaults));
@@ -1384,8 +1384,7 @@ var FolderToolbarView = Backbone.View.extend({
                 '<button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
                 '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
                 "</button>",
-                "<% if(mutiple_add_dataset_options) { %>", // add datasets button
-
+                "<% if(multiple_add_dataset_options) { %>", // add datasets button
                 '<div data-toggle="tooltip" data-placement="right" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">',
                 '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
@@ -1395,7 +1394,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
                 '<a class="dropdown-item" href="#folders/<%= id %>/import/userdir"> from User Directory</a>',
                 "<% } %>",
-                "<% if(Galaxy.config.allow_library_path_paste || Galaxy.config.library_import_dir !== null) { %>",
+                "<% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>",
                 '<h5 class="dropdown-header">Admins only</h5>',
                 "<% if(Galaxy.config.library_import_dir !== null) { %>",
                 '<a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>',

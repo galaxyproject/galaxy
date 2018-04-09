@@ -251,6 +251,7 @@ class Grid(object):
         # as str.
         grid_config = {
             'title'                         : self.title,
+            'title_id'                      : getattr(self, "title_id", None),
             'url_base'                      : trans.request.path_url,
             'async_ops'                     : [],
             'categorical_filters'           : {},

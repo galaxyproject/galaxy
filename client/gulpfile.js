@@ -31,6 +31,7 @@ var paths = {
         "galaxy/style/scss/circster.scss",
         "galaxy/style/scss/reports.scss"
     ],
+    plugin_dirs: ["../config/plugins/**/static/**/*", "!../config/plugins/**/node_modules{,/**}"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -110,6 +111,10 @@ gulp.task("style", function() {
         .pipe(gulp.dest("../static/style/blue/"));
 });
 
+gulp.task("plugins", function() {
+    return gulp.src(paths.plugin_dirs).pipe(gulp.dest("../static/plugins/"));
+});
+
 gulp.task("clean", function() {
     //Wipe out all scripts that aren't handled by webpack
     return del(["../static/scripts/**/*.js", "!../static/scripts/bundled/**.*.js"], { force: true });
@@ -125,3 +130,5 @@ gulp.task("watch-style", function() {
 
 gulp.task("default", ["scripts", "libs"]);
 gulp.task("staging", ["stage-libs", "fonts"]);
+
+gulp.task("default", ["scripts", "libs", "plugins"]);

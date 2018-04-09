@@ -23,6 +23,7 @@ var View = Backbone.View.extend({
                 var options = $.extend({}, self.model.attributes, response);
                 var form = new Form({
                     title: options.title,
+                    title_id: options.title_id,
                     message: options.message,
                     status: options.status || "warning",
                     icon: options.icon,

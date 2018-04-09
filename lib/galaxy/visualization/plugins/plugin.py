@@ -19,36 +19,6 @@ from galaxy.web import url_for
 log = logging.getLogger(__name__)
 
 
-class ServesStaticPluginMixin(object):
-    """
-    An object that serves static files from the server.
-    """
-
-    def _set_up_static_plugin(self, **kwargs):
-        """
-        Detect and set up static paths and urls if needed.
-        """
-        # TODO: allow config override
-        self.serves_static = False
-        if self._is_static_plugin():
-            self.static_path = self._build_static_path()
-            self.static_url = self._build_static_url()
-            self.serves_static = True
-        return self.serves_static
-
-    def _is_static_plugin(self):
-        """
-        Detect whether this plugin should serve static resources.
-        """
-        return os.path.isdir(self._build_static_path())
-
-    def _build_static_path(self):
-        return os.path.join(self.path, 'static')
-
-    def _build_static_url(self):
-        return '/'.join([self.base_url, 'static'])
-
-
 class ServesTemplatesPluginMixin(object):
     """
     An object that renders (mako) template files from the server.
@@ -92,7 +62,7 @@ class ServesTemplatesPluginMixin(object):
             output_encoding=output_encoding)
 
 
-class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
+class VisualizationPlugin(ServesTemplatesPluginMixin):
     """
     A plugin that instantiates resources, serves static files, and uses mako
     templates to render web pages.
@@ -105,8 +75,9 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         self.config = config
         base_url = context.get('base_url', '')
         self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
-        self._set_up_static_plugin()
-        self._set_up_static_images()
+        self.static_path = os.path.join(self.path.replace('./config', './static'), 'static')
+        if os.path.exists(os.path.join(self.static_path, 'logo.png')):
+            self.config['logo'] = '/'.join([self.static_path, 'logo.png'])
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
         self._set_up_template_plugin(template_cache_dir, additional_template_paths=additional_template_paths)
@@ -151,7 +122,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
             'settings'      : self.config.get('settings'),
             'groups'        : self.config.get('groups'),
             'specs'         : self.config.get('specs'),
-            'static_url'    : None if not self.serves_static else '/'.join(['plugins', self.static_url]),
             'href'          : self._get_url()
         }
 
@@ -170,14 +140,6 @@ class VisualizationPlugin(ServesStaticPluginMixin, ServesTemplatesPluginMixin):
         return copy.copy(visualization.latest_revision.config)
 
     # ---- non-public
-    def _check_path(self, path):
-        return os.path.exists(os.path.join(self.path, path))
-
-    def _set_up_static_images(self):
-        default_path = 'static/logo.png'
-        if self._check_path(default_path):
-            self.config['logo'] = '/'.join(['plugins', self.base_url, default_path])
-
     def _build_render_vars(self, config, trans=None, **kwargs):
         """
         Build all the variables that will be passed into the renderer.
@@ -339,6 +301,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars['embedded'] = self._parse_embedded(embedded)
+        render_vars['static_url'] = url_for('/%s/' % self.static_path)
         render_vars.update(vars={})
         render_vars.update({
             "script_attributes" : self.config['entry_point']['attr']
@@ -353,8 +316,8 @@ class ChartVisualizationPlugin(ScriptVisualizationPlugin):
 
 class StaticFileVisualizationPlugin(VisualizationPlugin):
     """
-    A visualiztion plugin that starts by loading a static html file defined
-    in the visualization's config file.
+    A visualization plugin that starts by loading a static html file defined in
+    the visualization's config file.
     """
     # TODO: these are not embeddable by their nature - update config
     # TODO: should do render/render_saved here since most of the calc done there is unneeded in this case

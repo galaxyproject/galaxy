@@ -124,8 +124,9 @@ tool-data/shared/jars/
 sprite-*.scss
 
 # JS, Local node_modules, and bower_components directories
-static/scripts
 static/maps
+static/plugins
+static/scripts
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
