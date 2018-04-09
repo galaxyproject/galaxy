@@ -56,8 +56,8 @@ export default {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
             let id_str = "";
-            if(options.title_id) {
-                id_str +=` id="${options.title_id}"`;
+            if (options.title_id) {
+                id_str += ` id="${options.title_id}"`;
             }
             tmpl += `<h2${id_str}>${options.title}</h2>`;
         }
