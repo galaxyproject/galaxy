@@ -188,7 +188,7 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-class BamNative(Binary):
+class BamNative(CompressedArchive):
     """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
@@ -570,6 +570,7 @@ class CRAM(Binary):
     def set_index_file(self, dataset, index_file):
         try:
             pysam.index(dataset.file_name, index_file.file_name)
+            return True
         except Exception as exc:
             log.warning('%s, set_index_file Exception: %s', self, exc)
             return False
@@ -592,7 +593,7 @@ class CRAM(Binary):
             return False
 
 
-class BaseBcf(Binary):
+class BaseBcf(CompressedArchive):
     edam_format = "format_3020"
     edam_data = "data_3498"
 

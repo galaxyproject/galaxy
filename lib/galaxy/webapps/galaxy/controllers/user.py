@@ -532,7 +532,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         if autoreg["auto_reg"]:
             kwd['email'] = autoreg["email"]
             kwd['username'] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd['email']),
+            message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
                                 validate_publicname(trans, kwd['username'])]).rstrip()
             if not message:
                 message, status, user, success = self.__register(trans, cntrller, False, no_redirect=skip_login_handling, **kwd)
@@ -572,7 +572,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
             message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:

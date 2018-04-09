@@ -25,11 +25,15 @@ export default Backbone.View.extend({
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
-        this.chart.on("redraw", function() {
-            self.app.deferred.execute(function(process) {
-                console.debug("viewer:redraw() - Redrawing...");
-                self._draw(process, self.chart);
-            });
+        this.chart.on("redraw", function(confirmed) {
+            if (!self.chart.get("modified") || !self.chart.plugin.specs.confirm || confirmed) {
+                self.app.deferred.execute(function(process) {
+                    console.debug("viewer:redraw() - Redrawing...");
+                    self._draw(process, self.chart);
+                });
+            } else {
+                self.chart.state("info", "Please confirm the settings before rendering the results.");
+            }
         });
         this.chart.on("set:state", function() {
             var $container = self.$(".charts-viewer-container");
@@ -47,6 +51,10 @@ export default Backbone.View.extend({
                     break;
                 case "failed":
                     $icon.addClass("icon fa fa-warning");
+                    $container.hide();
+                    break;
+                case "info":
+                    $icon.addClass("icon fa fa-info");
                     $container.hide();
                     break;
                 default:

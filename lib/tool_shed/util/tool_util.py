@@ -190,7 +190,7 @@ def is_data_index_sample_file(file_path):
         return False
     if checkers.is_gzip(file_path):
         return False
-    if checkers.check_zip(file_path):
+    if checkers.is_zip(file_path):
         return False
     # Default to copying the file if none of the above are true.
     return True

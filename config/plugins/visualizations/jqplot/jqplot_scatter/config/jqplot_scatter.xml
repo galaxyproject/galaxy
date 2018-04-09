@@ -6,7 +6,7 @@
     </macros>
     <description>Renders a scatter plot using jqPlot hosted at http://www.jqplot.com.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" load="jqplot_scatter"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_scatter"/>
     <specs>
         <expand macro="specs"/>
     </specs>

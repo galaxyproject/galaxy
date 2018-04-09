@@ -846,6 +846,7 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
+        resource_parameters = invocation.resource_parameters
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
@@ -918,7 +919,8 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
-                completed_jobs=completed_jobs
+                completed_jobs=completed_jobs,
+                workflow_resource_parameters=resource_parameters
             )
             complete = True
         except PartialJobExecution as pje:

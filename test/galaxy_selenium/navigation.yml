@@ -49,6 +49,7 @@ masthead:
     visualization: 'Visualization'
     help: 'Help'
     user: 'User'
+    admin: 'Admin'
 
     # user menu
     register: 'Register'
@@ -104,6 +105,7 @@ history_panel:
       build_pair: "Build Dataset Pair"
       build_list: "Build Dataset List"
       build_list_pairs: "Build List of Dataset Pairs"
+      build_from_rules: "Build Collection from Rules"
 
   collection_view:
     selectors:
@@ -229,6 +231,37 @@ tour:
       previous: '${_} button[data-role="prev"]'
       end: '${_} button[data-role="end"]'
 
+admin:
+
+  index:
+    selectors:
+      datatypes: '#admin-link-datatypes'
+      data_tables: '#admin-link-data-tables'
+      display_applications: '#admin-link-display-applications'
+      jobs: '#admin-link-jobs'
+      local_data: '#admin-link-local-data'
+      users: '#admin-link-users'
+      quotas: '#admin-link-quotas'
+      groups: '#admin-link-groups'
+      roles: '#admin-link-roles'
+      api_keys: '#admin-link-api-keys'
+      impersonate: '#admin-link-impersonate'
+
+  selectors:
+    # TODO: place betters IDS or something on this in these grids in the DOM
+    datatypes_grid: '#datatypes-grid'
+    data_tables_grid: '#data-tables-grid'
+    display_applications_grid: '#display-applications-grid'
+    update_jobs: 'form[name="jobs"]'
+    data_managers_title: '#data-managers-title'
+    users_grid: '#users-grid'
+    users_grid_create_button: '.manage-table-actions .action-button'
+    groups_grid_create_button: '.manage-table-actions .action-button'
+    registration_form: 'form[name="registration"]'
+    groups_grid: '#groups-grid'
+    roles_grid: '#roles-grid'
+    groups_create_view: '#create-group'
+
 libraries:
 
   selectors:
@@ -278,6 +311,36 @@ gies:
   selectors:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
+
+upload:
+  selectors:
+    tab: '#tab-title-link-${tab}'
+    start: '.upload-button'
+    rule_source_content: 'textarea.upload-rule-source-content'
+    rule_select_data_type: '.rule-data-type'
+    rule_select_input_type: '.rule-select-type'
+    rule_dataset_selector: '.upload-rule-option .dataset-selector'
+
+rule_builder:
+  selectors:
+    _: '.rule-collection-creator'
+    menu_button_filter: '.rule-menu-filter-button'
+    menu_button_rules: '.rule-menu-rules-button'
+    menu_button_column: '.rule-menu-column-button'
+    menu_item_rule_type: '.rule-link-${rule_type}'
+    rule_editor: '.rule-edit-${rule_type}'
+    rule_editor_ok: '.rule-editor-ok'
+    add_mapping_menu: '.rule-add-mapping'
+    add_mapping_button: '.rule-add-mapping-${mapping_type}'
+    mapping_edit: '.rule-map-${mapping_type} .select2-container'
+    mapping_remove_column: '.rule-map-${mapping_type} .rule-column-selector-target-remove'
+    mapping_add_column: '.rule-map-${mapping_type} .rule-column-selector-target-add'
+    mapping_ok: '.rule-mapping-ok'
+    main_button_ok: '.rule-btn-okay'
+    collection_name_input: 'input.collection-name'
+    view_source: '.rule-builder-view-source'
+    source: '.rule-source'
+    table: '#hot-table .htCore'
 
 charts:
   selectors:

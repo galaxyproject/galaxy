@@ -8,8 +8,14 @@ import time
 from operator import itemgetter
 
 from galaxy import exceptions
-from galaxy.util import jstree, unicodify
-from galaxy.util.path import safe_path, safe_walk
+from galaxy.util import (
+    jstree,
+    smart_str
+)
+from galaxy.util.path import (
+    safe_path,
+    safe_walk
+)
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
@@ -135,13 +141,13 @@ class RemoteFilesAPIController(BaseAPIController):
             for (dirpath, dirnames, filenames) in safe_walk(directory, whitelist=whitelist):
                 for dirname in dirnames:
                     dir_path = os.path.relpath(os.path.join(dirpath, dirname), directory)
-                    dir_path_hash = hashlib.sha1(unicodify(dir_path).encode('utf-8')).hexdigest()
+                    dir_path_hash = hashlib.sha1(smart_str(dir_path)).hexdigest()
                     disabled = True if disable == 'folders' else False
                     jstree_paths.append(jstree.Path(dir_path, dir_path_hash, {'type': 'folder', 'state': {'disabled': disabled}, 'li_attr': {'full_path': dir_path}}))
 
                 for filename in filenames:
                     file_path = os.path.relpath(os.path.join(dirpath, filename), directory)
-                    file_path_hash = hashlib.sha1(unicodify(file_path).encode('utf-8')).hexdigest()
+                    file_path_hash = hashlib.sha1(smart_str(file_path)).hexdigest()
                     disabled = True if disable == 'files' else False
                     jstree_paths.append(jstree.Path(file_path, file_path_hash, {'type': 'file', 'state': {'disabled': disabled}, 'li_attr': {'full_path': file_path}}))
         else:

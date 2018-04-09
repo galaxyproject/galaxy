@@ -108,7 +108,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
     webapp.add_client_route('/openids/list')
-    webapp.add_client_route('/visualizations/dataset_id={dataset_id}')
+    webapp.add_client_route('/visualizations')
     webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
@@ -178,6 +178,7 @@ uwsgi_app_factory = uwsgi_app
 def postfork_setup():
     from galaxy.app import app
     app.control_worker.bind_and_start()
+    app.application_stack.log_startup()
 
 
 def populate_api_routes(webapp, app):
@@ -305,6 +306,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
+    webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
@@ -968,7 +970,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         app = wrap_if_allowed(app, stack, StatsdMiddleware,
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
-                                    conf.get('statsd_prefix', 'galaxy')))
+                                    conf.get('statsd_prefix', 'galaxy'),
+                                    conf.get('statsd_influxdb', False)))
         log.debug("Enabling 'statsd' middleware")
     # graphite request timing and profiling
     graphite_host = conf.get('graphite_host', None)
@@ -1056,17 +1059,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
-    # wrap any static dirs for plugins
-    plugin_frameworks = plugin_frameworks or []
-    for framework in plugin_frameworks:
-        # invert control to each plugin for finding their own static dirs
-        for plugin in framework.plugins.values():
-            if plugin.serves_static:
-                plugin_url = '/plugins/' + plugin.static_url
-                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
-
-    # URL mapper becomes the root webapp
     return urlmap

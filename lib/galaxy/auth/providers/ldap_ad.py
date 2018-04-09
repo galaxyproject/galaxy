@@ -165,7 +165,7 @@ class LDAP(AuthProvider):
                 log.debug(("LDAP authenticate: search attributes are %s" % attrs))
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
-                        if attr == self.role_search_attribute[1:-1]:  # strip brackets
+                        if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip brackets
                             # keep role names as list
                             params[self.role_search_option] = attrs[attr]
                         elif attr in attrs:
