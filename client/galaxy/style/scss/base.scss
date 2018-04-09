@@ -424,27 +424,32 @@ div.unified-panel-body-background {
     padding: 0;
     margin-bottom: 0px;
     .navbar-nav {
-        .nav-link {
-            cursor: pointer;
-            text-decoration: none;
-            &:hover {
+        > li {
+            &.active {
+                background: black;
+            }
+            .nav-link {
+                cursor: pointer;
+                text-decoration: none;
+                &:hover {
+                    color: gold;
+                }
+                &.nav-icon {
+                    font-size: 1.7em;
+                }
+                &.toggle {
+                    color: gold;
+                }
+            }
+            .nav-note {
+                font-weight: bold;
+                font-size: 10px;
+                position: relative;
+                left: 30px;
+                top: -15px;
                 color: gold;
+                height: 0px;
             }
-            &.nav-icon {
-                font-size: 1.7em;
-            }
-            &.toggle {
-                color: gold;
-            }
-        }
-        .nav-note {
-            font-weight: bold;
-            font-size: 10px;
-            position: relative;
-            left: 30px;
-            top: -15px;
-            color: gold;
-            height: 0px;
         }
     }
     .navbar-brand {
