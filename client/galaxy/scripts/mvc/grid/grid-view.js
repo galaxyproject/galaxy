@@ -238,7 +238,7 @@ export default Backbone.View.extend({
         //
         // add page click events
         //
-        this.$el.find(".page-link > a").each(function() {
+        this.$el.find(".page-link-grid > a").each(function() {
             $(this).click(function() {
                 self.set_page($(this).attr("page_num"));
                 return false;

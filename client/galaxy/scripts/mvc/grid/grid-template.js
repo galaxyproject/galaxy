@@ -267,27 +267,27 @@ export default {
 
             if (min_page > 1) {
                 tmpl +=
-                    '<span class="page-link" id="page-link-1"><a href="javascript:void(0);" page_num="1" onclick="return false;">1</a></span> ...';
+                    '<span class="page-link-grid" id="page-link-1"><a href="javascript:void(0);" page_num="1" onclick="return false;">1</a></span> ...';
             }
 
             // create page urls
             for (var page_index = min_page; page_index < max_page + 1; page_index++) {
                 if (page_index == options.cur_page_num) {
-                    tmpl += `<span class="page-link inactive-link" id="page-link-${page_index}">${page_index}</span>`;
+                    tmpl += `<span class="page-link-grid inactive-link" id="page-link-${page_index}">${page_index}</span>`;
                 } else {
-                    tmpl += `<span class="page-link" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
+                    tmpl += `<span class="page-link-grid" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
                 }
             }
 
             // show last page
             if (max_page < num_pages) {
-                tmpl += `...<span class="page-link" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
+                tmpl += `...<span class="page-link-grid" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
             }
             tmpl += "</span>";
 
             // Show all link
             tmpl += `
-                    <span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
+                    <span class="page-link-grid" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
                     </td>
                 </tr>`;
         }
