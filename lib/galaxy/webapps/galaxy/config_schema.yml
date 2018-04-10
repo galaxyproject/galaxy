@@ -2032,6 +2032,15 @@ mapping:
           It should be a comma separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
+      gdpr_compliance_mode:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing
+          emails/usernames from logs and bug reports.
+
       enable_beta_ts_api_install:
         type: bool
         default: true

@@ -1314,6 +1314,11 @@ galaxy:
   # 10.10.10.10,10.0.1.0/24,fd00::/8
   #fetch_url_whitelist: null
 
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.
+  #gdpr_compliance_mode: false
+
   # Enable the new interface for installing tools from Tool Shed via the
   # API. Admin menu will list both if enabled.
   #enable_beta_ts_api_install: true
