@@ -2039,7 +2039,10 @@ mapping:
         desc: |
           Enables GDPR Compliance mode. This makes several changes to the way
           Galaxy logs and exposes data externally such as removing
-          emails/usernames from logs and bug reports.
+          emails/usernames from logs and bug reports. It also causes the delete
+          user admin action to permanently delete all information stored on a
+          user, removing all related rows from the database. (You are
+          responsible for removing the data from backups.)
 
       enable_beta_ts_api_install:
         type: bool

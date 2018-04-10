@@ -20,6 +20,7 @@ class JsonPlugin(ErrorPlugin):
     def __init__(self, **kwargs):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', False))
+        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         self.report_directory = kwargs.get("directory", tempfile.gettempdir())
         if not os.path.exists(self.report_directory):
@@ -40,12 +41,17 @@ class JsonPlugin(ErrorPlugin):
                 'exit_code': job.exit_code,
                 'stdout': job.stdout,
                 'handler': job.handler,
-                'user': job.get_user().to_dict(),
                 'tool_version': job.tool_version,
                 'tool_xml': str(tool.config_file) if tool else None
             }
-            if 'email' in kwargs:
-                data['email'] = kwargs['email']
+            if self.gdpr_compliant:
+                data['user'] = {
+                    'id': job.get_user().id
+                }
+            else:
+                data['user'] = job.get_user().to_dict()
+                if 'email' in kwargs:
+                    data['email'] = kwargs['email']
 
             if 'message' in kwargs:
                 data['message'] = kwargs['message']

@@ -286,6 +286,7 @@ class Configuration(object):
             for ip in kwargs.get("fetch_url_whitelist", "").split(',')
             if len(ip.strip()) > 0
         ]
+        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", "False"))
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
