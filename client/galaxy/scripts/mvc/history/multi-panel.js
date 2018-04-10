@@ -1085,8 +1085,8 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     optionsPopoverTemplate: _.template(
         [
-            '<div class="more-options">',
-            '<div class="order btn-group">',
+            '<div class="more-options d-flex flex-column">',
+            '<div class="order btn-group mb-2">',
             '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
             `${_l("Order histories by")} `,
             '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
@@ -1094,7 +1094,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             "</button>",
             '<ul class="dropdown-menu" role="menu">',
             "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<li><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
+            '<li class="dropdown-item"><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
             "<%- text %>",
             "</a></li>",
             "<% }); %>",
@@ -1105,8 +1105,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             '<%= view.collection.includeDeleted? " checked" : "" %>>',
             _l("Include deleted histories"),
             "</label></div>",
-
-            "<hr />",
 
             '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
             _l("Include deleted datasets"),
