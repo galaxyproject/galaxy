@@ -295,6 +295,15 @@ class DockerService(Container):
         return True
 
     @property
+    def node(self):
+        """Same caveats as :meth:`state`.
+        """
+        for task in self.tasks:
+            if task.node is not None:
+                return task.node
+        return None
+
+    @property
     def image(self):
         if self._image is None:
             self._image = self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Image']

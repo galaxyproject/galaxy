@@ -167,34 +167,44 @@ class SwarmManager(object):
             self._state.clean_services(cleaned_services)
             log.info("cleaned services: %s", ', '.join([x.id for x in cleaned_services]))
 
+    @staticmethod
+    def _env_str(envs, service):
+        if envs.get(service.id):
+            return ' [' + ', '.join(envs.get(service.id, [])) + ']'
+        return ''
+
     def _log_state(self, now=False):
-        # TODO: log services waiting due to limits, idle nodes alive due to limits
-        if now or (self._last_log < (time.time() - self._log_interval)):
-            services = list(self._docker_interface.services())
-            nodes = list(self._docker_interface.nodes())
-            terminal = [s for s in services if s.terminal]
-            envs = {}
-            for service in services:
-                envs[service.id] = ['%s=%s' % (k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
-            log.info('%s nodes, %s services (%s terminal)', len(nodes), len(services), len(terminal))
-            if terminal:
-                service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
-                log.info('terminal services: %s', ', '.join(service_strs) or 'none')
-            for node in nodes:
-                log.info('node %s (%s) state: %s, %s tasks (%s terminal)', node.name, node.id, node.state,
-                         len(node.tasks), len([t for t in node.tasks if t.terminal]))
-                for task in node.tasks:
-                    if not task.service:
-                        log.warning('node %s (%s) task %s (%s) has no service! state: %s %s', node.name, node.id,
-                                    task.slot, task.id, task.state, task.current_state_time)
-                    else:
-                        env_str = ''
-                        if envs.get(task.service.id):
-                            env_str = ' [' + ', '.join(envs.get(task.service.id, [])) + ']'
-                        log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
-                                 task.service.name, task.service.id, task.slot, task.id, env_str, task.state,
-                                 task.current_state_time)
-            self._last_log = time.time()
+        if not now and not (self._last_log < (time.time() - self._log_interval)):
+            return
+        services = list(self._docker_interface.services())
+        nodes = list(self._docker_interface.nodes())
+        terminal = [s for s in services if s.terminal]
+        node_task_ids = [t.id for nt in [n.tasks for n in nodes] for t in nt]
+        envs = {}
+        for service in services:
+            envs[service.id] = ['%s=%s' % (k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
+        log.info('%s nodes, %s services (%s terminal)', len(nodes), len(services), len(terminal))
+        if terminal:
+            service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
+            log.info('terminal services: %s', ', '.join(service_strs) or 'none')
+        for service in services:
+            unassigned_tasks = [t for t in service.tasks if t.id not in node_task_ids]
+            if service not in terminal and unassigned_tasks:
+                task = unassigned_tasks[0]
+                log.info('service %s (%s)%s is not assigned to a node; state: %s %s', service.name, service.id,
+                         self._env_str(envs, service), service.state, task.current_state_time)
+        for node in nodes:
+            log.info('node %s (%s) state: %s, %s tasks (%s terminal)', node.name, node.id, node.state,
+                     len(node.tasks), len([t for t in node.tasks if t.terminal]))
+            for task in node.tasks:
+                if not task.service:
+                    log.warning('node %s (%s) task %s (%s) has no service! state: %s %s', node.name, node.id,
+                                task.slot, task.id, task.state, task.current_state_time)
+                else:
+                    log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
+                             task.service.name, task.service.id, task.slot, task.id,
+                             self._env_str(envs, task.service), task.state, task.current_state_time)
+        self._last_log = time.time()
 
     def _terminate_if_idle(self):
         if not self._conf.terminate_when_idle:
