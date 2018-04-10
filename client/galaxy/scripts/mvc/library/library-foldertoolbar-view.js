@@ -140,7 +140,7 @@ var FolderToolbarView = Backbone.View.extend({
             $(".logged-dataset-manipulation").hide();
             $(".dataset-manipulation").hide();
         }
-        this.$el.find('[data-toggle="tooltip"]').tooltip();
+        this.$el.find('[data-toggle="tooltip"]').tooltip({trigger: "hover"});
     },
 
     createFolderFromModal: function(event) {

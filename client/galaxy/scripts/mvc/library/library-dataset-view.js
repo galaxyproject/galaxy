@@ -99,7 +99,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var template = this.templateDataset();
         this.$el.html(template({ item: this.model }));
         $(".peek").html(this.model.get("peek"));
-        $('#center [data-toggle="tooltip"]').tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
     },
 
     fetchVersion: function(options) {
@@ -144,7 +144,7 @@ var LibraryDatasetView = Backbone.View.extend({
             file_ext: this.model.get("file_ext")
         });
         $(".peek").html(this.model.get("peek"));
-        $('#center [data-toggle="tooltip"]').tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
     },
 
     downloadDataset: function() {
@@ -302,7 +302,7 @@ var LibraryDatasetView = Backbone.View.extend({
             .fail(() => {
                 mod_toastr.error("An error occurred while attempting to fetch dataset permissions.");
             });
-        $('#center [data-toggle="tooltip"]').tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
         $("#center").css("overflow", "auto");
     },
 
