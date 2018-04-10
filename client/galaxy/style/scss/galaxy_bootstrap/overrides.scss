@@ -18,6 +18,7 @@ pre {
 // Allow text in buttons to wrap
 .btn {
     white-space: normal;
+    border: 1px solid $border-default-color;
 }
 
 .dropdown-menu {
@@ -62,7 +63,7 @@ input[type="radio"] {
 
 NOTE: these styles do not currently work.
 
-.modal { 
+.modal {
   position: absolute;
   top: 50px;
   width: 660px;

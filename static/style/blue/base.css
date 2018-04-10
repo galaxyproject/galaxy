@@ -8985,7 +8985,8 @@ pre {
 
 .btn, input[type="submit"],
 button, .action-button, .menubutton {
-  white-space: normal; }
+  white-space: normal;
+  border: 1px solid #bfbfbf; }
 
 .dropdown-menu {
   max-width: auto; }
@@ -9018,7 +9019,7 @@ input[type="radio"] {
 
 NOTE: these styles do not currently work.
 
-.modal { 
+.modal {
   position: absolute;
   top: 50px;
   width: 660px;
@@ -14265,7 +14266,7 @@ pre.peek {
   .history-panel > .list-items:not(:empty) {
     border-top: 1px solid #bfbfbf; }
   .history-panel > .list-items:empty {
-    flex-grow: 0; }
+    flex-grow: 0 !important; }
   .history-panel > .list-items .list-item:first-child {
     border-top-width: 0px; }
 
