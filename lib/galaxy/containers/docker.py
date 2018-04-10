@@ -6,6 +6,7 @@ from __future__ import absolute_import
 import logging
 import os
 from functools import partial
+from itertools import cycle, repeat
 from time import sleep
 
 try:
@@ -55,6 +56,14 @@ class DockerInterface(ContainerInterface):
         'memory',
     )
 
+    def validate_config(self):
+        super(DockerInterface, self).validate_config()
+        self.__host_iter = None
+        if self._conf.host is None or isinstance(self._conf.host, string_types):
+            self.__host_iter = repeat(self._conf.host)
+        else:
+            self.__host_iter = cycle(self._conf.host)
+
     @property
     def _default_image(self):
         assert self._conf.image is not None, "No default image for this docker interface"
@@ -86,7 +95,11 @@ class DockerInterface(ContainerInterface):
 
     @property
     def host(self):
-        return self._conf.host
+        return self.__host_iter.next()
+
+    @property
+    def host_iter(self):
+        return self.__host_iter
 
 
 class DockerCLIInterface(DockerInterface):
@@ -219,11 +232,12 @@ class DockerAPIClient(object):
         return response_code >= 500 or response_code in (404, 408, 409, 429)
 
     @staticmethod
-    def default_client_handler(f, *args, **kwargs):
+    def default_client_handler(client, f, *args, **kwargs):
         success_test = kwargs.pop('success_test', lambda: False)
         max_tries = kwargs.pop('max_tries', DockerAPIClient.default_max_tries)
         for tries in range(1, max_tries + 1):
             retry_time = DockerAPIClient.exception_retry_time
+            reinit_client = False
             exc = None
             try:
                 r = f(*args, **kwargs)
@@ -231,12 +245,13 @@ class DockerAPIClient(object):
                     log.info('%s() succeeded on attempt %s', DockerAPIClient._qualname(f), tries)
                 return r
             except requests.exceptions.ConnectionError as exc:
-                pass
+                reinit_client = True
             except docker.errors.APIError as exc:
                 if not DockerAPIClient.should_retry_request(exc.response.status_code):
                     raise
                 pass
             except requests.exceptions.ReadTimeout as exc:
+                reinit_client = True
                 retry_time = 0
             finally:
                 # this is inside the finally context so we can do a bare raise when we give up (so the real stack for
@@ -254,9 +269,14 @@ class DockerAPIClient(object):
                     else:
                         log.error("Retrying in %s seconds (attempt: %s of %s)", retry_time, tries, max_tries)
                         sleep(retry_time)
+                        if reinit_client:
+                            client._init_client()
 
     def __init__(self, *args, **kwargs):
-        self.__client = docker.APIClient(*args, **kwargs)
+        self.__host_iter = kwargs.pop('host_iter', None)
+        self.__client_args = args
+        self.__client_kwargs = kwargs
+        self._init_client()
 
     def __getattr__(self, attr):
         cattr = getattr(self.__client, attr)
@@ -264,10 +284,17 @@ class DockerAPIClient(object):
             def wrapped(*args, **kwargs):
                 handler_name = DockerAPIClient.client_handler_map.get(attr, 'default_client_handler')
                 handler = getattr(DockerAPIClient, handler_name)
-                return handler(cattr, *args, **kwargs)
+                return handler(self, cattr, *args, **kwargs)
             return wrapped
         else:
             return cattr
+
+    def _init_client(self):
+        kwargs = self.__client_kwargs.copy()
+        if self.__host_iter is not None and 'base_url' not in kwargs:
+            kwargs['base_url'] = self.__host_iter.next()
+        self.__client = docker.APIClient(*self.__client_args, **kwargs)
+        log.info('Initialized Docker API client for server: %s', kwargs.get('base_url', 'localhost'))
 
 
 class DockerAPIInterface(DockerInterface):
@@ -306,7 +333,7 @@ class DockerAPIInterface(DockerInterface):
             tls_config = False
         if not self.__client:
             self.__client = DockerAPIClient(
-                base_url=self._conf.host,
+                host_iter=self.host_iter,
                 tls=tls_config,
             )
         return self.__client
