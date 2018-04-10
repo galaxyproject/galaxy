@@ -220,6 +220,33 @@ workflows:
     new_button: '#new-workflow'
     import_button: '#import-workflow'
 
+workflow_editor:
+
+  node:
+    selectors:
+      _: "[node-label='${label}']"
+
+      title: '${_} .nodeTitle'
+      destroy: '${_} .node-destroy'
+      clone: '${_} .node-clone'
+
+      output_terminal: "${_} [output-name='${name}']"
+      input_terminal: "${_} [input-name='${name}']"
+
+  selectors:
+    canvas_body: '#workflow-canvas-body'
+    canvas_title: '#workflow-canvas-title'
+    edit_name: '#edit-attributes #workflow-name'
+
+    tool_menu: '#workflow-tool-menu'
+    tool_menu_section_link: '#title___workflow__${section_name}__ a span'
+    tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
+
+    label_input: "[tour_id='__label'] input"
+    annotation_input: "[tour_id='__annotation'] textarea"
+
+    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+
 tour:
   popover:
     selectors:

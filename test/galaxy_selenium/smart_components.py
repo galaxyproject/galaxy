@@ -39,7 +39,7 @@ class SmartTarget(object):
         self._has_driver = has_driver
 
     def __call__(self, *args, **kwds):
-        return self._wrap(self._target(*args, **kwds))
+        return self._wrap(self._target(*args[:], **kwds.copy()))
 
     def __getattr__(self, name):
         return self._wrap(getattr(self._target, name))
@@ -64,6 +64,9 @@ class SmartTarget(object):
 
     def wait_for_text(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds).text
+
+    def wait_for_value(self, **kwds):
+        return self._has_driver.wait_for_visible(self._target, **kwds).get_attribute("value")
 
     @property
     def is_displayed(self):
