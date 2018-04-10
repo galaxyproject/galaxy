@@ -15,6 +15,7 @@ class AuthManager(object):
 
     def __init__(self, app):
         self.__app = app
+        self.gdpr_compliant = app.config.gdpr_compliance_mode
         self.authenticators = get_authenticators(app.config.auth_config_file)
 
     def check_registration_allowed(self, email, username, password):
@@ -117,7 +118,9 @@ class AuthManager(object):
                     passed_filter = eval(filter_str, {"__builtins__": None}, {'str': str})
                     if not passed_filter:
                         continue  # skip to next
-                yield authenticator.plugin, authenticator.options
+                options = authenticator.options
+                options['gdpr_compliant'] = self.gdpr_compliant
+                yield authenticator.plugin, options
         except Exception:
             log.exception("Active Authenticators Failure")
             raise
