@@ -137,7 +137,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         });
         return $(
             [
-                '<div class="panel-controls clear flex-row">',
+                '<div class="panel-controls clear flex-row mb-1">',
                 this.controlsLeftTemplate({
                     history: data,
                     view: this
@@ -1033,7 +1033,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         [
             '<div class="header flex-column-container">',
             '<div class="control-column control-column-left flex-column">',
-            '<button class="done btn btn-secondary" tabindex="1">',
+            '<button class="done btn btn-primary" tabindex="1">',
             _l("Done"),
             "</button>",
             '<div id="search-histories" class="search-control"></div>',
