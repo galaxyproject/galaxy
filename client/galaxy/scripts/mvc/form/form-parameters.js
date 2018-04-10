@@ -83,8 +83,14 @@ export default Backbone.Model.extend({
             });
         }
 
-        // identify display type
-        return new Ui.TextSelect({
+        // pick selection display
+        var classes = {
+            "checkboxes": Ui.Checkbox,
+            "radio": Ui.Radio,
+            "radiobutton": Ui.RadioButton
+        }
+        var SelectClass = classes[input_def.display] || Ui.Select;
+        var select = new SelectClass.View({
             id: `field-${input_def.id}`,
             data: data,
             display: input_def.display,
@@ -96,6 +102,7 @@ export default Backbone.Model.extend({
             individual: input_def.individual,
             searchable: input_def.flavor !== "workflow"
         });
+        return input_def.textable ? new Ui.TextSelect({select: select}) : select;
     },
 
     /** Drill down options field */
