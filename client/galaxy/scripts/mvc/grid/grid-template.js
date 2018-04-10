@@ -180,15 +180,9 @@ export default {
                     }
 
                     // Attach popup menu?
-                    var id = "";
-                    var cls = "";
+                    var popup_id = "";
                     if (column.attach_popup) {
-                        id = `grid-${item.encode_id}-popup`;
-                        cls = "menubutton";
-                        if (link !== "") {
-                            cls += " split";
-                        }
-                        cls += " popup";
+                        popup_id = `grid-${item.encode_id}-popup`;
                     }
 
                     // Check for row wrapping
@@ -199,18 +193,17 @@ export default {
                         tmpl += `<div class="delayed-value-${column.key}" data-id="${
                             item.encode_id
                         }" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                    } else if (column.attach_popup && link) {
+                        tmpl += `<div class="btn-group">
+                                    <button class="btn use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
+                                    <button id="${popup_id}" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"/>
+                                </div>`;
+                    } else if (column.attach_popup) {
+                        tmpl += `<button id="${popup_id}" class="btn dropdown-toggle" data-toggle="dropdown">${value}</button>`;
                     } else if (link) {
-                        if (options.operations.length !== 0) {
-                            tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
-                        }
-                        tmpl += `<a class="menubutton-label use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
-                        if (options.operations.length !== 0) {
-                            tmpl += "</div>";
-                        }
+                        tmpl += `<a class="use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
                     } else {
-                        tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${
-                            item.encode_id
-                        }" for="${item.encode_id}">${value || ""}</label></div>`;
+                        tmpl += `<label>${value || ""}</label>`;
                     }
                     tmpl += "</td>";
                 }
