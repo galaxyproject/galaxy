@@ -15,7 +15,7 @@
           <remove value="'"/>
         </valid>
         <mapping initial="none">
-          <add source="'" target="\'"/>
+          <add source="'" target="'&quot;'&quot;'"/>
         </mapping>
       </sanitizer>
     </param>
