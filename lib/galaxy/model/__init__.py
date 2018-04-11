@@ -4687,6 +4687,16 @@ class UserAuthnzToken(UserMixin):
         return instance
 
 
+class CloudAuthz(object):
+    def __init__(self, user, provider, config):
+        self.user = user
+        self.provider = provider
+        self.config = config
+        self.tokens = None
+        self.last_update = datetime.now()
+        self.last_activity = datetime.now()
+
+
 class Page(Dictifiable):
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
 
