@@ -15,7 +15,7 @@ export default Backbone.View.extend({
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
                 options.ftp_upload_site
             }</strong> using your Galaxy credentials.
-            For help visit <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial page</a>.`,
+            For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.`,
             collection: null,
             onchange: function() {},
             onadd: function() {},
