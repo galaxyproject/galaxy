@@ -10316,7 +10316,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   word-wrap: break-word; }
 
 .ui-modal, .ui-modal-styled {
-  display: none; }
+  display: none;
+  overflow: auto; }
   .ui-modal .modal-header.no-separator, .ui-modal-styled .modal-header.no-separator {
     border: none !important;
     padding-bottom: 0px !important; }
