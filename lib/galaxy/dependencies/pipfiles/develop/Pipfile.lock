@@ -192,10 +192,10 @@
         },
         "pbr": {
             "hashes": [
-                "sha256:05f61c71aaefc02d8e37c0a3eeb9815ff526ea28b3b76324769e6158d7f95be1",
-                "sha256:60c25b7dfd054ef9bb0ae327af949dd4676aa09ac3a9471cdc871d8a9213f9ac"
+                "sha256:56b7a8ba7d64bf6135a9dfefb85a80d95924b3fde5ed6343a1a1d464a040dae3",
+                "sha256:de75cf1d510542c746beeff66b52241eb12c8f95f2ef846ee50ed5d72392caa4"
             ],
-            "version": "==3.1.1"
+            "version": "==4.0.1"
         },
         "pygithub3": {
             "hashes": [
@@ -310,11 +310,11 @@
         },
         "sphinx-rtd-theme": {
             "hashes": [
-                "sha256:2df74b8ff6fae6965c527e97cca6c6c944886aae474b490e17f92adfbe843417",
-                "sha256:62ee4752716e698bad7de8a18906f42d33664128eea06c46b718fc7fbd1a9f5c"
+                "sha256:220dbf14814001c6475f0c6c25ac4129a18fb5e3681251a7c6ffb1646da5cc30",
+                "sha256:665135dfbdf8f1d218442458a18cf266444354b8c98eed93d1543f7e701cfdba"
             ],
             "index": "galaxy",
-            "version": "==0.2.4"
+            "version": "==0.3.0"
         },
         "sphinxcontrib-websupport": {
             "hashes": [
@@ -325,11 +325,11 @@
         },
         "testfixtures": {
             "hashes": [
-                "sha256:338aed9695c432b7c9b8a271dabb521e3e7e2c96b11f7b4e60552f1c8408a8f0",
-                "sha256:53b8e493366a910f5690749dbfccabbb94e0aac0747e95d267b5a37ac2fc4fe9"
+                "sha256:dd3fdc1b252df3ba5a03a8504b942890abe5d9b1755bc280d0bb8aa9fe914371",
+                "sha256:f6c4cf24d043f9d8e9a9337371ec1d2f6638a0032504bd67dbd724224fd64969"
             ],
             "index": "galaxy",
-            "version": "==5.4.0"
+            "version": "==6.0.0"
         },
         "twill": {
             "hashes": [

@@ -1405,6 +1405,15 @@ galaxy:
   # If OpenID is enabled, consumer cache directory to use.
   #openid_consumer_cache_path: database/openid_consumer_cache
 
+  # Enables and disables OpenID Connect (OIDC) support.
+  #enable_oidc: false
+
+  # Sets the path to OIDC configuration file.
+  #oidc_config_file: config/oidc_config.xml
+
+  # Sets the path to OIDC backends configuration file.
+  #oidc_backends_config_file: config/oidc_backends_config.xml
+
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
