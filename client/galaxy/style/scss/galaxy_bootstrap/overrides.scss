@@ -18,6 +18,9 @@ pre {
 // Allow text in buttons to wrap
 .btn {
     white-space: normal;
+}
+
+.btn-secondary {
     border: 1px solid $border-default-color;
 }
 

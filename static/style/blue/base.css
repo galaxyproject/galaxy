@@ -8985,7 +8985,10 @@ pre {
 
 .btn, input[type="submit"],
 button, .action-button, .menubutton {
-  white-space: normal;
+  white-space: normal; }
+
+.btn-secondary, input[type="submit"],
+button, .action-button, .menubutton {
   border: 1px solid #bfbfbf; }
 
 .dropdown-menu {
