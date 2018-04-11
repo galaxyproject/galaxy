@@ -115,8 +115,11 @@ const WorkflowItemView = Backbone.View.extend({
         return `
             <td>
                 <div class="btn-group">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                    <a href="${Galaxy.root}workflow/editor?id=${this.model.id}" class="btn btn-secondary">
                         ${_.escape(this.model.get("name"))}
+                    </a>
+                    <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      <span class="sr-only">Toggle Dropdown</span>
                     </button>
                     ${this._templateActions()}
                 </div>
