@@ -12755,16 +12755,18 @@ div.unified-panel-body-background {
 #masthead {
   padding: 0;
   margin-bottom: 0px; }
-  #masthead .navbar-nav .nav-link {
+  #masthead .navbar-nav > li.active {
+    background: black; }
+  #masthead .navbar-nav > li .nav-link {
     cursor: pointer;
     text-decoration: none; }
-    #masthead .navbar-nav .nav-link:hover {
+    #masthead .navbar-nav > li .nav-link:hover {
       color: gold; }
-    #masthead .navbar-nav .nav-link.nav-icon {
+    #masthead .navbar-nav > li .nav-link.nav-icon {
       font-size: 1.7em; }
-    #masthead .navbar-nav .nav-link.toggle {
+    #masthead .navbar-nav > li .nav-link.toggle {
       color: gold; }
-  #masthead .navbar-nav .nav-note {
+  #masthead .navbar-nav > li .nav-note {
     font-weight: bold;
     font-size: 10px;
     position: relative;
