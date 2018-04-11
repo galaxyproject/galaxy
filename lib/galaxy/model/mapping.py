@@ -133,6 +133,16 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.CloudAuthz.table = Table(
+    "cloudauthz", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('provider', String(255)),
+    Column('config', JSONType),
+    Column('tokens', JSONType),
+    Column('last_update', DateTime),
+    Column('last_activity', DateTime))
+
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
@@ -1475,6 +1485,12 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
+))
+
+mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
+                  backref='cloudauthz')
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
