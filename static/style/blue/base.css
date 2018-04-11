@@ -12757,7 +12757,8 @@ div.unified-panel-body-background {
 
 #masthead {
   padding: 0;
-  margin-bottom: 0px; }
+  margin-bottom: 0px;
+  background-color: #2c3143; }
   #masthead .navbar-nav > li.active {
     background: black; }
   #masthead .navbar-nav > li .nav-link {
