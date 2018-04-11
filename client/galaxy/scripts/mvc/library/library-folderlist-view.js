@@ -132,7 +132,7 @@ var FolderListView = Backbone.View.extend({
             }
             this.paginate();
         }
-        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 
@@ -181,7 +181,7 @@ var FolderListView = Backbone.View.extend({
                 current_sort_order: false
             });
         });
-        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         this.checkEmptiness();
         this.postRender();
     },

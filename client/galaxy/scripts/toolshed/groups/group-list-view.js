@@ -41,7 +41,7 @@ const GroupListView = Backbone.View.extend({
         const template = this.templateGroupsList();
         this.$el.html(template({ length: window.globalTS.groups.collection.models.length }));
         this.renderRows(window.globalTS.groups.collection.models);
-        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 

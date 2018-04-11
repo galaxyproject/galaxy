@@ -226,7 +226,7 @@ var FolderRowView = Backbone.View.extend({
         this.render();
         old_element.replaceWith(this.$el);
         /* now we attach new tooltips to the newly created row element */
-        this.$el.find('[data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     templateRowFolder: function() {

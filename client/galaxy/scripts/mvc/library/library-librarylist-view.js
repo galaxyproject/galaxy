@@ -124,7 +124,7 @@ var LibraryListView = Backbone.View.extend({
             );
             Galaxy.libraries.libraryToolbarView.renderPaginator(this.options);
         }
-        $('#center [data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 

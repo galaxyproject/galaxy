@@ -47,7 +47,7 @@ var LibraryRowView = Backbone.View.extend({
     repaint: function(library) {
         /* need to dispose manually because of the element removal in setElement
     invoked in render() */
-        this.$el.find('[data-toggle="tooltip"]').tooltip('dispose');
+        this.$el.find('[data-toggle="tooltip"]').tooltip("dispose");
         /* we need to store the old element to be able to replace it with
     new one */
         var old_element = this.$el;
@@ -56,7 +56,7 @@ var LibraryRowView = Backbone.View.extend({
         this.render();
         old_element.replaceWith(this.$el);
         /* now we attach new tooltips to the newly created row element */
-        this.$el.find('[data-toggle="tooltip"]').tooltip({trigger: "hover"});
+        this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     /**

@@ -197,8 +197,11 @@ export var TextSelect = Backbone.View.extend({
                 this.model.get("onchange")(this.value());
             }
         });
-        this.setElement($("<div/>").append(this.select.$el)
-                                   .append(this.text.$el));
+        this.setElement(
+            $("<div/>")
+                .append(this.select.$el)
+                .append(this.text.$el)
+        );
         this.update(this.model.get("data"));
     },
     wait: function() {
