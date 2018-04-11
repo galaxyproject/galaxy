@@ -105,6 +105,7 @@ $ui-margin-horizontal-large: 10px;
 
 .ui-modal {
     display: none;
+    overflow: auto;
     .modal-header.no-separator {
         border: none !important;
         padding-bottom: 0px !important;
@@ -724,11 +725,6 @@ $ui-margin-horizontal-large: 10px;
     .popover-content {
         padding: 0.6em 1rem;
     }
-}
-
-.popover {
-    text-align: left;
-    white-space: normal;
     .arrow {
         border-width: 0.68rem;
     }
@@ -736,54 +732,53 @@ $ui-margin-horizontal-large: 10px;
         border-width: 0.68rem;
         content: "";
     }
-}
-
-.popover .arrow,
-.popover .arrow::after {
-    position: absolute;
-    display: block;
-    width: 0;
-    height: 0;
-    border-color: transparent;
-    border-bottom-color: transparent;
-    border-style: solid;
-}
-
-.popover.bottom {
-    .arrow {
-        left: 50%;
-        margin-left: -0.65rem;
-        border-top-width: 0;
-        border-bottom-color: #999;
-        border-bottom-color: rgba(0, 0, 0, 0.25);
-        top: -0.72rem;
-    }
+    .arrow,
     .arrow::after {
-        content: " ";
-        top: 0.05rem;
-        margin-left: -0.6rem;
-        border-top-width: 0;
-        border-bottom-color: #ffffff;
+        position: absolute;
+        display: block;
+        width: 0;
+        height: 0;
+        border-color: transparent;
+        border-bottom-color: transparent;
+        border-style: solid;
     }
-}
+    &.bottom {
+        .arrow {
+            left: 50%;
+            margin-left: -0.65rem;
+            border-top-width: 0;
+            border-bottom-color: #999;
+            border-bottom-color: rgba(0, 0, 0, 0.25);
+            top: -0.72rem;
+        }
 
-.popover.top {
-    margin-top: -0.6rem;
-    .arrow {
-        left: 50%;
-        margin-left: -0.65rem;
-        border-width: 0.4rem;
-        border-bottom-width: 0;
-        border-top-color: #999;
-        border-top-color: rgba(0, 0, 0, 0.25);
-        bottom: -0.65rem;
+        .arrow::after {
+            content: " ";
+            top: 0.05rem;
+            margin-left: -0.6rem;
+            border-top-width: 0;
+            border-bottom-color: #ffffff;
+        }
+
     }
-    .arrow::after {
-        content: " ";
-        bottom: 0.05rem;
-        margin-left: -0.6rem;
-        border-bottom-width: 0;
-        border-top-color: #ffffff;
+    &.top {
+        margin-top: -0.6rem;
+        .arrow {
+            left: 50%;
+            margin-left: -0.65rem;
+            border-width: 0.4rem;
+            border-bottom-width: 0;
+            border-top-color: #999;
+            border-top-color: rgba(0, 0, 0, 0.25);
+            bottom: -0.65rem;
+        }
+        .arrow::after {
+            content: " ";
+            bottom: 0.05rem;
+            margin-left: -0.6rem;
+            border-bottom-width: 0;
+            border-top-color: #ffffff;
+        }
     }
 }
 

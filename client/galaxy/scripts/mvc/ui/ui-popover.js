@@ -43,7 +43,7 @@ var View = Backbone.View.extend({
         this.$title.html(this.options.title);
         this.$el
             .removeClass()
-            .addClass("ui-popover popover fade in")
+            .addClass("ui-popover popover in")
             .addClass(this.options.placement);
         this.$el.css(this._get_placement(this.options.placement));
 

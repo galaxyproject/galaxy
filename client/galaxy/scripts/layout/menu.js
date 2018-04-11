@@ -443,7 +443,7 @@ var Tab = Backbone.View.extend({
             }
         } else {
             if (this.$link.popover) {
-                this.$link.popover("destroy");
+                this.$link.popover("dispose");
             }
             this.$link
                 .popover({
@@ -456,8 +456,8 @@ var Tab = Backbone.View.extend({
                 })
                 .popover("show");
             window.setTimeout(() => {
-                this.$link.popover("destroy");
-            }, 5000);
+                this.$link.popover("dispose");
+            }, 3000);
         }
     },
 
