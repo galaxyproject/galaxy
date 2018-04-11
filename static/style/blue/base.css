@@ -10774,6 +10774,49 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     border-radius: 0.25rem 0.25rem 0 0; }
   .ui-popover .popover-content {
     padding: 0.6em 1rem; }
+  .ui-popover .arrow {
+    border-width: 0.68rem; }
+  .ui-popover .arrow::after {
+    border-width: 0.68rem;
+    content: ""; }
+  .ui-popover .arrow,
+  .ui-popover .arrow::after {
+    position: absolute;
+    display: block;
+    width: 0;
+    height: 0;
+    border-color: transparent;
+    border-bottom-color: transparent;
+    border-style: solid; }
+  .ui-popover.bottom .arrow {
+    left: 50%;
+    margin-left: -0.65rem;
+    border-top-width: 0;
+    border-bottom-color: #999;
+    border-bottom-color: rgba(0, 0, 0, 0.25);
+    top: -0.72rem; }
+  .ui-popover.bottom .arrow::after {
+    content: " ";
+    top: 0.05rem;
+    margin-left: -0.6rem;
+    border-top-width: 0;
+    border-bottom-color: #ffffff; }
+  .ui-popover.top {
+    margin-top: -0.6rem; }
+    .ui-popover.top .arrow {
+      left: 50%;
+      margin-left: -0.65rem;
+      border-width: 0.4rem;
+      border-bottom-width: 0;
+      border-top-color: #999;
+      border-top-color: rgba(0, 0, 0, 0.25);
+      bottom: -0.65rem; }
+    .ui-popover.top .arrow::after {
+      content: " ";
+      bottom: 0.05rem;
+      margin-left: -0.6rem;
+      border-bottom-width: 0;
+      border-top-color: #ffffff; }
 
 .ui-input, .ui-form-element .ui-form-preview, .ui-form-element-disabled .ui-form-preview, .ui-input-basic, .ui-select select, .ui-select .select2-container .select2-choice, .ui-textarea, .ui-options .ui-options-list, .ui-form-slider .ui-form-slider-text, .ui-select .select2-container-multi .select2-choices {
   width: 100%;
