@@ -195,8 +195,8 @@ export default {
                         }" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
                     } else if (column.attach_popup && link) {
                         tmpl += `<div class="btn-group">
-                                    <button class="btn use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
-                                    <button id="${popup_id}" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"/>
+                                    <button class="btn btn-secondary use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
+                                    <button id="${popup_id}" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"/>
                                 </div>`;
                     } else if (column.attach_popup) {
                         tmpl += `<button id="${popup_id}" class="btn dropdown-toggle" data-toggle="dropdown">${value}</button>`;
