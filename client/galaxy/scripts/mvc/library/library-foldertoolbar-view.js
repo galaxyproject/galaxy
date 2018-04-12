@@ -1374,7 +1374,6 @@ var FolderToolbarView = Backbone.View.extend({
                 '<div class="library_style_container">', // container start
                 '<div class="d-flex align-items-center mb-2">',
                 '<span class="mr-1">DATA LIBRARIES</span>',
-                '<div class="d-flex align-items-center folder-paginator" />', // paginator will append here
                 '<div id="library_toolbar">', // toolbar start
                 '<form class="form-inline">',
                 '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
