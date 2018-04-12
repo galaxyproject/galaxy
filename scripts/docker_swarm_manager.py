@@ -2,7 +2,7 @@
 """
 Docker Swarm mode management
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import argparse
 import errno
@@ -17,21 +17,11 @@ try:
     import daemon.pidfile
     import lockfile
 except ImportError:
-    daemon = None
+    print('ERROR: The daemon module is required to use the swarm manager, '
+          'install it with `pip install python-daemon`', file=sys.stderr)
+    sys.exit(1)
 
-try:
-    # remove this directory from sys.path to avoid `docker` module name conflict
-    sys.path.remove(os.path.dirname(__file__))
-except ValueError:
-    pass
-
-try:
-    import galaxy   # noqa: F401 this is a test import
-except ImportError:
-    sys.path.insert(0, os.path.abspath(os.path.join(
-        os.path.dirname(__file__),
-        os.pardir,
-        os.pardir)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.containers import (
     build_container_interfaces,
@@ -457,19 +447,9 @@ class SwarmState(object):
         self._handled_services.difference_update(services)
 
 
-def main(argv=None, fork=False):
-    if not daemon:
-        _configure_logging(None, {})
-        log.error('The daemon module is required to use the swarm manager, install it with `pip install python-daemon`')
-        return
-    if argv is None:
-        argv = sys.argv[1:]
-    if fork:
-        p = subprocess.Popen([sys.executable, __file__] + argv)
-        p.wait()
-    else:
-        args = _arg_parser().parse_args(argv)
-        _run_swarm_manager(args)
+def main():
+    args = _arg_parser().parse_args()
+    _run_swarm_manager(args)
 
 
 def _arg_parser():
@@ -585,7 +565,7 @@ def _swarm_manager_pidfile(conf):
 
 
 def _swarm_manager_daemon(pidfile, logfile, swarm_manager_conf, docker_interface):
-    log.debug("daemonizing, logs will be written to '%s'", logfile)
+    log.info("daemonizing, logs will be written to '%s'", logfile)
     with open(logfile, 'a') as logfh:
         try:
             with daemon.DaemonContext(

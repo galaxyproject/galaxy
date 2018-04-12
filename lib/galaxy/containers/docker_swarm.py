@@ -4,6 +4,8 @@ Docker Swarm mode interface
 from __future__ import absolute_import
 
 import logging
+import os.path
+import subprocess
 from functools import partial
 
 try:
@@ -17,7 +19,6 @@ except ImportError:
         Placement=None,
     ))
 
-from galaxy.containers import docker_swarm_manager
 from galaxy.containers.docker import (
     DockerAPIInterface,
     DockerCLIInterface,
@@ -35,6 +36,15 @@ from galaxy.exceptions import ContainerRunError
 from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
+
+SWARM_MANAGER_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        os.path.pardir,
+        os.path.pardir,
+        os.path.pardir,
+        'scripts',
+        'docker_swarm_manager.py'))
 
 
 class DockerSwarmInterface(DockerInterface):
@@ -109,7 +119,12 @@ class DockerSwarmInterface(DockerInterface):
 
     def _run_swarm_manager(self):
         if self._conf.managed and self._conf.manager_autostart:
-            docker_swarm_manager.main(argv=['--containers-config-file', self.containers_config_file, '--swarm', self.key], fork=True)
+            try:
+                # sys.exectuable would be preferable to using $PATH, but sys.executable is probably uwsgi
+                subprocess.check_call(['python', SWARM_MANAGER_PATH, '--containers-config-file',
+                                      self.containers_config_file, '--swarm', self.key])
+            except subprocess.CalledProcessError as exc:
+                log.error('Failed to launch swarm manager: %s', str(exc))
 
     def _get_image(self, image):
         """Get the image string, either from the argument, or from the
