@@ -26,7 +26,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
         name = self.workflow_create_new()
         editor.canvas_body.wait_for_visible()
-        menu_element = editor.tool_menu.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
         editor.tool_menu_item_link(section_name="inputs", item_name="data_input").wait_for_and_click()
         self.screenshot("workflow_editor_data_input_new")
@@ -53,7 +53,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
         name = self.workflow_create_new()
         editor.canvas_body.wait_for_visible()
-        menu_element = editor.tool_menu.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
         editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
         editor.tool_menu_item_link(section_name="inputs", item_name="data_collection_input").wait_for_and_click()
         self.screenshot("workflow_editor_data_input_collection_new")
