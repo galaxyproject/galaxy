@@ -233,10 +233,10 @@ var FolderRowView = Backbone.View.extend({
         return _.template(
             [
                 '<tr class="folder_row light library-row" data-id="<%- content_item.id %>">',
-                "<td>",
+                '<td class="mid">',
                 '<span title="Folder" class="fa fa-folder-o"/>',
                 "</td>",
-                '<td style="text-align: center; "><input style="margin: 0;" type="checkbox"></td>',
+                '<td class="mid"><input style="margin: 0;" type="checkbox"></td>',
                 "<% if(!edit_mode) { %>",
                 "<td>",
                 '<a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>',
@@ -282,10 +282,10 @@ var FolderRowView = Backbone.View.extend({
         return _.template(
             [
                 '<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">',
-                "<td>",
+                '<td class="mid">',
                 '<span title="Dataset" class="fa fa-file-o"/>',
                 "</td>",
-                '<td style="text-align: center; ">',
+                '<td class="mid">',
                 '<input style="margin: 0;" type="checkbox">',
                 "</td>",
                 "<td>",
@@ -329,10 +329,10 @@ var FolderRowView = Backbone.View.extend({
         return _.template(
             [
                 '<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">',
-                "<td>",
+                '<td class="mid">',
                 '<span title="Dataset" class="fa fa-file-o"/>',
                 "</td>",
-                "<td></td>",
+                '<td></td>',
                 '<td style="color:grey;">',
                 '<%- content_item.get("name") %>',
                 "</td>",
@@ -368,7 +368,7 @@ var FolderRowView = Backbone.View.extend({
         return _.template(
             [
                 '<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">',
-                "<td>",
+                '<td class="mid">',
                 '<span title="Folder" class="fa fa-folder-o"/>',
                 "</td>",
                 "<td></td>",

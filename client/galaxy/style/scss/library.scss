@@ -117,6 +117,13 @@
     .libimport-select-all {
         margin-left: 0.5em;
     }
+    td, thead {
+        vertical-align: middle;
+    }
+    .mid {
+        vertical-align: middle;
+        text-align: center;
+    }
 }
 
 // Extra style for Galaxy modal

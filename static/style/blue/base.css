@@ -11191,6 +11191,11 @@ label {
   .library_style_container .libimport-select-none,
   .library_style_container .libimport-select-all {
     margin-left: 0.5em; }
+  .library_style_container td, .library_style_container thead {
+    vertical-align: middle; }
+  .library_style_container .mid {
+    vertical-align: middle;
+    text-align: center; }
 
 .modal-content .library_selected_history_content ul {
   list-style-type: none; }

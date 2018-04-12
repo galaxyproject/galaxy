@@ -382,7 +382,7 @@ var FolderListView = Backbone.View.extend({
                 '<table data-library-id="<%- parent_library_id  %>" class="grid table table-sm">',
                 "<thead>",
                 '<th class="button_heading"></th>',
-                '<th style="text-align: center; width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
+                '<th class="mid" style="width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
                 '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
                 '<th style="width:20%;"><a class="sort-folder-description" title="Click to reverse order" href="#">description</a> <span title="Sorted alphabetically" class="sort-icon-description fa"></span></th>',
                 '<th style="width:5%;"><a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span></th>',
