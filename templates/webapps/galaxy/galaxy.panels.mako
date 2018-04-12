@@ -209,8 +209,8 @@
                     </div>
                     <div class="unified-panel-body" style="overflow: auto;"></div>
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
+                        <div id="left-panel-collapse" class="panel-collapse right"></span></div>
+                        <div id="left-panel-drag" class="drag"></div>
                     </div>
                 </div>
             %endif
@@ -237,8 +237,8 @@
                     </div>
                     <div class="unified-panel-body" style="overflow: auto;"></div>
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
+                        <div id="right-panel-collapse" class="panel-collapse right"></span></div>
+                        <div id="right-panel-drag"  class="drag"></div>
                     </div>
                 </div>
             %endif

@@ -35,6 +35,9 @@ $.extend(Connector.prototype, {
     redraw: function() {
         const handle1 = this.handle1;
         const handle2 = this.handle2;
+        const startRibbon = handle1 && handle1.isMappedOver();
+        const endRibbon = handle2 && handle2.isMappedOver();
+        const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
@@ -71,6 +74,7 @@ $.extend(Connector.prototype, {
         this.canvas.style.top = `${canvas_top}px`;
         this.canvas.setAttribute("width", canvas_width);
         this.canvas.setAttribute("height", canvas_height);
+        this.canvas.setAttribute("class", canvasClass);
         // Adjust points to be relative to the canvas
         start_x -= canvas_left;
         start_y -= canvas_top;
@@ -84,13 +88,13 @@ $.extend(Connector.prototype, {
         var start_offsets = null;
         var end_offsets = null;
         var num_offsets = 1;
-        if (handle1 && handle1.isMappedOver()) {
+        if (startRibbon) {
             var start_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
             var start_offsets = [0];
         }
-        if (handle2 && handle2.isMappedOver()) {
+        if (endRibbon) {
             var end_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
