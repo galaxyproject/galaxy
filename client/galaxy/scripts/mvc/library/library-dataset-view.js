@@ -904,7 +904,6 @@ var LibraryDatasetView = Backbone.View.extend({
                 // CONTAINER START
                 '<div class="library_style_container">',
 
-
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
                 '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
@@ -1002,7 +1001,6 @@ var LibraryDatasetView = Backbone.View.extend({
                 "&nbsp;Save",
                 "</button>",
                 "</div>",
-
 
                 // CONTAINER END
                 "</div>"

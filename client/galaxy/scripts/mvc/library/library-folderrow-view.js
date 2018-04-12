@@ -332,7 +332,7 @@ var FolderRowView = Backbone.View.extend({
                 '<td class="mid">',
                 '<span title="Dataset" class="fa fa-file-o"/>',
                 "</td>",
-                '<td></td>',
+                "<td></td>",
                 '<td style="color:grey;">',
                 '<%- content_item.get("name") %>',
                 "</td>",

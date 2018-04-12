@@ -185,7 +185,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             });
         },
         "click .purge-history": function() {
-            if (confirm(_l("This will permanently remove the data. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data. Are you sure?"))) {
                 this.model.purge().done(data => {
                     this.render();
                 });
@@ -761,8 +761,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     // ------------------------------------------------------------------------ events/behaviors
     events: {
-        // will move to the server root (gen. Analyze data)
-        "click .done.btn": "close",
         // creates a new empty history and makes it current
         "click .create-new.btn": "create",
         "click #include-deleted": "_clickToggleDeletedHistories",
@@ -1033,9 +1031,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         [
             '<div class="header flex-column-container">',
             '<div class="control-column control-column-left flex-column">',
-            '<button class="done btn btn-primary" tabindex="1">',
-            _l("Done"),
-            "</button>",
             '<div id="search-histories" class="search-control"></div>',
             '<div id="search-datasets" class="search-control"></div>',
             '<a class="open-more-options btn btn-secondary" tabindex="3">',
