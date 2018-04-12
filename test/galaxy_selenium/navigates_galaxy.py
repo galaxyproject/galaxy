@@ -941,7 +941,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".dropdown-toggle")
+        workflow_button = row_element.find_element_by_css_selector("a.btn.btn-secondary")
         return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
