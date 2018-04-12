@@ -949,7 +949,7 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".dropdown .btn")
+            workflow_button = workflow_row.find_element_by_css_selector("button.dropdown-toggle")
             workflow_button.click()
 
         click_option()
