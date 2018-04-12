@@ -594,24 +594,24 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div>',
-                '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-secondary toolbtn-download-dataset primary-button toolbar-item" type="button">',
+                '<div class="d-flex mb-2">',
+                '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-secondary toolbtn-download-dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-download"></span>',
                 "&nbsp;Download",
                 "</button>",
-                '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-secondary toolbtn-import-dataset primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-secondary toolbtn-import-dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-book"></span>',
                 "&nbsp;to History",
                 "</button>",
                 '<% if (item.get("can_user_modify")) { %>',
-                '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-pencil"></span>',
                 "&nbsp;Modify",
                 "</button>",
                 "<% } %>",
                 '<% if (item.get("can_user_manage")) { %>',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">',
-                '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-secondary toolbtn_change_permissions primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1" type="button">',
                 '<span class="fa fa-group"></span>',
                 "&nbsp;Permissions",
                 "</button>",
@@ -778,9 +778,9 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div>',
+                '<div class="d-flex mb-2">',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-secondary primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
                 '<span class="fa fa-caret-left fa-lg"></span>',
                 "&nbsp;Latest dataset",
                 "</button>",
@@ -903,16 +903,7 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div>',
-                '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-secondary toolbtn_cancel_modifications primary-button toolbar-item" type="button">',
-                '<span class="fa fa-times"></span>',
-                "&nbsp;Cancel",
-                "</button>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-secondary toolbtn_save_modifications primary-button toolbar-item" type="button">',
-                '<span class="fa fa-floppy-o"></span>',
-                "&nbsp;Save",
-                "</button>",
-                "</div>",
+
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
@@ -1000,6 +991,19 @@ var LibraryDatasetView = Backbone.View.extend({
                 "</pre>",
                 "</div>",
                 "</div>",
+
+                '<div class="d-flex">',
+                '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-secondary toolbtn_cancel_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-times"></span>',
+                "&nbsp;Cancel",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-secondary toolbtn_save_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-floppy-o"></span>',
+                "&nbsp;Save",
+                "</button>",
+                "</div>",
+
+
                 // CONTAINER END
                 "</div>"
             ].join("")
@@ -1011,9 +1015,9 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div>',
+                '<div class="d-flex mb-2">',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-secondary primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
                 '<span class="fa fa-file-o"></span>',
                 "&nbsp;Dataset Details",
                 "</button>",
@@ -1065,7 +1069,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<div class="alert alert-info roles-selection">',
                 "User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability manage this dataset unless you are an admin.",
                 "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions  type="button">',
                 '<span class="fa fa-floppy-o"></span>',
                 "&nbsp;Save",
                 "</button>",
