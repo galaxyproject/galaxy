@@ -594,7 +594,7 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div>',
                 '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-secondary toolbtn-download-dataset primary-button toolbar-item" type="button">',
                 '<span class="fa fa-download"></span>',
                 "&nbsp;Download",
@@ -778,7 +778,7 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div>',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
                 '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-secondary primary-button toolbar-item" type="button">',
                 '<span class="fa fa-caret-left fa-lg"></span>',
@@ -903,7 +903,7 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div>',
                 '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-secondary toolbtn_cancel_modifications primary-button toolbar-item" type="button">',
                 '<span class="fa fa-times"></span>',
                 "&nbsp;Cancel",
@@ -1011,7 +1011,7 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div>',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
                 '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-secondary primary-button toolbar-item" type="button">',
                 '<span class="fa fa-file-o"></span>',
