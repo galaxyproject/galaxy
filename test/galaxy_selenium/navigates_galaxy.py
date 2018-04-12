@@ -422,7 +422,7 @@ class NavigatesGalaxy(HasDriver):
             # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
             # Like the logged in user doesn't have permission to the previously anonymous user's
             # history, it is odd but I cannot replicate this outside of Selenium.
-            time.sleep(.35)
+            time.sleep(1.35)
 
         if assert_valid:
             # self.wait_for_selector_visible(".donemessage")

@@ -33,6 +33,8 @@ $.extend(Connector.prototype, {
         }
     },
     redraw: function() {
+        const handle1 = this.handle1;
+        const handle2 = this.handle2;
         var canvas_container = $("#canvas-container");
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
@@ -41,16 +43,18 @@ $.extend(Connector.prototype, {
                 this.canvas.style.zIndex = "300";
             }
         }
+        this.canvas.setAttribute("handle1-id", handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : "");
+        this.canvas.setAttribute("handle2-id", handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : "");
         var relativeLeft = e => $(e).offset().left - canvas_container.offset().left;
         var relativeTop = e => $(e).offset().top - canvas_container.offset().top;
-        if (!this.handle1 || !this.handle2) {
+        if (!handle1 || !handle2) {
             return;
         }
         // Find the position of each handle
-        var start_x = relativeLeft(this.handle1.element) + 5;
-        var start_y = relativeTop(this.handle1.element) + 5;
-        var end_x = relativeLeft(this.handle2.element) + 5;
-        var end_y = relativeTop(this.handle2.element) + 5;
+        var start_x = relativeLeft(handle1.element) + 5;
+        var start_y = relativeTop(handle1.element) + 5;
+        var end_x = relativeLeft(handle2.element) + 5;
+        var end_y = relativeTop(handle2.element) + 5;
         // Calculate canvas area
         var canvas_extra = 100;
         var canvas_min_x = Math.min(start_x, end_x);
@@ -80,13 +84,13 @@ $.extend(Connector.prototype, {
         var start_offsets = null;
         var end_offsets = null;
         var num_offsets = 1;
-        if (this.handle1 && this.handle1.isMappedOver()) {
+        if (handle1 && handle1.isMappedOver()) {
             var start_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
             var start_offsets = [0];
         }
-        if (this.handle2 && this.handle2.isMappedOver()) {
+        if (handle2 && handle2.isMappedOver()) {
             var end_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {

@@ -16,33 +16,77 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_build_workflow(self):
-        name = "test_edit_nam"
-        self.workflow_create_new(name=name)
-        element = self.wait_for_selector("#edit-attributes #workflow-name")
-        assert name in element.text, element.text
+        name = self.workflow_create_new()
+        edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
+        assert name in edit_name_element.text, edit_name_element.text
 
     @selenium_test
     def test_data_input(self):
-        self.workflow_create_new()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        menu = self.wait_for_selector(".toolMenu")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        inputs_section = menu.find_element_by_css_selector("#title___workflow__inputs__")
-        inputs_link = inputs_section.find_element_by_css_selector("a span")
-        inputs_link.click()
-        self.wait_for_selector_visible("#__workflow__inputs__ .toolTitle")
-        input_links = self.driver.find_elements_by_css_selector("#__workflow__inputs__ .toolTitle a")
-        input_links[0].click()
-        self.screenshot("workflow_editor_data_input")
-        # TODO: verify box is highlighted and side panel is a form describing input.
-        # More work needs to be done to develop testing abstractions for doing these things.
+        editor = self.components.workflow_editor
+
+        name = self.workflow_create_new()
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
+        editor.tool_menu_item_link(section_name="inputs", item_name="data_input").wait_for_and_click()
+        self.screenshot("workflow_editor_data_input_new")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
+        self.screenshot("workflow_editor_data_input_filled_in")
+        self.workflow_editor_save_and_close()
+        self.workflow_index_open_with_name(name)
+        data_input_node = editor.node._(label="input1")
+        data_input_node.title.wait_for_and_click()
+
+        label = editor.label_input.wait_for_value()
+        assert label == "input1", label
+        assert editor.annotation_input.wait_for_value() == "my cool annotation"
+
+        data_input_node.destroy.wait_for_and_click()
+        data_input_node.wait_for_absent()
+        self.screenshot("workflow_editor_data_input_deleted")
+
+    @selenium_test
+    def test_collection_input(self):
+        editor = self.components.workflow_editor
+
+        name = self.workflow_create_new()
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
+        editor.tool_menu_item_link(section_name="inputs", item_name="data_collection_input").wait_for_and_click()
+        self.screenshot("workflow_editor_data_input_collection_new")
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
+        self.screenshot("workflow_editor_data_input_collection_filled_in")
+        self.workflow_editor_save_and_close()
+        self.workflow_index_open_with_name(name)
+        data_input_node = editor.node._(label="input1")
+        data_input_node.title.wait_for_and_click()
+
+        label = editor.label_input.wait_for_value()
+        assert label == "input1", label
+        assert editor.annotation_input.wait_for_value() == "my cool annotation"
+
+        data_input_node.destroy.wait_for_and_click()
+        data_input_node.wait_for_absent()
+        self.screenshot("workflow_editor_data_input_deleted")
+
+    @selenium_test
+    def test_existing_connections(self):
+        name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        self.workflow_editor_click_option("Auto Re-layout")
+        self.assert_connected("input1#output", "first_cat#input1")
 
     @selenium_test
     def test_save_as(self):
-        workflow_populator = self.workflow_populator
-        workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.workflow_index_open_with_name(name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_edit_menu")
         self.workflow_editor_click_option("Save As")
@@ -84,16 +128,55 @@ steps:
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
 
-    def workflow_create_new(self, name=None, annotation=None):
+    def workflow_editor_save_and_close(self):
+        self.workflow_editor_click_option("Save")
+        self.workflow_editor_click_option("Close")
+
+    def assert_connected(self, source, sink):
+        editor = self.components.workflow_editor
+
+        source_node_label, source_output = source.split("#", 1)
+        sink_node_label, sink_input = sink.split("#", 1)
+
+        source_node = editor.node._(label=source_node_label)
+        sink_node = editor.node._(label=sink_node_label)
+
+        source_node.wait_for_visible()
+        sink_node.wait_for_visible()
+
+        output_terminal = source_node.output_terminal(name=source_output)
+        input_terminal = sink_node.input_terminal(name=sink_input)
+
+        output_element = output_terminal.wait_for_visible()
+        input_element = input_terminal.wait_for_visible()
+
+        source_id = output_element.get_attribute("id")
+        sink_id = input_element.get_attribute("id")
+
+        editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+
+    def workflow_index_open_with_name(self, name):
+        self.workflow_index_search_for(name)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+
+    def workflow_upload_yaml_with_random_name(self, content):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(content, name=name)
+        return name
+
+    def workflow_create_new(self, annotation=None):
         self.workflow_index_open()
         self.click_button_new_workflow()
         form_element = self.driver.find_element_by_id("submit")
-        name = name or self._get_random_name()
+        name = self._get_random_name()
         annotation = annotation or self._get_random_name()
         inputs = self.driver.find_elements_by_class_name("ui-input")
         inputs[0].send_keys(name)
         inputs[1].send_keys(annotation)
         form_element.click()
+        return name
 
     @retry_assertion_during_transitions
     def assert_modal_has_text(self, expected_text):

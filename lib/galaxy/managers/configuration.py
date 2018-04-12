@@ -62,6 +62,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_creation'               : _defaults_to(False),
             'use_remote_user'                   : _defaults_to(None),
             'enable_openid'                     : _defaults_to(False),
+            'enable_oidc'                       : _defaults_to(False),
             'enable_quotas'                     : _defaults_to(False),
             'remote_user_logout_href'           : _defaults_to(''),
             'datatypes_disable_auto'            : _defaults_to(False),

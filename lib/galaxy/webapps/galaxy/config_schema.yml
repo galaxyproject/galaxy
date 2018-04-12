@@ -2170,6 +2170,27 @@ mapping:
         desc: |
           If OpenID is enabled, consumer cache directory to use.
 
+      enable_oidc:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables and disables OpenID Connect (OIDC) support.
+
+      oidc_config_file:
+        type: str
+        default: config/oidc_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC configuration file.
+
+      oidc_backends_config_file:
+        type: str
+        default: config/oidc_backends_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC backends configuration file.
+
       auth_config_file:
         type: str
         default: config/auth_conf.xml
