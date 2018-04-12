@@ -170,7 +170,8 @@ class NavigatesGalaxy(HasDriver):
         finally:
             self.driver.switch_to.default_content()
 
-    def api_get(self, endpoint, data={}, raw=False):
+    def api_get(self, endpoint, data=None, raw=False):
+        data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         if raw:
@@ -1220,7 +1221,9 @@ class NavigatesGalaxy(HasDriver):
             self.click_label('go to the home page')
             assert not self.is_logged_in()
 
-    def run_tour(self, path, skip_steps=[], sleep_on_steps={}, tour_callback=None):
+    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+        skip_steps = skip_steps or []
+        sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
             tour_callback = NullTourCallback()
 
