@@ -170,12 +170,8 @@ class InteractiveEnvironmentRequest(object):
             # TODO: don't hardcode this, and allow for mapping
             key = '_default_'
         if key:
-            containers = build_container_interfaces(
-                self.attr.galaxy_config.containers_config_file,
-                containers_conf=self.attr.galaxy_config.containers_conf,
-            )
             try:
-                self.attr.container_interface = containers[key]
+                self.attr.container_interface = self.trans.app.containers[key]
             except KeyError:
                 log.error("Unable to load '%s' container interface: invalid key", key)
 
