@@ -7,8 +7,7 @@ import re
 from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPInternalServerError,
-    HTTPNotImplemented,
-    HTTPRequestRangeNotSatisfiable
+    HTTPNotImplemented
 )
 from six import string_types
 from sqlalchemy import true
