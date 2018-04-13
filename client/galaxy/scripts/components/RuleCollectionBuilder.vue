@@ -323,7 +323,7 @@
                     <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
                 </select2>
             </label>
-            <label class="rule-option pull-right" v-if="mappingAsDict.list_identifiers && !mappingAsDict.collection_name">
+            <label class="rule-option float-right" v-if="mappingAsDict.list_identifiers && !mappingAsDict.collection_name">
                 {{ l("Name") }}:
                 <input class="collection-name" style="width: 260px"
                 :placeholder="namePlaceholder" v-model="collectionName" />
@@ -1397,7 +1397,7 @@ const StateDiv = {
 };
 
 const OptionButtonsDiv = {
-    template: `<div class="actions clear vertically-spaced"><div class="main-options pull-right"><slot></slot></div></div>`
+    template: `<div class="actions clear vertically-spaced"><div class="main-options float-right"><slot></slot></div></div>`
 };
 
 const flatMap = (f, xs) => {

@@ -466,7 +466,7 @@
         margin-bottom: 8px;
 
         .clear-selected {
-            @extend .pull-right;
+            @extend .float-right;
             display: none;
         }
     }
@@ -519,7 +519,7 @@
             margin-top: 3px;
         }
         .discard {
-            @extend .pull-right;
+            @extend .float-right;
         }
     }
     .element-drop-placeholder {
@@ -553,7 +553,7 @@
         margin-bottom: 8px;
 
         .clear-selected {
-            @extend .pull-right;
+            @extend .float-right;
             display: none;
         }
     }

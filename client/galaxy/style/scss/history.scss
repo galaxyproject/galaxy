@@ -621,10 +621,10 @@
             .btn {
                 @extend .btn-sm;
             }
-            .pull-left .btn {
+            .float-left .btn {
                 margin-right: 4px;
             }
-            .pull-right .btn {
+            .float-right .btn {
                 margin-left: 4px;
             }
             .panel-menu {

@@ -147,7 +147,7 @@ export default Backbone.View.extend({
                     </h6>
                 </div>
                 <div class="upload-box" style="height: 335px;">
-                    <span style="width: 25%; display: inline; height: 100%" class="pull-left">
+                    <span style="width: 25%; display: inline; height: 100%" class="float-left">
                         <div class="upload-rule-option">
                             <div class="upload-rule-option-title">${_l("Upload data as")}:</div>
                             <div class="rule-data-type" />

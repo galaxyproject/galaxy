@@ -193,32 +193,31 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     // ------------------------------------------------------------------------ templates
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsLeftTemplate: _.template(
-        [
-            '<div class="pull-left">',
-            "<% if( data.history.isCurrentHistory ){ %>",
-            '<strong class="current-label">',
-            _l("Current History"),
-            "</strong>",
-            "<% } else { %>",
-            '<button class="switch-to btn btn-secondary">',
-            _l("Switch to"),
-            "</button>",
-            "<% } %>",
-            "</div>"
-        ].join(""),
+        `
+        <div class="float-left">
+            <% if( data.history.isCurrentHistory ){ %>
+                <strong class="current-label">
+                    ${_l("Current History")}
+                </strong>
+            <% } else { %>
+                <button class="switch-to btn btn-secondary">
+                    ${_l("Switch to")}
+                </button>
+            <% } %>
+        </div>`,
         { variable: "data" }
     ),
 
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsRightTemplate: _.template(
         [
-            '<div class="pull-right">',
+            '<div class="float-right">',
             "<% if( !data.history.purged ){ %>",
             '<div class="panel-menu btn-group">',
             '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
             '<span class="caret"></span>',
             "</button>",
-            '<ul class="dropdown-menu pull-right" role="menu">',
+            '<ul class="dropdown-menu float-right" role="menu">',
             "<% if( !data.history.deleted ){ %>",
             '<li><a href="javascript:void(0);" class="copy-history">',
             _l("Copy"),

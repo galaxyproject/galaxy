@@ -305,7 +305,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
                     _l("For all selected"),
                     "...",
                     "</button>",
-                    '<ul class="dropdown-menu pull-right" role="menu">',
+                    '<ul class="dropdown-menu float-right" role="menu">',
                     "</ul>",
                     "</div>"
                 ].join("")
