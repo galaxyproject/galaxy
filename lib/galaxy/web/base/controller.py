@@ -1075,10 +1075,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
-        if data is None:
-            raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
+        if not data:
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:
             # Verify ownership.
