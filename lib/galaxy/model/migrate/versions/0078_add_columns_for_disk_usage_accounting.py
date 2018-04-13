@@ -78,4 +78,3 @@ def downgrade(migrate_engine):
         GalaxySession_table.c.disk_usage.drop()
     except Exception:
         log.exception("Dropping disk_usage column from galaxy_session table failed.")
-
