@@ -205,7 +205,7 @@ class User(Dictifiable):
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'total_deleted_disk_usage', 'nice_total_deleted_disk_usage', 'deleted', 'active', 'last_password_change']
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'gross_deleted_disk_usage', 'nice_gross_deleted_disk_usage', 'deleted', 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None, username=None):
         self.email = email
@@ -371,10 +371,10 @@ class User(Dictifiable):
         """
         self.deleted_disk_usage = bytes
 
-    total_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
+    gross_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
 
     @property
-    def nice_total_deleted_disk_usage(self):
+    def nice_gross_deleted_disk_usage(self):
         """
         Return byte count of disk space used in a human-readable string.
         """
