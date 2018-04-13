@@ -1062,15 +1062,13 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         Get an HDA object by id performing security checks using
         the current transaction.
+
+        Deprecated in lieu to galaxy.managers.hdas.HDAManager.get_accessible(decoded_id, user)
         """
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            # DEPRECATION: We still support unencoded ids for backward compatibility
-            try:
-                dataset_id = int(dataset_id)
-            except ValueError:
-                raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
