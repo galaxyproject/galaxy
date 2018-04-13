@@ -72,7 +72,7 @@ var BaseInputTerminalView = TerminalView.extend({
         const node = options.node;
         const input = options.input;
         const name = input.name;
-        const id = `node-${node.id}-input-${name}`;
+        const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
         if (!terminal.multiple) {
             this.setupMappingView(terminal);
@@ -179,7 +179,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         const node = options.node;
         const output = options.output;
         const name = output.name;
-        const id = `node-${node.id}-output-${name}`;
+        const id = `node-${node.cid}-output-${name}`;
         const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);
         this.el.terminal = terminal;
