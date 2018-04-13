@@ -382,6 +382,12 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
 
+    def workflow_upload_yaml_with_random_name(self, content, **kwds):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
+
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
 
