@@ -34,4 +34,3 @@ nose==1.3.7
 requests==2.18.4
 idna==2.6
 nodeenv==1.2.0
-rpy2==2.8.6

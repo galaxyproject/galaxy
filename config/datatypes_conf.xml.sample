@@ -524,8 +524,7 @@
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="true" />
     <datatype extension="cel" type="galaxy.datatypes.binary:Cel" display_in_upload="true" />
     <datatype extension="rdata" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
-    <datatype extension="rds" type="galaxy.datatypes.binary:RDS" display_in_upload="true" description="RDS serialised RData object"/>
-    <datatype extension="sce" type="galaxy.datatypes.binary:SingleCellExperiment" display_in_upload="true" description="Stored RDS from a SingleCellObject"/>
+    <datatype extension="sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" />
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -825,8 +824,6 @@
     <sniffer type="galaxy.datatypes.annotation:SnapHmm" />
     <sniffer type="galaxy.datatypes.binary:Cel" />
     <sniffer type="galaxy.datatypes.binary:RData" />
-    <sniffer type="galaxy.datatypes.binary:RDS" />
-    <sniffer type="galaxy.datatypes.binary:SingleCellExperiment" />
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>
     <sniffer type="galaxy.datatypes.images:Tiff"/>
