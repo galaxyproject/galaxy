@@ -756,7 +756,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Convert incoming workflow data from json
             try:
                 data = json.loads(workflow_text)
-            except Exception as e:
+            except Exception:
                 data = None
                 message = "The data content does not appear to be a Galaxy workflow."
                 status = "error"
