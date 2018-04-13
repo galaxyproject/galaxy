@@ -1,6 +1,6 @@
 """
 Migration script to add 'total_size' column to the dataset table, 'purged'
-column to the HDA table, and 'disk_usage' column to the User and GalaxySession
+column to the HDA table, and 'disk_usage', 'deleted_disk_usage' columns to the User and GalaxySession
 tables.
 """
 from __future__ import print_function
@@ -51,6 +51,22 @@ def upgrade(migrate_engine):
     except Exception:
         log.exception("Adding disk_usage column to galaxy_session table failed.")
 
+    try:
+        User_table = Table("galaxy_user", metadata, autoload=True)
+        c = Column('deleted_disk_usage', Numeric(15, 0), index=True)
+        c.create(User_table, index_name="ix_galaxy_user_deleted_disk_usage")
+        assert c is User_table.c.deleted_disk_usage
+    except Exception:
+        log.exception("Adding deleted_disk_usage column to galaxy_user table failed.")
+
+    try:
+        GalaxySession_table = Table("galaxy_session", metadata, autoload=True)
+        c = Column('deleted_disk_usage', Numeric(15, 0), index=True)
+        c.create(GalaxySession_table, index_name="ix_galaxy_session_deleted_disk_usage")
+        assert c is GalaxySession_table.c.deleted_disk_usage
+    except Exception:
+        log.exception("Adding deleted_disk_usage column to galaxy_session table failed.")
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -78,3 +94,15 @@ def downgrade(migrate_engine):
         GalaxySession_table.c.disk_usage.drop()
     except Exception:
         log.exception("Dropping disk_usage column from galaxy_session table failed.")
+
+    try:
+        User_table = Table("galaxy_user", metadata, autoload=True)
+        User_table.c.deleted_disk_usage.drop()
+    except Exception:
+        log.exception("Dropping deleted_disk_usage column from galaxy_user table failed.")
+
+    try:
+        GalaxySession_table = Table("galaxy_session", metadata, autoload=True)
+        GalaxySession_table.c.deleted_disk_usage.drop()
+    except Exception:
+        log.exception("Dropping deleted_disk_usage column from galaxy_session table failed.")

@@ -38,7 +38,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.util import pgcalc
+from galaxy.model.util import count_toward_deleted_disk_usage, pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
@@ -368,57 +368,6 @@ class User(object, Dictifiable):
         """
         return self.get_deleted_disk_usage(nice_size=True)
 
-    @staticmethod
-    def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
-        """
-        ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
-            -1: dataset deleted
-            0: dataset not deleted, history deleted, hda deleted
-            1: dataset not deleted, history deleted, hda not deleted
-            2: dataset not deleted, history not deleted, hda deleted
-            3: dataset not deleted, history not deleted, hda not deleted
-
-        Return:
-        disk usage counted toward deleted disk usage for the input dataset
-        """
-        id_key=str(dataset_id)
-        # already counted, state fixed
-        if id_key in ids_dict and (ids_dict[id_key] == -1 or ids_dict[id_key] == 3):
-            return 0
-        if id_key not in ids_dict:       # first count; count all possibles
-            if dataset_deleted:
-                ids_dict[id_key] = -1    # must count
-                return dataset_disk_usage
-            elif hda_deleted:
-                if history_deleted:      # possible
-                    ids_dict[id_key] = 0
-                    return dataset_disk_usage
-                else:                    # possible
-                    ids_dict[id_key] = 2
-                    return dataset_disk_usage
-            else:
-                if history_deleted:     # possible
-                    ids_dict[id_key] = 1
-                    return dataset_disk_usage
-                else:                   # impossible
-                    ids_dict[id_key] = 3
-                    return 0
-        else:                           # repeat count
-            if hda_deleted:
-                if history_deleted:
-                    ids_dict[id_key] = ids_dict[id_key] | 0
-                else:
-                    ids_dict[id_key] = ids_dict[id_key] | 2
-            else:
-                if history_deleted:
-                    ids_dict[id_key] = ids_dict[id_key] | 1
-                else:
-                    ids_dict[id_key] = 3
-            if ids_dict[id_key] == 3:   # remove mis-count
-                return -dataset_disk_usage
-            else:
-                return 0
-
     def calculate_disk_usage(self):
         """
         Return a tuple.
@@ -439,7 +388,7 @@ class User(object, Dictifiable):
         deleted = 0
         db_session = object_session(self)
         # this can be a huge number and can run out of memory, so we avoid the mappers
-        for history in db_session.query(History.id, History.deleted).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
+        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
             for hda, dataset in db_session.query(
                 HistoryDatasetAssociation, Dataset).enable_eagerloads(False).join(Dataset).filter(and_(
                     HistoryDatasetAssociation.history_id == history.id,
@@ -451,7 +400,7 @@ class User(object, Dictifiable):
                     continue
                 if str(dataset.id) not in ids_dict:
                     total += dataset.get_total_size()
-                deleted_count = User.count_toward_deleted_disk_usage(
+                deleted_count = count_toward_deleted_disk_usage(
                     dataset.id,
                     history.deleted,
                     hda.deleted,
@@ -484,7 +433,7 @@ class User(object, Dictifiable):
                     current_deleted = self.get_deleted_disk_usage()
         else:
             total, deleted = pgcalc(db_session, self.id)
-        if new not in (current_total, None) or deleted not in (current_deleted, None):
+        if total not in (current_total, None) or deleted not in (current_deleted, None):
             self.set_disk_usage(total)
             self.set_deleted_disk_usage(deleted)
             db_session.add(self)

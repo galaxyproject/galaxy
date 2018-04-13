@@ -2,6 +2,56 @@
 Utility helpers related to the model
 """
 
+def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
+    """
+    ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
+        -1: dataset deleted
+        0: dataset not deleted, history deleted, hda deleted
+        1: dataset not deleted, history deleted, hda not deleted
+        2: dataset not deleted, history not deleted, hda deleted
+        3: dataset not deleted, history not deleted, hda not deleted
+
+    Return:
+    disk usage counted toward deleted disk usage for the input dataset
+    """
+    id_key = str(dataset_id)
+    # already counted, state fixed
+    if id_key in ids_dict and (ids_dict[id_key] == -1 or ids_dict[id_key] == 3):
+        return 0
+    if id_key not in ids_dict:       # first count; count all possibles
+        if dataset_deleted:
+            ids_dict[id_key] = -1    # must count
+            return dataset_disk_usage
+        elif hda_deleted:
+            if history_deleted:      # possible
+                ids_dict[id_key] = 0
+                return dataset_disk_usage
+            else:                    # possible
+                ids_dict[id_key] = 2
+                return dataset_disk_usage
+        else:
+            if history_deleted:     # possible
+                ids_dict[id_key] = 1
+                return dataset_disk_usage
+            else:                   # impossible
+                ids_dict[id_key] = 3
+                return 0
+    else:                           # repeat count
+        if hda_deleted:
+            if history_deleted:
+                ids_dict[id_key] = ids_dict[id_key] | 0
+            else:
+                ids_dict[id_key] = ids_dict[id_key] | 2
+        else:
+            if history_deleted:
+                ids_dict[id_key] = ids_dict[id_key] | 1
+            else:
+                ids_dict[id_key] = 3
+        if ids_dict[id_key] == 3:   # remove mis-count
+            return -dataset_disk_usage
+        else:
+            return 0
+
 def pgcalc(sa_session, id, dryrun=False):
     """
     Utility method for quickly recalculating user disk usage in postgres.
@@ -28,7 +78,7 @@ def pgcalc(sa_session, id, dryrun=False):
         for hda_deleted, dataset_id, dataset_deleted, dataset_total_size in sa_session.execute(query_hda_dataset, {'history_id': history_id}).fetchall():
             if str(dataset_id) not in ids_dict:
                     total += dataset_total_size
-            deleted_count = User.count_toward_deleted_disk_usage(
+            deleted_count = count_toward_deleted_disk_usage(
                 dataset_id,
                 history_deleted,
                 hda_deleted,
