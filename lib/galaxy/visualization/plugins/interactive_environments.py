@@ -16,7 +16,6 @@ import yaml
 from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
-from galaxy.containers import build_container_interfaces
 from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
 from galaxy.util import string_as_bool_or_none
