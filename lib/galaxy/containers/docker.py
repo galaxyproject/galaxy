@@ -219,39 +219,66 @@ class DockerAPIClient(object):
     """Wraps a ``docker.APIClient`` to catch exceptions.
     """
 
-    exception_retry_time = 5
-    default_max_tries = 10
-    client_handler_map = {}
+    _exception_retry_time = 5
+    _default_max_tries = 10
+    _host_iter = None
+    _client = None
+    _client_args = ()
+    _client_kwargs = {}
 
     @staticmethod
     def _qualname(f):
-        return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
+        if isinstance(f, partial):
+            f = f.func
+        try:
+            return getattr(f, '__qualname__', f.im_class.__name__ + '.' + f.__name__)
+        except AttributeError:
+            return f.__name__
 
     @staticmethod
-    def should_retry_request(response_code):
+    def _should_retry_request(response_code):
         return response_code >= 500 or response_code in (404, 408, 409, 429)
 
     @staticmethod
-    def default_client_handler(client, f, *args, **kwargs):
-        success_test = kwargs.pop('success_test', lambda: False)
-        max_tries = kwargs.pop('max_tries', DockerAPIClient.default_max_tries)
+    def _nonfatal_error(response_code):
+        return response_code in (404,)
+
+    @staticmethod
+    def _unwrapped_attr(attr):
+        return getattr(DockerAPIClient._client, attr)
+
+    @staticmethod
+    def _init_client():
+        kwargs = DockerAPIClient._client_kwargs.copy()
+        if DockerAPIClient._host_iter is not None and 'base_url' not in kwargs:
+            kwargs['base_url'] = DockerAPIClient._host_iter.next()
+        DockerAPIClient._client = docker.APIClient(*DockerAPIClient._client_args, **kwargs)
+        log.info('Initialized Docker API client for server: %s', kwargs.get('base_url', 'localhost'))
+
+    @staticmethod
+    def _default_client_handler(fname, *args, **kwargs):
+        success_test = kwargs.pop('success_test', None)
+        max_tries = kwargs.pop('max_tries', DockerAPIClient._default_max_tries)
         for tries in range(1, max_tries + 1):
-            retry_time = DockerAPIClient.exception_retry_time
-            reinit_client = False
+            retry_time = DockerAPIClient._exception_retry_time
+            reinit = False
             exc = None
+            # re-get the APIClient method every time as a different caller (such as the success test function) may have
+            # already reinitialized the client, and we always want to use the current client
+            f = DockerAPIClient._unwrapped_attr(fname)
+            qualname = DockerAPIClient._qualname(f)
             try:
                 r = f(*args, **kwargs)
                 if tries > 1:
-                    log.info('%s() succeeded on attempt %s', DockerAPIClient._qualname(f), tries)
+                    log.info('%s() succeeded on attempt %s', qualname, tries)
                 return r
             except requests.exceptions.ConnectionError as exc:
-                reinit_client = True
+                reinit = True
             except docker.errors.APIError as exc:
-                if not DockerAPIClient.should_retry_request(exc.response.status_code):
+                if not DockerAPIClient._should_retry_request(exc.response.status_code):
                     raise
-                pass
             except requests.exceptions.ReadTimeout as exc:
-                reinit_client = True
+                reinit = True
                 retry_time = 0
             finally:
                 # this is inside the finally context so we can do a bare raise when we give up (so the real stack for
@@ -259,42 +286,45 @@ class DockerAPIClient(object):
                 if exc is not None:
                     log.warning("Caught exception on %s(): %s: %s",
                                 DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
-                    r = success_test()
+                    if reinit:
+                        log.warning("Reinitializing Docker API client due to connection-oriented failure")
+                        DockerAPIClient._init_client()
+                        f = DockerAPIClient._unwrapped_attr(fname)
+                        qualname = DockerAPIClient._qualname(f)
+                    r = None
+                    if success_test is not None:
+                        log.info("Testing if %s() succeeded despite the exception", qualname)
+                        r = success_test()
                     if r:
                         log.warning("The request appears to have succeeded, will not retry. Response is: %s", str(r))
                         return r
                     elif tries >= max_tries:
                         log.error("Maximum number of attempts (%s) exceeded", max_tries)
-                        raise
+                        if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
+                            return None
+                        else:
+                            raise
                     else:
-                        log.error("Retrying in %s seconds (attempt: %s of %s)", retry_time, tries, max_tries)
+                        log.error("Retrying %s() in %s seconds (attempt: %s of %s)", qualname, retry_time, tries,
+                                  max_tries)
                         sleep(retry_time)
-                        if reinit_client:
-                            client._init_client()
 
     def __init__(self, *args, **kwargs):
-        self.__host_iter = kwargs.pop('host_iter', None)
-        self.__client_args = args
-        self.__client_kwargs = kwargs
-        self._init_client()
+        # Only initialize the host iterator once
+        host_iter = kwargs.pop('host_iter', None)
+        DockerAPIClient._host_iter = DockerAPIClient._host_iter or host_iter
+        DockerAPIClient._client_args = args
+        DockerAPIClient._client_kwargs = kwargs
+        DockerAPIClient._init_client()
 
     def __getattr__(self, attr):
-        cattr = getattr(self.__client, attr)
+        """Allow the calling of methods on this class as if it were a docker.APIClient instance.
+        """
+        cattr = DockerAPIClient._unwrapped_attr(attr)
         if callable(cattr):
-            def wrapped(*args, **kwargs):
-                handler_name = DockerAPIClient.client_handler_map.get(attr, 'default_client_handler')
-                handler = getattr(DockerAPIClient, handler_name)
-                return handler(self, cattr, *args, **kwargs)
-            return wrapped
+            return partial(DockerAPIClient._default_client_handler, attr)
         else:
             return cattr
-
-    def _init_client(self):
-        kwargs = self.__client_kwargs.copy()
-        if self.__host_iter is not None and 'base_url' not in kwargs:
-            kwargs['base_url'] = self.__host_iter.next()
-        self.__client = docker.APIClient(*self.__client_args, **kwargs)
-        log.info('Initialized Docker API client for server: %s', kwargs.get('base_url', 'localhost'))
 
 
 class DockerAPIInterface(DockerInterface):
