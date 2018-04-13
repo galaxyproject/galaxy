@@ -261,8 +261,8 @@ tour:
     selectors:
       _: '.popover'
 
-      title: '${_} .popover-title'
-      content: '${_} .popover-content'
+      title: '${_} .popover-header'
+      content: '${_} .popover-body'
       next: '${_} button[data-role="next"]'
       previous: '${_} button[data-role="prev"]'
       end: '${_} button[data-role="end"]'
