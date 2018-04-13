@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData, Numeric, Table
+from sqlalchemy import Column, MetaData, Numeric, Table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
