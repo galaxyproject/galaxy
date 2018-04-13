@@ -448,9 +448,9 @@
         justify-content: flex-start;
     }
     .flex-row-container {
-        -webkit-flex-direction: column;
-        -ms-flex-direction: column;
-        flex-direction: column;
+        -webkit-flex-direction: column !important;
+        -ms-flex-direction: column !important;
+        flex-direction: column !important;
     }
     .flex-column-container {
         -webkit-flex-direction: row;

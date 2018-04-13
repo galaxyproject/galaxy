@@ -14434,9 +14434,9 @@ pre.peek {
     -ms-flex-pack: start;
     justify-content: flex-start; }
   .multi-panel-history .flex-row-container {
-    -webkit-flex-direction: column;
-    -ms-flex-direction: column;
-    flex-direction: column; }
+    -webkit-flex-direction: column !important;
+    -ms-flex-direction: column !important;
+    flex-direction: column !important; }
   .multi-panel-history .flex-column-container {
     -webkit-flex-direction: row;
     -ms-flex-direction: row;
