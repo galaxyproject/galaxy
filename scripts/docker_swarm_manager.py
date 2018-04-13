@@ -580,8 +580,13 @@ def _swarm_manager_daemon(pidfile, logfile, swarm_manager_conf, docker_interface
 
 def _swarm_manager(conf, docker_interface):
     swarm_manager = SwarmManager(conf, docker_interface)
-    log.debug("swarm manager loaded, running...")
-    swarm_manager.run()
+    while True:
+        try:
+            log.info("swarm manager loaded, running...")
+            swarm_manager.run()
+        except Exception:
+            log.exception("exception raised to run loop:")
+            log.error("restarting due to fatal error")
 
 
 if __name__ == '__main__':
