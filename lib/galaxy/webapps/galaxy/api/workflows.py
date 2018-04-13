@@ -582,7 +582,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
         from_dict_kwds = dict(
-            source="API",
             publish=publish,
             exact_tools=exact_tools,
         )
