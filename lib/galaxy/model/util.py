@@ -53,6 +53,7 @@ def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, da
         else:
             return 0
 
+
 def pgcalc(sa_session, id, dryrun=False):
     """
     Utility method for quickly recalculating user disk usage in postgres.
