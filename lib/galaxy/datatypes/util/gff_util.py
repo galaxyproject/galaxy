@@ -5,9 +5,10 @@ import copy
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
-from six import Iterator
 
 from galaxy.util.odict import odict
+
+FASTA_DIRECTIVE = '##FASTA'
 
 
 class GFFInterval(GenomicInterval):
@@ -120,7 +121,7 @@ class GFFIntervalToBEDReaderWrapper(NiceReaderWrapper):
         return interval
 
 
-class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed after bx-python library is ported to Python3
+class GFFReaderWrapper(NiceReaderWrapper):
     """
     Reader wrapper for GFF files.
 
@@ -145,6 +146,7 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
         self.cur_offset = 0
         self.seed_interval = None
         self.seed_interval_line_len = 0
+        self.__end_of_intervals = False
 
     def parse_row(self, line):
         interval = GFFInterval(self, line.split("\t"), self.chrom_col, self.feature_col,
@@ -177,6 +179,8 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
         #
         # Get next GFFFeature
         #
+        if self.__end_of_intervals:
+            raise StopIteration("End of Intervals")
         raw_size = self.seed_interval_line_len
 
         # If there is no seed interval, set one. Also, if there are no more
@@ -229,6 +233,9 @@ class GFFReaderWrapper(Iterator, NiceReaderWrapper):  # Iterator can be removed 
 
             # Ignore comments.
             if isinstance(interval, Comment):
+                if self.current_line.rstrip() == FASTA_DIRECTIVE:
+                    self.__end_of_intervals = True
+                    break
                 continue
 
             # Determine if interval is part of feature.

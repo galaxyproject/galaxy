@@ -47,6 +47,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
+    workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
     openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
@@ -177,6 +178,9 @@ class Configuration(object):
         self.database_template = kwargs.get("database_template", None)
         self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
         self.slow_query_log_threshold = float(kwargs.get("slow_query_log_threshold", 0))
+        self.thread_local_log = None
+        if string_as_bool(kwargs.get("enable_per_request_sql_debugging", "False")):
+            self.thread_local_log = threading.local()
 
         # Don't set this to true for production databases, but probably should
         # default to True for sqlite databases.
@@ -204,6 +208,10 @@ class Configuration(object):
         self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "tool-data"), os.getcwd())
         self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
+        # Galaxy OIDC settings.
+        self.enable_oidc = kwargs.get("enable_oidc", False)
+        self.oidc_config = kwargs.get('oidc_config_file', None)
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
@@ -388,6 +396,15 @@ class Configuration(object):
         self.maximum_workflow_invocation_duration = int(kwargs.get("maximum_workflow_invocation_duration", 2678400))
         self.maximum_workflow_jobs_per_scheduling_iteration = int(kwargs.get("maximum_workflow_jobs_per_scheduling_iteration", -1))
 
+        workflow_resource_params_mapper = kwargs.get("workflow_resource_params_mapper", None)
+        if not workflow_resource_params_mapper:
+            workflow_resource_params_mapper = None
+        elif ":" not in workflow_resource_params_mapper:
+            # Assume it is not a Python function, so a file
+            workflow_resource_params_mapper = self.resolve_path(workflow_resource_params_mapper)
+        # else: a Python a function!
+        self.workflow_resource_params_mapper = workflow_resource_params_mapper
+
         self.cache_user_job_count = string_as_bool(kwargs.get('cache_user_job_count', False))
         self.pbs_application_server = kwargs.get('pbs_application_server', "")
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
@@ -433,6 +450,7 @@ class Configuration(object):
         self.user_library_import_check_permissions = string_as_bool(kwargs.get('user_library_import_check_permissions', False))
         self.user_library_import_dir_auto_creation = string_as_bool(kwargs.get('user_library_import_dir_auto_creation', False)) if self.user_library_import_dir else False
         # Searching data libraries
+        self.chunk_upload_size = int(kwargs.get('chunk_upload_size', 104857600))
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
         self.ftp_upload_dir_identifier = kwargs.get('ftp_upload_dir_identifier', 'email')  # attribute on user - email, username, id, etc...
         self.ftp_upload_dir_template = kwargs.get('ftp_upload_dir_template', '${ftp_upload_dir}%s${ftp_upload_dir_identifier}' % os.path.sep)
@@ -459,6 +477,8 @@ class Configuration(object):
         self.tool_enable_ngram_search = kwargs.get("tool_enable_ngram_search", False)
         self.tool_ngram_minsize = kwargs.get("tool_ngram_minsize", 3)
         self.tool_ngram_maxsize = kwargs.get("tool_ngram_maxsize", 4)
+        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
+        self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Location for tool dependencies.
         use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
             parse_dependency_options(kwargs, self.root, self.dependency_resolvers_config_file)
@@ -601,6 +621,7 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
             raise ConfigurationError("Insecure configuration, please change master_api_key to something other than default (changethis)")
@@ -619,6 +640,7 @@ class Configuration(object):
         self.statsd_host = kwargs.get('statsd_host', '')
         self.statsd_port = int(kwargs.get('statsd_port', 8125))
         self.statsd_prefix = kwargs.get('statsd_prefix', 'galaxy')
+        self.statsd_influxdb = string_as_bool(kwargs.get('statsd_influxdb', False))
         # Statistics and profiling with graphite
         self.graphite_host = kwargs.get('graphite_host', '')
         self.graphite_port = int(kwargs.get('graphite_port', 2003))
@@ -880,7 +902,8 @@ def init_models_from_config(config, map_install_models=False, object_store=None,
         object_store=object_store,
         trace_logger=trace_logger,
         use_pbkdf2=config.get_bool('use_pbkdf2', True),
-        slow_query_log_threshold=config.slow_query_log_threshold
+        slow_query_log_threshold=config.slow_query_log_threshold,
+        thread_local_log=config.thread_local_log
     )
     return model
 
@@ -923,7 +946,7 @@ def configure_logging(config):
         register_postfork_function(root.addHandler, sentry_handler)
 
 
-class ConfiguresGalaxyMixin:
+class ConfiguresGalaxyMixin(object):
     """ Shared code for configuring Galaxy-like app objects.
     """
 

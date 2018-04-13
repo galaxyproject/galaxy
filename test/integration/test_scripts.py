@@ -26,6 +26,7 @@ def skip_unless_module(module):
     return unittest.skip(template % module)
 
 
+@integration_util.skip_if_jenkins
 class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):

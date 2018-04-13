@@ -126,6 +126,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_per_request_sql_debugging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable's a per request sql debugging option. If this is set to
+    true, append ?sql_debug=1 to web request URLs to enable detailed
+    logging on the backend of SQL queries generated during that
+    request. This is useful for debugging slow endpoints during
+    development.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``install_database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1180,6 +1194,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``default_locale``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default localization for Galaxy UI. Allowed values are listed at
+    the end of client/galaxy/scripts/nls/locale.js. With the default
+    value (auto), the locale will be automatically adjusted to the
+    user's navigator language. Users can override this settings in
+    their user preferences if the localization settings are enabled in
+    user_preferences_extra_conf.yml
+:Default: ``auto``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1600,6 +1629,18 @@
     nginx documentation for the corresponding nginx configuration.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2057,6 +2098,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_sloreq_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sentry slow request logging.  Requests slower than the threshold
+    indicated below will be sent as events to the configured Sentry
+    server (above, sentry_dsn).  A value of '0' is disabled.  For
+    example, you would set this to .005 to log all queries taking
+    longer than 5 milliseconds.
+:Default: ``0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -2100,6 +2155,19 @@
     statistics between them within the same aggregator.
 :Default: ``galaxy``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``statsd_influxdb``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If you are using telegraf to collect these metrics and then
+    sending them to InfluxDB, Galaxy can provide more nicely tagged
+    metrics. Instead of sending prefix + dot-separated-path, Galaxy
+    will send prefix with a tag path set to the page url
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~
@@ -2384,6 +2452,22 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``id_secret``
 ~~~~~~~~~~~~~
@@ -2394,8 +2478,8 @@
     should set a key to be used by the algorithm that encodes and
     decodes these values.  It can be any string up to 448 bits long.
     One simple way to generate a value for this is with the shell
-    command:   python -c 'import time; print time.time()' | md5sum |
-    cut -f 1 -d ' '
+    command:   python -c 'from __future__ import print_function;
+    import time; print(time.time())' | md5sum | cut -f 1 -d ' '
 :Default: ``USING THE DEFAULT IS NOT SECURE!``
 :Type: str
 
@@ -2833,6 +2917,36 @@
 :Description:
     If OpenID is enabled, consumer cache directory to use.
 :Default: ``database/openid_consumer_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``enable_oidc``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables OpenID Connect (OIDC) support.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``oidc_config_file``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC configuration file.
+:Default: ``config/oidc_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC backends configuration file.
+:Default: ``config/oidc_backends_config.xml``
 :Type: str
 
 
@@ -3336,6 +3450,38 @@
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
 :Default: ``config/job_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Similar to the above parameter, workflows can describe parameters
+    used to influence scheduling of jobs within the workflow. This
+    requires both a description of the fields available (which
+    defaults to the definitions in job_resource_params_file if not
+    set).
+:Default: ``config/workflow_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_mapper``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This parameter describes how to map users and workflows to a set
+    of workflow resource parameter to present (typically input IDs
+    from workflow_resource_params_file). If this this is a function
+    reference it will be passed various inputs (workflow model object
+    and user) and it should produce a list of input IDs. If it is a
+    path it is expected to an XML or YAML file describing how to map
+    group names to parameter descriptions (additional types of
+    mappings via these files could be implemented but haven't yet -
+    for instance using workflow tags to do the mapping).
+:Default: ``config/workflow_resource_mapper_conf.yml``
 :Type: str
 
 

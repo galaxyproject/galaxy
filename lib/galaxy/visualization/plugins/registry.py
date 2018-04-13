@@ -16,10 +16,8 @@ from galaxy.util import (
 )
 from galaxy.visualization.plugins import (
     config_parser,
-    plugin as vis_plugins,
-    utils as vis_utils
+    plugin as vis_plugins
 )
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -38,9 +36,7 @@ class VisualizationsRegistry(object):
     BASE_URL = 'visualizations'
     #: name of files to search for additional template lookup directories
     TEMPLATE_PATHS_CONFIG = 'additional_template_paths.xml'
-    # these should be handled somewhat differently - and be passed onto their resp. methods in ctrl.visualization
-    # TODO: change/remove if/when they can be updated to use this system
-    #: any built in visualizations that have their own render method in ctrls/visualization
+    #: built-in visualizations
     BUILT_IN_VISUALIZATIONS = [
         'trackster',
         'circster',
@@ -117,20 +113,15 @@ class VisualizationsRegistry(object):
         for plugin_path in self._find_plugins():
             try:
                 plugin = self._load_plugin(plugin_path)
-
                 if plugin and plugin.name not in self.plugins:
                     self.plugins[plugin.name] = plugin
                     log.info('%s, loaded plugin: %s', self, plugin.name)
-                # NOTE: prevent silent, implicit overwrite here (two plugins in two diff directories)
-                # TODO: overwriting may be desired
                 elif plugin and plugin.name in self.plugins:
                     log.warning('%s, plugin with name already exists: %s. Skipping...', self, plugin.name)
-
             except Exception:
                 if not self.skip_bad_plugins:
                     raise
                 log.exception('Plugin loading raised exception: %s. Skipping...', plugin_path)
-
         return self.plugins
 
     def _find_plugins(self):
@@ -148,6 +139,11 @@ class VisualizationsRegistry(object):
                 plugin_path = os.path.join(directory, plugin_dir)
                 if self._is_plugin(plugin_path):
                     yield plugin_path
+                if os.path.isdir(plugin_path):
+                    for plugin_subdir in sorted(os.listdir(plugin_path)):
+                        plugin_subpath = os.path.join(plugin_path, plugin_subdir)
+                        if self._is_plugin(plugin_subpath):
+                            yield plugin_subpath
 
     # TODO: add fill_template fn that is able to load extra libraries beforehand (and remove after)
     # TODO: add template helpers specific to the plugins
@@ -190,10 +186,9 @@ class VisualizationsRegistry(object):
         config_file = os.path.join(plugin_path, 'config', (plugin_name + '.xml'))
         config = self.config_parser.parse_file(config_file)
         # config file is required, otherwise skip this visualization
-        if not config:
-            return None
-        plugin = self._build_plugin(plugin_name, plugin_path, config)
-        return plugin
+        if config is not None:
+            plugin = self._build_plugin(plugin_name, plugin_path, config)
+            return plugin
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory
@@ -206,16 +201,17 @@ class VisualizationsRegistry(object):
         # js only
         elif config['entry_point']['type'] == 'script':
             plugin_class = vis_plugins.ScriptVisualizationPlugin
+        # js only using charts environment
+        elif config['entry_point']['type'] == 'chart':
+            plugin_class = vis_plugins.ChartVisualizationPlugin
         # from a static file (html, etc)
         elif config['entry_point']['type'] == 'html':
             plugin_class = vis_plugins.StaticFileVisualizationPlugin
-
-        plugin = plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
+        return plugin_class(self.app(), plugin_path, plugin_name, config, context=dict(
             base_url=self.base_url,
             template_cache_dir=self.template_cache_dir,
             additional_template_paths=self.additional_template_paths
         ))
-        return plugin
 
     def get_plugin(self, key):
         """
@@ -225,19 +221,24 @@ class VisualizationsRegistry(object):
             raise ObjectNotFound('Unknown or invalid visualization: ' + key)
         return self.plugins[key]
 
+    def get_plugins(self):
+        result = []
+        for plugin in self.plugins.itervalues():
+            result.append(plugin.to_dict())
+        return sorted(result, key=lambda k: k.get('html'))
+
     # -- building links to visualizations from objects --
     def get_visualizations(self, trans, target_object):
         """
         Get the names of visualizations usable on the `target_object` and
         the urls to call in order to render the visualizations.
         """
-        # TODO:?? a list of objects? YAGNI?
         applicable_visualizations = []
         for vis_name in self.plugins:
             url_data = self.get_visualization(trans, vis_name, target_object)
             if url_data:
                 applicable_visualizations.append(url_data)
-        return applicable_visualizations
+        return sorted(applicable_visualizations, key=lambda k: k.get('html'))
 
     def get_visualization(self, trans, visualization_name, target_object):
         """
@@ -245,41 +246,15 @@ class VisualizationsRegistry(object):
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        # log.debug( 'VisReg.get_visualization: %s, %s', visualization_name, target_object )
         visualization = self.plugins.get(visualization_name, None)
-        if not visualization:
-            return None
-
-        data_sources = visualization.config['data_sources']
-        for data_source in data_sources:
-            # log.debug( 'data_source: %s', data_source )
-            # currently a model class is required
-            model_class = data_source['model_class']
-            # log.debug( '\t model_class: %s', model_class )
-            if not isinstance(target_object, model_class):
-                continue
-            # log.debug( '\t passed model_class' )
-
-            # TODO: not true: must have test currently
-            tests = data_source['tests']
-            if tests and not self.is_object_applicable(trans, target_object, tests):
-                continue
-            # log.debug( '\t passed tests' )
-
-            param_data = data_source['to_params']
-            url = self.get_visualization_url(trans, target_object, visualization, param_data)
-            display_name = visualization.config.get('name', None)
-            render_target = visualization.config.get('render_target', 'galaxy_main')
-            embeddable = visualization.config.get('embeddable', False)
-            # remap some of these vars for direct use in ui.js, PopupMenu (e.g. text->html)
-            return {
-                'href'      : url,
-                'html'      : display_name,
-                'target'    : render_target,
-                'embeddable': embeddable
-            }
-
-        return None
+        if visualization is not None:
+            data_sources = visualization.config['data_sources']
+            for data_source in data_sources:
+                model_class = data_source['model_class']
+                if isinstance(target_object, model_class):
+                    tests = data_source['tests']
+                    if tests is None or self.is_object_applicable(trans, target_object, tests):
+                        return visualization.to_dict()
 
     def is_object_applicable(self, trans, target_object, data_source_tests):
         """
@@ -315,53 +290,3 @@ class VisualizationsRegistry(object):
                 return True
 
         return False
-
-    def get_visualization_url(self, trans, target_object, visualization, param_data):
-        """
-        Generates a url for the visualization with `visualization`
-        for use with the given `target_object` with a query string built
-        from the configuration data in `param_data`.
-        """
-        # precondition: the target_object should be usable by the visualization (accrd. to data_sources)
-        # convert params using vis.data_source.to_params
-        params = self.get_url_params(trans, target_object, param_data)
-
-        # we want existing visualizations to work as normal but still be part of the registry (without mod'ing)
-        #   so generate their urls differently
-        url = None
-        if visualization.name in self.BUILT_IN_VISUALIZATIONS:
-            url = url_for(controller='visualization', action=visualization.name, **params)
-        # TODO: needs to be split off as it's own registry
-        elif isinstance(visualization, vis_plugins.InteractiveEnvironmentPlugin):
-            url = url_for('interactive_environment_plugin', visualization_name=visualization.name, **params)
-        else:
-            url = url_for('visualization_plugin', visualization_name=visualization.name, **params)
-
-        # TODO:?? not sure if embedded would fit/used here? or added in client...
-        return url
-
-    def get_url_params(self, trans, target_object, param_data):
-        """
-        Convert the applicable objects and assoc. data into a param dict
-        for a url query string to add to the url that loads the visualization.
-        """
-        params = {}
-        for to_param_name, to_param_data in param_data.items():
-            # TODO??: look into params as well? what is required, etc.
-            target_attr = to_param_data.get('param_attr', None)
-            assign = to_param_data.get('assign', None)
-            # one or the other is needed
-            # assign takes precedence (goes last, overwrites)?
-            # NOTE this is only one level
-
-            if target_attr and vis_utils.hasattr_recursive(target_object, target_attr):
-                params[to_param_name] = vis_utils.getattr_recursive(target_object, target_attr)
-
-            if assign:
-                params[to_param_name] = assign
-
-        # NOTE!: don't expose raw ids: encode id, _id
-        # TODO: double encodes if from config
-        if params:
-            params = trans.security.encode_dict_ids(params)
-        return params

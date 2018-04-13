@@ -36,7 +36,7 @@ from .tags import tool_tag_manager
 log = logging.getLogger(__name__)
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
+class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
@@ -124,7 +124,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin, object):
                     raise
             except Exception:
                 log.exception("Error loading tools defined in config %s", config_filename)
-        log.debug("Reading tools from config files finshed %s", execution_timer)
+        log.debug("Reading tools from config files finished %s", execution_timer)
 
     def _init_tools_from_config(self, config_filename):
         """

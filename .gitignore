@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
@@ -123,9 +124,9 @@ tool-data/shared/jars/
 sprite-*.less
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
 static/maps
-static/scripts/bundled/*.map
+static/plugins
+static/scripts
 node_modules
 bower_components
 client/galaxy/scripts/libs/*

@@ -1,0 +1,56 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+
+[packages]
+numpy = "*"
+bx-python = "*"
+MarkupSafe = "*"
+PyYAML = "*"
+SQLAlchemy = "*"
+SQLAlchemy-Utils = "*"
+Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
+pycrypto = "*"
+uWSGI = "*"
+pysam = "==0.14.1"
+bdbag = "*"
+bleach = "*"
+"bz2file" = {version = "*", markers = "python_version < '3.3'"}
+ipaddress = {version = "*", markers = "python_version < '3.3'"}
+boltons = "*"
+Paste = "*"
+docutils = "*"
+Routes = "*"
+WebOb = "<=1.4.2"
+Mako = "*"
+Babel = "*"
+Beaker = "*"
+dictobj = "*"
+nose = "*"
+Parsley = "*"
+six = "*"
+Whoosh = "*"
+galaxy_sequence_utils = "*"
+"h5py" = "!=2.7.0, !=2.7.1"
+pykwalify = "*"
+"Cheetah3" = "*"
+requests = "*"
+bioblend = "*"
+boto = "*"
+kombu = "*"
+psutil = "*"
+pulsar-galaxy-lib = "*"
+sqlalchemy-migrate = "*"
+sqlparse = "*"
+svgwrite = "*"
+pyparsing = "*"
+"Fabric3" = "*"
+paramiko = "*"
+python-genomespaceclient = "*"
+social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
+
+[requires]
+python_version = "2.7"

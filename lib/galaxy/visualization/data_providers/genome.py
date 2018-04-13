@@ -270,7 +270,7 @@ class GenomeDataProvider(BaseDataProvider):
 #
 
 
-class FilterableMixin:
+class FilterableMixin(object):
     def get_filters(self):
         """ Returns a dataset's filters. """
         # Get filters.
@@ -311,7 +311,7 @@ class FilterableMixin:
         return filters
 
 
-class TabixDataProvider(FilterableMixin, GenomeDataProvider):
+class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     dataset_type = 'tabix'
 
     """
@@ -1247,7 +1247,7 @@ class BigBedDataProvider(BBIDataProvider):
         return f, BigBedFile(file=f)
 
 
-class BigWigDataProvider (BBIDataProvider):
+class BigWigDataProvider(BBIDataProvider):
     """
     Provides data from BigWig files; position data is reported in 1-based
     coordinate system, i.e. wiggle format.
@@ -1261,7 +1261,7 @@ class BigWigDataProvider (BBIDataProvider):
         return f, BigWigFile(file=f)
 
 
-class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
+class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
     """
     Interval index files used for GFF, Pileup files.
     """

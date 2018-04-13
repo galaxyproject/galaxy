@@ -1,2 +1,0 @@
-define("mvc/workflow/workflow-model",["exports","mvc/base-mvc"],function(o,e){"use strict";Object.defineProperty(o,"__esModule",{value:!0});var l=function(o){return o&&o.__esModule?o:{default:o}}(e),t=Backbone.Model.extend(l.default.LoggableMixin).extend({_logNamespace:"workflow",urlRoot:Galaxy.root+"api/workflows",toJSON:function(){return{workflow:this.attributes}}}),r=Backbone.Collection.extend({model:t,url:Galaxy.root+"api/workflows"});o.default={WorkflowItem:t,WorkflowCollection:r}});
-//# sourceMappingURL=../../../maps/mvc/workflow/workflow-model.js.map

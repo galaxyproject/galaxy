@@ -5,8 +5,15 @@ uwsgi:
   # ':9009' to listen on all available network interfaces.
   http: 127.0.0.1:9009
 
+  # By default uWSGI allocates a very small buffer (4096 bytes) for the
+  # headers of each request. If you start receiving "invalid request
+  # block size" in your logs, it could mean you need a bigger buffer. We
+  # recommend at least 16384.
+  buffer-size: 16384
+
   # Number of web server (worker) processes to fork after the
-  # application has loaded.
+  # application has loaded. If this is set to greater than 1, thunder-
+  # lock likely should be enabled below.
   processes: 1
 
   # Number of threads for each web server process.
@@ -36,6 +43,10 @@ uwsgi:
   # The entry point which returns the web application (e.g. Galaxy,
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
+
+  # It is usually a good idea to set this to ``true`` if processes is
+  # greater than 1.
+  thunder-lock: false
 
   # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
   # (its default is to brutally reload workers)
@@ -145,8 +156,9 @@ tool_shed:
   # decodes these values.  It can be any string.  If left unchanged,
   # anyone could construct a cookie that would grant them access to
   # others' sessions. One simple way to generate a value for this is
-  # with the shell command:   python -c 'import time; print time.time()'
-  # | md5sum | cut -f 1 -d ' '
+  # with the shell command:   python -c 'from __future__ import
+  # print_function; import time; print(time.time())' | md5sum | cut -f 1
+  # -d ' '
   #id_secret: changethisinproductiontoo
 
   # User authentication can be delegated to an upstream proxy server

@@ -16,11 +16,15 @@ import bx.align.maf
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.binary import (
+    Binary,
+    CompressedArchive
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
     get_headers,
-    iter_headers
+    iter_headers,
 )
 from galaxy.util import (
     compression_utils,
@@ -40,8 +44,10 @@ log = logging.getLogger(__name__)
 
 SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
 SNIFF_COMPRESSED_FASTAS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTA_SNIFFING", "0") == "1"
+SNIFF_COMPRESSED_GENBANKS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_GENBANK_SNIFFING", "0") == "1"
 
 
+@build_sniff_from_prefix
 class SequenceSplitLocations(data.Text):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
@@ -71,10 +77,10 @@ class SequenceSplitLocations(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
-        if os.path.getsize(filename) < 50000:
+    def sniff_prefix(self, file_prefix):
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
             try:
-                data = json.load(open(filename))
+                data = json.loads(file_prefix.contents_header)
                 sections = data['sections']
                 for section in sections:
                     if 'start' not in section or 'end' not in section or 'sequences' not in section:
@@ -195,9 +201,8 @@ class Sequence(data.Text):
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
                     split_data['args']['toc_file'] = toc.file_name
-                f = open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w')
-                json.dump(split_data, f)
-                f.close()
+                with open(os.path.join(dir, 'split_info_%s.json' % base_name), 'w') as f:
+                    json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
     write_split_files = classmethod(write_split_files)
@@ -312,7 +317,7 @@ class Alignment(data.Text):
         raise NotImplementedError("Can't split generic alignment files")
 
 
-class FastaGz(Sequence, Binary):
+class FastaGz(Sequence, CompressedArchive):
     """Class representing a generic compressed FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta.gz"
@@ -320,19 +325,20 @@ class FastaGz(Sequence, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTA format"""
-        if not SNIFF_COMPRESSED_FASTAS:
+        if not SNIFF_COMPRESSED_FASTAS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
         return Sequence.sniff(self, filename)
 
 
+@build_sniff_from_prefix
 class Fasta(Sequence):
     """Class representing a FASTA sequence"""
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in fasta format
 
@@ -366,32 +372,26 @@ class Fasta(Sequence):
         >>> Fasta().sniff( fname )
         True
         """
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if line:  # first non-empty line
+                if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
 
-        try:
-            fh = open(filename)
-            while True:
-                line = fh.readline()
-                if not line:
-                    break  # EOF
-                line = line.strip()
-                if line:  # first non-empty line
-                    if line.startswith('>'):
-                        # The next line.strip() must not be '', nor startwith '>'
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith('>'):
-                            break
-
-                        # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
-                        line = fh.readline()
-                        if not line.startswith('>') and re.search("[\(\)\[\]\.]", line):
-                            break
-
-                        return True
-                    else:
-                        break  # we found a non-empty line, but it's not a fasta header
-            fh.close()
-        except Exception:
-            pass
+                    # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
+                    line = fh.readline()
+                    if not line.startswith('>') and re.search("[\(\)\[\]\.]", line):
+                        break
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a fasta header
         return False
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -472,11 +472,11 @@ class Fasta(Sequence):
                 part_file.write(line)
         except Exception as e:
             log.error('Unable to size split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _size_split = classmethod(_size_split)
 
     def _count_split(cls, input_file, chunk_size, subdir_generator_function):
@@ -507,23 +507,23 @@ class Fasta(Sequence):
                         log.debug("Writing %s part to %s" % (input_file, part_path))
                         rec_count = 1
                 part_file.write(line)
-            part_file.close()
         except Exception as e:
             log.error('Unable to count split FASTA file: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     _count_split = classmethod(_count_split)
 
 
+@build_sniff_from_prefix
 class csFasta(Sequence):
     """ Class representing the SOLID Color-Space sequence ( csfasta ) """
     edam_format = "format_3589"
     file_ext = "csfasta"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Color-space sequence:
             >2_15_85_F3
@@ -537,28 +537,24 @@ class csFasta(Sequence):
         >>> csFasta().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
-            while True:
-                line = fh.readline()
-                if not line:
-                    break  # EOF
-                line = line.strip()
-                if line and not line.startswith('#'):  # first non-empty non-comment line
-                    if line.startswith('>'):
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith('>'):
-                            break
-                        elif line[0] not in string.ascii_uppercase:
-                            return False
-                        elif len(line) > 1 and not re.search('^[\d.]+$', line[1:]):
-                            return False
-                        return True
-                    else:
-                        break  # we found a non-empty line, but it's not a header
-            fh.close()
-        except Exception:
-            pass
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    elif line[0] not in string.ascii_uppercase:
+                        return False
+                    elif len(line) > 1 and not re.search('^[\d.]+$', line[1:]):
+                        return False
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a header
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -569,7 +565,8 @@ class csFasta(Sequence):
         return Sequence.set_meta(self, dataset, **kwd)
 
 
-class BaseFastq (Sequence):
+@build_sniff_from_prefix
+class BaseFastq(Sequence):
     """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
@@ -607,7 +604,7 @@ class BaseFastq (Sequence):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -628,11 +625,10 @@ class BaseFastq (Sequence):
         >>> FastqSanger().sniff( fname )
         False
         """
-        compressed = is_gzip(filename) or is_bz2(filename)
+        compressed = file_prefix.compressed_format is not None
         if compressed and not isinstance(self, Binary):
             return False
-        headers = iter_headers(filename, None, count=1000)
-
+        headers = iter_headers(file_prefix, None, count=1000)
         # If this is a FastqSanger-derived class, then check to see if the base qualities match
         if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
             if not self.sangerQualities(headers):
@@ -641,7 +637,7 @@ class BaseFastq (Sequence):
         bases_regexp = re.compile("^[NGTAC]*")
         # check that first block looks like a fastq block
         try:
-            headers = get_headers(filename, None, count=4)
+            headers = get_headers(file_prefix, None, count=4)
             if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
                 # Check the sequence line, make sure it contains only G/C/A/T/N
                 if not bases_regexp.match(headers[1][0]):
@@ -750,7 +746,7 @@ class FastqCSSanger(Fastq):
     file_ext = "fastqcssanger"
 
 
-class FastqGz(BaseFastq, Binary):
+class FastqGz(BaseFastq, CompressedArchive):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.gz"
@@ -758,7 +754,7 @@ class FastqGz(BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determines whether the file is in gzip-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_gzip(filename):
             return False
@@ -788,7 +784,7 @@ class FastqCSSangerGz(FastqGz):
     file_ext = "fastqcssanger.gz"
 
 
-class FastqBz2 (BaseFastq, Binary):
+class FastqBz2(BaseFastq, CompressedArchive):
     """Class representing a generic compressed FASTQ sequence"""
     edam_format = "format_1930"
     file_ext = "fastq.bz2"
@@ -796,7 +792,7 @@ class FastqBz2 (BaseFastq, Binary):
 
     def sniff(self, filename):
         """Determine whether the file is in bzip2-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS:
+        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
             return False
         if not is_bz2(filename):
             return False
@@ -826,6 +822,7 @@ class FastqCSSangerBz2(FastqBz2):
     file_ext = "fastqcssanger.bz2"
 
 
+@build_sniff_from_prefix
 class Maf(Alignment):
     """Class describing a Maf alignment"""
     edam_format = "format_3008"
@@ -856,10 +853,9 @@ class Maf(Alignment):
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
             chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
-        chrom_out = open(chrom_file.file_name, 'wb')
-        for spec, chroms in species_chromosomes.items():
-            chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
-        chrom_out.close()
+        with open(chrom_file.file_name, 'wb') as chrom_out:
+            for spec, chroms in species_chromosomes.items():
+                chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file
 
         index_file = dataset.metadata.maf_index
@@ -909,7 +905,7 @@ class Maf(Alignment):
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines wether the file is in maf format
 
@@ -932,7 +928,7 @@ class Maf(Alignment):
         >>> Maf().sniff( fname )
         False
         """
-        headers = get_headers(filename, None)
+        headers = get_headers(file_prefix, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0] == "##maf":
                 return True
@@ -980,6 +976,7 @@ class MafCustomTrack(data.Text):
             pass
 
 
+@build_sniff_from_prefix
 class Axt(data.Text):
     """Class describing an axt alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
@@ -990,7 +987,7 @@ class Axt(data.Text):
     edam_format = "format_3013"
     file_ext = "axt"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in axt format
 
@@ -1016,7 +1013,7 @@ class Axt(data.Text):
         >>> Axt().sniff( fname )
         False
         """
-        headers = get_headers(filename, None)
+        headers = get_headers(file_prefix, None)
         if len(headers) < 4:
             return False
         for hdr in headers:
@@ -1035,6 +1032,7 @@ class Axt(data.Text):
                     return True
 
 
+@build_sniff_from_prefix
 class Lav(data.Text):
     """Class describing a LAV alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
@@ -1045,7 +1043,7 @@ class Lav(data.Text):
     edam_format = "format_3014"
     file_ext = "lav"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in lav format
 
@@ -1062,7 +1060,7 @@ class Lav(data.Text):
         >>> Lav().sniff( fname )
         False
         """
-        headers = get_headers(filename, None)
+        headers = get_headers(file_prefix, None)
         try:
             if len(headers) > 1 and headers[0][0] and headers[0][0].startswith('#:lav'):
                 return True
@@ -1105,7 +1103,8 @@ class RNADotPlotMatrix(data.Data):
         return False
 
 
-class DotBracket (Sequence):
+@build_sniff_from_prefix
+class DotBracket(Sequence):
     edam_data = "data_0880"
     edam_format = "format_1457"
     file_ext = "dbn"
@@ -1137,7 +1136,7 @@ class DotBracket (Sequence):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Galaxy Dbn (Dot-Bracket notation) rules:
 
@@ -1169,61 +1168,91 @@ class DotBracket (Sequence):
 
         state = 0
 
-        with open(filename, "r") as handle:
-            for line in handle:
-                line = line.strip()
+        for line in file_prefix.line_iterator():
+            line = line.strip()
 
-                if line:
-                    # header line
-                    if state == 0:
-                        if(line[0] != '>'):
-                            return False
-                        else:
-                            state = 1
+            if line:
+                # header line
+                if state == 0:
+                    if(line[0] != '>'):
+                        return False
+                    else:
+                        state = 1
 
-                    # sequence line
-                    elif state == 1:
-                        if not self.sequence_regexp.match(line):
-                            return False
-                        else:
-                            sequence_size = len(line)
-                            state = 2
+                # sequence line
+                elif state == 1:
+                    if not self.sequence_regexp.match(line):
+                        return False
+                    else:
+                        sequence_size = len(line)
+                        state = 2
 
-                    # dot-bracket structure line
-                    elif state == 2:
-                        if sequence_size != len(line) or not self.structure_regexp.match(line) or \
-                                line.count('(') != line.count(')') or \
-                                line.count('[') != line.count(']') or \
-                                line.count('{') != line.count('}'):
-                            return False
-                        else:
-                            return True
+                # dot-bracket structure line
+                elif state == 2:
+                    if sequence_size != len(line) or not self.structure_regexp.match(line) or \
+                            line.count('(') != line.count(')') or \
+                            line.count('[') != line.count(']') or \
+                            line.count('{') != line.count('}'):
+                        return False
+                    else:
+                        return True
 
         # Number of lines is less than 3
         return False
 
 
+@build_sniff_from_prefix
 class Genbank(data.Text):
     """Class representing a Genbank sequence"""
     edam_format = "format_1936"
     edam_data = "data_0849"
     file_ext = "genbank"
 
+    def sniff_prefix(self, file_prefix):
+        """
+        Determine whether the file is in genbank format.
+        Works for compressed files.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.genbank' )
+        >>> Genbank().sniff( fname )
+        True
+        """
+        compressed = file_prefix.compressed_format
+        if compressed and not isinstance(self, Binary):
+            return False
+        return 'LOCUS ' == file_prefix.contents_header[0:6]
+
+
+class GenbankGz(Genbank, CompressedArchive):
+    """Class representing a compressed Genbank sequence"""
+    edam_format = "format_1936"
+    edam_data = "data_0849"
+    file_ext = "genbank.gz"
+    compressed = True
+
     def sniff(self, filename):
-        try:
-            with open(filename, 'r') as handle:
-                return 'LOCUS ' == handle.read(6)
-        except Exception:
-            pass
+        """
+        Determines whether the file is in gzip-compressed Genbank format
 
-        return False
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.genbank.gz' )
+        >>> GenbankGz().sniff( fname )
+        True
+        """
+        if not SNIFF_COMPRESSED_GENBANKS and not self.validate_mode:
+            return False
+        if not is_gzip(filename):
+            return False
+        return Genbank.sniff(self, filename)
 
 
+@build_sniff_from_prefix
 class MemePsp(Sequence):
     """Class representing MEME Position Specific Priors"""
     file_ext = "memepsp"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         The format of an entry in a PSP file is:
 
@@ -1249,34 +1278,34 @@ class MemePsp(Sequence):
             return True
         try:
             num_lines = 0
-            with open(filename) as fh:
-                line = fh.readline()
-                if not line:
-                    # EOF.
-                    return False
-                num_lines += 1
-                if num_lines > 100:
-                    return True
-                line = line.strip()
-                if line:
-                    if line.startswith('>'):
-                        # The line must not be blank, nor start with '>'
-                        line = fh.readline().strip()
-                        if line == '' or line.startswith('>'):
-                            return False
-                        # All items within the line must be floats.
+            fh = file_prefix.string_io()
+            line = fh.readline()
+            if not line:
+                # EOF.
+                return False
+            num_lines += 1
+            if num_lines > 100:
+                return True
+            line = line.strip()
+            if line:
+                if line.startswith('>'):
+                    # The line must not be blank, nor start with '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        return False
+                    # All items within the line must be floats.
+                    if not floats_verified(line):
+                        return False
+                    # If there is a second line within the ID section,
+                    # all items within the line must be floats.
+                    line = fh.readline().strip()
+                    if line:
                         if not floats_verified(line):
                             return False
-                        # If there is a second line within the ID section,
-                        # all items within the line must be floats.
-                        line = fh.readline().strip()
-                        if line:
-                            if not floats_verified(line):
-                                return False
-                    else:
-                        # We found a non-empty line,
-                        # but it's not a psp id width.
-                        return False
+                else:
+                    # We found a non-empty line,
+                    # but it's not a psp id width.
+                    return False
         except Exception:
             return False
         # We've reached EOF in less than 100 lines.

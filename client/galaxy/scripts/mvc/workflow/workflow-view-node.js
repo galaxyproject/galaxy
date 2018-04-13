@@ -20,6 +20,7 @@ export default Backbone.View.extend({
 
     renderToolLabel: function() {
         this.$(".nodeTitle").text(this.node.label || this.node.name);
+        this.$el.attr("node-label", this.node.label);
     },
 
     renderToolErrors: function() {

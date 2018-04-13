@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Clustered Heatmap">
+    <macros>
+        <import>../../heatmap_default/config/heatmap_shared.xml</import>
+    </macros>
+    <description>Applies hierarchical clustering to a matrix using R. The data has to be provided in 3-column format. The result is displayed as clustered heatmap.</description>
+    <entry_point entry_point_type="chart" src="../../heatmap_default/static/script.js" load="heatmap_cluster"/>
+    <expand macro="shared"/>
+    <specs>
+        <tag>svg</tag>
+        <use_panels>yes</use_panels>
+        <zoomable>true</zoomable>
+        <confirm>True</confirm>
+        <exports>
+            <exports>pdf</exports>
+            <exports>png</exports>
+            <exports>svg</exports>
+        </exports>
+    </specs>
+</visualization>

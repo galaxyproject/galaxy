@@ -12,7 +12,7 @@ export default {
             "message",
             e => {
                 if (options.successCallback && e.data.destination) {
-                  options.successCallback(e.data);
+                    options.successCallback(e.data);
                 }
             },
             false

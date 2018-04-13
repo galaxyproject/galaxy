@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Bar diagram (NVD3)">
+    <macros>
+        <import>nvd3_shared.xml</import>
+    </macros>
+    <description>Renders a regular bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="nvd3.js" css="nvd3.css" load="nvd3_bar"/>
+    <specs>
+        <expand macro="specs"/>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <expand macro="groups_bar"/>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>
