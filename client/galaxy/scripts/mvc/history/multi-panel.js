@@ -135,25 +135,14 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         data = _.extend(data || {}, {
             isCurrentHistory: this.currentHistory
         });
-        return $(
-            [
-                '<div class="panel-controls clear flex-row mb-1">',
-                this.controlsLeftTemplate({
-                    history: data,
-                    view: this
-                }),
-                this.controlsRightTemplate({
-                    history: data,
-                    view: this
-                }),
-                "</div>",
-                '<div class="inner flex-row flex-column-container">',
-                '<div id="history-',
-                data.id,
-                '" class="history-column history-panel flex-column"></div>',
-                "</div>"
-            ].join("")
-        );
+        return $(`
+            <div class="panel-controls clear flex-row mb-1">
+                ${this.controlsLeftTemplate({ history: data, view: this })}
+                ${this.controlsRightTemplate({ history: data, view: this })}
+            </div>
+            <div class="inner flex-row flex-column-container">
+                <div id="history-${data.id}" class="history-column history-panel flex-column"></div>
+            </div>`);
     },
 
     /** render the panel contained in the column using speed for fx speed */
@@ -631,7 +620,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         speed = speed !== undefined ? speed : this.fxSpeed;
 
         this.log(`${this}.render`);
-        this.$el.html(this.mainTemplate(this));
+        this.$el.html(this.mainTemplate);
         this.renderColumns(speed);
 
         // set the columns to full height allowed and set up behaviors for thie multipanel
@@ -653,7 +642,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
         this._addColumns(sortedAndFiltered, speed);
         if (!this.collection.allFetched) {
-            $middle.append(this.loadingIndicatorTemplate(this));
+            $middle.append(this.loadingIndicatorTemplate);
         }
         //TODO: sorta - at least their fx queue has started the re-rendering
         this.trigger("columns-rendered", sortedAndFiltered, this);
@@ -761,6 +750,8 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     // ------------------------------------------------------------------------ events/behaviors
     events: {
+        // will move to the server root (gen. Analyze data)
+        "click .done.btn": "close",
         // creates a new empty history and makes it current
         "click .create-new.btn": "create",
         "click #include-deleted": "_clickToggleDeletedHistories",
@@ -1027,47 +1018,35 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     },
 
     // ------------------------------------------------------------------------ templates
-    mainTemplate: _.template(
-        [
-            '<div class="header flex-column-container">',
-            '<div class="control-column control-column-left flex-column">',
-            '<div id="search-histories" class="search-control"></div>',
-            '<div id="search-datasets" class="search-control"></div>',
-            '<a class="open-more-options btn btn-secondary" tabindex="3">',
-            '<span class="fa fa-ellipsis-h"></span>',
-            "</a>",
-            "</div>",
-            // feedback
-            '<div class="control-column control-column-center flex-column">',
-            '<div class="header-info">',
-            "</div>",
-            "</div>",
-            '<div class="control-column control-column-right flex-column">',
-            '<button class="create-new btn btn-secondary" tabindex="4">',
-            _l("Create new"),
-            "</button> ",
-            "</div>",
-            "</div>",
-            // middle - where the columns go
-            '<div class="outer-middle flex-row flex-row-container">',
-            '<div class="middle flex-column-container flex-row"></div>',
-            "</div>",
-            // footer
-            '<div class="footer flex-column-container"></div>'
-        ].join(""),
-        { variable: "view" }
-    ),
+    mainTemplate: `
+        <div class="header flex-column-container">
+            <div class="control-column control-column-left flex-column">
+                <div id="search-histories" class="search-control"></div>
+                <div id="search-datasets" class="search-control"></div>
+                <a class="open-more-options btn btn-secondary" tabindex="3">
+                    <span class="fa fa-ellipsis-h"></span>
+                </a>
+            </div>
+            <div class="control-column control-column-center flex-column">
+                <div class="header-info">
+                </div>
+            </div>
+            <div class="control-column control-column-right flex-column">
+                <button class="create-new btn btn-secondary" tabindex="4">
+                    ${_l("Create new")}
+                </button>
+            </div>
+        </div>
+        <div class="outer-middle flex-row flex-row-container">
+            <div class="middle flex-column-container flex-row"></div>
+        </div>
+        <div class="footer flex-column-container"></div>`,
 
-    loadingIndicatorTemplate: _.template(
-        [
-            '<div class="histories-loading-indicator">',
-            '<span class="fa fa-spin fa-spinner"></span>',
-            _l("Loading histories"),
-            "...",
-            "</div>"
-        ].join(""),
-        { variable: "view" }
-    ),
+    loadingIndicatorTemplate: `
+        <div class="histories-loading-indicator">
+            <span class="fa fa-spin fa-spinner"></span>
+            ${_l("Loading histories")} ...
+        </div>`,
 
     orderDescriptions: {
         update_time: _l("most recent first"),
