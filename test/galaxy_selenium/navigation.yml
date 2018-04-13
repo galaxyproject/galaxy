@@ -224,6 +224,11 @@ workflows:
     new_button: '#new-workflow'
     import_button: '#import-workflow'
 
+workflow_run:
+
+  selectors: 
+    input_div: "[step-label='${label}'] .select2-container"
+
 workflow_editor:
 
   node:
