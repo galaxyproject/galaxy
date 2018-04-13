@@ -201,7 +201,7 @@ class User(object, Dictifiable):
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'total_deleted_disk_usage', 'nice_total_deleted_disk_usage', 'deleted', 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -341,103 +341,152 @@ class User(object, Dictifiable):
         """
         return self.get_disk_usage(nice_size=True)
 
+    def get_deleted_disk_usage(self, nice_size=False):
+        """
+        Return byte count of deleted disk space used by user or a human-readable
+        string if `nice_size` is `True`.
+        """
+        rval = 0
+        if self.deleted_disk_usage is not None:
+            rval = self.deleted_disk_usage
+        if nice_size:
+            rval = galaxy.util.nice_size(rval)
+        return rval
+
+    def set_deleted_disk_usage(self, bytes):
+        """
+        Manually set the disk space used by a user to `bytes`.
+        """
+        self.deleted_disk_usage = bytes
+
+    total_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
+
+    @property
+    def nice_total_deleted_disk_usage(self):
+        """
+        Return byte count of disk space used in a human-readable string.
+        """
+        return self.get_deleted_disk_usage(nice_size=True)
+
+    @staticmethod
+    def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
+        """
+        ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
+            -1: dataset deleted
+            0: dataset not deleted, history deleted, hda deleted
+            1: dataset not deleted, history deleted, hda not deleted
+            2: dataset not deleted, history not deleted, hda deleted
+            3: dataset not deleted, history not deleted, hda not deleted
+
+        Return:
+        disk usage counted toward deleted disk usage for the input dataset
+        """
+        id_key=str(dataset_id)
+        # already counted, state fixed
+        if id_key in ids_dict and (ids_dict[id_key] == -1 or ids_dict[id_key] == 3):
+            return 0
+        if id_key not in ids_dict:       # first count; count all possibles
+            if dataset_deleted:
+                ids_dict[id_key] = -1    # must count
+                return dataset_disk_usage
+            elif hda_deleted:
+                if history_deleted:      # possible
+                    ids_dict[id_key] = 0
+                    return dataset_disk_usage
+                else:                    # possible
+                    ids_dict[id_key] = 2
+                    return dataset_disk_usage
+            else:
+                if history_deleted:     # possible
+                    ids_dict[id_key] = 1
+                    return dataset_disk_usage
+                else:                   # impossible
+                    ids_dict[id_key] = 3
+                    return 0
+        else:                           # repeat count
+            if hda_deleted:
+                if history_deleted:
+                    ids_dict[id_key] = ids_dict[id_key] | 0
+                else:
+                    ids_dict[id_key] = ids_dict[id_key] | 2
+            else:
+                if history_deleted:
+                    ids_dict[id_key] = ids_dict[id_key] | 1
+                else:
+                    ids_dict[id_key] = 3
+            if ids_dict[id_key] == 3:   # remove mis-count
+                return -dataset_disk_usage
+            else:
+                return 0
+
     def calculate_disk_usage(self):
         """
-        Return byte count total of disk space used by all non-purged, non-library
-        HDAs in non-purged histories.
-        """
-        # maintain a list so that we don't double count
-        dataset_ids = []
-        total = 0
-        # this can be a huge number and can run out of memory, so we avoid the mappers
-        db_session = object_session(self)
-        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
-            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
-                # TODO: def hda.counts_toward_disk_usage():
-                #   return ( not self.dataset.purged and not self.dataset.library_associations )
-                if hda.dataset.id not in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
-                    dataset_ids.append(hda.dataset.id)
-                    total += hda.dataset.get_total_size()
-        return total
-
-    def calculate_deleted_disk_usage(self):
-        """
-        Return byte count total of disk space used by all deleted, non-purged, non-library
-        HDAs in non-purged histories.
+        Return a tuple.
+        total: byte count of total disk space used by all non-purged, non-library
+        HDAs in non-purged histories
+        AND
+        deleted: byte count of disk space used by all deleted, non-purged, non-library
+        HDAs in non-purged histories
 
         The deleted include:
         1) datasets that are directly labeled as 'deleted';
         2) datasets whose associated HDAs are all deleted;
         3) datasets whose associated histories are all deleted.
         """
-        #  a dictionary to indicate the state of dataset and its associated hda and history.
-        # -1: dataset deleted
-        # 0: dataset not deleted, history deleted, hda deleted
-        # 1: dataset not deleted, history deleted, hda not deleted
-        # 2: dataset not deleted, history not deleted, hda deleted
-        # 3: dataset not deleted, history not deleted, hda not deleted
-        dataset_ids = {}
-        deleted_usage = 0
-        # use the same query method as calculate_disk_usage()
+        # maintain a list so that we don't double count
+        ids_dict = {}
+        total = 0
+        deleted = 0
         db_session = object_session(self)
-        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
-            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
-                if hda.dataset.purged or hda.dataset.library_associations:
+        # this can be a huge number and can run out of memory, so we avoid the mappers
+        for history in db_session.query(History.id, History.deleted).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
+            for hda, dataset in db_session.query(
+                HistoryDatasetAssociation, Dataset).enable_eagerloads(False).join(Dataset).filter(and_(
+                    HistoryDatasetAssociation.history_id == history.id,
+                    HistoryDatasetAssociation.purged != true(),
+                    Dataset.purged != true())).yield_per(1000):
+                # TODO: def hda.counts_toward_disk_usage():
+                #   return ( not self.dataset.purged and not self.dataset.library_associations )
+                if dataset.library_associations:
                     continue
-                # either already counted or do not count
-                if str(hda.dataset.id) in dataset_ids and (dataset_ids[str(hda.dataset.id)] == -1 or dataset_ids[str(hda.dataset.id)] == 3):
-                    continue
-                if str(hda.dataset.id) not in dataset_ids:       # first count; count all possibles
-                    if hda.dataset.deleted:
-                        dataset_ids[str(hda.dataset.id)] = -1    # must count
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif hda.deleted and hda.history.deleted:    # possible
-                        dataset_ids[str(hda.dataset.id)] = 0
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif not hda.deleted and hda.history.deleted:  # possible
-                        dataset_ids[str(hda.dataset.id)] = 1
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif hda.deleted and not hda.history.deleted:  # possible
-                        dataset_ids[str(hda.dataset.id)] = 2
-                        deleted_usage += hda.dataset.get_total_size()
-                    else:                                         # impossible
-                        dataset_ids[str(hda.dataset.id)] = 3
-                else:                                             # repeat count
-                    if hda.deleted and hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 0
-                    elif not hda.deleted and hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 1
-                    elif hda.deleted and not hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 2
-                    else:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 3
-                    if dataset_ids[str(hda.dataset.id)] == 3:    # remove mis-count
-                        deleted_usage -= hda.dataset.get_total_size()
-
-        return deleted_usage
+                if str(dataset.id) not in ids_dict:
+                    total += dataset.get_total_size()
+                deleted_count = User.count_toward_deleted_disk_usage(
+                    dataset.id,
+                    history.deleted,
+                    hda.deleted,
+                    dataset.deleted,
+                    dataset.get_total_size(),
+                    **ids_dict)
+                deleted += deleted_count
+        return (total, deleted)
 
     def calculate_and_set_disk_usage(self):
         """
         Calculates and sets user disk usage.
         """
-        new = None
+        total = None
+        deleted = None
         db_session = object_session(self)
-        current = self.get_disk_usage()
+        current_total = self.get_disk_usage()
+        current_deleted = self.get_deleted_disk_usage()
         if db_session.get_bind().dialect.name not in ('postgres', 'postgresql'):
             done = False
             while not done:
-                new = self.calculate_disk_usage()
+                total, deleted = self.calculate_disk_usage()
                 db_session.refresh(self)
                 # make sure usage didn't change while calculating
                 # set done if it has not, otherwise reset current and iterate again.
-                if self.get_disk_usage() == current:
+                if self.get_disk_usage() == current_total and self.get_deleted_disk_usage() == current_deleted:
                     done = True
                 else:
-                    current = self.get_disk_usage()
+                    current_total = self.get_disk_usage()
+                    current_deleted = self.get_deleted_disk_usage()
         else:
-            new = pgcalc(db_session, self.id)
-        if new not in (current, None):
-            self.set_disk_usage(new)
+            total, deleted = pgcalc(db_session, self.id)
+        if new not in (current_total, None) or deleted not in (current_deleted, None):
+            self.set_disk_usage(total)
+            self.set_deleted_disk_usage(deleted)
             db_session.add(self)
             db_session.flush()
 
