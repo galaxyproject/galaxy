@@ -16,6 +16,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import (
     compression_utils,
     FILENAME_VALID_CHARS,
@@ -961,6 +962,7 @@ class Newick(Text):
         return ['phyloviz']
 
 
+@build_sniff_from_prefix
 class Nexus(Text):
     """Nexus format as used By Paup, Mr Bayes, etc"""
     edam_data = "data_0872"
@@ -974,15 +976,9 @@ class Nexus(Text):
     def init_meta(self, dataset, copy_from=None):
         Text.init_meta(self, dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
-        with open(filename, "r") as f:
-            firstline = f.readline().upper()
-
-        if "#NEXUS" in firstline:
-            return True
-        else:
-            return False
+        return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
     def get_visualizations(self, dataset):
         """

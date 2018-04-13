@@ -9,10 +9,12 @@ Phylip datatype sniffer
 """
 from galaxy import util
 from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import nice_size
 from .metadata import MetadataElement
 
 
+@build_sniff_from_prefix
 class Phylip(Text):
     """Phylip format stores a multiple sequence alignment"""
     edam_data = "data_0863"
@@ -44,7 +46,7 @@ class Phylip(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'
@@ -54,15 +56,15 @@ class Phylip(Text):
         >>> Phylip().sniff(fname)
         True
         """
-        with open(filename, "r") as f:
-            # Get number of sequence from first line
-            nb_seq = int(f.readline().split()[0])
-            # counts number of sequence from first stack
-            count = 0
-            for line in f:
-                if not line.split():
-                    break
-                count += 1
-                if count > nb_seq:
-                    return False
+        f = file_prefix.string_io()
+        # Get number of sequence from first line
+        nb_seq = int(f.readline().split()[0])
+        # counts number of sequence from first stack
+        count = 0
+        for line in f:
+            if not line.split():
+                break
+            count += 1
+            if count > nb_seq:
+                return False
         return count == nb_seq
