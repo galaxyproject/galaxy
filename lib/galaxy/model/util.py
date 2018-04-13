@@ -2,6 +2,7 @@
 Utility helpers related to the model
 """
 
+
 def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
     """
     ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
