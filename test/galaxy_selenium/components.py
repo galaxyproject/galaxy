@@ -25,15 +25,16 @@ class Target(object):
 
 class SelectorTemplate(Target):
 
-    def __init__(self, selector, selector_type, children={}, kwds=None, with_classes=None):
+    def __init__(self, selector, selector_type, children=None, kwds=None, with_classes=None):
         self._selector = selector
         self.selector_type = selector_type
-        self._children = children
+        self._children = children or {}
         self.__kwds = kwds or {}
         self.with_classes = with_classes or []
 
     @staticmethod
-    def from_dict(raw_value, children={}):
+    def from_dict(raw_value, children=None):
+        children = children or {}
         if isinstance(raw_value, dict):
             return SelectorTemplate(raw_value["selector"], raw_value.get("type", "css"), children=children)
         else:
@@ -53,7 +54,7 @@ class SelectorTemplate(Target):
         return SelectorTemplate(self.selector + " " + selector, self.selector_type, kwds=self.__kwds, children=self._children)
 
     def __call__(self, **kwds):
-        new_kwds = self.__kwds
+        new_kwds = self.__kwds.copy()
         new_kwds.update(**kwds)
         return SelectorTemplate(self._selector, self.selector_type, kwds=new_kwds, with_classes=self.with_classes, children=self._children)
 

@@ -4,6 +4,7 @@
 export default Backbone.Model.extend({
     defaults: {
         url_base: "",
+        title_id: undefined,
         async: false,
         async_ops: [],
         categorical_filters: [],

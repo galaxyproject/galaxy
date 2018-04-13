@@ -16,7 +16,7 @@ panel_item_types = bunch.Bunch(
 )
 
 
-class HasPanelItems:
+class HasPanelItems(object):
     """
     """
 
@@ -43,7 +43,7 @@ class HasPanelItems:
             yield (panel_key, panel_type, panel_value)
 
 
-class ToolSection(Dictifiable, HasPanelItems, object):
+class ToolSection(Dictifiable, HasPanelItems):
     """
     A group of tools with similar type/purpose that will be displayed as a
     group in the user interface.
@@ -91,7 +91,7 @@ class ToolSection(Dictifiable, HasPanelItems, object):
         return self.elems
 
 
-class ToolSectionLabel(Dictifiable, object):
+class ToolSectionLabel(Dictifiable):
     """
     A label for a set of tools that can be displayed above groups of tools
     and sections in the user interface
@@ -112,7 +112,7 @@ class ToolSectionLabel(Dictifiable, object):
         return super(ToolSectionLabel, self).to_dict()
 
 
-class ToolPanelElements(HasPanelItems, odict):
+class ToolPanelElements(odict, HasPanelItems):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """

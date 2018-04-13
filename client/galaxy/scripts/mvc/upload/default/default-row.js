@@ -11,6 +11,7 @@ export default Backbone.View.extend({
         init: "upload-icon-button fa fa-trash-o",
         queued: "upload-icon fa fa-spinner fa-spin",
         running: "upload-icon fa fa-spinner fa-spin",
+        warning: "upload-icon fa fa-spinner fa-spin",
         success: "upload-icon-button fa fa-check",
         error: "upload-icon-button fa fa-exclamation-triangle"
     },
@@ -18,6 +19,7 @@ export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
+        this.list_extensions = app.list_extensions;
         this.model = options.model;
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
@@ -57,7 +59,7 @@ export default Backbone.View.extend({
         // create select extension
         this.select_extension = new Select.View({
             css: "upload-extension",
-            data: self.app.list_extensions,
+            data: _.filter(this.list_extensions, ext => !ext.composite_files),
             container: this.$(".upload-extension"),
             value: default_extension,
             onchange: function(extension) {
@@ -183,7 +185,7 @@ export default Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get("info");
         if (info) {
-            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
+            this.$info_text.html(`<strong>Warning: </strong>${info}`).show();
         } else {
             this.$info_text.hide();
         }
@@ -213,12 +215,16 @@ export default Backbone.View.extend({
             this.select_genome.disable();
             this.select_extension.disable();
         }
+        this.$info_progress.show();
+        this.$el.removeClass().addClass("upload-row");
         if (status == "success") {
             this.$el.addClass("success");
             this.$percentage.html("100%");
-        }
-        if (status == "error") {
+        } else if (status == "error") {
             this.$el.addClass("danger");
+            this.$info_progress.hide();
+        } else if (status == "warning") {
+            this.$el.addClass("warning");
             this.$info_progress.hide();
         }
     },

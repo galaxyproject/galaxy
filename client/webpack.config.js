@@ -43,6 +43,7 @@ let buildconfig = {
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
         admin: "./galaxy/scripts/apps/admin.js",
+        chart: "./galaxy/scripts/apps/chart.js",
         extended: "./galaxy/scripts/apps/extended.js"
     },
     output: {
@@ -61,8 +62,17 @@ let buildconfig = {
     module: {
         rules: [
             {
+                test: /\.vue$/,
+                loader: "vue-loader",
+                options: {
+                    loaders: {
+                        js: "babel-loader"
+                    }
+                }
+            },
+            {
                 test: /\.js$/,
-                exclude: [/(node_modules|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(vue-handsontable-official)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -77,10 +87,6 @@ let buildconfig = {
                         options: "$"
                     }
                 ]
-            },
-            {
-                test: /\.vue$/,
-                loader: "vue-loader"
             }
         ]
     },

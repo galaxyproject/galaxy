@@ -12,6 +12,7 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
+from galaxy.util import unicodify
 from . import (
     commands,
     installable
@@ -165,6 +166,7 @@ class CondaContext(installable.InstallableContext):
     def conda_info(self):
         if self.conda_exec is not None:
             info_out = commands.execute([self.conda_exec, "info", "--json"])
+            info_out = unicodify(info_out)
             info = json.loads(info_out)
             return info
         else:
@@ -502,6 +504,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         search_cmd.extend(conda_context._override_channels_args)
     search_cmd.append(conda_target.package)
     res = commands.execute(search_cmd)
+    res = unicodify(res)
     hits = json.loads(res).get(conda_target.package, [])
     hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
 

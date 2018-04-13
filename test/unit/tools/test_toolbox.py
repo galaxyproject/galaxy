@@ -241,7 +241,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         # Disable access to the tool, make sure it is filtered out.
         self.toolbox.get_tool("test_tool").allow_user_access = allow_user_access
         as_dict = self.toolbox.to_dict(mock_trans(), in_panel=False)
-        assert len(as_dict) == 0
+        assert len(as_dict) == 0, as_dict
 
     def _find_section(self, as_dict, section_id):
         for elem in as_dict:

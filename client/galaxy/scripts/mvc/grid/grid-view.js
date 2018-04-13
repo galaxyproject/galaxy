@@ -18,6 +18,7 @@ export default Backbone.View.extend({
     initialize: function(grid_config) {
         this.grid = new GridModel();
         this.title = grid_config.title;
+        this.active_tab = grid_config.active_tab;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
@@ -266,13 +267,13 @@ export default Backbone.View.extend({
             var button = self.$(`#grid-${item.encode_id}-popup`).off();
             var popup = new PopupMenu(button);
             _.each(options.operations, operation => {
-                self._add_operation(popup, operation, item);
+                self.add_operation(popup, operation, item);
             });
         });
     },
 
     /** Add an operation to the items menu */
-    _add_operation: function(popup, operation, item) {
+    add_operation: function(popup, operation, item) {
         var self = this;
         var settings = item.operation_config[operation.label];
         if (settings.allowed && operation.allow_popup) {

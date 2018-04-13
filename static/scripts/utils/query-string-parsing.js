@@ -1,2 +1,0 @@
-define("utils/query-string-parsing",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0}),e.default={get:function(e,t){t=t||window.location.search.substr(1);var n=new RegExp(e+"=([^&#$]+)","g"),r=t.match(n);if(r&&r.length)return 1===(r=_.map(r,function(t){return decodeURIComponent(t.substr(e.length+1).replace(/\+/g," "))})).length?r[0]:r},parse:function(e){if(!e)return{};var t={};return e.split("&").forEach(function(e){var n=e.split("=");t[n[0]]=decodeURI(n[1])}),t}}});
-//# sourceMappingURL=../../maps/utils/query-string-parsing.js.map

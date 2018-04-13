@@ -177,7 +177,7 @@ mapping:
           string.  If left unchanged, anyone could construct a cookie that would grant
           them access to others' sessions.
           One simple way to generate a value for this is with the shell command:
-            python -c 'import time; print time.time()' | md5sum | cut -f 1 -d ' '
+            python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
       
       use_remote_user:
         type: bool

@@ -3,7 +3,6 @@
 pwd_dir=$(pwd)
 cd `dirname $0`
 
-# A good place to look for nose info: http://somethingaboutorange.com/mrl/projects/nose/
 rm -f run_functional_tests.log
 
 show_help() {
@@ -290,7 +289,9 @@ then
        shift
     fi
     MY_UID=$(id -u)
-    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
+    # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
+    # locally before testing - you will need to do this also if using this script for Selenium testing.
+    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
@@ -404,19 +405,6 @@ do
       -d|-data_managers|--data_managers)
           data_managers_test=1;
           shift 1
-          ;;
-      -j|-casperjs|--casperjs)
-          # TODO: Support running casper tests against existing
-          # Galaxy instances.
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          if [ $# -gt 1 ]; then
-              casperjs_test_name=$2
-              shift 2
-          else
-              shift 1
-          fi
-          report_file="run_casperjs_tests.html"
-          casperjs_test=1;
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -579,15 +567,6 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
-elif [ -n "$casperjs_test" ]; then
-    # TODO: Ensure specific versions of casperjs and phantomjs are
-    # available. Some option for leveraging npm to automatically
-    # install these dependencies would be nice as well.
-    if [ -n "$casperjs_test_name" ]; then
-        extra_args="test/casperjs/casperjs_runner.py:$casperjs_test_name"
-    else
-        extra_args="test/casperjs/casperjs_runner.py"
-    fi
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
 elif [ -n "$test_id" ]; then

@@ -78,7 +78,7 @@ var FolderToolbarView = Backbone.View.extend({
             id: this.options.id,
             is_admin: false,
             is_anonym: true,
-            mutiple_add_dataset_options: false
+            multiple_add_dataset_options: false
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
@@ -88,7 +88,7 @@ var FolderToolbarView = Backbone.View.extend({
                 Galaxy.config.allow_library_path_paste !== false ||
                 Galaxy.config.library_import_dir !== null
             ) {
-                template_defaults.mutiple_add_dataset_options = true;
+                template_defaults.multiple_add_dataset_options = true;
             }
         }
         this.$el.html(toolbar_template(template_defaults));
@@ -1390,7 +1390,7 @@ var FolderToolbarView = Backbone.View.extend({
                 '<span class="fa fa-plus"></span><span class="fa fa-folder"></span> Create Folder ',
                 "</button>",
                 // add datasets button
-                "<% if(mutiple_add_dataset_options) { %>",
+                "<% if(multiple_add_dataset_options) { %>",
                 '<div class="btn-group add-library-items add-library-items-datasets toolbar-item" style="display:none;">',
                 '<button title="Add Datasets to Current Folder" id="" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-plus"></span><span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
@@ -1400,7 +1400,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
                 '<li><a href="#folders/<%= id %>/import/userdir"> from User Directory</a></li>',
                 "<% } %>",
-                "<% if(Galaxy.config.allow_library_path_paste) { %>",
+                "<% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>",
                 '<li class="divider"></li>',
                 '<li class="dropdown-header">Admins only</li>',
                 "<% if(Galaxy.config.library_import_dir !== null) { %>",

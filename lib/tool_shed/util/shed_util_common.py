@@ -301,7 +301,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>gzip compressed file<br/>'
     elif checkers.is_bz2(file_path):
         return '<br/>bz2 compressed file<br/>'
-    elif checkers.check_zip(file_path):
+    elif checkers.is_zip(file_path):
         return '<br/>zip compressed file<br/>'
     elif checkers.check_binary(file_path):
         return '<br/>Binary file<br/>'

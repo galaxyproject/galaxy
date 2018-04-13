@@ -43,7 +43,7 @@
                         <%
                             try:
                                 group_state = tool_state[ input.name ][ 0 ]
-                            except Exception, e:
+                            except Exception as e:
                                 group_state = tool_state[ input.name ]
                             current_case = group_state[ '__current_case__' ]
                             group_prefix = prefix + input.name + "|"

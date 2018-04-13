@@ -1,2 +1,0 @@
-define("utils/add-logging",["exports"],function(e){"use strict";Object.defineProperty(e,"__esModule",{value:!0});var o=["log","debug","info","warn","error","metric"];e.default=function(e,t){var i=void 0!==e.prototype?e.prototype:e;return void 0!==t&&(i._logNamespace=t),o.forEach(function(e){i[e]=function(){if(this.logger)return this.logger.emit?this.logger.emit(e,this._logNamespace,arguments):this.logger[e]?this.logger[e].apply(this.logger,arguments):void 0}}),e}});
-//# sourceMappingURL=../../maps/utils/add-logging.js.map

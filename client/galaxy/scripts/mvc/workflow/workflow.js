@@ -158,6 +158,7 @@ const WorkflowItemView = Backbone.View.extend({
 /** View of the main workflow list page */
 const WorkflowListView = Backbone.View.extend({
     title: _l("Workflows"),
+    active_tab: "workflow",
     initialize: function() {
         LoadingIndicator.markViewAsLoading(this);
         _.bindAll(this, "adjustActiondropdown");
@@ -345,6 +346,7 @@ const WorkflowListView = Backbone.View.extend({
 const ImportWorkflowView = Backbone.View.extend({
     initialize: function() {
         this.setElement("<div/>");
+        this.active_tab = "workflow";
         this.render();
     },
 

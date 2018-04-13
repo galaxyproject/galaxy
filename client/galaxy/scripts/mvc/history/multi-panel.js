@@ -8,7 +8,6 @@ import historyCopyDialog from "mvc/history/copy-dialog";
 import ERROR_MODAL from "mvc/ui/error-modal";
 import baseMVC from "mvc/base-mvc";
 import ajaxQueue from "utils/ajax-queue";
-import "ui/mode-button";
 import "ui/search-input";
 
 /* global $ */

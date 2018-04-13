@@ -3,6 +3,7 @@ Support for running a tool in Galaxy via an internal job management system
 """
 import copy
 import datetime
+import errno
 import logging
 import os
 import pwd
@@ -108,7 +109,7 @@ def config_exception(e, file):
     return Exception(message)
 
 
-class JobConfiguration(object, ConfiguresHandlers):
+class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
@@ -223,7 +224,7 @@ class JobConfiguration(object, ConfiguresHandlers):
         except AttributeError:
             base_server_name = self.app.config.get('base_server_name', None)
         if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == self.handlers.keys()[0])):
+                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
             # Shortcut for compatibility with existing job confs that use the default handlers block,
             # there are no defined handlers, or there's only one handler and it's this server
             self.__set_default_job_handler()
@@ -397,17 +398,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     return conditional_element
 
     def __parse_resource_parameters(self):
-        if os.path.exists(self.app.config.job_resource_params_file):
-            resource_param_file = self.app.config.job_resource_params_file
-            try:
-                resource_definitions = util.parse_xml(resource_param_file)
-            except Exception as e:
-                raise config_exception(e, resource_param_file)
-            resource_definitions_root = resource_definitions.getroot()
-            # TODO: Also handling conditionals would be awesome!
-            for parameter_elem in resource_definitions_root.findall("param"):
-                name = parameter_elem.get("name")
-                self.resource_parameters[name] = parameter_elem
+        self.resource_parameters = util.parse_resource_parameters(self.app.config.job_resource_params_file)
 
     def __get_params(self, parent):
         """Parses any child <param> tags in to a dictionary suitable for persistence.
@@ -422,8 +413,8 @@ class JobConfiguration(object, ConfiguresHandlers):
             key = param.get('id')
             if key in ["container", "container_override"]:
                 from galaxy.tools.deps import requirements
-                containers = map(requirements.container_from_element, list(param))
-                param_value = map(lambda c: c.to_dict(), containers)
+                containers = map(requirements.container_from_element, param.findall('container'))
+                param_value = list(map(lambda c: c.to_dict(), containers))
             else:
                 param_value = param.text
 
@@ -672,7 +663,7 @@ class JobConfiguration(object, ConfiguresHandlers):
                     log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 
-class HasResourceParameters:
+class HasResourceParameters(object):
 
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
@@ -695,7 +686,7 @@ class HasResourceParameters:
         return resource_params
 
 
-class JobWrapper(object, HasResourceParameters):
+class JobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -831,6 +822,18 @@ class JobWrapper(object, HasResourceParameters):
     def get_version_string_path(self):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
+    def __prepare_upload_paramfile(self, tool_evaluator):
+        """Special case paramfile handling for the upload tool. Moves the paramfile to the working directory
+        """
+        new = os.path.join(self.working_directory, 'upload_params.json')
+        try:
+            shutil.move(tool_evaluator.param_dict['paramfile'], new)
+        except (OSError, IOError) as exc:
+            # It won't exist at the old path if setup was interrupted and tried again later
+            if exc.errno != errno.ENOENT or not os.path.exists(new):
+                raise
+        tool_evaluator.param_dict['paramfile'] = new
+
     def prepare(self, compute_environment=None):
         """
         Prepare the job to run by creating the working directory and the
@@ -854,6 +857,10 @@ class JobWrapper(object, HasResourceParameters):
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
 
         self.sa_session.flush()
+
+        # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
+        if job.tool_id == 'upload1':
+            self.__prepare_upload_paramfile(tool_evaluator)
 
         self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
@@ -947,6 +954,11 @@ class JobWrapper(object, HasResourceParameters):
         )
         return tool_evaluator
 
+    def _fix_output_permissions(self):
+        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+            if os.path.exists(path):
+                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+
     def fail(self, message, exception=False, stdout="", stderr="", exit_code=None):
         """
         Indicate job failure by setting state and message on all output
@@ -1009,6 +1021,7 @@ class JobWrapper(object, HasResourceParameters):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
+        self._fix_output_permissions()
         self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
@@ -1281,7 +1294,7 @@ class JobWrapper(object, HasResourceParameters):
                     if retry_internally and not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session):
                         # If Galaxy was expected to sniff type and didn't - do so.
                         if dataset.ext == "_sniff_":
-                            extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)
+                            extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)[0]
                             dataset.extension = extension
 
                         # call datatype.set_meta directly for the initial set_meta call during dataset creation
@@ -1388,7 +1401,7 @@ class JobWrapper(object, HasResourceParameters):
         collected_datasets = {
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
-        self.tool.collect_dynamic_collections(
+        self.tool.collect_dynamic_outputs(
             out_collections,
             self.get_tool_provided_job_metadata(),
             job_working_directory=tool_working_directory,
@@ -1426,10 +1439,7 @@ class JobWrapper(object, HasResourceParameters):
         # user).
         self.sa_session.flush()
 
-        # fix permissions
-        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
-            if os.path.exists(path):
-                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+        self._fix_output_permissions()
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -1569,7 +1579,7 @@ class JobWrapper(object, HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return map(os.path.basename, map(str, self.get_output_fnames()))
+        return list(map(os.path.basename, map(str, self.get_output_fnames())))
 
     def get_output_fnames(self):
         if self.output_paths is None:
@@ -1786,8 +1796,11 @@ class JobWrapper(object, HasResourceParameters):
             cmd.extend([self.working_directory, username, str(gid)])
             log.debug('(%s) Changing ownership of working directory with: %s' % (job.id, ' '.join(cmd)))
             p = subprocess.Popen(cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            # TODO: log stdout/stderr
             stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                log.error('external script failed.')
+                log.error('stdout was: %s' % stdout)
+                log.error('stderr was: %s' % stderr)
             assert p.returncode == 0
 
     def change_ownership_for_run(self):

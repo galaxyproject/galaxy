@@ -135,6 +135,54 @@ class ToolsTestCase(api.ApiTestCase):
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
         return tool_info
 
+    @skip_without_tool("composite_output")
+    def test_test_data_filepath_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output", admin=True)
+        assert test_data_response.status_code == 404, test_data_response.json()
+
+    @skip_without_tool("composite_output")
+    def test_test_data_admin_security(self):
+        test_data_response = self._get("tools/%s/test_data_path?filename=../CONTRIBUTORS.md" % "composite_output")
+        assert test_data_response.status_code == 403, test_data_response.json()
+
+    @skip_without_tool("composite_output")
+    def test_test_data_composite_output(self):
+        test_data_response = self._get("tools/%s/test_data" % "composite_output")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 1
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 1, test_case
+        # input0 = next(iter(test_case["inputs"].values()))
+
+    @skip_without_tool("collection_two_paired")
+    def test_test_data_collection_two_paired(self):
+        test_data_response = self._get("tools/%s/test_data" % "collection_two_paired")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 2
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 3, test_case
+
+    @skip_without_tool("collection_nested_test")
+    def test_test_data_collection_nested(self):
+        test_data_response = self._get("tools/%s/test_data" % "collection_nested_test")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 2
+        test_case = test_data[0]
+        self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
+        assert len(test_case["inputs"]) == 1, test_case
+
+    @skip_without_tool("simple_constructs_y")
+    def test_test_data_yaml_tools(self):
+        test_data_response = self._get("tools/%s/test_data" % "simple_constructs_y")
+        assert test_data_response.status_code == 200
+        test_data = test_data_response.json()
+        assert len(test_data) == 3
+
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
             hdca_id = self.__build_pair(history_id, ["123", "456"])
@@ -418,7 +466,12 @@ class ToolsTestCase(api.ApiTestCase):
             'col': "' ; echo 'moo",
         }
         response = self._run("column_param", history_id, inputs)
-        assert response.status_code != 200
+        # This needs to either fail at submit time or at job prepare time, but we have
+        # to make sure the job doesn't run.
+        if response.status_code == 200:
+            job = response.json()["jobs"][0]
+            final_job_state = self.dataset_populator.wait_for_job(job["id"])
+            assert final_job_state == "error"
 
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self):

@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import base64
 import errno
 import json
 import logging
@@ -11,12 +12,15 @@ import numbers
 import operator
 import os
 import pwd
+import random
+import string
 import time
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
 from six import string_types
+from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
     and_,
     func,
@@ -30,7 +34,7 @@ from sqlalchemy import (
     types)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import aliased, joinedload, object_session
-
+from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -38,7 +42,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.util import pgcalc
+from galaxy.model.util import count_toward_deleted_disk_usage, pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
@@ -118,7 +122,7 @@ class HasTags(object):
             self.tags.append(new_tag_assoc)
 
 
-class HasName:
+class HasName(object):
 
     def get_display_name(self):
         """
@@ -130,7 +134,7 @@ class HasName:
         return name
 
 
-class UsesCreateAndUpdateTime:
+class UsesCreateAndUpdateTime(object):
 
     @property
     def seconds_since_updated(self):
@@ -143,7 +147,7 @@ class UsesCreateAndUpdateTime:
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
-class JobLike:
+class JobLike(object):
 
     def _init_metrics(self):
         self.text_metrics = []
@@ -192,7 +196,7 @@ class JobLike:
         return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
 
 
-class User(object, Dictifiable):
+class User(Dictifiable):
     use_pbkdf2 = True
     """
     Data for a Galaxy user or admin and relations to their
@@ -201,9 +205,9 @@ class User(object, Dictifiable):
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'gross_deleted_disk_usage', 'nice_gross_deleted_disk_usage', 'deleted', 'active', 'last_password_change']
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, email=None, password=None, username=None):
         self.email = email
         self.password = password
         self.external = False
@@ -211,7 +215,7 @@ class User(object, Dictifiable):
         self.purged = False
         self.active = False
         self.activation_token = None
-        self.username = None
+        self.username = username
         self.last_password_change = None
         # Relationships
         self.histories = []
@@ -238,6 +242,14 @@ class User(object, Dictifiable):
         else:
             self.password = new_secure_hash(text_type=cleartext)
         self.last_password_change = datetime.now()
+
+    def set_random_password(self, length=16):
+        """
+        Sets user password to a random string of the given length.
+        :return: void
+        """
+        self.set_password_cleartext(
+            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length)))
 
     def check_password(self, cleartext):
         """
@@ -341,103 +353,101 @@ class User(object, Dictifiable):
         """
         return self.get_disk_usage(nice_size=True)
 
+    def get_deleted_disk_usage(self, nice_size=False):
+        """
+        Return byte count of deleted disk space used by user or a human-readable
+        string if `nice_size` is `True`.
+        """
+        rval = 0
+        if self.deleted_disk_usage is not None:
+            rval = self.deleted_disk_usage
+        if nice_size:
+            rval = galaxy.util.nice_size(rval)
+        return rval
+
+    def set_deleted_disk_usage(self, bytes):
+        """
+        Manually set the disk space used by a user to `bytes`.
+        """
+        self.deleted_disk_usage = bytes
+
+    gross_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
+
+    @property
+    def nice_gross_deleted_disk_usage(self):
+        """
+        Return byte count of disk space used in a human-readable string.
+        """
+        return self.get_deleted_disk_usage(nice_size=True)
+
     def calculate_disk_usage(self):
         """
-        Return byte count total of disk space used by all non-purged, non-library
-        HDAs in non-purged histories.
-        """
-        # maintain a list so that we don't double count
-        dataset_ids = []
-        total = 0
-        # this can be a huge number and can run out of memory, so we avoid the mappers
-        db_session = object_session(self)
-        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
-            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
-                # TODO: def hda.counts_toward_disk_usage():
-                #   return ( not self.dataset.purged and not self.dataset.library_associations )
-                if hda.dataset.id not in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
-                    dataset_ids.append(hda.dataset.id)
-                    total += hda.dataset.get_total_size()
-        return total
-
-    def calculate_deleted_disk_usage(self):
-        """
-        Return byte count total of disk space used by all deleted, non-purged, non-library
-        HDAs in non-purged histories.
+        Return a tuple.
+        total: byte count of total disk space used by all non-purged, non-library
+        HDAs in non-purged histories
+        AND
+        deleted: byte count of disk space used by all deleted, non-purged, non-library
+        HDAs in non-purged histories
 
         The deleted include:
         1) datasets that are directly labeled as 'deleted';
         2) datasets whose associated HDAs are all deleted;
         3) datasets whose associated histories are all deleted.
         """
-        #  a dictionary to indicate the state of dataset and its associated hda and history.
-        # -1: dataset deleted
-        # 0: dataset not deleted, history deleted, hda deleted
-        # 1: dataset not deleted, history deleted, hda not deleted
-        # 2: dataset not deleted, history not deleted, hda deleted
-        # 3: dataset not deleted, history not deleted, hda not deleted
-        dataset_ids = {}
-        deleted_usage = 0
-        # use the same query method as calculate_disk_usage()
+        # maintain a list so that we don't double count
+        ids_dict = {}
+        total = 0
+        deleted = 0
         db_session = object_session(self)
+        # this can be a huge number and can run out of memory, so we avoid the mappers
         for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
-            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
-                if hda.dataset.purged or hda.dataset.library_associations:
+            for hda, dataset in db_session.query(
+                HistoryDatasetAssociation, Dataset).enable_eagerloads(False).join(Dataset).filter(and_(
+                    HistoryDatasetAssociation.history_id == history.id,
+                    HistoryDatasetAssociation.purged != true(),
+                    Dataset.purged != true())).yield_per(1000):
+                # TODO: def hda.counts_toward_disk_usage():
+                #   return ( not self.dataset.purged and not self.dataset.library_associations )
+                if dataset.library_associations:
                     continue
-                # either already counted or do not count
-                if str(hda.dataset.id) in dataset_ids and (dataset_ids[str(hda.dataset.id)] == -1 or dataset_ids[str(hda.dataset.id)] == 3):
-                    continue
-                if str(hda.dataset.id) not in dataset_ids:       # first count; count all possibles
-                    if hda.dataset.deleted:
-                        dataset_ids[str(hda.dataset.id)] = -1    # must count
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif hda.deleted and hda.history.deleted:    # possible
-                        dataset_ids[str(hda.dataset.id)] = 0
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif not hda.deleted and hda.history.deleted:  # possible
-                        dataset_ids[str(hda.dataset.id)] = 1
-                        deleted_usage += hda.dataset.get_total_size()
-                    elif hda.deleted and not hda.history.deleted:  # possible
-                        dataset_ids[str(hda.dataset.id)] = 2
-                        deleted_usage += hda.dataset.get_total_size()
-                    else:                                         # impossible
-                        dataset_ids[str(hda.dataset.id)] = 3
-                else:                                             # repeat count
-                    if hda.deleted and hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 0
-                    elif not hda.deleted and hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 1
-                    elif hda.deleted and not hda.history.deleted:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 2
-                    else:
-                        dataset_ids[str(hda.dataset.id)] = dataset_ids[str(hda.dataset.id)] | 3
-                    if dataset_ids[str(hda.dataset.id)] == 3:    # remove mis-count
-                        deleted_usage -= hda.dataset.get_total_size()
-
-        return deleted_usage
+                if str(dataset.id) not in ids_dict:
+                    total += dataset.get_total_size()
+                deleted_count = count_toward_deleted_disk_usage(
+                    dataset.id,
+                    history.deleted,
+                    hda.deleted,
+                    dataset.deleted,
+                    dataset.get_total_size(),
+                    **ids_dict)
+                deleted += deleted_count
+        return (total, deleted)
 
     def calculate_and_set_disk_usage(self):
         """
         Calculates and sets user disk usage.
         """
-        new = None
+        total = None
+        deleted = None
         db_session = object_session(self)
-        current = self.get_disk_usage()
+        current_total = self.get_disk_usage()
+        current_deleted = self.get_deleted_disk_usage()
         if db_session.get_bind().dialect.name not in ('postgres', 'postgresql'):
             done = False
             while not done:
-                new = self.calculate_disk_usage()
+                total, deleted = self.calculate_disk_usage()
                 db_session.refresh(self)
                 # make sure usage didn't change while calculating
                 # set done if it has not, otherwise reset current and iterate again.
-                if self.get_disk_usage() == current:
+                if self.get_disk_usage() == current_total and self.get_deleted_disk_usage() == current_deleted:
                     done = True
                 else:
-                    current = self.get_disk_usage()
+                    current_total = self.get_disk_usage()
+                    current_deleted = self.get_deleted_disk_usage()
         else:
-            new = pgcalc(db_session, self.id)
-        if new not in (current, None):
-            self.set_disk_usage(new)
+            total, deleted = pgcalc(db_session, self.id)
+        if total not in (current_total, None) or deleted not in (current_deleted, None):
+            self.set_disk_usage(total)
+            self.set_deleted_disk_usage(deleted)
             db_session.add(self)
             db_session.flush()
 
@@ -482,6 +492,18 @@ class User(object, Dictifiable):
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
 
+    def is_active(self):
+        return self.active
+
+    def is_authenticated(self):
+        # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
+        # For instance, a user who is authenticated with Google, is not necessarily authenticated
+        # with Amazon. Therefore, this function should also receive the backend and check if this
+        # user is already authenticated on that backend or not. For now, returning always True
+        # seems reasonable. Besides, this is also how a PSA example is implemented:
+        # https://github.com/python-social-auth/social-examples/blob/master/example-cherrypy/example/db/user.py
+        return True
+
 
 class PasswordResetToken(object):
     def __init__(self, user, token=None):
@@ -517,7 +539,7 @@ class TaskMetricNumeric(BaseJobMetric):
     pass
 
 
-class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
+class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
     dict_element_visible_keys = ['id', 'state', 'exit_code', 'update_time', 'create_time']
 
@@ -906,7 +928,7 @@ class Job(object, JobLike, UsesCreateAndUpdateTime, Dictifiable):
         return config_value
 
 
-class Task(object, JobLike):
+class Task(JobLike):
     """
     A task represents a single component of a job.
     """
@@ -1312,7 +1334,7 @@ class DeferredJob(object):
             return False
 
 
-class Group(object, Dictifiable):
+class Group(Dictifiable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
@@ -1678,7 +1700,7 @@ class GroupRoleAssociation(object):
         self.role = role
 
 
-class Role(object, Dictifiable):
+class Role(Dictifiable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -1697,7 +1719,7 @@ class Role(object, Dictifiable):
         self.deleted = deleted
 
 
-class UserQuotaAssociation(object, Dictifiable):
+class UserQuotaAssociation(Dictifiable):
     dict_element_visible_keys = ['user']
 
     def __init__(self, user, quota):
@@ -1705,7 +1727,7 @@ class UserQuotaAssociation(object, Dictifiable):
         self.quota = quota
 
 
-class GroupQuotaAssociation(object, Dictifiable):
+class GroupQuotaAssociation(Dictifiable):
     dict_element_visible_keys = ['group']
 
     def __init__(self, group, quota):
@@ -1713,7 +1735,7 @@ class GroupQuotaAssociation(object, Dictifiable):
         self.quota = quota
 
 
-class Quota(object, Dictifiable):
+class Quota(Dictifiable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'bytes', 'operation', 'display_amount', 'default', 'users', 'groups']
     valid_operations = ('+', '-', '=')
@@ -2095,6 +2117,12 @@ class DatasetInstance(object):
         return self.dataset.set_file_name(filename)
     file_name = property(get_file_name, set_file_name)
 
+    def link_to(self, path):
+        self.file_name = os.path.abspath(path)
+        # Since we are not copying the file into Galaxy's managed
+        # default file location, the dataset should never be purgable.
+        self.dataset.purgable = False
+
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
@@ -2165,14 +2193,6 @@ class DatasetInstance(object):
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data(self)
-
-    def write_from_stream(self, stream):
-        """Writes data from a stream"""
-        self.datatype.write_from_stream(self, stream)
-
-    def set_raw_data(self, data):
-        """Saves the data on the disc"""
-        self.datatype.set_raw_data(self, data)
 
     def get_mime(self):
         """Returns the mime type of the data"""
@@ -2762,7 +2782,7 @@ class HistoryDatasetAssociationSubset(object):
         self.location = location
 
 
-class Library(object, Dictifiable, HasName):
+class Library(Dictifiable, HasName):
     permitted_actions = get_permitted_actions(filter='LIBRARY')
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'deleted', 'name', 'description', 'synopsis', 'root_folder_id', 'create_time']
@@ -2813,7 +2833,7 @@ class Library(object, Dictifiable, HasName):
         return roles
 
 
-class LibraryFolder(object, Dictifiable, HasName):
+class LibraryFolder(Dictifiable, HasName):
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
     def __init__(self, name=None, description=None, item_count=0, order_id=None):
@@ -3174,7 +3194,7 @@ class ImplicitlyConvertedDatasetAssociation(object):
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 
 
-class DatasetCollection(object, Dictifiable, UsesAnnotations):
+class DatasetCollection(Dictifiable, UsesAnnotations):
     """
     """
     dict_collection_visible_keys = ['id', 'collection_type']
@@ -3294,7 +3314,7 @@ class DatasetCollection(object, Dictifiable, UsesAnnotations):
         return ":" in self.collection_type
 
 
-class DatasetCollectionInstance(object, HasName):
+class DatasetCollectionInstance(HasName):
     """
     """
 
@@ -3515,7 +3535,7 @@ class LibraryDatasetCollectionAssociation(DatasetCollectionInstance):
         return dict_value
 
 
-class DatasetCollectionElement(object, Dictifiable):
+class DatasetCollectionElement(Dictifiable):
     """ Associates a DatasetInstance (hda or ldda) with a DatasetCollection. """
     # actionable dataset id needs to be available via API...
     dict_collection_visible_keys = ['id', 'element_type', 'element_index', 'element_identifier']
@@ -3713,7 +3733,7 @@ class StoredWorkflow(HasTags, Dictifiable):
         return rval
 
 
-class Workflow(object, Dictifiable):
+class Workflow(Dictifiable):
 
     dict_collection_visible_keys = ['name', 'has_cycles', 'has_errors']
     dict_element_visible_keys = ['name', 'has_cycles', 'has_errors']
@@ -4001,7 +4021,7 @@ class StoredWorkflowMenuEntry(object):
         self.order_index = None
 
 
-class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
+class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
     dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
@@ -4204,6 +4224,16 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
+    @property
+    def resource_parameters(self):
+        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+        _resource_parameters = {}
+        for input_parameter in self.input_parameters:
+            if input_parameter.type == resource_type:
+                _resource_parameters[input_parameter.name] = input_parameter.value
+
+        return _resource_parameters
+
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -4214,12 +4244,12 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         return False
 
 
-class WorkflowInvocationToSubworkflowInvocationAssociation(object, Dictifiable):
+class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
     dict_element_visible_keys = ['id', 'workflow_step_id', 'workflow_invocation_id', 'subworkflow_invocation_id']
 
 
-class WorkflowInvocationStep(object, Dictifiable):
+class WorkflowInvocationStep(Dictifiable):
     dict_collection_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
     dict_element_visible_keys = ['id', 'update_time', 'job_id', 'workflow_step_id', 'state', 'action']
     states = Bunch(
@@ -4292,12 +4322,12 @@ class WorkflowInvocationStep(object, Dictifiable):
         return rval
 
 
-class WorkflowInvocationStepJobAssociation(object, Dictifiable):
+class WorkflowInvocationStepJobAssociation(Dictifiable):
     dict_collection_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
     dict_element_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
 
 
-class WorkflowRequest(object, Dictifiable):
+class WorkflowRequest(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
     dict_element_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
 
@@ -4306,13 +4336,14 @@ class WorkflowRequest(object, Dictifiable):
         return rval
 
 
-class WorkflowRequestInputParameter(object, Dictifiable):
+class WorkflowRequestInputParameter(Dictifiable):
     """ Workflow-related parameters not tied to steps or inputs.
     """
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
-        META_PARAMETERS='meta',  #
+        META_PARAMETERS='meta',
+        RESOURCE_PARAMETERS='resource',
     )
 
     def __init__(self, name=None, value=None, type=None):
@@ -4321,7 +4352,7 @@ class WorkflowRequestInputParameter(object, Dictifiable):
         self.type = type
 
 
-class WorkflowRequestStepState(object, Dictifiable):
+class WorkflowRequestStepState(Dictifiable):
     """ Workflow step value parameters.
     """
     dict_collection_visible_keys = ['id', 'name', 'value', 'workflow_step_id']
@@ -4333,40 +4364,40 @@ class WorkflowRequestStepState(object, Dictifiable):
         self.type = type
 
 
-class WorkflowRequestToInputDatasetAssociation(object, Dictifiable):
+class WorkflowRequestToInputDatasetAssociation(Dictifiable):
     """ Workflow step input dataset parameters.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
-class WorkflowRequestToInputDatasetCollectionAssociation(object, Dictifiable):
+class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable):
     """ Workflow step input dataset collection parameters.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowRequestInputStepParmeter(object, Dictifiable):
+class WorkflowRequestInputStepParmeter(Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
 
 
-class WorkflowInvocationOutputDatasetAssociation(object, Dictifiable):
+class WorkflowInvocationOutputDatasetAssociation(Dictifiable):
     """Represents links to output datasets for the workflow."""
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
-class WorkflowInvocationOutputDatasetCollectionAssociation(object, Dictifiable):
+class WorkflowInvocationOutputDatasetCollectionAssociation(Dictifiable):
     """Represents links to output dataset collections for the workflow."""
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowInvocationStepOutputDatasetAssociation(object, Dictifiable):
+class WorkflowInvocationStepOutputDatasetAssociation(Dictifiable):
     """Represents links to output datasets for the workflow."""
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_id', 'output_name']
 
 
-class WorkflowInvocationStepOutputDatasetCollectionAssociation(object, Dictifiable):
+class WorkflowInvocationStepOutputDatasetCollectionAssociation(Dictifiable):
     """Represents links to output dataset collections for the workflow."""
     dict_collection_visible_keys = ['id', 'workflow_invocation_step_id', 'dataset_collection_id', 'output_name']
 
@@ -4407,7 +4438,7 @@ class MetadataFile(StorableObject):
             return os.path.abspath(os.path.join(path, "metadata_%d.dat" % self.id))
 
 
-class FormDefinition(object, Dictifiable):
+class FormDefinition(Dictifiable):
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField]
     types = Bunch(USER_INFO='User Information')
@@ -4493,7 +4524,224 @@ class UserOpenID(object):
         self.openid = openid
 
 
-class Page(object, Dictifiable):
+class PSAAssociation(AssociationMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
+        self.server_url = server_url
+        self.handle = handle
+        self.secret = secret
+        self.issued = issued
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def store(cls, server_url, association):
+        try:
+            assoc = cls.trans.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+        except IndexError:
+            assoc = cls(server_url=server_url, handle=association.handle)
+        assoc.secret = base64.encodestring(association.secret).decode()
+        assoc.issued = association.issued
+        assoc.lifetime = association.lifetime
+        assoc.assoc_type = association.assoc_type
+        cls.trans.sa_session.add(assoc)
+        cls.trans.sa_session.flush()
+
+    @classmethod
+    def get(cls, *args, **kwargs):
+        return cls.trans.sa_session.query(cls).filter_by(*args, **kwargs)
+
+    @classmethod
+    def remove(cls, ids_to_delete):
+        cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
+
+
+class PSACode(CodeMixin):
+    __table_args__ = (UniqueConstraint('code', 'email'),)
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, email, code):
+        self.email = email
+        self.code = code
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def get_code(cls, code):
+        return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
+
+
+class PSANonce(NonceMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, server_url, timestamp, salt):
+        self.server_url = server_url
+        self.timestamp = timestamp
+        self.salt = salt
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def use(cls, server_url, timestamp, salt):
+        try:
+            return cls.trans.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+        except IndexError:
+            instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
+            cls.trans.sa_session.add(instance)
+            cls.trans.sa_session.flush()
+            return instance
+
+
+class PSAPartial(PartialMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, token, data, next_step, backend):
+        self.token = token
+        self.data = data
+        self.next_step = next_step
+        self.backend = backend
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def load(cls, token):
+        return cls.trans.sa_session.query(cls).filter(cls.token == token).first()
+
+    @classmethod
+    def destroy(cls, token):
+        partial = cls.load(token)
+        if partial:
+            cls.trans.sa_session.delete(partial)
+
+
+class UserAuthnzToken(UserMixin):
+    __table_args__ = (UniqueConstraint('provider', 'uid'),)
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
+        self.provider = provider
+        self.uid = uid
+        self.user_id = user.id
+        self.extra_data = extra_data
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+    def get_id_token(self):
+        return self.extra_data.get('id_token', None) if self.extra_data is not None else None
+
+    def get_access_token(self):
+        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
+
+    def set_extra_data(self, extra_data=None):
+        # Note: the following unicode conversion is a temporary solution for a
+        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
+        if extra_data is not None:
+            extra_data = str(extra_data)
+        if super(UserAuthnzToken, self).set_extra_data(extra_data):
+            self.trans.sa_session.add(self)
+            self.trans.sa_session.flush()
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def username_max_length(cls):
+        # Note: This is the maximum field length set for the username column of the galaxy_user table.
+        # A better alternative is to retrieve this number from the table, instead of this const value.
+        return 255
+
+    @classmethod
+    def user_model(cls):
+        return User
+
+    @classmethod
+    def changed(cls, user):
+        cls.trans.sa_session.add(user)
+        cls.trans.sa_session.flush()
+
+    @classmethod
+    def user_query(cls):
+        return cls.trans.sa_session.query(cls.user_model())
+
+    @classmethod
+    def user_exists(cls, *args, **kwargs):
+        return cls.user_query().filter_by(*args, **kwargs).count() > 0
+
+    @classmethod
+    def get_username(cls, user):
+        return getattr(user, 'username', None)
+
+    @classmethod
+    def create_user(cls, *args, **kwargs):
+        model = cls.user_model()
+        instance = model(*args, **kwargs)
+        instance.set_random_password()
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
+        return instance
+
+    @classmethod
+    def get_user(cls, pk):
+        return cls.user_query().get(pk)
+
+    @classmethod
+    def get_users_by_email(cls, email):
+        return cls.user_query().filter_by(email=email)
+
+    @classmethod
+    def get_social_auth(cls, provider, uid):
+        uid = str(uid)
+        try:
+            return cls.trans.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_social_auth_for_user(cls, user, provider=None, id=None):
+        qs = cls.trans.sa_session.query(cls).filter_by(user_id=user.id)
+        if provider:
+            qs = qs.filter_by(provider=provider)
+        if id:
+            qs = qs.filter_by(id=id)
+        return qs
+
+    @classmethod
+    def create_social_auth(cls, user, uid, provider):
+        uid = str(uid)
+        instance = cls(user=user, uid=uid, provider=provider)
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
+        return instance
+
+
+class Page(Dictifiable):
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
 
     def __init__(self):
@@ -4515,7 +4763,7 @@ class Page(object, Dictifiable):
         return rval
 
 
-class PageRevision(object, Dictifiable):
+class PageRevision(Dictifiable):
     dict_element_visible_keys = ['id', 'page_id', 'title', 'content']
 
     def __init__(self):
@@ -4621,7 +4869,7 @@ class TransferJob(object):
         self.params = params
 
 
-class Tag (object):
+class Tag(object):
     def __init__(self, id=None, type=None, parent_id=None, name=None):
         self.id = id
         self.type = type
@@ -4632,7 +4880,7 @@ class Tag (object):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
 
 
-class ItemTagAssociation (object, Dictifiable):
+class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'user_tname', 'user_value']
     dict_element_visible_keys = dict_collection_visible_keys
 
@@ -4657,35 +4905,35 @@ class ItemTagAssociation (object, Dictifiable):
         return new_ta
 
 
-class HistoryTagAssociation (ItemTagAssociation):
+class HistoryTagAssociation(ItemTagAssociation):
     pass
 
 
-class DatasetTagAssociation (ItemTagAssociation):
+class DatasetTagAssociation(ItemTagAssociation):
     pass
 
 
-class HistoryDatasetAssociationTagAssociation (ItemTagAssociation):
+class HistoryDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class LibraryDatasetDatasetAssociationTagAssociation (ItemTagAssociation):
+class LibraryDatasetDatasetAssociationTagAssociation(ItemTagAssociation):
     pass
 
 
-class PageTagAssociation (ItemTagAssociation):
+class PageTagAssociation(ItemTagAssociation):
     pass
 
 
-class WorkflowStepTagAssociation (ItemTagAssociation):
+class WorkflowStepTagAssociation(ItemTagAssociation):
     pass
 
 
-class StoredWorkflowTagAssociation (ItemTagAssociation):
+class StoredWorkflowTagAssociation(ItemTagAssociation):
     pass
 
 
-class VisualizationTagAssociation (ItemTagAssociation):
+class VisualizationTagAssociation(ItemTagAssociation):
     pass
 
 
@@ -4815,7 +5063,7 @@ class DataManagerJobAssociation(object):
         self.data_manager_id = data_manager_id
 
 
-class UserPreference (object):
+class UserPreference(object):
     def __init__(self, name=None, value=None):
         self.name = name
         self.value = value

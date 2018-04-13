@@ -24,7 +24,7 @@ ${h.js( 'libs/jquery/jquery',
 require.config({
     baseUrl: app_root,
     paths: {
-        "plugin" : app_root + "js/",
+        "plugin" : app_root + "js",
         "galaxy.interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
     },
     urlArgs: "v=${app.server_starttime}",

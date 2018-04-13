@@ -40,7 +40,11 @@ export default {
     grid_header: function(options) {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
-            tmpl += `<h2>${options.title}</h2>`;
+            let id_str = "";
+            if(options.title_id) {
+                id_str +=` id="${options.title_id}"`;
+            }
+            tmpl += `<h2${id_str}>${options.title}</h2>`;
         }
         if (options.global_actions) {
             tmpl += '<ul class="manage-table-actions">';
@@ -93,7 +97,9 @@ export default {
             if (column.visible) {
                 tmpl += `<th id="${column.key}-header">`;
                 if (column.sortable) {
-                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${column.label}</a>`;
+                    tmpl += `<a href="javascript:void(0)" class="sort-link" sort_key="${column.key}">${
+                        column.label
+                    }</a>`;
                 } else {
                     tmpl += column.label;
                 }
@@ -173,8 +179,10 @@ export default {
                     // Check for row wrapping
                     tmpl += `<td ${nowrap}>`;
 
-                    // Link
-                    if (link) {
+                    // Determine cell content
+                    if (column.delayed) {
+                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                    } else if (link) {
                         if (options.operations.length !== 0) {
                             tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
                         }

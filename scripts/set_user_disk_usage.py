@@ -8,7 +8,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
-from galaxy.model.util import pgcalc, pgcalc_deleted
+from galaxy.model.util import pgcalc
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -39,32 +39,32 @@ def init():
 
 def quotacheck(sa_session, users, engine):
     sa_session.refresh(user)
-    current = user.get_disk_usage()
+    current_total = user.get_disk_usage()
+    current_deleted = user.get_deleted_disk_usage()
     print(user.username, '<' + user.email + '>:', end=' ')
     if engine not in ('postgres', 'postgresql'):
-        new = user.calculate_disk_usage()
-        deleted = user.calculate_deleted_disk_usage()
+        total, deleted = user.calculate_disk_usage()
         sa_session.refresh(user)
         # usage changed while calculating, do it again
-        if user.get_disk_usage() != current:
+        if user.get_disk_usage() != current_total or user.get_deleted_disk_usage() != current_deleted:
             print('usage changed while calculating, trying again...')
             return quotacheck(sa_session, user, engine)
     else:
-        new = pgcalc(sa_session, user.id, dryrun=args.dryrun)
-        deleted = pgcalc_deleted(sa_session, user.id)
+        total, deleted = pgcalc(sa_session, user.id, dryrun=args.dryrun)
     # yes, still a small race condition between here and the flush
-    print('old usage:', nice_size(current), '(active:', nice_size(current - deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
-    if new in (current, None):
+    print('old usage:', nice_size(current_total), '(active:', nice_size(current_total - deleted), ', deleted:', nice_size(deleted), ')  change:', end=' ')
+    if total in (current_total, None):
         print('none')
     else:
-        if new > current:
-            print('+%s' % (nice_size(new - current)))
+        if total > current_total:
+            print('+%s' % (nice_size(total - current_total)))
         else:
-            print('-%s' % (nice_size(current - new)))
-        if not args.dryrun and engine not in ('postgres', 'postgresql'):
-            user.set_disk_usage(new)
-            sa_session.add(user)
-            sa_session.flush()
+            print('-%s' % (nice_size(current_total - total)))
+    if not args.dryrun and engine not in ('postgres', 'postgresql') and (total not in (current_total, None) or deleted not in (current_deleted, None)):
+        user.set_disk_usage(total)
+        user.set_deleted_disk_usage(deleted)
+        sa_session.add(user)
+        sa_session.flush()
 
 
 if __name__ == '__main__':

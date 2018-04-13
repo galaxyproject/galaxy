@@ -1211,7 +1211,7 @@ var Circster = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.location = `${Galaxy.root}visualizations/list`;
+                        window.top.location = `${Galaxy.root}visualizations/list`;
                     }
                 }
             ],

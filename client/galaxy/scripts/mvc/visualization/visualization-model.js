@@ -1,4 +1,8 @@
-import * as Backbone from "libs/backbone";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
+/* global Galaxy */
+
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
  *
