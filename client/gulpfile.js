@@ -37,6 +37,7 @@ var paths = {
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
+        "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
@@ -128,7 +129,6 @@ gulp.task("watch-style", function() {
     gulp.watch(paths.style_sources, ["style"]);
 });
 
-gulp.task("default", ["scripts", "libs"]);
 gulp.task("staging", ["stage-libs", "fonts"]);
 
 gulp.task("default", ["scripts", "libs", "plugins"]);

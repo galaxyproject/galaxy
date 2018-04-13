@@ -3,9 +3,11 @@
  *  rendering a tour menu.
  */
 import _l from "utils/localization";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-import "bootstrap-tour";
+// The following must remain staged out of libs and not sourced from
+// node_modules, until TDTs are bundled.
+import * as Backbone from "libs/backbone";
+import * as _ from "libs/underscore";
+import "libs/bootstrap-tour";
 
 /* global $ */
 /* global Galaxy */
