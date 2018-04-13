@@ -606,26 +606,10 @@
         .panel-controls {
             width: 100%;
             height: ($mph-controls_height + 4);
-            border-radius: 3px;
             background-color: white;
-            text-align: center;
-
-            -webkit-flex: 0 0 auto;
-            -ms-flex: 0 0 auto;
-            flex: 0 0 auto;
-
-            -webkit-align-self: auto;
-            -ms-flex-item-align: auto;
-            align-self: auto;
 
             .btn {
                 @extend .btn-sm;
-            }
-            .float-left .btn {
-                margin-right: 4px;
-            }
-            .float-right .btn {
-                margin-left: 4px;
             }
             .panel-menu {
                 z-index: 1;

@@ -136,7 +136,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             isCurrentHistory: this.currentHistory
         });
         return $(`
-            <div class="panel-controls clear flex-row mb-1">
+            <div class="panel-controls no-gutters clear row justify-content-between mb-1">
                 ${this.controlsLeftTemplate({ history: data, view: this })}
                 ${this.controlsRightTemplate({ history: data, view: this })}
             </div>
@@ -194,7 +194,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsLeftTemplate: _.template(
         `
-        <div class="float-left">
+        <div class="text-left col-8">
             <% if( data.history.isCurrentHistory ){ %>
                 <strong class="current-label">
                     ${_l("Current History")}
@@ -210,39 +210,34 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsRightTemplate: _.template(
-        [
-            '<div class="float-right">',
-            "<% if( !data.history.purged ){ %>",
-            '<div class="panel-menu btn-group">',
-            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-            '<span class="caret"></span>',
-            "</button>",
-            '<ul class="dropdown-menu float-right" role="menu">',
-            "<% if( !data.history.deleted ){ %>",
-            '<li><a href="javascript:void(0);" class="copy-history">',
-            _l("Copy"),
-            "</a></li>",
-            //'<li><a href="javascript:void(0);" class="publish-history">',
-            //    _l( 'Publish' ),
-            //'</a></li>',
-            '<li><a href="javascript:void(0);" class="delete-history">',
-            _l("Delete"),
-            "</a></li>",
-            "<% } else /* if is deleted */ { %>",
-            '<li><a href="javascript:void(0);" class="undelete-history">',
-            _l("Undelete"),
-            "</a></li>",
-            "<% } %>",
-            "<% if( data.view.purgeAllowed ){ %>",
-            '<li><a href="javascript:void(0);" class="purge-history">',
-            _l("Purge"),
-            "</a></li>",
-            "<% } %>",
-            "</ul>",
-            "</div>",
-            "<% } %>",
-            "</div>"
-        ].join(""),
+        `<div class="text-right col-4">
+            <% if( !data.history.purged ){ %>
+                <div class="panel-menu btn-group">
+                    <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <% if( !data.history.deleted ){ %>
+                            <li><a href="javascript:void(0);" class="copy-history">
+                                ${_l("Copy")}
+                            </a></li>
+                            <li><a href="javascript:void(0);" class="delete-history">
+                                ${_l("Delete")}
+                            </a></li>
+                        <% } else /* if is deleted */ { %>
+                            <li><a href="javascript:void(0);" class="undelete-history">
+                                ${_l("Undelete")}
+                            </a></li>
+                        <% } %>
+                        <% if( data.view.purgeAllowed ){ %>
+                            <li><a href="javascript:void(0);" class="purge-history">
+                                ${_l("Purge")}
+                            </a></li>
+                        <% } %>
+                    </ul>
+                </div>
+            <% } %>
+        </div>`,
         { variable: "data" }
     ),
 
