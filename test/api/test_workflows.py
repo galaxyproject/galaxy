@@ -20,6 +20,7 @@ from base.populators import (  # noqa: I100
 )
 from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
 )
@@ -594,15 +595,8 @@ steps:
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\nd\n")
-            inputs = {
-                '0': self._ds_entry(hda1),
-            }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
-            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self._run_jobs(WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
             self.assertEqual("a\nc\nb\nd\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
     @skip_without_tool("job_properties")
@@ -741,40 +735,7 @@ test_data:
     @skip_without_tool("collection_split_on_column")
     def test_workflow_run_dynamic_output_collections(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  - label: text_input1
-    type: input
-  - label: text_input2
-    type: input
-  - label: cat_inputs
-    tool_id: cat1
-    state:
-      input1:
-        $link: text_input1
-      queries:
-        - input2:
-            $link: text_input2
-  - label: split_up
-    tool_id: collection_split_on_column
-    state:
-      input1:
-        $link: cat_inputs#out_file1
-  - tool_id: cat_list
-    state:
-      input1:
-        $link: split_up#split_output
-""")
-            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n")
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            inputs = {
-                '0': self._ds_entry(hda1),
-                '1': self._ds_entry(hda2),
-            }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
-            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            self._run_jobs(WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
             details = self.dataset_populator.get_history_dataset_details(history_id, hid=0)
             last_item_hid = details["hid"]
             assert last_item_hid == 7, "Expected 7 history items, got %s" % last_item_hid
