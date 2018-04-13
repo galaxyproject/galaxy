@@ -1,8 +1,12 @@
-from ._workflow_fixtures import (
+from base.workflow_fixtures import (
+    WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
+    WORKFLOW_WITH_OUTPUT_COLLECTION,
 )
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -15,10 +19,31 @@ class WorkflowEditorTestCase(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
-    def test_build_workflow(self):
+    def test_basics(self):
+        editor = self.components.workflow_editor
+
         name = self.workflow_create_new()
         edit_name_element = self.components.workflow_editor.edit_name.wait_for_visible()
         assert name in edit_name_element.text, edit_name_element.text
+
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+
+        self.screenshot("workflow_editor_blank")
+
+        self.components._.left_panel_drag.wait_for_visible()
+        self.components._.left_panel_collapse.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.screenshot("workflow_editor_left_collapsed")
+
+        self.components._.right_panel_drag.wait_for_visible()
+        self.components._.right_panel_collapse.wait_for_and_click()
+
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.screenshot("workflow_editor_left_and_right_collapsed")
 
     @selenium_test
     def test_data_input(self):
@@ -76,11 +101,48 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_existing_connections(self):
-        name = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
-        self.workflow_index_open()
-        self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Re-layout")
+        self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
+
+        editor = self.components.workflow_editor
         self.assert_connected("input1#output", "first_cat#input1")
+        self.screenshot("workflow_editor_connection_simple")
+
+        cat_node = editor.node._(label="first_cat")
+        cat_input = cat_node.input_terminal(name="input1")
+        cat_input.wait_for_and_click()
+        editor.connector_destroy_callout.wait_for_visible()
+        self.screenshot("workflow_editor_connection_callout")
+        editor.connector_destroy_callout.wait_for_and_click()
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.screenshot("workflow_editor_connection_destroyed")
+
+        self.workflow_editor_connect("input1#output", "first_cat#input1", screenshot_partial="workflow_editor_connection_dragging")
+        self.assert_connected("input1#output", "first_cat#input1")
+
+    @selenium_test
+    def test_rendering_output_collection_connections(self):
+        self.open_in_workflow_editor(WORKFLOW_WITH_OUTPUT_COLLECTION)
+        self.workflow_editor_maximize_center_pane()
+        self.screenshot("workflow_editor_output_collections")
+
+    @selenium_test
+    def test_simple_mapping_connections(self):
+        self.open_in_workflow_editor(WORKFLOW_SIMPLE_MAPPING)
+        self.workflow_editor_maximize_center_pane()
+        self.screenshot("workflow_editor_simple_mapping")
+        self.assert_connected("input1#output", "cat#input1")
+        self.assert_input_mapped("cat#input1")
+        self.workflow_editor_destroy_connection("cat#input1")
+        self.assert_input_not_mapped("cat#input1")
+        self.assert_not_connected("input1#output", "cat#input1")
+        self.workflow_editor_connect("input1#output", "cat#input1")
+        self.assert_input_mapped("cat#input1")
+
+    @selenium_test
+    def test_rendering_simple_nested_workflow(self):
+        self.open_in_workflow_editor(WORKFLOW_NESTED_SIMPLE)
+        self.workflow_editor_maximize_center_pane()
+        self.screenshot("workflow_editor_simple_nested")
 
     @selenium_test
     def test_save_as(self):
@@ -132,7 +194,42 @@ steps:
         self.workflow_editor_click_option("Save")
         self.workflow_editor_click_option("Close")
 
+    def workflow_editor_maximize_center_pane(self):
+        self.components._.left_panel_collapse.wait_for_and_click()
+        self.components._.right_panel_collapse.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def workflow_editor_connect(self, source, sink, screenshot_partial=None):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        source_element = self.driver.find_element_by_css_selector("#" + source_id)
+        sink_element = self.driver.find_element_by_css_selector("#" + sink_id)
+
+        ac = self.action_chains()
+        ac = ac.move_to_element(source_element).click_and_hold()
+        if screenshot_partial:
+            ac = ac.move_to_element_with_offset(sink_element, -5, 0)
+            ac.perform()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.screenshot(screenshot_partial)
+            ac = self.action_chains()
+
+        ac = ac.move_to_element(sink_element).release().perform()
+
     def assert_connected(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+
+    def assert_not_connected(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
+
+    def open_in_workflow_editor(self, yaml_content):
+        name = self.workflow_upload_yaml_with_random_name(yaml_content)
+        self.workflow_index_open()
+        self.workflow_index_open_with_name(name)
+        self.workflow_editor_click_option("Auto Re-layout")
+
+    def workflow_editor_source_sink_terminal_ids(self, source, sink):
         editor = self.components.workflow_editor
 
         source_node_label, source_output = source.split("#", 1)
@@ -153,7 +250,30 @@ steps:
         source_id = output_element.get_attribute("id")
         sink_id = input_element.get_attribute("id")
 
-        editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+        return source_id, sink_id
+
+    def workflow_editor_destroy_connection(self, sink):
+        editor = self.components.workflow_editor
+
+        sink_node_label, sink_input_name = sink.split("#", 1)
+        sink_node = editor.node._(label=sink_node_label)
+        sink_input = sink_node.input_terminal(name=sink_input_name)
+        sink_input.wait_for_and_click()
+        editor.connector_destroy_callout.wait_for_and_click()
+
+    def assert_input_mapped(self, sink):
+        editor = self.components.workflow_editor
+        sink_node_label, sink_input_name = sink.split("#", 1)
+        sink_node = editor.node._(label=sink_node_label)
+        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
+        sink_mapping_icon.wait_for_visible()
+
+    def assert_input_not_mapped(self, sink):
+        editor = self.components.workflow_editor
+        sink_node_label, sink_input_name = sink.split("#", 1)
+        sink_node = editor.node._(label=sink_node_label)
+        sink_mapping_icon = sink_node.input_mapping_icon(name=sink_input_name)
+        sink_mapping_icon.wait_for_absent_or_hidden()
 
     def workflow_index_open_with_name(self, name):
         self.workflow_index_search_for(name)

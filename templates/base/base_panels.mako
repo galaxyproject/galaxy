@@ -223,8 +223,8 @@
                 <div id="left">
                     ${self.left_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse"></div>
-                        <div class="drag"></div>
+                        <div id="left-panel-collapse" class="panel-collapse"></div>
+                        <div id="left-panel-drag" class="drag"></div>
                     </div>
                 </div><!--end left-->
             %endif
@@ -235,8 +235,8 @@
                 <div id="right">
                     ${self.right_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></div>
-                        <div class="drag"></div>
+                        <div id="right-panel-collapse" class="panel-collapse right"></div>
+                        <div id="right-panel-drag" class="drag"></div>
                     </div>
                 </div><!--end right-->
             %endif

@@ -11,6 +11,10 @@ _:  # global stuff
   selectors:
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
+    left_panel_drag: '#left-panel-drag'
+    left_panel_collapse: '#left-panel-collapse'
+    right_panel_drag: '#right-panel-drag'
+    right_panel_collapse: '#right-panel-collapse'
 
   messages:
     selectors:
@@ -234,6 +238,8 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
 
+      input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
+
   selectors:
     canvas_body: '#workflow-canvas-body'
     canvas_title: '#workflow-canvas-title'
@@ -247,6 +253,8 @@ workflow_editor:
     annotation_input: "[tour_id='__annotation'] textarea"
 
     connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+
+    connector_destroy_callout: '.callout .fa-times'
 
 tour:
   popover:
