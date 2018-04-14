@@ -22,7 +22,7 @@ from galaxy.managers import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import error, _future_expose_api as expose_api
+from galaxy.web import _future_expose_api as expose_api, error
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
