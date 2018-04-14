@@ -332,6 +332,7 @@ class CurrentUserSerializer(UserSerializer):
         history = trans.history
         if history:
             usage = self.app.quota_agent.get_usage(trans, history=trans.history)
+            deleted_usage = self.app.quota_agent.get_deleted_usage(trans, history=trans.history)
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 
         # a very small subset of keys available
@@ -339,6 +340,7 @@ class CurrentUserSerializer(UserSerializer):
             'id'                    : None,
             'total_disk_usage'      : float(usage),
             'nice_total_disk_usage' : util.nice_size(usage),
+            'gross_deleted_disk_usage' : float(deleted_usage),
             'quota_percent'         : percent,
         }
         serialized = {}
