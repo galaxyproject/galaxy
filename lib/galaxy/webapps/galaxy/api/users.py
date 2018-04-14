@@ -269,9 +269,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
     def anon_user_api_value(self, trans):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         usage = trans.app.quota_agent.get_usage(trans)
+        deleted_usage = trans.app.quota_agent.get_deleted_usage(trans)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {'total_disk_usage': int(usage),
                 'nice_total_disk_usage': util.nice_size(usage),
+                'gross_total_disk_usage': int(deleted_usage),
                 'quota_percent': percent}
 
     def _get_extra_user_preferences(self, trans):

@@ -26,7 +26,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             _.extend(this.options, options);
 
             //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
-            this.listenTo(this.model, "change:quota_percent change:total_disk_usage change:deleted_disk_usage", this.render);
+            this.listenTo(this.model, "change:quota_percent change:total_disk_usage change:gross_deleted_disk_usage", this.render);
         },
 
         /** Re-load user model data from the api */
@@ -132,11 +132,11 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 '<div class="progress-bar" style="width: ',
                 data.quota_percent,
                 '%"></div>',
-                '<div class="quota-meter-text" data-placement="left" style="top: 6px"',
+                '<div class="quota-meter-text" style="top: 6px"',
                 data.nice_total_disk_usage
                     ? ` title="Using ${data.nice_total_disk_usage}` +
-                        (data.deleted_disk_usage
-                            ? ` (deleted: ${UTILS.bytesToString(data.deleted_disk_usage, true, 2)})` : "") + `.  These values are recalculated when you log out.">`
+                        (data.gross_deleted_disk_usage
+                            ? ` (deleted: ${UTILS.bytesToString(data.gross_deleted_disk_usage, true, 2)})` : "") + `.  These values are recalculated when you log out.">`
                     : ">",
                 _l("Using"),
                 " ",
@@ -150,8 +150,8 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
         _templateUsage: function(data) {
             return [
                 '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
-                '<div class="quota-meter-text" data-placement="left" data-original-title="',
-                data.deleted_disk_usage ? `(deleted: ${UTILS.bytesToString(data.deleted_disk_usage, true, 2)})` : "",
+                '<div class="quota-meter-text" data-original-title="',
+                data.gross_deleted_disk_usage ? `(deleted: ${UTILS.bytesToString(data.gross_deleted_disk_usage, true, 2)})` : "",
                 ' These values are recalculated when you log out." style="top: 6px; color: white">',
                 data.nice_total_disk_usage ? _l("Using ") + data.nice_total_disk_usage : "",
                 "</div>",

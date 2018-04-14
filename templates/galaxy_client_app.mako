@@ -88,6 +88,7 @@ ${ h.dumps( get_config_dict() )}
             percent = None
             try:
                 usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
+                deleted_usage = trans.app.quota_agent.get_deleted_usage( trans, history=trans.history )
                 percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
             except AssertionError as assertion:
                 # no history for quota_agent.get_usage assertion
@@ -95,6 +96,7 @@ ${ h.dumps( get_config_dict() )}
             return {
                 'total_disk_usage'      : int( usage ),
                 'nice_total_disk_usage' : util.nice_size( usage ),
+                'gross_deleted_disk_usage' : int( deleted_usage ),
                 'quota_percent'         : percent
             }
 

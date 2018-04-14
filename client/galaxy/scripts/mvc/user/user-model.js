@@ -27,7 +27,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             email: "",
             total_disk_usage: 0,
             nice_total_disk_usage: "",
-            deleted_disk_usage: 0,
+            gross_deleted_disk_usage: 0,
             quota_percent: null,
             is_admin: false
         },
