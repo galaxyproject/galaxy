@@ -81,13 +81,13 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
             raise exceptions.DuplicatedSlugException("Page slug must be unique")
 
         content = payload.get("content", "")
-        content = sanitize_html(content, 'utf-8', 'text/html')
+        content = sanitize_html(content)
 
         # Create the new stored page
         page = trans.app.model.Page()
         page.title = payload['title']
         page.slug = payload['slug']
-        page_annotation = sanitize_html(payload.get("annotation", ""), 'utf-8', 'text/html')
+        page_annotation = sanitize_html(payload.get("annotation", ""))
         self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
         page.user = user
         # And the first (empty) page revision

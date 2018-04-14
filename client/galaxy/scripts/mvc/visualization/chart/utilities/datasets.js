@@ -125,6 +125,9 @@ var _fillFromCache = function(options) {
     });
     if (limit === 0) {
         console.debug("tabular-datasets::_fillFromCache() - No data available.");
+        if (options.chart) {
+            options.chart.state("failed", "No data available.");
+        }
     }
     var results = [];
     groups.each(function(group, group_index) {

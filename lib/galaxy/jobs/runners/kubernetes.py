@@ -101,7 +101,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     # metadata.name is the name of the pod resource created, and must be unique
                     # http://kubernetes.io/docs/user-guide/configuring-containers/
                     "name": k8s_job_name,
-                    "namespace": "default",  # TODO this should be set
+                    "namespace": self.runner_params['k8s_namespace'],
                     "labels": {"app": k8s_job_name}
             },
             "spec": self.__get_k8s_job_spec(job_wrapper)
@@ -365,7 +365,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
-        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
+        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
             job_destination = job_state.job_wrapper.job_destination

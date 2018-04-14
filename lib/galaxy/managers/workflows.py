@@ -36,6 +36,7 @@ from galaxy.workflow.modules import (
     ToolModule,
     WorkflowModuleInjector
 )
+from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
 from .base import decode_id
 
@@ -205,6 +206,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
     def __init__(self, app):
         self.app = app
+        self._resource_mapper_function = get_resource_mapper_function(app)
 
     def build_workflow_from_dict(
         self,
@@ -214,7 +216,7 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         publish=False,
         create_stored_workflow=True,
-        exact_tools=False,
+        exact_tools=True,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -241,7 +243,7 @@ class WorkflowContentsManager(UsesAnnotations):
             stored.user = trans.user
             stored.published = publish
             if data['annotation']:
-                annotation = sanitize_html(data['annotation'], 'utf-8', 'text/html')
+                annotation = sanitize_html(data['annotation'])
                 self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
             workflow_tags = data.get('tags', [])
             trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
@@ -376,7 +378,7 @@ class WorkflowContentsManager(UsesAnnotations):
         errors = {}
         for step in workflow.steps:
             try:
-                module_injector.inject(step, steps=workflow.steps)
+                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
             except exceptions.ToolMissingException:
                 if step.tool_id not in missing_tools:
                     missing_tools.append(step.tool_id)
@@ -432,13 +434,19 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model['messages'] = step.upgrade_messages
             step_models.append(step_model)
         return {
-            'id'                    : trans.app.security.encode_id(stored.id),
-            'history_id'            : trans.app.security.encode_id(trans.history.id) if trans.history else None,
-            'name'                  : stored.name,
-            'steps'                 : step_models,
-            'step_version_changes'  : step_version_changes,
-            'has_upgrade_messages'  : has_upgrade_messages
+            'id': trans.app.security.encode_id(stored.id),
+            'history_id': trans.app.security.encode_id(trans.history.id) if trans.history else None,
+            'name': stored.name,
+            'steps': step_models,
+            'step_version_changes': step_version_changes,
+            'has_upgrade_messages': has_upgrade_messages,
+            'workflow_resource_parameters': self._workflow_resource_parameters(trans, stored, workflow),
         }
+
+    def _workflow_resource_parameters(self, trans, stored, workflow):
+        """Get workflow scheduling resource parameters for this user and workflow or None if unconfigured.
+        """
+        return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
     def _workflow_to_dict_editor(self, trans, stored):
         workflow = stored.latest_workflow
@@ -450,7 +458,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
             if not module:
                 raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Load label from state of data input modules, necessary for backward compatibility
@@ -579,7 +587,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
             if not module:
-                return None
+                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
@@ -864,7 +872,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         annotation = step_dict['annotation']
         if annotation:
-            annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+            annotation = sanitize_html(annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily

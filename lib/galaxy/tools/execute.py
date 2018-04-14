@@ -31,7 +31,7 @@ class PartialJobExecution(Exception):
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
 
 
-def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None):
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -58,7 +58,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_invocation_uuid__']
-
+        if workflow_resource_parameters:
+            params['__workflow_resource_params__'] = workflow_resource_parameters
+        elif '__workflow_resource_params__' in params:
+            # Only workflow invocation code gets to set this, ignore user supplied
+            # values or rerun parameters.
+            del params['__workflow_resource_params__']
         job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
@@ -275,9 +280,9 @@ class ExecutionTracker(object):
                 trans=trans,
                 parent=history,
                 name=output_collection_name,
+                structure=effective_structure,
                 implicit_inputs=implicit_inputs,
                 implicit_output_name=output_name,
-                structure=effective_structure,
             )
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance

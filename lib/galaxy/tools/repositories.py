@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from contextlib import contextmanager
 
-from galaxy.datatypes.registry import Registry
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
@@ -31,7 +30,7 @@ class ValidationContext(object):
         self.config.tool_data_table_config = os.path.join(self.temporary_path, 'tool_data_table_conf.xml')
         self.config.shed_tool_data_table_config = os.path.join(self.temporary_path, 'shed_tool_data_table_conf.xml')
         self.tool_data_tables = tool_data_tables
-        self.datatypes_registry = registry or Registry()
+        self.datatypes_registry = registry
         self.hgweb_config_manager = hgweb_config_manager
         self.config.len_file_path = os.path.join(self.temporary_path, 'chromlen.txt')
         # If the builds file path is set to None, tools/__init__.py will load the default.
@@ -60,6 +59,7 @@ class ValidationContext(object):
                                tool_data_path=work_dir,
                                shed_tool_data_path=work_dir,
                                tool_data_tables=tool_data_tables,
+                               registry=app.datatypes_registry,
                                hgweb_config_manager=getattr(app, 'hgweb_config_manager', None)
                                ) as app:
             yield app

@@ -6,10 +6,11 @@
     </macros>
     <description>Uses the R-based `charts` tool to derive a histogram for discrete data e.g. text labels. The result is displayed as regular or stacked bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../nvd3_bar/static/nvd3.js" css="../nvd3_bar/static/nvd3.css" load="nvd3_histogram_discrete"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_histogram_discrete"/>
     <specs>
         <expand macro="specs"/>
         <use_panels>no</use_panels>
+        <confirm>True</confirm>
     </specs>
     <groups>
         <expand macro="groups"/>

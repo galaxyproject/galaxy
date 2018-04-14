@@ -80,7 +80,7 @@ export default Backbone.View.extend({
                     .first();
                 $panel.animate(
                     {
-                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - 120
+                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - $panel.position().top - 120
                     },
                     500
                 );
@@ -150,6 +150,7 @@ export default Backbone.View.extend({
         this.portlet = new Portlet.View({
             icon: options.icon,
             title: options.title,
+            title_id: options.title_id,
             cls: options.cls,
             operations: !options.hide_operations && options.operations,
             buttons: options.buttons,

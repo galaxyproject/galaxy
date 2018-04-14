@@ -39,11 +39,13 @@ from .data import (
     get_file_peek,
     Text
 )
+from .sniff import build_sniff_from_prefix
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
 
 
+@build_sniff_from_prefix
 class BlastXml(GenericXml):
     """NCBI Blast XML Output data"""
     file_ext = "blastxml"
@@ -59,7 +61,7 @@ class BlastXml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -73,17 +75,17 @@ class BlastXml(GenericXml):
         >>> BlastXml().sniff(fname)
         False
         """
-        with open(filename) as handle:
-            line = handle.readline()
-            if line.strip() != '<?xml version="1.0"?>':
-                return False
-            line = handle.readline()
-            if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
-                                    '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
-                return False
-            line = handle.readline()
-            if line.strip() != '<BlastOutput>':
-                return False
+        handle = file_prefix.string_io()
+        line = handle.readline()
+        if line.strip() != '<?xml version="1.0"?>':
+            return False
+        line = handle.readline()
+        if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
+                                '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
+            return False
+        line = handle.readline()
+        if line.strip() != '<BlastOutput>':
+            return False
         return True
 
     def merge(split_files, output_file):

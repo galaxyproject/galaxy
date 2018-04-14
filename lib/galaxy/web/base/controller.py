@@ -7,8 +7,7 @@ import re
 from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPInternalServerError,
-    HTTPNotImplemented,
-    HTTPRequestRangeNotSatisfiable
+    HTTPNotImplemented
 )
 from six import string_types
 from sqlalchemy import true
@@ -341,7 +340,7 @@ class Datatype(object):
 #
 
 
-class CreatesUsersMixin:
+class CreatesUsersMixin(object):
     """
     Mixin centralizing logic for user creation between web and API controller.
 
@@ -367,7 +366,7 @@ class CreatesUsersMixin:
         return user
 
 
-class CreatesApiKeysMixin:
+class CreatesApiKeysMixin(object):
     """
     Mixing centralizing logic for creating API keys for user objects.
 
@@ -378,7 +377,7 @@ class CreatesApiKeysMixin:
         return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
-class SharableItemSecurityMixin:
+class SharableItemSecurityMixin(object):
     """ Mixin for handling security for sharable items. """
 
     def security_check(self, trans, item, check_ownership=False, check_accessible=False):
@@ -386,7 +385,7 @@ class SharableItemSecurityMixin:
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin:
+class ExportsHistoryMixin(object):
 
     def serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
@@ -419,7 +418,7 @@ class ExportsHistoryMixin:
         history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
 
 
-class ImportsHistoryMixin:
+class ImportsHistoryMixin(object):
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -428,7 +427,7 @@ class ImportsHistoryMixin:
         history_imp_tool.execute(trans, incoming=incoming)
 
 
-class UsesLibraryMixin:
+class UsesLibraryMixin(object):
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
@@ -517,7 +516,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message, 'utf-8')
+            ldda_message = sanitize_html(ldda_message)
 
         # check permissions on (all three?) resources: hda, library, folder
         # TODO: do we really need the library??
@@ -1075,7 +1074,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+
+        if not data:
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:
             # Verify ownership.
@@ -1121,7 +1123,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         else:
             self.create_item_slug(trans.sa_session, visualization)
         if annotation:
-            annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+            annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
             #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             self.add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
@@ -1242,7 +1244,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=False):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1269,7 +1271,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         )
 
 
-class UsesFormDefinitionsMixin:
+class UsesFormDefinitionsMixin(object):
     """Mixin for controllers that use Galaxy form objects."""
 
     def get_all_forms(self, trans, all_versions=False, filter=None, form_type='All'):
@@ -1337,7 +1339,7 @@ class UsesFormDefinitionsMixin:
         return values
 
 
-class SharableMixin:
+class SharableMixin(object):
     """ Mixin for a controller that manages an item that can be shared. """
 
     # -- Implemented methods. --

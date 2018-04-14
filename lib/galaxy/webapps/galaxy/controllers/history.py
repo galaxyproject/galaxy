@@ -44,10 +44,6 @@ class NameColumn(grids.TextColumn):
 class HistoryListGrid(grids.Grid):
 
     # Custom column types
-    class DelayedValueColumn(grids.GridColumn):
-        def get_value(self, trans, grid, history):
-            return '<div class="delayed-value-%s" data-history-id="%s"><span class="fa fa-spinner fa-spin"></span></div>' % (self.key, trans.security.encode_id(history.id))
-
     class ItemCountColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):
             return str(history.hid_counter - 1)
@@ -89,11 +85,11 @@ class HistoryListGrid(grids.Grid):
     columns = [
         HistoryListNameColumn("Name", key="name", attach_popup=True, filterable="advanced"),
         ItemCountColumn("Items", key="item_count", sortable=False),
-        DelayedValueColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
+        grids.GridColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True, delayed=True),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation,
                                    filterable="advanced", grid_name="HistoryListGrid"),
         grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False, use_shared_with_count=True),
-        DelayedValueColumn("Size on Disk", key="disk_size", sortable=False),
+        grids.GridColumn("Size on Disk", key="disk_size", sortable=False, delayed=True),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         DeletedColumn("Status", key="deleted", filterable="advanced")
@@ -494,11 +490,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = trans.sa_session.query(model.History).options(
             eagerload_all('active_datasets.creating_job_associations.job.workflow_invocation_step.workflow_invocation.workflow'),
         ).get(id)
-        assert history
-        # TODO: formalize to trans.show_error
-        assert (history.user and (history.user.id == trans.user.id) or
-                (history.id == trans.history.id) or
-                (trans.user_is_admin()))
+        if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
+                             (trans.history and history.id == trans.history.id) or
+                             trans.user_is_admin())):
+            return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
         # top level
@@ -1127,7 +1122,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     def purge_deleted_datasets(self, trans):
         count = 0
-        if trans.app.config.allow_user_dataset_purge:
+        if trans.app.config.allow_user_dataset_purge and trans.history:
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
@@ -1145,7 +1140,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     except Exception:
                         log.exception('Unable to purge dataset (%s) on purge of hda (%s):' % (hda.dataset.id, hda.id))
                 count += 1
-        return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+            return trans.show_ok_message("%d datasets have been deleted permanently" % count, refresh_frames=['history'])
+        return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
     def delete(self, trans, id, purge=False):

@@ -1,6 +1,10 @@
 /** This class renders the selection grid. */
+import * as Backbone from "backbone";
 import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
+
+/* global $ */
+
 var View = Backbone.View.extend({
     events: {
         "click .ui-thumbnails-item": "_onclick",

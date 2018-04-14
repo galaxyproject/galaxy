@@ -346,6 +346,7 @@ const WorkflowListView = Backbone.View.extend({
 const ImportWorkflowView = Backbone.View.extend({
     initialize: function() {
         this.setElement("<div/>");
+        this.active_tab = "workflow";
         this.render();
     },
 

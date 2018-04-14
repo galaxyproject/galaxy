@@ -66,6 +66,7 @@ var GroupView = Backbone.View.extend({
                             cls: "ui-portlet-plain",
                             onchange: function() {
                                 self.group.set(self.form.data.create());
+                                self.chart.set("modified", true);
                                 self.chart.trigger("redraw");
                             }
                         });

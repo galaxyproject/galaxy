@@ -1,7 +1,3 @@
-# Location of your galaxy config file. The radio telescope will need to
-# partially initialize a copy of galaxy.
-galaxy_config: config/galaxy.ini
-
 grt:
     # Go to https://telescope.galaxyproject.org to obtain an Instance ID and API key
     instance_id: 

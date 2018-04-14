@@ -105,6 +105,7 @@ var PieWrapper = Backbone.View.extend({
         var targets = options.targets;
         var process = options.process;
         Datasets.request({
+            chart: chart,
             dataset_id: chart.get("dataset_id"),
             dataset_groups: chart.groups,
             success: function(groups) {

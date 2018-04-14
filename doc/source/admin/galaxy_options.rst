@@ -71,7 +71,7 @@
     gone away", you will want to set this to some positive value (7200
     should work).
 :Default: ``-1``
-:Type: str
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -443,7 +443,7 @@
     scheme that may work in wider range of scenarios than the watchdog
     default.
 :Default: ``false``
-:Type: bool
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -608,7 +608,7 @@
     which will use a less efficient monitoring scheme that may work in
     wider range of scenarios than the watchdog default.
 :Default: ``false``
-:Type: bool
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~
@@ -1546,20 +1546,8 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``nginx_x_archive_files_base``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    nginx can make use of mod_zip to create zip files containing
-    multiple library files.  If using X-Accel-Redirect, this can be
-    the same value as that option.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~
@@ -1601,8 +1589,8 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1613,8 +1601,8 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1626,8 +1614,8 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1639,8 +1627,20 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2157,6 +2157,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``statsd_influxdb``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If you are using telegraf to collect these metrics and then
+    sending them to InfluxDB, Galaxy can provide more nicely tagged
+    metrics. Instead of sending prefix + dot-separated-path, Galaxy
+    will send prefix with a tag path set to the page url
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~
 ``graphite_host``
 ~~~~~~~~~~~~~~~~~
@@ -2437,6 +2450,22 @@
     Set maximum size of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
 
 
 ~~~~~~~~~~~~~
@@ -2888,6 +2917,36 @@
 :Description:
     If OpenID is enabled, consumer cache directory to use.
 :Default: ``database/openid_consumer_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``enable_oidc``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables OpenID Connect (OIDC) support.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``oidc_config_file``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC configuration file.
+:Default: ``config/oidc_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC backends configuration file.
+:Default: ``config/oidc_backends_config.xml``
 :Type: str
 
 
@@ -3391,6 +3450,38 @@
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
 :Default: ``config/job_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Similar to the above parameter, workflows can describe parameters
+    used to influence scheduling of jobs within the workflow. This
+    requires both a description of the fields available (which
+    defaults to the definitions in job_resource_params_file if not
+    set).
+:Default: ``config/workflow_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_mapper``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This parameter describes how to map users and workflows to a set
+    of workflow resource parameter to present (typically input IDs
+    from workflow_resource_params_file). If this this is a function
+    reference it will be passed various inputs (workflow model object
+    and user) and it should produce a list of input IDs. If it is a
+    path it is expected to an XML or YAML file describing how to map
+    group names to parameter descriptions (additional types of
+    mappings via these files could be implemented but haven't yet -
+    for instance using workflow tags to do the mapping).
+:Default: ``config/workflow_resource_mapper_conf.yml``
 :Type: str
 
 

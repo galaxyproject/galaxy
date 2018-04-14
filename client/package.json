@@ -25,11 +25,13 @@
     "jquery.cookie": "^1.4.1",
     "latex-parser": "^0.6.2",
     "latex-to-unicode-converter": "^0.5.0",
+    "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.17.0",
     "requirejs": "2",
     "underscore": "^1.8.3",
     "vue": "^2.5.9",
-    "vue-social-sharing": "^2.3.3"
+    "vue-social-sharing": "^2.3.3",
+    "vue-handsontable-official": "^1.0.0"
   },
   "scripts": {
     "watch": "gulp stage-libs && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
@@ -50,13 +52,12 @@
     "gulp-production-maps": "GXY_BUILD_SOURCEMAPS=1 NODE_ENV=production gulp",
     "build-toolshed": "grunt --app=toolshed",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
-    "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
-    "build-scatterplot": "NODE_PATH=./node_modules webpack -p --config ../config/plugins/visualizations/scatterplot/webpack.config.js",
     "prettier": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/{*.js,*.vue}\""
   },
   "devDependencies": {
     "babel-core": "^6.24.0",
     "babel-loader": "^7.1.1",
+    "babel-plugin-transform-vue-template": "^0.3.1",
     "babel-preset-env": "^1.6.1",
     "concurrently": "^3.5.1",
     "css-loader": "^0.28.7",
@@ -93,7 +94,7 @@
     "qunitjs": "^2.4.1",
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
-    "vue-template-compiler": "^2.5.9",
+    "vue-template-compiler": "^2.5.13",
     "webpack": "^3.10.0"
   }
 }

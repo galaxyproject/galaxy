@@ -66,6 +66,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Force /activate to go to the controller
     webapp.add_route('/activate', controller='user', action='activate')
 
+    # Authentication endpoints.
+    webapp.add_route('/authnz/{provider}/login', controller='authnz', action='login', provider=None)
+    webapp.add_route('/authnz/{provider}/callback', controller='authnz', action='callback', provider=None)
+    webapp.add_route('/authnz/{provider}/disconnect', controller='authnz', action='disconnect', provider=None)
+
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
     webapp.add_route('/{controller}/{action}', action='index')
@@ -108,7 +113,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
     webapp.add_client_route('/openids/list')
-    webapp.add_client_route('/visualizations/dataset_id={dataset_id}')
+    webapp.add_client_route('/visualizations')
     webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
@@ -179,6 +184,7 @@ uwsgi_app_factory = uwsgi_app
 def postfork_setup():
     from galaxy.app import app
     app.control_worker.bind_and_start()
+    app.application_stack.log_startup()
 
 
 def populate_api_routes(webapp, app):
@@ -257,6 +263,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('dataset_collection', 'dataset_collections', path_prefix='/api/')
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
+    webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
     webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
@@ -272,9 +279,13 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect('/api/tools/fetch', action='fetch', controller='tools', conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/all_requirements', action='all_requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/build', action='build', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
+    webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data_path', action='test_data_path', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
@@ -301,6 +312,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
+    webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
@@ -965,7 +977,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         app = wrap_if_allowed(app, stack, StatsdMiddleware,
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
-                                    conf.get('statsd_prefix', 'galaxy')))
+                                    conf.get('statsd_prefix', 'galaxy'),
+                                    conf.get('statsd_influxdb', False)))
         log.debug("Enabling 'statsd' middleware")
     # graphite request timing and profiling
     graphite_host = conf.get('graphite_host', None)
@@ -1053,17 +1066,5 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
 
 def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap, cache_time = galaxy.web.framework.webapp.build_url_map(app, global_conf, local_conf)
-    # wrap any static dirs for plugins
-    plugin_frameworks = plugin_frameworks or []
-    for framework in plugin_frameworks:
-        # invert control to each plugin for finding their own static dirs
-        for plugin in framework.plugins.values():
-            if plugin.serves_static:
-                plugin_url = '/plugins/' + plugin.static_url
-                urlmap[(plugin_url)] = Static(plugin.static_path, cache_time)
-                log.debug('added url, path to static middleware: %s, %s', plugin_url, plugin.static_path)
-
-    # URL mapper becomes the root webapp
     return urlmap

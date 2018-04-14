@@ -137,6 +137,11 @@ class JobRunnerMapper(object):
                 workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
                 actual_args["workflow_invocation_uuid"] = workflow_invocation_uuid
 
+            if "workflow_resource_params" in function_arg_names:
+                param_values = job.raw_param_dict()
+                workflow_resource_params = param_values.get("__workflow_resource_params__", None)
+                actual_args["workflow_resource_params"] = workflow_resource_params
+
         return expand_function(**actual_args)
 
     def __job_params(self, job):
