@@ -574,7 +574,7 @@
         min-width: 100%;
         margin: 0px 0px 0px 0px;
         background-color: white;
-        padding: $mph-column_gap;
+        padding: $mph-column_gap 0px;
     }
 
     .history-column {
@@ -585,6 +585,9 @@
         &:first-child {
             position: fixed;
             z-index: 10;
+            background-color: white;
+            width: $mph-column_width + $mph-column_gap;
+            padding-left: $mph-column_gap;
 
             // visually differentiate the current history
             .history-panel {
@@ -594,7 +597,7 @@
         }
         &:nth-child(2) {
             // push the column after the current away from the left (since it's fixed)
-            margin-left: ($mph-column_width + $mph-column_gap);
+            margin-left: ($mph-column_width + $mph-column_gap * 2);
         }
         &:last-child {
             margin-right: 0px;
