@@ -133,7 +133,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/create')
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import_workflow')
-    webapp.add_client_route('/workflows/share_workflow')
+    webapp.add_client_route('/workflows/share')
     webapp.add_client_route('/custom_builds')
 
     # ==== Done
@@ -304,6 +304,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/workflows/share_workflow', action='share_workflow', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")

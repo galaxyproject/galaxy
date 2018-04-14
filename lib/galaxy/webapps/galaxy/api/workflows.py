@@ -12,7 +12,8 @@ from sqlalchemy.orm import eagerload
 from galaxy import (
     exceptions,
     model,
-    util
+    util,
+    web
 )
 from galaxy.managers import (
     histories,
@@ -373,7 +374,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             trans.response.set_content_type('application/galaxy-archive')
         return ret_dict
 
-    @expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/workflows/{encoded_workflow_id}
@@ -401,6 +401,69 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         # TODO: Unsure of response message to let api know that a workflow was successfully deleted
         return ("Workflow '%s' successfully deleted" % stored_workflow.name)
+
+    @expose_api
+    @web.json
+    def share_workflow(self, trans, id, **kwargs):
+        """
+        GET /api/workflows/share_workflow
+        Returns a selected workflow as a json dictionary.
+        :param  id:      encoded workflow id
+        """
+        session = trans.sa_session
+        if 'unshare_me' in kwargs:
+            # Remove self from shared associations with workflow.
+            stored = self.get_stored_workflow(trans, id, False, True)
+            association = session.query(model.StoredWorkflowUserShareAssociation) \
+                                 .filter_by(user=trans.user, stored_workflow=stored).one()
+            session.delete(association)
+            session.flush()
+            return self.list(trans)
+        else:
+            # Get session and workflow.
+            stored = self.get_stored_workflow(trans, id)
+            session.add(stored)
+
+            # Do operation on workflow.
+            if 'make_accessible_via_link' in kwargs:
+                self._make_item_accessible(trans.sa_session, stored)
+            elif 'make_accessible_and_publish' in kwargs:
+                self._make_item_accessible(trans.sa_session, stored)
+                stored.published = True
+            elif 'publish' in kwargs:
+                stored.published = True
+            elif 'disable_link_access' in kwargs:
+                stored.importable = False
+            elif 'unpublish' in kwargs:
+                stored.published = False
+            elif 'disable_link_access_and_unpublish' in kwargs:
+                stored.importable = stored.published = False
+            elif 'unshare_user' in kwargs:
+                user = session.query(model.User).get(trans.security.decode_id(kwargs['unshare_user']))
+                if not user:
+                    error("User not found for provided id")
+                association = session.query(model.StoredWorkflowUserShareAssociation) \
+                                     .filter_by(user=user, stored_workflow=stored).one()
+                session.delete(association)
+
+            # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
+            if stored.importable and not stored.slug:
+                self._make_item_accessible(trans.sa_session, stored)
+            session.flush()
+            wf_association = list()
+            for item in stored.users_shared_with:
+                association = dict()
+                association["user_id"] = trans.security.encode_id(item.user.id)
+                association["user_email"] = item.user.email
+                wf_association.append(association)
+            stored_workflow = stored.to_dict()
+            stored_workflow["id"] = trans.security.encode_id(stored_workflow["id"])
+            stored_workflow["user_name"] = trans.get_user().username
+            stored_workflow["importable"] = stored.importable
+            stored_workflow["url"] = url_for(controller="workflow", action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True)
+            stored_workflow["users_shared_with"] = wf_association
+            stored_workflow["slug"] = stored.slug
+            return {"workflow_item": stored_workflow}
 
     @expose_api
     def import_new_workflow_deprecated(self, trans, payload, **kwd):

@@ -67,7 +67,7 @@ window.app = function app(options, bootstrapped) {
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
-            "(/)workflows/share_workflow": "show_workflows_share",
+            "(/)workflows/share": "show_workflows_share",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)import(/)": "show_histories_import",

@@ -134,7 +134,7 @@ const WorkflowItemView = Backbone.View.extend({
                 this.model.id
             }">Edit</a></li><li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li><li><a href="${
                 Galaxy.root
-            }workflows/share_workflow?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
+            }workflows/share?id=${this.model.id}">Share</a></li><li><a href="${Galaxy.root}api/workflows/${
                 this.model.id
             }/download?format=json-download">Download</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a id="rename-workflow" style="cursor: pointer;">Rename</a></li><li><a href="${
                 Galaxy.root
@@ -150,7 +150,7 @@ const WorkflowItemView = Backbone.View.extend({
                 this.model.id
             }">Run</a></li><li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li><li><a class="link-confirm-shared-${
                 this.model.id
-            }" href="${Galaxy.root}workflow/sharing_workflow?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
+            }" href="${Galaxy.root}api/workflows/share_workflow?unshare_me=True&id=${this.model.id}">Remove</a></li></ul>`;
         }
     }
 });

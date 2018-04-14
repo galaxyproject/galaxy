@@ -10,7 +10,7 @@
                 <a class="action-button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
             </li>
             <li>
-                <a class="action-button" :href="createSVGUrl" title="Create image of workflow in SVG format">Create image</a>
+                <a class="action-button" v-on:click.prevent="createWorkflowSVG" title="Create image of workflow in SVG format">Create image</a>
             </li>
             <li>
                 <a class='action-button' title='Back to workflows list' :href="wfListUrl"> Back to workflows list </a>
@@ -211,7 +211,7 @@ export default {
         }
     },
     created: function() {
-        let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id
+        let url = Galaxy.root + 'api/workflows/share_workflow?id=' + this.id
         if(this.message !== "" && this.status === "error") {
             this.showError(this.message);
         }
@@ -233,7 +233,8 @@ export default {
             mod_toastr.error(errorMsg);
         },
         updateView: function(response) {
-            this.workflowItem = response.data.workflow_item;
+            response = JSON.parse(response.data);
+            this.workflowItem = response.workflow_item;
             this.workflowUrl = this.workflowItem.url;
             if( this.workflowItem.importable === true ) {
                 this.shareStatus = "accessible via link";
@@ -274,30 +275,41 @@ export default {
             });
         },
         getUrl: function() {
-            return Galaxy.root + "workflow/sharing_workflow?id=" + this.id;
+            return Galaxy.root + "api/workflows/share_workflow?id=" + this.id;
         },
         submit: function(event) {
-            let url = Galaxy.root + 'workflow/sharing_workflow',
+            let url = Galaxy.root + 'api/workflows/share_workflow',
                 attr = event.target.name,
                 value = event.target.value;
             $.ajax({
                 url: url,
                 data: { id: this.id, [attr]: value },
-                method: "POST"
+                method: "GET"
             })
             .done(response => {
-                window.location = Galaxy.root + 'workflows/share_workflow?id=' + this.id;
+                window.location = Galaxy.root + 'workflows/share?id=' + this.id;
             })
             .fail(response => {
                 this.showError(response);
             });
         },
         unshareWorkflow: function(userId) {
-            let url = Galaxy.root + 'workflow/sharing_workflow?id=' + this.id + '&unshare_user=' + userId;
+            let url = Galaxy.root + 'api/workflows/share_workflow?id=' + this.id + '&unshare_user=' + userId;
             this.ajaxCall(url);
         },
         createUsernameSlugUrl: function() {
             return this.workflowItem.url + '/json-download';
+        },
+        createWorkflowSVG: function() {
+            let url = this.createSVGUrl;
+            axios
+                .get(url)
+                .then(response => {
+                    window.location = url;
+                })
+                .catch(e => {
+                    this.showError('Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.');
+                });
         }
     },
     updated: function() {
