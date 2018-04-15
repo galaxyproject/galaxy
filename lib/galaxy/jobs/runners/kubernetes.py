@@ -52,6 +52,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
             k8s_galaxy_instance_id=dict(map=str),
+            k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
@@ -119,9 +120,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # re-create the job
             log.debug("Matching job exists, but Job is not trusted, so it will be deleted and a new one created.")
             job.delete()
+            elapsed_seconds = 0
             while job.exists():
                 sleep(3)
+                elapsed_seconds += 3
+                if elapsed_seconds > self.runner_params['k8s_timeout_seconds_job_deletion']:
+                    log.debug("Timed out before k8s could delete existing untrusted job " + k8s_job_name +
+                              ", not queuing associated Galaxy job.")
+                    return
                 log.debug("Waiting for job to be deleted " + k8s_job_name)
+
             Job(self._pykube_api, k8s_job_obj).create()
         elif job.exists() and self._galaxy_instance_id:
             # The job exists and we trust the identifier.
