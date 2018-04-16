@@ -54,14 +54,13 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
-    stdouterr = None
     try:
-        stdouterr = subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
+        subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % e
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % stdouterr
+            error_message += "\nOutput was:\n%s" % e.output
         log.error(error_message)
         return False, error_message
 
@@ -457,4 +456,13 @@ def update_repository(repo, ctx_rev=None):
     # I = ignored
     # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
     # purging is not supported by the mercurial API.
-    commands.update(get_configured_ui(), repo, rev=ctx_rev)
+    cmd = ['hg', 'update']
+    if ctx_rev:
+        cmd.extend(['-r', ctx_rev])
+    try:
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo.root)
+    except Exception as e:
+        error_message = 'Error updating repository: %s' % e
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
