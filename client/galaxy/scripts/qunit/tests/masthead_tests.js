@@ -117,9 +117,9 @@ QUnit.test("tabs", function(assert) {
     tab.set("show_menu", true);
     assert.ok($menu.css("display", "block"), "Menu manually shown, again");
     tab = this.masthead.collection.findWhere({ id: "enable-scratchbook" });
-    $tab = $("#enable-scratchbook").find(".dropdown");
-    assert.ok(tab && $tab.length == 1, "Found tab to enable scratchbook");
-    $toggle = $tab.find(".dropdown-toggle");
+    $tab = $("#enable-scratchbook");
+    $toggle = $tab.find(".nav-link");
+    assert.ok(tab && $toggle.length == 1, "Found tab to enable scratchbook");
     assert.ok(!$toggle.hasClass("toggle"), "Untoggled before click");
     $toggle.trigger("click");
     assert.ok($toggle.hasClass("toggle"), "Toggled after click");
