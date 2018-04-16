@@ -4,7 +4,7 @@
 define([
     "jquery",
     "sinon",
-    "libs/bootstrap",
+    "bootstrap",
     "qunit/test-data/bootstrapped",
     "qunit/test-data/fakeserver",
     "galaxy",
