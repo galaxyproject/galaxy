@@ -29,7 +29,11 @@ class CloudAuthzController(BaseAPIController):
         :param kwargs:
         :return:
         """
-        pass
+        rtv = []
+        for cloudauthz in trans.user.cloudauthz:
+            rtv.append(self.cloudauthzs_serializer.serialize_to_view(
+                cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, 'summary')))
+        return rtv
 
     @web.expose_api
     def create(self, trans, payload, **kwargs):
