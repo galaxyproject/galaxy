@@ -58,6 +58,7 @@
     "babel-loader": "^7.1.1",
     "babel-plugin-transform-vue-template": "^0.3.1",
     "babel-preset-env": "^1.6.1",
+    "chai": "^4.1.2",
     "concurrently": "^3.5.1",
     "css-loader": "^0.28.7",
     "del": "^3.0.0",
@@ -83,10 +84,12 @@
     "gulp-watch": "^4.3.11",
     "jshint": "^2.9.4",
     "karma": "^1.7.1",
+    "karma-mocha": "^1.3.0",
     "karma-phantomjs-launcher": "^1.0.4",
     "karma-polyfill": "^1.0.0",
     "karma-qunit": "^1.2.1",
     "karma-webpack": "^2.0.6",
+    "mocha": "^5.0.5",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
     "prettier": "^1.10.1",
@@ -94,6 +97,7 @@
     "sinon": "^4.1.2",
     "vue-loader": "^13.5.0",
     "vue-template-compiler": "^2.5.13",
-    "webpack": "^3.10.0"
+    "webpack": "^3.10.0",
+    "yaml-loader": "^0.5.0"
   }
 }
