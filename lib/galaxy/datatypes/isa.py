@@ -1,7 +1,7 @@
 """
 ISA datatype
 
-See http://isa-tools.org
+See https://github.com/ISA-tools
 
 """
 
