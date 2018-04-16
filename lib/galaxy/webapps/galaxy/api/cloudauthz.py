@@ -19,6 +19,7 @@ class CloudAuthzController(BaseAPIController):
     def __init__(self, app):
         super(CloudAuthzController, self).__init__(app)
         self.cloudauthzs_manager = cloudauthzs.CloudAuthzManager(app)
+        self.cloudauthzs_serializer = cloudauthzs.CloudAuthzsSerializer(app)
 
     @web.expose_api
     def index(self, trans, **kwargs):
