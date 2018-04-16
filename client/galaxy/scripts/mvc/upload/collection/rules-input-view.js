@@ -21,12 +21,12 @@ export default Backbone.View.extend({
         this.btnReset = new Ui.Button({
             id: "btn-reset",
             title: _l("Reset"),
-            onclick: () => this._eventReset(),
+            onclick: () => this._eventReset()
         });
         this.btnClose = new Ui.Button({
             id: "btn-close",
             title: _l("Close"),
-            onclick: () => this.app.modal.hide(),
+            onclick: () => this.app.modal.hide()
         });
         _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
@@ -122,7 +122,7 @@ export default Backbone.View.extend({
         if (this.datasetSelectorView) {
             this.datasetSelectorView.value(null);
         }
-        $(".upload-rule-source-content").val('');
+        $(".upload-rule-source-content").val("");
         this._updateScreen();
     },
 

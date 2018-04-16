@@ -1,6 +1,6 @@
 <template>
     <state-div v-if="state == 'build'">
-        <!-- Different instructions if building up from individual datasets vs.
+        <!-- Different instructions if building up from individual datasets vs. 
              initial data import. -->
         <div class="header flex-row no-flex" v-if="ruleView == 'source'">
             The is an advanced setting, below is a raw JSON description of the rules to apply to the tabular data used. The alternative graphical editor is recommended for most usages.
@@ -182,7 +182,7 @@
                                  v-for="map in mapping"
                                  v-bind:index="map.index"
                                  v-bind:key="map.type">
-                                <column-selector
+                                <column-selector 
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
                                     :target.sync="map.columns"
@@ -194,7 +194,7 @@
                                     <span class="fa fa-times" @click="removeMapping(map.index)"></span>
                                 </column-selector>
                             </div>
-                            <div class="buttons btn-group pull-right rule-edit-buttons">
+                            <div class="buttons btn-group float-right rule-edit-buttons">
                                 <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
@@ -276,8 +276,8 @@
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
                                   </ul>
-                                </div>
-                            </div>
+                                </div> 
+                            </div>                               
                         </div>
                     </div>
                 </div>
@@ -325,7 +325,7 @@
             </label>
             <label class="rule-option float-right" v-if="showCollectionNameInput">
                 {{ l("Name") }}:
-                <input class="collection-name" style="width: 260px"
+                <input class="collection-name" style="width: 260px" 
                 :placeholder="namePlaceholder" v-model="collectionName" />
             </label>
             <option-buttons-div>
@@ -684,7 +684,7 @@ const RuleComponent = {
     data: function() {
         return {
             applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel"),
+            cancelLabel: _l("Cancel")
         };
     },
     props: {
@@ -724,228 +724,13 @@ const OptionButtonsDiv = {
 };
 
 export default {
-  data: function() {
-    let mapping;
-    if(this.elementsType == "ftp") {
-      mapping = [{"type": "ftp_path", "columns": [0]}];
-    } else if(this.elementsType == "datasets") {
-      mapping = [{"type": "list_identifiers", "columns": [1]}];
-    } else {
-      mapping = [];
-    }
-    return {
-        rules: [],
-        colHeadersPerRule: [],
-        mapping: mapping,
-        state: 'build',  // 'build', 'error', 'wait',
-        ruleView: 'normal', // 'normal' or 'source'
-        ruleSource: '',
-        ruleSourceError: null,
-        errorMessage: '',
-        hasRuleErrors: false,
-        jaggedData: false,
-        waitingJobState: 'new',
-        titleReset: _l("Undo all reordering and discards"),
-        titleNumericSort: _l("By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers."),
-        titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column."),
-        titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column."),
-        titleInvertFilterMatches: _l("Remove rows not matching supplied value."),
-        titleViewSource: _l("Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data."),
-        namePlaceholder: _l("Enter a name for your new collection"),
-        activeRuleIndex: null,
-        addColumnRegexTarget: 0,
-        addColumnBasenameTarget: 0,
-        addColumnRegexExpression: "",
-        addColumnRegexReplacement: null,
-        addColumnRegexGroupCount: null,
-        addColumnRegexType: "global",
-        addColumnConcatenateTarget0: 0,
-        addColumnConcatenateTarget1: 0,
-        addColumnRownumStart: 1,
-        addColumnSubstrTarget: 0,
-        addColumnSubstrType: "keep_prefix",
-        addColumnSubstrLength: 1,
-        addColumnValue: "",
-        removeColumnTargets: [],
-        addFilterRegexTarget: 0,
-        addFilterRegexExpression: "",
-        addFilterRegexInvert: false,
-        addFilterMatchesTarget: 0,
-        addFilterMatchesValue: "",
-        addFilterMatchesInvert: false,
-        addFilterEmptyTarget: 0,
-        addFilterEmptyInvert: false,
-        addFilterCompareTarget: 0,
-        addFilterCompareValue: 0,
-        addFilterCompareType: "less_than",
-        addFilterCountN: 1,
-        addFilterCountInvert: false,
-        addFilterCountWhich: "first",
-        addSortingTarget: 0,
-        addSortingNumeric: false,
-        splitColumnsTargets0: [],
-        splitColumnsTargets1: [],
-        swapColumnsTarget0: 0,
-        swapColumnsTarget1: 0,
-        collectionName: "",
-        displayRuleType: null,
-        extensions: [],
-        extension: null,
-        genomes: [],
-        genome: null,
-        hideSourceItems: this.defaultHideSourceItems,
-        orientation: "vertical",
-    };
-  },
-  props: {
-    initialElements: {
-        type: Array,
-        required: true
-    },
-    importType: {
-        type: String,
-        required: false,
-        default: "collections",
-    },
-    elementsType: {
-        type: String,
-        required: false,
-        default: "datasets",
-    },
-    // required if elementsType is "datasets" - hook into Backbone code for creating
-    // collections from HDAs, etc...
-    creationFn: {
-        required: false,
-        type: Function,
-    },
-    defaultHideSourceItems: {
-        type: Boolean,
-        required: false,
-        default: true,
-    },
-    // Callbacks sent in by modal code.
-    oncancel: {
-        required: true,
-        type: Function,
-    },
-    oncreate: {
-        required: true,
-        type: Function,
-    },
-    ftpUploadSite: {
-        type: String,
-        required: false,
-        default: null,
-    }
-  },
-  computed: {
-    exisistingDatasets() {
-        const elementsType = this.elementsType;
-        return elementsType === "datasets";
-    },
-    showFileTypeSelector() {
-        return !this.exisistingDatasets && !this.mappingAsDict.file_type;
-    },
-    showGenomeSelector() {
-        return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
-    },
-    showCollectionNameInput() {
-        return this.importType == "collections" && !this.mappingAsDict.collection_name;
-    },
-    titleFinish() {
-        if(this.elementsType == "datasets") {
-            return _l("Create new collection from specified rules and datasets.");
+    data: function() {
+        let mapping;
+        if (this.elementsType == "ftp") {
+            mapping = [{ type: "ftp_path", columns: [0] }];
+        } else if (this.elementsType == "datasets") {
+            mapping = [{ type: "list_identifiers", columns: [1] }];
         } else {
-            return _l("Upload collection using specified rules.");
-        }
-    },
-    finishButtonTitle() {
-        if(this.elementsType == "datasets") {
-            return _l("Create");
-        } else {
-            return _l("Upload");
-        }
-    },
-    hasActiveMappingEdit() {
-        const has = _.any(_.values(this.mapping), (mapping) => mapping.editing);
-        return has;
-    },
-    activeRule() {
-        return this.activeRuleIndex !== null && this.rules[this.activeRuleIndex];
-    },
-    activeRuleColHeaders() {
-        const rulesHeaders = (this.activeRuleIndex !== null && this.colHeadersPerRule[this.activeRuleIndex]);
-        return rulesHeaders || this.colHeaders;
-    },
-    horizontal() {
-        return this.orientation == "horizontal";
-    },
-    vertical() {
-        return this.orientation == "vertical";
-    },
-    mappedTargets() {
-      const targets = [];
-      for(let mapping of this.mapping) {
-        targets.push(mapping.type);
-      }
-      return targets;
-    },
-    unmappedTargets() {
-      const targets = [];
-      const mappedTargets = this.mappedTargets;
-      for(let target in MAPPING_TARGETS) {
-        const targetModes = MAPPING_TARGETS[target].modes;
-
-        if(targetModes && targetModes.indexOf(this.elementsType) < 0) {
-          continue;
-        }
-
-        const targetDefinition = MAPPING_TARGETS[target];
-        const targetImportType = targetDefinition.importType;
-        if(targetImportType && this.importType != targetImportType) {
-            continue;
-        }
-        if (!this.ftpUploadSite && targetDefinition.requiresFtp) {
-            continue;
-        }
-        if(mappedTargets.indexOf(target) < 0) {
-          targets.push(target);
-        }
-      }
-      return targets;
-    },
-    hotData() {
-      let data, sources;
-      if(this.elementsType == "datasets") {
-        data = this.initialElements.map(el => [el["hid"], el["name"]]);
-        sources = this.initialElements.slice();
-      } else {
-        data = this.initialElements.slice();
-        sources = data.map(el => null);
-      }
-
-      let hasRuleError = false;
-      this.colHeadersPerRule = [];
-      for(var ruleIndex in this.rules) {
-        const ruleHeaders = this.colHeadersFor(data);
-        this.colHeadersPerRule[ruleIndex] = ruleHeaders;
-
-        const rule = this.rules[ruleIndex];
-        rule.error = null;
-        rule.warn = null;
-        if(hasRuleError) {
-          rule.warn = _l("Skipped due to previous errors.");
-          continue;
-        }
-        var ruleType = rule.type;
-        const ruleDef = RULES[ruleType];
-        const res = ruleDef.apply(rule, data, sources);
-        if (res.error) {
-          hasRuleError = true;
-          rule.error = res.error;
-        } else {
-            // TODO: incorrect to ease testing, fix.
-            // mapping = [{"type": "url", "columns": [0]}, {"type": "list_identifiers", "columns": [1]}, {"type": "paired_identifier", "columns": [3]}, {"type": "collection_name", "columns": [5]}];
             mapping = [];
         }
         return {
@@ -1060,6 +845,33 @@ export default {
         }
     },
     computed: {
+        exisistingDatasets() {
+            const elementsType = this.elementsType;
+            return elementsType === "datasets";
+        },
+        showFileTypeSelector() {
+            return !this.exisistingDatasets && !this.mappingAsDict.file_type;
+        },
+        showGenomeSelector() {
+            return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
+        },
+        showCollectionNameInput() {
+            return this.importType == "collections" && !this.mappingAsDict.collection_name;
+        },
+        titleFinish() {
+            if (this.elementsType == "datasets") {
+                return _l("Create new collection from specified rules and datasets.");
+            } else {
+                return _l("Upload collection using specified rules.");
+            }
+        },
+        finishButtonTitle() {
+            if (this.elementsType == "datasets") {
+                return _l("Create");
+            } else {
+                return _l("Upload");
+            }
+        },
         hasActiveMappingEdit() {
             const has = _.any(_.values(this.mapping), mapping => mapping.editing);
             return has;
@@ -1132,7 +944,7 @@ export default {
                     continue;
                 }
                 var ruleType = rule.type;
-                const ruleDef = Rules[ruleType];
+                const ruleDef = RULES[ruleType];
                 const res = ruleDef.apply(rule, data, sources);
                 if (res.error) {
                     hasRuleError = true;
@@ -1202,88 +1014,23 @@ export default {
                 valid = this.collectionName.length > 0;
             }
 
-        // raw tabular variant can build stand-alone datasets without identifier
-        // columns for the collection builder for existing datasets cannot do this.
-        if(this.elementsType == "datasets" && identifierColumns.length == 0) {
-            valid = false;
-        }
-        return valid;
-    }
-  },
-  methods: {
-    l(str) {  // _l conflicts private methods of Vue internals, expose as l instead
-        return _l(str);
-    },
-    cancel() {
-        this.oncancel();
-    },
-    mappingTargets() {
-      return MAPPING_TARGETS;
-    },
-    resetRules() {
-      this.rules.splice(0, this.rules.length);
-      this.mapping.splice(0, this.mapping.length);
-    },
-    resetRulesAndState() {
-      this.resetRules()
-      this.state = 'build';
-      this.errorMessage = '';
-      this.collectionName = '';
-    },
-    addNewRule(ruleType) {
-      RULES[ruleType].init(this);
-      this.displayRuleType = ruleType;
-      this.activeRuleIndex = null;
-    },
-    handleRuleSave(ruleType) {
-      const rule = this.activeRule;
-      if(rule) {
-        RULES[ruleType].save(this, rule);
-      } else {
-        const rule = {"type": ruleType};
-        RULES[ruleType].save(this, rule);
-        this.rules.push(rule);
-      }
-    },
-    viewSource() {
-        this.resetSource();
-        this.ruleView = 'source';
-    },
-    resetSource() {
-        const replacer = function(key, value) {
-            if(key == "error" || key == "warn") {
-                return undefined;
+            if (mappingAsDict.ftp_path && mappingAsDict.url) {
+                // Can only specify one of these.
+                valid = false;
             }
 
-    },
-    colHeadersFor(data) {
-      if(data.length == 0) {
-          return [];
-      } else {
-          return data[0].map((el, i) => String.fromCharCode(65 + i));
-      }
-    },
-    addIdentifier(identifier) {
-      const multiple = this.mappingTargets()[identifier].multiple;
-      // If multiple selection, pop open a new column selector in edit mode.
-      const initialColumns = multiple ? [] : [0];
-      this.mapping.push({"type": identifier, "columns": initialColumns, "editing": multiple});
-    },
-    editRule(rule, index) {
-       const ruleType = rule.type;
-       this.activeRuleIndex = index;
-       RULES[ruleType].init(this, rule);
-       this.displayRuleType = ruleType;
-    },
-    removeRule(index) {
-        this.rules.splice(index, 1);
-    },
-    removeMapping(index) {
-        this.mapping.splice(index, 1);
-    },
-    refreshAndWait(response) {
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.refreshContents();
+            for (var rule of this.rules) {
+                if (rule.error) {
+                    valid = false;
+                }
+            }
+
+            // raw tabular variant can build stand-alone datasets without identifier
+            // columns for the collection builder for existing datasets cannot do this.
+            if (this.elementsType == "datasets" && identifierColumns.length == 0) {
+                valid = false;
+            }
+            return valid;
         }
     },
     methods: {
@@ -1308,17 +1055,17 @@ export default {
             this.collectionName = "";
         },
         addNewRule(ruleType) {
-            Rules[ruleType].init(this);
+            RULES[ruleType].init(this);
             this.displayRuleType = ruleType;
             this.activeRuleIndex = null;
         },
         handleRuleSave(ruleType) {
             const rule = this.activeRule;
             if (rule) {
-                Rules[ruleType].save(this, rule);
+                RULES[ruleType].save(this, rule);
             } else {
                 const rule = { type: ruleType };
-                Rules[ruleType].save(this, rule);
+                RULES[ruleType].save(this, rule);
                 this.rules.push(rule);
             }
         },
@@ -1391,7 +1138,7 @@ export default {
         editRule(rule, index) {
             const ruleType = rule.type;
             this.activeRuleIndex = index;
-            Rules[ruleType].init(this, rule);
+            RULES[ruleType].init(this, rule);
             this.displayRuleType = ruleType;
         },
         removeRule(index) {
@@ -1456,7 +1203,7 @@ export default {
                 this.$nextTick(function() {
                     const fullWidth = $(".rule-builder-body").width();
                     hotTable.updateSettings({
-                        width: fullWidth - 280
+                        width: fullWidth - 270
                     });
                 });
             }
@@ -1754,58 +1501,23 @@ export default {
                 this.addColumnRegexGroupCount = 1;
             }
             if (val == "replacement") {
-                this.addColumnRegexReplacement = "$&";
+                this.addColumnRegexReplacement = "\0";
             }
         }
     },
-  },
-  created() {
-      let columnCount = null;
-      if(this.elementsType == "datasets") {
-          for(let element of this.initialElements) {
-              if(element.history_content_type == "dataset_collection") {
-                  this.errorMessage = "This component can only be used with datasets, you have specified one or more collections.";
-                  this.state = 'error';
-              }
-          }
-      } else {
-          for(let row of this.initialElements) {
-              if (columnCount == null) {
-                  columnCount = row.length;
-              } else {
-                  if(columnCount != row.length) {
-                      this.jaggedData = true;
-                      break
-                  }
-              }
-          }
-      }
-      UploadUtils.getUploadDatatypes((extensions) => {this.extensions = extensions; this.extension = UploadUtils.DEFAULT_EXTENSION}, false, UploadUtils.AUTO_EXTENSION);
-      UploadUtils.getUploadGenomes((genomes) => {this.genomes = genomes; this.genome = UploadUtils.DEFAULT_GENOME;}, UploadUtils.DEFAULT_GENOME);
-  },
-  watch: {
-      'addColumnRegexType': function (val) {
-          if (val == "groups") {
-              this.addColumnRegexGroupCount = 1;
-          }
-          if (val == "replacement") {
-              this.addColumnRegexReplacement = "\0";
-          }
-      },
-  },
-  components: {
-    HotTable,
-    RuleComponent,
-    RuleTargetComponent,
-    RuleDisplay,
-    IdentifierDisplay,
-    ColumnSelector,
-    RegularExpressionInput,
-    StateDiv,
-    OptionButtonsDiv,
-    Select2,
-  }
-}
+    components: {
+        HotTable,
+        RuleComponent,
+        RuleTargetComponent,
+        RuleDisplay,
+        IdentifierDisplay,
+        ColumnSelector,
+        RegularExpressionInput,
+        StateDiv,
+        OptionButtonsDiv,
+        Select2
+    }
+};
 </script>
 
 <style>
@@ -1854,12 +1566,12 @@ export default {
     height: 100%;
     display: flex;
     flex-direction: column;
-  }
-  .rule-edit-buttons {
-     margin: 5px;
-     height: 25px;
-  }
-  .rules {
+}
+.rule-edit-buttons {
+    margin: 5px;
+    height: 25px;
+}
+.rules {
     flex-grow: 1;
     overflow-y: scroll;
 }
