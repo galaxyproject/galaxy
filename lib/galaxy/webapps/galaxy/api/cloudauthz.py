@@ -18,8 +18,8 @@ class CloudAuthzController(BaseAPIController):
 
     def __init__(self, app):
         super(CloudAuthzController, self).__init__(app)
-        self.cloudauthzs_manager = cloudauthzs.CloudAuthzManager(app)
-        self.cloudauthzs_serializer = cloudauthzs.CloudAuthzsSerializer(app)
+        self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
+        self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
 
     @web.expose_api
     def index(self, trans, **kwargs):
@@ -31,7 +31,7 @@ class CloudAuthzController(BaseAPIController):
         """
         rtv = []
         for cloudauthz in trans.user.cloudauthz:
-            rtv.append(self.cloudauthzs_serializer.serialize_to_view(
+            rtv.append(self.cloudauthz_serializer.serialize_to_view(
                 cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, 'summary')))
         return rtv
 
@@ -69,13 +69,13 @@ class CloudAuthzController(BaseAPIController):
                     'message': 'The following required arguments are missing in the payload: {}'.format(missing_arguments)}
 
         try:
-            new_cloudauthz = self.cloudauthzs_manager.create(
+            new_cloudauthz = self.cloudauthz_manager.create(
                 user_id=trans.user.id,
                 provider=provider,
                 config=config,
                 authn_id=authn_id
             )
-            view = self.cloudauthzs_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
+            view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
             trans.response.status = '200'
             return view
