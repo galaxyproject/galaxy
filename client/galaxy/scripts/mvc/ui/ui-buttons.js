@@ -233,7 +233,7 @@ var ButtonIcon = ButtonDefault.extend({
                 $(".tooltip").hide();
                 !options.disabled && options.onclick && options.onclick();
             });
-        this.$button.addClass("button").tooltip({ title: options.tooltip, placement: "bottom" });
+        this.$button.addClass("button").tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$icon
             .removeClass()
             .addClass("icon fa")
@@ -289,7 +289,7 @@ var ButtonMenu = ButtonDefault.extend({
         this.$root
             .addClass("root button dropdown-toggle")
             .attr("data-toggle", "dropdown")
-            .tooltip({ title: options.tooltip, placement: "bottom" })
+            .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")
             .on("click", e => {
                 $(".tooltip").hide();
