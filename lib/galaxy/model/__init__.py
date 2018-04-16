@@ -4688,10 +4688,11 @@ class UserAuthnzToken(UserMixin):
 
 
 class CloudAuthz(object):
-    def __init__(self, user, provider, config):
-        self.user = user
+    def __init__(self, user_id, provider, config, authn_id):
+        self.user_id = user_id
         self.provider = provider
         self.config = config
+        self.authn_id = authn_id
         self.tokens = None
         self.last_update = datetime.now()
         self.last_activity = datetime.now()

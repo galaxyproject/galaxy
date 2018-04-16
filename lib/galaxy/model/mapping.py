@@ -139,6 +139,7 @@ model.CloudAuthz.table = Table(
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('provider', String(255)),
     Column('config', JSONType),
+    Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
     Column('tokens', JSONType),
     Column('last_update', DateTime),
     Column('last_activity', DateTime))
@@ -1490,7 +1491,10 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
 mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
-                  backref='cloudauthz')
+                  backref='cloudauthz'),
+    authn=relation(model.UserAuthnzToken,
+                   primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.table.c.id),
+                   backref='cloudauthz')
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)

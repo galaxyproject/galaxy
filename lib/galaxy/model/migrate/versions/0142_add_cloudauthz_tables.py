@@ -18,6 +18,7 @@ cloudauthz = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('provider', String(255)),
     Column('config', JSONType),
+    Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
     Column('tokens', JSONType),
     Column('last_update', DateTime),
     Column('last_activity', DateTime))
