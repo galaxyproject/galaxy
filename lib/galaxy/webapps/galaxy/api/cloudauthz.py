@@ -70,10 +70,10 @@ class CloudAuthzController(BaseAPIController):
                 config=config,
                 authn_id=authn_id
             )
-
+            view = self.cloudauthzs_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
             trans.response.status = '200'
-            return None
+            return view
 
         except Exception as e:
             log.exception('An unexpected error has occurred while responding to the create request of the cloudauthz API. ' + str(e))
