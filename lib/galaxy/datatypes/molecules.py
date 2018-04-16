@@ -11,6 +11,7 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
     get_headers,
     iter_headers
 )
@@ -84,10 +85,11 @@ class MOL(GenericMolFile):
         dataset.metadata.number_of_molecules = 1
 
 
+@build_sniff_from_prefix
 class SDF(GenericMolFile):
     file_ext = "sdf"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a SDF2 file.
 
@@ -102,11 +104,9 @@ class SDF(GenericMolFile):
         >>> fname = get_test_fname('drugbank_drugs.sdf')
         >>> SDF().sniff(fname)
         True
-
         >>> fname = get_test_fname('github88.v3k.sdf')
         >>> SDF().sniff(fname)
         True
-
         >>> fname = get_test_fname('chebi_57262.v3k.mol')
         >>> SDF().sniff(fname)
         False
@@ -114,23 +114,22 @@ class SDF(GenericMolFile):
         m_end_found = False
         limit = 10000
         idx = 0
-        with open(filename) as in_file:
-            for line in in_file:
-                idx += 1
-                line = line.rstrip('\n\r')
-                if idx < 4:
-                    continue
-                elif idx == 4:
-                    if len(line) != 39 or not(line.endswith(' V2000') or
-                            line.endswith(' V3000')):
-                        return False
-                elif not m_end_found:
-                    if line == 'M  END':
-                        m_end_found = True
-                elif line == '$$$$':
-                    return True
-                if idx == limit:
-                    break
+        for line in file_prefix.line_iterator():
+            idx += 1
+            line = line.rstrip('\n\r')
+            if idx < 4:
+                continue
+            elif idx == 4:
+                if len(line) != 39 or not(line.endswith(' V2000') or
+                        line.endswith(' V3000')):
+                    return False
+            elif not m_end_found:
+                if line == 'M  END':
+                    m_end_found = True
+            elif line == '$$$$':
+                return True
+            if idx == limit:
+                break
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -189,10 +188,11 @@ class SDF(GenericMolFile):
     split = classmethod(split)
 
 
+@build_sniff_from_prefix
 class MOL2(GenericMolFile):
     file_ext = "mol2"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a MOL2 file.
 
@@ -200,21 +200,19 @@ class MOL2(GenericMolFile):
         >>> fname = get_test_fname('drugbank_drugs.mol2')
         >>> MOL2().sniff(fname)
         True
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> MOL2().sniff(fname)
         False
         """
         limit = 60
         idx = 0
-        with open(filename) as in_file:
-            for line in in_file:
-                line = line.rstrip('\n\r')
-                if line == '@<TRIPOS>MOLECULE':
-                    return True
-                idx += 1
-                if idx == limit:
-                    break
+        for line in file_prefix.line_iterator():
+            line = line.rstrip('\n\r')
+            if line == '@<TRIPOS>MOLECULE':
+                return True
+            idx += 1
+            if idx == limit:
+                break
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -277,13 +275,14 @@ class MOL2(GenericMolFile):
     split = classmethod(split)
 
 
+@build_sniff_from_prefix
 class FPS(GenericMolFile):
     """
     chemfp fingerprint file: http://code.google.com/p/chem-fingerprints/wiki/FPS
     """
     file_ext = "fps"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a FPS file.
 
@@ -291,12 +290,11 @@ class FPS(GenericMolFile):
         >>> fname = get_test_fname('q.fps')
         >>> FPS().sniff(fname)
         True
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> FPS().sniff(fname)
         False
         """
-        header = get_headers(filename, sep='\t', count=1)
+        header = get_headers(file_prefix, sep='\t', count=1)
         if header[0][0].strip() == '#FPS1':
             return True
         else:
@@ -473,6 +471,7 @@ class PHAR(GenericMolFile):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
 class PDB(GenericMolFile):
     """
     Protein Databank format.
@@ -480,7 +479,7 @@ class PDB(GenericMolFile):
     """
     file_ext = "pdb"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a PDB file.
 
@@ -488,12 +487,11 @@ class PDB(GenericMolFile):
         >>> fname = get_test_fname('5e5z.pdb')
         >>> PDB().sniff(fname)
         True
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> PDB().sniff(fname)
         False
         """
-        headers = iter_headers(filename, sep=' ', count=300)
+        headers = iter_headers(file_prefix, sep=' ', count=300)
         h = t = c = s = k = e = False
         for line in headers:
             section_name = line[0].strip()
@@ -526,6 +524,7 @@ class PDB(GenericMolFile):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
 class PDBQT(GenericMolFile):
     """
     PDBQT Autodock and Autodock Vina format
@@ -533,7 +532,7 @@ class PDBQT(GenericMolFile):
     """
     file_ext = "pdbqt"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a PDBQT file.
 
@@ -541,12 +540,11 @@ class PDBQT(GenericMolFile):
         >>> fname = get_test_fname('NuBBE_1_obabel_3D.pdbqt')
         >>> PDBQT().sniff(fname)
         True
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> PDBQT().sniff(fname)
         False
         """
-        headers = iter_headers(filename, sep=' ', count=300)
+        headers = iter_headers(file_prefix, sep=' ', count=300)
         h = t = c = s = k = False
         for line in headers:
             section_name = line[0].strip()
@@ -601,6 +599,7 @@ class grdtgz(Binary):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
 class InChI(Tabular):
     file_ext = "inchi"
     column_names = ['InChI']
@@ -625,7 +624,7 @@ class InChI(Tabular):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a InChI file.
 
@@ -633,16 +632,17 @@ class InChI(Tabular):
         >>> fname = get_test_fname('drugbank_drugs.inchi')
         >>> InChI().sniff(fname)
         True
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> InChI().sniff(fname)
         False
         """
-        inchi_lines = iter_headers(filename, sep=' ', count=10)
+        inchi_lines = iter_headers(file_prefix, sep=' ', count=10)
+        found_lines = False
         for inchi in inchi_lines:
             if not inchi[0].startswith('InChI='):
                 return False
-        return True
+            found_lines = True
+        return found_lines
 
 
 class SMILES(Tabular):
@@ -704,6 +704,7 @@ class SMILES(Tabular):
     '''
 
 
+@build_sniff_from_prefix
 class CML(GenericXml):
     """
     Chemical Markup Language
@@ -729,7 +730,7 @@ class CML(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a CML file.
 
@@ -737,18 +738,14 @@ class CML(GenericXml):
         >>> fname = get_test_fname('interval.interval')
         >>> CML().sniff(fname)
         False
-
         >>> fname = get_test_fname('drugbank_drugs.cml')
         >>> CML().sniff(fname)
         True
         """
-        with open(filename) as handle:
-            line = handle.readline()
-            if line.strip() != '<?xml version="1.0"?>':
+        for expected_string in ['<?xml version="1.0"?>', 'http://www.xml-cml.org/schema']:
+            if expected_string not in file_prefix.contents_header:
                 return False
-            line = handle.readline()
-            if line.strip().find('http://www.xml-cml.org/schema') == -1:
-                return False
+
         return True
 
     def split(cls, input_datasets, subdir_generator_function, split_params):

@@ -250,7 +250,7 @@ def __from_step(**kwds):
         **kwds
     )
     injector = modules.WorkflowModuleInjector(trans)
-    injector.inject(step)
+    injector.inject(step, exact_tools=False)
     module = step.module
     module.test_step = step
     return module

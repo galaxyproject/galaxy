@@ -1063,6 +1063,8 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
     importType,
     options
 ) {
+    // importType in [datasets, collection]
+    // elementsType in [raw, ftp, datasets]
     let title;
     if (importType == "datasets") {
         title = _l("Build Rules for Uploading Datasets");

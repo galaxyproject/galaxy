@@ -17,7 +17,18 @@ export default Backbone.View.extend({
                 this._eventBuild();
             }
         });
-        _.each([this.btnBuild], button => {
+        this.btnBuild.$el.addClass("btn-primary");
+        this.btnReset = new Ui.Button({
+            id: "btn-reset",
+            title: _l("Reset"),
+            onclick: () => this._eventReset(),
+        });
+        this.btnClose = new Ui.Button({
+            id: "btn-close",
+            title: _l("Close"),
+            onclick: () => this.app.modal.hide(),
+        });
+        _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
         });
         const dataTypeOptions = [{ id: "datasets", text: "Datasets" }, { id: "collections", text: "Collection(s)" }];
@@ -104,6 +115,15 @@ export default Backbone.View.extend({
                 this._setPreview(response.data);
             })
             .catch(error => console.log(error));
+    },
+
+    /** Remove all */
+    _eventReset: function() {
+        if (this.datasetSelectorView) {
+            this.datasetSelectorView.value(null);
+        }
+        $(".upload-rule-source-content").val('');
+        this._updateScreen();
     },
 
     _eventBuild: function() {
