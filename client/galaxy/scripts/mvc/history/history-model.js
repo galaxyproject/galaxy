@@ -119,10 +119,16 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 return size ? UTILS.bytesToString(size, true, 2) : _l("(empty)");
             },
 
+            nice_deleted_size: function() {
+                var deleted_size = this.get("deleted_size");
+                return deleted_size ? UTILS.bytesToString(deleted_size, true, 2) : _l("(empty)");
+            },
+
             /** override to add nice_size */
             toJSON: function() {
                 return _.extend(Backbone.Model.prototype.toJSON.call(this), {
-                    nice_size: this.nice_size()
+                    nice_size: this.nice_size(),
+                    nice_deleted_size: this.nice_deleted_size()
                 });
             },
 
@@ -130,6 +136,9 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             get: function(key) {
                 if (key === "nice_size") {
                     return this.nice_size();
+                }
+                if (key === "nice_deleted_size") {
+                    return this.nice_deleted_size();
                 }
                 return Backbone.Model.prototype.get.apply(this, arguments);
             },

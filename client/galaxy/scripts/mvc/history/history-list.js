@@ -23,7 +23,7 @@ var HistoryGridView = GridView.extend({
                     const historyId = $(el).data("id");
                     const url = `${
                         Galaxy.root
-                    }api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
+                    }api/histories/${historyId}?keys=nice_size,deleted_size,contents_active,contents_states`;
                     const options = {};
                     options.url = url;
                     options.type = "GET";

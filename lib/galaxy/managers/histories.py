@@ -202,6 +202,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'contents_url',
             'empty',
             'size',
+            'deleted_size',
             'user_id',
             'create_time',
             'update_time',
@@ -222,6 +223,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         self.add_view('dev-detailed', [
             'contents_url',
             'size',
+            'deleted_size',
             'user_id',
             'create_time',
             'update_time',
@@ -243,6 +245,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'model_class'   : lambda *a, **c: 'History',
             'size'          : lambda i, k, **c: int(i.disk_size),
             'nice_size'     : lambda i, k, **c: i.disk_nice_size,
+            'deleted_size'  : lambda i, k, **c: int(i.deleted_disk_size),
             'state'         : self.serialize_history_state,
 
             'url'           : lambda i, k, **c: self.url_for('history', id=self.app.security.encode_id(i.id)),

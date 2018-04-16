@@ -65,6 +65,8 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                     return {};
                 }
                 var urls = {
+                    delete: `datasets/${id}/delete_new`,
+                    undelete: `datasets/${id}/undelete_new`,
                     purge: `datasets/${id}/purge_async`,
                     display: `datasets/${id}/display/?preview=True`,
                     edit: `datasets/edit?dataset_id=${id}`,
@@ -169,19 +171,72 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             //NOTE: subclasses of DA's will need to implement url and urlRoot in order to have these work properly
-            /** save this dataset, _Mark_ing it as deleted (just a flag) */
+            /** _Mark_ it as undeleted, adjust user deleted disk usage) */
             delete: function(options) {
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
-                return this.save({ deleted: true }, options);
+
+                options = options || {};
+                options.url = this.urls.delete;
+
+                var hda = this;
+
+                var xhr = jQuery.ajax(options);
+                xhr.done((message, status, responseObj) => {
+                    hda.set({ deleted: true });
+                });
+                xhr.fail((xhr, status, message) => {
+                    // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
+                    // unbury and re-add to xhr
+                    var error = _l("Unable to delete dataset");
+                    var messageBuriedInUnfortunatelyFormattedError =
+                        "Delete of datasets by users " + "is not allowed in this Galaxy instance";
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        error = xhr.responseJSON.error;
+                    } else if (xhr.responseText.indexOf(messageBuriedInUnfortunatelyFormattedError) !== -1) {
+                        error = messageBuriedInUnfortunatelyFormattedError;
+                    }
+                    xhr.responseText = error;
+                    hda.trigger("error", hda, xhr, options, _l(error), {
+                        error: error
+                    });
+                });
+                return xhr;
             },
-            /** save this dataset, _Mark_ing it as undeleted */
+
+            /** _Mark_ it as undeleted, adjust user deleted disk usage */
             undelete: function(options) {
                 if (!this.get("deleted") || this.get("purged")) {
                     return jQuery.when();
                 }
-                return this.save({ deleted: false }, options);
+
+                options = options || {};
+                options.url = this.urls.undelete;
+
+                var hda = this;
+
+                var xhr = jQuery.ajax(options);
+                xhr.done((message, status, responseObj) => {
+                    hda.set({ deleted: false });
+                });
+                xhr.fail((xhr, status, message) => {
+                    // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
+                    // unbury and re-add to xhr
+                    var error = _l("Unable to undelete dataset");
+                    var messageBuriedInUnfortunatelyFormattedError =
+                        "UNdelete of datasets by users " + "is not allowed in this Galaxy instance";
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        error = xhr.responseJSON.error;
+                    } else if (xhr.responseText.indexOf(messageBuriedInUnfortunatelyFormattedError) !== -1) {
+                        error = messageBuriedInUnfortunatelyFormattedError;
+                    }
+                    xhr.responseText = error;
+                    hda.trigger("error", hda, xhr, options, _l(error), {
+                        error: error
+                    });
+                });
+                return xhr;
             },
 
             /** remove the file behind this dataset from the filesystem (if permitted) */

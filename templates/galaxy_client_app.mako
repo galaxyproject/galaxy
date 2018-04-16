@@ -85,6 +85,7 @@ ${ h.dumps( get_config_dict() )}
                 return user_dict
 
             usage = 0
+            deleted_usage = 0
             percent = None
             try:
                 usage = trans.app.quota_agent.get_usage( trans, history=trans.history )

@@ -926,6 +926,76 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return True
         return False
 
+    def _delete_new(self, trans, dataset_id):
+        message = None
+        status = 'done'
+        try:
+            id = self.decode_id(dataset_id)
+            user = trans.get_user()
+            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+            # Invalid HDA
+            assert hda, 'Invalid history dataset ID'
+
+            # If the user is anonymous, make sure the HDA is owned by the current session.
+            if not user:
+                current_history_id = trans.galaxy_session.current_history_id
+                assert hda.history.id == current_history_id, 'Data does not belong to current user'
+            # If the user is known, make sure the HDA is owned by the current user.
+            else:
+                assert hda.history.user == user, 'Data does not belong to current user'
+
+            # Ensure HDA is deleted
+            hda.deleted = True
+            # Decrease deleted disk usage first
+            if user:
+                user.adjust_gross_deleted_disk_usage(hda.quota_amount(user))
+
+            trans.sa_session.add(hda)
+            trans.log_event("HDA id %s has been deleted" % hda.id)
+            trans.sa_session.flush()
+        except Exception as exc:
+            msg = 'HDA delete failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+            log.exception(msg)
+            trans.log_event(msg)
+            message = 'Dataset delete failed'
+            status = 'error'
+        return (message, status)
+
+    def _undelete_new(self, trans, dataset_id):
+        message = None
+        status = 'done'
+        try:
+            id = self.decode_id(dataset_id)
+            user = trans.get_user()
+            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+            # Invalid HDA
+            assert hda, 'Invalid history dataset ID'
+
+            # If the user is anonymous, make sure the HDA is owned by the current session.
+            if not user:
+                current_history_id = trans.galaxy_session.current_history_id
+                assert hda.history.id == current_history_id, 'Data does not belong to current user'
+            # If the user is known, make sure the HDA is owned by the current user.
+            else:
+                assert hda.history.user == user, 'Data does not belong to current user'
+
+            # Ensure HDA is deleted
+            hda.deleted = False
+            # restore deleted disk usage first
+            if user:
+                user.adjust_gross_deleted_disk_usage(-hda.quota_amount(user))
+
+            trans.sa_session.add(hda)
+            trans.log_event("HDA id %s has been undeleted" % hda.id)
+            trans.sa_session.flush()
+        except Exception as exc:
+            msg = 'HDA undelete failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+            log.exception(msg)
+            trans.log_event(msg)
+            message = 'Dataset undelete failed'
+            status = 'error'
+        return (message, status)
+
     def _purge(self, trans, dataset_id):
         message = None
         status = 'done'
@@ -982,6 +1052,22 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose
     def delete_async(self, trans, dataset_id, filename):
         message, status = self._delete(trans, dataset_id)
+        if status == 'done':
+            return "OK"
+        else:
+            raise Exception(message)
+
+    @web.expose
+    def delete_new(self, trans, dataset_id, filename):
+        message, status = self._delete_new(trans, dataset_id)
+        if status == 'done':
+            return "OK"
+        else:
+            raise Exception(message)
+
+    @web.expose
+    def undelete_new(self, trans, dataset_id, filename):
+        message, status = self._undelete_new(trans, dataset_id)
         if status == 'done':
             return "OK"
         else:

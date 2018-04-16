@@ -327,6 +327,7 @@ class CurrentUserSerializer(UserSerializer):
         # use the current history if any to get usage stats for trans' anonymous user
         # TODO: might be better as sep. Serializer class
         usage = 0
+        deleted_usage = 0
         percent = None
 
         history = trans.history

@@ -373,6 +373,10 @@ class User(Dictifiable):
 
     gross_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
 
+    def adjust_gross_deleted_disk_usage(self, amount):
+        if amount != 0:
+            self.deleted_disk_usage = func.coalesce(self.table.c.deleted_disk_usage, 0) + amount
+
     @property
     def nice_gross_deleted_disk_usage(self):
         """

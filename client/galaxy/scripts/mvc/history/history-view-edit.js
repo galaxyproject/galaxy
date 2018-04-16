@@ -92,9 +92,8 @@ var HistoryViewEdit = _super.extend(
         _setUpCollectionListeners: function() {
             _super.prototype._setUpCollectionListeners.call(this);
             this.listenTo(this.collection, {
-                "change:deleted": this._handleItemDeletedChange,
                 "change:visible": this._handleItemVisibleChange,
-                "change:purged": function(model) {
+                "change:purged change:deleted": function(model) {
                     // hafta get the new nice-size w/o the purged model
                     this.model.fetch();
                 },

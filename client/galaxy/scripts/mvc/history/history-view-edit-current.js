@@ -150,7 +150,7 @@ var CurrentHistoryView = _super.extend(
             _super.prototype._setUpModelListeners.call(this);
             // re-broadcast any model change events so that listeners don't have to re-bind to each history
             return this.listenTo(this.model, {
-                "change:nice_size change:size": function() {
+                "change:nice_size change:size change:deleted_size change:nice_deleted_size": function() {
                     this.trigger("history-size-change", this, this.model, arguments);
                 },
                 "change:id": function() {
