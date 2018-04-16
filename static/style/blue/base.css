@@ -2307,13 +2307,13 @@ input[type="button"].btn-block {
   background-color: transparent;
   border: 0; }
   .dropdown-item:hover, ul.dropdown-menu li:hover, .dropdown-item:focus, ul.dropdown-menu li:focus {
-    color: #16181b;
-    text-decoration: none;
-    background-color: #f8f9fa; }
-  .dropdown-item.active, ul.dropdown-menu li.active, .dropdown-item:active, ul.dropdown-menu li:active {
-    color: #fff;
+    color: white;
     text-decoration: none;
     background-color: #25537b; }
+  .dropdown-item.active, ul.dropdown-menu li.active, .dropdown-item:active, ul.dropdown-menu li:active {
+    color: black;
+    text-decoration: none;
+    background-color: #25cf25; }
   .dropdown-item.disabled, ul.dropdown-menu li.disabled, .dropdown-item:disabled, ul.dropdown-menu li:disabled {
     color: #868e96;
     background-color: transparent; }

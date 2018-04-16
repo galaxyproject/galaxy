@@ -169,6 +169,12 @@ $line-height-computed-px: 16px;
 $headings-font-weight: 800; // default 500
 $headings-line-height: 1.1; // default 1.2
 
+// Increase contrast of dropdown items
+$dropdown-link-hover-color: white;
+$dropdown-link-hover-bg: $brand-primary;
+$dropdown-link-active-color: black;
+$dropdown-link-active-bg: $brand-success;
+
 // BOOTSTRAP 4 STYLE REFACTORING BREAK POINT
 // Anything that is actually used should be moved above this line and
 // documented, everything else should be removed.
