@@ -1,5 +1,5 @@
 <%
-    app_root = "/static/plugins/visualizations/hivtrace/static/"
+    app_root = h.url_for("/static/plugins/visualizations/hivtrace/static/")
 %>
 
 <html lang='en'>
