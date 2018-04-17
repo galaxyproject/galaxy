@@ -220,7 +220,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
                     RequestParameterMissingException
         """
-        is_admin_operation = trans.user_is_admin()
         if payload:
             kwd.update(payload)
         action = kwd.get('action', None)
@@ -231,7 +230,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or is_admin_operation
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
         new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
@@ -254,14 +253,13 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             # ACCESS DATASET ROLES
             valid_access_roles = []
             invalid_access_roles_ids = []
+            valid_roles_for_dataset, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset)
             if new_access_roles_ids is None:
                 trans.app.security_agent.make_dataset_public(dataset)
             else:
                 for role_id in new_access_roles_ids:
                     role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                    #  Check whether role is in the set of allowed roles
-                    valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset)
-                    if role in valid_roles:
+                    if role in valid_roles_for_dataset:
                         valid_access_roles.append(role)
                     else:
                         invalid_access_roles_ids.append(role_id)
@@ -275,16 +273,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             valid_manage_roles = []
             invalid_manage_roles_ids = []
             new_manage_roles_ids = util.listify(new_manage_roles_ids)
-            active_access_roles = dataset.get_access_roles(trans)
-            if is_admin_operation:
-                valid_manage_roles = [self.role_manager.get(trans, managers_base.decode_id(self.app, role_id)) for role_id in new_manage_roles_ids]
-            else:
-                for role_id in new_manage_roles_ids:
-                    role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                    if role in active_access_roles:
-                        valid_manage_roles.append(role)
-                    else:
-                        invalid_manage_roles_ids.append(role_id)
+            for role_id in new_manage_roles_ids:
+                role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
+                if role in valid_roles_for_dataset:
+                    valid_manage_roles.append(role)
+                else:
+                    invalid_manage_roles_ids.append(role_id)
             if len(invalid_manage_roles_ids) > 0:
                 log.warning("The following roles could not be added to the dataset manage permission: " + str(invalid_manage_roles_ids))
             manage_permission = {trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles}
@@ -294,16 +288,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             valid_modify_roles = []
             invalid_modify_roles_ids = []
             new_modify_roles_ids = util.listify(new_modify_roles_ids)
-            active_access_roles = dataset.get_access_roles(trans)
-            if is_admin_operation:
-                valid_modify_roles = [self.role_manager.get(trans, managers_base.decode_id(self.app, role_id)) for role_id in new_modify_roles_ids]
-            else:
-                for role_id in new_modify_roles_ids:
-                    role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                    if role in active_access_roles:
-                        valid_modify_roles.append(role)
-                    else:
-                        invalid_modify_roles_ids.append(role_id)
+            for role_id in new_modify_roles_ids:
+                role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
+                if role in valid_roles_for_dataset:
+                    valid_modify_roles.append(role)
+                else:
+                    invalid_modify_roles_ids.append(role_id)
             if len(invalid_modify_roles_ids) > 0:
                 log.warning("The following roles could not be added to the dataset modify permission: " + str(invalid_modify_roles_ids))
             modify_permission = {trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles}
