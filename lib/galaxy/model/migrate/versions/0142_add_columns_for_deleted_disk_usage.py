@@ -35,4 +35,3 @@ def downgrade(migrate_engine):
         User_table.c.deleted_disk_usage.drop()
     except Exception:
         log.exception("Dropping deleted_disk_usage column from galaxy_user table failed.")
-
