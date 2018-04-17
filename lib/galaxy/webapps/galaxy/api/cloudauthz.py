@@ -1,5 +1,11 @@
 """
 API operations on defining cloud authorizations.
+
+Through means of cloud authorization a user is able to grant a Galaxy server a secure access to his/her
+cloud-based resources without sharing his/her long-lasting credentials.
+
+User provides a provider-specific configuration, which Galaxy users to request temporary credentials
+from the provider to access the user's resources.
 """
 
 import logging
@@ -24,10 +30,16 @@ class CloudAuthzController(BaseAPIController):
     @web.expose_api
     def index(self, trans, **kwargs):
         """
+        * GET /api/cloud/authz
+            Lists all the cloud authorizations user has defined.
 
-        :param trans:
-        :param kwargs:
-        :return:
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :param kwargs: empty dict
+
+        :rtype: list of dict
+        :return: a list of cloud authorizations (each represented in key-value pair format) defined for the user.
         """
         rtv = []
         for cloudauthz in trans.user.cloudauthz:
@@ -38,11 +50,27 @@ class CloudAuthzController(BaseAPIController):
     @web.expose_api
     def create(self, trans, payload, **kwargs):
         """
+        * POST /api/cloud/authz/create
+            Request to store the payload as a cloudauthz (cloud authorization) configuration for a user.
 
-        :param trans:
-        :param payload:
-        :param kwargs:
-        :return:
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type payload: dict
+        :param payload: A dictionary structure containing the following keys:
+            *   provider:   the cloud-based resource provider to which this configuration belongs to.
+            *   config:     a dictionary containing all the configuration required to request temporary credentials
+                            from the provider.
+            *   authn_id:   the (encoded) ID of a third-party authentication of a user. To have this ID, user must
+                            have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
+                            associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
+                            https://galaxyproject.org/admin/authentication/
+        :param kwargs: empty dict
+
+        :rtype: dict
+        :return: a dictionary with the following kvp:
+            *   status:     HTTP response code
+            *   message:    A message complementary to the response code.
         """
         if not isinstance(payload, dict):
             trans.response.status = 400

@@ -21,7 +21,7 @@ class CloudAuthzManager(sharable.SharableModelManager):
         super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
 
 
-class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):  # sharable.SharableModelSerializer, deletable.PurgableSerializerMixin):
+class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
     """
     Interface/service object for serializing cloud authorizations (cloudauthzs) into dictionaries.
     """
