@@ -58,6 +58,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
         self.workflow_editor_save_and_close()
         self.workflow_index_open_with_name(name)
@@ -85,6 +86,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_collection_filled_in")
         self.workflow_editor_save_and_close()
         self.workflow_index_open_with_name(name)
