@@ -59,7 +59,6 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
-            "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import_workflow": "show_import_workflow",
             "(/)workflows/run(/)": "show_run",
