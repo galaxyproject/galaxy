@@ -25,14 +25,6 @@ def upgrade(migrate_engine):
     except Exception:
         log.exception("Adding deleted_disk_usage column to galaxy_user table failed.")
 
-    try:
-        GalaxySession_table = Table("galaxy_session", metadata, autoload=True)
-        c = Column('deleted_disk_usage', DECIMAL(asdecimal=False), default=0.0, index=True)
-        c.create(GalaxySession_table, index_name="ix_galaxy_session_deleted_disk_usage")
-        assert c is GalaxySession_table.c.deleted_disk_usage
-    except Exception:
-        log.exception("Adding deleted_disk_usage column to galaxy_session table failed.")
-
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -44,8 +36,3 @@ def downgrade(migrate_engine):
     except Exception:
         log.exception("Dropping deleted_disk_usage column from galaxy_user table failed.")
 
-    try:
-        GalaxySession_table = Table("galaxy_session", metadata, autoload=True)
-        GalaxySession_table.c.deleted_disk_usage.drop()
-    except Exception:
-        log.exception("Dropping deleted_disk_usage column from galaxy_session table failed.")
