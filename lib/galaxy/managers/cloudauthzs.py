@@ -6,8 +6,8 @@ import logging
 
 from galaxy import model
 from galaxy.managers import base
-from galaxy.managers import sharable
 from galaxy.managers import deletable
+from galaxy.managers import sharable
 
 og = logging.getLogger(__name__)
 
