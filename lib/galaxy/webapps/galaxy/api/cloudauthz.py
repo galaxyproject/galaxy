@@ -68,6 +68,10 @@ class CloudAuthzController(BaseAPIController):
             return {'status': '400',
                     'message': 'The following required arguments are missing in the payload: {}'.format(missing_arguments)}
 
+        if not isinstance(config, dict):
+            return {'status': '400',
+                    'message': 'Invalid type for the required `config` variable; expect `dict` but received `{}`.'.format(type(config))}
+
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
                 user_id=trans.user.id,
