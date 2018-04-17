@@ -99,7 +99,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var template = this.templateDataset();
         this.$el.html(template({ item: this.model }));
         $(".peek").html(this.model.get("peek"));
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     fetchVersion: function(options) {
@@ -144,7 +144,7 @@ var LibraryDatasetView = Backbone.View.extend({
             file_ext: this.model.get("file_ext")
         });
         $(".peek").html(this.model.get("peek"));
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     downloadDataset: function() {
@@ -302,7 +302,7 @@ var LibraryDatasetView = Backbone.View.extend({
             .fail(() => {
                 mod_toastr.error("An error occurred while attempting to fetch dataset permissions.");
             });
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 
@@ -594,24 +594,24 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
-                '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-default toolbtn-download-dataset primary-button toolbar-item" type="button">',
+                '<div class="d-flex mb-2">',
+                '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-secondary toolbtn-download-dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-download"></span>',
                 "&nbsp;Download",
                 "</button>",
-                '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-default toolbtn-import-dataset primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-secondary toolbtn-import-dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-book"></span>',
                 "&nbsp;to History",
                 "</button>",
                 '<% if (item.get("can_user_modify")) { %>',
-                '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-default toolbtn_modify_dataset primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-pencil"></span>',
                 "&nbsp;Modify",
                 "</button>",
                 "<% } %>",
                 '<% if (item.get("can_user_manage")) { %>',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">',
-                '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-default toolbtn_change_permissions primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1" type="button">',
                 '<span class="fa fa-group"></span>',
                 "&nbsp;Permissions",
                 "</button>",
@@ -621,12 +621,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -639,7 +639,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // TABLE START
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
                 '<td><%= _.escape(item.get("name")) %></td>',
@@ -778,9 +778,9 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div class="d-flex mb-2">',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-default primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
                 '<span class="fa fa-caret-left fa-lg"></span>',
                 "&nbsp;Latest dataset",
                 "</button>",
@@ -789,12 +789,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -802,7 +802,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>',
                 // DATASET START
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>',
                 '<td><%= _.escape(ldda.get("name")) %></td>',
@@ -903,31 +903,21 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
-                '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-default toolbtn_cancel_modifications primary-button toolbar-item" type="button">',
-                '<span class="fa fa-times"></span>',
-                "&nbsp;Cancel",
-                "</button>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_modifications primary-button toolbar-item" type="button">',
-                '<span class="fa fa-floppy-o"></span>',
-                "&nbsp;Save",
-                "</button>",
-                "</div>",
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
 
                 '<div class="dataset_table">',
-                '<table class="grid table table-striped table-condensed">',
+                '<table class="grid table table-striped table-sm">',
                 "<tr>",
                 '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
                 '<td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>',
@@ -1000,6 +990,18 @@ var LibraryDatasetView = Backbone.View.extend({
                 "</pre>",
                 "</div>",
                 "</div>",
+
+                '<div class="d-flex">',
+                '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-secondary toolbtn_cancel_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-times"></span>',
+                "&nbsp;Cancel",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-secondary toolbtn_save_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-floppy-o"></span>',
+                "&nbsp;Save",
+                "</button>",
+                "</div>",
+
                 // CONTAINER END
                 "</div>"
             ].join("")
@@ -1011,9 +1013,9 @@ var LibraryDatasetView = Backbone.View.extend({
             [
                 // CONTAINER START
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                '<div class="d-flex mb-2">',
                 '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-default primary-button toolbar-item" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
                 '<span class="fa fa-file-o"></span>',
                 "&nbsp;Dataset Details",
                 "</button>",
@@ -1022,12 +1024,12 @@ var LibraryDatasetView = Backbone.View.extend({
 
                 // BREADCRUMBS
                 '<ol class="breadcrumb">',
-                '<li><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
                 '<% _.each(item.get("full_path"), function(path_item) { %>',
                 "<% if (path_item[0] != item.id) { %>",
-                '<li><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
                 "<% } else { %>",
-                '<li class="active"><span title="You are here"><%- path_item[1] %></span></li>',
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
                 "<% } %>",
                 "<% }); %>",
                 "</ol>",
@@ -1065,7 +1067,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<div class="alert alert-info roles-selection">',
                 "User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability manage this dataset unless you are an admin.",
                 "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions  type="button">',
                 '<span class="fa fa-floppy-o"></span>',
                 "&nbsp;Save",
                 "</button>",

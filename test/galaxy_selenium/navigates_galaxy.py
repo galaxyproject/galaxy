@@ -170,7 +170,8 @@ class NavigatesGalaxy(HasDriver):
         finally:
             self.driver.switch_to.default_content()
 
-    def api_get(self, endpoint, data={}, raw=False):
+    def api_get(self, endpoint, data=None, raw=False):
+        data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         if raw:
@@ -429,9 +430,9 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
-            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.wait_for_visible(self.navigation.masthead.selectors.user_email)
+                user_email_element = self.components.masthead.user_email.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
@@ -941,7 +942,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        workflow_button = row_element.find_element_by_css_selector("a.btn.btn-secondary")
         return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
@@ -949,13 +950,13 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+            workflow_button = workflow_row.find_element_by_css_selector("button.dropdown-toggle")
             workflow_button.click()
 
         click_option()
 
-        menu_element = self.wait_for_selector_visible("ul.action-dpd")
-        menu_options = menu_element.find_elements_by_css_selector("li a")
+        menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
+        menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
@@ -975,7 +976,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1220,7 +1221,9 @@ class NavigatesGalaxy(HasDriver):
             self.click_label('go to the home page')
             assert not self.is_logged_in()
 
-    def run_tour(self, path, skip_steps=[], sleep_on_steps={}, tour_callback=None):
+    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+        skip_steps = skip_steps or []
+        sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
             tour_callback = NullTourCallback()
 
@@ -1247,12 +1250,20 @@ class NavigatesGalaxy(HasDriver):
 
     def tour_wait_for_clickable_element(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_selector_clickable(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
+        element = wait.until(
+            sizzle.sizzle_selector_clickable(selector),
+            timeout_message,
+        )
         return element
 
     def tour_wait_for_element_present(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_presence_of_selector(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
+        element = wait.until(
+            sizzle.sizzle_presence_of_selector(selector),
+            timeout_message,
+        )
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):

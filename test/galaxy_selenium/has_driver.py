@@ -157,12 +157,14 @@ class HasDriver:
         element = self.driver.find_element(*selector_template.element_locator)
         element.click()
 
+    def _timeout_message(self, on_str):
+        return "Timeout waiting on %s." % on_str
+
     def _wait_on(self, condition, on_str=None, **kwds):
         if on_str is None:
             on_str = str(condition)
-        message = "Timeout waiting on %s." % on_str
         wait = self.wait(**kwds)
-        return wait.until(condition, message)
+        return wait.until(condition, self._timeout_message(on_str))
 
     def action_chains(self):
         return ActionChains(self.driver)

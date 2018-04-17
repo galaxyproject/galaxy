@@ -574,11 +574,11 @@ HistoryView.prototype.templates = (() => {
 
             '<div class="list-actions">',
             '<div class="btn-group">',
-            '<button class="select-all btn btn-default"',
+            '<button class="select-all btn btn-secondary"',
             'data-mode="select">',
             _l("All"),
             "</button>",
-            '<button class="deselect-all btn btn-default"',
+            '<button class="deselect-all btn btn-secondary"',
             'data-mode="select">',
             _l("None"),
             "</button>",

@@ -290,7 +290,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         self.driver = get_driver()
         # New workflow index page does not degrade well to smaller sizes, needed
         # to increase this.
-        self.driver.set_window_size(1280, 900)
+        # Needed to up the height for paired list creator being taller in BS4 branch.
+        self.driver.set_window_size(1280, 1000)
 
         self._setup_galaxy_logging()
 

@@ -21,12 +21,12 @@ export default Backbone.View.extend({
         this.btnReset = new Ui.Button({
             id: "btn-reset",
             title: _l("Reset"),
-            onclick: () => this._eventReset(),
+            onclick: () => this._eventReset()
         });
         this.btnClose = new Ui.Button({
             id: "btn-close",
             title: _l("Close"),
-            onclick: () => this.app.modal.hide(),
+            onclick: () => this.app.modal.hide()
         });
         _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
@@ -46,7 +46,7 @@ export default Backbone.View.extend({
 
         const selectionTypeOptions = [
             { id: "paste", text: "Pasted Table" },
-            { id: "dataset", text: "History Dataset" },
+            { id: "dataset", text: "History Dataset" }
         ];
         if (this.ftpUploadSite) {
             selectionTypeOptions.push({ id: "ftp", text: "FTP Directory" });
@@ -122,7 +122,7 @@ export default Backbone.View.extend({
         if (this.datasetSelectorView) {
             this.datasetSelectorView.value(null);
         }
-        $(".upload-rule-source-content").val('');
+        $(".upload-rule-source-content").val("");
         this._updateScreen();
     },
 
@@ -167,7 +167,7 @@ export default Backbone.View.extend({
                     </h6>
                 </div>
                 <div class="upload-box" style="height: 335px;">
-                    <span style="width: 25%; display: inline; height: 100%" class="pull-left">
+                    <span style="width: 25%; display: inline; height: 100%" class="float-left">
                         <div class="upload-rule-option">
                             <div class="upload-rule-option-title">${_l("Upload data as")}:</div>
                             <div class="rule-data-type" />
