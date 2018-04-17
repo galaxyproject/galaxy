@@ -847,7 +847,6 @@ model.GalaxySession.table = Table(
     # saves a reference to the previous session so we have a way to chain them together
     Column("prev_session_id", Integer),
     Column("disk_usage", Numeric(15, 0), index=True),
-    Column("deleted_disk_usage", Numeric(15, 0), index=True),
     Column("last_action", DateTime))
 
 model.GalaxySessionToHistoryAssociation.table = Table(
