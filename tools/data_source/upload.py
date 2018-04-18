@@ -175,7 +175,7 @@ def add_file(dataset, registry, output_path):
             stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
                       " manually")
 
-    datatype = registry.get_datatype_by_extension(ext)
+    datatype = registry.get_datatype_by_extension(ext or dataset.file_type)
 
     # Strip compression extension from name
     if compression_type and not getattr(datatype, 'compressed', False) and dataset.name.endswith('.' + compression_type):
