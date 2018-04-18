@@ -1,5 +1,3 @@
-<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
-
 <!DOCTYPE html>
 
 ## inject parameters parsed by controller config dictionary
@@ -108,21 +106,16 @@
     <script type="text/javascript">
         // load any app configured
         define( 'app', function(){
-            window.Galaxy = top.Galaxy;
             var jscript = galaxy_config.app.jscript;
-            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
-                $( function(){
-                    // load galaxy module application
-                    window.bundleEntries[galaxy_config.app.jscript]();
-                });
+            if( jscript && window.bundleEntries[jscript]){
+                window.Galaxy = top.Galaxy;
+                window.bundleEntries[jscript]();
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
             }
         });
+        require(['app']);
     </script>
-
-    ## load the Galaxy global js var and run 'app' from above
-    ${ galaxy_client.load( app='app' ) }
 </%def>
 
 ## default late-load javascripts
