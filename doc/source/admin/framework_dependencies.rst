@@ -172,16 +172,35 @@ Conda
 ^^^^^
 
 `Conda`_ and `virtualenv`_ are incompatible. However, Conda provides its own environment separation functionality in the
-form of `Conda environments`_.  Starting Galaxy with Conda Python will cause ``--skip-venv`` to be implicitly set, and
-the currently active Conda environment will be used to install Galaxy framework dependencies instead.
+form of `Conda environments`_.  Starting Galaxy with Conda Python will cause Galaxy to create a ``_galaxy_YY.MM``
+environment into which Galaxy framework dependencies will be installed.
+
+To instruct Galaxy to use a different environment name, set the ``$GALAXY_CONDA_ENV`` environment variable.
+
+If you use the recommended setup of sourcing ``$CONDA_ROOT/etc/profile.d/conda.sh`` as of Conda 4.4, Conda Python is not
+automatically added to your ``$PATH``, so Galaxy will not use Conda for its framework dependencies unless you start it
+with an environment activated that has Conda Python installed. This is because Galaxy defaults to creating a virtualenv
+unless the ``python`` on ``$PATH`` is Conda Python.
+
+.. tip::
+
+    If you would like to force Galaxy to use Conda with Conda 4.4 or later, the simplest method is:
+
+        1. Ensure ``.venv`` does not exist.
+        2. Activate the base environment with ``conda activate base``
+
+    Galaxy will not install in to the base environment.
 
 .. caution::
 
-    Be sure to create and activate a Conda environment for Galaxy prior to installing packages and/or starting Galaxy or
-    else they will be installed in the Conda root environment.
+    Versions of Galaxy prior to 18.05 could install in to the base/root Conda environment. Consult the correct version
+    of the documentation for your version of Galaxy.
+
+**Installing dependencies with conda (instead of pip)**
 
 Because Conda package names typically match PyPI package names, you can install Conda versions of what dependencies are
-available from conda-forge_ and Bioconda_ using a script provided with Galaxy:
+available from conda-forge_ and Bioconda_ using a script provided with Galaxy, **but this is not necessary**. If you do
+not run the script, the dependencies will simply be installed via pip.
 
 .. code-block:: console
 
@@ -235,10 +254,6 @@ Next, activate the environment and run ``pip`` to fetch the remaining dependenci
     #...
     Installing collected packages: SQLAlchemy, ...
     Successfully installed SQLAlchemy-1.0.15 ...
-
-``run.sh`` is not currently compatible with running without a virtualenv. In this case, you should start with uWSGI
-directly. Be sure to uncomment the required options in the ``uwsgi`` section of ``galaxy.yml`` since ``run.sh`` normally
-sets these for you on the command line:
 
 .. code-block:: console
 
