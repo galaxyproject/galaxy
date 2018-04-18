@@ -382,6 +382,7 @@ rule_builder:
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
     table: '#hot-table .htCore'
+    extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
   selectors:

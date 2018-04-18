@@ -609,7 +609,7 @@ class NavigatesGalaxy(HasDriver):
         name_element.send_keys(name)
 
     def rule_builder_set_extension(self, extension):
-        self.select2_set_value(".rule-option-extension", extension)
+        self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
 
     def rule_builder_filter_count(self, count=1):
         rule_builder = self.components.rule_builder
@@ -1372,6 +1372,8 @@ class NavigatesGalaxy(HasDriver):
         #                     why.
         # with_click seems to work in all situtations - the enter methods
         # doesn't seem to work with the tool form for some reason.
+        if hasattr(container_selector_or_elem, "selector"):
+            container_selector_or_elem = container_selector_or_elem.selector
         if not hasattr(container_selector_or_elem, "find_element_by_css_selector"):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:
