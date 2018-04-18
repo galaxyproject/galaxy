@@ -383,6 +383,12 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
 
+    def workflow_upload_yaml_with_random_name(self, content, **kwds):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
+
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
 
@@ -504,9 +510,9 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route):
+    def _get(self, route, data={}):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
     def _post(self, route, data={}):

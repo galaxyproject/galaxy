@@ -278,8 +278,8 @@ steps:
         sink_mapping_icon.wait_for_absent_or_hidden()
 
     def workflow_index_open_with_name(self, name):
-        self.workflow_index_search_for(name)
         self.workflow_index_open()
+        self.workflow_index_search_for(name)
         self.workflow_index_click_option("Edit")
 
     def workflow_upload_yaml_with_random_name(self, content):

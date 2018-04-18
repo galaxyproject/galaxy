@@ -14,12 +14,14 @@ from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
     flakey,
+    load_data_dict,
     skip_without_tool,
     wait_on,
     WorkflowPopulator
 )
 from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
 )
@@ -101,11 +103,8 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
                 ds_map[key] = label_map[label]
         return dumps(ds_map)
 
-    def _ds_entry(self, hda):
-        src = 'hda'
-        if 'history_content_type' in hda and hda['history_content_type'] == "dataset_collection":
-            src = 'hdca'
-        return dict(src=src, id=hda["id"])
+    def _ds_entry(self, history_content):
+        return self.dataset_populator.ds_entry(history_content)
 
     def _workflow_inputs(self, uploaded_workflow_id):
         workflow_show_resposne = self._get("workflows/%s" % uploaded_workflow_id)
@@ -136,62 +135,7 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
             jobs_descriptions = yaml.safe_load(has_workflow)
 
         test_data = jobs_descriptions.get("test_data", {})
-
-        label_map = {}
-        inputs = {}
-        has_uploads = False
-
-        for key, value in test_data.items():
-            is_dict = isinstance(value, dict)
-            if is_dict and ("elements" in value or value.get("type", None) in ["list:paired", "list", "paired"]):
-                elements_data = value.get("elements", [])
-                elements = []
-                for element_data in elements_data:
-                    identifier = element_data["identifier"]
-                    input_type = element_data.get("type", "raw")
-                    if input_type == "File":
-                        content = read_test_data(element_data)
-                    else:
-                        content = element_data["content"]
-                    elements.append((identifier, content))
-                # TODO: make this collection_type
-                collection_type = value["type"]
-                new_collection_kwds = {}
-                if "name" in value:
-                    new_collection_kwds["name"] = value["name"]
-                if collection_type == "list:paired":
-                    hdca = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id, **new_collection_kwds).json()
-                elif collection_type == "list":
-                    hdca = self.dataset_collection_populator.create_list_in_history(history_id, contents=elements, **new_collection_kwds).json()
-                else:
-                    hdca = self.dataset_collection_populator.create_pair_in_history(history_id, contents=elements, **new_collection_kwds).json()
-                label_map[key] = self._ds_entry(hdca)
-                inputs[key] = hdca
-                has_uploads = True
-            elif is_dict and "type" in value:
-                input_type = value["type"]
-                if input_type == "File":
-                    content = read_test_data(value)
-                    new_dataset_kwds = {
-                        "content": content
-                    }
-                    if "name" in value:
-                        new_dataset_kwds["name"] = value["name"]
-                    if "file_type" in value:
-                        new_dataset_kwds["file_type"] = value["file_type"]
-                    hda = self.dataset_populator.new_dataset(history_id, **new_dataset_kwds)
-                    label_map[key] = self._ds_entry(hda)
-                    has_uploads = True
-                elif input_type == "raw":
-                    label_map[key] = value["value"]
-                    inputs[key] = value["value"]
-            elif not is_dict:
-                has_uploads = True
-                hda = self.dataset_populator.new_dataset(history_id, content=value)
-                label_map[key] = self._ds_entry(hda)
-                inputs[key] = hda
-            else:
-                raise ValueError("Invalid test_data def %" % test_data)
+        inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
         workflow_request = dict(
             history="hist_id=%s" % history_id,
             workflow_id=workflow_id,
@@ -594,15 +538,8 @@ steps:
 
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\nd\n")
-            inputs = {
-                '0': self._ds_entry(hda1),
-            }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
-            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self._run_jobs(WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
             self.assertEqual("a\nc\nb\nd\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
     @skip_without_tool("job_properties")
@@ -741,40 +678,7 @@ test_data:
     @skip_without_tool("collection_split_on_column")
     def test_workflow_run_dynamic_output_collections(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  - label: text_input1
-    type: input
-  - label: text_input2
-    type: input
-  - label: cat_inputs
-    tool_id: cat1
-    state:
-      input1:
-        $link: text_input1
-      queries:
-        - input2:
-            $link: text_input2
-  - label: split_up
-    tool_id: collection_split_on_column
-    state:
-      input1:
-        $link: cat_inputs#out_file1
-  - tool_id: cat_list
-    state:
-      input1:
-        $link: split_up#split_output
-""")
-            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n")
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            inputs = {
-                '0': self._ds_entry(hda1),
-                '1': self._ds_entry(hda2),
-            }
-            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
-            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+            self._run_jobs(WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
             details = self.dataset_populator.get_history_dataset_details(history_id, hid=0)
             last_item_hid = details["hid"]
             assert last_item_hid == 7, "Expected 7 history items, got %s" % last_item_hid
