@@ -96,18 +96,6 @@
                     "libs/d3": { exports: "d3" },
                 },
             });
-
-            // console protection
-            // TODO: Only needed for IE <9 which I believe we dropped
-            window.console = window.console || {
-                log     : function(){},
-                debug   : function(){},
-                info    : function(){},
-                warn    : function(){},
-                error   : function(){},
-                assert  : function(){}
-            };
-
             // extra configuration global
             var galaxy_config = ${ h.dumps( self.galaxy_config ) };
             window.galaxy_config = galaxy_config;
