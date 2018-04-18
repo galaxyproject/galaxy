@@ -288,8 +288,10 @@ def guess_ext(fname, sniff_order, is_binary=False):
     generate a data for the 'fname' file
 
     >>> from galaxy.datatypes import registry
+    >>> from galaxy.util.bunch import Bunch
     >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
-    >>> datatypes_registry = registry.Registry()
+    >>> config = Bunch(sniff_compressed_dynamic_datatypes_default=True)
+    >>> datatypes_registry = registry.Registry(config)
     >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
     >>> sniff_order = datatypes_registry.sniff_order
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
@@ -310,6 +312,12 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('sequence.fasta')
     >>> guess_ext(fname, sniff_order)
     'fasta'
+    >>> fname = get_test_fname('1.genbank')
+    >>> guess_ext(fname, sniff_order)
+    'genbank'
+    >>> fname = get_test_fname('1.genbank.gz')
+    >>> guess_ext(fname, sniff_order)
+    'genbank.gz'
     >>> fname = get_test_fname('file.html')
     >>> guess_ext(fname, sniff_order)
     'html'
