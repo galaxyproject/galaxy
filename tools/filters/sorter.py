@@ -11,7 +11,7 @@
 """
 # 03/05/2013 guerler
 
-import os
+import subprocess
 import sys
 from optparse import OptionParser
 import subprocess
