@@ -198,14 +198,17 @@
                                 <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
-                                <ul class="dropdown-menu" role="menu">
-                                    <li v-for="target in unmappedTargets"
+                                <div class="dropdown-menu" role="menu">
+                                    <a v-for="target in unmappedTargets"
                                         v-bind:index="target"
                                         v-bind:key="target"
+                                        class="dropdown-item"
+                                        href="#"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)">
-                                      <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')">{{ mappingTargets()[target].label }}</a>
-                                    </li>
-                                </ul>
+                                      {{ mappingTargets()[target].label }}
+                                    </a>
+                                </div>
                                 <button type="button" class="btn btn-default btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
                             </div>
                         </div>
@@ -245,38 +248,38 @@
                                   <button type="button" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
-                                  <ul class="dropdown-menu" role="menu">
+                                  <div class="dropdown-menu" role="menu">
                                     <rule-target-component :builder="this" rule-type="sort" />
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <li><a class="rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a></li>
-                                  </ul>
+                                    <a href="#" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
                                     <button type="button" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_filter_regex" />
                                         <rule-target-component :builder="this" rule-type="add_filter_matches" />
                                         <rule-target-component :builder="this" rule-type="add_filter_compare" />
                                         <rule-target-component :builder="this" rule-type="add_filter_empty" />
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
-                                  </ul>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
                                     <button type="button" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
-                                  </ul>
+                                  </div>
                                 </div> 
                             </div>                               
                         </div>
@@ -660,7 +663,7 @@ const IdentifierDisplay = {
 };
 
 const RuleTargetComponent = {
-    template: `<li><a class="rule-link" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a></li>`,
+    template: `<a class="rule-link dropdown-item" href="#" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
