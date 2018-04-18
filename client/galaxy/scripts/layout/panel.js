@@ -222,17 +222,21 @@ var CenterPanel = Backbone.View.extend({
 
     /** Display a view in the center panel, hide iframe */
     display: function(view) {
-        var contentWindow = this.$frame[0].contentWindow || {};
-        var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
-        if (!message || confirm(message)) {
-            contentWindow.onbeforeunload = undefined;
-            this.$frame.attr("src", "about:blank").hide();
-            this.$panel
-                .empty()
-                .scrollTop(0)
-                .append(view.$el || view)
-                .show();
-            Galaxy.trigger("center-panel:load", view);
+        if (typeof view == "string") {
+            this.$frame.attr("src", view).show();
+        } else {
+            var contentWindow = this.$frame[0].contentWindow || {};
+            var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+            if (!message || confirm(message)) {
+                contentWindow.onbeforeunload = undefined;
+                this.$frame.attr("src", "about:blank").hide();
+                this.$panel
+                    .empty()
+                    .scrollTop(0)
+                    .append(view.$el || view)
+                    .show();
+                Galaxy.trigger("center-panel:load", view);
+            }
         }
     },
 

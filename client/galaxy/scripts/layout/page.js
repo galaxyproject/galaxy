@@ -27,19 +27,7 @@ var View = Backbone.View.extend({
         this.center = new Panel.CenterPanel();
 
         // display helper
-        Galaxy.display = this.display = view => {
-            if (view.title) {
-                Utils.setWindowTitle(view.title);
-                view.allow_title_display = false;
-            } else {
-                Utils.setWindowTitle();
-                view.allow_title_display = true;
-            }
-            if (view.active_tab) {
-                self.masthead.highlight(view.active_tab);
-            }
-            self.center.display(view);
-        };
+        Galaxy.display = (view, options) => {return this.display(view, options)};
 
         // build page template
         this.$el.attr("scroll", "no");
@@ -90,6 +78,24 @@ var View = Backbone.View.extend({
                 pushState: true
             });
         }
+    },
+
+    display: function(view, options) {
+        options = options || {};
+        if (typeof view == "object") {
+            if (view.title) {
+                    Utils.setWindowTitle(view.title);
+                    view.allow_title_display = false;
+                } else {
+                    Utils.setWindowTitle();
+                    view.allow_title_display = true;
+                }
+                if (view.active_tab) {
+                    this.masthead.highlight(view.active_tab);
+                }
+            }
+        }
+        this.center.display(view);
     },
 
     render: function() {
