@@ -16,108 +16,6 @@
     self.galaxy_config.update(config)
 %>
 
-<%def name="stylesheets()">
-    ## load default style
-    ${h.css("base")}
-
-    ## modify default style
-    <style type="text/css">
-    #center {
-        %if not self.galaxy_config['left_panel']:
-            left: 0 !important;
-        %endif
-        %if not self.galaxy_config['right_panel']:
-            right: 0 !important;
-        %endif
-    }
-    #center, #right, #left { top: 0 !important; }
-    </style>
-</%def>
-
-<%def name="javascripts()">
-    <script>
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        window.jQuery = window.jquery = window.$;
-    </script>
-    ## Send errors to Sentry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email | h}" } );
-            %endif
-        </script>
-    %endif
-
-    ## load jscript libraries
-    ${h.js(
-        ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
-        'bundled/extended.bundled',
-        'libs/d3',
-        'libs/require',
-    )}
-
-    <script type="text/javascript">
-        // configure require
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        window.jQuery = window.jquery = window.$;
-        define( 'jquery', [], function(){ return window.$; })
-
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts')}",
-            // cache buster based on templated server (re)start time
-            urlArgs: 'v=${app.server_starttime}',
-            shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                },
-                "libs/d3": { exports: "d3" },
-            },
-        });
-
-        // console protection
-        // TODO: Only needed for IE <9 which I believe we dropped
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
-        // extra configuration global
-        var galaxy_config = ${ h.dumps( self.galaxy_config ) };
-        window.galaxy_config = galaxy_config;
-    </script>
-
-    ${h.js(
-        'libs/jquery/jquery-ui'
-    )}
-
-</%def>
-
-<%def name="javascript_app()">
-    <script type="text/javascript">
-        // load any app configured
-        define( 'app', function(){
-            var jscript = galaxy_config.app.jscript;
-            if( jscript && window.bundleEntries[jscript]){
-                window.Galaxy = top.Galaxy;
-                window.bundleEntries[jscript]();
-            } else {
-                console.error("'galaxy_config.app.jscript' missing.");
-            }
-        });
-        require(['app']);
-    </script>
-</%def>
-
 ## default late-load javascripts
 <%def name="late_javascripts()">
     ## Scripts can be loaded later since they progressively add features to
@@ -157,9 +55,101 @@
             %endif
         </title>
 
-        ${self.stylesheets()}
-        ${self.javascripts()}
-        ${self.javascript_app()}
+        ## load default style
+        ${h.css("base")}
+
+        ## modify default style
+        <style type="text/css">
+            #center {
+                %if not self.galaxy_config['left_panel']:
+                    left: 0 !important;
+                %endif
+                %if not self.galaxy_config['right_panel']:
+                    right: 0 !important;
+                %endif
+            }
+            #center, #right, #left { top: 0 !important; }
+        </style>
+
+        <script>
+            window.Galaxy = window.Galaxy || {};
+            window.Galaxy.root = '${h.url_for( "/" )}';
+            window.jQuery = window.jquery = window.$;
+        </script>
+
+        ## Send errors to Sentry server if configured
+        %if app.config.sentry_dsn:
+            ${h.js( "libs/raven" )}
+            <script>
+                Raven.config('${app.config.sentry_dsn_public}').install();
+                %if trans.user:
+                    Raven.setUser( { email: "${trans.user.email | h}" } );
+                %endif
+            </script>
+        %endif
+
+        ## load jscript libraries
+        ${h.js(
+            ## TODO: remove when all libs are required directly in modules
+            'bundled/libs.bundled',
+            'bundled/extended.bundled',
+            'libs/d3',
+            'libs/require',
+        )}
+
+        <script type="text/javascript">
+            // configure require
+            // due to our using both script tags and require, we need to access the same jq in both for plugin retention
+            window.jQuery = window.jquery = window.$;
+            define( 'jquery', [], function(){ return window.$; })
+
+            require.config({
+                baseUrl: "${h.url_for('/static/scripts')}",
+                // cache buster based on templated server (re)start time
+                urlArgs: 'v=${app.server_starttime}',
+                shim: {
+                    "libs/underscore": { exports: "_" },
+                    "libs/backbone": {
+                        deps: [ 'jquery', 'libs/underscore' ],
+                        exports: "Backbone"
+                    },
+                    "libs/d3": { exports: "d3" },
+                },
+            });
+
+            // console protection
+            // TODO: Only needed for IE <9 which I believe we dropped
+            window.console = window.console || {
+                log     : function(){},
+                debug   : function(){},
+                info    : function(){},
+                warn    : function(){},
+                error   : function(){},
+                assert  : function(){}
+            };
+
+            // extra configuration global
+            var galaxy_config = ${ h.dumps( self.galaxy_config ) };
+            window.galaxy_config = galaxy_config;
+        </script>
+
+        ${h.js(
+            'libs/jquery/jquery-ui'
+        )}
+
+        <script type="text/javascript">
+            // load any app configured
+            define( 'app', function(){
+                var jscript = galaxy_config.app.jscript;
+                if( jscript && window.bundleEntries[jscript]){
+                    window.Galaxy = top.Galaxy;
+                    window.bundleEntries[jscript]();
+                } else {
+                    console.error("'galaxy_config.app.jscript' missing.");
+                }
+            });
+            require(['app']);
+        </script>
     </head>
 
     <body scroll="no" class="full-content">
