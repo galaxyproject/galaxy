@@ -338,7 +338,7 @@
                 <button @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn btn rule-btn-reset">
                     {{ l("Reset") }}
                 </button>
-                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
+                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-secondary btn-primary" v-bind:class="{ disabled: !validInput }">
                     {{ finishButtonTitle }}
                 </button>
             </option-buttons-div>
@@ -678,7 +678,7 @@ const RuleComponent = {
         <slot></slot>
         <div class="buttons float-right rule-edit-buttons">
            <button type="button" class="btn rule-editor-cancel" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-secondary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
+           <button type="button" class="btn btn-secondary btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
         </div>
     </div>`,
     data: function() {
@@ -1569,7 +1569,6 @@ export default {
 }
 .rule-edit-buttons {
     margin: 5px;
-    height: 25px;
 }
 .rules {
     flex-grow: 1;
