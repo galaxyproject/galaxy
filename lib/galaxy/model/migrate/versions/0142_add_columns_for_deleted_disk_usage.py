@@ -18,11 +18,35 @@ def upgrade(migrate_engine):
 
     try:
         User_table = Table("galaxy_user", metadata, autoload=True)
-        c = Column('deleted_disk_usage', DECIMAL(asdecimal=False), default=0.00, index=True)
+        c = Column('deleted_disk_usage', DECIMAL(asdecimal=False), index=True)
         c.create(User_table, index_name="ix_galaxy_user_deleted_disk_usage")
         assert c is User_table.c.deleted_disk_usage
     except Exception:
         log.exception("Adding deleted_disk_usage column to galaxy_user table failed.")
+
+    try:
+        User_table = Table("galaxy_user", metadata, autoload=True)
+        User_table.c.disk_usage.alter(type=DECIMAL(asdecimal=False))
+    except Exception:
+        log.exception("Altering data type of disk_usage column in galaxy_user table failed.")
+
+    try:
+        User_table = Table("galaxy_session", metadata, autoload=True)
+        User_table.c.disk_usage.alter(type=DECIMAL(asdecimal=False))
+    except Exception:
+        log.exception("Altering data type of disk_usage column in galaxy_session table failed.")
+
+    try:
+        User_table = Table("dataset", metadata, autoload=True)
+        User_table.c.total_size.alter(type=DECIMAL(asdecimal=False))
+    except Exception:
+        log.exception("Altering data type of total_size column in dataset table failed.")
+
+    try:
+        User_table = Table("dataset", metadata, autoload=True)
+        User_table.c.file_size.alter(type=DECIMAL(asdecimal=False))
+    except Exception:
+        log.exception("Altering data type of file_size column in dataset table failed.")
 
 
 def downgrade(migrate_engine):
