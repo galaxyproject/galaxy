@@ -73,7 +73,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         return config
 
     @web.expose
-    def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
+    def index(self, trans, tool_id=None, workflow_id=None, history_id=None, app_id=None, m_c=None, m_a=None, **kwd):
         """
         Root and entry point for client-side web app.
 
@@ -108,7 +108,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         js_options = self._get_js_options(trans)
         config = js_options['config']
         config.update(self._get_extended_config(trans))
-        return self.template(trans, 'analysis', options=js_options)
+        return self.template(trans, app_id or 'analysis', options=js_options)
 
     @web.expose
     def login(self, trans, redirect=None, **kwd):
