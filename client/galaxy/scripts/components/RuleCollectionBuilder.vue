@@ -1525,6 +1525,9 @@ export default {
     width: 100%;
     /* overflow: scroll; */
 }
+.select2-container {
+    min-width: 60px;
+}
 .vertical #hot-table {
     width: 100%;
     overflow: scroll;
