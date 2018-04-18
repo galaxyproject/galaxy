@@ -13,6 +13,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
     get_headers,
     iter_headers
 )
@@ -50,6 +51,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Interval(Tabular):
     """Tab delimited data containing interval information"""
     edam_data = "data_3002"
@@ -297,7 +299,7 @@ class Interval(Tabular):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'intervalness'
 
@@ -312,26 +314,23 @@ class Interval(Tabular):
         >>> Interval().sniff( fname )
         True
         """
+        found_valid_lines = False
         try:
-            """
-            If we got here, we already know the file is_column_based and is not bed,
-            so we'll just look for some valid data.
-            """
-            headers = iter_headers(filename, '\t', comment_designator='#')
+            headers = iter_headers(file_prefix, '\t', comment_designator='#')
+            # If we got here, we already know the file is_column_based and is not bed,
+            # so we'll just look for some valid data.
             for hdr in headers:
                 if hdr:
                     if len(hdr) < 3:
                         return False
-                    try:
-                        # Assume chrom start and end are in column positions 1 and 2
-                        # respectively ( for 0 based columns )
-                        int(hdr[1])
-                        int(hdr[2])
-                    except Exception:
-                        return False
-            return True
+                    # Assume chrom start and end are in column positions 1 and 2
+                    # respectively ( for 0 based columns )
+                    int(hdr[1])
+                    int(hdr[2])
+                    found_valid_lines = True
         except Exception:
             return False
+        return found_valid_lines
 
     def get_track_resolution(self, dataset, start, end):
         return None
@@ -464,7 +463,7 @@ class Bed(Interval):
         except Exception:
             return "This item contains no content"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'bedness'
 
@@ -488,10 +487,10 @@ class Bed(Interval):
         >>> Bed().sniff( fname )
         True
         """
-        if not get_headers(filename, '\t', comment_designator='#', count=1):
+        if not get_headers(file_prefix, '\t', comment_designator='#', count=1):
             return False
         try:
-            headers = iter_headers(filename, '\t', comment_designator='#')
+            headers = iter_headers(file_prefix, '\t', comment_designator='#')
             for hdr in headers:
                 if hdr[0] == '':
                     continue
@@ -635,6 +634,7 @@ class _RemoteCallMixin(object):
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Gff(Tabular, _RemoteCallMixin):
     """Tab delimited data in Gff format"""
     edam_data = "data_1255"
@@ -822,7 +822,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in gff format
 
@@ -831,17 +831,17 @@ class Gff(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'gff_version_3.gff' )
+        >>> fname = get_test_fname('gff_version_3.gff')
         >>> Gff().sniff( fname )
         False
-        >>> fname = get_test_fname( 'test.gff' )
+        >>> fname = get_test_fname('test.gff')
         >>> Gff().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
@@ -937,7 +937,7 @@ class Gff3(Gff):
                         break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in GFF version 3 format
 
@@ -970,10 +970,10 @@ class Gff3(Gff):
         >>> Gff3().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
                     return True
@@ -1020,7 +1020,7 @@ class Gtf(Gff):
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in gtf format
 
@@ -1045,10 +1045,10 @@ class Gtf(Gff):
         >>> Gtf().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
@@ -1085,6 +1085,7 @@ class Gtf(Gff):
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Wiggle(Tabular, _RemoteCallMixin):
     """Tab delimited data in wiggle format"""
     edam_format = "format_3005"
@@ -1218,7 +1219,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
             max_data_lines = 100
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines wether the file is in wiggle format
 
@@ -1242,7 +1243,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         True
         """
         try:
-            headers = iter_headers(filename, None)
+            headers = iter_headers(file_prefix, None)
             for hdr in headers:
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                     return True
@@ -1272,6 +1273,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
 
 
+@build_sniff_from_prefix
 class CustomTrack(Tabular):
     """UCSC CustomTrack"""
     edam_format = "format_3588"
@@ -1360,7 +1362,7 @@ class CustomTrack(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in customtrack format.
 
@@ -1377,7 +1379,8 @@ class CustomTrack(Tabular):
         >>> CustomTrack().sniff( fname )
         True
         """
-        headers = iter_headers(filename, None)
+        headers = iter_headers(file_prefix, None)
+        found_at_least_one_track = False
         first_line = True
         for hdr in headers:
             if first_line:
@@ -1409,9 +1412,10 @@ class CustomTrack(Tabular):
                             int(hdr[2])
                         except Exception:
                             return False
+                        found_at_least_one_track = True
                 except Exception:
                     return False
-        return True
+        return found_at_least_one_track
 
 
 class ENCODEPeak(Interval):
@@ -1467,6 +1471,7 @@ class ChromatinInteractions(Interval):
         return False
 
 
+@build_sniff_from_prefix
 class ScIdx(Tabular):
     """
     ScIdx files are 1-based and consist of strand-specific coordinate counts.
@@ -1492,55 +1497,55 @@ class ScIdx(Tabular):
         # line of the dataset displays them.
         self.column_names = ['chrom', 'index', 'forward', 'reverse', 'value']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'scidx-ness.'
         """
         count = 0
-        with open(filename, "r") as fh:
-            while True:
-                line = fh.readline()
-                if not line:
-                    # EOF
-                    if count > 1:
-                        # The second line is always the labels:
-                        # chrom index forward reverse value
-                        # We need at least the column labels and a data line.
-                        return True
-                    return False
-                line = line.strip()
-                # The first line is always a comment like this:
-                # 2015-11-23 20:18:56.51;input.bam;READ1
-                if count == 0:
-                    if line.startswith('#'):
-                        count += 1
-                        continue
-                    else:
-                        return False
-                # Skip first line.
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                # EOF
                 if count > 1:
-                    items = line.split('\t')
-                    if len(items) != 5:
-                        return False
-                    index = items[1]
-                    if not index.isdigit():
-                        return False
-                    forward = items[2]
-                    if not forward.isdigit():
-                        return False
-                    reverse = items[3]
-                    if not reverse.isdigit():
-                        return False
-                    value = items[4]
-                    if not value.isdigit():
-                        return False
-                    if int(forward) + int(reverse) != int(value):
-                        return False
-                if count == 100:
+                    # The second line is always the labels:
+                    # chrom index forward reverse value
+                    # We need at least the column labels and a data line.
                     return True
-                count += 1
-            if count < 100 and count > 0:
+                return False
+            line = line.strip()
+            # The first line is always a comment like this:
+            # 2015-11-23 20:18:56.51;input.bam;READ1
+            if count == 0:
+                if line.startswith('#'):
+                    count += 1
+                    continue
+                else:
+                    return False
+            # Skip first line.
+            if count > 1:
+                items = line.split('\t')
+                if len(items) != 5:
+                    return False
+                index = items[1]
+                if not index.isdigit():
+                    return False
+                forward = items[2]
+                if not forward.isdigit():
+                    return False
+                reverse = items[3]
+                if not reverse.isdigit():
+                    return False
+                value = items[4]
+                if not value.isdigit():
+                    return False
+                if int(forward) + int(reverse) != int(value):
+                    return False
+            if count == 100:
                 return True
+            count += 1
+        if count < 100 and count > 0:
+            return True
         return False
 
 

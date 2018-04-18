@@ -10,7 +10,6 @@ var commonLibs = [
     // jquery et al
     "jquery",
     "libs/jquery/jquery.migrate",
-    // jquery plugins
     "libs/jquery/jquery.autocomplete",
     "libs/jquery/jquery.event.hover",
     "libs/jquery/jquery.event.drag",
@@ -23,8 +22,8 @@ var commonLibs = [
     "libs/jquery/jstorage",
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
-    "libs/bootstrap",
-    "libs/bootstrap-tour",
+    "bootstrap",
+    "bootstrap-tour",
     "vue",
     // mvc
     "libs/underscore",
@@ -62,8 +61,17 @@ let buildconfig = {
     module: {
         rules: [
             {
+                test: /\.vue$/,
+                loader: "vue-loader",
+                options: {
+                    loaders: {
+                        js: "babel-loader"
+                    }
+                }
+            },
+            {
                 test: /\.js$/,
-                exclude: [/(node_modules|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(vue-handsontable-official)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -78,10 +86,6 @@ let buildconfig = {
                         options: "$"
                     }
                 ]
-            },
-            {
-                test: /\.vue$/,
-                loader: "vue-loader"
             }
         ]
     },

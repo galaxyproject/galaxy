@@ -584,7 +584,7 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=False, **kwds):
+    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, **kwds):
         super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
@@ -600,14 +600,14 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans, d, exact_tools=False, **kwds):
+    def from_dict(Class, trans, d, **kwds):
         tool_id = d.get('content_id') or d.get('tool_id')
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException("No tool id could be located for step [%s]." % d)
         tool_version = d.get('tool_version')
         if tool_version:
             tool_version = str(tool_version)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, exact_tools=exact_tools)
+        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
@@ -625,7 +625,7 @@ class ToolModule(WorkflowModule):
     def from_workflow_step(Class, trans, step, **kwds):
         tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
         tool_version = step.tool_version
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version)
+        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -846,6 +846,7 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
+        resource_parameters = invocation.resource_parameters
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
@@ -918,7 +919,8 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
-                completed_jobs=completed_jobs
+                completed_jobs=completed_jobs,
+                workflow_resource_parameters=resource_parameters
             )
             complete = True
         except PartialJobExecution as pje:
@@ -1046,12 +1048,12 @@ class WorkflowModuleFactory(object):
         assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]" % (type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step):
+    def from_workflow_step(self, trans, step, **kwargs):
         """
         Return module initializd from the WorkflowStep object `step`.
         """
         type = step.type
-        return self.module_types[type].from_workflow_step(trans, step)
+        return self.module_types[type].from_workflow_step(trans, step, **kwargs)
 
 
 def is_tool_module_type(module_type):
@@ -1130,7 +1132,7 @@ class WorkflowModuleInjector(object):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step, step_args=None, steps=None):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
         """ Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -1149,7 +1151,7 @@ class WorkflowModuleInjector(object):
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step)
+        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)

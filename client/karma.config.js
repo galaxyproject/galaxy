@@ -14,7 +14,11 @@ var single_pack_mode = function(){
     return process.env.GALAXY_TEST_AS_SINGLE_PACK || false;
 };
 
-var TESTS_SEPARATE_PACKS = [
+var test_framework = function() {
+    return process.env.GALAXY_TEST_FRAMEWORK || "qunit";
+}
+
+var QUNIT_TESTS_SEPARATE_PACKS = [
     {pattern: 'galaxy/scripts/qunit/tests/galaxy_app_base_tests.js', watched: false},
     // Something is funky with form_tests.js - needs to come before all other tests.
     {pattern: 'galaxy/scripts/qunit/tests/form_tests.js', watched: false},
@@ -41,22 +45,31 @@ var TESTS_SEPARATE_PACKS = [
     // {pattern: 'galaxy/scripts/qunit/tests/ui_tests.js', watched: false},
 ];
 
-var TESTS_AS_SINGLE_PACK = [
+var QUNIT_TESTS_AS_SINGLE_PACK = [
     {pattern: 'galaxy/scripts/qunit/test.js', watched: false},
 ];
+
+
+QUNIT_TEST_FILES = single_pack_mode() ? QUNIT_TESTS_AS_SINGLE_PACK : QUNIT_TESTS_SEPARATE_PACKS;
+MOCHA_TEST_FILES = [
+    {pattern: 'galaxy/scripts/mocha/test.js', watched: false},
+];
+TEST_FILES = test_framework() == "qunit" ? QUNIT_TEST_FILES : MOCHA_TEST_FILES;
+FRAMEWORK_PLUGIN = test_framework() == "qunit" ? "karma-qunit" : "karma-mocha";
 
 // karma.conf.js
 module.exports = function(config) {
   config.set({
     basepath: '.',
-    files: (single_pack_mode() ? TESTS_AS_SINGLE_PACK : TESTS_SEPARATE_PACKS).concat([
+    files: TEST_FILES.concat([
       // Non-test assets that will be served by web server.
       // CSS needed by tests.
       'galaxy/scripts/qunit/assets/*.css',
     ]),
     plugins: [
       'karma-webpack',
-      'karma-qunit',
+      FRAMEWORK_PLUGIN,
+      'karma-mocha',
       'karma-polyfill',
       'karma-phantomjs-launcher',
     ],
@@ -69,10 +82,11 @@ module.exports = function(config) {
     // that we have a working setup.
     preprocessors: {
       // add webpack as preprocessor
-      'galaxy/scripts/qunit/**/*.js': ['webpack']
+      'galaxy/scripts/qunit/**/*.js': ['webpack'],
+      'galaxy/scripts/mocha/**/*.js': ['webpack']
     },
 
-    frameworks: ['polyfill', 'qunit'],
+    frameworks: ['polyfill', test_framework()],
 
     webpack: webpackConfig,
     webpackMiddleware: { noInfo: false }

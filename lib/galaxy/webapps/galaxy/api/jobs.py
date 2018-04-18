@@ -111,7 +111,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
         return out
 
-    @expose_api
+    @expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         show( trans, id )
@@ -255,7 +255,9 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise exceptions.ObjectNotFound()
-        if not trans.user_is_admin() and job.user != trans.user:
+        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        if not trans.user_is_admin() and not belongs_to_user:
+            # Check access granted via output datasets.
             if not job.output_datasets:
                 raise exceptions.ItemAccessibilityException("Job has no output datasets.")
             for data_assoc in job.output_datasets:

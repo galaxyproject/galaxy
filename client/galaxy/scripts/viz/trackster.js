@@ -95,7 +95,7 @@ class TracksterUI extends Backbone.Model {
                 this.view.has_changes = false;
 
                 // Needed to set URL when first saving a visualization.
-                window.history.pushState({}, "", vis_info.url + window.location.hash);
+                window.history.pushState({}, "", vis_info.url + window.top.location.hash);
             })
             .error(() => {
                 // show dialog
@@ -151,7 +151,7 @@ class TracksterUI extends Backbone.Model {
                     icon_class: "globe",
                     title: _l("Circster"),
                     on_click: () => {
-                        window.location = `${this.baseURL}visualization/circster?id=${this.view.vis_id}`;
+                        window.top.location = `${this.baseURL}visualization/circster?id=${this.view.vis_id}`;
                     }
                 },
                 {
@@ -354,17 +354,17 @@ class TracksterUI extends Backbone.Model {
                     },
                     "Leave without Saving": () => {
                         $(window).off("beforeunload");
-                        window.location = `${Galaxy.root}visualization`;
+                        window.top.location = `${Galaxy.root}visualization`;
                     },
                     Save: () => {
                         $.when(this.save_viz()).then(() => {
-                            window.location = `${Galaxy.root}visualization`;
+                            window.top.location = `${Galaxy.root}visualization`;
                         });
                     }
                 }
             });
         } else {
-            window.location = `${Galaxy.root}visualization`;
+            window.top.location = `${Galaxy.root}visualization`;
         }
     }
 }
@@ -433,7 +433,7 @@ class TracksterUIView extends Backbone.View {
                 "Not available."}</b></li><li>or create a new session with this dataset as the only track</li></ul></p>`,
             buttons: {
                 Cancel: () => {
-                    window.location = `${Galaxy.root}visualizations/list`;
+                    window.top.location = `${Galaxy.root}visualizations/list`;
                 },
                 "View in saved visualization": () => {
                     this.view_in_saved(dataset_params);
@@ -456,14 +456,14 @@ class TracksterUIView extends Backbone.View {
             body: tracks_grid.$el,
             buttons: {
                 Cancel: () => {
-                    window.location = `${Galaxy.root}visualizations/list`;
+                    window.top.location = `${Galaxy.root}visualizations/list`;
                 },
                 "Add to visualization": () => {
                     $(window.parent.document)
                         .find("input[name=id]:checked")
                         .each(() => {
                             dataset_params.id = $(this).val();
-                            window.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
+                            window.top.location = `${Galaxy.root}visualization/trackster?${$.param(dataset_params)}`;
                         });
                 }
             }
@@ -509,7 +509,7 @@ class TracksterUIView extends Backbone.View {
                     body: this.template_view_new(response),
                     buttons: {
                         Cancel: () => {
-                            window.location = `${Galaxy.root}visualizations/list`;
+                            window.top.location = `${Galaxy.root}visualizations/list`;
                         },
                         Create: () => {
                             this.create_browser($("#new-title").val(), $("#new-dbkey").val());
@@ -562,7 +562,7 @@ class TracksterUIView extends Backbone.View {
         // close selection/finalize template
         html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
             Galaxy.root
-        }custom_builds">Add a Custom Build</a></div></form>`;
+        }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
 
         // return
         return html;

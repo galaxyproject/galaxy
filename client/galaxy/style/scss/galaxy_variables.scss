@@ -1,0 +1,34 @@
+// Additional variables that are not used by bootstrap but are used
+// in Galaxy stylesheets
+
+$base-bg: $white;
+$base-text-color: $black;
+
+$side-panel-bg: lighten(black, 95%);
+$layout-border-color: darken($border-default-color, 15%);
+
+$form-heading-bg: $complement-color-3;
+$form-border: $complement-color-3;
+
+$table-heading-bg: $complement-color-3;
+$table-border: $complement-color-3;
+$table-bg-accent: #f9f9f9; // for striping
+
+// Additional state colors
+
+$state-default-bg: $gray-lighter;
+$state-default-border: $border-default-color;
+
+$state-paused-bg: #d9edf7;
+
+$state-running-border: #aaaa66;
+$state-running-bg: #ffffcc;
+
+$navbar-height: 33px; // 2.062500rem;
+$navbar-default-bg: $gray-lighter; // JT #f8f8f8;
+$navbar-default-border: darken($navbar-default-bg, $border-darken-percent);
+
+@import "theme/blue.scss";
+
+// Theme: plain
+//@import "theme/plain.scss";

@@ -44,10 +44,6 @@ class NameColumn(grids.TextColumn):
 class HistoryListGrid(grids.Grid):
 
     # Custom column types
-    class DelayedValueColumn(grids.GridColumn):
-        def get_value(self, trans, grid, history):
-            return '<div class="delayed-value-%s" data-history-id="%s"><span class="fa fa-spinner fa-spin"></span></div>' % (self.key, trans.security.encode_id(history.id))
-
     class ItemCountColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):
             return str(history.hid_counter - 1)
@@ -89,11 +85,11 @@ class HistoryListGrid(grids.Grid):
     columns = [
         HistoryListNameColumn("Name", key="name", attach_popup=True, filterable="advanced"),
         ItemCountColumn("Items", key="item_count", sortable=False),
-        DelayedValueColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True),
+        grids.GridColumn("Datasets", key="datasets_by_state", sortable=False, nowrap=True, delayed=True),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryTagAssociation,
                                    filterable="advanced", grid_name="HistoryListGrid"),
         grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False, use_shared_with_count=True),
-        DelayedValueColumn("Size on Disk", key="disk_size", sortable=False),
+        grids.GridColumn("Size on Disk", key="disk_size", sortable=False, delayed=True),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
         DeletedColumn("Status", key="deleted", filterable="advanced")

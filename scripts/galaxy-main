@@ -94,6 +94,7 @@ def load_galaxy_app(
         **kwds
     )
     app.control_worker.bind_and_start()
+    app.application_stack.log_startup()
     return app
 
 
@@ -183,7 +184,7 @@ class GalaxyConfigBuilder(object):
     def populate_options(cls, arg_parser):
         arg_parser.add_argument("-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)")
         arg_parser.add_argument("--ini-path", default=None, help="DEPRECATED: use -c/--config-file")
-        arg_parser.add_argument("--app", default=None, help="app section in ini file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
+        arg_parser.add_argument("--app", default=None, help="app section in config file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonzie process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")

@@ -8,6 +8,7 @@ from abc import (
 
 import six
 
+from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (
     asbool,
     in_directory,
@@ -347,13 +348,13 @@ def preprocess_volumes(volumes_raw_str, container_type):
     parent directories with rw subdirectories).
 
     >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
-    '/a/b:rw'
+    ['/a/b:rw']
     >>> preprocess_volumes("/a/b:ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
-    '/a/b:ro,/a/b/c:rw'
+    ['/a/b:ro', '/a/b/c:rw']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", DOCKER_CONTAINER_TYPE)
-    '/a/b:ro,/a/b/c:rw'
+    ['/a/b:ro', '/a/b/c:rw']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    '/a/b:rw,/a/b/c:rw'
+    ['/a/b:rw', '/a/b/c:rw']
     """
 
     volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
@@ -383,7 +384,7 @@ def preprocess_volumes(volumes_raw_str, container_type):
 
         volume[1] = how
 
-    return ",".join([":".join(v) for v in volumes])
+    return [":".join(v) for v in volumes]
 
 
 class HasDockerLikeVolumes(object):
@@ -464,9 +465,9 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
-        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
+        preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
-        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+        volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
         # If a tool definitely has a temp directory available set it to /tmp in container for compat.
         # with CWL. This is part of that spec and should make it easier to share containers between CWL
         # and Galaxy.
@@ -558,8 +559,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             raise Exception("Cannot containerize command [%s] without defined working directory." % working_directory)
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
-        preprocessed_volumes_str = preprocess_volumes(volumes_raw, self.container_type)
-        volumes = docker_util.DockerVolume.volumes_from_str(preprocessed_volumes_str)
+        preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
+        volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
         singularity_target_kwds = dict(
             singularity_cmd=prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),

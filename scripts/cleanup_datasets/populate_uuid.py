@@ -8,33 +8,32 @@ script fixes datasets that were generated before the change.
 """
 from __future__ import print_function
 
+import argparse
+import os
 import sys
 import uuid
 
-from galaxy.model import mapping
-from galaxy.model.orm.scripts import get_config
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
-assert sys.version_info[:2] >= (2, 6)
+import galaxy.config
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
-
-def usage(prog):
-    print("usage: %s galaxy.ini" % prog)
-    print("""
+DESCRIPTION = """
 Populates blank uuid fields in datasets with randomly generated values.
 
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
-    """)
+"""
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv == "-h" or sys.argv == "--help":
-        usage(sys.argv[0])
-        sys.exit()
-    ini_file = sys.argv.pop(1)
-    config = get_config(ini_file)
+    parser = argparse.ArgumentParser(DESCRIPTION)
+    populate_config_args(parser)
+    args = parser.parse_args()
 
-    model = mapping.init(ini_file, config['db_url'], create_tables=False)
+    app_properties = app_properties_from_args(args)
+    config = galaxy.config.Configuration(**app_properties)
+    model = galaxy.config.init_models_from_config(config)
 
     for row in model.context.query(model.Dataset):
         if row.uuid is None:
@@ -47,6 +46,7 @@ def main():
             row.uuid = uuid.uuid4()
             print("Setting Workflow:", row.id, " UUID to ", row.uuid)
     model.context.flush()
+    print("Complete")
 
 
 if __name__ == "__main__":

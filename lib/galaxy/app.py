@@ -10,6 +10,7 @@ import galaxy.queues
 import galaxy.quota
 import galaxy.security
 from galaxy import config, jobs
+from galaxy.containers import build_container_interfaces
 from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
@@ -183,6 +184,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
                 )
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
+
+        if self.config.enable_oidc:
+            from galaxy.authnz import managers
+            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+
         self.sentry_client = None
         if self.config.sentry_dsn:
 
@@ -205,6 +211,13 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        self.containers = {}
+        if self.config.enable_beta_containers_interface:
+            self.containers = build_container_interfaces(
+                self.config.containers_config_file,
+                containers_conf=self.config.containers_conf
+            )
 
         # Configure handling of signals
         handlers = {}

@@ -6,7 +6,7 @@
     </macros>
     <description>Renders a regular bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../nvd3_bar/static/nvd3.js" css="static/nvd3.css" load="nvd3_bar"/>
+    <entry_point entry_point_type="chart" src="nvd3.js" css="nvd3.css" load="nvd3_bar"/>
     <specs>
         <expand macro="specs"/>
     </specs>

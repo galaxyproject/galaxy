@@ -153,6 +153,8 @@
 
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
+        margin-left: 6px;
+        margin-right: 6px;
     }
     .form-row-clear {
         clear: both;
@@ -247,7 +249,7 @@
         <div class="toolSectionBg">
             %for module in module_section["modules"]:
                 <div class="toolTitle">
-                    <a href="#" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
+                    <a href="#" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
                         ${module['description']}
                     </a>
                 </div>
@@ -270,7 +272,7 @@
 
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenuContainer">
-            <div class="toolMenu">
+            <div class="toolMenu" id="workflow-tool-menu">
                 <%
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
@@ -355,11 +357,11 @@
         <div class="unified-panel-header-inner" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
-        <div class="unified-panel-header-inner">
+        <div class="unified-panel-header-inner" id="workflow-canvas-title">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
-    <div class="unified-panel-body">
+    <div class="unified-panel-body" id="workflow-canvas-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>

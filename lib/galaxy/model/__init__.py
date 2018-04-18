@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+import base64
 import errno
 import json
 import logging
@@ -11,12 +12,15 @@ import numbers
 import operator
 import os
 import pwd
+import random
+import string
 import time
 from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
 from six import string_types
+from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
     and_,
     func,
@@ -30,7 +34,7 @@ from sqlalchemy import (
     types)
 from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import aliased, joinedload, object_session
-
+from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
@@ -110,6 +114,12 @@ class HasTags(object):
                 tag_str += ":" + tag.user_value
             tags_str_list.append(tag_str)
         return tags_str_list
+
+    def copy_tags_from(self, target_user, source):
+        for source_tag_assoc in source.tags:
+            new_tag_assoc = source_tag_assoc.copy()
+            new_tag_assoc.user = target_user
+            self.tags.append(new_tag_assoc)
 
 
 class HasName(object):
@@ -197,7 +207,7 @@ class User(Dictifiable):
     # attributes that will be accessed and returned when calling to_dict( view='element' )
     dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, email=None, password=None, username=None):
         self.email = email
         self.password = password
         self.external = False
@@ -205,7 +215,7 @@ class User(Dictifiable):
         self.purged = False
         self.active = False
         self.activation_token = None
-        self.username = None
+        self.username = username
         self.last_password_change = None
         # Relationships
         self.histories = []
@@ -232,6 +242,14 @@ class User(Dictifiable):
         else:
             self.password = new_secure_hash(text_type=cleartext)
         self.last_password_change = datetime.now()
+
+    def set_random_password(self, length=16):
+        """
+        Sets user password to a random string of the given length.
+        :return: void
+        """
+        self.set_password_cleartext(
+            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length)))
 
     def check_password(self, cleartext):
         """
@@ -419,6 +437,18 @@ class User(Dictifiable):
         """
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
+
+    def is_active(self):
+        return self.active
+
+    def is_authenticated(self):
+        # TODO: is required for python social auth (PSA); however, a user authentication is relative to the backend.
+        # For instance, a user who is authenticated with Google, is not necessarily authenticated
+        # with Amazon. Therefore, this function should also receive the backend and check if this
+        # user is already authenticated on that backend or not. For now, returning always True
+        # seems reasonable. Besides, this is also how a PSA example is implemented:
+        # https://github.com/python-social-auth/social-examples/blob/master/example-cherrypy/example/db/user.py
+        return True
 
 
 class PasswordResetToken(object):
@@ -1404,7 +1434,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:
             self.copy_item_annotation(db_session, self.user, self, target_user, new_history)
-            new_history.copy_tags_from(target_user=target_user, source_history=self)
+            new_history.copy_tags_from(target_user=target_user, source=self)
 
         # Copy HDAs.
         if activatable:
@@ -1437,6 +1467,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
             if target_user:
                 new_hdca.copy_item_annotation(db_session, self.user, hdca, target_user, new_hdca)
+                new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
         db_session.add(new_history)
@@ -1595,12 +1626,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
     def __collection_contents_iter(self, **kwds):
         return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
-
-    def copy_tags_from(self, target_user, source_history):
-        for src_shta in source_history.tags:
-            new_shta = src_shta.copy()
-            new_shta.user = target_user
-            self.tags.append(new_shta)
 
 
 class HistoryUserShareAssociation(object):
@@ -2003,6 +2028,9 @@ class DatasetInstance(object):
         self.dataset = dataset
         self.parent_id = parent_id
         self.validation_errors = validation_errors
+
+    def update(self):
+        self.update_time = galaxy.model.orm.now.now()
 
     @property
     def ext(self):
@@ -2663,15 +2691,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     def type_id(cls):
         return ((type_coerce(cls.content_type, types.Unicode) + u'-' +
                  type_coerce(cls.id, types.Unicode)).label('type_id'))
-
-    def copy_tags_from(self, target_user, source_hda):
-        """
-        Copy tags from `source_hda` to this HDA and assign them the user `target_user`.
-        """
-        for source_tag_assoc in source_hda.tags:
-            new_tag_assoc = source_tag_assoc.copy()
-            new_tag_assoc.user = target_user
-            self.tags.append(new_tag_assoc)
 
 
 class HistoryDatasetAssociationHistory(object):
@@ -3648,6 +3667,7 @@ class StoredWorkflow(HasTags, Dictifiable):
         self.workflows = []
 
     def copy_tags_from(self, target_user, source_workflow):
+        # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
             new_swta = src_swta.copy()
             new_swta.user = target_user
@@ -4150,6 +4170,16 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
 
+    @property
+    def resource_parameters(self):
+        resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
+        _resource_parameters = {}
+        for input_parameter in self.input_parameters:
+            if input_parameter.type == resource_type:
+                _resource_parameters[input_parameter.name] = input_parameter.value
+
+        return _resource_parameters
+
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:
             if content.workflow_step_id == step_id:
@@ -4258,7 +4288,8 @@ class WorkflowRequestInputParameter(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
-        META_PARAMETERS='meta',  #
+        META_PARAMETERS='meta',
+        RESOURCE_PARAMETERS='resource',
     )
 
     def __init__(self, name=None, value=None, type=None):
@@ -4437,6 +4468,223 @@ class UserOpenID(object):
         self.user = user
         self.session = session
         self.openid = openid
+
+
+class PSAAssociation(AssociationMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
+        self.server_url = server_url
+        self.handle = handle
+        self.secret = secret
+        self.issued = issued
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def store(cls, server_url, association):
+        try:
+            assoc = cls.trans.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+        except IndexError:
+            assoc = cls(server_url=server_url, handle=association.handle)
+        assoc.secret = base64.encodestring(association.secret).decode()
+        assoc.issued = association.issued
+        assoc.lifetime = association.lifetime
+        assoc.assoc_type = association.assoc_type
+        cls.trans.sa_session.add(assoc)
+        cls.trans.sa_session.flush()
+
+    @classmethod
+    def get(cls, *args, **kwargs):
+        return cls.trans.sa_session.query(cls).filter_by(*args, **kwargs)
+
+    @classmethod
+    def remove(cls, ids_to_delete):
+        cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
+
+
+class PSACode(CodeMixin):
+    __table_args__ = (UniqueConstraint('code', 'email'),)
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, email, code):
+        self.email = email
+        self.code = code
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def get_code(cls, code):
+        return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
+
+
+class PSANonce(NonceMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, server_url, timestamp, salt):
+        self.server_url = server_url
+        self.timestamp = timestamp
+        self.salt = salt
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def use(cls, server_url, timestamp, salt):
+        try:
+            return cls.trans.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+        except IndexError:
+            instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
+            cls.trans.sa_session.add(instance)
+            cls.trans.sa_session.flush()
+            return instance
+
+
+class PSAPartial(PartialMixin):
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, token, data, next_step, backend):
+        self.token = token
+        self.data = data
+        self.next_step = next_step
+        self.backend = backend
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def load(cls, token):
+        return cls.trans.sa_session.query(cls).filter(cls.token == token).first()
+
+    @classmethod
+    def destroy(cls, token):
+        partial = cls.load(token)
+        if partial:
+            cls.trans.sa_session.delete(partial)
+
+
+class UserAuthnzToken(UserMixin):
+    __table_args__ = (UniqueConstraint('provider', 'uid'),)
+
+    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
+    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
+    trans = None
+
+    def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
+        self.provider = provider
+        self.uid = uid
+        self.user_id = user.id
+        self.extra_data = extra_data
+        self.lifetime = lifetime
+        self.assoc_type = assoc_type
+
+    def get_id_token(self):
+        return self.extra_data.get('id_token', None) if self.extra_data is not None else None
+
+    def get_access_token(self):
+        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
+
+    def set_extra_data(self, extra_data=None):
+        # Note: the following unicode conversion is a temporary solution for a
+        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
+        if extra_data is not None:
+            extra_data = str(extra_data)
+        if super(UserAuthnzToken, self).set_extra_data(extra_data):
+            self.trans.sa_session.add(self)
+            self.trans.sa_session.flush()
+
+    def save(self):
+        self.trans.sa_session.add(self)
+        self.trans.sa_session.flush()
+
+    @classmethod
+    def username_max_length(cls):
+        # Note: This is the maximum field length set for the username column of the galaxy_user table.
+        # A better alternative is to retrieve this number from the table, instead of this const value.
+        return 255
+
+    @classmethod
+    def user_model(cls):
+        return User
+
+    @classmethod
+    def changed(cls, user):
+        cls.trans.sa_session.add(user)
+        cls.trans.sa_session.flush()
+
+    @classmethod
+    def user_query(cls):
+        return cls.trans.sa_session.query(cls.user_model())
+
+    @classmethod
+    def user_exists(cls, *args, **kwargs):
+        return cls.user_query().filter_by(*args, **kwargs).count() > 0
+
+    @classmethod
+    def get_username(cls, user):
+        return getattr(user, 'username', None)
+
+    @classmethod
+    def create_user(cls, *args, **kwargs):
+        model = cls.user_model()
+        instance = model(*args, **kwargs)
+        instance.set_random_password()
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
+        return instance
+
+    @classmethod
+    def get_user(cls, pk):
+        return cls.user_query().get(pk)
+
+    @classmethod
+    def get_users_by_email(cls, email):
+        return cls.user_query().filter_by(email=email)
+
+    @classmethod
+    def get_social_auth(cls, provider, uid):
+        uid = str(uid)
+        try:
+            return cls.trans.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
+        except IndexError:
+            return None
+
+    @classmethod
+    def get_social_auth_for_user(cls, user, provider=None, id=None):
+        qs = cls.trans.sa_session.query(cls).filter_by(user_id=user.id)
+        if provider:
+            qs = qs.filter_by(provider=provider)
+        if id:
+            qs = qs.filter_by(id=id)
+        return qs
+
+    @classmethod
+    def create_social_auth(cls, user, uid, provider):
+        uid = str(uid)
+        instance = cls(user=user, uid=uid, provider=provider)
+        cls.trans.sa_session.add(instance)
+        cls.trans.sa_session.flush()
+        return instance
 
 
 class Page(Dictifiable):

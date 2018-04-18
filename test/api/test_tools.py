@@ -216,7 +216,11 @@ class ToolsTestCase(api.ApiTestCase):
                 }
             }
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
+            response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
+            implicit_collections = response["implicit_collections"]
+            self.assertEquals(len(implicit_collections), 2)
+            unzipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
+            assert unzipped_hdca["elements"][0]["element_type"] == "hda", unzipped_hdca
 
     def test_zip_inputs(self):
         with self.dataset_populator.test_history() as history_id:
@@ -462,7 +466,12 @@ class ToolsTestCase(api.ApiTestCase):
             'col': "' ; echo 'moo",
         }
         response = self._run("column_param", history_id, inputs)
-        assert response.status_code != 200
+        # This needs to either fail at submit time or at job prepare time, but we have
+        # to make sure the job doesn't run.
+        if response.status_code == 200:
+            job = response.json()["jobs"][0]
+            final_job_state = self.dataset_populator.wait_for_job(job["id"])
+            assert final_job_state == "error"
 
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self):

@@ -21,7 +21,7 @@ function dropDownSelect(options, selected) {
     var $select = $(
         [
             '<div class="dropdown-select btn-group">',
-            '<button type="button" class="btn btn-default">',
+            '<button type="button" class="btn btn-secondary">',
             `<span class="dropdown-select-selected">${selected}</span>`,
             "</button>",
             "</div>"

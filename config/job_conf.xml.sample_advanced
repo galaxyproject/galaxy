@@ -121,7 +121,7 @@
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
                  This requires installing pykube. Install pykube by activating Galaxy's virtual
-                 and then executing the following pip command:
+                 environment and then executing the following pip command:
 
                  pip install pykube==0.15.0
 

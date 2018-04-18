@@ -11,7 +11,7 @@ class RegistrationTestCase(SeleniumTestCase):
         # loading galaxy homepage
         self.home()
         assert self.driver.title == "Galaxy", self.driver.title
-        self.assert_xpath("//div[@id='masthead']")
+        self.components.masthead._.wait_for_visible()
 
     @selenium_test
     def test_registration(self):

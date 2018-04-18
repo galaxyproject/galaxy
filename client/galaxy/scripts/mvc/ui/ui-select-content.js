@@ -333,7 +333,7 @@ var View = Backbone.View.extend({
         var button_width = 0;
         if (this.fields.length > 1) {
             this.$el.append(this.button_type.$el);
-            button_width = `${Math.max(0, this.fields.length * 36)}px`;
+            button_width = `${Math.max(0, this.fields.length * 40)}px`;
         }
         _.each(this.fields, field => {
             self.$el.append(field.$el.css({ "margin-left": button_width }));
@@ -414,9 +414,20 @@ var View = Backbone.View.extend({
             var field = this.fields[current];
             var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
-            var new_src = drop_data.history_content_type == "dataset" ? "hda" : "hdca";
+            var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
             var new_value = { id: new_id, src: new_src };
-            if (data && _.findWhere(data[new_src], new_value)) {
+            if (data && drop_data.history_id) {
+                if (!_.findWhere(data[new_src], new_value)) {
+                    data[new_src].push({
+                        id: new_id,
+                        src: new_src,
+                        hid: drop_data.hid || "Dropped",
+                        name: drop_data.hid ? drop_data.name : new_id,
+                        keep: true,
+                        tags: []
+                    });
+                    this._changeData();
+                }
                 if (config.src == new_src) {
                     var current_value = field.value();
                     if (current_value && config.multiple) {

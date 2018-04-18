@@ -3,7 +3,6 @@ API check for whether the current session's interactive environment launch is re
 """
 import logging
 
-from galaxy.containers import build_container_interfaces
 from galaxy.web import expose, json
 from galaxy.web.base.controller import BaseUIController
 
@@ -29,12 +28,8 @@ class InteractiveEnvironmentsController(BaseUIController):
             # not using the new containers interface
             return True
 
-        container_interfaces = build_container_interfaces(
-            self.app.config.containers_config_file,
-            containers_conf=self.app.config.containers_conf,
-        )
         try:
-            interface = container_interfaces[proxy_map.container_interface]
+            interface = self.app.containers[proxy_map.container_interface]
         except KeyError:
             log.error('Invalid container interface key: %s', proxy_map.container_interface)
             return None

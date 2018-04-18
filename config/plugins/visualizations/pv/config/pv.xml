@@ -12,7 +12,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="static/pv.js"/>
+    <entry_point entry_point_type="chart" src="pv.js"/>
     <settings>
         <input>
             <label>Quality</label>

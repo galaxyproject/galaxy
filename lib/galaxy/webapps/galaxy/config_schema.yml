@@ -82,7 +82,7 @@ mapping:
           processes.
 
       database_engine_option_pool_recycle:
-        type: str
+        type: int
         default: -1
         required: false
         desc: |
@@ -341,7 +341,7 @@ mapping:
           install from in the admin interface (.sample used if default does not exist).
 
       watch_tools:
-        type: bool
+        type: str
         default: false
         required: false
         desc: |
@@ -464,7 +464,7 @@ mapping:
           when installed from a ToolShed. Defaults to tool_data_path.
 
       watch_tool_data_dir:
-        type: bool
+        type: str
         default: false
         required: false
         desc: |
@@ -1161,21 +1161,13 @@ mapping:
           this to True to inform Galaxy that mod_xsendfile is enabled upstream.
 
       nginx_x_accel_redirect_base:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
           should be set to the path defined in the nginx config as an internal redirect
           with access to Galaxy's data files (see documentation linked above).
-
-      nginx_x_archive_files_base:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          nginx can make use of mod_zip to create zip files containing multiple library
-          files.  If using X-Accel-Redirect, this can be the same value as that option.
 
       upstream_gzip:
         type: bool
@@ -1201,8 +1193,8 @@ mapping:
           `X-Frame-Options` header.
 
       nginx_upload_store:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1211,8 +1203,8 @@ mapping:
           which files uploaded by the upload module will be placed.
 
       nginx_upload_path:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1220,8 +1212,8 @@ mapping:
           requests.
 
       nginx_upload_job_files_store:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1230,8 +1222,8 @@ mapping:
           corresponding nginx configuration.
 
       nginx_upload_job_files_path:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1617,6 +1609,16 @@ mapping:
           other statistics to the configured statsd instance.  The statsd_prefix is
           useful if you are running multiple Galaxy instances and want to segment
           statistics between them within the same aggregator.
+
+      statsd_influxdb:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          If you are using telegraf to collect these metrics and then sending
+          them to InfluxDB, Galaxy can provide more nicely tagged metrics.
+          Instead of sending prefix + dot-separated-path, Galaxy will send
+          prefix with a tag path set to the page url
 
       graphite_host:
         type: str
@@ -2168,6 +2170,27 @@ mapping:
         desc: |
           If OpenID is enabled, consumer cache directory to use.
 
+      enable_oidc:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables and disables OpenID Connect (OIDC) support.
+
+      oidc_config_file:
+        type: str
+        default: config/oidc_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC configuration file.
+
+      oidc_backends_config_file:
+        type: str
+        default: config/oidc_backends_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC backends configuration file.
+
       auth_config_file:
         type: str
         default: config/auth_conf.xml
@@ -2538,6 +2561,29 @@ mapping:
           These fields will be presented to users in the tool forms and allow them to
           overwrite default job resources such as number of processors, memory and
           walltime.
+
+      workflow_resource_params_file:
+        type: str
+        default: config/workflow_resource_params_conf.xml
+        required: false
+        desc: |
+          Similar to the above parameter, workflows can describe parameters used to
+          influence scheduling of jobs within the workflow. This requires both a description
+          of the fields available (which defaults to the definitions in
+          job_resource_params_file if not set).
+
+      workflow_resource_params_mapper:
+        type: str
+        default: config/workflow_resource_mapper_conf.yml
+        required: false
+        desc: |
+          This parameter describes how to map users and workflows to a set of workflow
+          resource parameter to present (typically input IDs from workflow_resource_params_file).
+          If this this is a function reference it will be passed various inputs (workflow model
+          object and user) and it should produce a list of input IDs. If it is a path
+          it is expected to an XML or YAML file describing how to map group names to parameter
+          descriptions (additional types of mappings via these files could be implemented but
+          haven't yet - for instance using workflow tags to do the mapping).
 
       cache_user_job_count:
         type: bool
