@@ -1,4 +1,3 @@
-<%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 <!DOCTYPE html>
@@ -9,15 +8,9 @@
     self.galaxy_config = {
         ## template options
         'title'         : 'Galaxy - Data Intensive Biology for Everyone',
-        'master'        : True,
         'left_panel'    : False,
         'right_panel'   : False,
-        'message_box'   : False,
-
-        ## root
         'root'          : h.url_for("/"),
-
-        ## inject app specific configuration
         'app'           : config['app']
     }
 
@@ -40,15 +33,6 @@
         %endif
     }
     </style>
-
-    <style type="text/css">
-        %if self.galaxy_config['message_box']:
-            #left, #left-border, #center, #right-border, #right {
-                top: 64px;
-            }
-        %endif
-    </style>
-
 </%def>
 
 <%def name="javascripts()">
@@ -123,6 +107,7 @@
     <script type="text/javascript">
         // load any app configured
         define( 'app', function(){
+            window.Galaxy = top.Galaxy;
             var jscript = galaxy_config.app.jscript;
             if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
                 $( function(){
@@ -187,17 +172,6 @@
         <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
             ## background displays first
             <div id="background"></div>
-
-            ## master header
-            %if self.galaxy_config['master']:
-                <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
-                ${masthead.load()}
-            %endif
-
-            ## message box
-            %if self.galaxy_config['message_box']:
-                <div id="messagebox" class="panel-message"></div>
-            %endif
             ## left panel
             %if self.galaxy_config['left_panel']:
                 <div id="left">
