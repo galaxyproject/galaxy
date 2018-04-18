@@ -43,7 +43,7 @@ const TOURPAGE_TEMPLATE = `
     <% _.each(tourtag.tours, function(tour) { %>
         <li class="list-group-item">
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
-                <%- tour.name || tour.id %>
+                <%- tour.attributes.name || tour.id %>
             </a>
              - <%- tour.attributes.description || "No description given." %>
              <% _.each(tour.attributes.tags, function(tag) { %>
