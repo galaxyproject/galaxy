@@ -2,7 +2,7 @@
 """
 Docker Swarm mode management
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import argparse
 import errno
@@ -17,15 +17,11 @@ try:
     import daemon.pidfile
     import lockfile
 except ImportError:
-    daemon = None
+    print('ERROR: The daemon module is required to use the swarm manager, '
+          'install it with `pip install python-daemon`', file=sys.stderr)
+    sys.exit(1)
 
-try:
-    import galaxy   # noqa: F401 this is a test import
-except ImportError:
-    sys.path.insert(0, os.path.abspath(os.path.join(
-        os.path.dirname(__file__),
-        os.pardir,
-        os.pardir)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.containers import (
     build_container_interfaces,
@@ -57,6 +53,7 @@ SWARM_MANAGER_CONF_DEFAULTS = {
     'command_retries': 0,
     'command_retry_wait': 10,
     'terminate_when_idle': True,
+    'log_environment_variables': [],
 }
 log = logging.getLogger(__name__)
 
@@ -160,14 +157,44 @@ class SwarmManager(object):
             self._state.clean_services(cleaned_services)
             log.info("cleaned services: %s", ', '.join([x.id for x in cleaned_services]))
 
-    def _log_state(self):
-        if self._last_log < (time.time() - self._log_interval):
-            services = self._docker_interface.services()
-            nodes = self._docker_interface.nodes()
-            log.info('current service states: %s', ', '.join(['%s: %s' % (x.name, x.state) for x in services]))
-            log.info('current node states: %s', ', '.join(['%s: %s' % (x.name, x.state) for x in nodes]))
-            # TODO: log services waiting due to limits, idle nodes alive due to limits
-            self._last_log = time.time()
+    @staticmethod
+    def _env_str(envs, service):
+        if envs.get(service.id):
+            return ' [' + ', '.join(envs.get(service.id, [])) + ']'
+        return ''
+
+    def _log_state(self, now=False):
+        if not now and not (self._last_log < (time.time() - self._log_interval)):
+            return
+        services = list(self._docker_interface.services())
+        nodes = list(self._docker_interface.nodes())
+        terminal = [s for s in services if s.terminal]
+        node_task_ids = [t.id for nt in [n.tasks for n in nodes] for t in nt]
+        envs = {}
+        for service in services:
+            envs[service.id] = ['%s=%s' % (k, service.env.get(k, 'unset')) for k in self._conf.log_environment_variables]
+        log.info('%s nodes, %s services (%s terminal)', len(nodes), len(services), len(terminal))
+        if terminal:
+            service_strs = ['%s (state: %s)' % (s.name, s.state) for s in terminal]
+            log.info('terminal services: %s', ', '.join(service_strs) or 'none')
+        for service in services:
+            unassigned_tasks = [t for t in service.tasks if t.id not in node_task_ids]
+            if service not in terminal and unassigned_tasks:
+                task = unassigned_tasks[0]
+                log.info('service %s (%s)%s is not assigned to a node; state: %s %s', service.name, service.id,
+                         self._env_str(envs, service), service.state, task.current_state_time)
+        for node in nodes:
+            log.info('node %s (%s) state: %s, %s tasks (%s terminal)', node.name, node.id, node.state,
+                     len(node.tasks), len([t for t in node.tasks if t.terminal]))
+            for task in node.tasks:
+                if not task.service:
+                    log.warning('node %s (%s) task %s (%s) has no service! state: %s %s', node.name, node.id,
+                                task.slot, task.id, task.state, task.current_state_time)
+                else:
+                    log.info('node %s (%s) service %s (%s) task %s (%s)%s state: %s %s', node.name, node.id,
+                             task.service.name, task.service.id, task.slot, task.id,
+                             self._env_str(envs, task.service), task.state, task.current_state_time)
+        self._last_log = time.time()
 
     def _terminate_if_idle(self):
         if not self._conf.terminate_when_idle:
@@ -328,8 +355,11 @@ class SwarmState(object):
     def slots_delta(self, constraints, services, nodes):
         total = 0
         used = 0
+        if not self._cpus:
+            # there are no cpu constraints, so no calculation can be done
+            return 0, 0
         for node in nodes:
-            used += sum([t.cpus for t in node.tasks]) / self._cpus
+            used += sum([t.cpus for t in node.non_terminal_tasks]) / self._cpus
             total += node.cpus / self._cpus
         # need at least this many slots
         needed = used + self.get_limit(constraints, 'slots_min_spare')
@@ -417,18 +447,9 @@ class SwarmState(object):
         self._handled_services.difference_update(services)
 
 
-def main(argv=None, fork=False):
-    if not daemon:
-        log.warning('The daemon module is required to use the swarm manager, install it with `pip install python-daemon`')
-        return
-    if argv is None:
-        argv = sys.argv[1:]
-    if fork:
-        p = subprocess.Popen([sys.executable, __file__] + argv)
-        p.wait()
-    else:
-        args = _arg_parser().parse_args(argv)
-        _run_swarm_manager(args)
+def main():
+    args = _arg_parser().parse_args()
+    _run_swarm_manager(args)
 
 
 def _arg_parser():
@@ -458,7 +479,18 @@ def _run_swarm_manager(args):
             swarm_manager_conf['terminate_when_idle'] = False
         else:
             log.info("running in the foreground")
-        pidfile.acquire()
+        try:
+            pidfile.acquire()
+        except lockfile.AlreadyLocked:
+            pid = pidfile.read_pid()
+            try:
+                os.kill(pid, 0)
+                log.warning("swarm manager is already running in pid %s", pid)
+                return
+            except OSError:
+                log.warning("removing stale lockfile: %s", pidfile.path)
+                pidfile.break_lock()
+                pidfile.acquire()
         try:
             _swarm_manager(swarm_manager_conf, docker_interface)
         finally:
@@ -499,19 +531,22 @@ def _swarm_manager_conf(new_conf):
 
 def _configure_logging(args, conf):
     global log
-    if args.debug:
+    if args and args.debug:
         log_level = logging.DEBUG
     else:
         log_level = logging.getLevelName(conf.get('log_level', 'INFO').upper())
         assert int(log_level), 'invalid log level: %s' % conf['log_level']
     log = logging.getLogger(__name__)
+    gxlog = logging.getLogger('galaxy')
     log.setLevel(log_level)
+    gxlog.setLevel(log_level)
     log_format = conf.get('log_format', '%(name)s %(levelname)s %(asctime)s %(message)s')
     formatter = logging.Formatter(log_format)
     # file logging is handled by daemon
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     log.addHandler(handler)
+    gxlog.addHandler(handler)
 
 
 def _load_xdg_environment():
@@ -530,7 +565,7 @@ def _swarm_manager_pidfile(conf):
 
 
 def _swarm_manager_daemon(pidfile, logfile, swarm_manager_conf, docker_interface):
-    log.debug("daemonizing, logs will be written to '%s'", logfile)
+    log.info("daemonizing, logs will be written to '%s'", logfile)
     with open(logfile, 'a') as logfh:
         try:
             with daemon.DaemonContext(
@@ -545,8 +580,13 @@ def _swarm_manager_daemon(pidfile, logfile, swarm_manager_conf, docker_interface
 
 def _swarm_manager(conf, docker_interface):
     swarm_manager = SwarmManager(conf, docker_interface)
-    log.debug("swarm manager loaded, running...")
-    swarm_manager.run()
+    while True:
+        try:
+            log.info("swarm manager loaded, running...")
+            swarm_manager.run()
+        except Exception:
+            log.exception("exception raised to run loop:")
+            log.error("restarting due to fatal error")
 
 
 if __name__ == '__main__':
