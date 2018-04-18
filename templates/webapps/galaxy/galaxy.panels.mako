@@ -82,14 +82,7 @@
         )}
 
         <script type="text/javascript">
-            window.Galaxy = window.Galaxy || {};
-            window.Galaxy.root = '${h.url_for( "/" )}';
-            window.jQuery = window.jquery = window.$;
-            // configure require
-            // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-            window.jQuery = window.jquery = window.$;
-            define( 'jquery', [], function(){ return window.$; })
-
+            window.Galaxy = top.Galaxy || {};
             require.config({
                 baseUrl: "${h.url_for('/static/scripts')}",
                 // cache buster based on templated server (re)start time
@@ -122,7 +115,6 @@
             define( 'app', function(){
                 var jscript = galaxy_config.app.jscript;
                 if( jscript && window.bundleEntries[jscript]){
-                    window.Galaxy = top.Galaxy;
                     window.bundleEntries[jscript]();
                 } else {
                     console.error("'galaxy_config.app.jscript' missing.");
