@@ -201,8 +201,9 @@
                                 <ul class="dropdown-menu" role="menu">
                                     <li v-for="target in unmappedTargets"
                                         v-bind:index="target"
-                                        v-bind:key="target">
-                                      <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')" @click="addIdentifier(target)">{{ mappingTargets()[target].label }}</a>
+                                        v-bind:key="target"
+                                        @click="addIdentifier(target)">
+                                      <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')">{{ mappingTargets()[target].label }}</a>
                                     </li>
                                 </ul>
                                 <button type="button" class="btn btn-default btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
