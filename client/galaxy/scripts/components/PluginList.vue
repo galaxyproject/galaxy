@@ -105,7 +105,7 @@ export default {
         create: function(plugin) {
             let href = plugin.href;
             href += href.indexOf("?") == -1 ? "?" : "&";
-            href += `dataset_id=${this.selected}`;
+            href += `dataset_id=${this.selected}&${$.param(Galaxy.params, true)}`;
             if (plugin.target == "_top") {
                 window.location.href = href;
             } else {
