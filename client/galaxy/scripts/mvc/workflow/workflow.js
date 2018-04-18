@@ -333,7 +333,7 @@ const WorkflowListView = Backbone.View.extend({
             Galaxy.root
         }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
             Galaxy.root
-        }workflows/import_workflow"></a></li></ul>`;
+        }workflows/import"></a></li></ul>`;
     },
 
     /** Template for workflow table */
@@ -366,33 +366,6 @@ const WorkflowListView = Backbone.View.extend({
     }
 });
 
-const ImportWorkflowView = Backbone.View.extend({
-    initialize: function() {
-        this.setElement("<div/>");
-        this.active_tab = "workflow";
-        this.render();
-    },
-
-    /** Open page to import workflow */
-    render: function() {
-        $.getJSON(`${Galaxy.root}workflow/upload_import_workflow`, options => {
-            this.$el.empty().append(this._mainTemplate(options));
-        });
-    },
-
-    /** Template for the import workflow page */
-    _mainTemplate: function(options) {
-        return `<div class='toolForm'><div class='toolFormTitle'>Import Galaxy workflow</div><div class='toolFormBody'><form name='import_workflow' id='import_workflow' action='${
-            Galaxy.root
-        }workflow/upload_import_workflow' enctype='multipart/form-data' method='POST'><div class='form-row'><label>Galaxy workflow URL:</label><input type='text' name='url' class='input-url' value='${
-            options.url
-        }' size='40'><div class='toolParamHelp' style='clear: both;'>If the workflow is accessible via a URL, enter the URL above and click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><label>Galaxy workflow file:</label><div class='form-row-input'><input type='file' name='file_data' class='input-file'/></div><div class='toolParamHelp' style='clear: both;'>If the workflow is in a file on your computer, choose it and then click <b>Import</b>.</div><div style='clear: both'></div></div><div class='form-row'><input type='submit' class='primary-button wf-import' name='import_button' value='Import'></div></form><hr/><div class='form-row'><label>Import a Galaxy workflow from myExperiment:</label><div class='form-row-input'><a href='${
-            options.myexperiment_target_url
-        }'> Visit myExperiment</a></div><div class='toolParamHelp' style='clear: both;'>Click the link above to visit myExperiment and browse for Galaxy workflows.</div><div style='clear: both'></div></div></div></div>`;
-    }
-});
-
 export default {
-    View: WorkflowListView,
-    ImportWorkflowView: ImportWorkflowView
+    View: WorkflowListView
 };
