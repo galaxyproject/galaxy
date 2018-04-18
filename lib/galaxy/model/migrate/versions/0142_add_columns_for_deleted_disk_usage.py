@@ -1,6 +1,5 @@
 """
-Migration script to and deleted_disk_usage' column to the User and GalaxySession
-tables.
+Migration script to add 'deleted_disk_usage' column to the User table.
 """
 from __future__ import print_function
 

@@ -3,7 +3,7 @@ Utility helpers related to the model
 """
 
 
-def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
+def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, ids_dict):
     """
     ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
         -1: dataset deleted
@@ -16,28 +16,35 @@ def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, da
     disk usage counted toward deleted disk usage for the input dataset
     """
     id_key = str(dataset_id)
-    # already counted, state fixed
+
+    # already counted, state is fixed
     if id_key in ids_dict and (ids_dict[id_key] == -1 or ids_dict[id_key] == 3):
         return 0
-    if id_key not in ids_dict:       # first count; count all possibles
+
+    # first occurence
+    # count all datasets that keep possibilty to be counted in the end
+    # add dataset_id and state to ids_dict
+    if id_key not in ids_dict:
         if dataset_deleted:
-            ids_dict[id_key] = -1    # must count
+            ids_dict[id_key] = -1    # count
             return dataset_disk_usage
         elif hda_deleted:
-            if history_deleted:      # possible
+            if history_deleted:      # possible to be counted, count temporally
                 ids_dict[id_key] = 0
                 return dataset_disk_usage
-            else:                    # possible
+            else:                    # possible to be counted, count temporally
                 ids_dict[id_key] = 2
                 return dataset_disk_usage
         else:
-            if history_deleted:     # possible
+            if history_deleted:     # possible to be counted, count temporally
                 ids_dict[id_key] = 1
                 return dataset_disk_usage
-            else:                   # impossible
+            else:                   # not possible to be counted, do not count
                 ids_dict[id_key] = 3
                 return 0
-    else:                           # repeat count
+
+    # repeating occurrence, update state as needed
+    else:
         if hda_deleted:
             if history_deleted:
                 ids_dict[id_key] = ids_dict[id_key] | 0
@@ -48,7 +55,8 @@ def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, da
                 ids_dict[id_key] = ids_dict[id_key] | 1
             else:
                 ids_dict[id_key] = 3
-        if ids_dict[id_key] == 3:   # remove mis-count
+
+        if ids_dict[id_key] == 3:   # previously-counted dataset turns out to be not countable
             return -dataset_disk_usage
         else:
             return 0
