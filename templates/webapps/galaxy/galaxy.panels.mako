@@ -77,17 +77,6 @@
             window.jQuery = window.jquery = window.$;
         </script>
 
-        ## Send errors to Sentry server if configured
-        %if app.config.sentry_dsn:
-            ${h.js( "libs/raven" )}
-            <script>
-                Raven.config('${app.config.sentry_dsn_public}').install();
-                %if trans.user:
-                    Raven.setUser( { email: "${trans.user.email | h}" } );
-                %endif
-            </script>
-        %endif
-
         ## load jscript libraries
         ${h.js(
             ## TODO: remove when all libs are required directly in modules
