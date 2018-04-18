@@ -71,12 +71,6 @@
             #center, #right, #left { top: 0 !important; }
         </style>
 
-        <script>
-            window.Galaxy = window.Galaxy || {};
-            window.Galaxy.root = '${h.url_for( "/" )}';
-            window.jQuery = window.jquery = window.$;
-        </script>
-
         ## load jscript libraries
         ${h.js(
             ## TODO: remove when all libs are required directly in modules
@@ -84,9 +78,13 @@
             'bundled/extended.bundled',
             'libs/d3',
             'libs/require',
+            'libs/jquery/jquery-ui'
         )}
 
         <script type="text/javascript">
+            window.Galaxy = window.Galaxy || {};
+            window.Galaxy.root = '${h.url_for( "/" )}';
+            window.jQuery = window.jquery = window.$;
             // configure require
             // due to our using both script tags and require, we need to access the same jq in both for plugin retention
             window.jQuery = window.jquery = window.$;
@@ -120,13 +118,6 @@
             // extra configuration global
             var galaxy_config = ${ h.dumps( self.galaxy_config ) };
             window.galaxy_config = galaxy_config;
-        </script>
-
-        ${h.js(
-            'libs/jquery/jquery-ui'
-        )}
-
-        <script type="text/javascript">
             // load any app configured
             define( 'app', function(){
                 var jscript = galaxy_config.app.jscript;
