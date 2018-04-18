@@ -31,20 +31,20 @@ def upgrade(migrate_engine):
         log.exception("Altering data type of disk_usage column in galaxy_user table failed.")
 
     try:
-        User_table = Table("galaxy_session", metadata, autoload=True)
-        User_table.c.disk_usage.alter(type=DECIMAL(asdecimal=False))
+        Galaxy_session_table = Table("galaxy_session", metadata, autoload=True)
+        Galaxy_session_table.c.disk_usage.alter(type=DECIMAL(asdecimal=False))
     except Exception:
         log.exception("Altering data type of disk_usage column in galaxy_session table failed.")
 
     try:
-        User_table = Table("dataset", metadata, autoload=True)
-        User_table.c.total_size.alter(type=DECIMAL(asdecimal=False))
+        Dataset_table = Table("dataset", metadata, autoload=True)
+        Dataset_table.c.total_size.alter(type=DECIMAL(asdecimal=False))
     except Exception:
         log.exception("Altering data type of total_size column in dataset table failed.")
 
     try:
-        User_table = Table("dataset", metadata, autoload=True)
-        User_table.c.file_size.alter(type=DECIMAL(asdecimal=False))
+        Dataset_table = Table("dataset", metadata, autoload=True)
+        Dataset_table.c.file_size.alter(type=DECIMAL(asdecimal=False))
     except Exception:
         log.exception("Altering data type of file_size column in dataset table failed.")
 
