@@ -1,6 +1,4 @@
 import $ from "jquery";
-import "bootstrap";
-import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Page from "layout/page";
 
