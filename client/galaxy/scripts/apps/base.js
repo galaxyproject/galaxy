@@ -10,6 +10,6 @@ window.app = function app(options, bootstrapped) {
     Galaxy.debug("base app");
     $(() => {
         Galaxy.page = new Page.View(options);
-        alert('here');
+        Galaxy.display(`${Galaxy.root}${Galaxy.params.controller}/?${$.param(Galaxy.params, true)}`);
     });
 };

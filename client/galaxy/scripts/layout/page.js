@@ -84,15 +84,14 @@ var View = Backbone.View.extend({
         options = options || {};
         if (typeof view == "object") {
             if (view.title) {
-                    Utils.setWindowTitle(view.title);
-                    view.allow_title_display = false;
-                } else {
-                    Utils.setWindowTitle();
-                    view.allow_title_display = true;
-                }
-                if (view.active_tab) {
-                    this.masthead.highlight(view.active_tab);
-                }
+                Utils.setWindowTitle(view.title);
+                view.allow_title_display = false;
+            } else {
+                Utils.setWindowTitle();
+                view.allow_title_display = true;
+            }
+            if (view.active_tab) {
+                this.masthead.highlight(view.active_tab);
             }
         }
         this.center.display(view);
