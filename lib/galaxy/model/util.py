@@ -3,7 +3,7 @@ Utility helpers related to the model
 """
 
 
-def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, **ids_dict):
+def count_toward_deleted_disk_usage(dataset_id, history_deleted, hda_deleted, dataset_deleted, dataset_disk_usage, ids_dict):
     """
     ids_dict: stores the state of dataset and its associated hda and history, key=str(dataset_id), value could be one of following.
         -1: dataset deleted
@@ -94,7 +94,7 @@ def pgcalc(sa_session, id, dryrun=False):
                 hda_deleted,
                 dataset_deleted,
                 dataset_total_size,
-                **ids_dict)
+                ids_dict)
             deleted += deleted_count
     if not dryrun:
         sql_update = """UPDATE galaxy_user

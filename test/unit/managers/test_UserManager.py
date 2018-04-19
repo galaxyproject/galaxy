@@ -177,6 +177,7 @@ class UserSerializerTestCase(BaseTestCase):
         self.assertIsInstance(serialized['is_admin'], bool)
         self.assertIsInstance(serialized['total_disk_usage'], float)
         self.assertIsInstance(serialized['nice_total_disk_usage'], string_types)
+        self.assertIsInstance(serialized['gross_deleted_disk_usage'], float)
         self.assertIsInstance(serialized['quota_percent'], (type(None), float))
         self.assertIsInstance(serialized['tags_used'], list)
 
@@ -199,13 +200,14 @@ class CurrentUserSerializerTestCase(BaseTestCase):
         self.log('should be able to serialize anonymous user')
         serialized = self.user_serializer.serialize_to_view(anonym, view='detailed', trans=self.trans)
         self.assertKeys(serialized,
-            ['id', 'total_disk_usage', 'nice_total_disk_usage', 'quota_percent'])
+            ['id', 'total_disk_usage', 'nice_total_disk_usage', 'gross_deleted_disk_usage', 'quota_percent'])
 
         self.log('anonymous\'s id should be None')
         self.assertEqual(serialized['id'], None)
         self.log('everything serialized should be of the proper type')
         self.assertIsInstance(serialized['total_disk_usage'], float)
         self.assertIsInstance(serialized['nice_total_disk_usage'], string_types)
+        self.assertIsInstance(serialized['gross_deleted_disk_usage'], float)
         self.assertIsInstance(serialized['quota_percent'], (type(None), float))
 
         self.log('serialized should jsonify well')

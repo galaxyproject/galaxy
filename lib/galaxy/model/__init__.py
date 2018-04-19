@@ -418,7 +418,7 @@ class User(Dictifiable):
                     hda.deleted,
                     dataset.deleted,
                     dataset.get_total_size(),
-                    **ids_dict)
+                    ids_dict)
                 deleted += deleted_count
         return (total, deleted)
 
@@ -1571,6 +1571,26 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             func.sum(db_session.query(HistoryDatasetAssociation.dataset_id, Dataset.total_size).join(Dataset)
                     .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
                     .filter(HistoryDatasetAssociation.purged != true())
+                    .filter(Dataset.purged != true())
+                    # unique datasets only
+                    .distinct().subquery().c.total_size)).first()[0]
+        if rval is None:
+            rval = 0
+        return rval
+
+    @hybrid.hybrid_property
+    def deleted_disk_size(self):
+        """
+        Return the size in bytes of this history by summing the 'total_size's of
+        all deleted, non-purged, unique datasets within it.
+        """
+        # non-.expression part of hybrid.hybrid_property: called when an instance is the namespace (not the class)
+        db_session = object_session(self)
+        rval = db_session.query(
+            func.sum(db_session.query(HistoryDatasetAssociation.dataset_id, Dataset.total_size).join(Dataset)
+                    .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
+                    .filter(HistoryDatasetAssociation.purged != true())
+                    .filter(HistoryDatasetAssociation.deleted == true())
                     .filter(Dataset.purged != true())
                     # unique datasets only
                     .distinct().subquery().c.total_size)).first()[0]

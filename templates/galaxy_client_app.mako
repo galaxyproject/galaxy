@@ -69,7 +69,7 @@ ${ h.dumps( get_config_dict() )}
         try:
             if trans.user:
                 user_dict = trans.user.to_dict( view='element',
-                    value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float, 'email': escape, 'username': escape } )
+                    value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float, 'gross_deleted_disk_usage', float, 'email': escape, 'username': escape } )
                 user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
                 user_dict[ 'is_admin' ] = trans.user_is_admin()
 
@@ -85,9 +85,11 @@ ${ h.dumps( get_config_dict() )}
                 return user_dict
 
             usage = 0
+            deleted_usage = 0
             percent = None
             try:
                 usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
+                deleted_usage = trans.app.quota_agent.get_deleted_usage( trans, history=trans.history )
                 percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
             except AssertionError as assertion:
                 # no history for quota_agent.get_usage assertion
@@ -95,6 +97,7 @@ ${ h.dumps( get_config_dict() )}
             return {
                 'total_disk_usage'      : int( usage ),
                 'nice_total_disk_usage' : util.nice_size( usage ),
+                'gross_deleted_disk_usage' : int( deleted_usage ),
                 'quota_percent'         : percent
             }
 

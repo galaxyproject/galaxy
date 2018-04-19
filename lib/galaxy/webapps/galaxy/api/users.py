@@ -207,7 +207,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
-                                                          'total_disk_usage': float})
+                                                          'total_disk_usage': float,
+                                                          'gross_deleted_disk_usage': float})
         return item
 
     @expose_api
@@ -269,9 +270,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
     def anon_user_api_value(self, trans):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         usage = trans.app.quota_agent.get_usage(trans)
+        deleted_usage = trans.app.quota_agent.get_deleted_usage(trans)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {'total_disk_usage': int(usage),
                 'nice_total_disk_usage': util.nice_size(usage),
+                'gross_deleted_disk_usage': int(deleted_usage),
                 'quota_percent': percent}
 
     def _get_extra_user_preferences(self, trans):
