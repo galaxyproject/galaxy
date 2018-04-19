@@ -630,7 +630,7 @@ const RULES = {
             };
 
             data = flatMap(splitRow, data);
-            sources = flatMap(src => [src, src], data);
+            sources = flatMap(src => [src, src], sources);
             return { data, sources };
         }
     }
