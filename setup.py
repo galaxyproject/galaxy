@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PROJECT_DESCRIPTION = 'Subset of Galaxy (http://galaxyproject.org/) core code base designed to be used a library.'
 PACKAGES = [
     'galaxy',
+    'galaxy.containers',
     'galaxy.jobs',  # Incomplete
     'galaxy.exceptions',
     'galaxy.jobs.metrics',
