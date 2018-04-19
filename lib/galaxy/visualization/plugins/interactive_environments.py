@@ -6,7 +6,6 @@ import shlex
 import stat
 import string
 import tempfile
-import time
 import uuid
 from itertools import product
 from subprocess import PIPE, Popen
@@ -16,7 +15,7 @@ import yaml
 from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
-from galaxy.containers import build_container_interfaces
+from galaxy.containers import build_container_interfaces, ContainerPort
 from galaxy.managers import api_keys
 from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
@@ -443,25 +442,19 @@ class InteractiveEnvironmentRequest(object):
         """
         run_args = self.container_run_args(image, env_override, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
-        attempt = 0
-        container_ports = container.ports
-        while container_ports is None and attempt < 30:
-            # TODO: it would be better to do this in /interactive_environments/ready so the client doesn't block here,
-            # but _find_port_mapping needs certain non-persisted data (the port configured to be published) and the
-            # proxy manager doesn't have an update method, so that'd require bigger changes than I have the time for
-            # right now
-            attempt += 1
-            log.warning("Sleeping for 2 seconds while waiting for container %s ports", container.id)
-            time.sleep(2)
-            container_ports = container.ports
-        if container_ports is None:
-            raise Exception("Failed to determine ports for container '%s' after 30 attempts" % container.id)
-        container_port = self._find_port_mapping(container_ports)
-        log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
+        container_port = container.map_port(self.attr.docker_connect_port)
+        if not container_port:
+            log.warning("Container %s (%s) created but no port information available, readiness check will determine "
+                        "ports", container.name, container.id)
+            container_port = ContainerPort(self.attr.docker_connect_port, None, None, None)
+            # a negated docker_connect_port will be stored in the proxy to indicate that the readiness check should
+            # attempt to determine the port
+        log.debug("Container %s (%s) port %s accessible at: %s:%s", container.name, container.id, container_port.port,
+                  container_port.hostaddr, container_port.hostport)
         self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
             self.trans,
             host=container_port.hostaddr,
-            port=container_port.hostport,
+            port=container_port.hostport or -container_port.port,
             proxy_prefix=self.attr.proxy_prefix,
             route_name=self.attr.viz_id,
             container_ids=[container.id],
