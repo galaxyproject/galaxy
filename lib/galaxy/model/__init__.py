@@ -418,7 +418,7 @@ class User(Dictifiable):
                     hda.deleted,
                     dataset.deleted,
                     dataset.get_total_size(),
-                    ids_dict)
+                    **ids_dict)
                 deleted += deleted_count
         return (total, deleted)
 
