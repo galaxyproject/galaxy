@@ -59,6 +59,15 @@ class DuplicatedSlugException(MessageException):
     err_code = error_codes.USER_SLUG_DUPLICATE
 
 
+class ObjectHashExistsException(MessageException):
+    status_code = 303
+    err_code = error_codes.OBJECT_HASH_EXISTS
+
+    def __init__(self, other_id, **kwds):
+        kwds["other_id"] = other_id
+        super(ObjectHashExistsException, self).__init__(**kwds)
+
+
 class DuplicatedIdentifierException(MessageException):
     status_code = 400
     err_code = error_codes.USER_IDENTIFIER_DUPLICATE

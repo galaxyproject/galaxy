@@ -18,6 +18,19 @@ from requests import get
 from six import BytesIO
 
 
+MINIMAL_TOOL = {
+    'id': "minimal_tool",
+    'name': "Minimal Tool",
+    'class': "GalaxyTool",
+    'version': "1.0.0",
+    'command': "echo 'Hello World' > $output1",
+    'inputs': [],
+    'outputs': dict(
+        output1=dict(format='txt'),
+    )
+}
+
+
 class ToolsTestCase(api.ApiTestCase):
 
     def setUp(self):
@@ -866,6 +879,26 @@ class ToolsTestCase(api.ApiTestCase):
         assert output_element_0["element_identifier"] == "samp1"
         output_element_hda_0 = output_element_0["object"]
         assert output_element_hda_0["metadata_column_types"] is not None
+
+    def test_nonadmin_users_cannot_create_tools(self):
+        payload = dict(
+            representation=json.dumps(MINIMAL_TOOL),
+        )
+        create_response = self._post("dynamic_tools", data=payload, admin=False)
+        self._assert_status_code_is(create_response, 403)
+
+    def test_dynamic_tool_1(self):
+        # Create tool.
+        self.dataset_populator.create_tool(MINIMAL_TOOL)
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run("minimal_tool", history_id, inputs)
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World\n")
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)

@@ -774,11 +774,12 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, **kwds):
+    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_hash=None, **kwds):
         super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
-        self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools)
+        self.tool_hash = tool_hash
+        self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_hash=tool_hash)
         if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
             log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
             self.tool = None
@@ -792,12 +793,13 @@ class ToolModule(WorkflowModule):
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         tool_id = d.get('content_id') or d.get('tool_id')
-        if tool_id is None:
-            raise exceptions.RequestParameterInvalidException("No tool id could be located for step [%s]." % d)
         tool_version = d.get('tool_version')
         if tool_version:
             tool_version = str(tool_version)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, **kwds)
+        tool_hash = d.get('tool_hash', None)
+        if tool_id is None and tool_hash is None:
+            raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
+        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_hash=tool_hash, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
@@ -813,16 +815,20 @@ class ToolModule(WorkflowModule):
 
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
-        tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
+        if step.tool_id is not None:
+            tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
+        else:
+            tool_id = None
         tool_version = step.tool_version
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, **kwds)
+        tool_hash = step.tool_hash
+        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_hash=tool_hash, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
             module.post_job_actions[pja.action_type] = pja
         if module.tool:
             message = ""
-            if step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
+            if step.tool_id and step.tool_id != module.tool_id:  # This means the exact version of the tool is not installed. We inform the user.
                 old_tool_shed = step.tool_id.split("/repos/")[0]
                 if old_tool_shed not in tool_id:  # Only display the following warning if the tool comes from a different tool shed
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, old_tool_shed)
@@ -847,7 +853,11 @@ class ToolModule(WorkflowModule):
     def save_to_step(self, step):
         super(ToolModule, self).save_to_step(step)
         step.tool_id = self.tool_id
-        step.tool_version = self.get_version()
+        if self.tool:
+            step.tool_version = self.get_version()
+        else:
+            step.tool_version = self.tool_version
+        step.tool_hash = self.tool_hash
         for k, v in self.post_job_actions.items():
             pja = self.__to_pja(k, v, step)
             self.trans.sa_session.add(pja)
@@ -1138,7 +1148,7 @@ class ToolModule(WorkflowModule):
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_hash=step.tool_hash)
         if not tool.is_workflow_compatible:
             message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
             raise Exception(message)

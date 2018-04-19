@@ -187,6 +187,7 @@ class JobImportHistoryArchiveWrapper:
                     imported_job.imported = True
                     imported_job.tool_id = job_attrs['tool_id']
                     imported_job.tool_version = job_attrs['tool_version']
+                    imported_job.tool_version = job_attrs.get('tool_hash', None)
                     imported_job.set_state(job_attrs['state'])
                     imported_job.info = job_attrs.get('info', None)
                     imported_job.exit_code = job_attrs.get('exit_code', None)

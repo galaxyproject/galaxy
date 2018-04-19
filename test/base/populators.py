@@ -258,6 +258,16 @@ class BaseDatasetPopulator(object):
         delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
         return delete_response
 
+    def create_tool(self, representation):
+        if isinstance(representation, dict):
+            representation = json.dumps(representation)
+        payload = dict(
+            representation=representation,
+        )
+        create_response = self._post("dynamic_tools", data=payload, admin=True)
+        assert create_response.status_code == 200, create_response
+        return create_response.json()
+
     def _summarize_history(self, history_id):
         pass
 
@@ -536,7 +546,7 @@ class DatasetPopulator(BaseDatasetPopulator):
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None):
+    def _post(self, route, data=None, files=None, admin=False):
         if data is None:
             data = {}
 
@@ -544,7 +554,7 @@ class DatasetPopulator(BaseDatasetPopulator):
         if files is not None:
             del data["__files"]
 
-        return self.galaxy_interactor.post(route, data, files=files)
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
     def _put(self, route, data=None):
         if data is None:
@@ -761,11 +771,11 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data=None):
+    def _post(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.post(route, data)
+        return self.galaxy_interactor.post(route, data, admin=admin)
 
     def _get(self, route, data=None):
         if data is None:
@@ -784,6 +794,22 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         upload_response = self._post("workflows", data=data)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
+
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        upload_response = self._import_tool_response(tool)
+        assert upload_response.status_code == 200, upload_response
+        return upload_response.json()
+
+    def _import_tool_response(self, tool):
+        tool_str = json.dumps(tool, indent=4)
+        data = {
+            'representation': tool_str
+        }
+        upload_response = self._post("dynamic_tools", data=data, admin=True)
+        return upload_response
 
 
 class LibraryPopulator(object):
