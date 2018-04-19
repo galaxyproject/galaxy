@@ -746,11 +746,7 @@
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSangerGz"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSangerBz2"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
