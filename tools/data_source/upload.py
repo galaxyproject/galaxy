@@ -149,6 +149,8 @@ def add_file(dataset, registry, output_path):
         os.environ['GALAXY_SNIFFER_VALIDATE_MODE'] = '1'
         ext = sniff.guess_ext(dataset.path, registry.sniff_order, is_binary=is_binary)
         os.environ.pop('GALAXY_SNIFFER_VALIDATE_MODE')
+    else:
+        ext = dataset.file_type
 
     # The converted path will be the same as the input path if no conversion was done (or in-place conversion is used)
     converted_path = None if converted_path == dataset.path else converted_path
@@ -175,7 +177,7 @@ def add_file(dataset, registry, output_path):
             stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
                       " manually")
 
-    datatype = registry.get_datatype_by_extension(ext or dataset.file_type)
+    datatype = registry.get_datatype_by_extension(ext)
 
     # Strip compression extension from name
     if compression_type and not getattr(datatype, 'compressed', False) and dataset.name.endswith('.' + compression_type):
