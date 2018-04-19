@@ -62,8 +62,14 @@ def _json_wrap_input(input, value, handle_files="skip"):
             json_value = _data_input_to_path(value)
         elif handle_files == "skip":
             return SKIP_INPUT
-        else:
-            raise NotImplementedError()
+        elif handle_files == "OBJECT":
+            if value:
+                if isinstance(value, list):
+                    value = value[0]
+                return _hda_to_object(value)
+            else:
+                return None
+        raise NotImplementedError()
     elif input_type == "data_collection":
         if handle_files == "skip":
             return SKIP_INPUT
@@ -86,6 +92,21 @@ def _json_wrap_input(input, value, handle_files="skip"):
         raise NotImplementedError("input_type [%s] not implemented" % input_type)
 
     return json_value
+
+
+def _hda_to_object(hda):
+    hda_dict = hda.to_dict()
+    metadata_dict = {}
+
+    for key, value in hda_dict.items():
+        if key.startswith("metadata_"):
+            metadata_dict[key[len("metadata_"):]] = value
+
+    return {
+        'file_ext': hda_dict['file_ext'],
+        'name': hda_dict['name'],
+        'metadata': metadata_dict,
+    }
 
 
 def _cast_if_not_none(value, cast_to, empty_to_none=False):

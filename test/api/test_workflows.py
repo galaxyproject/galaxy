@@ -1965,7 +1965,7 @@ text_input:
   type: raw
 """, history_id=history_id, wait=True, assert_ok=False)
 
-    def test_run_with_text_connection(self):
+    def test_run_with_text_input_connection(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs("""
 class: GalaxyWorkflow
@@ -1995,6 +1995,27 @@ text_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+
+    def test_run_with_numeric_input_connection(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+- label: forty_two
+  tool_id: expression_forty_two
+  state: {}
+- label: consume_expression_parameter
+  tool_id: cheetah_casting
+  state:
+    floattest: 3.14
+    inttest:
+      $link: forty_two#out1
+test_data: {}
+""", history_id=history_id)
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEquals("43\n4.14\n", content)
 
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
