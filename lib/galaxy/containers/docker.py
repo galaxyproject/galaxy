@@ -14,7 +14,11 @@ try:
 except ImportError:
     docker = None
 
-import requests.exceptions
+try:
+    from requests.exceptions import ConnectionError, ReadTimeout
+except ImportError:
+    ConnectionError = None
+    ReadTimeout = None
 from six import string_types
 from six.moves import shlex_quote
 
@@ -272,12 +276,12 @@ class DockerAPIClient(object):
                 if tries > 1:
                     log.info('%s() succeeded on attempt %s', qualname, tries)
                 return r
-            except requests.exceptions.ConnectionError as exc:
+            except ConnectionError as exc:
                 reinit = True
             except docker.errors.APIError as exc:
                 if not DockerAPIClient._should_retry_request(exc.response.status_code):
                     raise
-            except requests.exceptions.ReadTimeout as exc:
+            except ReadTimeout as exc:
                 reinit = True
                 retry_time = 0
             finally:
