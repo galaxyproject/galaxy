@@ -34,6 +34,7 @@
             right: 0 !important;
         %endif
     }
+    #center, #right, #left { top: 0 !important; }
     </style>
 </%def>
 
