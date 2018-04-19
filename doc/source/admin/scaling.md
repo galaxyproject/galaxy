@@ -193,7 +193,7 @@ uwsgi:
     # fix up signal handling
     die-on-term: true
     hook-master-start: unix_signal:2 gracefully_kill_them_all
-    hook-master-start: unix_signal:5 gracefully_kill_them_all
+    hook-master-start: unix_signal:15 gracefully_kill_them_all
 
     # listening options
     
