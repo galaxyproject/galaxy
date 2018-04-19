@@ -115,7 +115,7 @@ const WorkflowItemView = Backbone.View.extend({
         return `
             <td>
                 <div class="btn-group">
-                    <a href="${Galaxy.root}workflow/editor?id=${this.model.id}" class="btn btn-secondary">
+                    <a href="${Galaxy.root}\?app_id=base&active_tab=workflow&controller=workflow/editor&id=${this.model.id}" class="btn btn-secondary">
                         ${_.escape(this.model.get("name"))}
                     </a>
                     <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -150,7 +150,7 @@ const WorkflowItemView = Backbone.View.extend({
     _templateActions: function() {
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a>
+                        <a class="dropdown-item" href="${Galaxy.root}\?app_id=base&active_tab=workflow&controller=workflow/editor&id=${this.model.id}">Edit</a>
                         <a class="dropdown-item" href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a>
                         <a class="dropdown-item" href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a>
                         <a class="dropdown-item" href="${Galaxy.root}api/workflows/${

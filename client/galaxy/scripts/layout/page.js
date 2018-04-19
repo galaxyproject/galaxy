@@ -82,6 +82,7 @@ var View = Backbone.View.extend({
 
     display: function(view, options) {
         options = options || {};
+        let active_tab = options.active_tab;
         if (typeof view == "object") {
             if (view.title) {
                 Utils.setWindowTitle(view.title);
@@ -91,8 +92,11 @@ var View = Backbone.View.extend({
                 view.allow_title_display = true;
             }
             if (view.active_tab) {
-                this.masthead.highlight(view.active_tab);
+                active_tab = view.active_tab;
             }
+        }
+        if (active_tab) {
+            this.masthead.highlight(active_tab);
         }
         this.center.display(view);
     },

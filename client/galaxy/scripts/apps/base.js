@@ -12,6 +12,7 @@ window.app = function app(options, bootstrapped) {
             hide_masthead: Galaxy.params.hide_masthead
         });
         Galaxy.page = new Page.View(options);
-        Galaxy.display(`${Galaxy.root}${Galaxy.params.controller}/?${$.param(Galaxy.params, true)}`);
+        Galaxy.display(`${Galaxy.root}${Galaxy.params.controller}/?${$.param(Galaxy.params, true)}`,
+                        {active_tab: Galaxy.params.active_tab});
     });
 };
