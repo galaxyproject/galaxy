@@ -1574,7 +1574,7 @@ class BaseDataToolParameter(ToolParameter):
                 if datatype is not None:
                     formats.append(datatype)
                 else:
-                    log.warning("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
+                    log.info("Datatype class not found for extension '%s', which is used in the 'format' attribute of parameter '%s'" % (extension, self.name))
         self.formats = formats
 
     def _parse_options(self, input_source):
