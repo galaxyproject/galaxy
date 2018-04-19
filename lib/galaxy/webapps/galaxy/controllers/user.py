@@ -434,8 +434,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
     @web.expose
     def login(self, trans, refresh_frames=[], **kwd):
         '''Handle Galaxy Log in'''
-        referer = trans.request.referer or ''
-        redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
+        redirect = self.__get_redirect_url(kwd.get('redirect', '').strip())
         redirect_url = ''  # always start with redirect_url being empty
         use_panels = util.string_as_bool(kwd.get('use_panels', False))
         message = kwd.get('message', '')
