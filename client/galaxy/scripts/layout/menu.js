@@ -240,8 +240,8 @@ var Collection = Backbone.Collection.extend({
                         },
                         {
                             title: _l("Register"),
-                            url: "user/create",
-                            target: "galaxy_main",
+                            url: "/?app_id=base&active_tab=user&controller=user/create",
+                            target: "_top",
                             noscratchbook: true
                         }
                     ]

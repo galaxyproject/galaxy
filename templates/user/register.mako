@@ -1,12 +1,5 @@
-<%!
-#This is a hack, we should restructure templates to avoid this.
-def inherit(context):
-    if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
-        return '/webapps/galaxy/base_panels.mako'
-    else:
-        return '/base.mako'
-%>
-<%inherit file="${inherit(context)}"/>
+<%!%>
+<%inherit file="/base.mako"/>
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="init()">
