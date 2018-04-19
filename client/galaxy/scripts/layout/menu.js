@@ -234,8 +234,8 @@ var Collection = Backbone.Collection.extend({
                     menu: [
                         {
                             title: _l("Login"),
-                            url: "user/login",
-                            target: "galaxy_main",
+                            url: "/?app_id=base&active_tab=user&controller=user/login",
+                            target: "_top",
                             noscratchbook: true
                         },
                         {
@@ -252,8 +252,8 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login"),
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
-                    url: "user/login",
-                    target: "galaxy_main",
+                    url: "/?app_id=base&active_tab=user&controller=user/login",
+                    target: "_top",
                     noscratchbook: true
                 };
             }
@@ -277,7 +277,7 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Logout"),
-                        url: `user/logout?session_csrf_token=${Galaxy.session_csrf_token}`,
+                        url: `?app_id=base&active_tab=user&controller=user/logout&session_csrf_token=${Galaxy.session_csrf_token}`,
                         target: "_top",
                         divider: true
                     },
