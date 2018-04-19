@@ -3,34 +3,34 @@ from __future__ import print_function
 import sys
 
 
-def stop_err( msg ):
-    sys.stderr.write( msg )
+def stop_err(msg):
+    sys.stderr.write(msg)
     sys.exit()
 
 
 def __main__():
     try:
-        infile = open( sys.argv[1], 'r')
-        outfile = open( sys.argv[2], 'w')
-    except:
-        stop_err( 'Cannot open or create a file\n' )
+        infile = open(sys.argv[1], 'r')
+        outfile = open(sys.argv[2], 'w')
+    except Exception:
+        stop_err('Cannot open or create a file\n')
 
-    if len( sys.argv ) < 4:
-        stop_err( 'No columns to merge' )
+    if len(sys.argv) < 4:
+        stop_err('No columns to merge')
     else:
         cols = sys.argv[3:]
 
     skipped_lines = 0
 
     for line in infile:
-        line = line.rstrip( '\r\n' )
-        if line and not line.startswith( '#' ):
-            fields = line.split( '\t' )
+        line = line.rstrip('\r\n')
+        if line and not line.startswith('#'):
+            fields = line.split('\t')
             line += '\t'
             for col in cols:
                 try:
-                    line += fields[ int( col ) - 1 ]
-                except:
+                    line += fields[int(col) - 1]
+                except Exception:
                     skipped_lines += 1
 
             print(line, file=outfile)

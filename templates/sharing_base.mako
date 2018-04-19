@@ -219,7 +219,7 @@
                     </table>
 
                     <p>
-                    <a class="action-button"
+                    <a id="share_with_a_user" class="action-button
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with another user</span>
                     </a>
@@ -228,7 +228,7 @@
 
                     <p>You have not shared this ${item_class_name_lc} with any users.</p>
 
-                    <a class="action-button"
+                    <a id="share_with_a_user" class="action-button"
                        href="${h.url_for(controller=controller_name, action='share', id=trans.security.encode_id(item.id), use_panels=use_panels )}">
                         <span>Share with a user</span>
                     </a>
@@ -240,5 +240,5 @@
     %endif
 
     <br /><br />
-    <a href="${h.url_for(controller=controller_list, action="list" )}">Back to ${item_class_plural_name} List</a>
+    <a href="${h.url_for(controller=controller_list, action="list" )}" target="_top">Back to ${item_class_plural_name} List</a>
 </%def>

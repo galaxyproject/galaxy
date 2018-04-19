@@ -4,16 +4,41 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
-from unittest import TestCase
+import os
+from unittest import skip, TestCase
 
+from galaxy.tools.deps.commands import which
+from galaxy.tools.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 
 
+def skip_if_jenkins(cls):
+
+    if os.environ.get("BUILD_NUMBER", ""):
+        return skip
+
+    return cls
+
+
+def skip_unless_executable(executable):
+    if which(executable):
+        return lambda func: func
+    return skip("PATH doesn't contain executable %s" % executable)
+
+
+def skip_unless_docker():
+    return skip_unless_executable("docker")
+
+
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
+
+    prefer_template_database = True
+    # Subclasses can override this to force uwsgi for tests.
+    require_uwsgi = False
 
     @classmethod
     def setUpClass(cls):
@@ -32,6 +57,7 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         cls._app_available = False
 
     def setUp(self):
+        self.test_data_resolver = TestDataResolver()
         # Setup attributes needed for API testing...
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
@@ -66,6 +92,13 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         This method will be passed the keyword argument pairs used to call
         Galaxy Config object and can modify the Galaxy instance created for
         the test as needed.
+        """
+
+    @classmethod
+    def handle_uwsgi_cli_command(cls, command):
+        """Extension point sub subclasses to modify arguments used to launch uWSGI server.
+
+        Command will a list that can be modified.
         """
 
     def _run_tool_test(self, *args, **kwargs):

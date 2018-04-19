@@ -18,18 +18,15 @@
             list_objects_url = "${h.url_for(controller='page', action='LIST_ACTION' )}",
             set_accessible_url = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
             get_name_and_link_url = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
-            list_histories_for_selection_url = "${h.url_for(controller='page', action='list_histories_for_selection' )}",
             editor_base_path = "${h.url_for('/static/wymeditor')}/",
             iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
             save_url = "${h.url_for(controller='page', action='save' )}";
+
+        $(function(){
+            bundleEntries.pages()
+        });
+
     </script>
-    ${h.js(
-        "libs/jquery/jquery.form",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.wymeditor",
-        "libs/jquery/jquery.autocomplete",
-        "galaxy.pages"
-    )}
 </%def>
 
 <%def name="stylesheets()">

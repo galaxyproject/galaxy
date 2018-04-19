@@ -1,30 +1,47 @@
 """
 XML format classes
 """
-import re
-import data
 import logging
-import dataproviders
+import re
+
+from . import (
+    data,
+    dataproviders,
+    sniff
+)
 
 log = logging.getLogger(__name__)
 
+OWL_MARKER = re.compile(r'\<owl:')
+
 
 @dataproviders.decorators.has_dataproviders
-class GenericXml( data.Text ):
+@sniff.build_sniff_from_prefix
+class GenericXml(data.Text):
     """Base format class for any XML file."""
     edam_format = "format_2332"
     file_ext = "xml"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'XML data'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
+    def _has_root_element_in_prefix(self, file_prefix, root):
+        contents = file_prefix.string_io()
+        while True:
+            line = contents.readline()
+            if line is None or not line.startswith('<?'):
+                break
+        # pattern match <root or <ns:root for any ns string
+        pattern = '^<(\w*:)?%s' % root
+        return line is not None and re.match(pattern, line) is not None
+
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is XML or not
 
@@ -36,13 +53,7 @@ class GenericXml( data.Text ):
         >>> GenericXml().sniff( fname )
         False
         """
-        # TODO - Use a context manager on Python 2.5+ to close handle
-        handle = open(filename)
-        line = handle.readline()
-        handle.close()
-
-        # TODO - Is there a more robust way to do this?
-        return line.startswith('<?xml ')
+        return file_prefix.startswith('<?xml ')
 
     def merge(split_files, output_file):
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
@@ -52,81 +63,82 @@ class GenericXml( data.Text ):
         data.Text.merge(split_files, output_file)
     merge = staticmethod(merge)
 
-    @dataproviders.decorators.dataprovider_factory( 'xml', dataproviders.hierarchy.XMLDataProvider.settings )
-    def xml_dataprovider( self, dataset, **settings ):
-        dataset_source = dataproviders.dataset.DatasetDataProvider( dataset )
-        return dataproviders.hierarchy.XMLDataProvider( dataset_source, **settings )
+    @dataproviders.decorators.dataprovider_factory('xml', dataproviders.hierarchy.XMLDataProvider.settings)
+    def xml_dataprovider(self, dataset, **settings):
+        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+        return dataproviders.hierarchy.XMLDataProvider(dataset_source, **settings)
 
 
-class MEMEXml( GenericXml ):
+@sniff.disable_parent_class_sniffing
+class MEMEXml(GenericXml):
     """MEME XML Output data"""
     file_ext = "memexml"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'MEME XML data'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
-        return False
 
-
-class CisML( GenericXml ):
+@sniff.disable_parent_class_sniffing
+class CisML(GenericXml):
     """CisML XML data"""  # see: http://www.ncbi.nlm.nih.gov/pubmed/15001475
     file_ext = "cisml"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'CisML data'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
-        return False
 
-
-class Phyloxml( GenericXml ):
+class Phyloxml(GenericXml):
     """Format for defining phyloxml data http://www.phyloxml.org/"""
     edam_data = "data_0872"
     edam_format = "format_3159"
     file_ext = "phyloxml"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'Phyloxml data'
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff( self, filename ):
-        """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines"""
+    def sniff_prefix(self, file_prefix):
+        """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines.
 
-        f = open( filename, "r" )
-        firstlines = "".join( f.readlines(5) )
-        f.close()
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.phyloxml' )
+        >>> Phyloxml().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'interval.interval' )
+        >>> Phyloxml().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'megablast_xml_parser_test1.blastxml' )
+        >>> Phyloxml().sniff( fname )
+        False
+        """
+        return self._has_root_element_in_prefix(file_prefix, "phyloxml")
 
-        if "phyloxml" in firstlines:
-            return True
-        return False
-
-    def get_visualizations( self, dataset ):
+    def get_visualizations(self, dataset):
         """
         Returns a list of visualizations for datatype.
         """
 
-        return [ 'phyloviz' ]
+        return ['phyloviz']
 
 
-class Owl( GenericXml ):
+class Owl(GenericXml):
     """
         Web Ontology Language OWL format description
         http://www.w3.org/TR/owl-ref/
@@ -134,23 +146,16 @@ class Owl( GenericXml ):
     edam_format = "format_3262"
     file_ext = "owl"
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff( self, filename ):
+    def sniff_prefix(self, file_prefix):
         """
             Checking for keyword - '<owl' in the first 200 lines.
         """
-        owl_marker = re.compile(r'\<owl:')
-        with open( filename ) as handle:
-            # Check first 200 lines for the string "<owl:"
-            first_lines = handle.readlines(200)
-            for line in first_lines:
-                if owl_marker.search( line ):
-                    return True
-        return False
+        return file_prefix.search(OWL_MARKER)

@@ -18,20 +18,20 @@ import subprocess
 import sys
 from sys import platform as _platform
 
+from six.moves import shlex_quote
 try:
     import yaml
 except ImportError:
     yaml = None
 
 from galaxy.tools.deps import commands, installable
-
 from galaxy.util import safe_makedirs
-
 from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
@@ -40,7 +40,7 @@ from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
 DEFAULT_CHANNEL = "bioconda"
-DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
+DEFAULT_EXTRA_CHANNELS = ["conda-forge"]
 DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
@@ -48,6 +48,7 @@ DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
+CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: bgruening/busybox-bash:0.1
@@ -116,17 +117,12 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
-    pkg_list = check_output(cmd, shell=True)
-    ret = list()
-    for pkg in pkg_list.strip().split('\n'):
-        if pkg and os.path.exists(os.path.join( recipes_dir, pkg )):
-            ret.append( (get_pkg_name(args, pkg), get_tests(args, pkg)) )
-    return ret
-
-
-def check_output(cmd, shell=True):
-    return subprocess.check_output(cmd, shell=shell)
+    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
+    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
+    pkg_list = set([x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')])
+    for pkg in pkg_list:
+        if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
+            yield (get_pkg_name(args, pkg), get_tests(args, pkg))
 
 
 def conda_versions(pkg_name, file_name):
@@ -201,7 +197,7 @@ def mull_targets(
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
         '-set', "CHANNELS='%s'" % channels,
-        '-set', "TEST='%s'" % test,
+        '-set', "TEST=%s" % shlex_quote(test),
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
@@ -209,6 +205,8 @@ def mull_targets(
 
     if DEST_BASE_IMAGE:
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+    if CONDA_IMAGE:
+        involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if singularity:
@@ -216,7 +214,7 @@ def mull_targets(
         involucro_args.extend(["-set", "SINGULARITY='1'"])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
-        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid() )])
+        involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
@@ -242,7 +240,8 @@ def mull_targets(
             with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
-        ret = involucro_context.exec_command(involucro_args)
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
         if singularity:
             # we can not remove this folder as it contains the image wich is owned by root
             pass

@@ -48,6 +48,7 @@ class LocalShell(BaseShellExec):
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):
+            sleep(0.1)  # For fast returning commands
             r = p.poll()
             if r is not None:
                 break

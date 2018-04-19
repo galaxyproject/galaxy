@@ -1,5 +1,4 @@
 import os
-import sys
 import tarfile
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -7,10 +6,7 @@ from tempfile import mkdtemp
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
-
-unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir ) )
-sys.path.insert( 1, unit_root )
-from unittest_utils.galaxy_mock import MockApp
+from ..unittest_utils.galaxy_mock import MockApp
 
 
 # good enough for the very specific tests we're writing as of now...

@@ -5,10 +5,11 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js("bundled/extended.bundled")}
 
     <script type="text/javascript">
-        require([ 'mvc/dataset/data' ], function( data ) {
-            data.createTabularDatasetChunkedView({
+        $(function(){
+            bundleEntries.createTabularDatasetChunkedView({
                 dataset_config : _.extend( ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )}, {
                         first_data_chunk: ${ chunk }
                     }),

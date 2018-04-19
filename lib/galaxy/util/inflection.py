@@ -8,7 +8,7 @@
 import re
 
 
-class Base:
+class Base(object):
     '''Locale inflectors must inherit from this base class inorder to provide
     the basic Inflector functionality'''
 
@@ -132,7 +132,7 @@ class Base:
         return self.underscore(self.demodulize(class_name)) + tail
 
 
-class English (Base):
+class English(Base):
     """
     Inflector for pluralize and singularize English nouns.
 
@@ -259,7 +259,7 @@ class English (Base):
         return word
 
 
-class Inflector:
+class Inflector(object):
     """
     Inflector for pluralizing and singularizing nouns.
 
@@ -267,7 +267,7 @@ class Inflector:
     based on naming conventions like on Ruby on Rails.
     """
 
-    def __init__( self, Inflector=English ):
+    def __init__(self, Inflector=English):
         assert callable(Inflector), "Inflector should be a callable obj"
         self.Inflector = Inflector()
 

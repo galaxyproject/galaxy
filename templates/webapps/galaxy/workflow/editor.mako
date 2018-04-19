@@ -1,5 +1,10 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
+<%def name="title()">
+
+    Workflow Editor
+</%def>
+
 <%def name="init()">
 <%
     self.active_view="workflow"
@@ -14,7 +19,7 @@
             'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
             'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
             'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
-            'workflow_index'      : h.url_for( controller='workflow', action='index' ),
+            'workflow_index'      : h.url_for( '/workflows/list' ),
             'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
             'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as') 
         },
@@ -39,14 +44,12 @@
         "libs/jquery/jquery.form",
         "libs/jquery/jstorage",
         "libs/jquery/jquery.autocomplete",
+        "bundled/extended.bundled"
     )}
 
     <script type='text/javascript'>
-        workflow_view = null;
         $( function() {
-            require(['mvc/workflow/workflow-view'], function(Workflow){
-                workflow_view = new Workflow(${h.dumps(self.editor_config)});
-            });
+            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
 </%def>
@@ -150,6 +153,8 @@
 
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
+        margin-left: 6px;
+        margin-right: 6px;
     }
     .form-row-clear {
         clear: both;
@@ -198,11 +203,11 @@
                 <div class="toolTitleNoSection">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_view.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
+                    ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_view.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -244,7 +249,7 @@
         <div class="toolSectionBg">
             %for module in module_section["modules"]:
                 <div class="toolTitle">
-                    <a href="#" onclick="workflow_view.add_node_for_module( '${module['name']}', '${module['title']}' )">
+                    <a href="#" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
                         ${module['description']}
                     </a>
                 </div>
@@ -267,7 +272,7 @@
 
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenuContainer">
-            <div class="toolMenu">
+            <div class="toolMenu" id="workflow-tool-menu">
                 <%
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
@@ -352,11 +357,11 @@
         <div class="unified-panel-header-inner" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
-        <div class="unified-panel-header-inner">
+        <div class="unified-panel-header-inner" id="workflow-canvas-title">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
-    <div class="unified-panel-body">
+    <div class="unified-panel-body" id="workflow-canvas-body">
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>

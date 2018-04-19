@@ -1,6 +1,6 @@
+import re
 
 from .baseparser import Base_Parser, PhyloTree
-import re
 
 
 class Newick_Parser(Base_Parser):
@@ -147,7 +147,7 @@ class Newick_Parser(Base_Parser):
                         if match:
                             indexOfNextSymbol = match.start()
                             stringRepOfInternalNode = stringRightOfBracket[:indexOfNextSymbol]
-                            internalNodes = self._makeNodesFromString( stringRepOfInternalNode, depth)
+                            internalNodes = self._makeNodesFromString(stringRepOfInternalNode, depth)
                             if len(internalNodes) > 0:
                                 InternalNode = internalNodes[0]
                             lenOfPreceedingInternalNodeString = len(stringRepOfInternalNode)
@@ -155,11 +155,11 @@ class Newick_Parser(Base_Parser):
                             InternalNode = self._makeNodesFromString(string[j + 1:], depth)[0]
                             lenOfPreceedingInternalNodeString = len(string) - j
                     if InternalNode is None:       # creating a generic node if it is unnamed
-                        InternalNode = self.phyloTree.makeNode( "", depth=depth, isInternal=True )  # "internal-" + str(depth)
+                        InternalNode = self.phyloTree.makeNode("", depth=depth, isInternal=True)  # "internal-" + str(depth)
                         lenOfPreceedingInternalNodeString = 0
 
                     # recussive call to make the internal claude
-                    childSubString = string[ i + 1 : j ]
+                    childSubString = string[i + 1 : j]
                     InternalNode.addChildNode(self.parseNode(childSubString, depth + 1))
 
                     nodes.append(InternalNode)  # we append the internal node later to preserve order

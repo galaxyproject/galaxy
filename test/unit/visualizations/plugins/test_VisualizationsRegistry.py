@@ -3,7 +3,6 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 import os
 import re
-import sys
 import unittest
 
 from six import string_types
@@ -11,15 +10,11 @@ from six import string_types
 from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from ...unittest_utils import galaxy_mock, utility
 
-unit_root = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir ) )
-sys.path.insert( 1, unit_root )
-from unittest_utils import galaxy_mock, utility
-
-# -----------------------------------------------------------------------------
-glx_dir = os.path.abspath( os.path.join( os.path.dirname( __file__ ), os.pardir, os.pardir, os.pardir, os.pardir ) )
-template_cache_dir = os.path.join( glx_dir, 'database', 'compiled_templates' )
-addtional_templates_dir = os.path.join( glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates' )
+glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
+template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')
+addtional_templates_dir = os.path.join(glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates')
 vis_reg_path = 'config/plugins/visualizations'
 
 config1 = """\
@@ -41,39 +36,34 @@ config1 = """\
 """
 
 
-# -----------------------------------------------------------------------------
-class VisualizationsRegistry_TestCase( unittest.TestCase ):
+class VisualizationsRegistry_TestCase(unittest.TestCase):
 
-    def test_plugin_load_from_repo( self ):
+    def test_plugin_load_from_repo(self):
         """should attempt load if criteria met"""
-        mock_app = galaxy_mock.MockApp( root=glx_dir )
-        plugin_mgr = VisualizationsRegistry( mock_app,
+        mock_app = galaxy_mock.MockApp(root=glx_dir)
+        plugin_mgr = VisualizationsRegistry(mock_app,
             directories_setting=vis_reg_path,
-            template_cache_dir=None )
+            template_cache_dir=None)
 
-        expected_plugins_path = os.path.join( glx_dir, vis_reg_path )
-        self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
+        expected_plugins_path = os.path.join(glx_dir, vis_reg_path)
+        self.assertEqual(plugin_mgr.base_url, 'visualizations')
+        self.assertEqual(plugin_mgr.directories, [expected_plugins_path])
 
-        scatterplot = plugin_mgr.plugins[ 'scatterplot' ]
-        self.assertEqual( scatterplot.name, 'scatterplot' )
-        self.assertEqual( scatterplot.path, os.path.join( expected_plugins_path, 'scatterplot' ) )
-        self.assertEqual( scatterplot.base_url, '/'.join([ plugin_mgr.base_url, scatterplot.name ]) )
-        self.assertTrue(  scatterplot.serves_static )
-        self.assertEqual( scatterplot.static_path, os.path.join( scatterplot.path, 'static' ) )
-        self.assertEqual( scatterplot.static_url, '/'.join([ scatterplot.base_url, 'static' ]) )
-        self.assertTrue(  scatterplot.serves_templates )
-        self.assertEqual( scatterplot.template_path, os.path.join( scatterplot.path, 'templates' ) )
-        self.assertEqual( scatterplot.template_lookup.__class__.__name__, 'TemplateLookup' )
+        scatterplot = plugin_mgr.plugins['scatterplot']
+        self.assertEqual(scatterplot.name, 'scatterplot')
+        self.assertEqual(scatterplot.path, os.path.join(expected_plugins_path, 'scatterplot'))
+        self.assertEqual(scatterplot.base_url, '/'.join([plugin_mgr.base_url, scatterplot.name]))
+        self.assertTrue(scatterplot.serves_templates)
+        self.assertEqual(scatterplot.template_path, os.path.join(scatterplot.path, 'templates'))
+        self.assertEqual(scatterplot.template_lookup.__class__.__name__, 'TemplateLookup')
 
-        trackster = plugin_mgr.plugins[ 'trackster' ]
-        self.assertEqual( trackster.name, 'trackster' )
-        self.assertEqual( trackster.path, os.path.join( expected_plugins_path, 'trackster' ) )
-        self.assertEqual( trackster.base_url, '/'.join([ plugin_mgr.base_url, trackster.name ]) )
-        self.assertFalse( trackster.serves_static )
-        self.assertFalse( trackster.serves_templates )
+        trackster = plugin_mgr.plugins['trackster']
+        self.assertEqual(trackster.name, 'trackster')
+        self.assertEqual(trackster.path, os.path.join(expected_plugins_path, 'trackster'))
+        self.assertEqual(trackster.base_url, '/'.join([plugin_mgr.base_url, trackster.name]))
+        self.assertFalse(trackster.serves_templates)
 
-    def test_plugin_load( self ):
+    def test_plugin_load(self):
         """"""
         mock_app_dir = galaxy_mock.MockDir({
             'plugins': {
@@ -110,43 +100,39 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
                 },
             }
         })
-        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
-        plugin_mgr = VisualizationsRegistry( mock_app,
+        mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
+        plugin_mgr = VisualizationsRegistry(mock_app,
             directories_setting='plugins',
-            template_cache_dir=template_cache_dir )
+            template_cache_dir=template_cache_dir)
 
-        expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
-        expected_plugin_names = [ 'vis1', 'vis2' ]
+        expected_plugins_path = os.path.join(mock_app_dir.root_path, 'plugins')
+        expected_plugin_names = ['vis1', 'vis2']
 
-        self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertEqual( sorted(plugin_mgr.plugins.keys()), expected_plugin_names )
+        self.assertEqual(plugin_mgr.base_url, 'visualizations')
+        self.assertEqual(plugin_mgr.directories, [expected_plugins_path])
+        self.assertEqual(sorted(plugin_mgr.plugins.keys()), expected_plugin_names)
 
-        vis1 = plugin_mgr.plugins[ 'vis1' ]
-        self.assertEqual( vis1.name, 'vis1' )
-        self.assertEqual( vis1.path, os.path.join( expected_plugins_path, 'vis1' ) )
-        self.assertEqual( vis1.base_url, '/'.join([ plugin_mgr.base_url, vis1.name ]) )
-        self.assertTrue(  vis1.serves_static )
-        self.assertEqual( vis1.static_path, os.path.join( vis1.path, 'static' ) )
-        self.assertEqual( vis1.static_url, '/'.join([ vis1.base_url, 'static' ]) )
-        self.assertTrue(  vis1.serves_templates )
-        self.assertEqual( vis1.template_path, os.path.join( vis1.path, 'templates' ) )
-        self.assertEqual( vis1.template_lookup.__class__.__name__, 'TemplateLookup' )
+        vis1 = plugin_mgr.plugins['vis1']
+        self.assertEqual(vis1.name, 'vis1')
+        self.assertEqual(vis1.path, os.path.join(expected_plugins_path, 'vis1'))
+        self.assertEqual(vis1.base_url, '/'.join([plugin_mgr.base_url, vis1.name]))
+        self.assertTrue(vis1.serves_templates)
+        self.assertEqual(vis1.template_path, os.path.join(vis1.path, 'templates'))
+        self.assertEqual(vis1.template_lookup.__class__.__name__, 'TemplateLookup')
 
-        vis2 = plugin_mgr.plugins[ 'vis2' ]
-        self.assertEqual( vis2.name, 'vis2' )
-        self.assertEqual( vis2.path, os.path.join( expected_plugins_path, 'vis2' ) )
-        self.assertEqual( vis2.base_url, '/'.join([ plugin_mgr.base_url, vis2.name ]) )
-        self.assertFalse( vis2.serves_static )
-        self.assertFalse( vis2.serves_templates )
+        vis2 = plugin_mgr.plugins['vis2']
+        self.assertEqual(vis2.name, 'vis2')
+        self.assertEqual(vis2.path, os.path.join(expected_plugins_path, 'vis2'))
+        self.assertEqual(vis2.base_url, '/'.join([plugin_mgr.base_url, vis2.name]))
+        self.assertFalse(vis2.serves_templates)
 
         mock_app_dir.remove()
         template_cache_dir
 
-    def test_interactive_environ_plugin_load( self ):
+    def test_interactive_environ_plugin_load(self):
         """
         """
-        jupyter_config = utility.clean_multiline_string( """\
+        jupyter_config = utility.clean_multiline_string("""\
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
         <interactive_environment name="Jupyter">
@@ -163,7 +149,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             </params>
             <template>jupyter.mako</template>
         </interactive_environment>
-        """ )
+        """)
 
         mock_app_dir = {
             'plugins': {
@@ -178,55 +164,55 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
 
         # going to use a fake template here to simplify testing
         jupyter_template = "${ ie_request }-${ get_api_key() }"
-        mock_app_dir[ 'plugins' ][ 'jupyter' ][ 'templates' ][ 'jupyter.mako' ] = jupyter_template
+        mock_app_dir['plugins']['jupyter']['templates']['jupyter.mako'] = jupyter_template
         # so that we don't create a cached version of that fake template in the real mako caches
         #   we'll set up a cache in the temp dir
-        mock_app_dir[ 'caches' ] = {}
+        mock_app_dir['caches'] = {}
         # and make sure the vis reg uses that
-        mock_app_dir = galaxy_mock.MockDir( mock_app_dir )
-        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
-        plugin_mgr = VisualizationsRegistry( mock_app,
+        mock_app_dir = galaxy_mock.MockDir(mock_app_dir)
+        mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
+        plugin_mgr = VisualizationsRegistry(mock_app,
             directories_setting='plugins',
-            template_cache_dir=os.path.join( mock_app_dir.root_path, 'caches' ) )
+            template_cache_dir=os.path.join(mock_app_dir.root_path, 'caches'))
 
         # ...then start testing
-        expected_plugins_path = os.path.join( mock_app_dir.root_path, 'plugins' )
-        expected_plugin_names = [ 'jupyter' ]
+        expected_plugins_path = os.path.join(mock_app_dir.root_path, 'plugins')
+        expected_plugin_names = ['jupyter']
 
-        self.assertEqual( plugin_mgr.base_url, 'visualizations' )
-        self.assertEqual( plugin_mgr.directories, [ expected_plugins_path ] )
-        self.assertEqual( sorted(plugin_mgr.plugins.keys()), expected_plugin_names )
+        self.assertEqual(plugin_mgr.base_url, 'visualizations')
+        self.assertEqual(plugin_mgr.directories, [expected_plugins_path])
+        self.assertEqual(sorted(plugin_mgr.plugins.keys()), expected_plugin_names)
 
-        jupyter = plugin_mgr.plugins[ 'jupyter' ]
+        jupyter = plugin_mgr.plugins['jupyter']
         config = jupyter.config
 
-        self.assertEqual( jupyter.name, 'jupyter' )
-        self.assertEqual( config.get( 'plugin_type' ), 'interactive_environment' )
+        self.assertEqual(jupyter.name, 'jupyter')
+        self.assertEqual(config.get('plugin_type'), 'interactive_environment')
 
         # get_api_key needs a user, fill_template a trans
-        user = model.User( email="blah@bler.blah", password="dockerDockerDOCKER" )
-        trans = galaxy_mock.MockTrans( user=user )
+        user = model.User(email="blah@bler.blah", password="dockerDockerDOCKER")
+        trans = galaxy_mock.MockTrans(user=user)
         # use a mock request factory - this will be written into the filled template to show it was used
         jupyter.INTENV_REQUEST_FACTORY = lambda t, p: 'mock'
 
         # should return the (new) api key for the above user (see the template above)
-        response = jupyter._render( {}, trans=trans )
+        response = jupyter._render({}, trans=trans)
         response.strip()
-        self.assertIsInstance( response, string_types )
-        self.assertTrue( '-' in response )
-        ie_request, api_key = response.split( '-' )
+        self.assertIsInstance(response, string_types)
+        self.assertTrue('-' in response)
+        ie_request, api_key = response.split('-')
 
-        self.assertEqual( ie_request, 'mock' )
+        self.assertEqual(ie_request, 'mock')
 
-        match = re.match( r'[a-f0-9]{32}', api_key )
-        self.assertIsNotNone( match )
-        self.assertEqual( match.span(), ( 0, 32 ) )
+        match = re.match(r'[a-f0-9]{32}', api_key)
+        self.assertIsNotNone(match)
+        self.assertEqual(match.span(), (0, 32))
 
         mock_app_dir.remove()
 
-    def test_script_entry( self ):
+    def test_script_entry(self):
         """"""
-        script_entry_config = utility.clean_multiline_string( """\
+        script_entry_config = utility.clean_multiline_string("""\
         <?xml version="1.0" encoding="UTF-8"?>
         <visualization name="js-test">
             <data_sources>
@@ -236,7 +222,7 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
             </data_sources>
             <entry_point entry_point_type="script" data-main="one" src="bler"></entry_point>
         </visualization>
-        """ )
+        """)
 
         mock_app_dir = galaxy_mock.MockDir({
             'plugins': {
@@ -248,25 +234,22 @@ class VisualizationsRegistry_TestCase( unittest.TestCase ):
                 },
             }
         })
-        mock_app = galaxy_mock.MockApp( root=mock_app_dir.root_path )
-        plugin_mgr = VisualizationsRegistry( mock_app,
+        mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
+        plugin_mgr = VisualizationsRegistry(mock_app,
             directories_setting='plugins',
-            template_cache_dir=template_cache_dir )
-        script_entry = plugin_mgr.plugins[ 'jstest' ]
+            template_cache_dir=template_cache_dir)
+        script_entry = plugin_mgr.plugins['jstest']
 
-        self.assertIsInstance( script_entry, plugin.ScriptVisualizationPlugin )
-        self.assertEqual( script_entry.name, 'jstest' )
-        self.assertTrue(  script_entry.serves_static )
-        self.assertTrue(  script_entry.serves_templates )
-        self.assertEqual( script_entry.static_path, os.path.join( script_entry.path, 'static' ) )
+        self.assertIsInstance(script_entry, plugin.ScriptVisualizationPlugin)
+        self.assertEqual(script_entry.name, 'jstest')
+        self.assertTrue(script_entry.serves_templates)
 
         trans = galaxy_mock.MockTrans()
-        script_entry._set_up_template_plugin( mock_app_dir.root_path, [ addtional_templates_dir ] )
-        response = script_entry._render( {}, trans=trans, embedded=True )
-        # print response
-        self.assertTrue( 'src="bler"' in response )
-        self.assertTrue( 'type="text/javascript"' in response )
-        self.assertTrue( 'data-main="one"' in response )
+        script_entry._set_up_template_plugin(mock_app_dir.root_path, [addtional_templates_dir])
+        response = script_entry._render({}, trans=trans, embedded=True)
+        self.assertTrue('src="bler"' in response)
+        self.assertTrue('type="text/javascript"' in response)
+        self.assertTrue('data-main="one"' in response)
         mock_app_dir.remove()
 
 

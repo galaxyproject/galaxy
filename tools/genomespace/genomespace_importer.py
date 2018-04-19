@@ -1,39 +1,26 @@
-# Dan Blankenberg
-
+import argparse
 import json
-import optparse
 import os
-import shutil
-import tempfile
+import sys
+import uuid
 
-from six.moves import http_cookiejar
-from six.moves.urllib.parse import parse_qs, unquote_plus, urlparse
-from six.moves.urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
+from genomespaceclient import GenomeSpaceClient
 
+import galaxy
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 
-GENOMESPACE_API_VERSION_STRING = "v1.0"
-GENOMESPACE_SERVER_URL_PROPERTIES = "https://dm.genomespace.org/config/%s/serverurl.properties" % ( GENOMESPACE_API_VERSION_STRING )
-DEFAULT_GENOMESPACE_TOOLNAME = 'Galaxy'
-FILENAME_VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
-CHUNK_SIZE = 2**20  # 1mb
-
-DEFAULT_GALAXY_EXT = "data"
-
-# genomespace format identifier is the URL
-GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT = {}  # TODO: fix this so it is not a global variable
-# TODO: we should use a better way to set up this mapping
+# Mappings for known genomespace formats to galaxy formats
 GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'lifes': 'lifes',
                                  'cn': 'cn',
-                                 'GTF': 'gtf',
+                                 'gtf': 'gtf',
                                  'res': 'res',
                                  'xcn': 'xcn',
                                  'lowercasetxt': 'lowercasetxt',
                                  'bed': 'bed',
-                                 'CBS': 'cbs',
+                                 'cbs': 'cbs',
                                  'genomicatab': 'genomicatab',
                                  'gxp': 'gxp',
                                  'reversedtxt': 'reversedtxt',
@@ -41,180 +28,233 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'unknown': 'unknown',
                                  'txt': 'txt',
                                  'uppercasetxt': 'uppercasetxt',
-                                 'GISTIC': 'gistic',
-                                 'GFF': 'gff',
+                                 'gistic': 'gistic',
+                                 'gff': 'gff',
                                  'gmt': 'gmt',
                                  'gct': 'gct'}
 
 
-def chunk_write( source_stream, target_stream, source_method="read", target_method="write" ):
-    source_method = getattr( source_stream, source_method )
-    target_method = getattr( target_stream, target_method )
-    while True:
-        chunk = source_method( CHUNK_SIZE )
-        if chunk:
-            target_method( chunk )
+def _prepare_json_list(param_list):
+    """
+    JSON serialization Support functions for exec_before_job hook
+    """
+    rval = []
+    for value in param_list:
+        if isinstance(value, dict):
+            rval.append(_prepare_json_param_dict(value))
+        elif isinstance(value, list):
+            rval.append(_prepare_json_list(value))
         else:
-            break
+            rval.append(str(value))
+    return rval
 
 
-def get_cookie_opener( gs_username, gs_token, gs_toolname=None ):
-    """ Create a GenomeSpace cookie opener """
-    cj = http_cookiejar.CookieJar()
-    for cookie_name, cookie_value in [ ( 'gs-token', gs_token ), ( 'gs-username', gs_username ) ]:
-        # create a super-cookie, valid for all domains
-        cookie = http_cookiejar.Cookie(version=0, name=cookie_name, value=cookie_value, port=None, port_specified=False, domain='', domain_specified=False, domain_initial_dot=False, path='/', path_specified=True, secure=False, expires=None, discard=True, comment=None, comment_url=None, rest={'HttpOnly': None}, rfc2109=False )
-        cj.set_cookie( cookie )
-    cookie_opener = build_opener( HTTPCookieProcessor( cj ) )
-    cookie_opener.addheaders.append( ( 'gs-toolname', gs_toolname or DEFAULT_GENOMESPACE_TOOLNAME ) )
-    return cookie_opener
-
-
-def get_galaxy_ext_from_genomespace_format_url( url_opener, file_format_url, default=DEFAULT_GALAXY_EXT ):
-    ext = GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT.get( file_format_url, None )
-    if ext is not None:
-        ext = GENOMESPACE_EXT_TO_GALAXY_EXT.get( ext, None )
-    if ext is None:
-        # could check content type, etc here
-        ext = default
-    return ext
-
-
-def get_genomespace_site_urls():
-    genomespace_sites = {}
-    for line in urlopen( GENOMESPACE_SERVER_URL_PROPERTIES ).read().split( '\n' ):
-        line = line.rstrip()
-        if not line or line.startswith( "#" ):
-            continue
-        server, line = line.split( '.', 1 )
-        if server not in genomespace_sites:
-            genomespace_sites[server] = {}
-        line = line.split( "=", 1 )
-        genomespace_sites[server][line[0]] = line[1]
-    return genomespace_sites
-
-
-def set_genomespace_format_identifiers( url_opener, dm_site ):
-    gs_request = Request( "%s/%s/dataformat/list" % ( dm_site, GENOMESPACE_API_VERSION_STRING ) )
-    gs_request.get_method = lambda: 'GET'
-    opened_gs_request = url_opener.open( gs_request )
-    genomespace_formats = json.loads( opened_gs_request.read() )
-    for format in genomespace_formats:
-        GENOMESPACE_FORMAT_IDENTIFIER_TO_GENOMESPACE_EXT[ format['url'] ] = format['name']
-
-
-def download_from_genomespace_importer( username, token, json_parameter_file, genomespace_site, gs_toolname ):
-    json_params = json.loads( open( json_parameter_file, 'r' ).read() )
-    datasource_params = json_params.get( 'param_dict' )
-    assert None not in [ username, token ], "Missing GenomeSpace username or token."
-    output_filename = datasource_params.get( "output_file1", None )
-    dataset_id = base_dataset_id = json_params['output_data'][0]['dataset_id']
-    hda_id = json_params['output_data'][0]['hda_id']
-    url_opener = get_cookie_opener( username, token, gs_toolname=gs_toolname )
-    # load and set genomespace format ids to galaxy exts
-    genomespace_site_dict = get_genomespace_site_urls()[ genomespace_site ]
-    set_genomespace_format_identifiers( url_opener, genomespace_site_dict['dmServer'] )
-    file_url_name = "URL"
-    metadata_parameter_file = open( json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'wb' )
-    # setup datatypes registry for sniffing
-    datatypes_registry = Registry()
-    datatypes_registry.load_datatypes( root_dir=json_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config=json_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
-    url_param = datasource_params.get( file_url_name, None )
-    used_filenames = []
-    for download_url in url_param.split( ',' ):
-        using_temp_file = False
-        parsed_url = urlparse( download_url )
-        query_params = parse_qs( parsed_url[4] )
-        # write file to disk
-        new_file_request = Request( download_url )
-        new_file_request.get_method = lambda: 'GET'
-        target_download_url = url_opener.open( new_file_request )
-        filename = None
-        if 'Content-Disposition' in target_download_url.info():
-            content_disposition = dict( x.strip().split('=') if '=' in x else ( x.strip(), '' ) for x in target_download_url.info()['Content-Disposition'].split( ';' ) )
-            if 'filename' in content_disposition:
-                filename = content_disposition[ 'filename' ].strip( "\"'" )
-        if not filename:
-            parsed_url = urlparse( download_url )
-            query_params = parse_qs( parsed_url[4] )
-            filename = unquote_plus( parsed_url[2].split( '/' )[-1] )
-        if not filename:
-            filename = download_url
-        if output_filename is None:
-            # need to use a temp file here, because we do not know the ext yet
-            using_temp_file = True
-            output_filename = tempfile.NamedTemporaryFile( prefix='tmp-genomespace-importer-' ).name
-        output_file = open( output_filename, 'wb' )
-        chunk_write( target_download_url, output_file )
-        output_file.close()
-
-        # determine file format
-        file_type = None
-        if 'dataformat' in query_params:  # this is a converted dataset
-            file_type = query_params[ 'dataformat' ][0]
-            file_type = get_galaxy_ext_from_genomespace_format_url( url_opener, file_type )
+def _prepare_json_param_dict(param_dict):
+    """
+    JSON serialization Support functions for exec_before_job hook
+    """
+    rval = {}
+    for key, value in param_dict.items():
+        if isinstance(value, dict):
+            rval[key] = _prepare_json_param_dict(value)
+        elif isinstance(value, list):
+            rval[key] = _prepare_json_list(value)
         else:
-            try:
-                # get and use GSMetadata object
-                download_file_path = download_url.split( "%s/file/" % ( genomespace_site_dict['dmServer'] ), 1)[-1]  # FIXME: This is a very bad way to get the path for determining metadata. There needs to be a way to query API using download URLto get to the metadata object
-                metadata_request = Request( "%s/%s/filemetadata/%s" % ( genomespace_site_dict['dmServer'], GENOMESPACE_API_VERSION_STRING, download_file_path ) )
-                metadata_request.get_method = lambda: 'GET'
-                metadata_url = url_opener.open( metadata_request )
-                file_metadata_dict = json.loads( metadata_url.read() )
-                metadata_url.close()
-                file_type = file_metadata_dict.get( 'dataFormat', None )
-                if file_type and file_type.get( 'url' ):
-                    file_type = file_type.get( 'url' )
-                    file_type = get_galaxy_ext_from_genomespace_format_url( url_opener, file_type, default=None )
-            except:
-                pass
-        if file_type is None:
-            # try to sniff datatype
-            try:
-                file_type = sniff.handle_uploaded_dataset_file( output_filename, datatypes_registry )
-            except:
-                pass  # sniff failed
-        if file_type is None and '.' in parsed_url[2]:
-            # still no known datatype, fall back to using extension
-            file_type = parsed_url[2].rsplit( '.', 1 )[-1]
-            file_type = GENOMESPACE_EXT_TO_GALAXY_EXT.get( file_type, file_type )
-        if file_type is None:
-            # use default extension (e.g. 'data')
-            file_type = DEFAULT_GALAXY_EXT
-
-        # save json info for single primary dataset
-        if dataset_id is not None:
-            metadata_parameter_file.write( "%s\n" % json.dumps( dict( type='dataset',
-                                                                      dataset_id=dataset_id,
-                                                                      ext=file_type,
-                                                                      name="GenomeSpace importer on %s" % ( filename ) ) ) )
-        # if using tmp file, move the file to the new file path dir to get scooped up later
-        if using_temp_file:
-            original_filename = filename
-            filename = ''.join( c in FILENAME_VALID_CHARS and c or '-' for c in filename )
-            while filename in used_filenames:
-                filename = "-%s" % filename
-            used_filenames.append( filename )
-            target_output_filename = os.path.join( os.getcwd(), 'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
-            shutil.move( output_filename, target_output_filename )
-            metadata_parameter_file.write( "%s\n" % json.dumps( dict( type='new_primary_dataset',
-                                                                      base_dataset_id=base_dataset_id,
-                                                                      ext=file_type,
-                                                                      filename=target_output_filename,
-                                                                      name="GenomeSpace importer on %s" % ( original_filename ) ) ) )
-        dataset_id = None  # only one primary dataset available
-        output_filename = None  # only have one filename available
-    metadata_parameter_file.close()
-    return True
+            rval[key] = str(value)
+    return rval
 
 
-if __name__ == '__main__':
-    parser = optparse.OptionParser()
-    parser.add_option( '-p', '--json_parameter_file', dest='json_parameter_file', action='store', type="string", default=None, help='json_parameter_file' )
-    parser.add_option( '-s', '--genomespace_site', dest='genomespace_site', action='store', type="string", default=None, help='genomespace_site' )
-    parser.add_option( '-t', '--token', dest='token', action='store', type="string", default=None, help='token' )
-    parser.add_option( '-u', '--username', dest='username', action='store', type="string", default=None, help='username' )
-    parser.add_option( '', '--genomespace_toolname', dest='genomespace_toolname', action='store', type="string", default=DEFAULT_GENOMESPACE_TOOLNAME, help='value to use for gs-toolname, used in GenomeSpace internal logging' )
-    (options, args) = parser.parse_args()
+def exec_before_job(app, inp_data, out_data, param_dict=None, tool=None):
+    """
+    Galaxy override hook
+    See: https://wiki.galaxyproject.org/Admin/Tools/ToolConfigSyntax#A.3Ccode.3E_tag_set
+    Since only tools with tool_type="data_source" provides functionality for having a JSON param file such as this:
+    https://wiki.galaxyproject.org/Admin/Tools/DataManagers/DataManagerJSONSyntax#Example_JSON_input_to_tool,
+    this hook is used to manually create a similar JSON file.
+    However, this hook does not provide access to GALAXY_DATATYPES_CONF_FILE and GALAXY_ROOT_DIR
+    properties, so these must be passed in as commandline params.
+    """
+    if param_dict is None:
+        param_dict = {}
+    json_params = {}
+    json_params['param_dict'] = _prepare_json_param_dict(param_dict)
+    json_params['output_data'] = []
+    json_params['job_config'] = dict(GALAXY_DATATYPES_CONF_FILE=param_dict.get('GALAXY_DATATYPES_CONF_FILE'),
+                                     GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'),
+                                     TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
+    json_filename = None
+    for i, (out_name, data) in enumerate(out_data.items()):
+        file_name = data.get_file_name()
+        data_dict = dict(out_data_name=out_name,
+                         ext=data.ext,
+                         dataset_id=data.dataset.id,
+                         hda_id=data.id,
+                         file_name=file_name)
+        json_params['output_data'].append(data_dict)
+        if json_filename is None:
+            json_filename = file_name
+    with open(json_filename, 'w') as out:
+        out.write(json.dumps(json_params))
 
-    download_from_genomespace_importer( options.username, options.token, options.json_parameter_file, options.genomespace_site, options.genomespace_toolname )
+
+def get_galaxy_ext_from_genomespace_format(format):
+    return GENOMESPACE_EXT_TO_GALAXY_EXT.get(format, None)
+
+
+def get_galaxy_ext_from_file_ext(filename):
+    if not filename:
+        return None
+    filename = filename.lower()
+    ext = filename.rsplit('.', 1)[-1]
+    return get_galaxy_ext_from_genomespace_format(ext)
+
+
+def sniff_and_handle_data_type(json_params, output_file):
+    """
+    The sniff.handle_uploaded_dataset_file() method in Galaxy performs dual
+    functions: it sniffs the filetype and if it's a compressed archive for
+    a non compressed datatype such as fasta, it will be unpacked.
+    """
+    try:
+        datatypes_registry = Registry()
+        datatypes_registry.load_datatypes(
+            root_dir=json_params['job_config']['GALAXY_ROOT_DIR'],
+            config=json_params['job_config']['GALAXY_DATATYPES_CONF_FILE'])
+        file_type = sniff.handle_uploaded_dataset_file(
+            output_file,
+            datatypes_registry)
+        return file_type
+    except Exception:
+        return None
+
+
+def determine_output_filename(input_url, metadata, json_params, primary_dataset):
+    """
+    Determines the output file name. If only a single output file, the dataset name
+    is used. If multiple files are being downloaded, each file is given a unique dataset
+    name
+    """
+    output_filename = json_params['output_data'][0]['file_name']
+
+    if not primary_dataset or not output_filename:
+        hda_id = json_params['output_data'][0]['hda_id']
+        output_filename = 'primary_%i_%s_visible_%s' % (hda_id, metadata.name, uuid.uuid4())
+
+    return os.path.join(os.getcwd(), output_filename)
+
+
+def determine_file_type(input_url, output_filename, metadata, json_params, sniffed_type):
+    """
+    Determine the Galaxy data format for this file.
+    """
+    # Use genomespace metadata to map type
+    file_format = metadata.dataFormat.name if metadata.dataFormat else None
+    file_type = get_galaxy_ext_from_genomespace_format(file_format)
+
+    # If genomespace metadata has no identifiable format, attempt to sniff type
+    if not file_type:
+        file_type = sniffed_type
+
+    # Still no type? Attempt to use filename extension to determine a type
+    if not file_type:
+        file_type = get_galaxy_ext_from_file_ext(metadata.name)
+
+    # Nothing works, use default
+    if not file_type:
+        file_type = "data"
+
+    return file_type
+
+
+def save_result_metadata(output_filename, file_type, metadata, json_params,
+                         primary_dataset=False):
+    """
+    Generates a new job metadata file (typically galaxy.json) with details of
+    all downloaded files, which Galaxy can read and use to display history items
+    and associated metadata
+    """
+    dataset_id = json_params['output_data'][0]['dataset_id']
+    with open(json_params['job_config']['TOOL_PROVIDED_JOB_METADATA_FILE'], 'ab') as metadata_parameter_file:
+        if primary_dataset:
+            metadata_parameter_file.write("%s\n" % json.dumps(dict(type='dataset',
+                                                                   dataset_id=dataset_id,
+                                                                   ext=file_type,
+                                                                   name="GenomeSpace importer on %s" % (metadata.name))))
+        else:
+            metadata_parameter_file.write("%s\n" % json.dumps(dict(type='new_primary_dataset',
+                                                                   base_dataset_id=dataset_id,
+                                                                   ext=file_type,
+                                                                   filename=output_filename,
+                                                                   name="GenomeSpace importer on %s" % (metadata.name))))
+
+
+def download_single_file(gs_client, input_url, json_params,
+                         primary_dataset=False):
+    # 1. Get file metadata
+    metadata = gs_client.get_metadata(input_url)
+
+    # 2. Determine output file name
+    output_filename = determine_output_filename(input_url, metadata, json_params, primary_dataset)
+
+    # 3. Download file
+    gs_client.copy(input_url, output_filename)
+
+    # 4. Decompress file if compressed and sniff type
+    sniffed_type = sniff_and_handle_data_type(json_params, output_filename)
+
+    # 5. Determine file type from available metadata
+    file_type = determine_file_type(input_url, output_filename, metadata, json_params, sniffed_type)
+
+    # 6. Write job output metadata
+    save_result_metadata(output_filename, file_type, metadata, json_params,
+                         primary_dataset=primary_dataset)
+
+
+def download_from_genomespace_importer(json_parameter_file, root, data_conf, custom_token):
+    with open(json_parameter_file, 'r') as param_file:
+        json_params = json.load(param_file)
+
+    # Add in missing job config properties that could not be set in the exec_before_job hook
+    json_params['job_config']['GALAXY_ROOT_DIR'] = root
+    json_params['job_config']['GALAXY_DATATYPES_CONF_FILE'] = data_conf
+
+    # Extract input_urls and token  (format is input_urls^token). If a custom_token is
+    # provided, use that instead.
+    url_with_token = json_params.get('param_dict', {}).get("URL", "")
+    if custom_token:
+        input_urls = url_with_token.split('^')[0]
+        token = custom_token
+    else:
+        input_urls, token = url_with_token.split('^')
+    input_url_list = input_urls.split(",")
+
+    gs_client = GenomeSpaceClient(token=token)
+
+    for idx, input_url in enumerate(input_url_list):
+        download_single_file(gs_client, input_url, json_params,
+                             primary_dataset=(idx == 0))
+
+
+def process_args(args):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--json_parameter_file', type=str,
+                        help="JSON parameter file", required=True)
+    parser.add_argument('-r', '--galaxy_root', type=str,
+                        help="Galaxy root dir", required=True)
+    parser.add_argument('-c', '--data_conf', type=str,
+                        help="Galaxy data types conf file for mapping file types", required=True)
+    parser.add_argument('-t', '--token', type=str,
+                        help="Optional OpenID/GenomeSpace token if not passed in as part of the URL as URLs^Token."
+                        " If none, the environment variable GS_TOKEN will be respected.", required=False)
+
+    args = parser.parse_args(args[1:])
+    return args
+
+
+def main():
+    args = process_args(sys.argv)
+    download_from_genomespace_importer(args.json_parameter_file, args.galaxy_root, args.data_conf, args.token or os.environ.get("GS_TOKEN"))
+
+
+if __name__ == "__main__":
+    sys.exit(main())

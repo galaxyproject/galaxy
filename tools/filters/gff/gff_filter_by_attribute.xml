@@ -1,4 +1,4 @@
-<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.1.1">
+<tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.2">
   <description>using simple expressions</description>
   <command interpreter="python">
     gff_filter_by_attribute.py $input $out_file1 "$cond" '${input.metadata.attribute_types}'
@@ -22,6 +22,11 @@
         <param name="input" value="gff_filter_attr_in1.gff"/>
         <param name="cond" value="conf_lo==0 or conf_hi>125"/>
         <output name="out_file1" file="gff_filter_by_attribute_out2.gff"/>
+    </test>
+    <test>
+        <param name="input" value="5.gff3" ftype="gff3"/>
+        <param name="cond" value="Note=='Ig-like'"/>
+        <output name="out_file1" file="5_Ig-like.gff"/>
     </test>
   </tests>
 

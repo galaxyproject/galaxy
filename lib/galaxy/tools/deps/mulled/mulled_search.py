@@ -26,6 +26,7 @@ class QuaySearch():
     """
     Tool to search within a quay organization for a given software name.
     """
+
     def __init__(self, organization):
         self.index = None
         self.organization = organization

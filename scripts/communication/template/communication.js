@@ -70,7 +70,7 @@ var events_module = {
             }
             else { // normal message sharing when connected
                 var room = utils.check_room_by_roomname( click_events.connected_room, msg.chatroom );
-                $el_room_msg = $( '#all_messages_' + room.id );
+                var $el_room_msg = $( '#all_messages_' + room.id );
                 utils.append_message( $el_room_msg, utils.build_message( msg ) );
                 utils.vertical_center_align_gravatar( $( '#all_messages_' + room.id + ' .message' ) );
                 utils.fancyscroll_to_last( $( "#galaxy_tabroom_" + room.id ) );
@@ -192,8 +192,8 @@ var click_events = {
     },
     // makes disconnect and raises disconnect event at the server
     make_disconnect: function ( uid, $el_input_text, $el_online_status ) {
-        var send_data = {}
-        disconnected_message = 'You are now disconnected. To send/receive messages, please connect';
+        var send_data = {};
+        var disconnected_message = 'You are now disconnected. To send/receive messages, please connect';
         click_events.is_connected = false;
         socket.emit( 'event disconnect', send_data );
         sessionStorage.removeItem( uid );

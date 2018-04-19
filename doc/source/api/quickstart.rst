@@ -4,9 +4,10 @@ Quickstart
 Log in as your user, navigate to the API Keys page in the User menu, and
 generate a new API key.  Make a note of the API key, and then pull up a
 terminal.  Now we'll use the display.py script in your galaxy/scripts/api
-directory for a short example::
+directory for a short example, which assumes your local galaxy server is
+running on the default port 8080::
 
-        % ./display.py my_key http://localhost:4096/api/histories
+        % ./display.py my_key http://localhost:8080/api/histories
         Collection Members
         ------------------
         #1: /api/histories/8c49be448cfe29bc
@@ -20,7 +21,7 @@ The result is a Collection of the histories of the user specified by the API
 key (you).  To look at the details of a particular history, say #1 above, do
 the following::
 
-        % ./display.py my_key http://localhost:4096/api/histories/8c49be448cfe29bc
+        % ./display.py my_key http://localhost:8080/api/histories/8c49be448cfe29bc
         Member Information
         ------------------
         state_details: {'ok': 1, 'failed_metadata': 0, 'upload': 0, 'discarded': 0, 'running': 0, 'setting_metadata': 0, 'error': 0, 'new': 0, 'queued': 0, 'empty': 0}
@@ -33,7 +34,7 @@ This gives detailed information about the specific member in question, in this
 case the History.  To view history contents, do the following::
 
 
-        % ./display.py my_key http://localhost:4096/api/histories/8c49be448cfe29bc/contents
+        % ./display.py my_key http://localhost:8080/api/histories/8c49be448cfe29bc/contents
         Collection Members
         ------------------
         #1: /api/histories/8c49be448cfe29bc/contents/6f91353f3eb0fa4a
@@ -45,7 +46,7 @@ What we have here is another Collection of items containing all of the datasets
 in this particular history.  Finally, to view details of a particular dataset
 in this collection, execute the following::
 
-        % ./display.py my_key http://localhost:4096/api/histories/8c49be448cfe29bc/contents/6f91353f3eb0fa4a
+        % ./display.py my_key http://localhost:8080/api/histories/8c49be448cfe29bc/contents/6f91353f3eb0fa4a
         Member Information
         ------------------
         misc_blurb: 1 line
@@ -82,27 +83,27 @@ In Galaxy, create an account that matches the address you put in 'admin_users',
 then browse to that user's preferences and generate a new API Key.  Copy the
 key to your clipboard and then use these scripts::
 
-        % ./display.py my_key http://localhost:4096/api/libraries
+        % ./display.py my_key http://localhost:8080/api/libraries
         Collection Members
         ------------------
 
         0 elements in collection
 
-        % ./library_create_library.py my_key http://localhost:4096/api/libraries api_test 'API Test Library'
+        % ./library_create_library.py my_key http://localhost:8080/api/libraries api_test 'API Test Library'
         Response
         --------
         /api/libraries/f3f73e481f432006
           name: api_test
           id: f3f73e481f432006
 
-        % ./display.py my_key http://localhost:4096/api/libraries
+        % ./display.py my_key http://localhost:8080/api/libraries
         Collection Members
         ------------------
         /api/libraries/f3f73e481f432006
           name: api_test
           id: f3f73e481f432006
 
-        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006
+        % ./display.py my_key http://localhost:8080/api/libraries/f3f73e481f432006
         Member Information
         ------------------
         synopsis: None
@@ -110,7 +111,7 @@ key to your clipboard and then use these scripts::
         description: API Test Library
         name: api_test
 
-        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents
+        % ./display.py my_key http://localhost:8080/api/libraries/f3f73e481f432006/contents
         Collection Members
         ------------------
         /api/libraries/f3f73e481f432006/contents/28202595c0d2591f61ddda595d2c3670
@@ -118,14 +119,14 @@ key to your clipboard and then use these scripts::
           type: folder
           id: 28202595c0d2591f61ddda595d2c3670
 
-        % ./library_create_folder.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents 28202595c0d2591f61ddda595d2c3670 api_test_folder1 'API Test Folder 1'
+        % ./library_create_folder.py my_key http://localhost:8080/api/libraries/f3f73e481f432006/contents 28202595c0d2591f61ddda595d2c3670 api_test_folder1 'API Test Folder 1'
         Response
         --------
         /api/libraries/f3f73e481f432006/contents/28202595c0d2591fa4f9089d2303fd89
           name: api_test_folder1
           id: 28202595c0d2591fa4f9089d2303fd89
 
-        % ./library_upload_from_import_dir.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents 28202595c0d2591fa4f9089d2303fd89 bed bed hg19
+        % ./library_upload_from_import_dir.py my_key http://localhost:8080/api/libraries/f3f73e481f432006/contents 28202595c0d2591fa4f9089d2303fd89 bed bed hg19
         Response
         --------
         /api/libraries/f3f73e481f432006/contents/e9ef7fdb2db87d7b
@@ -135,7 +136,7 @@ key to your clipboard and then use these scripts::
           name: 3.bed
           id: 3b7f6a31f80a5018
 
-        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents 
+        % ./display.py my_key http://localhost:8080/api/libraries/f3f73e481f432006/contents 
         Collection Members
         ------------------
         /api/libraries/f3f73e481f432006/contents/28202595c0d2591f61ddda595d2c3670
@@ -155,7 +156,7 @@ key to your clipboard and then use these scripts::
           type: file
           id: 3b7f6a31f80a5018
 
-        % ./display.py my_key http://localhost:4096/api/libraries/f3f73e481f432006/contents/e9ef7fdb2db87d7b
+        % ./display.py my_key http://localhost:8080/api/libraries/f3f73e481f432006/contents/e9ef7fdb2db87d7b
         Member Information
         ------------------
         misc_blurb: 68 regions

@@ -10,7 +10,7 @@ The latest information about Galaxy is available via `https://galaxyproject.org/
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject
     :alt: Chat on irc
-    
+
 .. image:: https://img.shields.io/badge/chat-gitter-blue.svg
     :target: https://gitter.im/galaxyproject/Lobby
     :alt: Chat on gitter
@@ -44,17 +44,17 @@ browser at:
 
 http://localhost:8080
 
+Configuration & Tools
+=====================
+
 You may wish to make changes from the default configuration. This can be
-done in the ``config/galaxy.ini`` file. Tools can be either installed
-from the Tool Shed or added manually. For details please see the Galaxy
-wiki:
+done in the ``config/galaxy.ini`` file.
 
-https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
-
-Not all dependencies are included for the tools provided in the sample
-``tool_conf.xml``. A full list of external dependencies is available at:
-
-https://wiki.galaxyproject.org/Admin/Tools/ToolDependencies
+Tools can be either installed from the Tool Shed or added manually.
+ For details please see the `tutorial <https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/>`__.
+Note that not all dependencies for the tools provided in the
+``tool_conf.xml.sample`` are included. To install them please visit
+"Manage dependencies" in the admin interface.
 
 Issues and Galaxy Development
 =============================
@@ -64,4 +64,4 @@ Please see `CONTRIBUTING.md <CONTRIBUTING.md>`_ .
 Roadmap
 =============================
 
-Interested in the next steps for Galaxy? Take a look here: https://github.com/galaxyproject/galaxy/issues/1928
+Interested in the next steps for Galaxy? Take a look at the `roadmap <https://github.com/galaxyproject/galaxy/projects/8>`__.

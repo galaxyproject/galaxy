@@ -32,7 +32,7 @@ def inherit(context):
     </style>
 </%def>
 
-<%def name="title()">Galaxy :: Logout</%def>
+<%def name="title()">Logout</%def>
 
 <%def name="center_panel()">
     ${self.body()}

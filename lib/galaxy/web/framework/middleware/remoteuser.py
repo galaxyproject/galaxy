@@ -1,10 +1,11 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
-
-import socket
-from galaxy.util import safe_str_cmp
 import logging
+import socket
+
+from galaxy.util import safe_str_cmp
+
 log = logging.getLogger(__name__)
 
 errorpage = """
@@ -39,11 +40,11 @@ errorpage = """
 """
 
 
-class RemoteUser( object ):
+class RemoteUser(object):
 
-    def __init__( self, app, maildomain=None, display_servers=None, admin_users=None,
-                  single_user=None, remote_user_header=None, remote_user_secret_header=None,
-                  normalize_remote_user_email=False ):
+    def __init__(self, app, maildomain=None, display_servers=None, admin_users=None,
+                 single_user=None, remote_user_header=None, remote_user_secret_header=None,
+                 normalize_remote_user_email=False):
         self.app = app
         self.maildomain = maildomain
         self.display_servers = display_servers or []
@@ -53,21 +54,21 @@ class RemoteUser( object ):
         self.config_secret_header = remote_user_secret_header
         self.normalize_remote_user_email = normalize_remote_user_email
 
-    def __call__( self, environ, start_response ):
+    def __call__(self, environ, start_response):
         # Allow display servers
         if self.display_servers and 'REMOTE_ADDR' in environ:
             try:
-                host = socket.gethostbyaddr( environ[ 'REMOTE_ADDR' ] )[0]
-            except( socket.error, socket.herror, socket.gaierror, socket.timeout ):
+                host = socket.gethostbyaddr(environ['REMOTE_ADDR'])[0]
+            except(socket.error, socket.herror, socket.gaierror, socket.timeout):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
-                environ[ self.remote_user_header ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
-                return self.app( environ, start_response )
+                environ[self.remote_user_header] = 'remote_display_server@%s' % (self.maildomain or 'example.org')
+                return self.app(environ, start_response)
 
         if self.single_user:
             assert self.remote_user_header not in environ
-            environ[ self.remote_user_header ] = self.single_user
+            environ[self.remote_user_header] = self.single_user
 
         if environ.get(self.remote_user_header, '').startswith('(null)'):
             # Throw away garbage headers.
@@ -87,8 +88,8 @@ class RemoteUser( object ):
 
         # The API handles its own authentication via keys
         # Check for API key before checking for header
-        if path_info.startswith( '/api/' ):
-            return self.app( environ, start_response )
+        if path_info.startswith('/api/'):
+            return self.app(environ, start_response)
 
         # If the secret header is enabled, we expect upstream to send along some key
         # in HTTP_GX_SECRET, so we'll need to compare that here to the correct value
@@ -115,7 +116,7 @@ class RemoteUser( object ):
                 <code>GX_SECRET</code> header must be set before you may
                 access Galaxy.
                 """
-                return self.error( start_response, title, message )
+                return self.error(start_response, title, message)
             if not safe_str_cmp(environ.get('HTTP_GX_SECRET', ''), self.config_secret_header):
                 title = "Access to Galaxy is denied"
                 message = """
@@ -128,12 +129,12 @@ class RemoteUser( object ):
                 <code>GX_SECRET</code> header must be set before you may
                 access Galaxy.
                 """
-                return self.error( start_response, title, message )
+                return self.error(start_response, title, message)
 
         if environ.get(self.remote_user_header, None):
-            if not environ[ self.remote_user_header ].count( '@' ):
+            if not environ[self.remote_user_header].count('@'):
                 if self.maildomain is not None:
-                    environ[ self.remote_user_header ] += '@' + self.maildomain
+                    environ[self.remote_user_header] += '@' + self.maildomain
                 else:
                     title = "Access to Galaxy is denied"
                     message = """
@@ -146,7 +147,7 @@ class RemoteUser( object ):
                         variable <code>remote_user_maildomain</code> must be set
                         before you may access Galaxy.
                     """
-                    return self.error( start_response, title, message )
+                    return self.error(start_response, title, message)
             user_accessible_paths = (
                 '/users',
                 '/user/api_key',
@@ -180,18 +181,18 @@ class RemoteUser( object ):
                 pass
             elif path_info == '/user' or path_info == '/user/':
                 pass  # We do allow access to the root user preferences page.
-            elif path_info.startswith( '/user' ):
+            elif path_info.startswith('/user'):
                 # Any other endpoint in the user controller is off limits
                 title = "Access to Galaxy user controls is disabled"
                 message = """
                     User controls are disabled when Galaxy is configured
                     for external authentication.
                 """
-                return self.error( start_response, title, message )
-            return self.app( environ, start_response )
+                return self.error(start_response, title, message)
+            return self.app(environ, start_response)
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
-            for k, v in environ.iteritems():
+            for k, v in environ.items():
                 log.debug("%s = %s", k, v)
 
             title = "Access to Galaxy is denied"
@@ -202,8 +203,8 @@ class RemoteUser( object ):
                 generally due to a misconfiguration in the upstream server.</p>
                 <p>Please contact your local Galaxy administrator.
             """
-            return self.error( start_response, title, message )
+            return self.error(start_response, title, message)
 
-    def error( self, start_response, title="Access denied", message="Please contact your local Galaxy administrator." ):
-        start_response( '403 Forbidden', [('Content-type', 'text/html')] )
+    def error(self, start_response, title="Access denied", message="Please contact your local Galaxy administrator."):
+        start_response('403 Forbidden', [('Content-type', 'text/html')])
         return [errorpage % (title, message)]

@@ -22,6 +22,7 @@ TOOL_REGEX = re.compile(r"<tool\s")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
+EXCLUDE_WALK_DIRS = ['.hg', '.git', '.venv']
 
 
 def load_exception_handler(path, exc_info):
@@ -164,9 +165,9 @@ def looks_like_a_tool_xml(path):
 
     if(checkers.check_binary(full_path) or
        checkers.check_image(full_path) or
-       checkers.check_gzip(full_path)[0] or
-       checkers.check_bz2(full_path)[0] or
-       checkers.check_zip(full_path)):
+       checkers.is_gzip(full_path) or
+       checkers.is_bz2(full_path) or
+       checkers.is_zip(full_path)):
         return False
 
     with open(path, "r") as f:
@@ -264,6 +265,8 @@ def _find_files(directory, pattern='*'):
 
     matches = []
     for root, dirnames, filenames in os.walk(directory):
+        # exclude some directories (like .hg) from traversing
+        dirnames[:] = [dir for dir in dirnames if dir not in EXCLUDE_WALK_DIRS]
         for filename in filenames:
             full_path = os.path.join(root, filename)
             if fnmatch.filter([full_path], pattern):

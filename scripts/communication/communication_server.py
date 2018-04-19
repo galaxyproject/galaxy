@@ -19,44 +19,61 @@ This communication server can be controlled on three different levels:
   1. The admin can activate/deactivate the communication server via ./config/galaxy.ini. [off by default]
   2. The user can activate/deactivate it in their own personal-settings via Galaxy user preferences. [off by default]
   3. The user can activate/deactivate communications for a session directly in the communication window. [on by default]
-
 """
 
 import argparse
+import hashlib
+import logging
 import os
 import sys
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
-import hashlib
-
-import logging
-logging.basicConfig()
-log = logging.getLogger(__name__)
-
-from flask import Flask, request, make_response, current_app, send_file
-from flask_socketio import SocketIO, emit, disconnect, join_room, leave_room
-import flask.ext.login as flask_login
-from flask.ext.login import current_user
 from datetime import timedelta
 from functools import update_wrapper
 
-from galaxy.model.orm.scripts import get_config
-from galaxy.model import mapping
-from galaxy.util.properties import load_app_properties
-from galaxy.web.security import SecurityHelper
-from galaxy.util.sanitize_html import sanitize_html
+import flask.ext.login as flask_login
+import six
+from flask import (
+    current_app,
+    Flask,
+    make_response,
+    request,
+    send_file
+)
+from flask.ext.login import current_user
+from flask_socketio import (
+    disconnect,
+    emit,
+    join_room,
+    leave_room,
+    SocketIO
+)
 
-# Get config file and load up SA session
-config = get_config( sys.argv )
-model = mapping.init( '/tmp/', config['db_url'] )
-sa_session = model.context.current
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+
+import galaxy.config
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.script import app_properties_from_args, populate_config_args
+from galaxy.web.security import SecurityHelper
+
+logging.basicConfig()
+log = logging.getLogger(__name__)
+
+parser = argparse.ArgumentParser(description='Real-time communication server for Galaxy.')
+parser.add_argument('--port', type=int, default="7070", help='Port number on which the server should run.')
+parser.add_argument('--host', default='localhost', help='Hostname of the communication server.')
+populate_config_args(parser)
+args = parser.parse_args()
 
 # With the config file we can load the full app properties
-app_properties = load_app_properties(ini_file=config['config_file'])
+app_properties = app_properties_from_args(args)
+
+config = galaxy.config.Configuration(**app_properties)
+model = galaxy.config.init_models_from_config(config)
+sa_session = model.context.current
 
 # We need the ID secret for configuring the security helper to decrypt
 # galaxysession cookies.
 if "id_secret" not in app_properties:
-    log.warn('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
+    log.warning('No ID_SECRET specified. Please set the "id_secret" in your galaxy.ini.')
 
 id_secret = app_properties.get('id_secret', 'dangerous_default')
 
@@ -92,9 +109,9 @@ def crossdomain(origin=None, methods=None, headers=None,
                 automatic_options=True):
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
+    if headers is not None and not isinstance(headers, six.string_types):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
+    if not isinstance(origin, six.string_types):
         origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -129,8 +146,8 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
-script_dir = os.path.dirname(os.path.realpath( __file__))
-communication_directory = os.path.join( script_dir, 'template' )
+script_dir = os.path.dirname(os.path.realpath(__file__))
+communication_directory = os.path.join(script_dir, 'template')
 
 
 @app.route('/')
@@ -204,9 +221,4 @@ def leave(message):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Real-time communication server for Galaxy.')
-    parser.add_argument('--port', type=int, default="7070", help='Port number on which the server should run.')
-    parser.add_argument('--host', default='localhost', help='Hostname of the communication server.')
-
-    args = parser.parse_args()
     socketio.run(app, host=args.host, port=args.port)

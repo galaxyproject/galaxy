@@ -45,6 +45,40 @@ class ContainerPort(namedtuple('ContainerPort', ('port', 'protocol', 'hostaddr',
     """
 
 
+class ContainerVolume(with_metaclass(ABCMeta, object)):
+
+    valid_modes = frozenset(["ro", "rw"])
+
+    def __init__(self, path, host_path=None, mode=None):
+        self.path = path
+        self.host_path = host_path
+        self.mode = mode
+        if mode and not self.mode_is_valid:
+            raise ValueError("Invalid container volume mode: %s" % mode)
+
+    @abstractmethod
+    def from_str(cls, as_str):
+        """Classmethod to convert from this container type's string representation.
+
+        :param  as_str: string representation of volume
+        :type   as_str: str
+        """
+
+    @abstractmethod
+    def __str__(self):
+        """Return this container type's string representation of the volume.
+        """
+
+    @abstractmethod
+    def to_native(self):
+        """Return this container type's native representation of the volume.
+        """
+
+    @property
+    def mode_is_valid(self):
+        return self.mode in self.valid_modes
+
+
 class Container(with_metaclass(ABCMeta, object)):
 
     def __init__(self, interface, id, name=None, **kwargs):
@@ -110,6 +144,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
 
     container_type = None
     container_class = None
+    volume_class = None
     conf_defaults = {
         'name_prefix': 'galaxy_',
     }
@@ -121,7 +156,7 @@ class ContainerInterface(with_metaclass(ABCMeta, object)):
         self._key = key
         self._containers_config_file = containers_config_file
         mro = reversed(self.__class__.__mro__)
-        mro.next()
+        next(mro)
         self._conf = ContainerInterfaceConfig()
         for c in mro:
             self._conf.update(c.conf_defaults)
@@ -266,7 +301,7 @@ class ContainerInterfaceConfig(dict):
         except KeyError:
             raise AttributeError("'%s' object has no attribute '%s'" % (self.__class__.__name__, name))
 
-    def get(self, name, default):
+    def get(self, name, default=None):
         try:
             return self[name]
         except KeyError:
@@ -306,11 +341,11 @@ def parse_containers_config(containers_config_file):
     conf = DEFAULT_CONF.copy()
     try:
         with open(containers_config_file) as fh:
-            c = yaml.load(fh)
+            c = yaml.safe_load(fh)
             conf.update(c.get('containers', {}))
     except (OSError, IOError) as exc:
         if exc.errno == errno.ENOENT:
-            log.warning("config file '%s' does not exist, running with default config", containers_config_file)
+            log.debug("config file '%s' does not exist, running with default config", containers_config_file)
         else:
             raise
     return conf
@@ -320,10 +355,8 @@ def _get_interface_modules():
     interfaces = []
     modules = submodules(sys.modules[__name__])
     for module in modules:
-        classes = filter(
-            lambda x: inspect.isclass(x)
-                      and not x == ContainerInterface           # noqa: E131
-                      and issubclass(x, ContainerInterface),    # noqa: E131
-            [getattr(module, x) for x in dir(module)])
+        module_names = [getattr(module, _) for _ in dir(module)]
+        classes = [_ for _ in module_names if inspect.isclass(_) and
+            not _ == ContainerInterface and issubclass(_, ContainerInterface)]
         interfaces.extend(classes)
-    return dict([(x.container_type, x) for x in interfaces])
+    return dict((x.container_type, x) for x in interfaces)

@@ -1,5 +1,8 @@
-from ConfigParser import ConfigParser
+"""Deprecated - only works with older ini files.
+"""
 from sys import argv
+
+from six.moves.configparser import ConfigParser
 
 REPLACE_PROPERTIES = ["file_path", "database_connection", "new_file_path"]
 MAIN_SECTION = "app:main"

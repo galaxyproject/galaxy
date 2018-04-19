@@ -12,11 +12,20 @@
             echo "#${ "\t".join( [ i for i in $arg_order if i in $args ] ) }" &gt; $out_file1
             &amp;&amp;
         #end if
+
+        ##Handle compressed (fastq) input
+        #if $input1.is_of_type("fastq.gz"):
+            zcat '$input1' |
+        #else if $input1.is_of_type("fastq.bz2"):
+            bzcat '$input1' |
+        #else:
+            cat '$input1' |
+        #end if
         wc
         #for $option in $args:
            -${ word_to_arg[ str(option) ] }
         #end for
-        $input1 | awk '{ print ${ '"\\t"'.join( [ "$%i" % ( i+1 ) for i in range( len( $args ) ) ] ) } }'
+        | awk '{ print ${ '"\\t"'.join( [ "$%i" % ( i+1 ) for i in range( len( $args ) ) ] ) } }'
         &gt;&gt; $out_file1
     </command>
     <inputs>

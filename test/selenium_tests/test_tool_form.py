@@ -1,10 +1,12 @@
+from base.populators import flakey
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+
 from .framework import (
-    SeleniumTestCase,
+    retry_assertion_during_transitions,
     selenium_test,
+    SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
-
-from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
@@ -78,29 +80,62 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # These form entries seem to be replaced/updated occasionally
         # causing stale elements.
         retry_call_during_transitions(check_recorded_val)
-        self.tool_execute()
+        self.tool_form_execute()
 
         self.history_panel_wait_for_hid_ok(2)
         self._check_dataset_details_for_inttest_value(2)
 
     @selenium_test
+    @flakey
     def test_run_data(self):
         test_path = self.get_filename("1.fasta")
         test_path_decoy = self.get_filename("1.txt")
+        # Upload form posts bad data if executed two times in a row like this, so
+        # wait between uploads. xref https://github.com/galaxyproject/galaxy/issues/5169
         self.perform_upload(test_path)
-        self.perform_upload(test_path_decoy)
         self.history_panel_wait_for_hid_ok(1)
+        self.perform_upload(test_path_decoy)
         self.history_panel_wait_for_hid_ok(2)
 
         self.home()
         self.tool_open("head")
         self.tool_set_value("input", "1.fasta", expected_type="data")
-        self.tool_execute()
+
+        self.screenshot("tool_form_simple_data")
+        self.tool_form_execute()
+
         self.history_panel_wait_for_hid_ok(3)
 
         latest_hda = self.latest_history_item()
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on data 1"
+
+    @selenium_test
+    def test_bibtex_rendering(self):
+        self.home()
+        # prefetch citations so they will be available quickly when rendering tool form.
+        citations_api = self.api_get("tools/bibtex/citations")
+        assert len(citations_api) == 29, len(citations_api)
+        self.tool_open("bibtex")
+        self.components.tool_form.citations.wait_for_visible()
+
+        @retry_assertion_during_transitions
+        def assert_citations_visible():
+            references = self.components.tool_form.reference.all()
+            # This should be 29, but bugs I guess?
+            assert len(references) > 0, len(references)
+            return references
+
+        references = assert_citations_visible()
+
+        doi_resolved_citation = references[0]
+        assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
+        self.screenshot("tool_form_citations_formatted")
+
+        self.components.tool_form.show_bibtex.wait_for_and_click()
+        textarea = self.components.tool_form.bibtex_area.wait_for_visible()
+        assert "Galaxy: A platform for interactive" in textarea.get_attribute("value")
+        self.screenshot("tool_form_citations_bibtex")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
         self.hda_click_primary_action_button(hid, "info")
@@ -117,4 +152,4 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         self.tool_open("environment_variables")
         self.tool_set_value("inttest", inttest_value)
-        self.tool_execute()
+        self.tool_form_execute()

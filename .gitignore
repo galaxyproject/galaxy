@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
@@ -17,6 +18,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/test_errors
 database/tmp
 database/*.sqlite
 database/openid_consumer_cache
@@ -73,6 +75,7 @@ config/plugins/interactive_environments/**/*.ini
 !config/plugins
 static/welcome.html.*
 static/welcome.html
+static/client_build_hash.txt
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -118,16 +121,23 @@ test/unit/**.log
 tool-data/shared/jars/
 
 # CSS build artifacts.
-sprite-*.less
+sprite-*.scss
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
+static/maps
+static/plugins
+static/scripts
 node_modules
 bower_components
+client/galaxy/scripts/libs/*
+client/galaxy/style/less/*
 
 # Documentation build files.
 doc/build
 doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/api/api.rst
+doc/source/api/ts_api.rst
 doc/source/dev/schema.rst
 
 # Misc

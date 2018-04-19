@@ -11,7 +11,6 @@ import glob
 import multiprocessing
 import os
 import subprocess
-
 from multiprocessing.pool import IMapIterator
 
 try:
@@ -23,8 +22,8 @@ except ImportError:
 
 def map_wrap(f):
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        return f(*args, **kwargs)
+    def wrapper(args):
+        return f(*args)
     return wrapper
 
 

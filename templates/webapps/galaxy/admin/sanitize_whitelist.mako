@@ -22,7 +22,7 @@
     Note that datasets originating from an archive import are still sanitized
     even when their creating tool is whitelisted since it isn't possible to
     validate the information supplied in the archive.</p></div>
-    <form name="sanitize_whitelist" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
+    <form name="sanitize_whitelist" method="post" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
     <div class="toolForm">
         <div class="toolFormTitle">Tool Sanitization Whitelist</div>
         <div class="toolFormBody">

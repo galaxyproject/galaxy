@@ -10,12 +10,11 @@ import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-
 from ..requirements import ToolRequirement
 
 
 @six.add_metaclass(ABCMeta)
-class DependencyResolver(Dictifiable, object):
+class DependencyResolver(Dictifiable):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
@@ -31,7 +30,7 @@ class DependencyResolver(Dictifiable, object):
     config_options = {}
 
     @abstractmethod
-    def resolve( self, requirement, **kwds ):
+    def resolve(self, requirement, **kwds):
         """Given inputs describing dependency in the abstract yield a Dependency object.
 
         The Dependency object describes various attributes (script, bin,
@@ -44,7 +43,7 @@ class DependencyResolver(Dictifiable, object):
         """
 
 
-class MultipleDependencyResolver:
+class MultipleDependencyResolver(object):
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
@@ -63,7 +62,7 @@ class MultipleDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class ListableDependencyResolver:
+class ListableDependencyResolver(object):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
@@ -79,7 +78,7 @@ class ListableDependencyResolver:
         return ToolRequirement(name=name, type="package", version=version)
 
 
-class MappableDependencyResolver:
+class MappableDependencyResolver(object):
     """Mix this into a ``DependencyResolver`` to allow mapping files.
 
     Mapping files allow adapting generic requirements to specific local implementations.
@@ -97,7 +96,7 @@ class MappableDependencyResolver:
     @staticmethod
     def _mapping_file_to_list(mapping_file):
         with open(mapping_file, "r") as f:
-            raw_mapping = yaml.load(f) or []
+            raw_mapping = yaml.safe_load(f) or []
         return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):
@@ -177,7 +176,7 @@ class RequirementMapping(object):
 
 
 @six.add_metaclass(ABCMeta)
-class SpecificationAwareDependencyResolver:
+class SpecificationAwareDependencyResolver(object):
     """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
 
     Allows adapting generic requirements to more specific URIs - to tailor name
@@ -189,7 +188,7 @@ class SpecificationAwareDependencyResolver:
         """Find closest matching specification for discovered resolver and return new concrete requirement."""
 
 
-class SpecificationPatternDependencyResolver:
+class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolver):
     """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
 
     @abstractproperty
@@ -221,7 +220,7 @@ class SpecificationPatternDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class InstallableDependencyResolver:
+class InstallableDependencyResolver(object):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
@@ -234,18 +233,18 @@ class InstallableDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class Dependency(Dictifiable, object):
+class Dependency(Dictifiable):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
     cacheable = False
 
     @abstractmethod
-    def shell_commands( self, requirement ):
+    def shell_commands(self):
         """
         Return shell commands to enable this dependency.
         """
 
     @abstractproperty
-    def exact( self ):
+    def exact(self):
         """ Return true if version information wasn't discarded to resolve
         the dependency.
         """
@@ -258,7 +257,7 @@ class Dependency(Dictifiable, object):
         return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
 
 
-class NullDependency( Dependency ):
+class NullDependency(Dependency):
     dependency_type = None
     exact = True
 
@@ -273,7 +272,7 @@ class NullDependency( Dependency ):
         """
         return "Dependency %s not found." % self.name
 
-    def shell_commands( self, requirement ):
+    def shell_commands(self):
         return None
 
 

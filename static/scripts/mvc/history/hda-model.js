@@ -1,2 +1,0 @@
-define(["mvc/dataset/dataset-model","mvc/history/history-content-model","mvc/base-mvc","utils/localization"],function(a,b,c){"use strict";var d=a.DatasetAssociation,e=b.HistoryContentMixin,f=d.extend(c.mixin(e,{defaults:_.extend({},d.prototype.defaults,e.defaults,{history_content_type:"dataset",model_class:"HistoryDatasetAssociation"})}));return{HistoryDatasetAssociation:f}});
-//# sourceMappingURL=../../../maps/mvc/history/hda-model.js.map

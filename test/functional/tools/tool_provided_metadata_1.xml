@@ -1,4 +1,5 @@
 <tool id="tool_provided_metadata_1" name="tool_provided_metadata_1">
+    <!-- Demonstrate setting simple dataset metadata for output datasets via galaxy.json for legacy tools (galaxy.json structure changes for profile >= 17.09 tools). -->
     <command>
       echo "This is a line of text." > $out1;
       cp $c1 galaxy.json;

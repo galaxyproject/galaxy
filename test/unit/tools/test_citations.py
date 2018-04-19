@@ -31,14 +31,14 @@ def test_parse_citation():
 
 def test_citation_collection():
     citation_collection = CitationCollection()
-    assert len( citation_collection ) == 0
+    assert len(citation_collection) == 0
     cite1 = QuickBibtexCitation("@article{'test1'}")
     cite1dup = QuickBibtexCitation("@article{'test1'}")
     cite2 = QuickBibtexCitation("@article{'test2'}")
     assert citation_collection.add(cite1)
     assert not citation_collection.add(cite1dup)
     assert citation_collection.add(cite2)
-    assert len( citation_collection ) == 2
+    assert len(citation_collection) == 2
 
 
 @contextmanager
@@ -50,7 +50,7 @@ def temp_directory():
         rmtree(base_path)
 
 
-class QuickBibtexCitation( BibtexCitation ):
+class QuickBibtexCitation(BibtexCitation):
 
-    def __init__( self, raw_bibtex ):
-        self._set_raw_bibtex( raw_bibtex )
+    def __init__(self, raw_bibtex):
+        self._set_raw_bibtex(raw_bibtex)

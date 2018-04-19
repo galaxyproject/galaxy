@@ -12,11 +12,12 @@ from galaxy.model.orm.scripts import get_config
 
 
 def invoke_migrate_main():
-    config = get_config( sys.argv )
+    # Migrate has its own args, so cannot use argparse
+    config = get_config(sys.argv, use_argparse=False)
     db_url = config['db_url']
     repo = config['repo']
 
-    main( repository=repo, url=db_url )
+    main(repository=repo, url=db_url)
 
 
 if __name__ == "__main__":

@@ -52,6 +52,11 @@
 </%def>
 
 <%def name="javascripts()">
+    <script>
+        window.Galaxy = window.Galaxy || {};
+        window.Galaxy.root = '${h.url_for( "/" )}';
+        window.jQuery = window.jquery = window.$;
+    </script>
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}
@@ -67,7 +72,7 @@
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
-        'libs/jquery/jquery-ui',
+        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
@@ -75,7 +80,9 @@
     <script type="text/javascript">
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        define( 'jquery', [], function(){ return jQuery; })
+        window.jQuery = window.jquery = window.$;
+        define( 'jquery', [], function(){ return window.$; })
+
         require.config({
             baseUrl: "${h.url_for('/static/scripts')}",
             // cache buster based on templated server (re)start time
@@ -103,7 +110,12 @@
 
         // extra configuration global
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
+        window.galaxy_config = galaxy_config;
     </script>
+
+    ${h.js(
+        'libs/jquery/jquery-ui'
+    )}
 
 </%def>
 
@@ -112,12 +124,10 @@
         // load any app configured
         define( 'app', function(){
             var jscript = galaxy_config.app.jscript;
-            if( jscript ){
-                require([ jscript ], function( js_lib ){
-                    $( function(){
-                        // load galaxy module application
-                        var module = new js_lib.GalaxyApp();
-                    });
+            if( galaxy_config.app.jscript && window.bundleEntries[galaxy_config.app.jscript]){
+                $( function(){
+                    // load galaxy module application
+                    window.bundleEntries[galaxy_config.app.jscript]();
                 });
             } else {
                 console.error("'galaxy_config.app.jscript' missing.");
@@ -137,14 +147,14 @@
         ## configure left panel
         %if self.galaxy_config['left_panel']:
             var lp = new panels.LeftPanel({ el: '#left' });
-            force_left_panel = function( x ) { lp.force_panel( x ) };
+            window.force_left_panel = function( x ) { lp.force_panel( x ) };
         %endif
 
         ## configure right panel
         %if self.galaxy_config['right_panel']:
             var rp = new panels.RightPanel({ el: '#right' });
             window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-            force_right_panel = function( x ) { rp.force_panel( x ) };
+            window.force_right_panel = function( x ) { rp.force_panel( x ) };
         %endif
     </script>
 </%def>
@@ -159,9 +169,13 @@
         <meta http-equiv="x-ua-compatible" content="ie=edge,chrome=1">
 
         <title>
-        %if self.galaxy_config['title']:
-            ${self.galaxy_config['title']}
-        %endif
+            Galaxy
+            %if app.config.brand:
+            | ${app.config.brand}
+            %endif
+            %if self.galaxy_config['title']:
+            | ${self.galaxy_config['title']}
+            %endif
         </title>
 
         ${self.stylesheets()}
@@ -195,8 +209,8 @@
                     </div>
                     <div class="unified-panel-body" style="overflow: auto;"></div>
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
+                        <div id="left-panel-collapse" class="panel-collapse right"></span></div>
+                        <div id="left-panel-drag" class="drag"></div>
                     </div>
                 </div>
             %endif
@@ -223,8 +237,8 @@
                     </div>
                     <div class="unified-panel-body" style="overflow: auto;"></div>
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
+                        <div id="right-panel-collapse" class="panel-collapse right"></span></div>
+                        <div id="right-panel-drag"  class="drag"></div>
                     </div>
                 </div>
             %endif
