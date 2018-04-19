@@ -1,9 +1,9 @@
 <template>
     <state-div v-if="state == 'build'">
-        <!-- Different instructions if building up from individual datasets vs. 
+        <!-- Different instructions if building up from individual datasets vs.
              initial data import. -->
         <div class="header flex-row no-flex" v-if="ruleView == 'source'">
-            The is an advanced setting, below is a raw JSON description of the rules to apply to the tabular data used. The alternative graphical editor is recommended for most usages.
+            Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
         </div>
         <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets'">
             Use this form to describe rules for building a collection from the specified datasets.
@@ -182,7 +182,7 @@
                                  v-for="map in mapping"
                                  v-bind:index="map.index"
                                  v-bind:key="map.type">
-                                <column-selector 
+                                <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
                                     :target.sync="map.columns"
@@ -195,7 +195,7 @@
                                 </column-selector>
                             </div>
                             <div class="buttons btn-group float-right rule-edit-buttons">
-                                <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
+                                <button type="button" class="dropdown-toggle btn btn-default mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -280,8 +280,8 @@
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
                                   </div>
-                                </div> 
-                            </div>                               
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -300,11 +300,14 @@
         </div>
         <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
             <option-buttons-div>
+                <button @click="attemptRulePreview" class="btn btn-secondary rule-btn-cancel">
+                    {{ l("Cancel") }}
+                </button>
                 <button @click="resetSource" class="creator-reset-btn btn rule-btn-reset">
                     {{ l("Reset") }}
                 </button>
                <button @click="attemptRulePreview" class="btn btn-secondary rule-btn-okay">
-                    {{ l("Okay")}}
+                    {{ l("Apply")}}
                 </button>
             </option-buttons-div>
         </div>
@@ -341,7 +344,7 @@
             </div>
             <option-buttons-div>
                 <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
-                    {{ l("Re-orient") }}
+                    {{ l("Reorient") }}
                 </button>
                 <button @click="cancel" class="creator-cancel-btn btn rule-btn-cancel" tabindex="-1">
                     {{ l("Cancel") }}
@@ -430,16 +433,16 @@ const Select2 = {
 const ColumnSelector = {
     template: `
         <div class="rule-column-selector" v-if="!multiple || !ordered">
-            <label>
-                {{ label }}
-                <select2 :value="target" @input="handleInput" :multiple="multiple">
+            <label class="d-flex justify-content-end align-items-center">
+                <span class="mr-1">{{ label }}</span>
+                <div class="mr-1"><select2 :value="target" @input="handleInput" :multiple="multiple">
                     <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
-                </select2>
+                </select2></div>
                 <slot></slot>
             </label>
         </div>
         <div class="rule-column-selector" v-else>
-            {{ label }}
+            <span class="mr-1">{{ label }}</span>
             <slot></slot>
             <ol>
                 <li v-for="(targetEl, index) in target"
@@ -1666,5 +1669,8 @@ export default {
     flex: 3;
     display: flex;
     flex-direction: row-reverse;
+}
+.fa-edit, .fa-times, .fa-wrench{
+    cursor: pointer;
 }
 </style>
