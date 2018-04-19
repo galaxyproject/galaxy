@@ -1,11 +1,16 @@
-<tool id="sort1" name="Sort" version="1.0.3">
+<tool id="sort1" name="Sort" version="1.1.0">
     <description>data in ascending or descending order</description>
-    <command interpreter="python">
-        sorter.py
-        
-        --input=${input}
-        --output=${out_file1}
-        
+    <requirements>
+        <requirement type="package" version="2.7.13">python</requirement>
+        <requirement type="package" version="2.14">grep</requirement>
+        <requirement type="package" version="4.4">sed</requirement>
+    </requirements>
+    <command detect_errors="aggressive">
+        python '$__tool_directory__/sorter.py'
+
+        --input='$input'
+        --output='$out_file1'
+
         #if (str($style) == 'num'):
             #set $style = 'n'
         #elif (str($style) == 'gennum'):
@@ -15,13 +20,13 @@
         #end if
 
         #set $order = '' if (str($order) == 'ASC') else 'r'
-        
+
         --key=${column},${column}${style}${order}
-        
-        
+
+
         #for $col in $column_set:
             #set $other_column = str($col.other_column)
-            
+
             #if (str($col.other_style) == 'num'):
                 #set $other_style = 'n'
             #elif (str($col.other_style) == 'gennum'):
@@ -29,10 +34,11 @@
             #else:
                 #set $other_style = ''
             #end if
-            
+
             #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
             --key=${other_column},${other_column}${other_style}${other_order}
         #end for
+        --header $header_lines
     </command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
@@ -58,44 +64,57 @@
                 <option value="ASC">Ascending order</option>
             </param>
         </repeat>
+        <param name="header_lines" type="integer" value="0" label="Number of header lines to skip" help="# characters are already considered as comments and kept"/>
     </inputs>
     <outputs>
-        <data format="input" name="out_file1" metadata_source="input"/>
+        <data format_source="input" name="out_file1" metadata_source="input"/>
     </outputs>
     <tests>
         <test>
-            <param name="input" value="sort_in1.bed"/>
+            <param name="input" value="1.bed"/>
             <param name="column" value="1"/>
             <param name="style" value="alpha"/>
             <param name="order" value="ASC"/>
-            <param name="other_column" value="3"/>
-            <param name="other_style" value="num"/>
-            <param name="other_order" value="DESC"/>
+            <repeat name="column_set">
+                <param name="other_column" value="3"/>
+                <param name="other_style" value="num"/>
+                <param name="other_order" value="DESC"/>
+            </repeat>
             <output name="out_file1" file="sort_out1.bed"/>
         </test>
         <test>
-            <param name="input" value="sort_in1.bed"/>
-            <param name="column" value="1"/>
-            <param name="style" value="alpha"/>
-            <param name="order" value="ASC"/>
-            <param name="other_column" value="3"/>
-            <param name="other_style" value="num"/>
-            <param name="other_order" value="ASC"/>
+            <param name="input" value="1.bed"/>
+            <param name="column" value="3"/>
+            <param name="style" value="num"/>
+            <param name="order" value="DESC"/>
+            <repeat name="column_set">
+                <param name="other_column" value="1"/>
+                <param name="other_style" value="alpha"/>
+                <param name="other_order" value="ASC"/>
+            </repeat>
             <output name="out_file1" file="sort_out2.bed"/>
         </test>
         <test>
-            <param name="input" value="sort_in2.bed"/>
-            <param name="column" value="5"/>
+            <param name="input" value="a.tab"/>
+            <param name="column" value="9"/>
             <param name="style" value="gennum"/>
             <param name="order" value="ASC"/>
-            <output name="out_file1" file="sort_out3.bed"/>
+            <output name="out_file1" file="sort_out3.tab"/>
+        </test>
+        <test>
+            <param name="input" value="sam_with_header.sam"/>
+            <param name="column" value="1"/>
+            <param name="style" value="alpha"/>
+            <param name="order" value="DESC"/>
+            <param name="header_lines" value="2"/>
+            <output name="out_file1" file="sort_out4.sam"/>
         </test>
     </tests>
     <help>
 .. class:: infomark
-        
+
 **TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
-        
+
 -----
 
 **Syntax**
@@ -105,7 +124,7 @@ This tool sorts the dataset on any number of columns in either ascending or desc
 * **Numerical sort** orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.
 * **General numeric sort** orders numbers by their general numerical value. Unlike the numerical sort option, it can handle numbers in scientific notation too.
 * **Alphabetical sort** is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
-        
+
 -----
 
 **Examples**
@@ -185,4 +204,5 @@ on column 5 (general numeric) in ascending order will yield::
     chr15  700  800  feature6  1.1e4    +
 
     </help>
+    <citations></citations>
 </tool>
