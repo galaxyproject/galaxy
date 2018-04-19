@@ -89,3 +89,16 @@ adjust as needed for how many error reports you see) in conjunction with any
 other data you're already tracking in InfluxDB/Grafana. This setup allows
 answering questions such as "did the change I make decrease the number of tool
 failures on average"
+
+GitHub
+------
+
+This plugin submits user bug reports to a GitHub repository of your choice. It
+uses the HTML formatter from the email bug reporter.
+
+Before submitting a bug report, the plugin will search for any open issues with
+a matching title. If there are no matching issues, it opens a new issue,
+otherwise, it makes a comment on the existing issue. This provides some measure
+of de-duplication.
+
+Issues will be tagged with the tool + version
