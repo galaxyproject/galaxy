@@ -136,9 +136,11 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             isCurrentHistory: this.currentHistory
         });
         return $(`
-            <div class="panel-controls no-gutters clear row justify-content-between mb-1">
-                ${this.controlsLeftTemplate({ history: data, view: this })}
-                ${this.controlsRightTemplate({ history: data, view: this })}
+            <div class="panel-controls mb-1">
+                <div class="flex-row flex-column-container no-gutters justify-content-between">
+                    ${this.controlsLeftTemplate({ history: data, view: this })}
+                    ${this.controlsRightTemplate({ history: data, view: this })}
+                </div>
             </div>
             <div class="inner flex-row flex-column-container">
                 <div id="history-${data.id}" class="history-column history-panel flex-column"></div>
