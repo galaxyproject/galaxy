@@ -34,7 +34,7 @@ class NoQuotaAgent(object):
             usage = user.total_disk_usage
         return usage
 
-     def get_deleted_usage(self, trans=None, user=False, history=False):
+    def get_deleted_usage(self, trans=None, user=False, history=False):
         if trans:
             user = trans.user
             history = trans.history
