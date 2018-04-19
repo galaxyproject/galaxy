@@ -10,7 +10,6 @@ var commonLibs = [
     // jquery et al
     "jquery",
     "libs/jquery/jquery.migrate",
-    // jquery plugins
     "libs/jquery/jquery.autocomplete",
     "libs/jquery/jquery.event.hover",
     "libs/jquery/jquery.event.drag",
@@ -23,8 +22,8 @@ var commonLibs = [
     "libs/jquery/jstorage",
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
-    "libs/bootstrap",
-    "libs/bootstrap-tour",
+    "bootstrap",
+    "bootstrap-tour",
     "vue",
     // mvc
     "libs/underscore",

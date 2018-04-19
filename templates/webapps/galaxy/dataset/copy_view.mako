@@ -78,8 +78,8 @@
                     %if not has_source_contents:
                         <div class="form-row">
                             <div class="btn-group">
-                                <span class="select-all btn btn-default" name="source-content-all" id="source-content-all">All</span>
-                                <span class="deselect-all btn btn-default" name="source-content-none" id="source-content-none">None</span>
+                                <span class="select-all btn btn-secondary" name="source-content-all" id="source-content-all">All</span>
+                                <span class="deselect-all btn btn-secondary" name="source-content-none" id="source-content-none">None</span>
                             </div>
                         </div>
                     %endif

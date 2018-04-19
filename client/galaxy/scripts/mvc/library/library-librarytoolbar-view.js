@@ -48,7 +48,7 @@ var LibraryToolbarView = Backbone.View.extend({
     renderPaginator: function(options) {
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
-        this.$el.find("#library_paginator").html(
+        this.$el.find(".library-paginator").html(
             paginator_template({
                 show_page: parseInt(this.options.show_page),
                 page_count: parseInt(this.options.page_count),
@@ -196,46 +196,29 @@ var LibraryToolbarView = Backbone.View.extend({
         return _.template(
             [
                 '<div class="library_style_container">',
-                '<div id="toolbar_form">',
-                '<div id="library_toolbar">',
-                '<form class="form-inline" role="form">',
-                '<span><strong><a href="#" title="Go to first page">DATA LIBRARIES</a></strong></span>',
-                '<span id="library_paginator" class="library-paginator">',
-                // paginator will append here
-                "</span>",
-                '<div class="form-group toolbar-item">',
-                '<input type="text" class="form-control library-search-input" placeholder="Search" size="30">',
+                '<div class="d-flex align-items-center mb-2">',
+                '<a class="mr-1" href="#" data-toggle="tooltip" data-placement="top" title="Go to first page">DATA LIBRARIES</a>',
+                '<div class="d-flex align-items-center library-paginator mr-1" />', // paginator will append here
+                '<form class="form-inline mr-1">',
+                '<input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">',
+                "<% if(admin_user === true) { %>", // only admins
+                '<div class="form-check mr-1">',
+                '<input class="form-check-input" id="include_deleted_chk" type="checkbox">',
+                '<label class="form-check-label" for="include_deleted_chk">include deleted</label>',
                 "</div>",
-                // only admins see the following
-                "<% if(admin_user === true) { %>",
-                '<div class="checkbox toolbar-item" style="height: 20px;">',
-                "<label>",
-                '<input id="include_deleted_chk" type="checkbox">',
-                "include deleted ",
-                "</input>",
-                "</label>",
-                "<label>",
-                '<input id="exclude_restricted_chk" type="checkbox">',
-                "exclude restricted",
-                "</input>",
-                "</label>",
+                '<div class="form-check mr-1">',
+                '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
+                '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
                 "</div>",
-                '<span class="toolbar-item" data-toggle="tooltip" data-placement="top" title="Create New Library">',
-                '<button id="create_new_library_btn" class="primary-button btn-xs" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                "</span>",
-                "<% } %>",
-                '<span class="help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
-                '<a href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
-                '<button class="primary-button" type="button"><span class="fa fa-question-circle"></span> Help</button>',
-                "</a>",
-                "</span>",
+                '<button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="btn btn-secondary" type="button"><span class="fa fa-plus"></span> New Library</button>',
+                "<% } %>", // end admins
                 "</form>",
-                "</div>",
-                "</div>",
-                '<div id="libraries_element">',
-                // table with libraries will append here
-                "</div>",
-                "</div>"
+                '<a class="library-help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
+                '<button class="btn btn-secondary" type="button"><span class="fa fa-question-circle"></span> Help</button>',
+                "</a>",
+                "</div>", // end flex
+                '<div id="libraries_element" />', // table with libraries will append here
+                "</div>" // end library_style_container
             ].join("")
         );
     },
@@ -243,34 +226,34 @@ var LibraryToolbarView = Backbone.View.extend({
     templatePaginator: function() {
         return _.template(
             [
-                '<ul class="pagination pagination-sm">',
+                '<ul class="pagination mr-1">',
                 "<% if ( ( show_page - 1 ) > 0 ) { %>",
                 "<% if ( ( show_page - 1 ) > page_count ) { %>", // we are on higher page than total page count
-                '<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } else { %>",
-                '<li><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li><a href="#page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item"><a class="page-link" href="#page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } %>",
                 "<% } else { %>", // we are on the first page
-                '<li class="disabled"><a href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="disabled"><a href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } %>",
-                '<li class="active">',
-                '<a href="#page/<% print( show_page ) %>"><% print( show_page ) %></a>',
+                '<li class="page-item active">',
+                '<a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page ) %></a>',
                 "</li>",
                 "<% if ( ( show_page ) < page_count ) { %>",
-                '<li><a href="#page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
+                '<li class="page-item"><a class="page-link" href="#page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } else { %>",
-                '<li class="disabled"><a href="#page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li class="disabled"><a href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } %>",
                 "</ul>",
-                "<span>",
+                '<span class="mr-1">',
                 ' <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- library_page_size %> per page" class="page_size_prompt">(change)</a>',
                 "</span>",
-                "<span>",
+                '<span class="mr-1">',
                 " <%- total_libraries_count %> total",
                 "</span>"
             ].join("")

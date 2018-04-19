@@ -17,7 +17,9 @@ fi
 mkdir -p "$GALAXY_TEST_ERRORS_DIRECTORY"
 mkdir -p "$GALAXY_TEST_SCREENSHOTS_DIRECTORY"
 
-docker run -v `pwd`:`pwd`:rw -w `pwd` -u $UID $GALAXY_TEST_CLIENT_BUILD_IMAGE /bin/bash -c 'make client-production-maps'
+# /etc/passwd hack needed as long as make client requires git.
+# https://github.com/galaxyproject/galaxy/issues/5912
+docker run -v /etc/passwd:/etc/passwd -v `pwd`:`pwd`:rw -w `pwd` -u $UID $GALAXY_TEST_CLIENT_BUILD_IMAGE /bin/bash -c 'make client-production-maps'
 
 # Start Selenium server in the test Docker container.
 DOCKER_RUN_EXTRA_ARGS="-e USE_SELENIUM=1 -e GALAXY_TEST_SELENIUM_RETRIES=${GALAXY_TEST_SELENIUM_RETRIES} -e GALAXY_TEST_ERRORS_DIRECTORY=${GALAXY_TEST_ERRORS_DIRECTORY} -e GALAXY_TEST_SCREENSHOTS_DIRECTORY=${GALAXY_TEST_SCREENSHOTS_DIRECTORY} ${DOCKER_RUN_EXTRA_ARGS}"

@@ -1,4 +1,3 @@
-/* global define */
 import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
@@ -7,6 +6,9 @@ import Drilldown from "mvc/ui/ui-drilldown";
 import Slider from "mvc/ui/ui-slider";
 import Thumbnails from "mvc/ui/ui-thumbnails";
 import Tabs from "mvc/ui/ui-tabs";
+
+/* global QUnit */
+/* global $ */
 
 QUnit.module("Ui test", {
     beforeEach: function() {
@@ -27,15 +29,11 @@ QUnit.test("tabs", function(assert) {
     var _test = function() {
         self.clock.tick(window.WAIT_FADE);
         collection.each(function(model, index) {
-            var $tab_element = tabs.$("#tab-" + model.id);
+            var $tab_element = tabs.$("#tab-" + model.id + " .nav-link");
             var $tab_content = tabs.$("#" + model.id);
             var is_current = model.id == tabs.model.get("current");
             assert.ok($tab_content.hasClass("active") == is_current, "Active state of content.");
             assert.ok($tab_element.hasClass("active") == is_current, "Active state of element.");
-            assert.ok(
-                $tab_element.css("display") == (model.get("hidden") ? "none" : "list-item"),
-                "Element visibility."
-            );
         });
     };
     $("body").prepend(tabs.$el);
@@ -91,7 +89,6 @@ QUnit.test("thumbnails", function(assert) {
             }
         ]
     });
-    var model = thumb.model;
     $("body").prepend(thumb.$el);
     _test({
         index: 0,
@@ -244,7 +241,7 @@ QUnit.test("options", function(assert) {
                 "All button in correct state: " + options.all_icon
             );
         assert.ok(
-            obj.$menu.find(".ui-button-check").length === (Boolean(options.all_icon) ? 1 : 0),
+            obj.$menu.find(".ui-button-check").length === (options.all_icon ? 1 : 0),
             "All button available: " + Boolean(options.all_active)
         );
     }
@@ -942,7 +939,7 @@ QUnit.test("select-content", function(assert) {
     $("body").prepend(select.$el);
     var _testEmptySelect = function(tag, txt_extension, txt_label) {
         var field = select.fields[tag == "first" ? 0 : select.fields.length - 1];
-        var $select = select.$(".ui-select:" + tag);
+        select.$(".ui-select:" + tag);
         assert.ok(field.data[0].value == "__null__", tag + " option has correct empty value.");
         assert.ok(
             field.data[0].label == "No " + txt_extension + txt_label + " available.",

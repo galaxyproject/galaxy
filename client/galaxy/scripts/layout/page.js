@@ -22,6 +22,11 @@ var View = Backbone.View.extend({
 
         // attach global objects, build mastheads
         Galaxy.modal = this.modal = new Modal.View();
+        Galaxy.router = this.router = options.Router && new options.Router(self, options);
+        this.masthead = new Masthead.View(this.config);
+        this.center = new Panel.CenterPanel();
+
+        // display helper
         Galaxy.display = this.display = view => {
             if (view.title) {
                 Utils.setWindowTitle(view.title);
@@ -31,13 +36,10 @@ var View = Backbone.View.extend({
                 view.allow_title_display = true;
             }
             if (view.active_tab) {
-                Utils.setActiveTab(view.active_tab);
+                self.masthead.highlight(view.active_tab);
             }
             self.center.display(view);
         };
-        Galaxy.router = this.router = options.Router && new options.Router(self, options);
-        this.masthead = new Masthead.View(this.config);
-        this.center = new Panel.CenterPanel();
 
         // build page template
         this.$el.attr("scroll", "no");

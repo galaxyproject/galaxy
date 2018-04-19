@@ -2,11 +2,11 @@
     <div class="toolForm">
         <div class="toolFormTitle">
             Citations
-            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-xs citations-to-bibtex" title="Show all in BibTeX format.">
+            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-sm btn-secondary citations-to-bibtex" title="Show all in BibTeX format.">
                 <i class="fa fa-pencil-square-o"></i>
                 Show BibTeX
             </button>
-            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-xs citations-to-formatted" title="Return to formatted citation list.">
+            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-sm btn-secondary citations-to-formatted" title="Return to formatted citation list.">
                 <i class="fa fa-times"></i>
                 Hide BibTeX
             </button>

@@ -383,14 +383,17 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
     return value
 
 
-def pretty_print_time_interval(time=False, precise=False):
+def pretty_print_time_interval(time=False, precise=False, utc=False):
     """
     Get a datetime object or a int() Epoch timestamp and return a
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
     'just now', etc
     credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
     """
-    now = datetime.now()
+    if utc:
+        now = datetime.utcnow()
+    else:
+        now = datetime.now()
     if type(time) is int:
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):

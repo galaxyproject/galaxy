@@ -17,7 +17,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         table_elements = self.workflow_index_table_elements()
         assert len(table_elements) == 1
 
-        new_workflow = table_elements[0].find_element_by_css_selector(".menubutton")
+        new_workflow = table_elements[0].find_element_by_css_selector("a.btn.btn-secondary")
         assert 'TestWorkflow1 (imported from uploaded file)' in new_workflow.text, new_workflow.text
 
     @selenium_test

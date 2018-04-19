@@ -62,8 +62,8 @@ model.User.table = Table(
     Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
-    Column("disk_usage", Numeric(15, 0), index=True),
-    Column("deleted_disk_usage", DECIMAL(asdecimal=False), default=0.0, index=True),
+    Column("disk_usage", DECIMAL(asdecimal=False), index=True),
+    Column("deleted_disk_usage", DECIMAL(asdecimal=False), index=True),
     Column("active", Boolean, index=True, default=True, nullable=False),
     Column("activation_token", TrimmedString(64), nullable=True, index=True))
 
@@ -220,8 +220,8 @@ model.Dataset.table = Table(
     Column("object_store_id", TrimmedString(255), index=True),
     Column("external_filename", TEXT),
     Column("_extra_files_path", TEXT),
-    Column('file_size', Numeric(15, 0)),
-    Column('total_size', Numeric(15, 0)),
+    Column('file_size', DECIMAL(asdecimal=False)),
+    Column('total_size', DECIMAL(asdecimal=False)),
     Column('uuid', UUIDType()))
 
 # hda read access permission given by a user to a specific site (gen. for external display applications)
@@ -846,7 +846,7 @@ model.GalaxySession.table = Table(
     Column("is_valid", Boolean, default=False),
     # saves a reference to the previous session so we have a way to chain them together
     Column("prev_session_id", Integer),
-    Column("disk_usage", Numeric(15, 0), index=True),
+    Column("disk_usage", DECIMAL(asdecimal=False), index=True),
     Column("last_action", DateTime))
 
 model.GalaxySessionToHistoryAssociation.table = Table(
