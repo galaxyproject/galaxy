@@ -1,7 +1,12 @@
 /**
  * Popover wrapper
  */
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Utils from "utils/utils";
+
+/* global $ */
+
 var View = Backbone.View.extend({
     optionsDefault: {
         with_close: true,
@@ -21,18 +26,23 @@ var View = Backbone.View.extend({
         this.$body = this.$(".popover-content");
 
         // add initial content
-        this.options.body && this.append(this.options.body);
+        if (this.options.body) {
+            this.append(this.options.body);
+        }
 
         // add event to hide if click is outside of popup and not on container
         var self = this;
         $("body").on(`mousedown.${this.uid}`, e => {
             // the 'is' for buttons that trigger popups
             // the 'has' for icons within a button that triggers a popup
-            self.visible &&
+            if (
+                self.visible &&
                 !$(self.options.container).is(e.target) &&
                 !$(self.el).is(e.target) &&
-                $(self.el).has(e.target).length === 0 &&
+                $(self.el).has(e.target).length === 0
+            ) {
                 self.hide();
+            }
         });
     },
 
@@ -43,7 +53,7 @@ var View = Backbone.View.extend({
         this.$title.html(this.options.title);
         this.$el
             .removeClass()
-            .addClass("ui-popover popover fade in")
+            .addClass("ui-popover popover in")
             .addClass(this.options.placement);
         this.$el.css(this._get_placement(this.options.placement));
 

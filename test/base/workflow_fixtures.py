@@ -53,6 +53,46 @@ steps:
     state:
       f1:
         $link: split_up#paired_output
+test_data:
+  text_input: |
+    a
+    b
+    c
+    d
+"""
+
+
+WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION = """
+class: GalaxyWorkflow
+steps:
+  - label: text_input1
+    type: input
+  - label: text_input2
+    type: input
+  - label: cat_inputs
+    tool_id: cat1
+    state:
+      input1:
+        $link: text_input1
+      queries:
+        - input2:
+            $link: text_input2
+  - label: split_up
+    tool_id: collection_split_on_column
+    state:
+      input1:
+        $link: cat_inputs#out_file1
+  - tool_id: cat_list
+    state:
+      input1:
+        $link: split_up#split_output
+test_data:
+  text_input1: |
+    samp1\t10.0
+    samp2\t20.0
+  text_input2: |
+    samp1\t30.0
+    samp2\t40.0
 """
 
 

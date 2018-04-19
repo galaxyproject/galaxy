@@ -1,0 +1,222 @@
+// Everything is derived from $base-color
+// Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
+
+// Base color -- Based on the Galaxy masthead color
+$base-color-1: #2c3143;
+$base-color-2: lighten($base-color-1, 25%);
+$base-color-3: lighten($base-color-1, 50%);
+
+// DB: complement-colors 1, 2 currently unused
+//$complement-color-1: spin($base-color-1, 180);
+//$complement-color-2: spin($base-color-2, 180);
+$complement-color-3: spin($base-color-3, 180);
+
+$base-color: $base-color-2;
+
+// Default border bolor, this is between gray-light and gray-lighter -- classic Galaxy border color
+$border-default-color: lighten(black, 75%);
+
+// When making borders for components with other colors, how much to darken
+$border-darken-percent: 40%;
+
+$panel-bg-color: #dfe5f9;
+
+// Derived variables used below
+
+@function luma($color) {
+    $r: red($color) / 255;
+    $g: green($color) / 255;
+    $b: blue($color) / 255;
+
+    // Taken from https://github.com/less/less.js/blob/master/lib/less/tree/color.js#L54
+    // This replicates the color values originally dervied with less and boostrap 2.
+    @return (0.2126 * $r + 0.7152 * $g + 0.0722 * $b) * 100;
+}
+
+$sat: saturation($base-color);
+$luma: luma($base-color);
+// DB: tone is unused
+//$tone: desaturate($base-color, 100%);
+
+// Grays
+
+// These are from Boostrap 2/3 but are used in Galaxy styles
+$gray-darker: lighten(black, 13.5%); // #222
+$gray-dark: lighten(black, 20%); // #333
+$gray: lighten(black, 33.5%); // #555
+$gray-light: lighten(black, 60%); // #999
+$gray-lighter: lighten(black, 93.5%); // #eee
+
+// ... and these come from Bootstrap 4 _variables.scss
+// FIXME: reconcile the grays 👽
+$white: #fff !default;
+$gray-100: #f8f9fa !default;
+$gray-200: #e9ecef !default;
+$gray-300: #dee2e6 !default;
+$gray-400: #ced4da !default;
+$gray-500: #adb5bd !default;
+$gray-600: #868e96 !default;
+$gray-700: #495057 !default;
+$gray-800: #343a40 !default;
+$gray-900: #212529 !default;
+$black: #000 !default;
+
+// Brand colors
+// -------------------------
+
+// Galaxy color history: when first moving to bootstrap, we derived a set of
+// colors for Galaxy by starting with the Galaxy masthead color (see
+// $base-color above), and mixing it with the boostrap default colors. The
+// default colors, and their variable names, have all since changed through
+// bootstrap 3 and bootstrap 4. We've saved those colors so we can replicate
+// our current color scheme.
+
+// These are the Galaxy primary colors original derived by mixing the Galaxy
+// $base-color with Bootstrap 2 and 3 colors. These are now hardcoded as the
+// derivations get increasingly complicated with each release. See the history
+// of this file and `base.less` for details.
+$galaxy-bs3-primary: #25537b;
+$galaxy-bs3-success: #3a873a;
+$galaxy-bs3-warning: #ae7628;
+$galaxy-bs3-danger: #c8524f;
+$galaxy-bs3-info: #3189a3;
+
+// Lightening and saturating gets to alert backgrounds that are *very close*
+// to the Boostrap 3 Galaxy styles. $brand-success is still a little bright
+// for a card background color.
+$brand-primary: $galaxy-bs3-primary;
+$brand-success: saturate(lighten($galaxy-bs3-success, 10%), 30%);
+$brand-info: saturate(lighten($galaxy-bs3-info, 10%), 30%);
+$brand-warning: saturate(lighten($galaxy-bs3-warning, 10%), 30%);
+$brand-danger: saturate(lighten($galaxy-bs3-danger, 10%), 30%);
+
+// These variables don't actually determine the colors in Bootstrap 4, instead
+// they use a map called $theme-colors, so here we override that
+
+$theme-colors: ();
+$theme-colors: map-merge(
+    (
+        "primary": $brand-primary,
+        "secondary": $gray-300,
+        "success": $brand-success,
+        "info": $brand-info,
+        "warning": $brand-warning,
+        "danger": $brand-danger,
+        "light": $gray-100,
+        "dark": $gray-800
+    ),
+    $theme-colors
+);
+
+// This is the default but we need to use it here.
+$theme-color-interval: 5% !default;
+
+// Alerts and states
+
+$alert-bg-level: -13 !default;
+$alert-border-level: -6 !default;
+$alert-color-level: 8 !default;
+
+// These are not Bootstrap styles but are used extensively in Galaxy. This
+// duplicated the way that Bootstrap 4 alerts are derived.
+
+$state-warning-text: theme-color-level("warning", $alert-color-level);
+$state-warning-bg: theme-color-level("warning", $alert-bg-level);
+$state-warning-border: theme-color-level("warning", $alert-border-level);
+
+$state-danger-text: theme-color-level("danger", $alert-color-level);
+$state-danger-bg: theme-color-level("danger", $alert-bg-level);
+$state-danger-border: theme-color-level("danger", $alert-border-level);
+
+$state-info-text: theme-color-level("info", $alert-color-level);
+$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-border: theme-color-level("info", $alert-border-level);
+
+$state-success-text: theme-color-level("success", $alert-color-level);
+$state-success-bg: theme-color-level("success", $alert-bg-level);
+$state-success-border: theme-color-level("success", $alert-border-level);
+
+// Body text and link colors
+
+$body-bg: $white;
+$text-color: $gray-dark;
+
+$link-color: #303030;
+$link-hover-color: darken($link-color, 15%);
+
+// Fonts and sizes
+
+$font-family-sans-serif: "Lucida Grande", verdana, arial, helvetica, sans-serif; //JT "Helvetica Neue", Helvetica, Arial, sans-serif;
+//$font-family-serif: Georgia, "Times New Roman", Times, serif;
+$font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
+$font-family-base: $font-family-sans-serif;
+
+$font-size-base: 0.75rem; // default 1rem
+
+$h1-font-size: $font-size-base * 2; // default 2.5
+$h2-font-size: $font-size-base * 1.75; // default 2
+$h3-font-size: $font-size-base * 1.5; // default 1.75
+$h4-font-size: $font-size-base * 1.25; // default 1.5
+$h5-font-size: $font-size-base; // default 1.25
+$h6-font-size: $font-size-base * 0.85; // default 1
+
+// This is the default for $line-height-base, but we use $line-height-computed
+// in base.css, that should be removed.
+$line-height-base: 1.5; // for scaling, as a multiplier -- not concrete units.
+$line-height-computed: floor($font-size-base * $line-height-base);
+$line-height-computed-px: 16px;
+
+$headings-font-weight: 800; // default 500
+$headings-line-height: 1.1; // default 1.2
+
+// Increase contrast of dropdown items
+$dropdown-link-hover-color: white;
+$dropdown-link-hover-bg: $brand-primary;
+$dropdown-link-active-color: black;
+$dropdown-link-active-bg: $brand-success;
+
+// BOOTSTRAP 4 STYLE REFACTORING BREAK POINT
+// Anything that is actually used should be moved above this line and
+// documented, everything else should be removed.
+
+// JT: I've deleted a lot of unused variables from below but there are still
+// likely some left.
+
+// Components
+// -------------------------
+
+$padding-base-vertical: 0.25rem;
+$padding-base-horizontal: 0.625rem;
+
+$line-height-large: 1.33;
+
+$border-radius-base: 0.1875rem;
+$border-radius-large: 0.3125rem;
+
+// Tables
+// -------------------------
+
+$table-border-color: $border-default-color; // table and cell border
+
+// Buttons
+// -------------------------
+
+$btn-default-color: #333;
+$btn-default-bg: darken($white, 5%);
+$btn-default-border: $border-default-color;
+
+// Forms
+// -------------------------
+
+$input-bg: $white;
+$input-bg-disabled: $gray-lighter;
+
+// COMPONENT VARIABLES
+// --------------------------------------------------
+
+// Z-index master list
+// -------------------------
+// Used for a bird's eye view of components dependent on the z-axis
+// Try to avoid customizing these :)
+
+$zindex-navbar: 1000;

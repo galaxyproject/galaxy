@@ -56,7 +56,7 @@ function _errorModal(message, title, details) {
             .appendTo(Galaxy.modal.$(".modal-content"))
             .append([$("<p/>").text(DETAILS_MSG), $("<pre/>").text(JSON.stringify(details, null, "  "))]);
 
-        $(`<button id="button-1" class="pull-left">${_l("Details")}</button>`)
+        $(`<button id="button-1" class="float-left">${_l("Details")}</button>`)
             .appendTo(Galaxy.modal.$(".buttons"))
             .click(() => {
                 Galaxy.modal.$(".error-details").toggle();

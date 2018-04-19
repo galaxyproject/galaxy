@@ -1,0 +1,93 @@
+// component to display a dataset choice and activate a modal chooser (single *and* multiple datasets)
+.dataset-choice {
+    border: 1px solid lightgrey;
+    border-radius: 3px;
+    overflow: hidden;
+    padding: 10px 8px 8px 8px;
+
+    &:hover {
+        border-color: black;
+        cursor: pointer;
+        & > * {
+            cursor: pointer;
+        }
+    }
+    .prompt {
+        margin-right: 8px;
+        &:after {
+            content: ":";
+        }
+        &:empty {
+            display: none;
+        }
+    }
+    .none-selected-msg {
+        color: grey;
+    }
+
+    .selected {
+        display: inline-block;
+
+        .title {
+            font-weight: bold;
+        }
+        .subtitle {
+            color: grey;
+            &:before {
+                content: "-";
+                margin: 0px 4px 0px 4px;
+            }
+            i {
+                font-style: normal;
+                &:not(:last-child):after {
+                    content: ", ";
+                }
+            }
+        }
+    }
+}
+
+// component to display a dataset choice and activate a modal chooser (multiple datasets)
+.dataset-choice.multi {
+    .selected {
+        display: block;
+        font-weight: normal;
+    }
+
+    table {
+        width: 100%;
+        margin-top: 8px;
+        cursor: pointer;
+
+        &:hover {
+            border-color: black;
+        }
+        tr:nth-child(even) {
+            background-color: aliceblue;
+        }
+        th {
+            padding: 0px;
+            font-weight: normal;
+            font-size: 80%;
+            color: grey;
+        }
+        th:not(:last-child),
+        td:not(:last-child) {
+            padding-right: 8px;
+        }
+        td.cell-name {
+            font-weight: bold;
+        }
+    }
+}
+
+// modal allowing single or multiple dataset selection - often activated by .dataset-choice above
+.dataset-choice-modal .list-panel {
+    .list-item.dataset {
+        border-left-width: 1px;
+        border-right-width: 1px;
+    }
+    .controls .title .name {
+        font-size: 120%;
+    }
+}

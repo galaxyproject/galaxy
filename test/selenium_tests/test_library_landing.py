@@ -55,8 +55,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_help(self):
-        help_button = self.wait_for_selector_clickable(".help-button")
-        help_link = help_button.find_element_by_css_selector("a")
+        help_link = self.wait_for_selector_clickable(".library-help-button")
         self.assertEqual(help_link.get_attribute("href"), "https://galaxyproject.org/data-libraries/screen/list-of-libraries/")
 
     @selenium_test

@@ -38,7 +38,7 @@ var HDCAListItemEdit = _super.extend(
                     <a class="delete-btn icon-btn" title="${_l("Delete")}" data-toggle="dropdown">
                         <span class="fa fa-times"></span>
                     </a>
-                    <ul class="dropdown-menu pull-right" role="menu">
+                    <ul class="dropdown-menu float-right" role="menu">
                         <li>
                             <a href="#" class="delete-collection">
                                 ${_l("Collection Only")}

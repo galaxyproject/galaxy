@@ -71,7 +71,7 @@ var FolderView = Backbone.View.extend({
                 mod_toastr.error("An error occurred while attempting to fetch folder permissions.");
             });
 
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         //hack to show scrollbars
         $("#center").css("overflow", "auto");
     },
@@ -196,9 +196,9 @@ var FolderView = Backbone.View.extend({
         return _.template(
             [
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                "<div>",
                 '<a href="#/folders/<%= folder.get("parent_id") %>">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder" class="btn btn-default primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go back to the parent folder" class="btn btn-secondary primary-button" type="button">',
                 '<span class="fa fa-caret-left fa-lg"/>',
                 "&nbsp;Parent folder",
                 "</button>",
@@ -237,7 +237,7 @@ var FolderView = Backbone.View.extend({
                 '<div class="alert alert-info roles-selection">',
                 "User with <strong>any</strong> of these roles can modify this folder (name, etc.).",
                 "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-secondary toolbtn_save_permissions primary-button" type="button">',
                 '<span class="fa fa-floppy-o"/>',
                 "&nbsp;Save",
                 "</button>",

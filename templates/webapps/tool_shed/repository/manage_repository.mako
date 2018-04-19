@@ -200,13 +200,13 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
             <div class="form-row">
                 <b>${sharable_link_label}</b>
                 <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>
-                <button title="to clipboard" class="btn btn-default btn-xs" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
+                <button title="to clipboard" class="btn btn-secondary btn-sm" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
             </div>
             %if can_download or can_push:
                 <div class="form-row">
                     <b>Clone this repository:</b>
                     <code>hg clone <a title="Show in mercurial browser" href="${ repository.clone_url }">${ repository.clone_url }</a></code>
-                    <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
+                    <button title="to clipboard" class="btn btn-secondary btn-sm" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
                 </div>
             %endif
             ${render_repository_type_select_field( repository_type_select_field, render_help=True )}
