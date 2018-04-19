@@ -14,7 +14,7 @@
 import subprocess
 import sys
 from optparse import OptionParser
-import subprocess
+
 
 def stop_err(msg):
     sys.stderr.write("%s\n" % msg)
