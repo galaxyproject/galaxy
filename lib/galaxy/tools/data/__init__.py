@@ -148,7 +148,7 @@ class ToolDataTableManager(object):
         error_message = ''
         try:
             table_elems = self.load_from_config_file(config_filename=config_filename,
-                                                     tool_data_path=tool_data_path,
+                                                     tool_data_path=tool_data_path or self.tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), str(e))
