@@ -343,9 +343,11 @@
                 </div>
             </div>
             <option-buttons-div>
+                <!--
                 <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
                     {{ l("Reorient") }}
                 </button>
+                -->
                 <button @click="cancel" class="creator-cancel-btn btn rule-btn-cancel" tabindex="-1">
                     {{ l("Cancel") }}
                 </button>
