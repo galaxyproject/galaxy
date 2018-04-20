@@ -54,6 +54,12 @@
       <param name="header_lines" value="1"/>
       <output name="out_file1" file="filter1_test5.tab"/>
     </test>
+    <test>
+      <param name="input" value="filter1_in6.bed"/>
+      <param name="cond" value="c2=='100%'"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test6.bed"/>
+    </test>
   </tests>
   <help>
 
