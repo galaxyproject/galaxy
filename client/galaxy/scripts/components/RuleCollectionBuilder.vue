@@ -336,7 +336,7 @@
                     </select2>
                 </div>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
-                    <input class="collection-name"
+                    <b-input class="collection-name"
                     :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover.focus v-model="collectionName" />
                     <label>
                         {{ l("Name") }}:
@@ -568,14 +568,29 @@ const ColumnSelector = {
 
 const RegularExpressionInput = {
     template: `
-        <div><label>
-            Regular Expression
-            <input class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
-        </label></div>
+        <div>
+            <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
+            <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
+            <b-input v-b-tooltip.hover.focus :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
+        </div>
     `,
     props: {
         target: {
             required: true
+        }
+    },
+    computed: {
+        label() {
+            return _l("Regular Expression");
+        },
+        title() {
+            return _l("Enter a regular expression.");
+        },
+        popoverTitle() {
+            return _l("Regular Expressions");
+        },
+        popoverContent() {
+            return _l(`Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`);
         }
     }
 };
