@@ -1,4 +1,4 @@
-<%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%inherit file="/base/base_panels.mako"/>
 <%namespace file="/galaxy_client_app.mako" name="galaxy_client"/>
 
 <%def name="title()">

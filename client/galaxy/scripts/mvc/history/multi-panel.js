@@ -768,9 +768,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
-            window.location = `${Galaxy.root}history/view_multiple?include_deleted_histories=True`;
+            window.location = `${Galaxy.root}?app_id=base&controller=history/view_multiple?include_deleted_histories=True`;
         } else {
-            window.location = `${Galaxy.root}history/view_multiple`;
+            window.location = `${Galaxy.root}?app_id=base&controller=history/view_multiple`;
         }
     },
 

@@ -642,7 +642,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
     @web.require_login("use more than one Galaxy history")
     @web.expose
-    def view_multiple(self, trans, include_deleted_histories=False, order='update_time', limit=10):
+    def view_multiple(self, trans, include_deleted_histories=False, order='update_time', limit=10, **kwargs):
         """
         """
         current_history_id = trans.security.encode_id(trans.history.id)

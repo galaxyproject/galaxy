@@ -45,7 +45,7 @@ var HistoryPanel = Backbone.View.extend({
             title: _l("View all histories"),
             cls: "panel-header-button",
             icon: "fa fa-columns",
-            href: `${this.root}history/view_multiple`
+            href: `${this.root}?app_id=base&controller=history/view_multiple`
         });
 
         // define components
