@@ -472,7 +472,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # with CWL. This is part of that spec and should make it easier to share containers between CWL
         # and Galaxy.
         if self.job_info.tmp_directory is not None:
-            volumes.append(docker_util.DockerVolume.volume_from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
+            volumes.append(DockerVolume.from_str("%s:/tmp:rw" % self.job_info.tmp_directory))
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = dict(

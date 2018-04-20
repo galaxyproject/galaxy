@@ -84,19 +84,19 @@ class DockerVolume(ContainerVolume):
         if not as_str:
             raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
-        kwds = dict(path=parts[0])
+        kwds = dict(host_path=parts[0])
         if len(parts) == 1:
             # auto-generated volume
-            kwds["host_path"] = kwds.pop("path")
+            kwds["path"] = kwds["host_path"]
         elif len(parts) == 2:
             # /host_path:mode is not (or is no longer?) valid Docker volume syntax
             if parts[1] in DockerVolume.valid_modes:
                 kwds["mode"] = parts[1]
-                kwds["host_path"] = kwds["path"]
+                kwds["path"] = kwds["host_path"]
             else:
-                kwds["host_path"] = parts[1]
+                kwds["path"] = parts[1]
         elif len(parts) == 3:
-            kwds["host_path"] = parts[1]
+            kwds["path"] = parts[1]
             kwds["mode"] = parts[2]
         return cls(**kwds)
 
