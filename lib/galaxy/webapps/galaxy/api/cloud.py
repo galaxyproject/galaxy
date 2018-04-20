@@ -5,8 +5,8 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 import logging
 
 from galaxy import exceptions
-from galaxy import web
 from galaxy.managers import cloud
+from galaxy.web import  _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class CloudController(BaseAPIController):
         super(CloudController, self).__init__(app)
         self.cloud_manager = cloud.CloudManager(app)
 
-    @web.expose_api
+    @expose_api
     def index(self, trans, **kwargs):
         """
         * GET /api/cloud
@@ -34,7 +34,7 @@ class CloudController(BaseAPIController):
         trans.response.status = 501
         return 'Not Implemented'
 
-    @web.expose_api
+    @expose_api
     def download(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/download
@@ -105,7 +105,7 @@ class CloudController(BaseAPIController):
         trans.response.status = status
         return {'status': status, 'message': message}
 
-    @web.expose_api
+    @expose_api
     def upload(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/upload
