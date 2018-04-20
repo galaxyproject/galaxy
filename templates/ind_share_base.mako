@@ -10,7 +10,9 @@
             elif context.get('app'):
                 app_name = context.get('app').name
             else:
-                app_name = 'galaxy'
+                app_name == 'galaxy'
+            if app_name == 'galaxy':
+                return '/base/base_panels.mako'
             return '/webapps/%s/base_panels.mako' % app_name
         else:
             return '/base.mako'
