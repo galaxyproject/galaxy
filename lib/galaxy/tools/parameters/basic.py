@@ -196,6 +196,10 @@ class ToolParameter(Dictifiable):
         self.validators = []
         for elem in input_source.parse_validator_elems():
             self.validators.append(validation.Validator.from_element(self, elem))
+        if hasattr(input_source, "parse_map_to"):
+            self.map_to = input_source.parse_map_to()
+        else:
+            self.map_to = None
 
     @property
     def visible(self) -> bool:

@@ -1135,7 +1135,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def is_cwl_job(self):
-        return self.tool.tool_type == "cwl"
+        return self.tool.tool_type in ["galactic_cwl", "cwl"]
 
     def get_job_runner_url(self):
         log.warning(f"({self.job_id}) Job runner URLs are deprecated, use destinations instead.")
