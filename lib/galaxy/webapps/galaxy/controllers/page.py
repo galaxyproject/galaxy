@@ -109,7 +109,7 @@ class PageListGrid(grids.Grid):
     ]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
+        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(__route_name__="/", app_id="base", controller="page/edit_content")),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
         grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="sharing")),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
@@ -613,7 +613,7 @@ class PageController(BaseUIController, SharableMixin,
 
     @web.expose
     @web.require_login("edit pages")
-    def edit_content(self, trans, id):
+    def edit_content(self, trans, id, **kwargs):
         """
         Render the main page editor interface.
         """

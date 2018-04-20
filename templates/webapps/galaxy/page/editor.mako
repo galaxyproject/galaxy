@@ -1,4 +1,4 @@
-<%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%inherit file="/base/base_panels.mako"/>
 
 <%def name="init()">
 <%
@@ -7,6 +7,9 @@
     self.active_view="user"
     self.overlay_visible=False
 %>
+</%def>
+
+<%def name="title()">
 </%def>
 
 <%def name="javascripts()">
