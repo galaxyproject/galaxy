@@ -1,11 +1,4 @@
-<%!
-    def inherit(context):
-        if context.get('use_panels'):
-            return '/webapps/galaxy/base_panels.mako'
-        else:
-            return '/base.mako'
-%>
-<%inherit file="${inherit(context)}"/>
+<%inherit file="/base.mako"/>
 
 <%def name="init()">
 <%

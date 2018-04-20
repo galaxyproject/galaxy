@@ -63,8 +63,8 @@ var Collection = Backbone.Collection.extend({
                 },
                 {
                     title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
+                    url: "?app_id=base&active_tab=visualization&controller=visualization/gie_list",
+                    target: "_top"
                 },
                 {
                     title: _l("Saved Visualizations"),

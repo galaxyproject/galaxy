@@ -18,6 +18,10 @@
     ## Override
 </%def>
 
+<%def name="title()">
+    ## Override
+</%def>
+
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css(
