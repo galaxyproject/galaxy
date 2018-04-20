@@ -198,13 +198,17 @@
                                 <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
-                                <ul class="dropdown-menu" role="menu">
-                                    <li v-for="target in unmappedTargets"
+                                <div class="dropdown-menu" role="menu">
+                                    <a v-for="target in unmappedTargets"
                                         v-bind:index="target"
-                                        v-bind:key="target">
-                                      <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')" @click="addIdentifier(target)">{{ mappingTargets()[target].label }}</a>
-                                    </li>
-                                </ul>
+                                        v-bind:key="target"
+                                        class="dropdown-item"
+                                        href="#"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)">
+                                      {{ mappingTargets()[target].label }}
+                                    </a>
+                                </div>
                                 <button type="button" class="btn btn-default btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
                             </div>
                         </div>
@@ -244,38 +248,38 @@
                                   <button type="button" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
-                                  <ul class="dropdown-menu" role="menu">
+                                  <div class="dropdown-menu" role="menu">
                                     <rule-target-component :builder="this" rule-type="sort" />
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <li><a class="rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a></li>
-                                  </ul>
+                                    <a href="#" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
                                     <button type="button" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_filter_regex" />
                                         <rule-target-component :builder="this" rule-type="add_filter_matches" />
                                         <rule-target-component :builder="this" rule-type="add_filter_compare" />
                                         <rule-target-component :builder="this" rule-type="add_filter_empty" />
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
-                                  </ul>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
                                     <button type="button" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
-                                  </ul>
+                                  </div>
                                 </div> 
                             </div>                               
                         </div>
@@ -294,40 +298,47 @@
                 </div>
             </div>
         </div>
-        <div class="footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
+        <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
             <option-buttons-div>
                 <button @click="resetSource" class="creator-reset-btn btn rule-btn-reset">
                     {{ l("Reset") }}
                 </button>
-               <button @click="attemptRulePreview" class="btn btn-primary rule-btn-okay">
+               <button @click="attemptRulePreview" class="btn btn-secondary rule-btn-okay">
                     {{ l("Okay")}}
                 </button>
             </option-buttons-div>
         </div>
-        <div class="footer flex-row no-flex vertically-spaced"
+        <div class="rule-footer footer flex-row no-flex vertically-spaced"
              v-else-if="ruleView == 'normal'">
-            <div class="attributes clear"/>
-            <label class="rule-option" v-if="elementsType == 'datasets'">
-                {{ l("Hide original elements") }}:
-                <input type="checkbox" v-model="hideSourceItems" />
-            </label>
-            <label class="rule-option rule-option-extension" v-if="showFileTypeSelector">
-                {{ l("Type") }}:
-                <select2 name="extension" style="width: 120px" v-model="extension" v-if="extension">
-                    <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
-                </select2>
-            </label>
-            <label class="rule-option" v-if="showGenomeSelector">
-                {{ l("Genome") }}:
-                <select2 id="genome-selector" style="width: 120px" v-model="genome" v-if="genome">
-                    <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
-                </select2>
-            </label>
-            <label class="rule-option float-right" v-if="showCollectionNameInput">
-                {{ l("Name") }}:
-                <input class="collection-name" style="width: 260px" 
-                :placeholder="namePlaceholder" v-model="collectionName" />
-            </label>
+            <div class="rule-footer-inputs">
+                <label v-if="elementsType == 'datasets'">
+                    {{ l("Hide original elements") }}:
+                </label>
+                <input type="checkbox" v-model="hideSourceItems" v-if="elementsType == 'datasets'"/>
+                <div class="rule-footer-extension-group" v-if="extension && showFileTypeSelector">
+                    <label>
+                        {{ l("Type") }}:
+                    </label>
+                    <select2 name="extension" class="extension-select" v-model="extension" >
+                        <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
+                    </select2>
+                </div>
+                <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
+                    <label>
+                        {{ l("Genome") }}:
+                    </label>
+                    <select2 class="genome-select" v-model="genome">
+                        <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
+                    </select2>
+                </div>
+                <div class="rule-footer-name-group" v-if="showCollectionNameInput">
+                    <input class="collection-name"
+                    :placeholder="namePlaceholder" v-model="collectionName" />
+                    <label>
+                        {{ l("Name") }}:
+                    </label>
+                </div>
+            </div>
             <option-buttons-div>
                 <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
                     {{ l("Re-orient") }}
@@ -338,7 +349,7 @@
                 <button @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn btn rule-btn-reset">
                     {{ l("Reset") }}
                 </button>
-                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
+                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-secondary btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
                     {{ finishButtonTitle }}
                 </button>
             </option-buttons-div>
@@ -348,7 +359,7 @@
         <div class="header flex-row no-flex">
             {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
         </div>
-        <div class="footer flex-row no-flex">
+        <div class="rule-footer footer flex-row no-flex">
             <option-buttons-div>
                 <button @click="cancel" class="creator-cancel-btn btn" tabindex="-1">
                     {{ l("Close") }}
@@ -652,7 +663,7 @@ const IdentifierDisplay = {
 };
 
 const RuleTargetComponent = {
-    template: `<li><a class="rule-link" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a></li>`,
+    template: `<a class="rule-link dropdown-item" href="#" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
@@ -678,7 +689,7 @@ const RuleComponent = {
         <slot></slot>
         <div class="buttons float-right rule-edit-buttons">
            <button type="button" class="btn rule-editor-cancel" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-secondary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
+           <button type="button" class="btn btn-secondary btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
         </div>
     </div>`,
     data: function() {
@@ -1525,6 +1536,9 @@ export default {
     width: 100%;
     /* overflow: scroll; */
 }
+.select2-container {
+    min-width: 60px;
+}
 .vertical #hot-table {
     width: 100%;
     overflow: scroll;
@@ -1559,9 +1573,6 @@ export default {
 .rules-container .title {
     font-weight: bold;
 }
-.rule-option {
-    padding-left: 20px;
-}
 .rule-summary {
     height: 100%;
     display: flex;
@@ -1569,7 +1580,6 @@ export default {
 }
 .rule-edit-buttons {
     margin: 5px;
-    height: 25px;
 }
 .rules {
     flex-grow: 1;
@@ -1613,5 +1623,48 @@ export default {
 }
 .rules-buttons {
 }
-/* .dropdown-menu {position:absolute;} */
+.rule-footer-inputs label {
+    padding-left: 20px;
+    align-self: baseline;
+}
+.rule-footer-inputs .select2-container {
+    align-self: baseline;
+}
+.rule-footer-inputs {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+.rule-footer-inputs input {
+    align-self: baseline;
+}
+.extension-select {
+    flex: 1;
+    max-width: 120px;
+    min-width: 60px;
+}
+.genome-select {
+    flex: 1;
+    max-width: 300px;
+    min-width: 120px;
+}
+.collection-name {
+    flex: 1;
+    min-width: 120px;
+    max-width: 500px;
+}
+.rule-footer-genome-group {
+    flex: 2;
+    display: flex;
+}
+.rule-footer-extension-group {
+    flex: 1;
+    display: flex;
+}
+.rule-footer-name-group {
+    flex: 3;
+    display: flex;
+    flex-direction: row-reverse;
+}
 </style>
