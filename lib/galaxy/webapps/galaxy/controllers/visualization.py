@@ -182,7 +182,7 @@ class VisualizationListGrid(grids.Grid):
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
         grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(controller="", action='visualizations/edit')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(__route_name__="/", app_id="base", active_tab="user", controller="visualization/sharing")),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
     ]
 
