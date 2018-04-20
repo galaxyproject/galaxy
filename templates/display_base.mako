@@ -2,7 +2,7 @@
     from galaxy.model import History, StoredWorkflow, Page
     from galaxy.web.framework.helpers import iff
 %>
-<%inherit file="/base.mako"/>
+<%inherit file="/base/base_panels.mako"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element, community_tag_js" />
 <%namespace file="/display_common.mako" import="*" />
 
