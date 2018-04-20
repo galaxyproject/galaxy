@@ -1418,7 +1418,7 @@ def move_merge(source, target):
     if os.path.isdir(source) and os.path.exists(target) and os.path.isdir(target):
         for name in os.listdir(source):
             move_merge(os.path.join(source, name), os.path.join(target, name))
-    elif os.path.exists(source):
+    else:
         return shutil.move(source, target)
 
 
