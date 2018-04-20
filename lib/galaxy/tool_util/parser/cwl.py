@@ -27,7 +27,12 @@ from .stdio import (
     StdioErrorLevel,
     ToolStdioExitCode,
 )
-from .yaml import YamlInputSource
+from .yaml import (
+    YamlInputSource,
+    YamlPageSource,
+)
+
+GX_INTERFACE_NAMESPACE = "http://galaxyproject.org/cwl#interface"
 
 CWL_DEFAULT_FILE_OUTPUT = "data"  # set to _sniff_ to sniff output types automatically.
 
@@ -76,8 +81,18 @@ class CwlToolSource(ToolSource):
                 )
         return self._tool_proxy
 
+    def _get_gx_interface(self):
+        rval = None
+        for h in self.tool_proxy.hints_or_requirements_of_class(GX_INTERFACE_NAMESPACE):
+            rval = strip_namespace(h, GX_INTERFACE_NAMESPACE[: -len("interface")])
+
+        return rval
+
     def parse_tool_type(self):
-        return "cwl"
+        if self._get_gx_interface() is not None:
+            return "galactic_cwl"
+        else:
+            return "cwl"
 
     def parse_id(self):
         return self.tool_proxy.galaxy_id()
@@ -165,7 +180,11 @@ class CwlToolSource(ToolSource):
         return []
 
     def parse_input_pages(self):
-        page_source = CwlPageSource(self.tool_proxy)
+        gx_interface = self._get_gx_interface()
+        if gx_interface is None:
+            page_source = CwlPageSource(self.tool_proxy)
+        else:
+            page_source = YamlPageSource(gx_interface["inputs"])
         return PagesSource([page_source])
 
     def parse_outputs(self, tool):
@@ -284,6 +303,19 @@ class CwlToolSource(ToolSource):
 
     def to_string(self):
         return json.dumps(self.tool_proxy.to_persistent_representation())
+
+
+def strip_namespace(ordered_dict, namespace):
+    if isinstance(ordered_dict, dict):
+        value = {}
+        for k, v in ordered_dict.items():
+            if k.startswith(namespace):
+                k = k[len(namespace) :]
+            value[k] = strip_namespace(v, namespace)
+        return value
+    elif isinstance(ordered_dict, list):
+        return list(map(lambda v: strip_namespace(v, namespace), ordered_dict))
+    return ordered_dict
 
 
 class CwlPageSource(PageSource):
