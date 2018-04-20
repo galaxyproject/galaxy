@@ -219,6 +219,10 @@ class ToolParameter(UsesDictVisibleKeys):
         else:
             self.sanitizer = None
         self.validators = validation.to_validators(tool.app if tool else None, input_source.parse_validators())
+        if hasattr(input_source, "parse_map_to"):
+            self.map_to = input_source.parse_map_to()
+        else:
+            self.map_to = None
 
     @property
     def visible(self) -> bool:

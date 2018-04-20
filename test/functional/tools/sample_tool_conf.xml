@@ -280,6 +280,8 @@
   <tool file="cwl_tools/v1.0_custom/index1.cwl" />
   <tool file="cwl_tools/v1.0_custom/optional-output2.cwl" />
   <tool file="cwl_tools/v1.0_custom/showindex1.cwl" />
+  <tool file="galactic_cat.cwl" />
+  <tool file="galactic_record_input.cwl" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
