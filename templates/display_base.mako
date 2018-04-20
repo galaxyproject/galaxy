@@ -1,14 +1,8 @@
 <%!
-    def inherit( context ):
-        if context.get('no_panels'):
-            return '/base.mako'
-        else:
-            return '/webapps/galaxy/base_panels.mako'
-
     from galaxy.model import History, StoredWorkflow, Page
     from galaxy.web.framework.helpers import iff
 %>
-<%inherit file="${inherit( context )}"/>
+<%inherit file="/base.mako"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element, community_tag_js" />
 <%namespace file="/display_common.mako" import="*" />
 
