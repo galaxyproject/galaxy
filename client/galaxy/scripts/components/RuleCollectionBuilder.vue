@@ -31,7 +31,7 @@
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
-                            <label :title="titleNumericSort">
+                            <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input type="checkbox" v-model="addSortingNumeric" />
                                 {{ l("Numeric sorting.") }}
                             </label>
@@ -119,7 +119,7 @@
                                         :builder="this">
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <regular-expression-input :target.sync="addFilterRegexExpression" />
-                            <label :title="titleInvertFilterRegex">
+                            <label v-b-tooltip.hover :title="titleInvertFilterRegex">
                                 <input type="checkbox" v-model="addFilterRegexInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -129,7 +129,7 @@
                                         :builder="this">
                             <column-selector :target.sync="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
                             <input type="text" v-model="addFilterMatchesValue" />
-                            <label :title="titleInvertFilterMatches">
+                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input type="checkbox" v-model="addFilterMatchesInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -163,7 +163,7 @@
                                 Filter how many rows?
                                 <input type="number" v-model="addFilterCountN" />
                             </label>
-                            <label :title="titleInvertFilterMatches">
+                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input type="checkbox" v-model="addFilterCountInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -172,7 +172,7 @@
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
-                            <label :title="titleInvertFilterEmpty">
+                            <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input type="checkbox" v-model="addFilterEmptyInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -185,17 +185,18 @@
                                 <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
+                                    :help="mappingTargets()[map.type].help"
                                     :target.sync="map.columns"
                                     :ordered-edit.sync="map.editing"
                                     :col-headers="colHeaders"
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover.focus :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
                                 </column-selector>
                             </div>
-                            <div class="buttons btn-group float-right rule-edit-buttons">
-                                <button type="button" class="dropdown-toggle btn btn-default mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                            <div class="buttons float-right rule-edit-buttons">
+                                <button v-b-tooltip.hover.focus :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-default mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -209,13 +210,13 @@
                                       {{ mappingTargets()[target].label }}
                                     </a>
                                 </div>
-                                <button type="button" class="btn btn-default btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
+                                <b-button v-b-tooltip.hover.focus :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
                             <span class="title">
                                 {{ l("Rules") }}
-                                <span class="fa fa-wrench rule-builder-view-source" :title="titleViewSource" @click="viewSource"></span>
+                                <span v-b-tooltip.hover class="fa fa-wrench rule-builder-view-source" :title="titleViewSource" @click="viewSource"></span>
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -245,7 +246,7 @@
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
-                                  <button type="button" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                  <button type="button" v-b-tooltip.hover.focus :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
                                   <div class="dropdown-menu" role="menu">
@@ -257,7 +258,7 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.focus :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -269,7 +270,7 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.focus :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -300,15 +301,15 @@
         </div>
         <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
             <option-buttons-div>
-                <button @click="cancelSourceEdit" class="btn btn-secondary rule-btn-cancel">
+                <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
                     {{ l("Cancel") }}
-                </button>
-                <button @click="resetSource" class="creator-reset-btn btn rule-btn-reset">
+                </b-button>
+                <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
                     {{ l("Reset") }}
-                </button>
-               <button @click="attemptRulePreview" class="btn btn-secondary rule-btn-okay">
+                </b-button>
+               <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
                     {{ l("Apply")}}
-                </button>
+                </b-button>
             </option-buttons-div>
         </div>
         <div class="rule-footer footer flex-row no-flex vertically-spaced"
@@ -336,7 +337,7 @@
                 </div>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
                     <input class="collection-name"
-                    :placeholder="namePlaceholder" v-model="collectionName" />
+                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover.focus v-model="collectionName" />
                     <label>
                         {{ l("Name") }}:
                     </label>
@@ -348,15 +349,15 @@
                     {{ l("Reorient") }}
                 </button>
                 -->
-                <button @click="cancel" class="creator-cancel-btn btn rule-btn-cancel" tabindex="-1">
+                <button @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
                     {{ l("Cancel") }}
                 </button>
-                <button @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn btn rule-btn-reset">
+                <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
                     {{ l("Reset") }}
-                </button>
-                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-secondary btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
+                </b-button>
+                <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" v-bind:class="{ disabled: !validInput }">
                     {{ finishButtonTitle }}
-                </button>
+                </b-button>
             </option-buttons-div>
         </div>
     </state-div>
@@ -366,9 +367,9 @@
         </div>
         <div class="rule-footer footer flex-row no-flex">
             <option-buttons-div>
-                <button @click="cancel" class="creator-cancel-btn btn" tabindex="-1">
+                <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
                     {{ l("Close") }}
-                </button>
+                </b-button>
             </option-buttons-div>
         </div>
     </state-div>
@@ -388,6 +389,9 @@ import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
+import BootstrapVue from 'bootstrap-vue'
+
+Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
@@ -436,8 +440,8 @@ const ColumnSelector = {
     template: `
         <div class="rule-column-selector" v-if="!multiple || !ordered">
             <label class="d-flex justify-content-end align-items-center">
-                <span class="mr-1">{{ label }}</span>
-                <div class="mr-1"><select2 :value="target" @input="handleInput" :multiple="multiple">
+                <span class="mr-1" v-b-tooltip.hover :title="help">{{ label }}</span>
+                <div class="mr-1" v-b-tooltip.hover.focus :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
                     <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
                 </select2></div>
                 <slot></slot>
@@ -484,6 +488,9 @@ const ColumnSelector = {
             type: String,
             default: _l("From Column")
         },
+        help: {
+            required: false,
+        },
         colHeaders: {
             type: Array,
             required: true
@@ -522,6 +529,9 @@ const ColumnSelector = {
                 }
             }
             return remaining;
+        },
+        title() {
+            return _l("Select a column");
         }
     },
     methods: {
@@ -574,8 +584,8 @@ const RuleDisplay = {
     template: `
         <li class="rule">
             <span class="rule-display">{{ title }}
-                <span class="fa fa-edit" @click="edit"></span>
-                <span class="fa fa-times" @click="remove"></span>
+                <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit" @click="edit"></span>
+                <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times" @click="remove"></span>
             </span>
             <span class="rule-warning" v-if="rule.warn">
                 {{ rule.warn }}
@@ -599,7 +609,9 @@ const RuleDisplay = {
         title() {
             const ruleType = this.rule.type;
             return RULES[ruleType].display(this.rule, this.colHeaders);
-        }
+        },
+        editTitle() { return _l("Edit this rule."); },
+        removeTitle() { return _l("Remove this rule."); }    
     },
     methods: {
         edit() {
@@ -613,10 +625,10 @@ const RuleDisplay = {
 
 const IdentifierDisplay = {
     template: `
-      <li class="rule" :title="help">
-        Set {{ columnsLabel }} as {{ typeDisplay }}
-        <span class="fa fa-edit" @click="edit"></span>
-        <span class="fa fa-times" @click="remove"></span>
+      <li class="rule">
+        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
+        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
+        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
       </li>
     `,
     props: {
@@ -646,6 +658,12 @@ const IdentifierDisplay = {
         },
         help() {
             return MAPPING_TARGETS[this.type].help || "";
+        },
+        titleEdit() {
+            return _l("Edit column definitions.");
+        },
+        titleRemove() {
+            return _l("Remove this column definitions.");
         },
         columnsLabel() {
             let columnNames;
@@ -773,6 +791,15 @@ export default {
             titleViewSource: _l(
                 "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data."
             ),
+            titleSourceCancel: _l("Stop editing rules and dismiss changes."),
+            titleSourceReset: _l("Reset text area to current set of rules."),
+            titleSourceApply: _l("Apply changes to rule source and return to rule preview."),
+            titleRulesMenu: _l("General rules to apply."),
+            titleFilterMenu: _l("Rules that filter rows from the data."),
+            titleColumMenu: _l("Rules that add generate new columns."),
+            titleRemoveMapping: _l("Remove column definition assignment."),
+            titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview."),
+            titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from that a column of the table."),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
