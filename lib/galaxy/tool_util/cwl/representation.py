@@ -231,6 +231,107 @@ def collection_wrapper_to_record(inputs_dir, wrapped_value):
     return rval
 
 
+def galactic_flavored_to_cwl_job(tool, param_dict, local_working_directory):
+    def simple_value(input, param_dict_value, type_representation_name=None):
+        type_representation = type_representation_from_name(type_representation_name)
+        # Hmm... cwl_type isn't really the cwl type in every case,
+        # like in the case of json for instance.
+
+        if type_representation.galaxy_param_type == NO_GALAXY_INPUT:
+            assert param_dict_value is None
+            return None
+
+        if type_representation.name == "file":
+            dataset_wrapper = param_dict_value
+            return dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper)
+        elif type_representation.name == "directory":
+            dataset_wrapper = param_dict_value
+            return dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper)
+        elif type_representation.name == "integer":
+            return int(str(param_dict_value))
+        elif type_representation.name == "long":
+            return int(str(param_dict_value))
+        elif type_representation.name in ["float", "double"]:
+            return float(str(param_dict_value))
+        elif type_representation.name == "boolean":
+            return string_as_bool(param_dict_value)
+        elif type_representation.name == "text":
+            return str(param_dict_value)
+        elif type_representation.name == "enum":
+            return str(param_dict_value)
+        elif type_representation.name == "json":
+            raw_value = param_dict_value.value
+            return json.loads(raw_value)
+        elif type_representation.name == "field":
+            if param_dict_value is None:
+                return None
+            if hasattr(param_dict_value, "value"):
+                # Is InputValueWrapper
+                rval = param_dict_value.value
+                if isinstance(rval, dict) and "src" in rval and rval["src"] == "json":
+                    # needed for wf_step_connect_undeclared_param, so non-file defaults?
+                    return rval["value"]
+                return rval
+            elif not param_dict_value.is_collection:
+                # Is DatasetFilenameWrapper
+                return dataset_wrapper_to_file_json(inputs_dir, param_dict_value)
+            else:
+                # Is DatasetCollectionWrapper
+                hdca_wrapper = param_dict_value
+                if hdca_wrapper.collection_type == "list":
+                    # TODO: generalize to lists of lists and lists of non-files...
+                    return collection_wrapper_to_array(inputs_dir, hdca_wrapper)
+                elif hdca_wrapper.collection_type.collection_type == "record":
+                    return collection_wrapper_to_record(inputs_dir, hdca_wrapper)
+
+        elif type_representation.name == "array":
+            # TODO: generalize to lists of lists and lists of non-files...
+            return collection_wrapper_to_array(inputs_dir, param_dict_value)
+        elif type_representation.name == "record":
+            return collection_wrapper_to_record(inputs_dir, param_dict_value)
+        else:
+            return str(param_dict_value)
+
+    inputs_dir = os.path.join(local_working_directory, "_inputs")
+
+    inputs = {}
+
+    # TODO: walk tree
+    for input_name, input_param in tool.inputs.items():
+        if input_param.type == "data":
+            # Probably need to be passing in the wrappers and using them - this seems to be
+            # an HDA.
+            map_to = input_param.map_to
+            inputs_at_depth = inputs
+            if map_to:
+
+                while "/" in map_to:
+                    first, map_to = map_to.split("/", 1)
+                    if first not in inputs_at_depth:
+                        inputs_at_depth[first] = {}
+                    inputs_at_depth = inputs_at_depth[first]
+            else:
+                map_to = input_param.name
+            inputs_at_depth[map_to] = dataset_wrapper_to_file_json(inputs_dir, param_dict[input_name])
+        else:
+            matched_field = None
+            for field in tool._cwl_tool_proxy.input_fields():
+                if field["name"] == input_name:  # CWL <=> Galaxy
+                    matched_field = field
+            field_type = field_to_field_type(matched_field)
+            if isinstance(field_type, list):
+                assert USE_FIELD_TYPES
+                type_descriptions = [FIELD_TYPE_REPRESENTATION]
+            else:
+                type_descriptions = type_descriptions_for_field_types([field_type])
+            assert len(type_descriptions) == 1
+            type_description_name = type_descriptions[0].name
+
+            inputs[input_name] = simple_value(input_param, param_dict[input_name], type_description_name)
+
+    return inputs
+
+
 def to_cwl_job(tool, param_dict, local_working_directory):
     """tool is Galaxy's representation of the tool and param_dict is the
     parameter dictionary with wrapped values.
