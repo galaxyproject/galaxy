@@ -300,7 +300,7 @@
         </div>
         <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
             <option-buttons-div>
-                <button @click="attemptRulePreview" class="btn btn-secondary rule-btn-cancel">
+                <button @click="cancelSourceEdit" class="btn btn-secondary rule-btn-cancel">
                     {{ l("Cancel") }}
                 </button>
                 <button @click="resetSource" class="creator-reset-btn btn rule-btn-reset">
@@ -1118,6 +1118,10 @@ export default {
                 return;
             }
             this.updateFromSource(asJson);
+            this.ruleView = "normal";
+        },
+        cancelSourceEdit() {
+            this.ruleSourceError = null;
             this.ruleView = "normal";
         },
         updateFromSource(asJson) {
