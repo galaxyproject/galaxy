@@ -233,7 +233,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return self.export_to_file(trans, encoded_id)
 
     @web.expose
-    def display_by_id(self, trans, id):
+    def display_by_id(self, trans, id, **kwargs):
         """ Display workflow based on id. """
         # Get workflow.
         stored_workflow = self.get_stored_workflow(trans, id)

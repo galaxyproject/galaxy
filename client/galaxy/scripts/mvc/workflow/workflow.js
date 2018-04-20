@@ -158,7 +158,7 @@ const WorkflowItemView = Backbone.View.extend({
             }/download?format=json-download">Download</a>
                         <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
                         <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/display_by_id?id=${
+                        <a class="dropdown-item" href="${Galaxy.root}?app_id=base&active_tab=workflow&controller=workflow/display_by_id&id=${
                 this.model.id
             }">View</a>
                         <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
