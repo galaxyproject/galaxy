@@ -402,7 +402,9 @@ class HasDockerLikeVolumes(object):
 
         def add_var(name, value):
             if value:
-                variables[name] = os.path.abspath(value)
+                if not value.startswith("$"):
+                    value = os.path.abspath(value)
+                variables[name] = value
 
         add_var("working_directory", self.job_info.working_directory)
         add_var("tmp_directory", self.job_info.tmp_directory)
