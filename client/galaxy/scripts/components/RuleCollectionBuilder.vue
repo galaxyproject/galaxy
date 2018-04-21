@@ -571,7 +571,7 @@ const RegularExpressionInput = {
         <div>
             <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
             <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
-            <b-input v-b-tooltip.hover.focus :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
+            <input v-b-tooltip.hover.focus.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
         </div>
     `,
     props: {
