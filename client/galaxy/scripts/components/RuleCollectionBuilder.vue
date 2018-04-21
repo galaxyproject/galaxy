@@ -196,7 +196,7 @@
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
-                                <button v-b-tooltip.hover.focus.bottom :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                                <button v-b-tooltip.hover.focus :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
