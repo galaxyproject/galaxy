@@ -351,13 +351,13 @@ const RULES = {
             const which = rule.which;
             const invert = rule.invert;
             if (which == "first" && !invert) {
-                return `Filter out first ${rule.count} row(s).}`;
+                return `Filter out first ${rule.count} row(s).`;
             } else if (which == "first" && invert) {
-                return `Keep only first ${rule.count} row(s).}`;
+                return `Keep only first ${rule.count} row(s).`;
             } else if (which == "last" && !invert) {
-                return `Filter out last ${rule.count} row(s).}`;
+                return `Filter out last ${rule.count} row(s).`;
             } else {
-                return `Keep only last ${rule.count} row(s).}`;
+                return `Keep only last ${rule.count} row(s).`;
             }
         },
         init: (component, rule) => {

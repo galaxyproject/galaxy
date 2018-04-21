@@ -17,6 +17,7 @@
     "bibtex-parse-js": "^0.0.24",
     "bootstrap": "^4.1.0",
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140",
+    "bootstrap-vue": "^2.0.0-rc.8",
     "d3": "3",
     "font-awesome": "^4.7.0",
     "gulp-sass": "^3.1.0",
