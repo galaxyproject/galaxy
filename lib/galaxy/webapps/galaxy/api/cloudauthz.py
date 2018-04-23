@@ -11,6 +11,12 @@ from the provider to access the user's resources.
 import logging
 
 from galaxy import web
+from galaxy.exceptions import (
+    ActionInputError,
+    InternalServerError,
+    RequestParameterInvalidException,
+    RequestParameterMissingException
+)
 from galaxy.managers import cloudauthzs
 from galaxy.web.base.controller import BaseAPIController
 
@@ -73,10 +79,8 @@ class CloudAuthzController(BaseAPIController):
             *   message:    A message complementary to the response code.
         """
         if not isinstance(payload, dict):
-            trans.response.status = 400
-            return {'status': '400',
-                    'message': 'Invalid payload data type. The payload is expected to be a dictionary, '
-                               'but received data of type `{}`.'.format(str(type(payload)))}
+            raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, but '
+                                   'received data of type `{}`.'.format(str(type(payload))))
 
         missing_arguments = []
         provider = payload.get('provider', None)
@@ -92,13 +96,12 @@ class CloudAuthzController(BaseAPIController):
             missing_arguments.append('authn_id')
 
         if len(missing_arguments) > 0:
-            trans.response.status = 400
-            return {'status': '400',
-                    'message': 'The following required arguments are missing in the payload: {}'.format(missing_arguments)}
+            raise RequestParameterMissingException('The following required arguments are missing in the payload: '
+                                                   '{}'.format(missing_arguments))
 
         if not isinstance(config, dict):
-            return {'status': '400',
-                    'message': 'Invalid type for the required `config` variable; expect `dict` but received `{}`.'.format(type(config))}
+            raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
+                                                   'but received `{}`.'.format(type(config)))
 
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
@@ -113,5 +116,6 @@ class CloudAuthzController(BaseAPIController):
             return view
 
         except Exception as e:
-            log.exception('An unexpected error has occurred while responding to the create request of the cloudauthz API. ' + str(e))
-            trans.response.status = '500 Internal Server Error'
+            msg = 'An unexpected error has occurred while responding to the create request of the cloudauthz API.' + str(e)
+            log.exception(msg)
+            raise InternalServerError(msg)
