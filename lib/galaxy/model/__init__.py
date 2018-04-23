@@ -2616,8 +2616,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     continue
                 if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
                     break
-            else:
-                rval += self.get_total_size()
+                else:
+                    rval += self.get_total_size()
         return rval
 
     def to_dict(self, view='collection', expose_dataset_path=False):
