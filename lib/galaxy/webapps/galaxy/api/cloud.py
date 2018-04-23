@@ -5,6 +5,7 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 import logging
 
 from galaxy import exceptions
+from galaxy.exceptions import ActionInputError
 from galaxy.managers import cloud
 from galaxy.web import  _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
@@ -59,10 +60,8 @@ class CloudController(BaseAPIController):
             *   message:    a description complementary to the status code.
         """
         if not isinstance(payload, dict):
-            trans.response.status = "400"
-            return {'status': "400",
-                    'message': 'Invalid payload data type. The payload is expected to be a dictionary, '
-                               'but received data of type `%s`.' % str(type(payload))}
+            raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, '
+                                   'but received data of type `{}`.'.format(str(type(payload))))
 
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
@@ -86,15 +85,12 @@ class CloudController(BaseAPIController):
             missing_arguments.append("credentials")
 
         if len(missing_arguments) > 0:
-            trans.response.status = "400"
-            return {'status': "400",
-                    'message': "The following required arguments are missing in the payload: %s" % missing_arguments}
+            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            trans.response.status = "400"
-            return {'status': "400", 'message': 'Invalid history ID. {}'.format(e)}
+            raise ActionInputError('Invalid history ID. {}'.format(e))
 
         status, message = self.cloud_manager.download(trans=trans,
                                                       history_id=history_id,
