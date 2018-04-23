@@ -19,7 +19,8 @@ var Node = Backbone.Model.extend({
     },
     removeWorkflowOutput: function(outputName) {
         while (this.isWorkflowOutput(outputName)) {
-            this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
+            const target = this.getWorkflowOutput(outputName);
+            this.workflow_outputs.splice(_.indexOf(this.workflow_outputs, target), 1);
         }
     },
     addWorkflowOutput: function(outputName, label) {
