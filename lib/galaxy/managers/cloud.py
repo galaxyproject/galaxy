@@ -8,6 +8,13 @@ import random
 import string
 from cgi import FieldStorage
 
+from galaxy.exceptions import (
+    AuthenticationFailed,
+    ItemAccessibilityException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+    RequestParameterMissingException
+)
 from galaxy.managers import sharable
 from galaxy.util import Params
 
@@ -43,8 +50,8 @@ class CloudManager(sharable.SharableModelManager):
             if secret is None:
                 missing_credentials.append('secret_key')
             if len(missing_credentials) > 0:
-                return "400", "The following required key(s) are missing from the provided credentials object: " \
-                              "{}".format(missing_credentials), None
+                raise RequestParameterMissingException("The following required key(s) are missing from the provided "
+                                                       "credentials object: {}".format(missing_credentials))
 
             config = {'aws_access_key': access,
                       'aws_secret_key': secret}
@@ -63,8 +70,8 @@ class CloudManager(sharable.SharableModelManager):
             if tenant is None:
                 missing_credentials.append('tenant')
             if len(missing_credentials) > 0:
-                return "400", "The following required key(s) are missing from the provided credentials object: " \
-                              "{}".format(missing_credentials), None
+                raise RequestParameterMissingException("The following required key(s) are missing from the provided "
+                                                       "credentials object: {}".format(missing_credentials))
 
             config = {'azure_subscription_id': subscription,
                       'azure_client_id': client,
@@ -72,32 +79,30 @@ class CloudManager(sharable.SharableModelManager):
                       'azure_tenant': tenant}
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         else:
-            return "400", "Unrecognized provider '{}'; the following are the supported providers: {}.".format(
-                provider, SUPPORTED_PROVIDERS), None
+            raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
+                                                   "providers: {}.".format(provider, SUPPORTED_PROVIDERS))
 
         try:
             if connection.authenticate():
-                return "200", "", connection
+                return connection
         except ProviderConnectionException as e:
-            return "400", "Could not authenticate to the '{}' provider. {}".format(provider, e), None
+            raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
     def download(self, trans, history_id, provider, container, obj, credentials):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        status, msg, connection = self._configure_provider(provider, credentials)
-        if status != "200":
-            return status, msg
+        connection = self._configure_provider(provider, credentials)
         try:
             container_obj = connection.object_store.get(container)
             if container_obj is None:
-                return "400", "The container `{}` not found.".format(container)
-        except Exception:
-            msg = "Could not get the container `{}`".format(container)
-            log.exception(msg)
-            return "400", msg
+                raise RequestParameterInvalidException("The container `{}` not found.".format(container))
+        except Exception as e:
+            raise ItemAccessibilityException("Could not get the container `{}`: {}".format(container, str(e)))
 
         key = container_obj.get(obj)
+        if key is None:
+            raise ObjectNotFound("Could not get the object `{}`.".format(obj))
         staging_file_name = os.path.abspath(os.path.join(
             trans.app.config.new_file_path,
             "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
