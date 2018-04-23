@@ -383,7 +383,7 @@
 <script>
 import axios from "axios";
 import _l from "utils/localization";
-import HotTable from "vue-handsontable-official";
+import HotTable from "@handsontable/vue";
 import Popover from "mvc/ui/ui-popover";
 import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
@@ -1592,6 +1592,8 @@ export default {
 };
 </script>
 
+<style src="../../../node_modules/handsontable/dist/handsontable.full.css">
+</style>
 <style>
 .table-column {
     width: 100%;
