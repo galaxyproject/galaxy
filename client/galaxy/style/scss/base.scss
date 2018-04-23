@@ -1423,7 +1423,6 @@ div.popmenu-wrapper {
 
 // For all dropdowns, define some additional item types
 ul.dropdown-menu {
-    // No underlines in dropdown menus
     a {
         text-decoration: none;
     }
@@ -1442,7 +1441,7 @@ ul.dropdown-menu {
         border-color: transparent;
     }
 
-    li {
+    li > a {
         @extend .dropdown-item;
     }
 }
