@@ -348,9 +348,9 @@
                     {{ l("Reorient") }}
                 </button>
                 -->
-                <button @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+                <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
                     {{ l("Cancel") }}
-                </button>
+                </b-button>
                 <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
                     {{ l("Reset") }}
                 </b-button>
@@ -376,6 +376,16 @@
         <!-- TODO: steal styling from paired collection builder warning... -->
         <div>
             {{ errorMessage }}
+        </div>
+        <div class="rule-footer footer flex-row no-flex">
+            <option-buttons-div>
+                <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                    {{ l("Close") }}
+                </b-button>
+                <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+                    {{ l("Okay") }}
+                </b-button>
+            </option-buttons-div>
         </div>
     </state-div>
 </template>
@@ -819,6 +829,7 @@ export default {
             titleRemoveMapping: _l("Remove column definition assignment"),
             titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
             titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
+            titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
@@ -925,6 +936,13 @@ export default {
                 return _l("Create new collection from specified rules and datasets");
             } else {
                 return _l("Upload collection using specified rules");
+            }
+        },
+        titleCancel() {
+            if (this.importType == "datasets") {
+                return _l("Close this modal and do not upload any datasets");
+            } else {
+                return _l("Close this modal and do not create any collections");
             }
         },
         finishButtonTitle() {
@@ -1284,9 +1302,11 @@ export default {
             const collectionType = this.collectionType;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                response.done(this.oncreate);
-                response.error(this.renderFetchError);
+                if (this.state !== "error") {
+                    const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                    response.done(this.oncreate);
+                    response.error(this.renderFetchError);
+                }
             } else {
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
@@ -1313,13 +1333,15 @@ export default {
                     ];
                 }
 
-                axios
-                    .post(`${Galaxy.root}api/tools/fetch`, {
-                        history_id: historyId,
-                        targets: targets
-                    })
-                    .then(this.refreshAndWait)
-                    .catch(this.renderFetchError);
+                if (this.state !== "error") {
+                    axios
+                        .post(`${Galaxy.root}api/tools/fetch`, {
+                            history_id: historyId,
+                            targets: targets
+                        })
+                        .then(this.refreshAndWait)
+                        .catch(this.renderFetchError);
+                }
             }
         },
         identifierColumns() {
@@ -1364,6 +1386,7 @@ export default {
 
             for (let collectionName in dataByCollection) {
                 const elements = [];
+                const identifiers = [];
 
                 for (let dataIndex in dataByCollection[collectionName]) {
                     const rowData = data[dataIndex];
@@ -1371,6 +1394,7 @@ export default {
                     // For each row, find place in depth for this element.
                     let collectionTypeAtDepth = collectionType;
                     let elementsAtDepth = elements;
+                    let identifiersAtDepth = identifiers;
 
                     for (
                         let identifierColumnIndex = 0;
@@ -1389,10 +1413,18 @@ export default {
                                     this.state = "error";
                                     this.errorMessage =
                                         "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    return;
                                 }
                             }
                             const element = createDatasetDescription(dataIndex, identifier);
                             elementsAtDepth.push(element);
+                            if (identifiersAtDepth.indexOf(identifier) >= 0) {
+                                this.state = "error";
+                                this.errorMessage =
+                                    "Duplicate identifiers detected, collection identifiers must be unique.";
+                                return;
+                            }
+                            identifiersAtDepth.push(identifier);
                         } else {
                             // Create nesting for this element.
                             collectionTypeAtDepth = collectionTypeAtDepth
@@ -1403,6 +1435,7 @@ export default {
                             for (let element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
                                     elementsAtDepth = element[subElementProp];
+                                    identifiersAtDepth = identifiersAtDepth[identifier];
                                     found = true;
                                     break;
                                 }
@@ -1410,6 +1443,7 @@ export default {
                             if (!found) {
                                 const subcollection = createSubcollectionDescription(identifier);
                                 elementsAtDepth.push(subcollection);
+                                identifiersAtDepth[identifier] = [];
                                 const childCollectionElements = [];
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
@@ -1440,7 +1474,12 @@ export default {
                 "element_identifiers"
             );
             // This modality only allows a single collection to be created currently.
-            return elementsByCollectionName[this.collectionName];
+            if (elementsByCollectionName) {
+                return elementsByCollectionName[this.collectionName];
+            } else {
+                // state was set to error...
+                return;
+            }
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
