@@ -6,8 +6,11 @@ import logging
 
 from galaxy import exceptions
 from galaxy.exceptions import ActionInputError
-from galaxy.managers import cloud
-from galaxy.web import  _future_expose_api as expose_api
+from galaxy.managers import (
+    cloud,
+    datasets
+)
+from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -21,6 +24,7 @@ class CloudController(BaseAPIController):
     def __init__(self, app):
         super(CloudController, self).__init__(app)
         self.cloud_manager = cloud.CloudManager(app)
+        self.datasets_serializer = datasets.DatasetSerializer(app)
 
     @expose_api
     def index(self, trans, **kwargs):
@@ -92,14 +96,16 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
-        status, message = self.cloud_manager.download(trans=trans,
-                                                      history_id=history_id,
-                                                      provider=provider,
-                                                      container=container,
-                                                      obj=obj,
-                                                      credentials=credentials)
-        trans.response.status = status
-        return {'status': status, 'message': message}
+        datasets = self.cloud_manager.download(trans=trans,
+                                               history_id=history_id,
+                                               provider=provider,
+                                               container=container,
+                                               obj=obj,
+                                               credentials=credentials)
+        rtv = []
+        for dataset in datasets:
+            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
+        return rtv
 
     @expose_api
     def upload(self, trans, payload, **kwargs):

@@ -104,6 +104,7 @@ class CloudManager(sharable.SharableModelManager):
         staging_file = open(staging_file_name, "w+")
         key.save_content(staging_file)
 
+        datasets = []
         with open(staging_file_name, "r") as f:
             content = f.read()
             headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
@@ -133,8 +134,10 @@ class CloudManager(sharable.SharableModelManager):
                 raise ValueError('Cannot upload a dataset.')
             else:
                 hids.update({staging_file: output['out_data'][0][1].hid})
+                for d in output['out_data']:
+                    datasets.append(d[1].dataset)
         os.remove(staging_file_name)
-        return "200", 'The dataset is downloaded successfully.'
+        return datasets
 
     def upload(self, dataset, provider, container, obj):
         raise NotImplementedError
