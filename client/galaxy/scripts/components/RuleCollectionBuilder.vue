@@ -5,7 +5,7 @@
         <div class="header flex-row no-flex" v-if="ruleView == 'source'">
             Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
         </div>
-        <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets'">
+        <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
             Use this form to describe rules for building a collection from the specified datasets.
         </div>
         <!-- This modality allows importing individual datasets, multiple collections,
@@ -922,14 +922,14 @@ export default {
             return this.importType == "collections" && !this.mappingAsDict.collection_name;
         },
         titleFinish() {
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create new collection from specified rules and datasets");
             } else {
                 return _l("Upload collection using specified rules");
             }
         },
         finishButtonTitle() {
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create");
             } else {
                 return _l("Upload");
@@ -987,6 +987,9 @@ export default {
             let data, sources;
             if (this.elementsType == "datasets") {
                 data = this.initialElements.map(el => [el["hid"], el["name"]]);
+                sources = this.initialElements.slice();
+            } else if (this.elementsType == "library_datasets") {
+                data = this.initialElements.map(el => [el["name"]]);
                 sources = this.initialElements.slice();
             } else {
                 data = this.initialElements.slice();
@@ -1090,7 +1093,8 @@ export default {
 
             // raw tabular variant can build stand-alone datasets without identifier
             // columns for the collection builder for existing datasets cannot do this.
-            if (this.elementsType == "datasets" && identifierColumns.length == 0) {
+            const fromDatasets = this.elementsType == "datasets" || this.elementsType == "library_datasets";
+            if (fromDatasets && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
@@ -1279,9 +1283,9 @@ export default {
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                const response = this.creationFn(elements, collectionType, name);
+                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
                 response.done(this.oncreate);
                 response.error(this.renderFetchError);
             } else {
@@ -1428,7 +1432,8 @@ export default {
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
-                    return { id: source["id"], name: identifier, src: "hda" };
+                    const src = this.elementsType == "datasets" ? "hda" : "ldda";
+                    return { id: source["id"], name: identifier, src: src };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
