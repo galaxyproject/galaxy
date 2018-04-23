@@ -132,9 +132,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 data.quota_percent,
                 '%"></div>',
                 '<div class="quota-meter-text" data-placement="left" style="top: 6px"',
-                data.nice_total_disk_usage
-                    ? ` title="Using ${data.nice_total_disk_usage}. Click for details.">`
-                    : ">",
+                data.nice_total_disk_usage ? ` title="Using ${data.nice_total_disk_usage}. Click for details.">` : ">",
                 '<a href="https://galaxyproject.org/support/account-quotas/" target="_blank">',
                 _l("Using"),
                 " ",

@@ -389,7 +389,7 @@ import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
-import BootstrapVue from 'bootstrap-vue'
+import BootstrapVue from "bootstrap-vue";
 
 Vue.use(BootstrapVue);
 
@@ -489,7 +489,7 @@ const ColumnSelector = {
             default: _l("From Column")
         },
         help: {
-            required: false,
+            required: false
         },
         colHeaders: {
             type: Array,
@@ -590,7 +590,9 @@ const RegularExpressionInput = {
             return _l("Regular Expressions");
         },
         popoverContent() {
-            return _l(`Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`);
+            return _l(
+                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`
+            );
         }
     }
 };
@@ -626,8 +628,12 @@ const RuleDisplay = {
             const ruleType = this.rule.type;
             return RULES[ruleType].display(this.rule, this.colHeaders);
         },
-        editTitle() { return _l("Edit this rule."); },
-        removeTitle() { return _l("Remove this rule."); }
+        editTitle() {
+            return _l("Edit this rule.");
+        },
+        removeTitle() {
+            return _l("Remove this rule.");
+        }
     },
     methods: {
         edit() {
@@ -799,9 +805,7 @@ export default {
             titleNumericSort: _l(
                 "By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
-            titleInvertFilterRegex: _l(
-                "Remove rows not matching the specified regular expression at specified column"
-            ),
+            titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
             titleInvertFilterMatches: _l("Remove rows not matching supplied value"),
             titleViewSource: _l(
@@ -1719,7 +1723,9 @@ export default {
     display: flex;
     flex-direction: row-reverse;
 }
-.fa-edit, .fa-times, .fa-wrench{
+.fa-edit,
+.fa-times,
+.fa-wrench {
     cursor: pointer;
 }
 </style>

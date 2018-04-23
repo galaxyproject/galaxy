@@ -65,7 +65,7 @@ export default Backbone.View.extend({
         this.selectedDatasetId = null;
 
         this.$sourceContent = this.$(".upload-rule-source-content");
-        this.$sourceContent.on('change keyup paste', () => {
+        this.$sourceContent.on("change keyup paste", () => {
             this._updateBuildState();
         });
         this._renderSelectedType();
@@ -126,7 +126,7 @@ export default Backbone.View.extend({
         if (this.datasetSelectorView) {
             this.datasetSelectorView.value(null);
         }
-        this.$sourceContent.val('');
+        this.$sourceContent.val("");
         this._updateScreen();
     },
 

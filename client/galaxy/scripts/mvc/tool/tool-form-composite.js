@@ -434,7 +434,7 @@ var View = Backbone.View.extend({
                         step
                     )
                 );
-                if(step.step_label) {
+                if (step.step_label) {
                     form.$el.attr("step-label", step.step_label);
                 }
             }
