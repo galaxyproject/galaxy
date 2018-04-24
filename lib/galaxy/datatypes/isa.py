@@ -29,6 +29,7 @@ from isatools import isatab
 from galaxy import model
 from galaxy import util
 from galaxy.datatypes import data
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
 # CONSTANTS {{{1
@@ -40,15 +41,6 @@ INVESTIGATION_FILE_REGEX = re.compile(r"^i_\w+\.txt$", flags=re.IGNORECASE)
 
 # The name of the ISA archive (compressed file) as saved inside Galaxy
 ISA_ARCHIVE_NAME = "archive"
-
-# Archives types
-_FILE_TYPE_PREFIX = {
-    "\x1f\x8b\x08": "gz",
-    "\x42\x5a\x68": "bz2",
-    "\x50\x4b\x03\x04": "zip"
-}
-_MAX_LEN_FILE_TYPE_PREFIX = max(len(x) for x in _FILE_TYPE_PREFIX)
-_FILE_TYPE_REGEX = re.compile("(%s)" % "|".join(map(re.escape, _FILE_TYPE_PREFIX.keys())))
 
 # Set max number of lines of the history peek
 _MAX_LINES_HISTORY_PEEK = 11
@@ -182,91 +174,6 @@ class _Isa(data.Data):
 
         return found_file
 
-    # Extract archive {{{2
-    ################################################################
-
-    def _extract_archive(self, stream, output_path=None):
-        """Extract files from archive and put them is predefined folder."""
-
-        # extract the archive to a temp folder
-        if output_path is None:
-            output_path = tempfile.mkdtemp()
-        # try to detect the type of the compressed archive
-        a_type = self._detect_file_type(stream)
-        # decompress the archive
-        if a_type == "zip":
-            self._extract_zip_archive(stream, output_path)
-        elif a_type == "gz":
-            self._extract_tar_archive(stream, output_path)
-        else:
-            raise Exception("Not supported archive format!!!")
-
-        return output_path
-
-    # Extract ZIP archive {{{2
-    ################################################################
-
-    def _extract_zip_archive(self, stream, target_path):
-        """Extract files from a ZIP archive."""
-
-        temp_folder = tempfile.mkdtemp()
-        data = BytesIO(stream.read())
-        zip_ref = zipfile.ZipFile(data)
-        zip_ref.extractall(path=temp_folder)
-        self._move_to_target_path(temp_folder, target_path)
-
-    # Extract TAR archive {{{2
-    ################################################################
-
-    def _extract_tar_archive(self, stream, target_path):
-        """Extract files from a TAR archive."""
-
-        # extract the TAR archive
-        temp_folder = tempfile.mkdtemp()
-        with tarfile.open(fileobj=stream) as tar:
-            tar.extractall(path=temp_folder)
-        self._move_to_target_path(temp_folder, target_path)
-
-    # Move to target path {{{2
-    ################################################################
-
-    def _move_to_target_path(self, temp_folder, target_path, delete_temp_folder=True):
-        """Move extracted files to the destination folder imposed by Galaxy."""
-
-        # find the root folder containing the dataset
-        tmp_subfolders = [f for f in os.listdir(temp_folder) if
-                          not f.startswith(".") and f not in (ISA_ARCHIVE_NAME, "__MACOSX")]
-        # move files contained within the root dataset folder to their target path
-        root_folder = os.path.join(temp_folder, tmp_subfolders[0])
-        if len(tmp_subfolders) == 1 and os.path.isdir(root_folder):
-            # move the root dataset folder to its final destination and clean the temp data
-            for f in os.listdir(root_folder):
-                shutil.move(os.path.join(root_folder, f), target_path)
-        elif len(tmp_subfolders) > 1:
-            for f in tmp_subfolders:
-                shutil.move(os.path.join(temp_folder, f), target_path)
-        # clean temp data if required
-        if delete_temp_folder:
-            shutil.rmtree(temp_folder)
-
-    # Detect file type {{{2
-    ################################################################
-
-    def _detect_file_type(self, stream):
-        """
-        Try to detect the type of the ISA archive: is it ZIP, or GUNZIP?
-
-        :return: "zip" or "gz" if the file type is detected; None otherwise.
-        """
-        file_type = None
-        file_start = stream.read(_MAX_LEN_FILE_TYPE_PREFIX)
-        stream.seek(0)  # reset the stream
-        matched_prefix = _FILE_TYPE_REGEX.match(file_start)
-        if matched_prefix:
-            file_type = _FILE_TYPE_PREFIX[matched_prefix.string[matched_prefix.start():matched_prefix.end()]]
-
-        return file_type
-
     # Set peek {{{2
     ################################################################
 
@@ -356,10 +263,20 @@ class _Isa(data.Data):
         # extract archive if the file corresponds to the ISA archive
         if basename == ISA_ARCHIVE_NAME:
             # perform extraction
-            with open(file_name, 'rb') as stream:
-                self._extract_archive(stream, output_path=output_path)
-            # remove the original archive file
-            os.remove(file_name)
+            # For some ZIP files CompressedFile::extract() extract the file inside <output_folder>/<file_name> instead of outputing it inside <output_folder>. So we first create a temporary folder, extract inside it, and move content to final destination.
+            temp_folder = tempfile.mkdtemp()
+            CompressedFile(file_name).extract(temp_folder)
+            shutil.rmtree(output_path)
+            extracted_files = os.listdir(temp_folder)
+            logger.debug(' '.join(extracted_files))
+            if len(extracted_files) == 0:
+                os.makedirs(output_path)
+                shutil.rmtree(temp_folder)
+            elif len(extracted_files) == 1 and os.path.isdir(os.path.join(temp_folder, extracted_files[0])):
+                shutil.move(os.path.join(temp_folder, extracted_files[0]), output_path)
+                shutil.rmtree(temp_folder)
+            else:
+                shutil.move(temp_folder, output_path)
 
     # Set meta {{{2
     ################################################################
