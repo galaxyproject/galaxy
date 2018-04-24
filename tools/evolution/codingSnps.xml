@@ -1,4 +1,4 @@
-<tool id="hgv_codingSnps" name="aaChanges" version="1.0.0">
+<tool id="hgv_codingSnps" name="aaChanges" version="1.0.1">
   <description>amino-acid changes caused by a set of SNPs</description>
 
   <command interpreter="perl">

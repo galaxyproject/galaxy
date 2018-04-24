@@ -1,4 +1,4 @@
-<tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.0">
+<tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.1">
   <description>converter</description>
   <edam_operations>
     <edam_operation>operation_3434</edam_operation>

@@ -1,4 +1,4 @@
-<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.0" hidden="true">
+<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.1" hidden="true">
     <requirements>
         <requirement type="package">ucsc-bedgraphtobigwig</requirement>
         <requirement type="package">samtools</requirement>

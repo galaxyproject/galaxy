@@ -1,4 +1,4 @@
-<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.3">
+<tool id="Extract genomic DNA 1" name="Extract Genomic DNA" version="2.2.4">
   <description>using coordinates from assembled/unassembled genomes</description>
   <requirements>
       <requirement type="package">ucsc-fatotwobit</requirement>
