@@ -32,7 +32,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
-SUPPORTED_PROVIDERS = "{aws, azure}"
+SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
 
 
 class CloudManager(sharable.SharableModelManager):
@@ -93,6 +93,35 @@ class CloudManager(sharable.SharableModelManager):
                       'azure_secret': secret,
                       'azure_tenant': tenant}
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
+        elif provider == "openstack":
+            username = credentials.get('username', None)
+            if username is None:
+                missing_credentials.append('username')
+            password = credentials.get('password', None)
+            if password is None:
+                missing_credentials.append('password')
+            auth_url = credentials.get('authentication URL', None)
+            if auth_url is None:
+                missing_credentials.append('authentication URL')
+            prj_name = credentials.get('project name', None)
+            if prj_name is None:
+                missing_credentials.append('project name')
+            prj_domain_name = credentials.get('project domain name', None)
+            if prj_domain_name is None:
+                missing_credentials.append('project domain name')
+            domain_name = credentials.get('domain name', None)
+            if domain_name is None:
+                missing_credentials.append('domain name')
+            if len(missing_credentials) > 0:
+                raise RequestParameterMissingException("The following required key(s) are missing from the provided "
+                                                       "credentials object: {}".format(missing_credentials))
+            config = {'username': username,
+                      'password': password,
+                      'authentication URL': auth_url,
+                      'project name': prj_name,
+                      'project domain name': prj_domain_name,
+                      'domain name': domain_name}
+            connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
         else:
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
                                                    "providers: {}.".format(provider, SUPPORTED_PROVIDERS))

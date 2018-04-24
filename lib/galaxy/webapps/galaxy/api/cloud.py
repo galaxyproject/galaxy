@@ -50,7 +50,7 @@ class CloudController(BaseAPIController):
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   history_id:    the (encoded) id of history to which the object should be downloaded to.
-            *   provider:      the name of cloud-based resource provided (e.g., 'aws' or 'azure').
+            *   provider:      the name of cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
             *   container:     is the name of container from which data should be downloaded (e.g., a bucket name on AWS S3).
             *   object:        is the name of an object to be downloaded.
             *   credentials:   is a dictionary containing all the credentials required to authenticated to the
