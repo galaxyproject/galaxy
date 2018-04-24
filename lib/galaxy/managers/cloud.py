@@ -141,6 +141,7 @@ class CloudManager(sharable.SharableModelManager):
                 hids.update({staging_file: output['out_data'][0][1].hid})
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
+        staging_file.close()
         os.remove(staging_file_name)
         return datasets
 
