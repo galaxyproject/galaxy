@@ -132,7 +132,7 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def download(self, trans, history_id, provider, container, obj, credentials):
+    def download(self, trans, history_id, provider, bucket, obj, credentials):
         """
         Implements the logic of downloading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -147,11 +147,11 @@ class CloudManager(sharable.SharableModelManager):
         :param provider: the name of cloud-based resource provided. A list of supported providers is given in
         `SUPPORTED_PROVIDERS` variable.
 
-        :type  container: string
-        :param container: is the name of container from which data should be downloaded (e.g., a bucket name on AWS S3).
+        :type  bucket: string
+        :param bucket: the name of a bucket from which data should be downloaded (e.g., a bucket name on AWS S3).
 
         :type  obj: string
-        :param obj: is the name of an object to be downloaded.
+        :param obj: the name of an object to be downloaded.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
@@ -165,13 +165,13 @@ class CloudManager(sharable.SharableModelManager):
 
         connection = self._configure_provider(provider, credentials)
         try:
-            container_obj = connection.object_store.get(container)
-            if container_obj is None:
-                raise RequestParameterInvalidException("The container `{}` not found.".format(container))
+            bucket_obj = connection.object_store.get(bucket)
+            if bucket_obj is None:
+                raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket))
         except Exception as e:
-            raise ItemAccessibilityException("Could not get the container `{}`: {}".format(container, str(e)))
+            raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket, str(e)))
 
-        key = container_obj.get(obj)
+        key = bucket_obj.get(obj)
         if key is None:
             raise ObjectNotFound("Could not get the object `{}`.".format(obj))
         staging_file_name = os.path.abspath(os.path.join(
@@ -216,5 +216,5 @@ class CloudManager(sharable.SharableModelManager):
         os.remove(staging_file_name)
         return datasets
 
-    def upload(self, dataset, provider, container, obj):
+    def upload(self, dataset, provider, bucket, obj):
         raise NotImplementedError

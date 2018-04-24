@@ -30,10 +30,10 @@ class CloudController(BaseAPIController):
     def index(self, trans, **kwargs):
         """
         * GET /api/cloud
-            Lists cloud-based containers (e.g., S3 bucket, Azure blob) user has defined.
+            Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
         :param trans:
         :param kwargs:
-        :return: A list of cloud-based containers user has defined.
+        :return: A list of cloud-based buckets user has defined.
         """
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
         trans.response.status = 501
@@ -43,17 +43,17 @@ class CloudController(BaseAPIController):
     def download(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/download
-            Downloads a given object from a given cloud-based container.
+            Downloads a given object from a given cloud-based bucket.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   history_id:    the (encoded) id of history to which the object should be downloaded to.
-            *   provider:      the name of cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
-            *   container:     is the name of container from which data should be downloaded (e.g., a bucket name on AWS S3).
-            *   object:        is the name of an object to be downloaded.
-            *   credentials:   is a dictionary containing all the credentials required to authenticated to the
+            *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
+            *   bucket:        the name of a bucket from which data should be downloaded (e.g., a bucket name on AWS S3).
+            *   object:        the name of an object to be downloaded.
+            *   credentials:   a dictionary containing all the credentials required to authenticated to the
             specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
         :param kwargs:
@@ -76,9 +76,9 @@ class CloudController(BaseAPIController):
         if provider is None:
             missing_arguments.append("provider")
 
-        container = payload.get("container", None)
-        if container is None:
-            missing_arguments.append("container")
+        bucket = payload.get("bucket", None)
+        if bucket is None:
+            missing_arguments.append("bucket")
 
         obj = payload.get("object", None)
         if obj is None:
@@ -99,7 +99,7 @@ class CloudController(BaseAPIController):
         datasets = self.cloud_manager.download(trans=trans,
                                                history_id=history_id,
                                                provider=provider,
-                                               container=container,
+                                               bucket=bucket,
                                                obj=obj,
                                                credentials=credentials)
         rtv = []
@@ -111,7 +111,7 @@ class CloudController(BaseAPIController):
     def upload(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/upload
-            Uploads a given dataset to a given cloud-based container.
+            Uploads a given dataset to a given cloud-based bucket.
         :param trans:
         :param payload:
         :param kwargs:
