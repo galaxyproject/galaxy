@@ -49,14 +49,6 @@ _MAX_LINES_HISTORY_PEEK = 11
 ################################################################
 
 logger = logging.getLogger(__name__)
-ch = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter("%(name)s %(levelname)s %(asctime)s %(message)s")
-ch.setFormatter(formatter)
-logger.handlers = []
-logger.propagate = False
-logger.addHandler(ch)
-logger.setLevel(logging.ERROR)
-
 
 # Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
 ################################################################
