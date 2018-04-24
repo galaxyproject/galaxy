@@ -1,0 +1,16 @@
+ <tool id="__APPLY_RULES__"
+      name="Apply Rule to Collection"
+      version="1.0.0"
+      tool_type="apply_rules_to_collection">
+    <type class="ApplyRulesTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection" />
+        <param type="rules" name="rules" data_ref="input" label="Rules" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type_from_rules="rules" label="${on_string} (re-organized)" >
+        </collection>
+    </outputs>
+</tool>

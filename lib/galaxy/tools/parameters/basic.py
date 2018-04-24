@@ -4,6 +4,7 @@ Basic tool parameters.
 from __future__ import print_function
 
 import cgi
+import json
 import logging
 import os
 import os.path
@@ -23,6 +24,7 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.rules_dsl import RuleSet
 from galaxy.web import url_for
 from . import validation
 from .dataset_matcher import (
@@ -2111,6 +2113,65 @@ class LibraryDatasetToolParameter(ToolParameter):
         return d
 
 
+class BaseJsonToolParameter(ToolParameter):
+    """
+    Class of parameter that tries to keep values as close to JSON as possible.
+    In particular value_to_basic is overloaded to prevent params_to_strings from
+    double encoding JSON and to_python using loads to produce values.
+    """
+
+    def value_to_basic(self, value, app, use_security=False):
+        if is_runtime_value(value):
+            return {'__class__': 'RuntimeValue'}
+        return value
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        return json.dumps(value)
+
+    def to_python(self, value, app):
+        """Convert a value created with to_json back to an object representation"""
+        return json.loads(value)
+
+
+class RulesListToolParameter(BaseJsonToolParameter):
+    """
+    Parameter that allows for the creation of a list of rules using the Galaxy rules DSL.
+    """
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        BaseJsonToolParameter.__init__(self, tool, input_source)
+        self.data_ref = input_source.get("data_ref", None)
+
+    def to_dict(self, trans, other_values={}):
+        d = ToolParameter.to_dict(self, trans)
+        target_name = self.data_ref
+        if target_name in other_values:
+            target = other_values[target_name]
+            if not is_runtime_value(target):
+                d["target"] = {
+                    "src": "hdca" if hasattr(target, "collection") else "hda",
+                    "id": trans.app.security.encode_id(target.id),
+                }
+        return d
+
+    def validate(self, value, trans=None):
+        super(RulesListToolParameter, self).validate(value, trans=trans)
+        if not isinstance(value, dict):
+            raise ValueError("No rules specified for rules parameter.")
+
+        if "rules" not in value:
+            raise ValueError("No rules specified for rules parameter")
+        mappings = value.get("mapping", None)
+        if not mappings:
+            raise ValueError("No column definitions defined for rules parameter.")
+
+    def to_text(self, value):
+        rule_set = RuleSet(value)
+        return rule_set.display
+
+
 parameter_types = dict(
     text=TextToolParameter,
     integer=IntegerToolParameter,
@@ -2129,6 +2190,7 @@ parameter_types = dict(
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
     library_data=LibraryDatasetToolParameter,
+    rules=RulesListToolParameter,
     drill_down=DrillDownSelectToolParameter
 )
 

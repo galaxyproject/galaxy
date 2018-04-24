@@ -215,6 +215,7 @@ tool_form:
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
     bibtex_area: '.citations-bibtex textarea'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:
     generate_tour: 'Generate Tour'

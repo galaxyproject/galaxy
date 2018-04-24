@@ -280,6 +280,17 @@ var View = Backbone.View.extend({
                 this.form.highlight(input_id);
                 return false;
             }
+            if (input_field.validate) {
+                // wish there was a way to just reset this input field
+                const reset = () => {
+                    this.form.trigger("reset");
+                };
+                const validateObject = input_field.validate(reset);
+                if (!validateObject.valid) {
+                    this.form.highlight(input_id, validateObject.message);
+                    return false;
+                }
+            }
             if (input_value && input_value.batch) {
                 var n = input_value.values.length;
                 var src = n > 0 && input_value.values[0] && input_value.values[0].src;

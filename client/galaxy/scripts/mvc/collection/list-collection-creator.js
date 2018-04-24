@@ -1090,7 +1090,9 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
             creationFn: options.creationFn,
             oncancel: options.oncancel,
             oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems
+            defaultHideSourceItems: options.defaultHideSourceItems,
+            saveRulesFn: options.saveRulesFn,
+            initialRules: options.initialRules
         }
     }).$mount(vm);
     return deferred;
@@ -1128,7 +1130,8 @@ function createListCollection(contents, defaultHideSourceItems) {
 
 function createCollectionViaRules(selection, defaultHideSourceItems) {
     let elements, elementsType, importType;
-    if (!selection.selectionType) {
+    const selectionType = selection.selectionType;
+    if (!selectionType) {
         // Have HDAs from the history panel.
         elements = selection.toJSON();
         elementsType = "datasets";

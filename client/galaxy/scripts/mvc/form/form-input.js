@@ -85,11 +85,13 @@ export default Backbone.View.extend({
         // render visibility
         this.$el[this.model.get("hidden") ? "hide" : "show"]();
         // render preview view for collapsed fields
+        // allow at least newlines to render properly after escape
+        const html = _.escape(this.model.get("text_value")).replace(/\n/g, "<br />");
         this.$preview[
             (this.field.collapsed && this.model.get("collapsible_preview")) || this.model.get("disabled")
                 ? "show"
                 : "hide"
-        ]().html(_.escape(this.model.get("text_value")));
+        ]().html(html);
         // render error messages
         var error_text = this.model.get("error_text");
         this.$error[error_text ? "show" : "hide"]();
@@ -106,7 +108,14 @@ export default Backbone.View.extend({
                 style: this.model.get("style")
             });
         // render collapsible options
-        if (!this.model.get("disabled") && this.model.get("collapsible_value") !== undefined) {
+        const workflowRuntimeCompatible =
+            this.field.workflowRuntimeCompatible === undefined ? true : this.field.workflowRuntimeCompatible;
+        if (
+            workflowRuntimeCompatible &&
+            !this.model.get("disabled") &&
+            this.model.get("collapsible_value") !== undefined
+        ) {
+            console.log(this.field);
             var collapsible_state = this.field.collapsed ? "enable" : "disable";
             this.$title_text.hide();
             this.$collapsible.show();
