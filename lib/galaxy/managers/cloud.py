@@ -41,6 +41,21 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     def _configure_provider(self, provider, credentials):
+        """
+        Given a provider name and required credentials, it configures and returns a cloudbridge
+        connection to the provider.
+
+        :type  provider: string
+        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
+        `SUPPORTED_PROVIDERS` variable.
+
+        :type  credentials: dict
+        :param credentials: a dictionary containing all the credentials required to authenticated to the
+        specified provider.
+
+        :rtype: provider specific, e.g., `cloudbridge.cloud.providers.aws.provider.AWSCloudProvider` for AWS.
+        :return: a cloudbridge connection to the specified provider.
+        """
         missing_credentials = []
         if provider == 'aws':
             access = credentials.get('access_key', None)
@@ -89,6 +104,33 @@ class CloudManager(sharable.SharableModelManager):
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
     def download(self, trans, history_id, provider, container, obj, credentials):
+        """
+        Implements the logic of downloading a file from a cloud-based storage (e.g., Amazon S3)
+        and persisting it as a Galaxy dataset.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type  history_id: string
+        :param history_id: the (encoded) id of history to which the object should be downloaded to.
+
+        :type  provider: string
+        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
+        `SUPPORTED_PROVIDERS` variable.
+
+        :type  container: string
+        :param container: is the name of container from which data should be downloaded (e.g., a bucket name on AWS S3).
+
+        :type  obj: string
+        :param obj: is the name of an object to be downloaded.
+
+        :type  credentials: dict
+        :param credentials: a dictionary containing all the credentials required to authenticated to the
+        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+
+        :rtype:  list of galaxy.model.Dataset
+        :return: a list of datasets created for the downloaded files.
+        """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
