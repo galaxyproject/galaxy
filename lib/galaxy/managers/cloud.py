@@ -100,27 +100,27 @@ class CloudManager(sharable.SharableModelManager):
             password = credentials.get('password', None)
             if password is None:
                 missing_credentials.append('password')
-            auth_url = credentials.get('authentication URL', None)
+            auth_url = credentials.get('auth_url', None)
             if auth_url is None:
-                missing_credentials.append('authentication URL')
-            prj_name = credentials.get('project name', None)
+                missing_credentials.append('auth_url')
+            prj_name = credentials.get('project_name', None)
             if prj_name is None:
-                missing_credentials.append('project name')
-            prj_domain_name = credentials.get('project domain name', None)
+                missing_credentials.append('project_name')
+            prj_domain_name = credentials.get('project_domain_name', None)
             if prj_domain_name is None:
-                missing_credentials.append('project domain name')
-            domain_name = credentials.get('domain name', None)
-            if domain_name is None:
-                missing_credentials.append('domain name')
+                missing_credentials.append('project_domain_name')
+            user_domain_name = credentials.get('user_domain_name', None)
+            if user_domain_name is None:
+                missing_credentials.append('user_domain_name')
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException("The following required key(s) are missing from the provided "
                                                        "credentials object: {}".format(missing_credentials))
-            config = {'username': username,
-                      'password': password,
-                      'authentication URL': auth_url,
-                      'project name': prj_name,
-                      'project domain name': prj_domain_name,
-                      'domain name': domain_name}
+            config = {'os_username': username,
+                      'os_password': password,
+                      'os_auth_url': auth_url,
+                      'os_project_name': prj_name,
+                      'os_project_domain_name': prj_domain_name,
+                      'os_user_domain_name': user_domain_name}
             connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
         else:
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
