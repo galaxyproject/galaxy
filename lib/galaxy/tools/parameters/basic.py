@@ -2168,8 +2168,11 @@ class RulesListToolParameter(BaseJsonToolParameter):
             raise ValueError("No column definitions defined for rules parameter.")
 
     def to_text(self, value):
-        rule_set = RuleSet(value)
-        return rule_set.display
+        if value:
+            rule_set = RuleSet(value)
+            return rule_set.display
+        else:
+            return ""
 
 
 parameter_types = dict(
