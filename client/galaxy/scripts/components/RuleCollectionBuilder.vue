@@ -204,6 +204,7 @@
                                         v-bind:index="target"
                                         v-bind:key="target"
                                         class="dropdown-item"
+                                        href="#"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)">
                                       {{ mappingTargets()[target].label }}
@@ -240,7 +241,7 @@
                                                     v-on:mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                                     :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
-                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a class="force-link-style" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
+                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="#" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
                                 </div>
                             </ol>
                             <div class="rules-buttons">
@@ -253,7 +254,7 @@
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <a class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                    <a href="#" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
@@ -707,7 +708,7 @@ const IdentifierDisplay = {
 };
 
 const RuleTargetComponent = {
-    template: `<a class="rule-link dropdown-item" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
+    template: `<a class="rule-link dropdown-item" href="#" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
@@ -1783,10 +1784,5 @@ export default {
 .fa-times,
 .fa-wrench {
     cursor: pointer;
-}
-/* Galaxy's drops underline on a without href, but I cannot use href="#" in this component
-   because it interferes with the library router. */
-a.force-link-style {
-    text-decoration: underline !important;
 }
 </style>
