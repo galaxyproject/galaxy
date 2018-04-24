@@ -228,7 +228,9 @@ class GalaxyInteractorApi(object):
 
     @nottest
     def test_data_path(self, tool_id, filename):
-        return self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename)).json()
+        response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
+        assert response.status_code == 200
+        return response.json()
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
