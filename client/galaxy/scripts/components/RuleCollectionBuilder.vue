@@ -2,25 +2,25 @@
     <state-div v-if="state == 'build'">
         <!-- Different instructions if building up from individual datasets vs.
              initial data import. -->
-        <div class="header flex-row no-flex" v-if="ruleView == 'source'">
+        <rule-modal-header v-if="ruleView == 'source'">
             Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
-        </div>
-        <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets'">
+        </rule-modal-header>
+        <rule-modal-header v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
             Use this form to describe rules for building a collection from the specified datasets.
-        </div>
+        </rule-modal-header>
         <!-- This modality allows importing individual datasets, multiple collections,
              and requires a data source - note that. -->
-        <div class="header flex-row no-flex" v-else-if="importType == 'datasets'">
+        <rule-modal-header v-else-if="importType == 'datasets'">
             Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...).
-        </div>
-        <div class="header flex-row no-flex" v-else>
-            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). Be sure to specify at least one column as a list identifier - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
-        </div>
-        <div class="middle flex-row flex-row-container" v-if="ruleView == 'source'">
-            <p class="alert-message" v-if="ruleSourceError">{{ ruleSourceError }}</p>
+        </rule-modal-header>
+        <rule-modal-header v-else>
+            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+        </rule-modal-header>
+        <rule-modal-middle v-if="ruleView == 'source'">
+            <p class="errormessagelarge" v-if="ruleSourceError">{{ ruleSourceError }}</p>
             <textarea class="rule-source" v-model="ruleSource"></textarea>
-        </div>
-        <div class="middle flex-row flex-row-container" v-else>
+        </rule-modal-middle>
+        <rule-modal-middle v-else>
             <!-- column-headers -->
             <div class="rule-builder-body vertically-spaced"
                  v-bind:class="{ 'flex-column-container': vertical }" v-if="ruleView == 'normal'">
@@ -204,7 +204,6 @@
                                         v-bind:index="target"
                                         v-bind:key="target"
                                         class="dropdown-item"
-                                        href="#"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)">
                                       {{ mappingTargets()[target].label }}
@@ -241,7 +240,7 @@
                                                     v-on:mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                                     :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
-                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="#" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
+                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a class="force-link-style" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
                                 </div>
                             </ol>
                             <div class="rules-buttons">
@@ -254,7 +253,7 @@
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <a href="#" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                    <a class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
@@ -298,23 +297,20 @@
                     </hot-table>
                 </div>
             </div>
-        </div>
-        <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
-            <option-buttons-div>
-                <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
-                    {{ l("Cancel") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </b-button>
-               <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
-                    {{ l("Apply")}}
-                </b-button>
-            </option-buttons-div>
-        </div>
-        <div class="rule-footer footer flex-row no-flex vertically-spaced"
-             v-else-if="ruleView == 'normal'">
-            <div class="rule-footer-inputs">
+        </rule-modal-middle>
+        <rule-modal-footer v-if="ruleView == 'source'">
+            <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+           <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
+                {{ l("Apply")}}
+            </b-button>
+        </rule-modal-footer>
+        <rule-modal-footer v-else-if="ruleView == 'normal'">
+            <div class="rule-footer-inputs" slot="inputs">
                 <label v-if="elementsType == 'datasets'">
                     {{ l("Hide original elements") }}:
                 </label>
@@ -343,47 +339,50 @@
                     </label>
                 </div>
             </div>
-            <option-buttons-div>
-                <!--
-                <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
-                    {{ l("Reorient") }}
-                </button>
-                -->
-                <button @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
-                    {{ l("Cancel") }}
-                </button>
-                <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" v-bind:class="{ disabled: !validInput }">
-                    {{ finishButtonTitle }}
-                </b-button>
-            </option-buttons-div>
-        </div>
+
+            <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
+                {{ finishButtonTitle }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
-        <div class="header flex-row no-flex">
+        <rule-modal-header>
             {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
-        </div>
-        <div class="rule-footer footer flex-row no-flex">
-            <option-buttons-div>
-                <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
-                    {{ l("Close") }}
-                </b-button>
-            </option-buttons-div>
-        </div>
+        </rule-modal-header>
+        <rule-modal-footer>
+            <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'error'">
         <!-- TODO: steal styling from paired collection builder warning... -->
-        <div>
-            {{ errorMessage }}
-        </div>
+        <rule-modal-header>
+            A problem was encountered.
+        </rule-modal-header>
+        <rule-modal-middle>
+            <p class="errormessagelarge">{{ errorMessage }}</p>
+        </rule-modal-middle>
+        <rule-modal-footer>
+            <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+                {{ l("Okay") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
 </template>
 <script>
 import axios from "axios";
 import _l from "utils/localization";
-import HotTable from "vue-handsontable-official";
+import HotTable from "@handsontable/vue";
 import Popover from "mvc/ui/ui-popover";
 import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
@@ -708,7 +707,7 @@ const IdentifierDisplay = {
 };
 
 const RuleTargetComponent = {
-    template: `<a class="rule-link dropdown-item" href="#" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
+    template: `<a class="rule-link dropdown-item" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
@@ -772,11 +771,30 @@ const RuleComponent = {
 };
 
 const StateDiv = {
-    template: `<div class="rule-collection-creator collection-creator flex-row-container"><slot></slot></div>`
+    template: `
+        <div class="rule-collection-creator collection-creator flex-row-container">
+            <slot></slot>
+        </div>`
 };
 
-const OptionButtonsDiv = {
-    template: `<div class="actions clear vertically-spaced"><div class="main-options float-right"><slot></slot></div></div>`
+const RuleModalHeader = {
+    template: `<div class="header flex-row no-flex"><slot></slot></div>`
+};
+
+const RuleModalMiddle = {
+    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
+}
+
+const RuleModalFooter = {
+    template: `   
+        <div class="rule-footer footer flex-row no-flex">
+            <slot name="inputs"></slot>
+            <div class="actions clear vertically-spaced">
+                <div class="main-options float-right">
+                    <slot></slot>
+                </div>
+            </div>
+        </div>`
 };
 
 export default {
@@ -820,6 +838,7 @@ export default {
             titleRemoveMapping: _l("Remove column definition assignment"),
             titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
             titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
+            titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
@@ -922,14 +941,21 @@ export default {
             return this.importType == "collections" && !this.mappingAsDict.collection_name;
         },
         titleFinish() {
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create new collection from specified rules and datasets");
             } else {
                 return _l("Upload collection using specified rules");
             }
         },
+        titleCancel() {
+            if (this.importType == "datasets") {
+                return _l("Close this modal and do not upload any datasets");
+            } else {
+                return _l("Close this modal and do not create any collections");
+            }
+        },
         finishButtonTitle() {
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create");
             } else {
                 return _l("Upload");
@@ -987,6 +1013,9 @@ export default {
             let data, sources;
             if (this.elementsType == "datasets") {
                 data = this.initialElements.map(el => [el["hid"], el["name"]]);
+                sources = this.initialElements.slice();
+            } else if (this.elementsType == "library_datasets") {
+                data = this.initialElements.map(el => [el["name"]]);
                 sources = this.initialElements.slice();
             } else {
                 data = this.initialElements.slice();
@@ -1090,7 +1119,8 @@ export default {
 
             // raw tabular variant can build stand-alone datasets without identifier
             // columns for the collection builder for existing datasets cannot do this.
-            if (this.elementsType == "datasets" && identifierColumns.length == 0) {
+            const fromDatasets = this.elementsType == "datasets" || this.elementsType == "library_datasets";
+            if (fromDatasets && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
@@ -1279,11 +1309,13 @@ export default {
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                const response = this.creationFn(elements, collectionType, name);
-                response.done(this.oncreate);
-                response.error(this.renderFetchError);
+                if (this.state !== "error") {
+                    const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                    response.done(this.oncreate);
+                    response.error(this.renderFetchError);
+                }
             } else {
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
@@ -1310,13 +1342,15 @@ export default {
                     ];
                 }
 
-                axios
-                    .post(`${Galaxy.root}api/tools/fetch`, {
-                        history_id: historyId,
-                        targets: targets
-                    })
-                    .then(this.refreshAndWait)
-                    .catch(this.renderFetchError);
+                if (this.state !== "error") {
+                    axios
+                        .post(`${Galaxy.root}api/tools/fetch`, {
+                            history_id: historyId,
+                            targets: targets
+                        })
+                        .then(this.refreshAndWait)
+                        .catch(this.renderFetchError);
+                }
             }
         },
         identifierColumns() {
@@ -1361,6 +1395,7 @@ export default {
 
             for (let collectionName in dataByCollection) {
                 const elements = [];
+                const identifiers = [];
 
                 for (let dataIndex in dataByCollection[collectionName]) {
                     const rowData = data[dataIndex];
@@ -1368,6 +1403,7 @@ export default {
                     // For each row, find place in depth for this element.
                     let collectionTypeAtDepth = collectionType;
                     let elementsAtDepth = elements;
+                    let identifiersAtDepth = identifiers;
 
                     for (
                         let identifierColumnIndex = 0;
@@ -1386,10 +1422,18 @@ export default {
                                     this.state = "error";
                                     this.errorMessage =
                                         "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    return;
                                 }
                             }
                             const element = createDatasetDescription(dataIndex, identifier);
                             elementsAtDepth.push(element);
+                            if (identifiersAtDepth.indexOf(identifier) >= 0) {
+                                this.state = "error";
+                                this.errorMessage =
+                                    "Duplicate identifiers detected, collection identifiers must be unique.";
+                                return;
+                            }
+                            identifiersAtDepth.push(identifier);
                         } else {
                             // Create nesting for this element.
                             collectionTypeAtDepth = collectionTypeAtDepth
@@ -1400,6 +1444,7 @@ export default {
                             for (let element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
                                     elementsAtDepth = element[subElementProp];
+                                    identifiersAtDepth = identifiersAtDepth[identifier];
                                     found = true;
                                     break;
                                 }
@@ -1407,6 +1452,7 @@ export default {
                             if (!found) {
                                 const subcollection = createSubcollectionDescription(identifier);
                                 elementsAtDepth.push(subcollection);
+                                identifiersAtDepth[identifier] = [];
                                 const childCollectionElements = [];
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
@@ -1428,7 +1474,8 @@ export default {
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
-                    return { id: source["id"], name: identifier, src: "hda" };
+                    const src = this.elementsType == "datasets" ? "hda" : "ldda";
+                    return { id: source["id"], name: identifier, src: src };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
@@ -1436,7 +1483,12 @@ export default {
                 "element_identifiers"
             );
             // This modality only allows a single collection to be created currently.
-            return elementsByCollectionName[this.collectionName];
+            if (elementsByCollectionName) {
+                return elementsByCollectionName[this.collectionName];
+            } else {
+                // state was set to error...
+                return;
+            }
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
@@ -1581,12 +1633,16 @@ export default {
         ColumnSelector,
         RegularExpressionInput,
         StateDiv,
-        OptionButtonsDiv,
+        RuleModalHeader,
+        RuleModalMiddle,
+        RuleModalFooter,
         Select2
     }
 };
 </script>
 
+<style src="../../../node_modules/handsontable/dist/handsontable.full.css">
+</style>
 <style>
 .table-column {
     width: 100%;
@@ -1727,5 +1783,10 @@ export default {
 .fa-times,
 .fa-wrench {
     cursor: pointer;
+}
+/* Galaxy's drops underline on a without href, but I cannot use href="#" in this component
+   because it interferes with the library router. */
+a.force-link-style {
+    text-decoration: underline !important;
 }
 </style>

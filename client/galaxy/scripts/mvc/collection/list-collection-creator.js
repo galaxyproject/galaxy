@@ -1171,5 +1171,6 @@ export default {
     collectionCreatorModal: collectionCreatorModal,
     listCollectionCreatorModal: listCollectionCreatorModal,
     createListCollection: createListCollection,
-    createCollectionViaRules: createCollectionViaRules
+    createCollectionViaRules: createCollectionViaRules,
+    ruleBasedCollectionCreatorModal: ruleBasedCollectionCreatorModal
 };
