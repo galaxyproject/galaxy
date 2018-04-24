@@ -1069,8 +1069,8 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
     let title;
     if (importType == "datasets") {
         title = _l("Build Rules for Uploading Datasets");
-    } else if (elementsType == "datasets") {
-        title = _l("Build Rules for Creating Collection");
+    } else if (elementsType == "datasets" || elementsType == "library_datasets") {
+        title = _l("Build Rules for Creating Collection(s)");
     } else {
         title = _l("Build Rules for Uploading Collections");
     }
