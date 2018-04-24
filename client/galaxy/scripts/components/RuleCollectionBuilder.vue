@@ -204,7 +204,7 @@
                                         v-bind:index="target"
                                         v-bind:key="target"
                                         class="dropdown-item"
-                                        href="#"
+                                        href="javascript:void(0)"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
                                         @click="addIdentifier(target)">
                                       {{ mappingTargets()[target].label }}
@@ -241,7 +241,7 @@
                                                     v-on:mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                                     :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
-                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="#" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
+                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
                                 </div>
                             </ol>
                             <div class="rules-buttons">
@@ -254,7 +254,7 @@
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <a href="#" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                    <a href="javascript:void(0)" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
@@ -708,7 +708,7 @@ const IdentifierDisplay = {
 };
 
 const RuleTargetComponent = {
-    template: `<a class="rule-link dropdown-item" href="#" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
+    template: `<a class="rule-link dropdown-item" href="javascript:void(0)" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
@@ -787,7 +787,7 @@ const RuleModalMiddle = {
 }
 
 const RuleModalFooter = {
-    template: `   
+    template: `
         <div class="rule-footer footer flex-row no-flex">
             <slot name="inputs"></slot>
             <div class="actions clear vertically-spaced">
