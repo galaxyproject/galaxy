@@ -21,7 +21,7 @@ form, a dynamic preview of the processing will be available in a tabular data vi
 may be used in workflows as well where no such preview can be generated.
 
 This tool is an advanced feature but has a lot of flexibility - it can be used to process collections
-with arbitrary nesting and can do many be used to do many kinds of filtering, re-sorting, nesting, 
+with arbitrary nesting and can do many kinds of filtering, re-sorting, nesting,
 flattening, and arbitrary combinations thereof not possible with Galaxy's other, more simple 
 collection operation tools.
 
