@@ -1033,8 +1033,9 @@ const collectionCreatorModalSetup = function _collectionCreatorModalSetup(option
         modal.show({
             title: options.title || _l("Create a collection"),
             body: el,
-            width: "80%",
+            width: "85%",
             height: "100%",
+            xlarge: true,
             closing_events: true
         });
     };
