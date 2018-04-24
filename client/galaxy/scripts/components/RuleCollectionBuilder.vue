@@ -6,7 +6,7 @@
             Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
         </rule-modal-header>
         <rule-modal-header v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
-            Use this form to describe rules for building a collection from the specified datasets.
+            Use this form to describe rules for building collection(s) from the specified datasets. <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
         </rule-modal-header>
         <!-- This modality allows importing individual datasets, multiple collections,
              and requires a data source - note that. -->
@@ -381,6 +381,7 @@
     </state-div>
 </template>
 <script>
+import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
 import HotTable from "@handsontable/vue";
@@ -930,7 +931,7 @@ export default {
     computed: {
         exisistingDatasets() {
             const elementsType = this.elementsType;
-            return elementsType === "datasets";
+            return elementsType === "datasets" || elementsType === "library_datasets";
         },
         showFileTypeSelector() {
             return !this.exisistingDatasets && !this.mappingAsDict.file_type;
@@ -1312,11 +1313,13 @@ export default {
             const collectionType = this.collectionType;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                if (this.state !== "error") {
-                    const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                    response.done(this.oncreate);
-                    response.error(this.renderFetchError);
-                }
+                new AjaxQueue.AjaxQueue(
+                    _.map(elements, (elements, name) => {
+                        return () => {
+                           const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                           return response;
+                        };
+                })).done(this.oncreate).fail(this.renderFetchError);
             } else {
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
@@ -1483,13 +1486,7 @@ export default {
                 },
                 "element_identifiers"
             );
-            // This modality only allows a single collection to be created currently.
-            if (elementsByCollectionName) {
-                return elementsByCollectionName[this.collectionName];
-            } else {
-                // state was set to error...
-                return;
-            }
+            return elementsByCollectionName;
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
