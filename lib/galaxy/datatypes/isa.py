@@ -249,39 +249,6 @@ class _Isa(data.Data):
         if delete_temp_folder:
             shutil.rmtree(temp_folder)
 
-    # List archive files {{{2
-    ################################################################
-
-    def _list_archive_files(self, stream):
-        """List files contained inside the ISA archive."""
-
-        # try to detect the type of the compressed archive
-        a_type = self._detect_file_type(stream)
-        # decompress the archive
-        if a_type == "zip":
-            data = BytesIO(stream.read())
-            zip_ref = zipfile.ZipFile(data)
-            files_list = zip_ref.namelist()
-        elif a_type == "gz":
-            with tarfile.open(fileobj=stream) as tar:
-                files_list = [i.name for i in tar]
-        else:
-            raise Exception("Not supported archive format!!!")
-        # filter the base path if it exists
-        if len(files_list) > 0:
-            base_path = files_list[0].split("/")[0]
-            if base_path:
-                # the TAR archive encodes the base_path without a final '/'
-                if base_path in files_list:
-                    files_list.remove(base_path)
-                # the ZIP archive encodes the base_path with a final '/'
-                base_path = os.path.join(base_path, '')
-                if base_path in files_list:
-                    files_list.remove(base_path)
-                # remove the base_path from all remaining files
-                files_list = [f.replace(base_path, '') for f in files_list]
-        return files_list
-
     # Detect file type {{{2
     ################################################################
 
