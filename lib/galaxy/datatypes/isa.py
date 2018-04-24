@@ -329,12 +329,13 @@ class _Isa(data.Data):
                     html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
                     html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
-                    if assay.data_files is not None:
-                        html += '<p>Data files:</p>'
-                        html += '<ul>'
-                        for data_file in assay.data_files:
-                            html += '<li>' + escape(util.unicodify(str(data_file.id), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
-                        html += '</ul>'
+                    # The list of Raw data files contained in the assay file cannot be obtained anymore, due to limitation in isa-rwval library. David Johnson (@djcomlab) is working on a solution, and will update isa-rwval soon.
+#                    if assay.data_files is not None:
+#                        html += '<p>Data files:</p>'
+#                        html += '<ul>'
+#                        for data_file in assay.data_files:
+#                            html += '<li>' + escape(util.unicodify(str(data_file.id), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
+#                        html += '</ul>'
 
             html += '</body></html>'
 
