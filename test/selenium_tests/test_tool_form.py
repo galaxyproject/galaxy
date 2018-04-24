@@ -185,7 +185,7 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
         inputs, _, _ = load_data_dict(history_id, {"input": example["test_data"]}, self.dataset_populator, self.dataset_collection_populator)
         self.dataset_populator.wait_for_history(history_id)
         self.home()
-        self.tool_open("__APPLY_RULES__")
+        self.tool_open("__APPLY_RULES__", outer=True)  # may appear twice in panel, grab top-level link
         self.screenshot("tool_apply_rules_landing")
         self.tool_parameter_edit_rules()
         rule_builder._.wait_for_visible()

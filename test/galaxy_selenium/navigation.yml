@@ -159,6 +159,12 @@ history_panel:
     new_name: 'Unnamed history'
     new_size: '(empty)'
 
+tool_panel:
+
+  selectors:
+    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
+
 multi_history_view:
 
   selectors:

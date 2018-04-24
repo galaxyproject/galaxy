@@ -1018,8 +1018,12 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
-    def tool_open(self, tool_id):
-        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+    def tool_open(self, tool_id, outer=False):
+        if outer:
+            tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
+        else:
+            tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
         return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
