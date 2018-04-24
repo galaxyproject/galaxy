@@ -2,25 +2,25 @@
     <state-div v-if="state == 'build'">
         <!-- Different instructions if building up from individual datasets vs.
              initial data import. -->
-        <div class="header flex-row no-flex" v-if="ruleView == 'source'">
+        <rule-modal-header v-if="ruleView == 'source'">
             Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
-        </div>
-        <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
+        </rule-modal-header>
+        <rule-modal-header v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
             Use this form to describe rules for building a collection from the specified datasets.
-        </div>
+        </rule-modal-header>
         <!-- This modality allows importing individual datasets, multiple collections,
              and requires a data source - note that. -->
-        <div class="header flex-row no-flex" v-else-if="importType == 'datasets'">
+        <rule-modal-header v-else-if="importType == 'datasets'">
             Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...).
-        </div>
-        <div class="header flex-row no-flex" v-else>
-            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). Be sure to specify at least one column as a list identifier - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
-        </div>
-        <div class="middle flex-row flex-row-container" v-if="ruleView == 'source'">
-            <p class="alert-message" v-if="ruleSourceError">{{ ruleSourceError }}</p>
+        </rule-modal-header>
+        <rule-modal-header v-else>
+            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+        </rule-modal-header>
+        <rule-modal-middle v-if="ruleView == 'source'">
+            <p class="errormessagelarge" v-if="ruleSourceError">{{ ruleSourceError }}</p>
             <textarea class="rule-source" v-model="ruleSource"></textarea>
-        </div>
-        <div class="middle flex-row flex-row-container" v-else>
+        </rule-modal-middle>
+        <rule-modal-middle v-else>
             <!-- column-headers -->
             <div class="rule-builder-body vertically-spaced"
                  v-bind:class="{ 'flex-column-container': vertical }" v-if="ruleView == 'normal'">
@@ -297,23 +297,20 @@
                     </hot-table>
                 </div>
             </div>
-        </div>
-        <div class="rule-footer footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
-            <option-buttons-div>
-                <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
-                    {{ l("Cancel") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </b-button>
-               <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
-                    {{ l("Apply")}}
-                </b-button>
-            </option-buttons-div>
-        </div>
-        <div class="rule-footer footer flex-row no-flex vertically-spaced"
-             v-else-if="ruleView == 'normal'">
-            <div class="rule-footer-inputs">
+        </rule-modal-middle>
+        <rule-modal-footer v-if="ruleView == 'source'">
+            <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+           <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
+                {{ l("Apply")}}
+            </b-button>
+        </rule-modal-footer>
+        <rule-modal-footer v-else-if="ruleView == 'normal'">
+            <div class="rule-footer-inputs" slot="inputs">
                 <label v-if="elementsType == 'datasets'">
                     {{ l("Hide original elements") }}:
                 </label>
@@ -342,51 +339,44 @@
                     </label>
                 </div>
             </div>
-            <option-buttons-div>
-                <!--
-                <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
-                    {{ l("Reorient") }}
-                </button>
-                -->
-                <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
-                    {{ l("Cancel") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" v-bind:class="{ disabled: !validInput }">
-                    {{ finishButtonTitle }}
-                </b-button>
-            </option-buttons-div>
-        </div>
+
+            <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
+                {{ finishButtonTitle }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
-        <div class="header flex-row no-flex">
+        <rule-modal-header>
             {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
-        </div>
-        <div class="rule-footer footer flex-row no-flex">
-            <option-buttons-div>
-                <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
-                    {{ l("Close") }}
-                </b-button>
-            </option-buttons-div>
-        </div>
+        </rule-modal-header>
+        <rule-modal-footer>
+            <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'error'">
         <!-- TODO: steal styling from paired collection builder warning... -->
-        <div>
-            {{ errorMessage }}
-        </div>
-        <div class="rule-footer footer flex-row no-flex">
-            <option-buttons-div>
-                <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
-                    {{ l("Close") }}
-                </b-button>
-                <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
-                    {{ l("Okay") }}
-                </b-button>
-            </option-buttons-div>
-        </div>
+        <rule-modal-header>
+            A problem was encountered.
+        </rule-modal-header>
+        <rule-modal-middle>
+            <p class="errormessagelarge">{{ errorMessage }}</p>
+        </rule-modal-middle>
+        <rule-modal-footer>
+            <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+            <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+                {{ l("Okay") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
 </template>
 <script>
@@ -781,11 +771,30 @@ const RuleComponent = {
 };
 
 const StateDiv = {
-    template: `<div class="rule-collection-creator collection-creator flex-row-container"><slot></slot></div>`
+    template: `
+        <div class="rule-collection-creator collection-creator flex-row-container">
+            <slot></slot>
+        </div>`
 };
 
-const OptionButtonsDiv = {
-    template: `<div class="actions clear vertically-spaced"><div class="main-options float-right"><slot></slot></div></div>`
+const RuleModalHeader = {
+    template: `<div class="header flex-row no-flex"><slot></slot></div>`
+};
+
+const RuleModalMiddle = {
+    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
+}
+
+const RuleModalFooter = {
+    template: `   
+        <div class="rule-footer footer flex-row no-flex">
+            <slot name="inputs"></slot>
+            <div class="actions clear vertically-spaced">
+                <div class="main-options float-right">
+                    <slot></slot>
+                </div>
+            </div>
+        </div>`
 };
 
 export default {
@@ -1624,7 +1633,9 @@ export default {
         ColumnSelector,
         RegularExpressionInput,
         StateDiv,
-        OptionButtonsDiv,
+        RuleModalHeader,
+        RuleModalMiddle,
+        RuleModalFooter,
         Select2
     }
 };
