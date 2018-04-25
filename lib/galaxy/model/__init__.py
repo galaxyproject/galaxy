@@ -1582,6 +1582,8 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 .filter(HistoryDatasetCollectionAssociation.visible)
                 .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
                 .options(joinedload("collection"),
+                         joinedload("collection.elements"),
+                         joinedload("collection.elements.hda"),
                          joinedload("tags")))
             self._active_visible_dataset_collections = query.all()
         return self._active_visible_dataset_collections
