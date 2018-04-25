@@ -1494,7 +1494,7 @@ class BaseDataToolParameter(ToolParameter):
                         return match.hda
             else:
                 dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
-                for hdca in reversed(history.active_dataset_collections):
+                for hdca in reversed(history.active_visible_dataset_collections):
                     if dataset_collection_matcher.hdca_match(hdca, reduction=self.multiple):
                         return hdca
 
@@ -1608,7 +1608,7 @@ class DataToolParameter(BaseDataToolParameter):
     def match_collections(self, history, dataset_matcher, reduction=True):
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
 
-        for history_dataset_collection in history.active_dataset_collections:
+        for history_dataset_collection in history.active_visible_dataset_collections:
             if dataset_collection_matcher.hdca_match(history_dataset_collection, reduction=reduction):
                 yield history_dataset_collection
 
@@ -1834,7 +1834,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
-        for hdca in history.active_dataset_collections:
+        for hdca in history.active_visible_dataset_collections:
             if dataset_collection_matcher.hdca_match(hdca, reduction=multiple):
                 append(d['options']['hdca'], hdca, hdca.name, 'hdca')
 
@@ -1882,7 +1882,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def match_multirun_collections(self, trans, history, dataset_matcher):
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
 
-        for history_dataset_collection in history.active_dataset_collections:
+        for history_dataset_collection in history.active_visible_dataset_collections:
             if not self._history_query(trans).can_map_over(history_dataset_collection):
                 continue
 
