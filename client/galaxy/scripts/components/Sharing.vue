@@ -3,7 +3,7 @@
         <h2>Share or Publish {{item_class_name}} '{{item_name}}'</h2>
         <div v-if="!has_username">
             <div>To make a {{item_class_name_lc}} accessible via link or publish it, you must create a public username:</div>
-            <div class="ui-message ui-show alert alert-danger">
+            <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
                 {{ err_msg }}
             </div>
             <form class="form-group">
@@ -13,6 +13,7 @@
             <button type="submit" class="btn btn-primary" @click="setUsername()">Set Username</button>
         </div>
         <div v-else>
+            <br>
             <h3>Make {{item_class_name}} Accessible via Link and Publish It</h3>
         </div>
     </div>
@@ -41,8 +42,8 @@ export default {
             item_class_plural_name: "plural_name",
             item_name: "name",
             username: "",
-            has_username: false,
-            err_msg: "test",
+            has_username: true,
+            err_msg: null,
             user: Galaxy.user
         };
     },
