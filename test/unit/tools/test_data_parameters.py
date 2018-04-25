@@ -156,6 +156,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def stub_active_datasets(self, *hdas):
         self.test_history._active_datasets_and_roles = [h for h in hdas if not h.deleted]
+        self.test_history._active_visible_datasets_and_roles = [h for h in hdas if not h.deleted and h.visible]
 
     def _simple_field(self, **kwds):
         return self.param.to_dict(trans=self.trans, **kwds)
