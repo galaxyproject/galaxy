@@ -3475,6 +3475,8 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
             def recursively_add_joined_loads(depth_collection_type, prefix):
                 if ":" not in depth_collection_type:
                     joined_loads.append(joinedload(prefix + "hda"))
+                    joined_loads.append(joinedload(prefix + "hda.dataset.actions"))
+                    joined_loads.append(joinedload(prefix + "hda.dataset.actions.role"))
                 else:
                     joined_loads.append(joinedload(prefix + "child_collection"))
                     joined_loads.append(joinedload(prefix + "child_collection.elements"))
