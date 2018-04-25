@@ -1510,7 +1510,7 @@ class BaseDataToolParameter(ToolParameter):
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
             if isinstance(self, DataToolParameter):
-                for hda in reversed(history.active_datasets_and_roles):
+                for hda in reversed(history.active_visible_datasets_and_roles):
                     match = dataset_matcher.hda_match(hda)
                     if match:
                         return match.hda
@@ -1832,7 +1832,8 @@ class DataToolParameter(BaseDataToolParameter):
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
-        for hda in history.active_datasets_and_roles:
+        # Prefetch all at once, big list of visible, non-deleted datasets.
+        for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda)
             if match:
                 m = match.hda
