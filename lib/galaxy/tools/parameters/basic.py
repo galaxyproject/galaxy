@@ -1486,13 +1486,15 @@ class BaseDataToolParameter(ToolParameter):
         if history is not None:
             dataset_matcher = DatasetMatcher(trans, self, None, other_values)
             if isinstance(self, DataToolParameter):
-                for hda in reversed(history.active_datasets_and_roles):
+                for hda in reversed(history.active_visible_datasets_and_roles):
+                    # TODO: optimize to reuse DatasetMatcher between calls in here and
+                    # don't re-filter the same hdas from the above list.
                     match = dataset_matcher.hda_match(hda, check_security=False)
                     if match:
                         return match.hda
             else:
                 dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
-                for hdca in reversed(history.active_dataset_collections):
+                for hdca in reversed(history.active_visible_dataset_collections):
                     if dataset_collection_matcher.hdca_match(hdca, reduction=self.multiple):
                         return hdca
 
@@ -1606,7 +1608,7 @@ class DataToolParameter(BaseDataToolParameter):
     def match_collections(self, history, dataset_matcher, reduction=True):
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
 
-        for history_dataset_collection in history.active_dataset_collections:
+        for history_dataset_collection in history.active_visible_dataset_collections:
             if dataset_collection_matcher.hdca_match(history_dataset_collection, reduction=reduction):
                 yield history_dataset_collection
 
@@ -1811,7 +1813,9 @@ class DataToolParameter(BaseDataToolParameter):
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
-        for hda in history.active_datasets_and_roles:
+        # we can restrict to visible datasets here I think, the DatasetMatcher will process non-visible datasets if
+        # passed a "value", but this is set to None above.
+        for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda, check_security=False)
             if match:
                 m = match.hda
@@ -1830,7 +1834,7 @@ class DataToolParameter(BaseDataToolParameter):
 
         # add dataset collections
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
-        for hdca in history.active_dataset_collections:
+        for hdca in history.active_visible_dataset_collections:
             if dataset_collection_matcher.hdca_match(hdca, reduction=multiple):
                 append(d['options']['hdca'], hdca, hdca.name, 'hdca')
 
@@ -1878,7 +1882,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
     def match_multirun_collections(self, trans, history, dataset_matcher):
         dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
 
-        for history_dataset_collection in history.active_dataset_collections:
+        for history_dataset_collection in history.active_visible_dataset_collections:
             if not self._history_query(trans).can_map_over(history_dataset_collection):
                 continue
 
