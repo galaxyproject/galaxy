@@ -25,10 +25,13 @@ export default Backbone.View.extend({
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
             var input = self.input_list[input_id];
+            var field = self.field_list[input_id];
+            if (field.refreshDefinition) {
+                field.refreshDefinition(node);
+            }
             if (input && input.options) {
                 if (!_.isEqual(input.options, node.options)) {
                     input.options = node.options;
-                    var field = self.field_list[input_id];
                     if (field.update) {
                         var new_options = [];
                         if (["data", "data_collection", "drill_down"].indexOf(input.type) != -1) {

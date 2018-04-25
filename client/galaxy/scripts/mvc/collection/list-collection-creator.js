@@ -1069,6 +1069,8 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
     let title;
     if (importType == "datasets") {
         title = _l("Build Rules for Uploading Datasets");
+    } else if (elementsType == "collection_contents") {
+        title = _l("Build Rules for Applying to Existing Collection");
     } else if (elementsType == "datasets" || elementsType == "library_datasets") {
         title = _l("Build Rules for Creating Collection(s)");
     } else {
@@ -1090,7 +1092,9 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
             creationFn: options.creationFn,
             oncancel: options.oncancel,
             oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems
+            defaultHideSourceItems: options.defaultHideSourceItems,
+            saveRulesFn: options.saveRulesFn,
+            initialRules: options.initialRules
         }
     }).$mount(vm);
     return deferred;
@@ -1128,7 +1132,8 @@ function createListCollection(contents, defaultHideSourceItems) {
 
 function createCollectionViaRules(selection, defaultHideSourceItems) {
     let elements, elementsType, importType;
-    if (!selection.selectionType) {
+    const selectionType = selection.selectionType;
+    if (!selectionType) {
         // Have HDAs from the history panel.
         elements = selection.toJSON();
         elementsType = "datasets";

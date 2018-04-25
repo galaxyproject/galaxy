@@ -130,6 +130,82 @@ steps:
 """
 
 
+WORKFLOW_WITH_RULES_1 = """
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: apply
+    tool_id: __APPLY_RULES__
+    state:
+      input:
+        $link: input_c
+      rules:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [0, 1]
+  - tool_id: random_lines1
+    label: random_lines
+    state:
+      num_lines: 1
+      input:
+        $link: apply#output
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+"""
+
+
+WORKFLOW_WITH_RULES_2 = """
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: apply
+    tool_id: __APPLY_RULES__
+    state:
+      input:
+        $link: input_c
+      rules:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [0, 1]
+  - tool_id: collection_creates_list
+    label: copy_list
+    state:
+      input1:
+        $link: apply#output
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+"""
+
+
 WORKFLOW_NESTED_SIMPLE = """
 class: GalaxyWorkflow
 inputs:

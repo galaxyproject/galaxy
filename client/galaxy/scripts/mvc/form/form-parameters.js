@@ -7,6 +7,7 @@ import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
+import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
 // create form view
 export default Backbone.Model.extend({
@@ -30,6 +31,7 @@ export default Backbone.Model.extend({
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
+        rules: "_fieldRulesEdit",
         genomespacefile: "_fieldGenomeSpace"
     },
 
@@ -215,10 +217,17 @@ export default Backbone.Model.extend({
     /** GenomeSpace file select field
      */
     _fieldGenomeSpace: function(input_def) {
-        var self = this;
         return new SelectGenomeSpace.View({
             id: `field-${input_def.id}`,
             onchange: input_def.onchange
+        });
+    },
+
+    _fieldRulesEdit: function(input_def) {
+        return new RulesEdit.View({
+            id: `field-${input_def.id}`,
+            onchange: input_def.onchange,
+            target: input_def.target
         });
     },
 

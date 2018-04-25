@@ -10,6 +10,7 @@ import yaml
 from requests import delete, put
 
 from base import api  # noqa: I100,I202
+from base import rules_test_data  # noqa: I100
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -24,6 +25,7 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
+    WORKFLOW_WITH_RULES_1,
 )
 from galaxy.exceptions import error_codes  # noqa: I201
 from galaxy.tools.verify.test_data import TestDataResolver
@@ -871,6 +873,13 @@ steps:
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
+
+    @skip_without_tool("__APPLY_RULES__")
+    def test_workflow_run_apply_rules(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_WITH_RULES_1, history_id=history_id, wait=True, assert_ok=True)
+            output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+            rules_test_data.check_example_2(output_content, self.dataset_populator)
 
     def test_filter_failed_mapping(self):
         with self.dataset_populator.test_history() as history_id:

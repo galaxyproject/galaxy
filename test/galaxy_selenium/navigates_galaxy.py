@@ -766,6 +766,19 @@ class NavigatesGalaxy(HasDriver):
                 self.screenshot(screenshot_name)
         rule_builder.mapping_ok.wait_for_and_click()
 
+    def rule_builder_set_source(self, json):
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        self.rule_builder_enter_source_text(json)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_enter_source_text(self, json):
+        rule_builder = self.components.rule_builder
+        text_area_elem = rule_builder.source.wait_for_visible()
+        text_area_elem.clear()
+        text_area_elem.send_keys(json)
+
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
         menu_element = self.workflow_editor_options_menu_element()
@@ -1005,11 +1018,20 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
-    def tool_open(self, tool_id):
-        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+    def tool_open(self, tool_id, outer=False):
+        if outer:
+            tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
+        else:
+            tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+
+    def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
+        rules_div_element = self.tool_parameter_div("rules")
+        edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
+        edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)

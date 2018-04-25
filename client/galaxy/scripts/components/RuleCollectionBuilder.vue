@@ -26,7 +26,7 @@
                  v-bind:class="{ 'flex-column-container': vertical }" v-if="ruleView == 'normal'">
                 <!-- width: 30%; -->
                 <div class="rule-column" v-bind:class="orientation">
-                    <div class="rules-container" v-bind:class="{'rules-container-vertical': vertical, 'rules-container-horizontal': horizontal}">
+                    <div class="rules-container" v-bind:class="{'rules-container-vertical': initialElements && vertical, 'rules-container-horizontal': initialElements && horizontal, 'rules-container-full': initialElements == null}">
                         <rule-component rule-type="sort"
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
@@ -47,6 +47,16 @@
                             <label>
                                 {{ l("Starting from") }}
                                 <input type="number" v-model="addColumnRownumStart" min="0" />
+                            </label>
+                        </rule-component>
+                        <rule-component rule-type="add_column_metadata"
+                                        :display-rule-type="displayRuleType"
+                                        :builder="this">
+                            <label>
+                                {{ l("For") }}
+                                <select v-model="addColumnMetadataValue">
+                                    <option v-for="(col, index) in metadataOptions" :value="index">{{ col }}</option>
+                                </select>
                             </label>
                         </rule-component>
                         <rule-component rule-type="add_column_regex"
@@ -275,6 +285,7 @@
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
+                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="elementsType == 'collection_contents'"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -288,7 +299,7 @@
                 </div>
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
-                <div class="table-column" v-bind:class="orientation" style="width: 100%;">
+                <div class="table-column" v-bind:class="orientation" style="width: 100%;" v-if="initialElements !== null">
                     <hot-table id="hot-table"
                                ref="hotTable"
                                :data="hotData['data']"
@@ -689,21 +700,7 @@ const IdentifierDisplay = {
             return _l("Remove this column definition");
         },
         columnsLabel() {
-            let columnNames;
-            if (typeof this.columns == "object") {
-                columnNames = this.columns.map(idx => this.colHeaders[idx]);
-            } else {
-                columnNames = [this.colHeaders[this.columns]];
-            }
-            if (columnNames.length == 2) {
-                return "columns " + columnNames[0] + " and " + columnNames[1];
-            } else if (columnNames.length > 2) {
-                return (
-                    "columns " + columnNames.slice(0, -1).join(", ") + ", and " + columnNames[columnNames.length - 1]
-                );
-            } else {
-                return "column " + columnNames[0];
-            }
+            return RuleDefs.columnDisplay(this.columns, this.colHeaders);
         }
     }
 };
@@ -801,24 +798,50 @@ const RuleModalFooter = {
 
 export default {
     data: function() {
-        let mapping;
-        if (this.elementsType == "ftp") {
-            mapping = [{ type: "ftp_path", columns: [0] }];
-        } else if (this.elementsType == "datasets") {
-            mapping = [{ type: "list_identifiers", columns: [1] }];
+        let orientation = "vertical";
+        let mapping, rules;
+        if (this.initialRules) {
+            mapping = this.initialRules.mapping.slice();
+            rules = this.initialRules.rules.slice();
         } else {
-            mapping = [];
+            if (this.elementsType == "ftp") {
+                mapping = [{ type: "ftp_path", columns: [0] }];
+            } else if (this.elementsType == "datasets") {
+                mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else {
+                mapping = [];
+            }
+            rules = [];
+            if (this.elementsType == "collection_contents") {
+                if (this.initialElements !== null) {
+                    const collectionType = this.initialElements.collection_type;
+                    const collectionTypeRanks = collectionType.split(":");
+                    for (let index in collectionTypeRanks) {
+                        rules.push({
+                            type: "add_column_metadata",
+                            value: "identifier" + index
+                        });
+                    }
+                } else {
+                    orientation = "horizontal";
+                    // just assume a list is given by default.
+                    rules.push({
+                        type: "add_column_metadata",
+                        value: "identifier0"
+                    });
+                }
+            }
         }
         return {
-            rules: [],
+            rules: rules,
             colHeadersPerRule: [],
             mapping: mapping,
             state: "build", // 'build', 'error', 'wait',
             ruleView: "normal", // 'normal' or 'source'
             ruleSource: "",
+            ruleSourceJson: null,
             ruleSourceError: null,
             errorMessage: "",
-            hasRuleErrors: false,
             jaggedData: false,
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
@@ -849,6 +872,7 @@ export default {
             addColumnRegexReplacement: null,
             addColumnRegexGroupCount: null,
             addColumnRegexType: "global",
+            addColumnMetadataValue: 0,
             addColumnConcatenateTarget0: 0,
             addColumnConcatenateTarget1: 0,
             addColumnRownumStart: 1,
@@ -884,12 +908,11 @@ export default {
             genomes: [],
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
-            orientation: "vertical"
+            orientation: orientation
         };
     },
     props: {
         initialElements: {
-            type: Array,
             required: true
         },
         importType: {
@@ -907,6 +930,16 @@ export default {
         creationFn: {
             required: false,
             type: Function
+        },
+        // required if elementsType is "collection_contents" - hook into tool form to update
+        // rule parameter
+        saveRulesFn: {
+            required: false,
+            type: Function
+        },
+        initialRules: {
+            required: false,
+            type: Object
         },
         defaultHideSourceItems: {
             type: Boolean,
@@ -931,7 +964,7 @@ export default {
     computed: {
         exisistingDatasets() {
             const elementsType = this.elementsType;
-            return elementsType === "datasets" || elementsType === "library_datasets";
+            return elementsType === "datasets" || elementsType === "collection_contents" || elementsType === "library_datasets";
         },
         showFileTypeSelector() {
             return !this.exisistingDatasets && !this.mappingAsDict.file_type;
@@ -940,11 +973,17 @@ export default {
             return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
         },
         showCollectionNameInput() {
-            return this.importType == "collections" && !this.mappingAsDict.collection_name;
+            return (
+                this.importType == "collections" &&
+                this.elementsType != "collection_contents" &&
+                !this.mappingAsDict.collection_name
+            );
         },
         titleFinish() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create new collection from specified rules and datasets");
+            } else if (this.elementsType == "collection_contents") {
+                return _l("Save rules and return to tool form");
             } else {
                 return _l("Upload collection using specified rules");
             }
@@ -959,6 +998,8 @@ export default {
         finishButtonTitle() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create");
+            } else if (this.elementsType == "collection_contents") {
+                return _l("Save");
             } else {
                 return _l("Upload");
             }
@@ -1012,50 +1053,48 @@ export default {
             return targets;
         },
         hotData() {
-            let data, sources;
+            let data, sources, columns;
             if (this.elementsType == "datasets") {
                 data = this.initialElements.map(el => [el["hid"], el["name"]]);
                 sources = this.initialElements.slice();
+                columns = ["new", "new"];
             } else if (this.elementsType == "library_datasets") {
                 data = this.initialElements.map(el => [el["name"]]);
                 sources = this.initialElements.slice();
+                columns = ["new"];
+            } else if (this.elementsType == "collection_contents") {
+                const collection = this.initialElements;
+                if (collection) {
+                    const obj = this.populateElementsFromCollectionDescription(
+                        collection.elements,
+                        collection.collection_type
+                    );
+                    data = obj.data;
+                    sources = obj.sources;
+                    columns = [];
+                } else {
+                    data = [];
+                    sources = [];
+                    columns = [];
+                }
             } else {
                 data = this.initialElements.slice();
                 sources = data.map(el => null);
-            }
-
-            let hasRuleError = false;
-            this.colHeadersPerRule = [];
-            for (var ruleIndex in this.rules) {
-                const ruleHeaders = this.colHeadersFor(data);
-                this.colHeadersPerRule[ruleIndex] = ruleHeaders;
-
-                const rule = this.rules[ruleIndex];
-                rule.error = null;
-                rule.warn = null;
-                if (hasRuleError) {
-                    rule.warn = _l("Skipped due to previous errors.");
-                    continue;
-                }
-                var ruleType = rule.type;
-                const ruleDef = RULES[ruleType];
-                const res = ruleDef.apply(rule, data, sources);
-                if (res.error) {
-                    hasRuleError = true;
-                    rule.error = res.error;
-                } else {
-                    if (res.warn) {
-                        rule.warn = res.warn;
+                columns = [];
+                if (this.initialElements) {
+                    for (var columnIndex in this.initialElements[0]) {
+                        columns.push("new");
                     }
-                    data = res.data || data;
-                    sources = res.sources || sources;
                 }
             }
-            return { data, sources };
+
+            this.colHeadersPerRule = [];
+            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
         },
         colHeaders() {
             const data = this.hotData["data"];
-            return this.colHeadersFor(data);
+            const columns = this.hotData["columns"];
+            return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
             const formattedHeaders = [];
@@ -1087,6 +1126,29 @@ export default {
             }
             return asDict;
         },
+        metadataOptions() {
+            const metadataOptions = {};
+            if (this.elementsType == "collection_contents") {
+                let collectionType;
+                if (this.initialElements) {
+                    collectionType = this.initialElements.collection_type;
+                } else {
+                    // give a bunch of different options if not constrained with given input
+                    collectionType = "list:list:list:paired";
+                }
+                const collectionTypeRanks = collectionType.split(":");
+                for (let index in collectionTypeRanks) {
+                    const collectionTypeRank = collectionTypeRanks[index];
+                    if (collectionTypeRank == "list") {
+                        // TODO: drop the numeral at the end if only flat list
+                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                    } else {
+                        metadataOptions["identifier" + index] = _l("Paired Identifier");
+                    }
+                }
+            }
+            return metadataOptions;
+        },
         collectionType() {
             let identifierColumns = [];
             if (this.mappingAsDict.list_identifiers) {
@@ -1094,14 +1156,18 @@ export default {
             }
             let collectionType = identifierColumns.map(col => "list").join(":");
             if (this.mappingAsDict.paired_identifier) {
-                collectionType += ":paired";
+                if (collectionType) {
+                    collectionType += ":paired";
+                } else {
+                    collectionType = "paired";
+                }
             }
             return collectionType;
         },
         validInput() {
             const identifierColumns = this.identifierColumns();
             const mappingAsDict = this.mappingAsDict;
-            const buildingCollection = identifierColumns.length > 0;
+            const buildingCollection = identifierColumns.length > 0 && this.elementsType != "collection_contents";
 
             let valid = true;
             if (buildingCollection && !mappingAsDict.collection_name) {
@@ -1179,12 +1245,15 @@ export default {
                 rules: this.rules,
                 mapping: this.mapping
             };
-            if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
-                asJson.extension = this.extension;
+            if (!this.exisistingDatasets) {
+                if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
+                    asJson.extension = this.extension;
+                }
+                if (this.genome !== UploadUtils.DEFAULT_GENOME) {
+                    asJson.genome = this.genome;
+                }
             }
-            if (this.genome !== UploadUtils.DEFAULT_GENOME) {
-                asJson.genome = this.genome;
-            }
+            this.ruleSourceJson = asJson;
             this.ruleSource = JSON.stringify(asJson, replacer, "  ");
             this.ruleSourceError = null;
         },
@@ -1218,14 +1287,6 @@ export default {
             }
             if (asJson.mapping) {
                 this.mapping = asJson.mapping;
-            }
-        },
-        handleColumnMapping() {},
-        colHeadersFor(data) {
-            if (data.length == 0) {
-                return [];
-            } else {
-                return data[0].map((el, i) => String.fromCharCode(65 + i));
             }
         },
         addIdentifier(identifier) {
@@ -1313,13 +1374,21 @@ export default {
             const collectionType = this.collectionType;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                new AjaxQueue.AjaxQueue(
-                    _.map(elements, (elements, name) => {
-                        return () => {
-                           const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                           return response;
-                        };
-                })).done(this.oncreate).fail(this.renderFetchError);
+                if (this.state !== "error") {
+                    new AjaxQueue.AjaxQueue(
+                        _.map(elements, (elements, name) => {
+                            return () => {
+                               const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                               return response;
+                            };
+                    })).done(this.oncreate).fail(this.renderFetchError);
+                }
+            } else if (this.elementsType == "collection_contents") {
+                this.resetSource();
+                if (this.state !== "error") {
+                    this.saveRulesFn(this.ruleSourceJson);
+                    this.oncreate();
+                }
             } else {
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
@@ -1522,6 +1591,35 @@ export default {
 
             return datasets;
         },
+        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_) {
+            const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
+            let data = [];
+            let sources = [];
+            for (let element of elements) {
+                const elementObject = element.object;
+                const identifiers = parentIdentifiers.concat([element.element_identifier]);
+                const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                if (collectionTypeLevelSepIndex === -1) {
+                    // Flat collection at this depth.
+                    // sources are the elements
+                    // TOOD: right thing is probably this: data.push([]);
+                    data.push([]);
+                    sources.push({ identifiers: identifiers, dataset: elementObject });
+                } else {
+                    const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
+                    let elementObj = this.populateElementsFromCollectionDescription(
+                        elementObject.elements,
+                        restCollectionType,
+                        identifiers
+                    );
+                    const elementData = elementObj.data;
+                    const elementSources = elementObj.sources;
+                    data = data.concat(elementData);
+                    sources = sources.concat(elementSources);
+                }
+            }
+            return { data, sources };
+        },
         highlightColumn(n) {
             const headerSelection = $(`.htCore > thead > tr > th:nth-child(${n + 1})`);
             headerSelection.addClass("ht__highlight");
@@ -1578,39 +1676,41 @@ export default {
         }
     },
     created() {
-        let columnCount = null;
-        if (this.elementsType == "datasets") {
-            for (let element of this.initialElements) {
-                if (element.history_content_type == "dataset_collection") {
-                    this.errorMessage =
-                        "This component can only be used with datasets, you have specified one or more collections.";
-                    this.state = "error";
+        if (this.elementsType !== "collection_contents") {
+            let columnCount = null;
+            if (this.elementsType == "datasets") {
+                for (let element of this.initialElements) {
+                    if (element.history_content_type == "dataset_collection") {
+                        this.errorMessage =
+                            "This component can only be used with datasets, you have specified one or more collections.";
+                        this.state = "error";
+                    }
                 }
-            }
-        } else {
-            for (let row of this.initialElements) {
-                if (columnCount == null) {
-                    columnCount = row.length;
-                } else {
-                    if (columnCount != row.length) {
-                        this.jaggedData = true;
-                        break;
+            } else {
+                for (let row of this.initialElements) {
+                    if (columnCount == null) {
+                        columnCount = row.length;
+                    } else {
+                        if (columnCount != row.length) {
+                            this.jaggedData = true;
+                            break;
+                        }
                     }
                 }
             }
+            UploadUtils.getUploadDatatypes(
+                extensions => {
+                    this.extensions = extensions;
+                    this.extension = UploadUtils.DEFAULT_EXTENSION;
+                },
+                false,
+                UploadUtils.AUTO_EXTENSION
+            );
+            UploadUtils.getUploadGenomes(genomes => {
+                this.genomes = genomes;
+                this.genome = UploadUtils.DEFAULT_GENOME;
+            }, UploadUtils.DEFAULT_GENOME);
         }
-        UploadUtils.getUploadDatatypes(
-            extensions => {
-                this.extensions = extensions;
-                this.extension = UploadUtils.DEFAULT_EXTENSION;
-            },
-            false,
-            UploadUtils.AUTO_EXTENSION
-        );
-        UploadUtils.getUploadGenomes(genomes => {
-            this.genomes = genomes;
-            this.genome = UploadUtils.DEFAULT_GENOME;
-        }, UploadUtils.DEFAULT_GENOME);
     },
     watch: {
         addColumnRegexType: function(val) {
@@ -1667,6 +1767,10 @@ export default {
 }
 .rule-column.horizontal {
     height: 150px;
+}
+.rules-container-full {
+    width: 100%;
+    height: 400px;
 }
 .rules-container {
     border: 1px dashed #ccc;

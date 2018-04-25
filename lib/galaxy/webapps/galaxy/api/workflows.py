@@ -663,8 +663,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Schedule the workflow specified by `workflow_id` to run.
         """
-        # /usage is awkward in this context but is consistent with the rest of
-        # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow
