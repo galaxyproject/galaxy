@@ -61,11 +61,11 @@
             <ul class="navbar-nav">
                 <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
                     <%
-                    cls = ""
+                    cls = "nav-item"
                     a_cls = "nav-link"
                     extra = ""
                     if extra_class:
-                        cls += " " + extra_class
+                        cls = extra_class
                     if self.active_view == id:
                         cls += " active"
                     if menu_options:
@@ -76,6 +76,7 @@
                     if not visible:
                         style = "display: none;"
                     %>
+
                     <li class="${cls}" style="${style}">
                       <a
                         %if href:
@@ -83,9 +84,14 @@
                         %else:
                             class="${a_cls}"
                         %endif
-                        >${display}${extra}</a>
+						%if menu_options:
+							role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+						%endif
+                        >
+							${display}${extra}
+						</a>
                         %if menu_options:
-                            <div class="dropdown-menu">
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 %for menu_item in menu_options:
                                     %if not menu_item:
                                         <div class="dropdown-divider"></div>
