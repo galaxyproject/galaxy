@@ -1646,7 +1646,7 @@ export default {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;
-                res["src"] = "ftp_path";
+                res["src"] = "ftp_import";
             }
             if (mappingAsDict.dbkey) {
                 const dbkeyColumn = mappingAsDict.dbkey.columns[0];
