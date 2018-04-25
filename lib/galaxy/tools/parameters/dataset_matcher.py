@@ -165,14 +165,15 @@ class DatasetCollectionMatcher(object):
         if reduction and dataset_collection.collection_type.find(":") > 0:
             return False
         else:
-            return self.dataset_collection_match(dataset_collection)
+            if history_dataset_collection_association.collection.populated_state != galaxy.model.DatasetCollection.populated_states.OK:
+                return False
+
+            if not history_dataset_collection_association.check_populated_with_prefetched_element_collection():
+                return False
+
+            return self.dataset_collection_match(history_dataset_collection_association.collection_with_prefetched_elements)
 
     def dataset_collection_match(self, dataset_collection):
-        # If dataset collection not yet populated, cannot determine if it
-        # would be a valid match for this parameter.
-        if not dataset_collection.populated:
-            return False
-
         valid = True
         for element in dataset_collection.elements:
             if not self.__valid_element(element):

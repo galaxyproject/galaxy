@@ -1580,6 +1580,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 .filter(HistoryDatasetCollectionAssociation.table.c.history_id == self.id)
                 .filter(not_(HistoryDatasetCollectionAssociation.deleted))
                 .filter(HistoryDatasetCollectionAssociation.visible)
+                .filter(DatasetCollection.populated_state == DatasetCollection.populated_states.OK)
                 .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
                 .options(joinedload("collection"),
                          joinedload("tags")))
@@ -3459,6 +3460,42 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
         object_session(self).add(hdca)
         object_session(self).flush()
         return hdca
+
+    @property
+    def collection_with_prefetched_elements(self):
+        # If it is a flat collection or a list of pairs, just fetch all the hdas,
+        # otherwise fetch elements and child collection objects to next depth
+        # so this method may be recursively called on those objects.
+        # Treat list of pairs specially because it seems silly to trigger a whole
+        # new database query for each pair when each pair only has two elements.
+        if not hasattr(self, '_collection_with_prefetched_elements'):
+            db_session = object_session(self)
+            joined_loads = []
+
+            def recursively_add_joined_loads(depth_collection_type, prefix):
+                if ":" not in depth_collection_type:
+                    joined_loads.append(joinedload(prefix + "hda"))
+                else:
+                    joined_loads.append(joinedload(prefix + "child_collection"))
+                    joined_loads.append(joinedload(prefix + "child_collection.elements"))
+                    next_prefix = prefix + "child_collection.elements."
+                    recursively_add_joined_loads(depth_collection_type.split(":", 1)[1], next_prefix)
+
+            recursively_add_joined_loads(self.collection.collection_type, "elements.")
+            query = (db_session.query(DatasetCollection)
+                .filter(DatasetCollection.table.c.id == self.collection.id)
+                .options(joinedload("elements"), *joined_loads))
+
+            self._collection_with_prefetched_elements = query.one()
+
+        return self._collection_with_prefetched_elements
+
+    def check_populated_with_prefetched_element_collection(self):
+        """Don't use self.collection to check if this is fully populated, use the locally
+        cached variant with all elements since we will need to pull that in anyway.
+        """
+        collection = self.collection_with_prefetched_elements
+        return collection.populated
 
 
 class LibraryDatasetCollectionAssociation(DatasetCollectionInstance):
