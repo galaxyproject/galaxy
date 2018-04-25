@@ -128,6 +128,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/sharing')
     webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/histories/view')
     webapp.add_client_route('/histories/show_structure')
