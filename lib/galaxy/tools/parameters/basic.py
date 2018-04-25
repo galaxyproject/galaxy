@@ -1486,7 +1486,9 @@ class BaseDataToolParameter(ToolParameter):
         if history is not None:
             dataset_matcher = DatasetMatcher(trans, self, None, other_values)
             if isinstance(self, DataToolParameter):
-                for hda in reversed(history.active_datasets_and_roles):
+                for hda in reversed(history.active_visible_datasets_and_roles):
+                    # TODO: optimize to reuse DatasetMatcher between calls in here and
+                    # don't re-filter the same hdas from the above list.
                     match = dataset_matcher.hda_match(hda, check_security=False)
                     if match:
                         return match.hda
@@ -1811,7 +1813,9 @@ class DataToolParameter(BaseDataToolParameter):
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
-        for hda in history.active_datasets_and_roles:
+        # we can restrict to visible datasets here I think, the DatasetMatcher will process non-visible datasets if
+        # passed a "value", but this is set to None above.
+        for hda in history.active_visible_datasets_and_roles:
             match = dataset_matcher.hda_match(hda, check_security=False)
             if match:
                 m = match.hda
