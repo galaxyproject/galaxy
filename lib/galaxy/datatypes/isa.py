@@ -270,25 +270,6 @@ class _Isa(data.Data):
             else:
                 shutil.move(temp_folder, output_path)
 
-    # Set meta {{{2
-    ################################################################
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        """Set meta data information."""
-        super(_Isa, self).set_meta(dataset, **kwd)
-        self._set_dataset_name(dataset)
-        return True
-
-    # Set dataset name {{{2
-    ################################################################
-
-    def _set_dataset_name(self, dataset):
-        investigation = self._get_investigation(dataset)
-        if investigation is not None:
-            dataset.name = investigation.identifier
-        else:
-            dataset.name = 'ISA DATASET'
-
     # Display data {{{2
     ################################################################
 
@@ -297,7 +278,6 @@ class _Isa(data.Data):
            if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
            The preview is triggered when user clicks on the eye icon of the composite dataset."""
 
-        self._set_dataset_name(dataset)
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super(_Isa, self).display_data(trans, dataset, preview, filename, to_ext, **kwd)
