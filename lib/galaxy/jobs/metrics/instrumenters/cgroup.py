@@ -1,5 +1,7 @@
 """The module describes the ``cgroup`` job metrics plugin."""
 import logging
+import numbers
+from collections import namedtuple
 
 from galaxy.util import asbool, nice_size
 from ..instrumenters import InstrumentPlugin
@@ -14,19 +16,18 @@ TITLES = {
     "memory.memsw.limit_in_bytes": "Memory limit on cgroup (MEM+SWP)",
     "memory.soft_limit_in_bytes": "Memory softlimit on cgroup",
     "memory.failcnt": "Failed to allocate memory count",
-    "memory.oom_control": "OOM Control enabled",
-    "under_oom": "Was OOM Killer active?",
+    "memory.oom_control.oom_kill_disable": "OOM Control enabled",
+    "memory.oom_control.under_oom": "Was OOM Killer active?",
     "cpuacct.usage": "CPU Time"
 }
 CONVERSION = {
-    "memory.memsw.max_usage_in_bytes": nice_size,
-    "memory.max_usage_in_bytes": nice_size,
-    "memory.limit_in_bytes": nice_size,
-    "memory.memsw.limit_in_bytes": nice_size,
-    "memory.soft_limit_in_bytes": nice_size,
-    "under_oom": lambda x: "Yes" if x == "1" else "No",
-    "cpuacct.usage": lambda x: formatting.seconds_to_str(int(x) / 10**9)  # convert nanoseconds
+    "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
+    "memory.oom_control.under_oom": lambda x: "Yes" if x == 1 else "No",
+    "cpuacct.usage": lambda x: formatting.seconds_to_str(x / 10**9)  # convert nanoseconds
 }
+
+
+Metric = namedtuple("Metric", ("key", "subkey", "value"))
 
 
 class CgroupPluginFormatter(formatting.JobMetricFormatter):
@@ -37,9 +38,11 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
             return title, CONVERSION[key](value)
         elif key.endswith("_bytes"):
             try:
-                return title, nice_size(key)
+                return title, nice_size(value)
             except ValueError:
                 pass
+        elif isinstance(value, numbers.Number) and value == int(value):
+            value = int(value)
         return title, value
 
 
@@ -73,17 +76,63 @@ class CgroupPlugin(InstrumentPlugin):
 
     def __read_metrics(self, path):
         metrics = {}
+        prev_metric = None
         with open(path, "r") as infile:
             for line in infile:
-                line = line.strip()
                 try:
-                    key, value = line.split(": ")
-                    if key in TITLES or self.verbose:
-                        metrics[key] = value
-                except ValueError:
-                    if line.startswith("under_oom"):
-                        metrics["under_oom"] = line.split(" ")[1]
+                    metric, prev_metric = self.__read_key_value(line, prev_metric)
+                except Exception:
+                    log.exception("Caught exception attempting to read metric from cgroup line: %s", line)
+                    metric = None
+                if not metric:
+                    continue
+                self.__add_metric(metrics, prev_metric)
+                prev_metric = metric
+        self.__add_metric(metrics, prev_metric)
         return metrics
+
+    def __add_metric(self, metrics, metric):
+        if metric and (metric.subkey in TITLES or self.verbose):
+            metrics[metric.subkey] = metric.value
+
+    def __read_key_value(self, line, prev_metric):
+        if not line.startswith('\t'):
+            # line is a single-line param or the first line of a multi-line param
+            try:
+                subkey, value = line.strip().split(": ", 1)
+                key = subkey
+            except ValueError:
+                # or not a param line at all, ignore
+                return None, prev_metric
+        else:
+            # line is a subsequent line of a multi-line param
+            subkey, value = line.strip().split(" ", 1)
+            key = prev_metric.key
+            subkey = ".".join((key, subkey))
+            prev_metric = self.__fix_prev_metric(prev_metric)
+        value = self.__type_value(value)
+        return (Metric(key, subkey, value), prev_metric)
+
+    def __fix_prev_metric(self, metric):
+        # we can't determine whether a param is single-line or multi-line until we read the second line, after which, we
+        # must go back and fix the first param to be subkeyed
+        if metric.key == metric.subkey:
+            try:
+                subkey, value = metric.value.split(" ", 1)
+                subkey = ".".join((metric.key, subkey))
+                metric = Metric(metric.key, subkey, self.__type_value(value))
+            except ValueError:
+                pass
+        return metric
+
+    def __type_value(self, value):
+        try:
+            try:
+                return int(value)
+            except ValueError:
+                return float(value)
+        except ValueError:
+            return value
 
 
 __all__ = ('CgroupPlugin', )

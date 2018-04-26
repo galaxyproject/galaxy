@@ -65,6 +65,11 @@ _datatypes_registry = None
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
 
+# The column sizes for job metrics
+JOB_METRIC_MAX_LENGTH = 1023
+JOB_METRIC_PRECISION = 22
+JOB_METRIC_SCALE = 7
+
 
 class NoConverterException(Exception):
     def __init__(self, value):
@@ -149,6 +154,8 @@ class UsesCreateAndUpdateTime(object):
 
 class JobLike(object):
 
+    MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
+
     def _init_metrics(self):
         self.text_metrics = []
         self.numeric_metrics = []
@@ -156,15 +163,19 @@ class JobLike(object):
     def add_metric(self, plugin, metric_name, metric_value):
         plugin = unicodify(plugin, 'utf-8')
         metric_name = unicodify(metric_name, 'utf-8')
-        if isinstance(metric_value, numbers.Number):
+        number = isinstance(metric_value, numbers.Number)
+        if number and int(metric_value) <= JobLike.MAX_NUMERIC:
             metric = self._numeric_metric(plugin, metric_name, metric_value)
             self.numeric_metrics.append(metric)
+        elif number:
+            log.warning("Cannot store metric due to database column overflow (max: %s): %s: %s",
+                        JobLike.MAX_NUMERIC, metric_name, metric_value)
         else:
             metric_value = unicodify(metric_value, 'utf-8')
-            if len(metric_value) > 1022:
+            if len(metric_value) > (JOB_METRIC_MAX_LENGTH - 1):
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
-                metric_value = metric_value[:1022]
+                metric_value = metric_value[:(JOB_METRIC_MAX_LENGTH - 1)]
             metric = self._text_metric(plugin, metric_name, metric_value)
             self.text_metrics.append(metric)
 
