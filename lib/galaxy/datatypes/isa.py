@@ -303,7 +303,7 @@ class _Isa(data.Data):
                 html += '<p>Submitted the %s</p>' % study.submission_date
                 html += '<p>Released on %s</p>' % study.public_release_date
 
-                html += '<p>Factors %s</p>' % ', '.join([x.name for x in study.factors])
+                html += '<p>Experimental factors used: %s</p>' % ', '.join([x.name for x in study.factors])
 
                 # Loop on all assays of this study
                 for assay in study.assays:
@@ -315,7 +315,7 @@ class _Isa(data.Data):
                         html += '<p>Data files:</p>'
                         html += '<ul>'
                         for data_file in assay.data_files:
-                            html += '<li>' + escape(util.unicodify(str(data_file.id), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
+                            html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
                         html += '</ul>'
 
             html += '</body></html>'
