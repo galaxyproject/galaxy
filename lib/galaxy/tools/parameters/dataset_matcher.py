@@ -26,19 +26,12 @@ class DatasetMatcher(object):
             except IndexError:
                 pass  # no valid options
         self.filter_value = filter_value
-
-    def hda_accessible(self, hda):
-        """ Does HDA correspond to dataset that is an a valid state and is
-        accessible to user.
-        """
-        dataset = hda.dataset
         has_tool = self.tool
         if has_tool:
             valid_input_states = self.tool.valid_input_states
         else:
             valid_input_states = galaxy.model.Dataset.valid_input_states
-        state_valid = dataset.state in valid_input_states
-        return state_valid
+        self.valid_input_states = valid_input_states
 
     def valid_hda_match(self, hda, check_implicit_conversions=True):
         """ Return False of this parameter can not be matched to the supplied
@@ -70,12 +63,13 @@ class DatasetMatcher(object):
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
-        accessible = self.hda_accessible(hda)
-        if accessible and (not ensure_visible or hda.visible or (self.selected(hda) and not hda.implicitly_converted_parent_datasets)):
+        dataset = hda.dataset
+        valid_state = dataset.state in self.valid_input_states
+        if valid_state and (not ensure_visible or hda.visible or (self.selected(hda) and not hda.implicitly_converted_parent_datasets)):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
             require_public = self.tool and self.tool.tool_type == 'data_destination'
-            if require_public and not self.trans.app.security_agent.dataset_is_public(hda.dataset):
+            if require_public and not self.trans.app.security_agent.dataset_is_public(dataset):
                 return False
             if self.filter(hda):
                 return False
