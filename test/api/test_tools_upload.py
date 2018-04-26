@@ -219,6 +219,19 @@ class ToolsUploadTestCase(api.ApiTestCase):
             roadmaps_content = self._get_roadmaps_content(history_id, dataset)
             assert roadmaps_content.strip() == "roadmaps\ncontent", roadmaps_content
 
+    @skip_without_datatype("isa-tab")
+    def test_composite_datatype_isatab(self):
+        zip_path = TestDataResolver().get_filename("MTBLS6.zip")
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "????", # content
+                file_type="zip"
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            datasets = run_response.json()["outputs"]
+            
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.upload_payload(history_id, "Test123", dbkey="hg19")
