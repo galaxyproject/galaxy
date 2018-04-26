@@ -5,8 +5,9 @@ from __future__ import print_function
 
 import logging
 
-from galaxy.model.custom_types import JSONType
 from sqlalchemy import MetaData, Table, TEXT
+
+from galaxy.model.custom_types import JSONType
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
