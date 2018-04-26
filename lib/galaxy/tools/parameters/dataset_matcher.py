@@ -71,8 +71,6 @@ class DatasetMatcher(object):
             require_public = self.tool and self.tool.tool_type == 'data_destination'
             if require_public and not self.trans.app.security_agent.dataset_is_public(dataset):
                 return False
-            if self.filter(hda):
-                return False
             return self.valid_hda_match(hda, check_implicit_conversions=check_implicit_conversions)
 
     def selected(self, hda):
