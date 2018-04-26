@@ -303,19 +303,20 @@ class _Isa(data.Data):
                 html += '<p>Submitted the %s</p>' % study.submission_date
                 html += '<p>Released on %s</p>' % study.public_release_date
 
+                html += '<p>Factors %s</p>' % ', '.join([x.name for x in study.factors])
+
                 # Loop on all assays of this study
                 for assay in study.assays:
                     html += '<h3>Assay %s</h3>' % assay.filename
                     html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
                     html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
                     html += '<p>Technology platform: %s</p>' % assay.technology_platform
-                    # The list of Raw data files contained in the assay file cannot be obtained anymore, due to limitation in isa-rwval library. David Johnson (@djcomlab) is working on a solution, and will update isa-rwval soon.
-#                    if assay.data_files is not None:
-#                        html += '<p>Data files:</p>'
-#                        html += '<ul>'
-#                        for data_file in assay.data_files:
-#                            html += '<li>' + escape(util.unicodify(str(data_file.id), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
-#                        html += '</ul>'
+                    if assay.data_files is not None:
+                        html += '<p>Data files:</p>'
+                        html += '<ul>'
+                        for data_file in assay.data_files:
+                            html += '<li>' + escape(util.unicodify(str(data_file.id), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
+                        html += '</ul>'
 
             html += '</body></html>'
 
@@ -347,6 +348,12 @@ class IsaTab(_Isa):
         parser = isatab.InvestigationParser()
         fp = utf8_text_file_open(filename)
         parser.parse(fp)
+        for study in parser.isa.studies:
+            s_parser = isatab.LazyStudySampleTableParser(parser.isa)
+            s_parser.parse(study.filename)
+            for assay in study.assays:
+                a_parser = isatab.LazyAssayTableParser(parser.isa)
+                a_parser.parse(assay.filename)
         isa = parser.isa
 
         return isa
