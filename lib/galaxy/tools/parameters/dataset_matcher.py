@@ -14,11 +14,10 @@ class DatasetMatcher(object):
     and permission handling.
     """
 
-    def __init__(self, trans, param, value, other_values):
+    def __init__(self, trans, param, other_values):
         self.trans = trans
         self.param = param
         self.tool = param.tool
-        self.value = value
         filter_value = None
         if param.options and other_values:
             try:
@@ -65,22 +64,13 @@ class DatasetMatcher(object):
         """
         dataset = hda.dataset
         valid_state = dataset.state in self.valid_input_states
-        if valid_state and (not ensure_visible or hda.visible or (self.selected(hda) and not hda.implicitly_converted_parent_datasets)):
+        if valid_state and (not ensure_visible or hda.visible):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
             require_public = self.tool and self.tool.tool_type == 'data_destination'
             if require_public and not self.trans.app.security_agent.dataset_is_public(dataset):
                 return False
             return self.valid_hda_match(hda, check_implicit_conversions=check_implicit_conversions)
-
-    def selected(self, hda):
-        """ Given value for DataToolParameter, is this HDA "selected".
-        """
-        value = self.value
-        if value and str(value[0]).isdigit():
-            return hda.id in map(int, value)
-        else:
-            return value and hda in value
 
     def filter(self, hda):
         """ Filter out this value based on other values for job (if
