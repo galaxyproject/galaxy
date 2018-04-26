@@ -90,4 +90,4 @@ ecdsa==0.13
 python-genomespaceclient==0.1.8
 
 # ISA
-git+https://github.com/ISA-tools/isa-rwval.git@develop#egg=isa-rwval
+isa-rwval==0.10.1
