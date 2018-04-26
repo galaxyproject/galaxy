@@ -26,8 +26,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.web import url_for
 from . import validation
 from .dataset_matcher import (
-    DatasetCollectionMatcher,
-    DatasetMatcher
+    get_dataset_matcher_factory,
 )
 from .sanitize import ToolParameterSanitizer
 from ..parameters import (
@@ -1484,14 +1483,15 @@ class BaseDataToolParameter(ToolParameter):
             return None
         history = trans.history
         if history is not None:
-            dataset_matcher = DatasetMatcher(trans, self, other_values)
+            dataset_matcher_factory = get_dataset_matcher_factory(trans)
+            dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
             if isinstance(self, DataToolParameter):
                 for hda in reversed(history.active_datasets_and_roles):
                     match = dataset_matcher.hda_match(hda)
                     if match:
                         return match.hda
             else:
-                dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
+                dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
                 for hdca in reversed(history.active_dataset_collections):
                     if dataset_collection_matcher.hdca_match(hdca, reduction=self.multiple):
                         return hdca
@@ -1790,7 +1790,8 @@ class DataToolParameter(BaseDataToolParameter):
             return d
 
         # prepare dataset/collection matching
-        dataset_matcher = DatasetMatcher(trans, self, other_values)
+        dataset_matcher_factory = get_dataset_matcher_factory(trans)
+        dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         multiple = self.multiple
 
         # build and append a new select option
@@ -1822,7 +1823,7 @@ class DataToolParameter(BaseDataToolParameter):
                 append(d['options']['hda'], hda, '(%s) %s' % (hda_state, hda.name), 'hda', True)
 
         # add dataset collections
-        dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
+        dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
         for hdca in history.active_dataset_collections:
             if dataset_collection_matcher.hdca_match(hdca, reduction=multiple):
                 append(d['options']['hdca'], hdca, hdca.name, 'hdca')
@@ -1859,18 +1860,15 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
         return history_query.HistoryQuery.from_parameter(self, dataset_collection_type_descriptions)
 
-    def match_collections(self, trans, history, dataset_matcher):
+    def match_collections(self, trans, history, dataset_collection_matcher):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections(history, self._history_query(trans))
-        dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
 
         for dataset_collection_instance in dataset_collections:
             if not dataset_collection_matcher.hdca_match(dataset_collection_instance):
                 continue
             yield dataset_collection_instance
 
-    def match_multirun_collections(self, trans, history, dataset_matcher):
-        dataset_collection_matcher = DatasetCollectionMatcher(dataset_matcher)
-
+    def match_multirun_collections(self, trans, history, dataset_collection_matcher):
         for history_dataset_collection in history.active_dataset_collections:
             if not self._history_query(trans).can_map_over(history_dataset_collection):
                 continue
@@ -1947,10 +1945,12 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             return d
 
         # prepare dataset/collection matching
-        dataset_matcher = DatasetMatcher(trans, self, other_values)
+        dataset_matcher_factory = get_dataset_matcher_factory(trans)
+        dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
+        dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
 
         # append directly matched collections
-        for hdca in self.match_collections(trans, history, dataset_matcher):
+        for hdca in self.match_collections(trans, history, dataset_collection_matcher):
             d['options']['hdca'].append({
                 'id'   : trans.security.encode_id(hdca.id),
                 'hid'  : hdca.hid,
@@ -1960,7 +1960,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             })
 
         # append matching subcollections
-        for hdca in self.match_multirun_collections(trans, history, dataset_matcher):
+        for hdca in self.match_multirun_collections(trans, history, dataset_collection_matcher):
             subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
             d['options']['hdca'].append({
                 'id'   : trans.security.encode_id(hdca.id),
