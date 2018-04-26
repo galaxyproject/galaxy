@@ -665,6 +665,24 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
+model.JobMetricFile.table = Table(
+    "job_metric_file", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("plugin", Unicode(255)),
+    Column("metric_name", Unicode(255)),
+    Column("metric_value", Unicode(255)),
+    Column("object_store_id", Unicode(255)))
+
+model.TaskMetricFile.table = Table(
+    "task_metric_file", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("task_id", Integer, ForeignKey("task.id"), index=True),
+    Column("plugin", Unicode(255)),
+    Column("metric_name", Unicode(255)),
+    Column("metric_value", Unicode(255)),
+    Column("object_store_id", Unicode(255)))
+
 model.JobMetricText.table = Table(
     "job_metric_text", metadata,
     Column("id", Integer, primary_key=True),
@@ -1958,6 +1976,12 @@ mapper(model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryDatas
 simple_mapping(model.JobStateHistory,
     job=relation(model.Job, backref="state_history"))
 
+simple_mapping(model.JobMetricFile,
+    job=relation(model.Job, backref="file_metrics"))
+
+simple_mapping(model.TaskMetricFile,
+    task=relation(model.Task, backref="file_metrics"))
+
 simple_mapping(model.JobMetricText,
     job=relation(model.Job, backref="text_metrics"))
 
@@ -2573,6 +2597,8 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     model.Dataset.file_path = file_path
     # Connect dataset to object store
     model.Dataset.object_store = object_store
+    # Connect job metric file to object store
+    model.BaseJobMetricFile.object_store = object_store
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module

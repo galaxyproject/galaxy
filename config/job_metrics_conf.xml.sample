@@ -48,6 +48,14 @@
   <!-- Or, specific params can be recorded. -->
   <!-- <cgroup params="cpuacct.usage,memory.max_usage_in_bytes,memory.memsw.max_usage_in_bytes" /> -->
 
+  <!-- Galaxy can also record the CPU and memory usage at a given interval
+       (default is 30 seconds), if jobs are run in the `cpuacct` and `memory`
+       cgroups. This plugin is experimental, there is currently no way to
+       visualize this data. -->
+  <!-- <cgroup_time_series /> -->
+  <!-- The interval (given in seconds) can be changed. -->
+  <!-- <cgroup_time_series interval="15" /> -->
+
   <!-- <collectl /> -->
   <!-- Collectl (http://collectl.sourceforge.net/) is a powerful monitoring
        utility capable of gathering numerous system and process level
