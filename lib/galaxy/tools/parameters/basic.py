@@ -1487,7 +1487,7 @@ class BaseDataToolParameter(ToolParameter):
             dataset_matcher = DatasetMatcher(trans, self, None, other_values)
             if isinstance(self, DataToolParameter):
                 for hda in reversed(history.active_datasets_and_roles):
-                    match = dataset_matcher.hda_match(hda, check_security=False)
+                    match = dataset_matcher.hda_match(hda)
                     if match:
                         return match.hda
             else:
@@ -1812,7 +1812,7 @@ class DataToolParameter(BaseDataToolParameter):
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         for hda in history.active_datasets_and_roles:
-            match = dataset_matcher.hda_match(hda, check_security=False)
+            match = dataset_matcher.hda_match(hda)
             if match:
                 m = match.hda
                 hda_list = [h for h in hda_list if h != m and h != hda]

@@ -4,9 +4,6 @@ import galaxy.model
 
 log = getLogger(__name__)
 
-ROLES_UNSET = object()
-INVALID_STATES = [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]
-
 
 class DatasetMatcher(object):
     """ Utility class to aid DataToolParameter and similar classes in reasoning
@@ -22,7 +19,6 @@ class DatasetMatcher(object):
         self.param = param
         self.tool = param.tool
         self.value = value
-        self.current_user_roles = ROLES_UNSET
         filter_value = None
         if param.options and other_values:
             try:
@@ -31,7 +27,7 @@ class DatasetMatcher(object):
                 pass  # no valid options
         self.filter_value = filter_value
 
-    def hda_accessible(self, hda, check_security=True):
+    def hda_accessible(self, hda):
         """ Does HDA correspond to dataset that is an a valid state and is
         accessible to user.
         """
@@ -42,9 +38,9 @@ class DatasetMatcher(object):
         else:
             valid_input_states = galaxy.model.Dataset.valid_input_states
         state_valid = dataset.state in valid_input_states
-        return state_valid and (not check_security or self.__can_access_dataset(dataset))
+        return state_valid
 
-    def valid_hda_match(self, hda, check_implicit_conversions=True, check_security=False):
+    def valid_hda_match(self, hda, check_implicit_conversions=True):
         """ Return False of this parameter can not be matched to the supplied
         HDA, otherwise return a description of the match (either a
         HdaDirectMatch describing a direct match or a HdaImplicitMatch
@@ -62,8 +58,6 @@ class DatasetMatcher(object):
                 original_hda = hda
                 if converted_dataset:
                     hda = converted_dataset
-                if check_security and not self.__can_access_dataset(hda.dataset):
-                    return False
                 rval = HdaImplicitMatch(hda, target_ext, original_hda)
             else:
                 return False
@@ -71,12 +65,12 @@ class DatasetMatcher(object):
             return False
         return rval
 
-    def hda_match(self, hda, check_implicit_conversions=True, check_security=True, ensure_visible=True):
+    def hda_match(self, hda, check_implicit_conversions=True, ensure_visible=True):
         """ If HDA is accessible, return information about whether it could
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
-        accessible = self.hda_accessible(hda, check_security=check_security)
+        accessible = self.hda_accessible(hda)
         if accessible and (not ensure_visible or hda.visible or (self.selected(hda) and not hda.implicitly_converted_parent_datasets)):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
@@ -102,12 +96,6 @@ class DatasetMatcher(object):
         """
         param = self.param
         return param.options and param.get_options_filter_attribute(hda) != self.filter_value
-
-    def __can_access_dataset(self, dataset):
-        # Lazily cache current_user_roles.
-        if self.current_user_roles is ROLES_UNSET:
-            self.current_user_roles = self.trans.get_current_user_roles()
-        return self.trans.app.security_agent.can_access_dataset(self.current_user_roles, dataset)
 
 
 class HdaDirectMatch(object):
