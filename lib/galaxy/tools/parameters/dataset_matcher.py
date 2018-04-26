@@ -5,6 +5,46 @@ import galaxy.model
 log = getLogger(__name__)
 
 
+def set_dataset_matcher_factory(trans, tool, param_values):
+    trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool, param_values)
+
+
+def unset_dataset_matcher_factory(trans):
+    trans.dataset_matcher_factory = None
+
+
+def get_dataset_matcher_factory(trans):
+    dataset_matcher_factory = getattr(trans, "dataset_matcher_factory", None)
+    return dataset_matcher_factory or DatasetMatcherFactory(trans)
+
+
+class DatasetMatcherFactory(object):
+    """"""
+
+    def __init__(self, trans, tool=None, param_values=None):
+        self._trans = trans
+        self._tool = tool
+        self._data_inputs = []
+        if tool is not None and param_values is not None:
+            self._collect_data_inputs(tool, param_values)
+
+    def _collect_data_inputs(self, tool, param_values):
+        def visitor(input, value, prefix, parent=None, **kwargs):
+            type_name = type(input).__name__
+            if "DataToolParameter" in type_name:
+                self._data_inputs.append(input)
+            elif "DatasetCollectionToolParameter" in type_name:
+                self._data_inputs.append(input)
+
+        tool.visit_inputs(param_values, visitor)
+
+    def dataset_matcher(self, param, other_values):
+        return DatasetMatcher(self._trans, param, other_values)
+
+    def dataset_collection_matcher(self, dataset_matcher):
+        return DatasetCollectionMatcher(dataset_matcher)
+
+
 class DatasetMatcher(object):
     """ Utility class to aid DataToolParameter and similar classes in reasoning
     about what HDAs could match or are selected for a parameter and value.
