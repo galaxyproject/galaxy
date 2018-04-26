@@ -1484,7 +1484,7 @@ class BaseDataToolParameter(ToolParameter):
             return None
         history = trans.history
         if history is not None:
-            dataset_matcher = DatasetMatcher(trans, self, None, other_values)
+            dataset_matcher = DatasetMatcher(trans, self, other_values)
             if isinstance(self, DataToolParameter):
                 for hda in reversed(history.active_datasets_and_roles):
                     match = dataset_matcher.hda_match(hda)
@@ -1797,7 +1797,7 @@ class DataToolParameter(BaseDataToolParameter):
             return d
 
         # prepare dataset/collection matching
-        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
+        dataset_matcher = DatasetMatcher(trans, self, other_values)
         multiple = self.multiple
 
         # build and append a new select option
@@ -1954,7 +1954,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             return d
 
         # prepare dataset/collection matching
-        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
+        dataset_matcher = DatasetMatcher(trans, self, other_values)
 
         # append directly matched collections
         for hdca in self.match_collections(trans, history, dataset_matcher):
