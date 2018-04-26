@@ -72,7 +72,7 @@ pulsar-galaxy-lib==0.8.3
 
 # sqlalchemy-migrate and dependencies
 sqlalchemy-migrate==0.11.0
-decorator==4.0.2
+decorator==4.1.0
 Tempita==0.5.3dev
 sqlparse==0.1.16
 pbr==3.1.1
@@ -91,4 +91,3 @@ python-genomespaceclient==0.1.8
 
 # ISA
 git+https://github.com/ISA-tools/isa-rwval.git@develop#egg=isa-rwval
-

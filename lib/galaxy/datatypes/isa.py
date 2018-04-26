@@ -24,7 +24,7 @@ from json import dumps  # noqa: F401
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
 from isatools import isajson
-from isatools import isatab
+from isatools import isatab_meta
 
 from galaxy import model
 from galaxy import util
@@ -345,15 +345,16 @@ class IsaTab(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse ISA-Tab investigation file
-        parser = isatab.InvestigationParser()
+        parser = isatab_meta.InvestigationParser()
+        isa_dir = os.path.dirname(filename)
         fp = utf8_text_file_open(filename)
         parser.parse(fp)
         for study in parser.isa.studies:
-            s_parser = isatab.LazyStudySampleTableParser(parser.isa)
-            s_parser.parse(study.filename)
+            s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
+            s_parser.parse(os.path.join(isa_dir, study.filename))
             for assay in study.assays:
-                a_parser = isatab.LazyAssayTableParser(parser.isa)
-                a_parser.parse(assay.filename)
+                a_parser = isatab_meta.LazyAssayTableParser(parser.isa)
+                a_parser.parse(os.path.join(isa_dir, assay.filename))
         isa = parser.isa
 
         return isa
