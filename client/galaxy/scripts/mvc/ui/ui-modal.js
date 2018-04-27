@@ -10,7 +10,7 @@ export var View = Backbone.View.extend({
         backdrop: true,
         height: null,
         width: null,
-        xlarge: false, /* BS4 max-width already expanded in Galaxy, expand even more if true. */
+        xlarge: false /* BS4 max-width already expanded in Galaxy, expand even more if true. */,
         closing_events: false,
         closing_callback: null,
         title_separator: true

@@ -168,7 +168,8 @@ var HistoryViewEdit = _super.extend(
                 $activator: faIconButton({
                     title: _l("Edit history tags"),
                     classes: "history-tag-btn",
-                    faIcon: "fa-tags"
+                    faIcon: "fa-tags",
+                    tooltipConfig: { placement: "top" }
                 }).appendTo($where.find(".controls .actions"))
             });
         },
@@ -191,7 +192,8 @@ var HistoryViewEdit = _super.extend(
                 $activator: faIconButton({
                     title: _l("Edit history annotation"),
                     classes: "history-annotate-btn",
-                    faIcon: "fa-comment"
+                    faIcon: "fa-comment",
+                    tooltipConfig: { placement: "top" }
                 }).appendTo($where.find(".controls .actions"))
             });
         },
