@@ -4608,10 +4608,6 @@ class UserAuthnzToken(UserMixin):
         return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
     def set_extra_data(self, extra_data=None):
-        # Note: the following unicode conversion is a temporary solution for a
-        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
-        if extra_data is not None:
-            extra_data = str(extra_data)
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self.trans.sa_session.add(self)
             self.trans.sa_session.flush()
