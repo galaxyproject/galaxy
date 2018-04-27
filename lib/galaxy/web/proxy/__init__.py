@@ -24,6 +24,11 @@ SECURE_COOKIE = "galaxysession"
 
 class ProxyManager(object):
 
+    valid_update_keys = (
+        'host',
+        'port',
+    )
+
     def __init__(self, config):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
                        "dynamic_proxy_bind_ip", "dynamic_proxy_debug",
@@ -83,6 +88,13 @@ class ProxyManager(object):
             'proxied_port': proxy_requests.port,
             'proxied_host': proxy_requests.host,
         }
+
+    def update_proxy(self, trans, **kwargs):
+        authentication = AuthenticationToken(trans)
+        for k in kwargs.keys():
+            if k not in self.valid_update_keys:
+                raise Exception("Invalid proxy request update key: %s" % k)
+        return self.proxy_ipc.update_requests(authentication, **kwargs)
 
     def query_proxy(self, trans):
         authentication = AuthenticationToken(trans)
@@ -211,6 +223,15 @@ class JsonFileProxyIpc(object):
             new_json_data = json.dumps(session_map)
             open(self.proxy_session_map, "w").write(new_json_data)
 
+    def update_requests(self, authentication, host=None, port=None):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            session_map = json.load(open(self.proxy_session_map))
+            session_map[key]['host'] = host
+            session_map[key]['port'] = port
+            new_json_data = json.dumps(session_map)
+            open(self.proxy_session_map, "w").write(new_json_data)
+
     def fetch_requests(self, authentication):
         key = authentication.cookie_value
         try:
@@ -260,6 +281,20 @@ class SqliteProxyIpc(object):
                            proxy_requests.port,
                            json.dumps(container_ids),
                            container_interface))
+                conn.commit()
+            finally:
+                conn.close()
+
+    def update_requests(self, authentication, host=None, port=None):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            conn = sqlite.connect(self.proxy_session_map)
+            try:
+                c = conn.cursor()
+                update = '''UPDATE gxproxy2
+                            SET host = ?, port = ?
+                            WHERE key = ?'''
+                c.execute(update, (host, port, key))
                 conn.commit()
             finally:
                 conn.close()
