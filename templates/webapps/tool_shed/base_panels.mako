@@ -97,7 +97,9 @@
                                         <div class="dropdown-divider"></div>
                                     %else:
                                         %if len ( menu_item ) == 1:
-                                            <a href="#">${menu_item[0]}</a>
+                                            <a class="dropdown-item" href="#">
+                                                ${menu_item[0]}
+                                            </a>
                                         %elif len ( menu_item ) == 2:
                                             <% name, link = menu_item %>
                                             <a class="dropdown-item" href="${link}">${name | h}</a>
@@ -154,7 +156,7 @@
                         email = escape( trans.user.email )
                     else:
                         email = ""
-                    menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
+                    menu_options = [ [ 'Logged in as <span id="user-email">%s</span>' %  email ] ]
                     if app.config.use_remote_user:
                         if app.config.remote_user_logout_href:
                             menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
