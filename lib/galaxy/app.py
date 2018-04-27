@@ -10,6 +10,7 @@ import galaxy.queues
 import galaxy.quota
 import galaxy.security
 from galaxy import config, jobs
+from galaxy.containers import build_container_interfaces
 from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
@@ -93,7 +94,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagManager(self.model.context)
-        # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
@@ -210,6 +210,13 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        self.containers = {}
+        if self.config.enable_beta_containers_interface:
+            self.containers = build_container_interfaces(
+                self.config.containers_config_file,
+                containers_conf=self.config.containers_conf
+            )
 
         # Configure handling of signals
         handlers = {}

@@ -601,7 +601,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
             user = self.app.model.User(email=remote_user_email)
-            user.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 12)))
+            user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-']:

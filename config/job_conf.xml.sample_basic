@@ -4,9 +4,6 @@
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
     </plugins>
-    <handlers>
-        <handler id="main"/>
-    </handlers>
     <destinations>
         <destination id="local" runner="local"/>
     </destinations>

@@ -141,7 +141,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_mapping("url", "D")
         self.rule_builder_set_mapping("name", "C", screenshot_name="rules_example_1_5_mapping_edit")
         self.screenshot("rules_example_1_6_mapping_set")
-        self.select2_set_value(".rule-option-extension", "fastqsanger.gz")
+        self.rule_builder_set_extension("fastqsanger.gz")
         self.screenshot("rules_example_1_7_extension_set")
         # rule_builder.main_button_ok.wait_for_and_click()
         # self.history_panel_wait_for_hid_ok(6)
@@ -188,7 +188,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # Filter header.
         self.rule_builder_filter_count(1)
         self.rule_builder_set_mapping("list-identifiers", "C")
-        self.select2_set_value(".rule-option-extension", "fastqsanger.gz")
+        self.rule_builder_set_extension("fastqsanger.gz")
         self.screenshot("rules_example_3_3_old_rules")
         self.rule_builder_add_regex_groups("D", 2, "(.*);(.*)", screenshot_name="rules_example_3_4_regex")
         self.screenshot("rules_example_3_6_with_regexes")
@@ -220,7 +220,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_example_4_3_basic_rules")
         self.rule_builder_sort("A", screenshot_name="rules_example_4_4_sort")
 
-        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/$&.fasta", screenshot_name="rules_example_4_5_url")
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.fasta", screenshot_name="rules_example_4_5_url")
         self.screenshot("rules_example_4_6_url_built")
         self.rule_builder_set_mapping("list-identifiers", "A")
         self.rule_builder_set_mapping("url", "C")
@@ -246,18 +246,15 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder = self.components.rule_builder
         rule_builder.view_source.wait_for_and_click()
 
-        text_area_elem = rule_builder.source.wait_for_visible()
-
         content = self._read_rules_test_data_file("uniprot.json")
-        text_area_elem.clear()
-        text_area_elem.send_keys(content)
+        self.rule_builder_enter_source_text(content)
         self.screenshot("rules_example_5_2_source")
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
         self.screenshot("rules_example_5_3_initial_rules")
         self.rule_builder_add_value("fasta", screenshot_name="rules_example_5_4_fasta")
         self.rule_builder_add_value("UP000052092 FASTA")
-        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/$&.gff", screenshot_name="rules_example_5_5_url")
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.gff", screenshot_name="rules_example_5_5_url")
         self.rule_builder_add_value("gff3")
         self.rule_builder_add_value("UP000052092 GFF3")
         self._scroll_to_end_of_table()

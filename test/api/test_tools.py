@@ -3,10 +3,12 @@ import json
 import os
 
 from base import api
+from base import rules_test_data
 from base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    load_data_dict,
     skip_without_tool,
 )
 
@@ -256,7 +258,6 @@ class ToolsTestCase(api.ApiTestCase):
 
     def test_filter_failed(self):
         with self.dataset_populator.test_history() as history_id:
-            history_id = self.dataset_populator.new_history()
             ok_hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()["id"]
             response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
 
@@ -281,6 +282,31 @@ class ToolsTestCase(api.ApiTestCase):
             filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
             filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
             assert filtered_states == [u"ok", u"ok"], filtered_states
+
+    def _apply_rules_and_check(self, example):
+        with self.dataset_populator.test_history() as history_id:
+            inputs, _, _ = load_data_dict(history_id, {"input": example["test_data"]}, self.dataset_populator, self.dataset_collection_populator)
+            hdca = inputs["input"]
+            inputs = {
+                "input": {"src": "hdca", "id": hdca["id"]},
+                "rules": example["rules"]
+            }
+            self.dataset_populator.wait_for_history(history_id)
+            response = self._run("__APPLY_RULES__", history_id, inputs, assert_ok=True)
+            output_collections = response["output_collections"]
+            self.assertEquals(len(output_collections), 1)
+            output_hid = output_collections[0]["hid"]
+            output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
+            example["check"](output_hdca, self.dataset_populator)
+
+    def test_apply_rules_1(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_1)
+
+    def test_apply_rules_2(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_2)
+
+    def test_apply_rules_3(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_3)
 
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):

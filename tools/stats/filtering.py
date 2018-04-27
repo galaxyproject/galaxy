@@ -3,6 +3,7 @@
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 from __future__ import division, print_function
 
+import json
 import re
 import sys
 from ast import Module, parse, walk
@@ -142,7 +143,9 @@ def stop_err(msg):
 
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
-cond_text = sys.argv[3]
+with open(sys.argv[3], "r") as f:
+    inputs = json.load(f)
+cond_text = inputs["cond"]
 try:
     in_columns = int(sys.argv[4])
     assert sys.argv[5]  # check to see that the column types variable isn't null

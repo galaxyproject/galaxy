@@ -354,17 +354,17 @@ class TracksterUI extends Backbone.Model {
                     },
                     "Leave without Saving": () => {
                         $(window).off("beforeunload");
-                        window.top.location = `${Galaxy.root}visualization`;
+                        window.top.location = `${Galaxy.root}visualizations/list`;
                     },
                     Save: () => {
                         $.when(this.save_viz()).then(() => {
-                            window.top.location = `${Galaxy.root}visualization`;
+                            window.top.location = `${Galaxy.root}visualizations/list`;
                         });
                     }
                 }
             });
         } else {
-            window.top.location = `${Galaxy.root}visualization`;
+            window.top.location = `${Galaxy.root}visualizations/list`;
         }
     }
 }

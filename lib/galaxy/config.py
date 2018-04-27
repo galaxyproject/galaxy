@@ -334,6 +334,7 @@ class Configuration(object):
                                           " you won't be able to upload data or run jobs until you have verified your email address.")
         self.inactivity_box_content = kwargs.get('inactivity_box_content', default_inactivity_box_content)
         self.terms_url = kwargs.get('terms_url', None)
+        self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
         self.instance_resource_url = kwargs.get('instance_resource_url', None)
         self.registration_warning_message = kwargs.get('registration_warning_message', None)
         self.ga_code = kwargs.get('ga_code', None)
@@ -461,6 +462,7 @@ class Configuration(object):
         # allow_path_paste value.
         self.allow_library_path_paste = string_as_bool(kwargs.get('allow_library_path_paste', self.allow_path_paste))
         self.disable_library_comptypes = kwargs.get('disable_library_comptypes', '').lower().split(',')
+        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", False))
         self.check_upload_content = string_as_bool(kwargs.get('check_upload_content', True))
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')

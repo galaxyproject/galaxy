@@ -16,9 +16,9 @@
             <br>
             <div class="container">
                 <p>Take an interactive tour:
-                    <a target="_parent" href="../tours/core.galaxy_ui" class="btn btn-default btn-xs">Galaxy UI</a>
-                    <a target="_parent" href="../tours/core.history" class="btn btn-default btn-xs">History</a>
-                    <a target="_parent" href="../tours/core.scratchbook" class="btn btn-default btn-xs">Scratchbook</a>
+                    <a target="_parent" href="../tours/core.galaxy_ui" class="btn btn-secondary btn-sm">Galaxy UI</a>
+                    <a target="_parent" href="../tours/core.history" class="btn btn-secondary btn-sm">History</a>
+                    <a target="_parent" href="../tours/core.scratchbook" class="btn btn-secondary btn-sm">Scratchbook</a>
                 </p>
             </div>
         </div>

@@ -66,7 +66,7 @@ Additionally some of the runners including DRMAA may use the ``cluster_files_dir
 cluster_files_directory: database/pbs
 ```
 
-You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_output_collection` option in `galaxy.yml` first to see if this solves the problem.
+You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_job_output_collection` option in `galaxy.yml` first to see if this solves the problem.
 
 ## Runner Configuration
 
@@ -348,7 +348,12 @@ galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/external_chown_script
 
 If your sudo config contains `Defaults    requiretty`, this option must be disabled.
 
-For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.yml can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. 
+For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.yml can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. For example, the path to the python inside the galaxy's python virtualenv may have to be inserted before the script call to make sure the virtualenv is used for drmaa submissions of real user jobs.
+
+```
+drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
+```
+
 Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.

@@ -3156,11 +3156,13 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         id=None,
         collection_type=None,
         populated=True,
+        element_count=None
     ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
+        self.element_count = element_count
 
     @property
     def populated(self):
@@ -3233,6 +3235,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
     def copy(self, destination=None, element_destination=None):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
+            element_count=self.element_count
         )
         for element in self.elements:
             element.copy_to_collection(

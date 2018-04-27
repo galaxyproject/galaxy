@@ -17,7 +17,18 @@ export default Backbone.View.extend({
                 this._eventBuild();
             }
         });
-        _.each([this.btnBuild], button => {
+        this.btnBuild.$el.addClass("btn-primary");
+        this.btnReset = new Ui.Button({
+            id: "btn-reset",
+            title: _l("Reset"),
+            onclick: () => this._eventReset()
+        });
+        this.btnClose = new Ui.Button({
+            id: "btn-close",
+            title: _l("Close"),
+            onclick: () => this.app.modal.hide()
+        });
+        _.each([this.btnReset, this.btnBuild, this.btnClose], button => {
             this.$(".upload-buttons").prepend(button.$el);
         });
         const dataTypeOptions = [{ id: "datasets", text: "Datasets" }, { id: "collections", text: "Collection(s)" }];
@@ -35,7 +46,7 @@ export default Backbone.View.extend({
 
         const selectionTypeOptions = [
             { id: "paste", text: "Pasted Table" },
-            { id: "dataset", text: "History Dataset" },
+            { id: "dataset", text: "History Dataset" }
         ];
         if (this.ftpUploadSite) {
             selectionTypeOptions.push({ id: "ftp", text: "FTP Directory" });
@@ -53,6 +64,10 @@ export default Backbone.View.extend({
         });
         this.selectedDatasetId = null;
 
+        this.$sourceContent = this.$(".upload-rule-source-content");
+        this.$sourceContent.on("change keyup paste", () => {
+            this._updateBuildState();
+        });
         this._renderSelectedType();
     },
 
@@ -106,8 +121,17 @@ export default Backbone.View.extend({
             .catch(error => console.log(error));
     },
 
+    /** Remove all */
+    _eventReset: function() {
+        if (this.datasetSelectorView) {
+            this.datasetSelectorView.value(null);
+        }
+        this.$sourceContent.val("");
+        this._updateScreen();
+    },
+
     _eventBuild: function() {
-        const selection = this.$(".upload-rule-source-content").val();
+        const selection = this.$sourceContent.val();
         this._buildSelection(selection);
     },
 
@@ -126,16 +150,21 @@ export default Backbone.View.extend({
     },
 
     _setPreview: function(content) {
-        $(".upload-rule-source-content").val(content);
+        this.$sourceContent.val(content);
         this._updateScreen();
     },
 
     _updateScreen: function() {
+        this._updateBuildState();
         const selectionType = this.selectionType;
-        const selection = this.$(".upload-rule-source-content").val();
-        this.btnBuild[selection || selectionType == "paste" ? "enable" : "disable"]();
         this.$("#upload-rule-dataset-option")[selectionType == "dataset" ? "show" : "hide"]();
-        this.$(".upload-rule-source-content").attr("disabled", selectionType !== "paste");
+        this.$sourceContent.attr("disabled", selectionType !== "paste");
+    },
+
+    _updateBuildState: function() {
+        const selection = this.$sourceContent.val();
+        this.btnBuild[selection ? "enable" : "disable"]();
+        this.btnBuild.$el[selection ? "addClass" : "removeClass"]("btn-primary");
     },
 
     _template: function() {
@@ -147,7 +176,7 @@ export default Backbone.View.extend({
                     </h6>
                 </div>
                 <div class="upload-box" style="height: 335px;">
-                    <span style="width: 25%; display: inline; height: 100%" class="pull-left">
+                    <span style="width: 25%; display: inline; height: 100%" class="float-left">
                         <div class="upload-rule-option">
                             <div class="upload-rule-option-title">${_l("Upload data as")}:</div>
                             <div class="rule-data-type" />

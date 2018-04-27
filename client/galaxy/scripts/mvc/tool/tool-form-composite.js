@@ -434,6 +434,9 @@ var View = Backbone.View.extend({
                         step
                     )
                 );
+                if (step.step_label) {
+                    form.$el.attr("step-label", step.step_label);
+                }
             }
             self.forms[step.index] = form;
             self._append(self.$steps, form.$el);

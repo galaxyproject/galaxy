@@ -294,7 +294,7 @@ As a natural extension to this, a dynamic job runner can be used as the default 
 The following example assumes the existence of a job destination with ids `short_pbs` and `long_pbs` and that a default dynamic job runner has been defined as follows in `job_conf.xml`:
 
 ```xml
-  <destination default="dynamic">
+  <destinations default="dynamic">
     <destination id="dynamic">
       <param id="type">python</param>
       <param id="function">default_runner</param>
@@ -317,7 +317,7 @@ def default_runner(tool_id):
 As another example, assume that a few tools should be only accessible to developers and all other users should receive a message indicating they are not authorized to use this tool. This can be accomplished with the following `job_conf.xml` fragment
 
 ```xml
-  <destination default="dynamic">
+  <destinations default="dynamic">
     <destination id="dev_dynamic">
       <param id="type">python</param>
       <param id="function">dev_only</param>

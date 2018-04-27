@@ -11,6 +11,7 @@ var beautify = require("gulp-beautify");
 var gulpif = require("gulp-if");
 var cached = require("gulp-cached");
 var plumber = require("gulp-plumber");
+var sass = require("gulp-sass");
 
 var paths = {
     node_modules: "./node_modules",
@@ -20,12 +21,23 @@ var paths = {
         "!galaxy/scripts/apps/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
+    style_sources: ["galaxy/style/scss/**/*.scss"],
+    style: [
+        "galaxy/style/scss/base.scss",
+        "galaxy/style/scss/autocomplete_tagging.scss",
+        "galaxy/style/scss/embed_item.scss",
+        "galaxy/style/scss/library.scss",
+        "galaxy/style/scss/trackster.scss",
+        "galaxy/style/scss/circster.scss",
+        "galaxy/style/scss/reports.scss"
+    ],
     plugin_dirs: ["../config/plugins/**/static/**/*", "!../config/plugins/**/node_modules{,/**}"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
+        "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
@@ -80,11 +92,24 @@ gulp.task("stage-libs", function(callback) {
     });
 });
 
+gulp.task("fonts", function() {
+    return gulp
+        .src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*")))
+        .pipe(gulp.dest("../static/images/fonts"));
+});
+
 gulp.task("libs", function() {
     return gulp
         .src(paths.libs)
         .pipe(uglify())
         .pipe(gulp.dest("../static/scripts/libs/"));
+});
+
+gulp.task("style", function() {
+    return gulp
+        .src(paths.style)
+        .pipe(sass().on("error", sass.logError))
+        .pipe(gulp.dest("../static/style/blue/"));
 });
 
 gulp.task("plugins", function() {
@@ -99,5 +124,11 @@ gulp.task("clean", function() {
 gulp.task("watch", function() {
     gulp.watch(paths.scripts, ["scripts"]);
 });
+
+gulp.task("watch-style", function() {
+    gulp.watch(paths.style_sources, ["style"]);
+});
+
+gulp.task("staging", ["stage-libs", "fonts"]);
 
 gulp.task("default", ["scripts", "libs", "plugins"]);

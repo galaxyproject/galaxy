@@ -140,7 +140,7 @@ var FolderToolbarView = Backbone.View.extend({
             $(".logged-dataset-manipulation").hide();
             $(".dataset-manipulation").hide();
         }
-        this.$el.find("[data-toggle]").tooltip();
+        this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     createFolderFromModal: function(event) {
@@ -1241,7 +1241,8 @@ var FolderToolbarView = Backbone.View.extend({
             data: [
                 { id: "list", text: "List" },
                 { id: "paired", text: "Paired" },
-                { id: "list:paired", text: "List of Pairs" }
+                { id: "list:paired", text: "List of Pairs" },
+                { id: "rules", text: "From Rules" }
             ],
             value: "list",
             onchange: collectionType => {
@@ -1353,6 +1354,14 @@ var FolderToolbarView = Backbone.View.extend({
                 title: modal_title,
                 defaultHideSourceItems: true
             });
+        } else if (this.collectionType === "rules") {
+            const creationFn = (elements, collectionType, name, hideSourceItems) => {
+                return this.createHDCA(elements, collectionType, name, hideSourceItems, history_id);
+            };
+            LIST_CREATOR.ruleBasedCollectionCreatorModal(collection_elements, "library_datasets", "collections", {
+                creationFn: creationFn,
+                defaultHideSourceItems: true
+            });
         }
     },
 
@@ -1371,102 +1380,90 @@ var FolderToolbarView = Backbone.View.extend({
     templateToolBar: function() {
         return _.template(
             [
-                // container start
-                '<div class="library_style_container">',
-                // toolbar start
-                '<div id="library_toolbar">',
-                '<form class="form-inline" role="form">',
-                "<span><strong>DATA LIBRARIES</strong></span>",
-                // paginator will append here
-                '<span class="library-paginator folder-paginator"></span>',
-                // include deleted checkbox
-                '<div class="checkbox toolbar-item logged-dataset-manipulation" style="height: 20px; display:none;">',
-                "<label>",
-                '<input type="checkbox" class="include-deleted-datasets-chk">include deleted</input>',
-                "</label>",
+                '<div class="library_style_container">', // container start
+                '<div class="d-flex align-items-center mb-2">',
+                '<span class="mr-1">DATA LIBRARIES</span>',
+                "<div>", // toolbar start
+                '<form class="form-inline">',
+                '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
+                '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
+                '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
                 "</div>",
-                // create new folder button
-                '<button style="display:none;" data-toggle="tooltip" data-placement="top" title="Create New Folder" class="btn btn-default primary-button toolbtn-create-folder add-library-items add-library-items-folder toolbar-item" type="button">',
-                '<span class="fa fa-plus"></span><span class="fa fa-folder"></span> Create Folder ',
+                '<button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
+                '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
                 "</button>",
-                // add datasets button
-                "<% if(multiple_add_dataset_options) { %>",
-                '<div class="btn-group add-library-items add-library-items-datasets toolbar-item" style="display:none;">',
-                '<button title="Add Datasets to Current Folder" id="" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
-                '<span class="fa fa-plus"></span><span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
+                "<% if(multiple_add_dataset_options) { %>", // add datasets button
+                '<div data-toggle="tooltip" data-placement="right" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">',
+                '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
+                '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
                 "</button>",
-                '<ul class="dropdown-menu" role="menu">',
-                '<li><a href="#folders/<%= id %>/import/history"> from History</a></li>',
+                '<div class="dropdown-menu">',
+                '<a class="dropdown-item" href="#folders/<%= id %>/import/history"> from History</a>',
                 "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
-                '<li><a href="#folders/<%= id %>/import/userdir"> from User Directory</a></li>',
+                '<a class="dropdown-item" href="#folders/<%= id %>/import/userdir"> from User Directory</a>',
                 "<% } %>",
                 "<% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>",
-                '<li class="divider"></li>',
-                '<li class="dropdown-header">Admins only</li>',
+                '<h5 class="dropdown-header">Admins only</h5>',
                 "<% if(Galaxy.config.library_import_dir !== null) { %>",
-                '<li><a href="#folders/<%= id %>/import/importdir">from Import Directory</a></li>',
+                '<a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>',
                 "<% } %>",
                 "<% if(Galaxy.config.allow_library_path_paste) { %>",
-                '<li><a href="#folders/<%= id %>/import/path">from Path</a></li>',
+                '<a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>',
                 "<% } %>",
                 "<% } %>",
-                "</ul>",
                 "</div>",
+                "</div>",
+
                 "<% } else { %>",
-                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-default add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
+                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-secondary add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
                 '<span class="fa fa-plus"></span><span class="fa fa-file"></span>',
                 "</a>",
                 "<% } %>",
                 // import to history button
-                '<div class="btn-group toolbar-item">',
-                '<button title="Import to history" type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
+                '<div data-toggle="tooltip" data-placement="right" title="Import to history" class="dropdown mr-1">',
+                '<button type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
                 '<span class="fa fa-book"></span> To History <span class="caret"></span>',
                 "</button>",
-                '<ul class="dropdown-menu" role="menu">',
-                '<li><a href="" class="toolbtn-bulk-import add-to-history-datasets">as Datasets</a></li>',
-                '<li><a href="" class="toolbtn-collection-import add-to-history-collection">as a Collection</a></li>',
-                "</ul>",
+                '<div class="dropdown-menu" role="menu">',
+                '<a href="" class="toolbtn-bulk-import add-to-history-datasets dropdown-item">as Datasets</a>',
+                '<a href="" class="toolbtn-collection-import add-to-history-collection dropdown-item">as a Collection</a>',
+                "</div>",
                 "</div>",
                 // download button
-                '<div class="btn-group dataset-manipulation toolbar-item" style="display:none; ">',
-                '<button title="Download items as archive" type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
+                '<div data-toggle="tooltip" data-placement="right" title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">',
+                '<button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
                 '<span class="fa fa-save"></span> Download <span class="caret"></span>',
                 "</button>",
-                '<ul class="dropdown-menu" role="menu">',
-                '<li><a href="#/folders/<%= id %>/download/tgz">.tar.gz</a></li>',
-                '<li><a href="#/folders/<%= id %>/download/tbz">.tar.bz</a></li>',
-                '<li><a href="#/folders/<%= id %>/download/zip">.zip</a></li>',
-                "</ul>",
+                '<div class="dropdown-menu" role="menu">',
+                '<a class="dropdown-item" href="#/folders/<%= id %>/download/tgz">.tar.gz</a>',
+                '<a class="dropdown-item" href="#/folders/<%= id %>/download/tbz">.tar.bz</a>',
+                '<a class="dropdown-item" href="#/folders/<%= id %>/download/zip">.zip</a>',
+                "</div>",
                 "</div>",
                 // delete button
-                '<button data-toggle="tooltip" data-placement="top" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation toolbar-item" style="display:none;" type="button">',
+                '<button data-toggle="tooltip" data-placement="right" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">',
                 '<span class="fa fa-trash"></span> Delete',
                 "</button>",
-                // help button
-                '<span class="right-float" data-toggle="tooltip" data-placement="top" title="See this screen annotated">',
-                '<a href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
+                '<span class="mr-1" data-toggle="tooltip" data-placement="right" title="Show location details">', // location button
+                '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">',
+                '<span class="fa fa-info-circle"></span>',
+                "&nbsp;Details",
+                "</button>",
+                "</span>",
+                '<span data-toggle="tooltip" data-placement="right" title="See this screen annotated">', // help button
+                '<a class="library-help-button" href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
                 '<button class="primary-button" type="button">',
                 '<span class="fa fa-question-circle"></span>',
                 "&nbsp;Help",
                 "</button>",
                 "</a>",
                 "</span>",
-                // location button
-                '<span class="right-float" data-toggle="tooltip" data-placement="top" title="Show location details">',
-                '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo toolbar-item" type="button">',
-                '<span class="fa fa-info-circle"></span>',
-                "&nbsp;Details",
-                "</button>",
-                "</span>",
-                // toolbar end
-                "</div>",
                 "</form>",
-                // folder contents will append here
-                '<div id="folder_items_element" />',
-                // paginator will append here
-                '<div class="folder-paginator paginator-bottom" />',
-                // container end
-                "</div>"
+                "</div>", // toolbar end
+                "</div>", // end flex
+                '<div id="folder_items_element" />', // folder contents will append here
+                '<div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />', // paginator will append here
+                "</div>" // container end
             ].join("")
         );
     },
@@ -1475,7 +1472,7 @@ var FolderToolbarView = Backbone.View.extend({
         return _.template(
             [
                 "<div>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 '<th style="width: 25%;">library</th>',
                 "<th></th>",
@@ -1509,7 +1506,7 @@ var FolderToolbarView = Backbone.View.extend({
                 "</tr>",
                 "</tbody>",
                 "</table>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 '<th style="width: 25%;">folder</th>',
                 "<th></th>",
@@ -1618,8 +1615,6 @@ var FolderToolbarView = Backbone.View.extend({
         return _.template(
             [
                 '<div id="file_browser_modal">',
-                '<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder ignoring their folder structure.</div>',
-                '<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>',
                 '<div style="margin-bottom:1em;">',
                 '<label title="Switch to selecting files" class="radio-inline import-type-switch">',
                 '<input type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked"> Choose Files',
@@ -1628,6 +1623,8 @@ var FolderToolbarView = Backbone.View.extend({
                 '<input type="radio" name="jstree-radio" value="jstree-disable-files"> Choose Folders',
                 "</label>",
                 "</div>",
+                '<div class="alert alert-info jstree-files-message">All files you select will be imported into the current folder ignoring their folder structure.</div>',
+                '<div class="alert alert-info jstree-folders-message" style="display:none;">All files within the selected folders and their subfolders will be imported into the current folder.</div>',
                 '<div style="margin-bottom:1em;">',
                 '<label class="checkbox-inline jstree-preserve-structure" style="display:none;">',
                 '<input class="preserve-checkbox" type="checkbox" value="preserve_directory_structure">',
@@ -1789,34 +1786,34 @@ var FolderToolbarView = Backbone.View.extend({
     templatePaginator: function() {
         return _.template(
             [
-                '<ul class="pagination pagination-sm">',
+                '<ul class="pagination mr-1">',
                 "<% if ( ( show_page - 1 ) > 0 ) { %>",
                 "<% if ( ( show_page - 1 ) > page_count ) { %>", // we are on higher page than total page count
-                '<li><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } else { %>",
-                '<li><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li><a href="#folders/<%= id %>/page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } %>",
                 "<% } else { %>", // we are on the first page
-                '<li class="disabled"><a href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/1"><span class="fa fa-angle-double-left"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
                 "<% } %>",
-                '<li class="active">',
-                '<a href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page ) %></a>',
+                '<li class="page-item active">',
+                '<a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>"><% print( show_page ) %></a>',
                 "</li>",
                 "<% if ( ( show_page ) < page_count ) { %>",
-                '<li><a href="#folders/<%= id %>/page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li><a href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
+                '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>',
+                '<li class="page-item"><a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } else { %>",
-                '<li class="disabled"><a href="#folders/<%= id %>/page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li class="disabled"><a href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>',
+                '<li class="page-item disabled"><a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
                 "<% } %>",
                 "</ul>",
-                "<span>",
+                '<span class="mr-1">',
                 ' <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>',
                 "</span>",
-                "<span>",
+                '<span class="mr-1">',
                 " <%- total_items_count %> total",
                 "</span>"
             ].join("")
@@ -1856,6 +1853,9 @@ var FolderToolbarView = Backbone.View.extend({
                 "</li>",
                 "<li>",
                 "List of Pairs: Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.",
+                "</li>",
+                "<li>",
+                "From Rules: Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.",
                 "</li>",
                 "</ul>",
                 "</div>",

@@ -216,12 +216,12 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         publish=False,
         create_stored_workflow=True,
-        exact_tools=False,
+        exact_tools=True,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
-        if source and source != 'API':
+        if source:
             name = "%s (imported from %s)" % (data['name'], source)
         else:
             name = data['name']
@@ -378,7 +378,7 @@ class WorkflowContentsManager(UsesAnnotations):
         errors = {}
         for step in workflow.steps:
             try:
-                module_injector.inject(step, steps=workflow.steps)
+                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
             except exceptions.ToolMissingException:
                 if step.tool_id not in missing_tools:
                     missing_tools.append(step.tool_id)
@@ -458,7 +458,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
+            module = module_factory.from_workflow_step(trans, step, exact_tools=False)
             if not module:
                 raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Load label from state of data input modules, necessary for backward compatibility
@@ -587,7 +587,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
             if not module:
-                return None
+                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
