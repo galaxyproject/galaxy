@@ -14,6 +14,7 @@ from galaxy import web
 from galaxy.exceptions import (
     ActionInputError,
     InternalServerError,
+    MalformedId,
     RequestParameterInvalidException,
     RequestParameterMissingException
 )
@@ -102,6 +103,10 @@ class CloudAuthzController(BaseAPIController):
         if not isinstance(config, dict):
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
                                                    'but received `{}`.'.format(type(config)))
+        try:
+            authn_id = self.decode_id(authn_id)
+        except Exception:
+            raise MalformedId('Invalid `authn_id`!')
 
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
