@@ -108,7 +108,7 @@ const RULES = {
             }
         },
         save: (component, rule) => {
-            rule.start = component.addColumnRownumStart;
+            rule.start = parseInt(component.addColumnRownumStart);
         },
         apply: (rule, data, sources, columns) => {
             let rownum = rule.start;
