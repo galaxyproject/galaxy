@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
+    alias,
     and_,
     func,
     inspect,
@@ -1579,6 +1580,36 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                          joinedload("tags")))
             self._active_datasets_and_roles = query.all()
         return self._active_datasets_and_roles
+
+    @property
+    def active_visible_datasets_and_roles(self):
+        if not hasattr(self, '_active_visible_datasets_and_roles'):
+            db_session = object_session(self)
+            query = (db_session.query(HistoryDatasetAssociation)
+                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
+                .filter(not_(HistoryDatasetAssociation.deleted))
+                .filter(HistoryDatasetAssociation.visible)
+                .order_by(HistoryDatasetAssociation.table.c.hid.asc())
+                .options(joinedload("dataset"),
+                         joinedload("dataset.actions"),
+                         joinedload("dataset.actions.role"),
+                         joinedload("tags")))
+            self._active_visible_datasets_and_roles = query.all()
+        return self._active_visible_datasets_and_roles
+
+    @property
+    def active_visible_dataset_collections(self):
+        if not hasattr(self, '_active_visible_dataset_collections'):
+            db_session = object_session(self)
+            query = (db_session.query(HistoryDatasetCollectionAssociation)
+                .filter(HistoryDatasetCollectionAssociation.table.c.history_id == self.id)
+                .filter(not_(HistoryDatasetCollectionAssociation.deleted))
+                .filter(HistoryDatasetCollectionAssociation.visible)
+                .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
+                .options(joinedload("collection"),
+                         joinedload("tags")))
+            self._active_visible_dataset_collections = query.all()
+        return self._active_visible_dataset_collections
 
     @property
     def active_contents(self):
@@ -3161,6 +3192,78 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
+
+    @property
+    def dataset_states_and_extensions_summary(self):
+        if not hasattr(self, '_dataset_states_and_extensions_summary'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_stmt = select([hda.c.extension, dataset.c.state]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            extensions = set()
+            states = set()
+            for extension, state in db_session.execute(select_stmt).fetchall():
+                states.add(state)
+                extensions.add(extension)
+
+            self._dataset_states_and_extensions_summary = (states, extensions)
+
+        return self._dataset_states_and_extensions_summary
+
+    @property
+    def populated_optimized(self):
+        if not hasattr(self, '_populated_optimized'):
+            _populated_optimized = True
+            if ":" not in self.collection_type:
+                _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
+            else:
+                db_session = object_session(self)
+
+                dc = alias(DatasetCollection.table)
+                de = alias(DatasetCollectionElement.table)
+
+                select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+                collection_depth_aliases = [dc]
+
+                depth_collection_type = self.collection_type
+                while ":" in depth_collection_type:
+                    child_collection = alias(DatasetCollection.table)
+                    child_collection_element = alias(DatasetCollectionElement.table)
+                    select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                    select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                    collection_depth_aliases.append(child_collection)
+
+                    de = child_collection_element
+                    depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+                select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
+                for populated_states in db_session.execute(select_stmt).fetchall():
+                    for populated_state in populated_states:
+                        if populated_state != DatasetCollection.populated_states.OK:
+                            _populated_optimized = False
+
+            self._populated_optimized = _populated_optimized
+
+        return self._populated_optimized
 
     @property
     def populated(self):
