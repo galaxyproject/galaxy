@@ -16,8 +16,6 @@ const GroupListView = Backbone.View.extend({
         window.globalTS.groups.collection = new mod_group_model.Groups();
         window.globalTS.groups.collection.fetch({
             success: function(model) {
-                console.log("received data: ");
-                console.log(model);
                 that.render();
             },
             error: function(model, response) {
