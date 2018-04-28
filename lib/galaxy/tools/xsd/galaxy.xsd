@@ -1750,7 +1750,7 @@ managed by the Galaxy admins (for instance via
 [data managers](https://galaxyproject.org/admin/tools/data-managers/)
 ) and
 history files. A good example tool that demonstrates this is
-the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
+the [Bowtie 2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
 
 ```xml
 <conditional name="reference_genome">
