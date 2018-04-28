@@ -4,6 +4,7 @@ Manager and serializer for cloud authorizations (cloudauthzs).
 
 import logging
 
+from galaxy import exceptions
 from galaxy import model
 from galaxy.managers import base
 from galaxy.managers import deletable
@@ -19,6 +20,15 @@ class CloudAuthzManager(sharable.SharableModelManager):
 
     def __init__(self, app, *args, **kwargs):
         super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
+
+    def can_user_assume_authn(self, trans, authn_id):
+        qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
+        if qres is None:
+            raise exceptions.ObjectNotFound
+        if qres.user_id != trans.user.id:
+            og.critical('The user with ID:`{}` requested creation of a cloudauthz record and associating it with '
+                        'the authnz record ID:`{}`, which belongs to another user.'.format(trans.user.id, authn_id))
+            raise exceptions.ItemAccessibilityException
 
 
 class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

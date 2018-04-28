@@ -14,7 +14,9 @@ from galaxy import web
 from galaxy.exceptions import (
     ActionInputError,
     InternalServerError,
+    ItemAccessibilityException,
     MalformedId,
+    ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
 )
@@ -107,6 +109,13 @@ class CloudAuthzController(BaseAPIController):
             authn_id = self.decode_id(authn_id)
         except Exception:
             raise MalformedId('Invalid `authn_id`!')
+
+        try:
+            self.cloudauthz_manager.can_user_assume_authn(trans, authn_id)
+        except ObjectNotFound:
+            raise ObjectNotFound('Authentication record with the given `authn_id` not found.')
+        except ItemAccessibilityException:
+            raise ItemAccessibilityException('The specified authentication with ID:`{}` belongs to another user.'.format(authn_id))
 
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
