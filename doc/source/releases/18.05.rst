@@ -66,7 +66,7 @@ Enhancements
 * Capture more HDA state transitions in the history panel.
   `Pull Request 5749`_
 * Add script for propagating hashtags in a Galaxy history
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
   `Pull Request 5669`_
 * Add proteomics proBAM and proBED datatypes
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
