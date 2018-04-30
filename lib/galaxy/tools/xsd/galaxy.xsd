@@ -3232,7 +3232,7 @@ contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
 ### Character presets
 
 The following presets can be used when specifying the valid characters: the
-[constants from the ``string`` Python3 module](https://docs.python.org/3/library/string.html#string-constants),
+[constants](https://docs.python.org/3/library/string.html#string-constants) from the ``string`` Python3 module,
 plus ``default`` (equal to ``string.ascii_letters + string.digits + " -=_.()/+*^,:?!"``)
 and ``none`` (empty set).
 The ``string.letters``, ``string.lowercase`` and ``string.uppercase`` Python2
