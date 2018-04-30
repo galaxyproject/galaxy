@@ -229,7 +229,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Prepare for next release**
 
-    - [ ] Ensure milestone ``${next_version}`` exists.
+    - [ ] Close milestone ``${version}`` and ensure milestone ``${next_version}`` exists.
     - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
     - [ ] Schedule committer meeting to discuss re-alignment of priorities.
     - [ ] Close this issue.
