@@ -185,7 +185,8 @@ var HistoryView = _super.extend(
             return faIconButton({
                 title: _l("Operations on multiple datasets"),
                 classes: "show-selectors-btn",
-                faIcon: "fa-check-square-o"
+                faIcon: "fa-check-square-o",
+                tooltipConfig: { placement: "top" }
             }).prependTo($where.find(".controls .actions"));
         },
 

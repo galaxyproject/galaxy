@@ -1,3 +1,5 @@
+import $ from "jquery";
+import "bootstrap";
 import GalaxyApp from "galaxy";
 import WorkflowView from "mvc/workflow/workflow-view";
 import Trackster from "viz/trackster";
@@ -26,7 +28,6 @@ import * as run_stats from "reports/run_stats";
 import ToolshedGroups from "toolshed/toolshed.groups";
 
 /* global Galaxy */
-/* global $ */
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports

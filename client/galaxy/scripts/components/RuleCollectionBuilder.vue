@@ -782,7 +782,7 @@ const RuleModalHeader = {
 
 const RuleModalMiddle = {
     template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
-}
+};
 
 const RuleModalFooter = {
     template: `
@@ -964,7 +964,11 @@ export default {
     computed: {
         exisistingDatasets() {
             const elementsType = this.elementsType;
-            return elementsType === "datasets" || elementsType === "collection_contents" || elementsType === "library_datasets";
+            return (
+                elementsType === "datasets" ||
+                elementsType === "collection_contents" ||
+                elementsType === "library_datasets"
+            );
         },
         showFileTypeSelector() {
             return !this.exisistingDatasets && !this.mappingAsDict.file_type;
@@ -1378,10 +1382,13 @@ export default {
                     new AjaxQueue.AjaxQueue(
                         _.map(elements, (elements, name) => {
                             return () => {
-                               const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                               return response;
+                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                                return response;
                             };
-                    })).done(this.oncreate).fail(this.renderFetchError);
+                        })
+                    )
+                        .done(this.oncreate)
+                        .fail(this.renderFetchError);
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
@@ -1646,7 +1653,7 @@ export default {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;
-                res["src"] = "ftp_path";
+                res["src"] = "ftp_import";
             }
             if (mappingAsDict.dbkey) {
                 const dbkeyColumn = mappingAsDict.dbkey.columns[0];
