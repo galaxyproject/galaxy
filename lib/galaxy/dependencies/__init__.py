@@ -103,9 +103,6 @@ class ConditionalDependencies(object):
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
 
-    def check_graphite(self):
-        return self.config.get("graphite_host", None) is not None
-
     def check_weberror(self):
         return (asbool(self.config["debug"]) and
                 asbool(self.config["use_interactive"]))

@@ -2170,54 +2170,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~
-``graphite_host``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~
-``graphite_port``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``2003``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~
-``graphite_prefix``
-~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``galaxy``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~
 ``library_import_dir``
 ~~~~~~~~~~~~~~~~~~~~~~
