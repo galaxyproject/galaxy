@@ -693,7 +693,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     @web.expose
     @web.require_login("share Galaxy histories")
     def sharing(self, trans, id=None, histories=[], **kwargs):
-        """ Handle history sharing. """
+        """     Handle history sharing. """
 
         # Get session and histories.
         session = trans.sa_session

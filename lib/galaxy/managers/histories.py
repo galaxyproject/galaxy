@@ -213,6 +213,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'state',
             'state_details',
             'state_ids',
+            'users_shared_with',
             # 'community_rating',
             # 'user_rating',
         ], include_keys_from='summary')
@@ -260,6 +261,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
 
             'contents_states': self.serialize_contents_states,
             'contents_active': self.serialize_contents_active,
+            'users_shared_with': lambda i, k, **c: i.users_shared_with,
         })
 
     # remove this
