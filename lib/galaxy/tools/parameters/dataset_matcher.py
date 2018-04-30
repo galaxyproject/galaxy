@@ -67,7 +67,7 @@ class DatasetMatcherFactory(object):
             type_name = type(input).__name__
             if "DataToolParameter" in type_name:
                 self._data_inputs.append(input)
-            elif "DatasetCollectionToolParameter" in type_name:
+            elif "DataCollectionToolParameter" in type_name:
                 self._data_inputs.append(input)
 
         tool.visit_inputs(param_values, visitor)
