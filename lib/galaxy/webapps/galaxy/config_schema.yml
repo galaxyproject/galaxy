@@ -1620,41 +1620,6 @@ mapping:
           Instead of sending prefix + dot-separated-path, Galaxy will send
           prefix with a tag path set to the page url
 
-      graphite_host:
-        type: str
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_port:
-        type: int
-        default: 2003
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_prefix:
-        type: str
-        default: galaxy
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
       library_import_dir:
         type: str
         default: null

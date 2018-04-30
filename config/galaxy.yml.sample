@@ -52,8 +52,8 @@ uwsgi:
   # --daemon and/or production deployments.
   master: false
 
-  # Path to the application's Python virtual environment. If using Conda for
-  # Galaxy's framework dependencies (not tools!), do not set this.
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
   virtualenv: .venv
 
   # Path to the application's Python library.
@@ -1052,30 +1052,6 @@ galaxy:
   # Instead of sending prefix + dot-separated-path, Galaxy will send
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_host: null
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_port: 2003
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_prefix: galaxy
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.

@@ -979,15 +979,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                     conf.get('statsd_prefix', 'galaxy'),
                                     conf.get('statsd_influxdb', False)))
         log.debug("Enabling 'statsd' middleware")
-    # graphite request timing and profiling
-    graphite_host = conf.get('graphite_host', None)
-    if graphite_host:
-        from galaxy.web.framework.middleware.graphite import GraphiteMiddleware
-        app = wrap_if_allowed(app, stack, GraphiteMiddleware,
-                              args=(graphite_host,
-                                    conf.get('graphite_port', 2003),
-                                    conf.get('graphite_prefix', 'galaxy')))
-        log.debug("Enabling 'graphite' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
