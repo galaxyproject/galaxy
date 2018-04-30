@@ -3232,7 +3232,7 @@ contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
 ### Character presets
 
 The following presets can be used when specifying the valid characters: the
-[constants from the ``string`` Python3 module](https://docs.python.org/3/library/string.html#string-constants),
+[constants](https://docs.python.org/3/library/string.html#string-constants) from the ``string`` Python3 module,
 plus ``default`` (equal to ``string.ascii_letters + string.digits + " -=_.()/+*^,:?!"``)
 and ``none`` (empty set).
 The ``string.letters``, ``string.lowercase`` and ``string.uppercase`` Python2
@@ -3261,10 +3261,10 @@ be dropped from the input.
 ```
 <sanitizer>
     <valid initial="string.printable">
-        <remove value="&apos;"/>
+        <remove value="&amp;"/>
     </valid>
     <mapping initial="none">
-        <add source="&apos;" target=""/>
+        <add source="&amp;" target=""/>
     </mapping>
 </sanitizer>
 ```
@@ -3317,7 +3317,8 @@ valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters.</xs:documentation>
+        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters. The default
+is the ``none`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3330,12 +3331,12 @@ valid input for the mapping to occur.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to remove
 individual characters or preset lists of characters.
-Character must not be allowed as a valid input for the mapping to occur.
-Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+Character must not be allowed as a valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters.</xs:documentation>
+        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters. The default
+is the ``none`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3818,7 +3819,7 @@ metadata in the same way that the command line parameters are (discussed in the
 [command](#tool-command) directive).
 
 Creating collections in tools is covered in-depth in
-[planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
+[Planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
 
 ]]></xs:documentation>
     </xs:annotation>
