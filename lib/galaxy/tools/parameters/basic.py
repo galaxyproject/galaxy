@@ -26,16 +26,16 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.web import url_for
-from . import validation
+from . import (
+    dynamic_options,
+    history_query,
+    validation
+)
 from .dataset_matcher import (
     DatasetCollectionMatcher,
     DatasetMatcher
 )
 from .sanitize import ToolParameterSanitizer
-from ..parameters import (
-    dynamic_options,
-    history_query
-)
 from ..parser import get_input_source as ensure_input_source
 
 log = logging.getLogger(__name__)
