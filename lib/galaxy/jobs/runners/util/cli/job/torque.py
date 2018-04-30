@@ -103,7 +103,7 @@ class Torque(BaseJobExec):
     def parse_single_status(self, status, job_id):
         for line in status.splitlines():
             line = line.split(' = ')
-            if line[0] == 'job_state':
+            if line[0].strip() == 'job_state':
                 return self._get_job_state(line[1].strip())
         # no state found, job has exited
         return job_states.OK
