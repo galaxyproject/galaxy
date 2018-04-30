@@ -134,7 +134,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_interval_0",
     "CONVERTER_wiggle_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
-    "lastz_wrapper_2",
     "qualityFilter",
     "winSplitter",
     "pileup_interval",
@@ -166,6 +165,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "fetchflank": packaging.version.parse("1.0.1"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "lastz_wrapper_2": packaging.version.parse("1.3"),
 }
 
 
