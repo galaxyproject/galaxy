@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h2>Share or Publish {{item_class_name}} '{{item_name}}'</h2>
+        <h2>Share or Publish {{item_class_name}} '{{item.name}}'</h2>
         <div v-if="!has_username">
             <div>To make a {{item_class_name_lc}} accessible via link or publish it, you must create a public username:</div>
             <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
@@ -15,18 +15,18 @@
         <div v-else>
             <br/><br/>
             <h3>Make {{item_class_name}} Accessible via Link and Publish It</h3>
-            <div v-if="item_importable">
+            <div v-if="item.importable">
                 This {{item_class_name_lc}} is currently <strong>{{item_status}}</strong>.
                 <div>
                     <p>Anyone can view and import this {{item_class_name_lc}} by visiting the following URL:</p>
                     <blockquote>
                         <a id="item-url" :href="item_url" target="_top">{{item_url}}</a>
                     </blockquote>
-                    <div v-if="item_published">
+                    <div v-if="item.published">
                         <p>This {{item_class_name_lc}} is publicly listed and searchable in Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section. You can:</p>
                     </div>
                 </div>
-                <div v-if="!item_published">
+                <div v-if="!item.published">
                     <!-- Item is importable but not published. User can disable importable or publish. -->
                     <button @click="disableLink">Disable Access to {{item_class_name}} Link</button>
                     <div class="toolParamHelp">Disables {{item_class_name_lc}}'s link so that it is not accessible.</div>
@@ -55,7 +55,7 @@
             <br/><br/>
             <h3>Share {{item_class_name}} with Individual Users</h3>
             <div>
-                <div v-if="item_users_shared_with">
+                <div v-if="item.users_shared_with">
                     <p>
                         The following users will see this {{item_class_name_lc}} in their {{item_class_name_lc}} list and will be able to view, import and run it.
                     </p>
@@ -98,10 +98,10 @@ export default {
             return this.item_class_plural_name.toLowerCase();
         },
         item_status() {
-            return this.item_published ? "accessible via link" : "accessible via link and published";
+            return this.item.published ? "accessible via link" : "accessible via link and published";
         },
         item_url() {
-            return `${Galaxy.root}${this.item_controller}/display_by_username_and_slug/?username=${this.username}&slug=${this.item_slug}&qualified=true`;
+            return `${Galaxy.root}${this.item_controller}/display_by_username_and_slug/?username=${this.username}&slug=${this.item.slug}&qualified=true`;
         },
         list_url() {
             return `${Galaxy.root}${this.item_controller}/list_published`;
@@ -112,15 +112,18 @@ export default {
     },
     data() {
         return {
+            item : {
+                name: "name",
+                importable: true,
+                published: true,
+                users_shared_with: [],
+                slug: "slug",
+            },
             item_class_name: "class_name",
             item_class_plural_name: "plural_name",
-            item_name: "name",
-            item_importable: true,
-            item_published: true,
-            item_users_shared_with: [],
-            item_slug: "slug",
             item_controller: "item_controller",
             list_controller: "list_controller",
+            share_url: "",
             username: "",
             has_username: true,
             err_msg: null,
@@ -128,6 +131,12 @@ export default {
         };
     },
     created: function() {
+        axios
+            .get(`${Galaxy.root}api/histories/0ecfc3245c6a5fff`)
+            .then(response => {
+                this.item = response;
+            })
+            .catch(error => this.err_msg = error.response.data.err_msg)
     },
     methods: {
         setUsername: function() {
