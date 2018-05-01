@@ -175,7 +175,14 @@ window.app = function app(options, bootstrapped) {
             var sharingInstance = Vue.extend(Sharing);
             var vm = document.createElement("div");
             this.page.display(vm);
-            new sharingInstance().$mount(vm);
+            new sharingInstance({ propsData: {
+                id: QueryStringParsing.get("id"),
+                item_class_name: "History",
+                item_class_plural_name: "Histories",
+                item_controller: "history",
+                list_controller: "histories",
+                share_url: "url_to_share"
+            } }).$mount(vm);
         },
 
         show_histories_import: function() {

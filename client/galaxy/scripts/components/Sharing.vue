@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <h2>Share or Publish {{item_class_name}} '{{item.name}}'</h2>
+    <div v-if="ready">
+        <h2>Share or Publish {{item_class_name}} `{{item.name}}`</h2>
         <div v-if="!has_username">
             <div>To make a {{item_class_name_lc}} accessible via link or publish it, you must create a public username:</div>
             <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
@@ -55,7 +55,7 @@
             <br/><br/>
             <h3>Share {{item_class_name}} with Individual Users</h3>
             <div>
-                <div v-if="item.users_shared_with">
+                <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
                     <p>
                         The following users will see this {{item_class_name_lc}} in their {{item_class_name_lc}} list and will be able to view, import and run it.
                     </p>
@@ -65,19 +65,17 @@
                             <th/>
                         </tr>
                     </table>
-                    <a id="share_with_a_user" class="action-button" :href="share_url">
-                        <span>Share with another user</span>
-                    </a>
                 </div>
                 <div v-else>
                     <p>You have not shared this {{item_class_name_lc}} with any users.</p>
-                    <a id="share_with_a_user" class="action-button" :href="share_url">
-                        <span>Share with a user</span>
-                    </a>
-                    <br/>
                 </div>
+                <a id="share_with_a_user" class="action-button" :href="share_url">
+                    <span>Share with a user</span>
+                </a>
             </div>
         </div>
+        <br/>
+        <a :href="list_controller" target="_top">Show {{item_class_plural_name}} list</a>
     </div>
 </template>
 
@@ -85,17 +83,26 @@
 import axios from "axios";
 export default {
     props: {
-        /*id: {
+        id: {
             type: String,
             required: true
-        }*/
+        },
+        list_controller: {
+            type: String,
+            required: true
+        },
+        item_class_name: {
+            type: String,
+            required: true
+        },
+        item_class_plural_name: {
+            type: String,
+            required: true
+        }
     },
     computed: {
         item_class_name_lc() {
             return this.item_class_name.toLowerCase();
-        },
-        item_class_plural_name_lc() {
-            return this.item_class_plural_name.toLowerCase();
         },
         item_status() {
             return this.item.published ? "accessible via link" : "accessible via link and published";
@@ -112,6 +119,7 @@ export default {
     },
     data() {
         return {
+            ready: false,
             item : {
                 name: "name",
                 importable: true,
@@ -119,10 +127,6 @@ export default {
                 users_shared_with: [],
                 slug: "slug",
             },
-            item_class_name: "class_name",
-            item_class_plural_name: "plural_name",
-            item_controller: "item_controller",
-            list_controller: "list_controller",
             share_url: "",
             username: "",
             has_username: true,
@@ -132,9 +136,10 @@ export default {
     },
     created: function() {
         axios
-            .get(`${Galaxy.root}api/histories/0ecfc3245c6a5fff`)
+            .get(`${Galaxy.root}api/${this.list_controller}/${this.id}`)
             .then(response => {
-                this.item = response;
+                this.item = response.data;
+                this.ready = true;
             })
             .catch(error => this.err_msg = error.response.data.err_msg)
     },
