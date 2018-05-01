@@ -92,6 +92,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         self._init_monitor_thread()
         self._init_worker_threads()
+        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
 
     def url_to_destination(self, url):
         """Convert a legacy URL to a job destination"""
@@ -389,7 +390,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         job_name = 'g%s' % galaxy_id_tag
         if job_wrapper.tool.old_id:
             job_name += '_%s' % job_wrapper.tool.old_id
-        if external_runjob_script is None:
+        if not self.gdpr_compliant and external_runjob_script is None:
             job_name += '_%s' % job_wrapper.user
         job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
         if self.restrict_job_name_length:

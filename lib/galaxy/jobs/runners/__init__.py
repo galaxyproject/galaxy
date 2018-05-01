@@ -75,6 +75,7 @@ class BaseJobRunner(object):
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -464,7 +465,7 @@ class JobState(object):
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
+            if not self.gdpr_compliant and self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
             self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 
