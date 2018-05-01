@@ -180,7 +180,6 @@ window.app = function app(options, bootstrapped) {
                 plural_name: "Histories",
                 item_controller: "history",
                 list_controller: "histories",
-                share_url: "url_to_share"
             } }).$mount(vm);
         },
 

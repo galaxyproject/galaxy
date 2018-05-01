@@ -261,7 +261,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
 
             'contents_states': self.serialize_contents_states,
             'contents_active': self.serialize_contents_active,
-            'users_shared_with': lambda i, k, **c: i.users_shared_with,
+            'users_shared_with': lambda i, k, **c: [{'id': a.user.id, 'email': a.user.email} for a in i.users_shared_with],
         })
 
     # remove this
