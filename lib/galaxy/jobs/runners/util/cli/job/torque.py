@@ -9,7 +9,7 @@ try:
     job_states = Job.states
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
-    from galaxy.util import enum
+    from pulsar.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued')
 
 from ..job import BaseJobExec
@@ -17,7 +17,6 @@ from ..job import BaseJobExec
 log = getLogger(__name__)
 
 ERROR_MESSAGE_UNRECOGNIZED_ARG = 'Unrecognized long argument passed to Torque CLI plugin: %s'
-
 
 argmap = {'destination': '-q',
           'Execution_Time': '-a',
@@ -104,7 +103,7 @@ class Torque(BaseJobExec):
     def parse_single_status(self, status, job_id):
         for line in status.splitlines():
             line = line.split(' = ')
-            if line[0] == 'job_state':
+            if line[0].strip() == 'job_state':
                 return self._get_job_state(line[1].strip())
         # no state found, job has exited
         return job_states.OK
