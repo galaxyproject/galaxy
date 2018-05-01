@@ -2,8 +2,8 @@
 import logging
 
 from galaxy.util import asbool, nice_size
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 log = logging.getLogger(__name__)
 
