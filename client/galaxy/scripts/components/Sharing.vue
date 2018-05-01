@@ -59,13 +59,17 @@
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
                     <p>
                         The following users will see this {{item_model_class_lc}} in their {{item_model_class_lc}} list and will be able to view, import and run it.
+                        <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+                            <tr class="header">
+                                <th>Email</th>
+                                <th/>
+                            </tr>
+                            <tr v-for="user in item.users_shared_with">
+                                <td>{{user.email}}</td>
+                                <td><button>Remove</button></td>
+                            </tr>
+                        </table>
                     </p>
-                    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
-                        <tr class="header">
-                            <th>Email</th>
-                            <th/>
-                        </tr>
-                    </table>
                 </div>
                 <div v-else>
                     <p>You have not shared this {{item_model_class_lc}} with any users.</p>
@@ -75,8 +79,6 @@
                 </a>
             </div>
         </div>
-        <br/>
-        <a :href="list_controller" target="_top">Show {{plural_name}} list</a>
     </div>
 </template>
 
