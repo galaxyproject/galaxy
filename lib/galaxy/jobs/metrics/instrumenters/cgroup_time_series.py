@@ -68,7 +68,7 @@ class CgroupTimeSeriesPlugin(InstrumentPlugin):
     def pre_execute_instrument(self, job_directory):
         self.__write_script(job_directory)
         return [
-            """sh {script} {interval} > {data} 2> {log} &""".format(
+            """sh {script} {interval} > {data} 2> {log} & __GALAXY_CGROUP_TIME_SERIES_PID=$!""".format(
                 script=self._instrument_file_path(job_directory, "script"),
                 data=self._instrument_file_path(job_directory, "data"),
                 log=self._instrument_file_path(job_directory, "log"),
@@ -78,7 +78,7 @@ class CgroupTimeSeriesPlugin(InstrumentPlugin):
 
     def post_execute_instrument(self, job_directory):
         return [
-            """kill $! 2>> {log}""".format(log=self._instrument_file_path(job_directory, "log")),
+            """kill $__GALAXY_CGROUP_TIME_SERIES_PID 2>> {log}""".format(log=self._instrument_file_path(job_directory, "log")),
         ]
 
     def job_properties(self, job_id, job_directory):
