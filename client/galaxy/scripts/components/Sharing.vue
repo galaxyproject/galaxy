@@ -1,8 +1,8 @@
 <template>
     <div v-if="ready">
-        <h2>Share or Publish {{item_class_name}} `{{item.name}}`</h2>
+        <h2>Share or Publish {{item.model_class}} `{{item.name}}`</h2>
         <div v-if="!has_username">
-            <div>To make a {{item_class_name_lc}} accessible via link or publish it, you must create a public username:</div>
+            <div>To make a {{item_model_class_lc}} accessible via link or publish it, you must create a public username:</div>
             <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
                 {{ err_msg }}
             </div>
@@ -14,50 +14,50 @@
         </div>
         <div v-else>
             <br/><br/>
-            <h3>Make {{item_class_name}} Accessible via Link and Publish It</h3>
+            <h3>Make {{item.model_class}} Accessible via Link and Publish It</h3>
             <div v-if="item.importable">
-                This {{item_class_name_lc}} is currently <strong>{{item_status}}</strong>.
+                This {{item_model_class_lc}} is currently <strong>{{item_status}}</strong>.
                 <div>
-                    <p>Anyone can view and import this {{item_class_name_lc}} by visiting the following URL:</p>
+                    <p>Anyone can view and import this {{item_model_class_lc}} by visiting the following URL:</p>
                     <blockquote>
                         <a id="item-url" :href="item_url" target="_top">{{item_url}}</a>
                     </blockquote>
                     <div v-if="item.published">
-                        <p>This {{item_class_name_lc}} is publicly listed and searchable in Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section. You can:</p>
+                        <p>This {{item_model_class_lc}} is publicly listed and searchable in Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section. You can:</p>
                     </div>
                 </div>
                 <div v-if="!item.published">
                     <!-- Item is importable but not published. User can disable importable or publish. -->
-                    <button @click="disableLink">Disable Access to {{item_class_name}} Link</button>
-                    <div class="toolParamHelp">Disables {{item_class_name_lc}}'s link so that it is not accessible.</div>
+                    <button @click="disableLink">Disable Access to {{item.model_class}} Link</button>
+                    <div class="toolParamHelp">Disables {{item_model_class_lc}}'s link so that it is not accessible.</div>
                     <br/>
-                    <button @click="enablePublish">Publish {{item_class_name}}</button>
-                    <div class="toolParamHelp">Publishes the {{item_class_name_lc}} to Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section, where it is publicly listed and searchable.</div>
+                    <button @click="enablePublish">Publish {{item.model_class}}</button>
+                    <div class="toolParamHelp">Publishes the {{item_model_class_lc}} to Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section, where it is publicly listed and searchable.</div>
                     <br/>
                 </div>
                 <div v-else>
                     <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <button @click="disablePublish">Unpublish {{item_class_name}}</button>
-                    <div class="toolParamHelp">Removes this {{item_class_name_lc}} from Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section so that it is not publicly listed or searchable.</div>
+                    <button @click="disablePublish">Unpublish {{item.model_class}}</button>
+                    <div class="toolParamHelp">Removes this {{item_model_class_lc}} from Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                     <br/>
-                    <button @click="disableLinkPublish">Disable Access to {{item_class_name}} via Link and Unpublish</button>
-                    <div class="toolParamHelp">Disables this {{item_class_name_lc}}'s link so that it is not accessible and removes {{item_class_name_lc}} from Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section so that it is not publicly listed or searchable.</div>
+                    <button @click="disableLinkPublish">Disable Access to {{item.model_class}} via Link and Unpublish</button>
+                    <div class="toolParamHelp">Disables this {{item_model_class_lc}}'s link so that it is not accessible and removes {{item_model_class_lc}} from Galaxy's <a :href="list_url" target="_top">Published {{item_class_plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                 </div>
             </div>
             <div v-else>
-                <p>This {{item_class_name_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
-                <button @click="enableLink">Make {{item_class_name}} Accessible via Link</button>
-                <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{item_class_name_lc}}.</div>
+                <p>This {{item_model_class_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
+                <button @click="enableLink">Make {{item.model_class}} Accessible via Link</button>
+                <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{item_model_class_lc}}.</div>
                 <br/>
-                <button @click="enableLinkPublish">Make {{item_class_name}} Accessible and Publish</button>
-                <div class="toolParamHelp">Makes the {{item_class_name_lc}} accessible via link (see above) and publishes the {{item_class_name_lc}} to Galaxy's <a href='list_url' target='_top'>Published {{item_class_plural_name}}</a> section, where it is publicly listed and searchable.</div>
+                <button @click="enableLinkPublish">Make {{item.model_class}} Accessible and Publish</button>
+                <div class="toolParamHelp">Makes the {{item_model_class_lc}} accessible via link (see above) and publishes the {{item_model_class_lc}} to Galaxy's <a href='list_url' target='_top'>Published {{item_class_plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
-            <h3>Share {{item_class_name}} with Individual Users</h3>
+            <h3>Share {{item.model_class}} with Individual Users</h3>
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
                     <p>
-                        The following users will see this {{item_class_name_lc}} in their {{item_class_name_lc}} list and will be able to view, import and run it.
+                        The following users will see this {{item_model_class_lc}} in their {{item_model_class_lc}} list and will be able to view, import and run it.
                     </p>
                     <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                         <tr class="header">
@@ -67,7 +67,7 @@
                     </table>
                 </div>
                 <div v-else>
-                    <p>You have not shared this {{item_class_name_lc}} with any users.</p>
+                    <p>You have not shared this {{item_model_class_lc}} with any users.</p>
                 </div>
                 <a id="share_with_a_user" class="action-button" :href="share_url">
                     <span>Share with a user</span>
@@ -91,18 +91,14 @@ export default {
             type: String,
             required: true
         },
-        item_class_name: {
-            type: String,
-            required: true
-        },
         item_class_plural_name: {
             type: String,
             required: true
         }
     },
     computed: {
-        item_class_name_lc() {
-            return this.item_class_name.toLowerCase();
+        item_model_class_lc() {
+            return this.item.model_class.toLowerCase();
         },
         item_status() {
             return this.item.published ? "accessible via link" : "accessible via link and published";
@@ -122,6 +118,7 @@ export default {
             ready: false,
             item : {
                 name: "name",
+                model_class: "model_class",
                 importable: true,
                 published: true,
                 users_shared_with: [],
