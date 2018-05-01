@@ -42,6 +42,9 @@
   <!-- <cgroup /> -->
   <!-- <cgroup verbose="true" /> -->
 
+  <!-- Uncomment to record hostname - linux only -->
+  <!-- <hostname /> -->
+
   <!-- <collectl /> -->
   <!-- Collectl (http://collectl.sourceforge.net/) is a powerful monitoring
        utility capable of gathering numerous system and process level
