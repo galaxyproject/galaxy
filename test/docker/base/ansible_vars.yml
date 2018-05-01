@@ -19,7 +19,8 @@ galaxy_config_file: "{{ galaxy_server_dir }}/config/galaxy.ini"
 configure_docker: no
 postgresql_bin_dir: /usr/lib/postgresql/9.5/bin
 galaxy_manage_database: no
-
+# avoid some packages unneeded packages install by ansible-galaxy-os
+install_maintainance_packages: false
 galaxy_user_name: "root"
 galaxy_extras_install_packages: true
 galaxy_job_conf_path: "/etc/galaxy/job_conf.xml"
