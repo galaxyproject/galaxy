@@ -2580,7 +2580,9 @@ mapping:
 
       use_pbkdf2:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
-          asdf
+          Allow disabling pbkdf2 hashing of passwords for legacy situations.
+          This should normally be left enabled unless there is a specific
+          reason to disable it.
