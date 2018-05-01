@@ -42,7 +42,7 @@
   <!-- <cgroup /> -->
   <!-- <cgroup verbose="true" /> -->
 
-  <!-- Uncomment to record hostname - linux only -->
+  <!-- Uncomment to record hostname - *nix only -->
   <!-- <hostname /> -->
 
   <!-- <collectl /> -->

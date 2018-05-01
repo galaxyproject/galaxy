@@ -1,8 +1,8 @@
 """The module describes the ``cpuinfo`` job metrics plugin."""
 import logging
 
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 log = logging.getLogger(__name__)
 
