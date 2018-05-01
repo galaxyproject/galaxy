@@ -1,6 +1,6 @@
 """The module describes the ``uname`` job metrics plugin."""
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 
 class UnameFormatter(formatting.JobMetricFormatter):
