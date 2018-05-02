@@ -176,9 +176,7 @@ class DockerContainer(Container):
 class DockerService(Container):
 
     def __init__(self, interface, id, name=None, image=None, inspect=None):
-        self._interface = interface
-        self._id = id
-        self._name = name
+        super(DockerService, self).__init__(interface, id, name=name)
         self._image = image
         self._inspect = inspect
         self._env = {}
