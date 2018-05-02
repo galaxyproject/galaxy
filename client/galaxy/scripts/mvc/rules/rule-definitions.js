@@ -36,12 +36,11 @@ const applyRegex = function(regex, target, data, replacement, groupCount) {
     function newRow(row) {
         const source = row[target];
         const match = regExp.exec(source);
+        if (!match) {
+            failedCount++;
+            return null;
+        }
         if (!replacement) {
-            const match = regExp.exec(source);
-            if (!match) {
-                failedCount++;
-                return null;
-            }
             groupCount = groupCount && parseInt(groupCount);
             if (groupCount) {
                 if (match.length != groupCount + 1) {
