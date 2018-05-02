@@ -276,11 +276,14 @@ class DockerService(Container):
     @property
     def env(self):
         if not self._env:
-            for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
-                try:
-                    self._env.update([env_str.split('=', 1)])
-                except ValueError:
-                    self._env[env_str] = None
+            try:
+                for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
+                    try:
+                        self._env.update([env_str.split('=', 1)])
+                    except ValueError:
+                        self._env[env_str] = None
+            except KeyError as exc:
+                log.debug('Cannot retrieve container environment: KeyError: %s', str(exc))
         return self._env
 
     @property
