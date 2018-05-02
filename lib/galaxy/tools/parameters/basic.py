@@ -1683,7 +1683,8 @@ class DataToolParameter(BaseDataToolParameter):
         else:
             rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(value)
         values = util.listify(rval)
-        dataset_matcher = DatasetMatcher(trans, self, None, other_values)
+        dataset_matcher_factory = get_dataset_matcher_factory(trans)
+        dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in values:
             if v:
                 if v.deleted:
@@ -1691,7 +1692,7 @@ class DataToolParameter(BaseDataToolParameter):
                 elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ValueError("The previously selected dataset has entered an unusable state")
                 elif hasattr(v, "dataset"):
-                    match = dataset_matcher.hda_match(v, check_security=False)
+                    match = dataset_matcher.hda_match(v)
                     if match and match.implicit_conversion:
                         v.implicit_conversion = True
         if not self.multiple:
