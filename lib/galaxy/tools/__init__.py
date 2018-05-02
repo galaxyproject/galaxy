@@ -1822,6 +1822,7 @@ class Tool(object, Dictifiable):
         if self.input_translator:
             self.input_translator.translate(params)
 
+        set_dataset_matcher_factory(request_context, self)
         # create tool state
         state_inputs = {}
         state_errors = {}
@@ -1830,7 +1831,6 @@ class Tool(object, Dictifiable):
         # create tool model
         tool_model = self.to_dict(request_context)
         tool_model['inputs'] = []
-        set_dataset_matcher_factory(request_context, self, state_inputs)
         self.populate_model(request_context, self.inputs, state_inputs, tool_model['inputs'])
         unset_dataset_matcher_factory(request_context)
 
