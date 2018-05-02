@@ -150,7 +150,8 @@ class Container(with_metaclass(ABCMeta, object)):
         :rtype:         :class:`ContainerPort` instance
         """
         mapping = None
-        for mapping in self.ports:
+        ports = self.ports or []
+        for mapping in ports:
             if port == mapping.port:
                 return mapping
             if port is None:
