@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/common/common.mako" import="render_checkbox" />
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -51,4 +52,3 @@
     </div>
     <p/>
 %endif
-

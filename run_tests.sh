@@ -593,7 +593,7 @@ if [ -n "$with_framework_test_tools_arg" ]; then
     GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     export GALAXY_TEST_TOOL_CONF
 fi
-python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 exit ${exit_status}
