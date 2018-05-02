@@ -531,33 +531,34 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         }
 
     @expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
+    def sharing(self, trans, history_id, payload=None, **kwd):
         """
         POST /api/histories/{id}/sharing
         Set sharing details of a given history.
         """
-        history = self._get_history(trans, id)
+        history = self._get_history(trans, history_id)
         payload = payload or {}
-        action = payload.get()
-        if 'make_accessible_via_link' in kwargs:
+        action = payload.get("action")
+        if not action:
+            raise exceptions.MessageException("Specify a sharing action.")
+        if action == "make_accessible_via_link":
             self._make_item_accessible(trans.sa_session, history)
-        elif 'make_accessible_and_publish' in kwargs:
+        elif action == "make_accessible_and_publish":
             self._make_item_accessible(trans.sa_session, history)
             history.published = True
-        elif 'publish' in kwargs:
+        elif action == "publish":
             if history.importable:
                 history.published = True
             else:
-                # TODO: report error here.
-                pass
-        elif 'disable_link_access' in kwargs:
+                raise exceptions.MessageException("Item not importable.")
+        elif action == "disable_link_access":
             history.importable = False
-        elif 'unpublish' in kwargs:
+        elif action == "unpublish":
             history.published = False
-        elif 'disable_link_access_and_unpublish' in kwargs:
+        elif action == "disable_link_access_and_unpublish":
             history.importable = history.published = False
-        elif 'unshare_user' in kwargs:
-            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(kwargs['unshare_user']))
+        elif action == "unshare_user":
+            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get('user_id')))
             # Look for and delete sharing relation for history-user.
             deleted_sharing_relation = False
             husas = trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=user, history=history).all()
@@ -568,17 +569,12 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             if not deleted_sharing_relation:
                 history_name = escape(history.name)
                 user_email = escape(user.email)
-                message = "History '%s' does not seem to be shared with user '%s'" % (history_name, user_email)
-                return trans.fill_template('/sharing_base.mako', controller_list='histories', item=history,
-                                           message=message, status='error', use_panels=True)
-
-        # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
+                raise exceptions.MessageException("History '%s' does not seem to be shared with user '%s'" % (history_name, user_email))
         if history.importable and not history.slug:
             self._make_item_accessible(trans.sa_session, history)
-
-        session.flush()
-
-        return trans.fill_template("/sharing_base.mako", controller_list='histories', item=history, use_panels=True)
+        trans.sa_session.add(history)
+        trans.sa_session.flush()
+        return {"message": "Sharing status updated."}
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)

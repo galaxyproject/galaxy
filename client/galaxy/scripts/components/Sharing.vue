@@ -29,28 +29,28 @@
                 </div>
                 <div v-if="!item.published">
                     <!-- Item is importable but not published. User can disable importable or publish. -->
-                    <button @click="disableLink">Disable Access to {{item.model_class}} Link</button>
+                    <button @click="setSharing('disable_link_access')">Disable Access to {{item.model_class}} Link</button>
                     <div class="toolParamHelp">Disables {{item_model_class_lc}}'s link so that it is not accessible.</div>
                     <br/>
-                    <button @click="enablePublish">Publish {{item.model_class}}</button>
+                    <button @click="setSharing('publish')">Publish {{item.model_class}}</button>
                     <div class="toolParamHelp">Publishes the {{item_model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
                     <br/>
                 </div>
                 <div v-else>
                     <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <button @click="disablePublish">Unpublish {{item.model_class}}</button>
+                    <button @click="setSharing('unpublish')">Unpublish {{item.model_class}}</button>
                     <div class="toolParamHelp">Removes this {{item_model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                     <br/>
-                    <button @click="disableLinkPublish">Disable Access to {{item.model_class}} via Link and Unpublish</button>
+                    <button @click="setSharing('disable_link_access_and_unpublish')">Disable Access to {{item.model_class}} via Link and Unpublish</button>
                     <div class="toolParamHelp">Disables this {{item_model_class_lc}}'s link so that it is not accessible and removes {{item_model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                 </div>
             </div>
             <div v-else>
                 <p>This {{item_model_class_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
-                <button @click="enableLink">Make {{item.model_class}} Accessible via Link</button>
+                <button @click="setSharing('make_accessible_via_link')">Make {{item.model_class}} Accessible via Link</button>
                 <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{item_model_class_lc}}.</div>
                 <br/>
-                <button @click="enableLinkPublish">Make {{item.model_class}} Accessible and Publish</button>
+                <button @click="setSharing('make_accessible_and_publish')">Make {{item.model_class}} Accessible and Publish</button>
                 <div class="toolParamHelp">Makes the {{item_model_class_lc}} accessible via link (see above) and publishes the {{item_model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
@@ -156,20 +156,14 @@ export default {
                 .then(response => this.has_username = true)
                 .catch(error => this.err_msg = error.response.data.err_msg);
         },
-        enableLink: function() {
-        },
-        disableLink: function() {
-        },
-        enablePublish: function() {
-        },
-        disablePublish: function() {
-        },
-        enableLinkPublish: function() {
-        },
-        disableLinkPublish: function() {
+        setSharing: function(action) {
+            axios
+                .post(`${Galaxy.root}api/histories/${this.id}/sharing`, {
+                    action: action
+                })
+                .then(response => window.console.log(response))
+                .catch(error => this.err_msg = error.response.data.err_msg);
         }
-    },
-    updated: function() {
     }
 };
 </script>
