@@ -558,23 +558,18 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         elif action == "disable_link_access_and_unpublish":
             history.importable = history.published = False
         elif action == "unshare_user":
-            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get('user_id')))
-            # Look for and delete sharing relation for history-user.
-            deleted_sharing_relation = False
+            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
             husas = trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=user, history=history).all()
             if husas:
-                deleted_sharing_relation = True
                 for husa in husas:
                     trans.sa_session.delete(husa)
-            if not deleted_sharing_relation:
-                history_name = escape(history.name)
-                user_email = escape(user.email)
-                raise exceptions.MessageException("History '%s' does not seem to be shared with user '%s'" % (history_name, user_email))
+            else:
+                raise exceptions.MessageException("History was not shared with user.")
         if history.importable and not history.slug:
             self._make_item_accessible(trans.sa_session, history)
         trans.sa_session.add(history)
         trans.sa_session.flush()
-        return {"message": "Sharing status updated."}
+        return {"message": "Sharing status updated.", "item": {"published": history.published, "importable": history.importable}}
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)

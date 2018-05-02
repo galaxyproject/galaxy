@@ -1,11 +1,12 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{item.model_class}} `{{item.name}}`</h2>
+        <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
+            {{ err_msg }}
+        </div>
+        </br>
         <div v-if="!has_username">
             <div>To make a {{item_model_class_lc}} accessible via link or publish it, you must create a public username:</div>
-            <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
-                {{ err_msg }}
-            </div>
             <form class="form-group">
                 <label/>
                 <input class="form-control" type="text" v-model="username"/>
@@ -13,7 +14,7 @@
             <button type="submit" class="btn btn-primary" @click="setUsername()">Set Username</button>
         </div>
         <div v-else>
-            <br/><br/>
+            <br/>
             <h3>Make {{item.model_class}} Accessible via Link and Publish It</h3>
             <div v-if="item.importable">
                 This {{item_model_class_lc}} is currently <strong>{{item_status}}</strong>.
@@ -38,11 +39,11 @@
                 </div>
                 <div v-else>
                     <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <button @click="setSharing('unpublish')">Unpublish {{item.model_class}}</button>
-                    <div class="toolParamHelp">Removes this {{item_model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
-                    <br/>
                     <button @click="setSharing('disable_link_access_and_unpublish')">Disable Access to {{item.model_class}} via Link and Unpublish</button>
                     <div class="toolParamHelp">Disables this {{item_model_class_lc}}'s link so that it is not accessible and removes {{item_model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
+                    <br/>
+                    <button @click="setSharing('unpublish')">Unpublish {{item.model_class}}</button>
+                    <div class="toolParamHelp">Removes this {{item_model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                 </div>
             </div>
             <div v-else>
@@ -67,7 +68,7 @@
                             </tr>
                             <tr v-for="user in item.users_shared_with">
                                 <td>{{user.email}}</td>
-                                <td><button>Remove</button></td>
+                                <td><button @click="setSharing('unshare_user', user.id)">Remove</button></td>
                             </tr>
                         </table>
                     </p>
@@ -109,7 +110,7 @@ export default {
             return this.item.model_class.toLowerCase();
         },
         item_status() {
-            return this.item.published ? "accessible via link" : "accessible via link and published";
+            return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
             return `${Galaxy.root}${this.item_controller}/display_by_username_and_slug/?username=${this.username}&slug=${this.item.slug}&qualified=true`;
@@ -134,8 +135,7 @@ export default {
             },
             username: "",
             has_username: true,
-            err_msg: null,
-            user: Galaxy.user
+            err_msg: null
         };
     },
     created: function() {
@@ -156,12 +156,21 @@ export default {
                 .then(response => this.has_username = true)
                 .catch(error => this.err_msg = error.response.data.err_msg);
         },
-        setSharing: function(action) {
+        setSharing: function(action, user_id) {
             axios
                 .post(`${Galaxy.root}api/histories/${this.id}/sharing`, {
-                    action: action
+                    action: action,
+                    user_id: user_id
                 })
-                .then(response => window.console.log(response))
+                .then(response => {
+                    if (!response || !response.data || !response.data.item) {
+                        this.err_msg = "Invalid server response.";
+                        console.debug(this.err_msg);
+                        console.debug(response);
+                    } else {
+                        Object.assign(this.item, response.data.item);
+                    }
+                })
                 .catch(error => this.err_msg = error.response.data.err_msg);
         }
     }
