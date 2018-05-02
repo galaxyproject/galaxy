@@ -125,7 +125,7 @@ export default {
     data() {
         return {
             ready: false,
-            has_username: !!Galaxy.user.get("username"),
+            has_username: Galaxy.user.get("username"),
             new_username: "",
             err_msg: null,
             item : {
