@@ -7,9 +7,9 @@
         </br>
         <div v-if="!has_username">
             <div>To make a {{item_model_class_lc}} accessible via link or publish it, you must create a public username:</div>
-            <form class="form-group">
+            <form class="form-group" @submit.prevent="setUsername()">
                 <label/>
-                <input class="form-control" type="text" v-model="username"/>
+                <input class="form-control" type="text" v-model="new_username"/>
             </form>
             <button type="submit" class="btn btn-primary" @click="setUsername()">Set Username</button>
         </div>
@@ -113,47 +113,55 @@ export default {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
-            return `${Galaxy.root}${this.item_controller}/display_by_username_and_slug/?username=${this.username}&slug=${this.item.slug}&qualified=true`;
+            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${Galaxy.root}${this.item.username_and_slug}`;
         },
         published_url() {
             return `${Galaxy.root}${this.list_controller}/list_published`;
         },
         share_url() {
             return `${Galaxy.root}${this.item_controller}/share/?id=${this.id}`;
-        }
+        },
     },
     data() {
         return {
             ready: false,
+            has_username: !!Galaxy.user.get("username"),
+            new_username: "",
+            err_msg: null,
             item : {
                 name: "name",
                 model_class: "model_class",
-                importable: true,
-                published: true,
+                username_and_slug: "username_and_slug",
+                importable: false,
+                published: false,
                 users_shared_with: [],
-                slug: "slug",
-            },
-            username: "",
-            has_username: true,
-            err_msg: null
+            }
         };
     },
     created: function() {
-        axios
-            .get(`${Galaxy.root}api/${this.list_controller}/${this.id}`)
-            .then(response => {
-                this.item = response.data;
-                this.ready = true;
-            })
-            .catch(error => this.err_msg = error.response.data.err_msg)
+        this.getModel();
     },
     methods: {
+        getModel: function() {
+            this.ready = false;
+            axios
+                .get(`${Galaxy.root}api/${this.list_controller}/${this.id}`)
+                .then(response => {
+                    this.item = response.data;
+                    this.ready = true;
+                })
+                .catch(error => this.err_msg = error.response.data.err_msg)
+        },
         setUsername: function() {
             axios
                 .put(`${Galaxy.root}api/users/${Galaxy.user.id}/information/inputs`, {
-                    username: this.username
+                    username: this.new_username || ''
                 })
-                .then(response => this.has_username = true)
+                .then(response => {
+                    this.err_msg = null;
+                    this.has_username = true;
+                    this.getModel();
+                })
                 .catch(error => this.err_msg = error.response.data.err_msg);
         },
         setSharing: function(action, user_id) {
