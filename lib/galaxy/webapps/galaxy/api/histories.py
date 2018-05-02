@@ -560,19 +560,22 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         elif action == "unshare_user":
             user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
             husas = trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=user, history=history).all()
-            if husas:
-                for husa in husas:
-                    trans.sa_session.delete(husa)
-            else:
+            if not husas:
                 raise exceptions.MessageException("History was not shared with user.")
+            for husa in husas:
+                trans.sa_session.delete(husa)
         if history.importable and not history.slug:
             self._make_item_accessible(trans.sa_session, history)
         trans.sa_session.add(history)
         trans.sa_session.flush()
-        return {"message": "Sharing status updated.", "item": {"published": history.published, "importable": history.importable}}
+        return {"message": "Sharing status updated.", "item": {
+            "published": history.published,
+            "importable": history.importable,
+            "users_shared_with": [{"id": trans.app.security.encode_id(a.user.id), "email": a.user.email} for a in history.users_shared_with]
+            }}
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
         if not history:
-            raise MessageException('Invalid history (%s).' % id)
+            raise MessageException("Invalid history (%s)." % id)
         return history
