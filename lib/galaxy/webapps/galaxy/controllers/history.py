@@ -689,67 +689,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             user_is_owner=user_is_owner, history_dict=history_dictionary,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
 
-    # ......................................................................... sharing & publishing
-    @web.expose
-    @web.require_login("share Galaxy histories")
-    def sharing(self, trans, id=None, histories=[], **kwargs):
-        """     Handle history sharing. """
-
-        # Get session and histories.
-        session = trans.sa_session
-        # Id values take precedence over histories passed in; last resort is current history.
-        if id:
-            ids = listify(id)
-            if ids:
-                histories = [self.history_manager.get_accessible(self.decode_id(history_id), trans.user, current_history=trans.history)
-                             for history_id in ids]
-        elif not histories:
-            histories = [trans.history]
-
-        # Do operation on histories.
-        for history in histories:
-            if 'make_accessible_via_link' in kwargs:
-                self._make_item_accessible(trans.sa_session, history)
-            elif 'make_accessible_and_publish' in kwargs:
-                self._make_item_accessible(trans.sa_session, history)
-                history.published = True
-            elif 'publish' in kwargs:
-                if history.importable:
-                    history.published = True
-                else:
-                    # TODO: report error here.
-                    pass
-            elif 'disable_link_access' in kwargs:
-                history.importable = False
-            elif 'unpublish' in kwargs:
-                history.published = False
-            elif 'disable_link_access_and_unpublish' in kwargs:
-                history.importable = history.published = False
-            elif 'unshare_user' in kwargs:
-                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(kwargs['unshare_user']))
-                # Look for and delete sharing relation for history-user.
-                deleted_sharing_relation = False
-                husas = trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=user, history=history).all()
-                if husas:
-                    deleted_sharing_relation = True
-                    for husa in husas:
-                        trans.sa_session.delete(husa)
-                if not deleted_sharing_relation:
-                    history_name = escape(history.name)
-                    user_email = escape(user.email)
-                    message = "History '%s' does not seem to be shared with user '%s'" % (history_name, user_email)
-                    return trans.fill_template('/sharing_base.mako', controller_list='histories', item=history,
-                                               message=message, status='error', use_panels=True)
-
-        # Legacy issue: histories made accessible before recent updates may not have a slug. Create slug for any histories that need them.
-        for history in histories:
-            if history.importable and not history.slug:
-                self._make_item_accessible(trans.sa_session, history)
-
-        session.flush()
-
-        return trans.fill_template("/sharing_base.mako", controller_list='histories', item=history, use_panels=True)
-
     @web.expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
