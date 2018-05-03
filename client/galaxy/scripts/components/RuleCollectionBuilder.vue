@@ -1537,6 +1537,7 @@ export default {
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
                                 elementsAtDepth = childCollectionElements;
+                                identifiersAtDepth = identifiersAtDepth[identifier];
                             }
                         }
                     }
