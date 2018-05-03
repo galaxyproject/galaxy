@@ -727,7 +727,7 @@ export default Backbone.View.extend({
     },
 
     showForm: function(content, node) {
-        var cls = "right-content";
+        const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
         if (content && $container.find(`#${id}`).length === 0) {

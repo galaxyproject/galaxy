@@ -308,7 +308,6 @@ class Workflow {
         this.app.showAttributes();
     }
     activate_node(node) {
-        console.debug("ACTIVATING NODE ", node);
         if (this.active_node != node) {
             this.check_changes_in_active_form();
             this.clear_active_node();
