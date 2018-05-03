@@ -537,42 +537,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         Set sharing details of a given history.
         """
         history = self._get_history(trans, history_id)
-        payload = payload or {}
-        action = payload.get("action")
-        if not action:
-            raise exceptions.MessageException("Specify a sharing action.")
-        if action == "make_accessible_via_link":
-            self._make_item_accessible(trans.sa_session, history)
-        elif action == "make_accessible_and_publish":
-            self._make_item_accessible(trans.sa_session, history)
-            history.published = True
-        elif action == "publish":
-            if history.importable:
-                history.published = True
-            else:
-                raise exceptions.MessageException("Item not importable.")
-        elif action == "disable_link_access":
-            history.importable = False
-        elif action == "unpublish":
-            history.published = False
-        elif action == "disable_link_access_and_unpublish":
-            history.importable = history.published = False
-        elif action == "unshare_user":
-            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
-            husas = trans.sa_session.query(trans.app.model.HistoryUserShareAssociation).filter_by(user=user, history=history).all()
-            if not husas:
-                raise exceptions.MessageException("History was not shared with user.")
-            for husa in husas:
-                trans.sa_session.delete(husa)
-        if history.importable and not history.slug:
-            self._make_item_accessible(trans.sa_session, history)
-        trans.sa_session.add(history)
-        trans.sa_session.flush()
-        return {"message": "Sharing status updated.", "item": {
-            "published": history.published,
-            "importable": history.importable,
-            "users_shared_with": [{"id": trans.app.security.encode_id(a.user.id), "email": a.user.email} for a in history.users_shared_with]
-            }}
+        return self.set_sharing_status(trans, history, payload)
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
