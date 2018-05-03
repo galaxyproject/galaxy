@@ -66,9 +66,10 @@ _datatypes_registry = None
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
 
-# The column sizes for job metrics
+# The column sizes for job metrics. Note: changing these values does not change the column sizes, a migration must be
+# performed to do that.
 JOB_METRIC_MAX_LENGTH = 1023
-JOB_METRIC_PRECISION = 22
+JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 
 
