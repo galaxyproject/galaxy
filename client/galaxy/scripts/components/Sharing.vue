@@ -22,6 +22,10 @@
                     <p>Anyone can view and import this {{item_model_class_lc}} by visiting the following URL:</p>
                     <blockquote>
                         <a id="item-url" :href="item_url" target="_top">{{item_url}}</a>
+                        <span id="item-url-text" style="display: none">
+                            {{item_url_parts[0]}}<span id='item-identifier'>{{item_url_parts[1]}}</span>
+                        </span>
+                        <a href="#" id="edit-identifier"><img :src="pencil_url"/></a>
                     </blockquote>
                     <div v-if="item.published">
                         <p>This {{item_model_class_lc}} is publicly listed and searchable in Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section.</p>
@@ -86,6 +90,7 @@
 
 <script>
 import axios from "axios";
+import async_save_text from "utils/async-save-text";
 export default {
     props: {
         id: {
@@ -115,12 +120,20 @@ export default {
         item_url() {
             return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${Galaxy.root}${this.item.username_and_slug}`;
         },
+        item_url_parts() {
+            let str = this.item_url;
+            let index = str.lastIndexOf("/");
+            return [str.substring(0, index + 1), str.substring(index + 1)];
+        },
         published_url() {
             return `${Galaxy.root}${this.list_controller}/list_published`;
         },
         share_url() {
             return `${Galaxy.root}${this.item_controller}/share/?id=${this.id}`;
         },
+        slug_url() {
+            return `${Galaxy.root}${this.item_controller}/set_slug_async/?id=${this.id}`;
+        }
     },
     data() {
         return {
@@ -128,6 +141,7 @@ export default {
             has_username: Galaxy.user.get("username"),
             new_username: "",
             err_msg: null,
+            pencil_url: `${Galaxy.root}static/images/fugue/pencil.png`,
             item : {
                 name: "name",
                 model_class: "model_class",
@@ -140,6 +154,9 @@ export default {
     },
     created: function() {
         this.getModel();
+    },
+    updated: function() {
+        this.createSlugHandler();
     },
     methods: {
         getModel: function() {
@@ -180,6 +197,32 @@ export default {
                     }
                 })
                 .catch(error => this.err_msg = error.response.data.err_msg);
+        },
+        createSlugHandler: function() {
+            var on_start = function( text_elt ) {
+                // Replace URL with URL text.
+                $('#item-url').hide();
+                $('#item-url-text').show();
+
+                // Allow only lowercase alphanumeric and '-' characters in slug.
+                text_elt.keyup(function(){
+                    text_elt.val( $(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() )
+                });
+            };
+            var on_finish = function( text_elt ) {
+                // Replace URL text with URL.
+                $('#item-url-text').hide();
+                $('#item-url').show();
+
+                // Set URL to new value.
+                var new_url = $('#item-url-text').text();
+                var item_url_obj = $('#item-url');
+                item_url_obj.attr( "href", new_url );
+                item_url_obj.text( new_url );
+            };
+            async_save_text("edit-identifier", "item-identifier",
+                            this.slug_url, "new_slug", null, false, 0,
+                            on_start, on_finish);
         }
     }
 };
