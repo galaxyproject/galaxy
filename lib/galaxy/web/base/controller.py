@@ -1413,10 +1413,11 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    def set_sharing_status(self, trans, item, payload):
+    def set_sharing_status(self, trans, id, payload):
         payload = payload or {}
         action = payload.get("action")
-        class_name = item.__class__.__name__
+        class_name = payload.get("class_name")
+        item = managers_base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         if not action:
             raise exceptions.MessageException("Specify a sharing action.")
         if action == "make_accessible_via_link":

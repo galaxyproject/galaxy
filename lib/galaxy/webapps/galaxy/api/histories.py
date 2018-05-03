@@ -536,8 +536,9 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         POST /api/histories/{id}/sharing
         Set sharing details of a given history.
         """
-        history = self._get_history(trans, history_id)
-        return self.set_sharing_status(trans, history, payload)
+        payload = payload or {}
+        payload["class_name"] = "History"
+        return self.set_sharing_status(trans, history_id, payload)
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
