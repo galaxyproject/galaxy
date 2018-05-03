@@ -1,7 +1,8 @@
-import * as d3 from "d3";
+import * as d3 from 'd3';
 import jqplot from 'jqplot-exported/jqplot';
 import { LineRenderer } from 'jqplot-exported/LineRenderer';
 import { BarRenderer } from 'jqplot-exported/plugins/BarRenderer';
+import { OHLCRenderer } from 'jqplot-exported/plugins/OHLCRenderer';
 import { EnhancedLegendRenderer } from 'jqplot-exported/plugins/EnhancedLegendRenderer';
 
 var Series = window.bundleEntries.chartUtilities.Series;
@@ -230,17 +231,17 @@ _.extend(window.bundleEntries || {}, {
                     key   : group.get( 'key' )
                 });
             });
-            var plot = new Plot( {
+            var plot = new CommonWrapper( {
                 process             : options.process,
                 chart               : options.chart,
                 dataset_id          : dataset.id,
                 dataset_groups      : dataset_groups,
                 targets             : options.targets,
                 makeConfig          : function( groups, plot_config ){
-                    var boundary = Utilities.getDomains( groups, 'x' );
+                    var boundary = Series.getDomains( groups, 'x' );
                     $.extend( true, plot_config, {
                         seriesDefaults: {
-                            renderer: $.jqplot.OHLCRenderer,
+                            renderer: OHLCRenderer,
                             rendererOptions : {
                                 candleStick     : true,
                                 fillUpBody      : true,
@@ -264,7 +265,7 @@ _.extend(window.bundleEntries || {}, {
                     for ( var group_index in groups ) {
                         x_labels.push( groups[ group_index ].key );
                     }
-                    Utilities.mapCategories ( groups, x_labels );
+                    Series.mapCategories ( groups, x_labels );
                     return {
                         array: {
                             x : x_labels
@@ -332,11 +333,11 @@ _.extend(window.bundleEntries || {}, {
             options.dataset_groups = dataset_groups;
             options.makeConfig = function( groups, plot_config ){
                 $.extend( true, plot_config, {
-                    seriesDefaults: { renderer: $.jqplot.BarRenderer },
+                    seriesDefaults: { renderer: BarRenderer },
                     axes: { xaxis: { min : -1 }, yaxis: { pad : 1.2 } }
                 });
             };
-            new Plot( options );
+            new CommonWrapper( options );
         });
     },
     jqplot_line: function(options) {

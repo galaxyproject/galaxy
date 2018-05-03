@@ -202,11 +202,11 @@
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span v-b-tooltip.hover.focus :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
-                                <button v-b-tooltip.hover.focus :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                                <button v-b-tooltip.hover :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -220,7 +220,7 @@
                                       {{ mappingTargets()[target].label }}
                                     </a>
                                 </div>
-                                <b-button v-b-tooltip.hover.focus.bottom :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
+                                <b-button v-b-tooltip.hover.bottom :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
@@ -256,7 +256,7 @@
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
-                                  <button type="button" v-b-tooltip.hover.focus.bottom :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                  <button type="button" v-b-tooltip.hover.bottom :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
                                   <div class="dropdown-menu" role="menu">
@@ -268,7 +268,7 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" v-b-tooltip.hover.focus.bottom :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -280,7 +280,7 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" v-b-tooltip.hover.focus.bottom :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -311,13 +311,13 @@
             </div>
         </rule-modal-middle>
         <rule-modal-footer v-if="ruleView == 'source'">
-            <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
+            <b-button v-b-tooltip.hover :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
                 {{ l("Cancel") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
                 {{ l("Reset") }}
             </b-button>
-           <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
+           <b-button v-b-tooltip.hover :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
                 {{ l("Apply")}}
             </b-button>
         </rule-modal-footer>
@@ -345,20 +345,20 @@
                 </div>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
                     <b-input class="collection-name"
-                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover.focus v-model="collectionName" />
+                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover v-model="collectionName" />
                     <label>
                         {{ l("Name") }}:
                     </label>
                 </div>
             </div>
 
-            <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+            <b-button v-b-tooltip.hover :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
                 {{ l("Cancel") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
+            <b-button v-b-tooltip.hover @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
                 {{ l("Reset") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
+            <b-button v-b-tooltip.hover @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
                 {{ finishButtonTitle }}
             </b-button>
         </rule-modal-footer>
@@ -382,10 +382,10 @@
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </rule-modal-middle>
         <rule-modal-footer>
-            <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+            <b-button v-b-tooltip.hover :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
                 {{ l("Close") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+            <b-button v-b-tooltip.hover :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
                 {{ l("Okay") }}
             </b-button>
         </rule-modal-footer>
@@ -583,7 +583,7 @@ const RegularExpressionInput = {
         <div>
             <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
             <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
-            <input v-b-tooltip.hover.focus.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
+            <input v-b-tooltip.hover.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
         </div>
     `,
     props: {
@@ -1537,6 +1537,7 @@ export default {
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
                                 elementsAtDepth = childCollectionElements;
+                                identifiersAtDepth = identifiersAtDepth[identifier];
                             }
                         }
                     }
