@@ -46,7 +46,11 @@ var menu = [
     },
     {
         html: _l("Share or Publish"),
-        href: "history/sharing"
+        func: function() {
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/sharing?id=${Galaxy.currHistoryPanel.model.id}`);
+            }
+        }
     },
     {
         html: _l("Show Structure"),
