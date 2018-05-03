@@ -1490,7 +1490,10 @@ export default {
                         identifierColumnIndex < numIdentifierColumns;
                         identifierColumnIndex++
                     ) {
-                        let identifier = rowData[identifierColumns[identifierColumnIndex]];
+                        // typeof indicates identifier is a string, but the raw string value coming from this data
+                        // structure sometimes does not work as expected with indexOf below, I don't understand why
+                        // but as a result this cast here seems needed.
+                        let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
                             if (collectionTypeAtDepth === "paired") {
