@@ -1538,6 +1538,49 @@ test_data:
             invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert invocation['state'] == 'cancelled'
 
+    @skip_without_tool("cat")
+    def test_pause_outputs_with_deleted_inputs(self):
+        # We run a workflow on a collection with a deleted element.
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+    type: data_collection_input
+    collection_type: list
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+  - tool_id: cat
+    label: second_cat
+    state:
+      input1:
+        $link: first_cat#out_file1
+""")
+            DELETED = 0
+            hdca1 = self.dataset_collection_populator.create_list_in_history(history_id,
+                                                                             contents=[("sample1-1", "1 2 3")]).json()
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            r = self._delete("histories/%s/contents/%s" % (history_id, hdca1['elements'][DELETED]['object']['id']))
+            label_map = {"input1": self._ds_entry(hdca1)}
+            workflow_request = dict(
+                history="hist_id=%s" % history_id,
+                workflow_id=workflow_id,
+                ds_map=self._build_ds_map(workflow_id, label_map),
+            )
+            r = self._post("workflows", data=workflow_request)
+            self._assert_status_code_is(r, 200)
+            # If this starts failing we may have prevented running workflows on collections with deleted members,
+            # in which case we can disable this test.
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            contents = self.__history_contents(history_id)
+            assert contents[DELETED]['deleted']
+            assert contents[3]['state'] == 'paused'
+            assert contents[5]['state'] == 'paused'
+
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_jobs("""
