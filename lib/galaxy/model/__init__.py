@@ -68,7 +68,7 @@ MAX_IN_FILTER_LENGTH = 100
 
 # The column sizes for job metrics
 JOB_METRIC_MAX_LENGTH = 1023
-JOB_METRIC_PRECISION = 22
+JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 
 
@@ -158,10 +158,12 @@ class JobLike(object):
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
+        self.file_metrics = []
         self.text_metrics = []
         self.numeric_metrics = []
 
     def add_metric(self, plugin, metric_name, metric_value):
+        # TODO: This should probably overwrite matching metrics so duplicates are not created on handler restarts
         plugin = unicodify(plugin, 'utf-8')
         metric_name = unicodify(metric_name, 'utf-8')
         number = isinstance(metric_value, numbers.Number)
@@ -171,6 +173,13 @@ class JobLike(object):
         elif number:
             log.warning("Cannot store metric due to database column overflow (max: %s): %s: %s",
                         JobLike.MAX_NUMERIC, metric_name, metric_value)
+        elif hasattr(metric_value, 'name'):
+            value = unicodify(os.path.basename(metric_value.name), 'utf-8')
+            metric = self._file_metric(plugin, metric_name, value)
+            object_session(self).add(metric)
+            object_session(self).flush()
+            metric.store(metric_value.name)
+            self.file_metrics.append(metric)
         else:
             metric_value = unicodify(metric_value, 'utf-8')
             if len(metric_value) > (JOB_METRIC_MAX_LENGTH - 1):
@@ -183,7 +192,7 @@ class JobLike(object):
     @property
     def metrics(self):
         # TODO: Make iterable, concatenate with chain
-        return self.text_metrics + self.numeric_metrics
+        return self.text_metrics + self.numeric_metrics + self.file_metrics
 
     def set_streams(self, stdout, stderr):
         stdout = galaxy.util.unicodify(stdout)
@@ -473,6 +482,12 @@ class PasswordResetToken(object):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
+class StorableObject(object):
+
+    def __init__(self, id, **kwargs):
+        self.id = id
+
+
 class BaseJobMetric(object):
 
     def __init__(self, plugin, metric_name, metric_value):
@@ -481,11 +496,42 @@ class BaseJobMetric(object):
         self.metric_value = metric_value
 
 
+class BaseJobMetricFile(BaseJobMetric, StorableObject):
+
+    object_store = None  # This get initialized in mapping.py (method init) by app.py
+
+    @property
+    def __object_store_kwargs(self):
+        assert self.id is not None, "ID must be set before filename used (commit the object)"
+        return {
+            'extra_dir': '_job_metrics',
+            'extra_dir_at_root': True,
+            'alt_name': 'job_metric_file_%d.dat' % self.id,
+        }
+
+    @property
+    def exists(self):
+        return self.object_store.exists(self, **self.__object_store_kwargs)
+
+    def store(self, path):
+        kwargs = self.__object_store_kwargs
+        self.object_store.create(self, **kwargs)
+        self.object_store.update_from_file(self, file_name=path, **kwargs)
+
+
+class JobMetricFile(BaseJobMetricFile):
+    pass
+
+
 class JobMetricText(BaseJobMetric):
     pass
 
 
 class JobMetricNumeric(BaseJobMetric):
+    pass
+
+
+class TaskMetricFile(BaseJobMetricFile):
     pass
 
 
@@ -505,6 +551,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
     A job represents a request to run a tool given input datasets, tool
     parameters, and output datasets.
     """
+    _file_metric = JobMetricFile
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
@@ -890,6 +937,7 @@ class Task(JobLike):
     """
     A task represents a single component of a job.
     """
+    _file_metric = TaskMetricFile
     _numeric_metric = TaskMetricNumeric
     _text_metric = TaskMetricText
 
@@ -1832,12 +1880,6 @@ class DefaultHistoryPermissions(object):
         self.history = history
         self.action = action
         self.role = role
-
-
-class StorableObject(object):
-
-    def __init__(self, id, **kwargs):
-        self.id = id
 
 
 class Dataset(StorableObject):
