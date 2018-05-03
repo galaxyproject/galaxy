@@ -189,8 +189,8 @@
                         </rule-component>
                         <div v-if="displayRuleType == 'mapping'">
                             <div class="map"
-                                 v-for="map in mapping"
-                                 v-bind:index="map.index"
+                                 v-for="(map, index) in mapping"
+                                 v-bind:index="index"
                                  v-bind:key="map.type">
                                 <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
@@ -202,7 +202,7 @@
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(index)"></span>
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
