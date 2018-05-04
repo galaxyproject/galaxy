@@ -27,7 +27,7 @@ var Configurations = {
             icon: "fa-folder-o",
             tooltip: _l("Dataset collection"),
             multiple: false,
-            batch: Batch.LINKED
+            batch: Batch.ENABLED
         }
     ],
     data_multiple: [
@@ -476,7 +476,8 @@ var View = Backbone.View.extend({
         if (config.batch == Batch.LINKED || config.batch == Batch.ENABLED) {
             result["batch"] = true;
             if (config.batch == Batch.ENABLED && this.button_product.value() === "true") {
-                result["product"] = true;
+                result["product"] = true;  // for dataset_collection_input step in workflow form
+                result["linked"] = false;  // for collections in tool form
             }
         }
         return result;
