@@ -487,9 +487,9 @@ class DatasetCollectionManager(object):
                 data.append([])
                 sources.append({"identifiers": identifiers, "dataset": element_object})
             else:
-                child_collection_type = collection_type_description.child_collection_type()
+                child_collection_type_description = collection_type_description.child_collection_type_description()
                 element_data, element_sources = self.__init_rule_data(
-                    element_object.elements, child_collection_type, identifiers
+                    element_object.elements, child_collection_type_description, identifiers
                 )
                 data.extend(element_data)
                 sources.extend(element_sources)
