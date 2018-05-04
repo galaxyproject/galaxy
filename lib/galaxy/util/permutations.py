@@ -83,7 +83,8 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
         if multi_input_key == first_multi_input_key:
             continue
         if len(multi_input_values) != len(first_multi_value):
-            raise InputMatchedException()
+            raise InputMatchedException("Received %d inputs for '%s' and %d inputs for '%s', these should be of equal length" %
+                                        (len(multi_input_values), multi_input_key, len(first_multi_value), first_multi_input_key))
 
         for index, value in enumerate(multi_input_values):
             matched_multi_inputs[index][multi_input_key] = value
