@@ -123,6 +123,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/pages/sharing')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
@@ -360,6 +361,7 @@ def populate_api_routes(webapp, app):
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
+    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('revision', 'revisions',
                            path_prefix='/api/pages/{page_id}',
                            controller='page_revisions',
