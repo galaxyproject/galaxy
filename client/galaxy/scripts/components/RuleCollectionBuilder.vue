@@ -189,8 +189,8 @@
                         </rule-component>
                         <div v-if="displayRuleType == 'mapping'">
                             <div class="map"
-                                 v-for="map in mapping"
-                                 v-bind:index="map.index"
+                                 v-for="(map, index) in mapping"
+                                 v-bind:index="index"
                                  v-bind:key="map.type">
                                 <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
@@ -202,7 +202,7 @@
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(index)"></span>
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
@@ -1490,7 +1490,10 @@ export default {
                         identifierColumnIndex < numIdentifierColumns;
                         identifierColumnIndex++
                     ) {
-                        let identifier = rowData[identifierColumns[identifierColumnIndex]];
+                        // typeof indicates identifier is a string, but the raw string value coming from this data
+                        // structure sometimes does not work as expected with indexOf below, I don't understand why
+                        // but as a result this cast here seems needed.
+                        let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
                             if (collectionTypeAtDepth === "paired") {
