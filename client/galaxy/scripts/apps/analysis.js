@@ -58,6 +58,7 @@ window.app = function app(options, bootstrapped) {
             "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
+            "(/)pages(/)sharing(/)": "show_pages_sharing",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
@@ -262,6 +263,19 @@ window.app = function app(options, bootstrapped) {
                     active_tab: "user"
                 })
             );
+        },
+
+        show_pages_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({ propsData: {
+                id: QueryStringParsing.get("id"),
+                plural_name: "Pages",
+                model_class: "Page",
+                item_controller: "page",
+                list_controller: "pages",
+            } }).$mount(vm);
         },
 
         show_plugins: function() {
