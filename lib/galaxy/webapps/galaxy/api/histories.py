@@ -53,7 +53,8 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         self.history_serializer = histories.HistorySerializer(app)
         self.history_deserializer = histories.HistoryDeserializer(app)
         self.history_filters = histories.HistoryFilters(app)
-        self.sharing_class_name = "History"
+        self.manager = self.history_manager
+        self.serializer = self.history_serializer
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):

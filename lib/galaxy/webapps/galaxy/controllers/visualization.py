@@ -182,7 +182,7 @@ class VisualizationListGrid(grids.Grid):
         grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
         grids.GridOperation("Edit Attributes", allow_multiple=False, url_args=dict(controller="", action='visualizations/edit')),
         grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action='sharing')),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="visualizations/sharing")),
         grids.GridOperation("Delete", condition=(lambda item: not item.deleted), confirm="Are you sure you want to delete this visualization?"),
     ]
 
@@ -404,41 +404,6 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             return trans.show_ok_message(
                 message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
                 % (visualization.title, web.url_for('/visualizations/list'), referer_message), use_panels=True)
-
-    @web.expose
-    @web.require_login("share Galaxy visualizations")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle visualization sharing. """
-
-        # Get session and visualization.
-        session = trans.sa_session
-        visualization = self.get_visualization(trans, id, check_ownership=True)
-
-        # Do operation on visualization.
-        if 'make_accessible_via_link' in kwargs:
-            self._make_item_accessible(trans.sa_session, visualization)
-        elif 'make_accessible_and_publish' in kwargs:
-            self._make_item_accessible(trans.sa_session, visualization)
-            visualization.published = True
-        elif 'publish' in kwargs:
-            visualization.published = True
-        elif 'disable_link_access' in kwargs:
-            visualization.importable = False
-        elif 'unpublish' in kwargs:
-            visualization.published = False
-        elif 'disable_link_access_and_unpublish' in kwargs:
-            visualization.importable = visualization.published = False
-        elif 'unshare_user' in kwargs:
-            user = session.query(model.User).get(self.decode_id(kwargs['unshare_user']))
-            if not user:
-                error("User not found for provided id")
-            association = session.query(model.VisualizationUserShareAssociation) \
-                                 .filter_by(user=user, visualization=visualization).one()
-            session.delete(association)
-
-        session.flush()
-
-        return trans.fill_template("/sharing_base.mako", item=visualization, controller_list='visualizations', use_panels=True)
 
     @web.expose
     @web.require_login("share Galaxy visualizations")

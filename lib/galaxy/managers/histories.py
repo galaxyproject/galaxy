@@ -261,11 +261,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
 
             'contents_states': self.serialize_contents_states,
             'contents_active': self.serialize_contents_active,
-            'users_shared_with': self.serialize_users_shared_with,
         })
-
-    def serialize_users_shared_with(self, history, key=None, **context):
-        return [{'id': self.app.security.encode_id(a.user.id), 'email': a.user.email} for a in history.users_shared_with]
 
     # remove this
     def serialize_state_ids(self, history, key, **context):

@@ -61,6 +61,7 @@ window.app = function app(options, bootstrapped) {
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/run(/)": "show_workflows_run",
@@ -128,6 +129,19 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_visualizations_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({ propsData: {
+                id: QueryStringParsing.get("id"),
+                plural_name: "Visualizations",
+                model_class: "Visualization",
+                item_controller: "visualization",
+                list_controller: "visualizations",
+            } }).$mount(vm);
+        },
+
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
@@ -178,6 +192,7 @@ window.app = function app(options, bootstrapped) {
             new sharingInstance({ propsData: {
                 id: QueryStringParsing.get("id"),
                 plural_name: "Histories",
+                model_class: "History",
                 item_controller: "history",
                 list_controller: "histories",
             } }).$mount(vm);

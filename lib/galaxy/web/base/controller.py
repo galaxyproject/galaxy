@@ -1340,7 +1340,8 @@ class UsesFormDefinitionsMixin(object):
 class SharableMixin(object):
     """ Mixin for a controller that manages an item that can be shared. """
 
-    sharing_class_name = None
+    manager = None
+    serializer = None
 
     # -- Implemented methods. --
 
@@ -1416,54 +1417,46 @@ class SharableMixin(object):
         return item.slug == cur_slug
 
     @web.expose_api
-    def set_sharing(self, trans, id, payload=None, **kwargs):
-        payload = payload or {}
-        action = payload.get("action")
-        class_name = payload.get("class_name", self.sharing_class_name)
-        item = managers_base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        if not action:
-            raise exceptions.MessageException("Specify a sharing action.")
-        if action == "make_accessible_via_link":
-            self._make_item_accessible(trans.sa_session, item)
-        elif action == "make_accessible_and_publish":
-            self._make_item_accessible(trans.sa_session, item)
-            item.published = True
-        elif action == "publish":
-            if item.importable:
+    def sharing(self, trans, id, payload=None, **kwd):
+        class_name = self.manager.model_class.__name__
+        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
+        if payload and payload.get("action"):
+            action = payload.get("action")
+            if action == "make_accessible_via_link":
+                self._make_item_accessible(trans.sa_session, item)
+            elif action == "make_accessible_and_publish":
+                self._make_item_accessible(trans.sa_session, item)
                 item.published = True
-            else:
-                raise exceptions.MessageException("%s not importable." % class_name)
-        elif action == "disable_link_access":
-            item.importable = False
-        elif action == "unpublish":
-            item.published = False
-        elif action == "disable_link_access_and_unpublish":
-            item.importable = item.published = False
-        elif action == "unshare_user":
-            user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
-            class_name_lc = class_name.lower()
-            ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
-            usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
-            if not usas:
-                raise exceptions.MessageException("%s was not shared with user." % class_name)
-            for usa in usas:
-                trans.sa_session.delete(usa)
+            elif action == "publish":
+                if item.importable:
+                    item.published = True
+                else:
+                    raise exceptions.MessageException("%s not importable." % class_name)
+            elif action == "disable_link_access":
+                item.importable = False
+            elif action == "unpublish":
+                item.published = False
+            elif action == "disable_link_access_and_unpublish":
+                item.importable = item.published = False
+            elif action == "unshare_user":
+                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
+                class_name_lc = class_name.lower()
+                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
+                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
+                if not usas:
+                    raise exceptions.MessageException("%s was not shared with user." % class_name)
+                for usa in usas:
+                    trans.sa_session.delete(usa)
+            trans.sa_session.add(item)
+            trans.sa_session.flush()
         if item.importable and not item.slug:
             self._make_item_accessible(trans.sa_session, item)
-        trans.sa_session.add(item)
-        trans.sa_session.flush()
-        return {"message": "Sharing status updated.", "item": {
-            "published": item.published,
-            "importable": item.importable,
-            "users_shared_with": [{"id": trans.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-            }}
-    # -- Abstract methods. --
+        item_dict = self.serializer.serialize_to_view(item,
+            user=trans.user, trans=trans, default_view="sharing")
+        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        return item_dict
 
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle item sharing. """
-        raise NotImplementedError()
+    # -- Abstract methods. --
 
     @web.expose
     @web.require_login("share Galaxy items")
