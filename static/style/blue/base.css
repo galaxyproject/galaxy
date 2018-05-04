@@ -12846,11 +12846,14 @@ div.unified-panel-body-background {
   left: 0;
   width: 100px;
   height: 16px;
-  margin-top: -6px;
+  margin-top: -7px;
   text-align: center;
   z-index: 9001;
   color: #000000;
   white-space: nowrap; }
+  .quota-meter-text a {
+    font-size: 12px;
+    text-decoration: none; }
 
 div.metadataForm {
   border: solid #aaaaaa 1px; }
