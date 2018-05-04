@@ -320,7 +320,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
-    webapp.mapper.connect('/api/histories/{history_id}/sharing', action='sharing', controller="histories", conditions=dict(method=["POST"]))
+    webapp.mapper.connect('/api/histories/{id}/sharing', action='set_sharing', controller="histories", conditions=dict(method=["POST"]))
     webapp.mapper.connect(
         'dynamic_tool_confs',
         '/api/configuration/dynamic_tool_confs',

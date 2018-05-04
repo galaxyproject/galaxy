@@ -53,6 +53,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         self.history_serializer = histories.HistorySerializer(app)
         self.history_deserializer = histories.HistoryDeserializer(app)
         self.history_filters = histories.HistoryFilters(app)
+        self.sharing_class_name = "History"
 
     @expose_api_anonymous
     def index(self, trans, deleted='False', **kwd):
@@ -529,16 +530,6 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             'installed_builds'  : [{'label' : ins, 'value' : ins} for ins in installed_builds],
             'fasta_hdas'        : [{'label' : '%s: %s' % (hda.hid, hda.name), 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }
-
-    @expose_api
-    def sharing(self, trans, history_id, payload=None, **kwd):
-        """
-        POST /api/histories/{id}/sharing
-        Set sharing details of a given history.
-        """
-        payload = payload or {}
-        payload["class_name"] = "History"
-        return self.set_sharing_status(trans, history_id, payload)
 
     def _get_history(self, trans, id):
         history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)

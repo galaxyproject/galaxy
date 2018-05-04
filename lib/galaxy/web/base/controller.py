@@ -1340,6 +1340,8 @@ class UsesFormDefinitionsMixin(object):
 class SharableMixin(object):
     """ Mixin for a controller that manages an item that can be shared. """
 
+    sharing_class_name = None
+
     # -- Implemented methods. --
 
     def _is_valid_slug(self, slug):
@@ -1413,10 +1415,11 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    def set_sharing_status(self, trans, id, payload):
+    @web.expose_api
+    def set_sharing(self, trans, id, payload=None, **kwargs):
         payload = payload or {}
         action = payload.get("action")
-        class_name = payload.get("class_name")
+        class_name = payload.get("class_name", self.sharing_class_name)
         item = managers_base.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         if not action:
             raise exceptions.MessageException("Specify a sharing action.")
