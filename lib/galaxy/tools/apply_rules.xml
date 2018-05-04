@@ -10,7 +10,7 @@
         <param type="rules" name="rules" data_ref="input" label="Rules" />
     </inputs>
     <outputs>
-        <collection name="output" format_source="input" type_from_rules="rules" label="${on_string} (re-organized)" >
+        <collection name="output" format_source="input" type_from_rules="rules" label="${input.name} (re-organized)" >
         </collection>
     </outputs>
     <help><![CDATA[
