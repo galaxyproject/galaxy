@@ -213,7 +213,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             'state',
             'state_details',
             'state_ids',
-            'users_shared_with',
             # 'community_rating',
             # 'user_rating',
         ], include_keys_from='summary')

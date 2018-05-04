@@ -531,9 +531,3 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
             'installed_builds'  : [{'label' : ins, 'value' : ins} for ins in installed_builds],
             'fasta_hdas'        : [{'label' : '%s: %s' % (hda.hid, hda.name), 'value' : trans.security.encode_id(hda.id)} for hda in fasta_hdas],
         }
-
-    def _get_history(self, trans, id):
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if not history:
-            raise MessageException("Invalid history (%s)." % id)
-        return history
