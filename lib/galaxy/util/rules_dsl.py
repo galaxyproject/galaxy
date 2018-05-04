@@ -33,13 +33,13 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem apply regular expression [%s] to [%s]." % (regex, source))
+                raise Exception("Problem applying regular expression [%s] to [%s]." % (regex, source))
 
             if group_count:
-                if len(match.groups()) != group_count + 1:
-                    raise Exception("Problem apply regular expression.")
+                if len(match.groups()) != group_count:
+                    raise Exception("Problem applying regular expression, wrong number of groups found.")
 
-                result = row + [match.groups()[1:len(match.groups())]]
+                result = row + list(match.groups())
             else:
                 result = row + [match.group(0)]
         else:
@@ -124,7 +124,7 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
         target = rule["target_column"]
         expression = rule["expression"]
         replacement = rule.get("replacement")
-        group_count = rule.get("rule_count")
+        group_count = rule.get("group_count")
 
         return apply_regex(expression, target, data, replacement, group_count), sources
 
