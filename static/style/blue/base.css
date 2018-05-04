@@ -6563,10 +6563,10 @@ a.text-danger:hover, a.text-danger:focus {
 a.text-light:hover, a.text-light:focus {
   color: #dae0e5 !important; }
 
-.text-dark {
+.text-dark, .quota-meter-text {
   color: #343a40 !important; }
 
-a.text-dark:hover, a.text-dark:focus {
+a.text-dark:hover, a.quota-meter-text:hover, a.text-dark:focus, a.quota-meter-text:focus {
   color: #1d2124 !important; }
 
 .text-body {
@@ -12848,7 +12848,6 @@ div.unified-panel-body-background {
   margin-top: -7px;
   text-align: center;
   z-index: 9001;
-  color: #000000;
   white-space: nowrap; }
   .quota-meter-text a {
     font-size: 12px;

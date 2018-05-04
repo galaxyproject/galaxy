@@ -511,6 +511,7 @@ div.unified-panel-body-background {
 }
 
 .quota-meter-text {
+    @extend .text-dark;
     position: absolute;
     top: 50%;
     left: 0;
@@ -519,7 +520,6 @@ div.unified-panel-body-background {
     margin-top: -7px;
     text-align: center;
     z-index: 9001;
-    color: $black;
     white-space: nowrap;
     a {
         font-size: 12px;
