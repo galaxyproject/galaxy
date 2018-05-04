@@ -6557,16 +6557,16 @@ a.text-warning:hover, a.text-warning:focus {
 a.text-danger:hover, a.text-danger:focus {
   color: #eb312c !important; }
 
-.text-light {
+.text-light, .quota-meter-text {
   color: #f8f9fa !important; }
 
-a.text-light:hover, a.text-light:focus {
+a.text-light:hover, a.quota-meter-text:hover, a.text-light:focus, a.quota-meter-text:focus {
   color: #dae0e5 !important; }
 
-.text-dark, .quota-meter-text {
+.text-dark, .quota-meter-text a {
   color: #343a40 !important; }
 
-a.text-dark:hover, a.quota-meter-text:hover, a.text-dark:focus, a.quota-meter-text:focus {
+a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-text a:focus {
   color: #1d2124 !important; }
 
 .text-body {
