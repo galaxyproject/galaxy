@@ -27,6 +27,16 @@
     sources: [1,2]
   final:
     data: [["foo", "the os oo"], ["cow", "the os o"]]
+- rules: 
+    - type: add_column_regex
+      target_column: 0
+      expression: '.*(o)(o)'
+      group_count: 2
+  initial:
+    data: [[foo], [boo]]
+    sources: [1,2]
+  final:
+    data: [["foo", "o", "o"], ["boo", "o", "o"]]
 - rules:
     - type: add_column_substr
       target_column: 0
