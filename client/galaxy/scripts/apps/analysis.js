@@ -138,8 +138,6 @@ window.app = function app(options, bootstrapped) {
                 id: QueryStringParsing.get("id"),
                 plural_name: "Visualizations",
                 model_class: "Visualization",
-                item_controller: "visualization",
-                list_controller: "visualizations",
             } }).$mount(vm);
         },
 
@@ -194,8 +192,6 @@ window.app = function app(options, bootstrapped) {
                 id: QueryStringParsing.get("id"),
                 plural_name: "Histories",
                 model_class: "History",
-                item_controller: "history",
-                list_controller: "histories",
             } }).$mount(vm);
         },
 
@@ -273,8 +269,6 @@ window.app = function app(options, bootstrapped) {
                 id: QueryStringParsing.get("id"),
                 plural_name: "Pages",
                 model_class: "Page",
-                item_controller: "page",
-                list_controller: "pages",
             } }).$mount(vm);
         },
 

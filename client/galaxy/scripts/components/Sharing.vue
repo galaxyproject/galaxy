@@ -97,14 +97,6 @@ export default {
             type: String,
             required: true
         },
-        list_controller: {
-            type: String,
-            required: true
-        },
-        item_controller: {
-            type: String,
-            required: true
-        },
         plural_name: {
             type: String,
             required: true
@@ -118,6 +110,9 @@ export default {
         model_class_lc() {
             return this.model_class.toLowerCase();
         },
+        plural_name_lc() {
+            return this.plural_name.toLowerCase();
+        },
         item_status() {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
@@ -130,13 +125,13 @@ export default {
             return [str.substring(0, index + 1), str.substring(index + 1)];
         },
         published_url() {
-            return `${Galaxy.root}${this.list_controller}/list_published`;
+            return `${Galaxy.root}${this.plural_name_lc}/list_published`;
         },
         share_url() {
-            return `${Galaxy.root}${this.item_controller}/share/?id=${this.id}`;
+            return `${Galaxy.root}${this.model_class_lc}/share/?id=${this.id}`;
         },
         slug_url() {
-            return `${Galaxy.root}${this.item_controller}/set_slug_async/?id=${this.id}`;
+            return `${Galaxy.root}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
         }
     },
     data() {
@@ -165,7 +160,7 @@ export default {
         getModel: function() {
             this.ready = false;
             axios
-                .get(`${Galaxy.root}api/${this.list_controller}/${this.id}/sharing`)
+                .get(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`)
                 .then(response => {
                     this.item = response.data;
                     this.ready = true;
@@ -186,7 +181,7 @@ export default {
         },
         setSharing: function(action, user_id) {
             axios
-                .post(`${Galaxy.root}api/${this.list_controller}/${this.id}/sharing`, {
+                .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, {
                     action: action,
                     user_id: user_id
                 })

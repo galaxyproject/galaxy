@@ -345,9 +345,9 @@ class SharableModelSerializer(base.ModelSerializer,
         ])
 
     def serialize_title(self, item, key, **context):
-        if hasattr(item, title):
+        if hasattr(item, "title"):
             return item.title
-        elif hasattr(item, name):
+        elif hasattr(item, "name"):
             return item.name
 
     def serialize_username_and_slug(self, item, key, **context):

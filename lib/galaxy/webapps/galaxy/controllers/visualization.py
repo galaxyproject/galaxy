@@ -24,7 +24,6 @@ from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.visualization.plugins import registry
-from galaxy.web import error
 from galaxy.web.base.controller import (
     BaseUIController,
     SharableMixin,
