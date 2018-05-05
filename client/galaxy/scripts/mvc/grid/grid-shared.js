@@ -29,7 +29,7 @@ var View = Backbone.View.extend({
 
     _templateShared: function() {
         var self = this;
-        var $tmpl = $(`<div><h2>${this.model.get("plural")} shared with you by others</h2></div>`);
+        var $tmpl = $(`<div><br/><h2>${this.model.get("plural")} shared with you by others</h2></div>`);
         var options = this.model.attributes;
         if (options.shared_by_others && options.shared_by_others.length > 0) {
             var $table = $(
