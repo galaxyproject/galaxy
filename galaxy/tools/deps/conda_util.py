@@ -12,6 +12,7 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
+from galaxy.tools.deps.commands import CommandLineException
 from galaxy.util import unicodify
 from . import (
     commands,
@@ -508,7 +509,7 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         res = unicodify(res)
         hits = json.loads(res).get(conda_target.package, [])
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
-    except:
+    except CommandLineException:
         log.error("Could not execute: '%s'", search_cmd)
         hits = []
 
