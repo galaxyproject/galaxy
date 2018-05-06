@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.8.dev0
+18.5.8 (2018-05-06)
 ---------------------
 
 * Better error handling for Conda searching (thanks to @bgruening).
