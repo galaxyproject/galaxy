@@ -9,7 +9,9 @@ History
 18.5.8.dev0
 ---------------------
 
-    
+* Better error handling for Conda searching (thanks to @bgruening).
+* Update against the latest Galaxy codebase.
+* Add Galaxy tool linting to ensure versions are PEP 440 compliant (thanks to @davebx).
 
 ---------------------
 18.5.7 (2018-03-12)
