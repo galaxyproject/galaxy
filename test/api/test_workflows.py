@@ -1561,6 +1561,8 @@ steps:
         $link: first_cat#out_file1
 """)
             DELETED = 0
+            PAUSED_1 = 3
+            PAUSED_2 = 5
             hdca1 = self.dataset_collection_populator.create_list_in_history(history_id,
                                                                              contents=[("sample1-1", "1 2 3")]).json()
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -1578,8 +1580,8 @@ steps:
             self.dataset_populator.wait_for_history(history_id, assert_ok=False)
             contents = self.__history_contents(history_id)
             assert contents[DELETED]['deleted']
-            assert contents[3]['state'] == 'paused'
-            assert contents[5]['state'] == 'paused'
+            assert contents[PAUSED_1]['state'] == 'paused'
+            assert contents[PAUSED_2]['state'] == 'paused'
 
     def test_run_with_implicit_connection(self):
         with self.dataset_populator.test_history() as history_id:

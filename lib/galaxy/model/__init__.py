@@ -1517,8 +1517,12 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
     def resume_paused_jobs(self):
         for dataset in self.datasets:
             job = dataset.creating_job
-            if job is not None and job.state == Job.states.PAUSED:
-                job.set_state(Job.states.NEW)
+            if job is not None:
+                if job.state == Job.states.PAUSED:
+                    job.set_state(Job.states.NEW)
+                if job.state in (Job.states.NEW, Job.states.PAUSED):
+                    # Reset any message
+                    dataset.info = None
 
     @hybrid.hybrid_property
     def disk_size(self):

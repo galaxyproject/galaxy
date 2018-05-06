@@ -380,6 +380,7 @@ class JobHandlerQueue(Monitors):
                 input_association._state,
                 input_association.name,
                 model.Dataset.deleted,
+                model.Dataset.purged,
                 model.Dataset.state,
             ).join(job_to_input) \
                 .join(input_association) \
@@ -391,20 +392,31 @@ class JobHandlerQueue(Monitors):
                             input_association._state == input_association.states.FAILED_METADATA
                             )).all()
             queries.extend(q)
-        jobs_with_invalid_input_states = defaultdict(list)
-        for (job_id, hda_deleted, hda_state, hda_name, dataset_deleted, dataset_state) in queries:
+        jobs_to_pause = defaultdict(list)
+        jobs_to_fail = defaultdict(list)
+        for (job_id, hda_deleted, hda_state, hda_name, dataset_deleted, dataset_purged, dataset_state) in queries:
             if hda_deleted or dataset_deleted:
-                jobs_with_invalid_input_states[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                if dataset_purged:
+                    # If the dataset has been purged we can't resume the job by undeleting the input
+                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                else:
+                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
             elif hda_state == model.HistoryDatasetAssociation.states.FAILED_METADATA:
-                jobs_with_invalid_input_states[job_id].append("Input dataset '%s' failed to properly set metadata" % (hda_name))
+                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % (hda_name))
             elif dataset_state != model.Dataset.states.OK:
-                jobs_with_invalid_input_states[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
-        for job_id in sorted(jobs_with_invalid_input_states.keys()):
-            pause_string = ", ".join(jobs_with_invalid_input_states[job_id])
-            pause_string = "%s. To resume this job fix the input dataset(s)." % pause_string
+                jobs_to_pause[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
+        for job_id in sorted(jobs_to_pause):
+            pause_message = ", ".join(jobs_to_pause[job_id])
+            pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.pause(job=job, message=pause_string)
-        return [j for j in jobs if j.id not in jobs_with_invalid_input_states]
+            job_wrapper.pause(job=job, message=pause_message)
+        for job_id in sorted(jobs_to_fail):
+            fail_message = ", ".join(jobs_to_fail[job_id])
+            job, job_wrapper = self.job_pair_for_id(job_id)
+            job_wrapper.fail(fail_message)
+        jobs_to_ignore = jobs_to_pause.copy()
+        jobs_to_ignore.update(jobs_to_fail)
+        return [j for j in jobs if j.id not in jobs_to_ignore]
 
     def __check_job_state(self, job):
         """
