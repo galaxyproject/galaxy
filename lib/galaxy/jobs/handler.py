@@ -394,6 +394,7 @@ class JobHandlerQueue(Monitors):
             queries.extend(q)
         jobs_to_pause = defaultdict(list)
         jobs_to_fail = defaultdict(list)
+        jobs_to_ignore = defaultdict(list)
         for (job_id, hda_deleted, hda_state, hda_name, dataset_deleted, dataset_purged, dataset_state) in queries:
             if hda_deleted or dataset_deleted:
                 if dataset_purged:
@@ -403,8 +404,10 @@ class JobHandlerQueue(Monitors):
                     jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
             elif hda_state == model.HistoryDatasetAssociation.states.FAILED_METADATA:
                 jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % (hda_name))
+            elif dataset_state == model.Dataset.states.PAUSED:
+                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % (hda_name))
             elif dataset_state != model.Dataset.states.OK:
-                jobs_to_pause[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
+                jobs_to_ignore[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
         for job_id in sorted(jobs_to_pause):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
@@ -414,7 +417,7 @@ class JobHandlerQueue(Monitors):
             fail_message = ", ".join(jobs_to_fail[job_id])
             job, job_wrapper = self.job_pair_for_id(job_id)
             job_wrapper.fail(fail_message)
-        jobs_to_ignore = jobs_to_pause.copy()
+        jobs_to_ignore.update(jobs_to_pause)
         jobs_to_ignore.update(jobs_to_fail)
         return [j for j in jobs if j.id not in jobs_to_ignore]
 

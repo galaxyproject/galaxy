@@ -1577,7 +1577,7 @@ steps:
             self._assert_status_code_is(r, 200)
             # If this starts failing we may have prevented running workflows on collections with deleted members,
             # in which case we can disable this test.
-            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
             contents = self.__history_contents(history_id)
             assert contents[DELETED]['deleted']
             assert contents[PAUSED_1]['state'] == 'paused'
