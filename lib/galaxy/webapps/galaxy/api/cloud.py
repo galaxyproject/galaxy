@@ -111,11 +111,33 @@ class CloudController(BaseAPIController):
     def upload(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/upload
-            Uploads a given dataset to a given cloud-based bucket.
-        :param trans:
-        :param payload:
+            Uploads dataset(s) belonging to a given history to a given cloud-based bucket. Each dataset is named
+            using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type  payload: dict
+        :param payload: A dictionary structure containing the following keys:
+            *   history_id              the (encoded) id of history to which the object should be downloaded to.
+            *   provider:               the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
+            *   bucket:                 the name of a bucket from which data should be downloaded (e.g., a bucket name on AWS S3).
+            *   credentials:            a dictionary containing all the credentials required to authenticated to the
+                                        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                                        "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   dataset_ids:            [Optional; default: None]
+                                        A list of encoded dataset IDs belonging to the specified history,
+                                        which should be uploaded to the given bucket. If not provided, Galaxy uploads
+                                        all the datasets belonging the specified history.
+            *   overwrite_existing:     [Optional; default: False]
+                                        A boolean value. If set to "True", and an object with same name of the dataset
+                                        to be uploaded already exist in the bucket, Galaxy replaces the existing object
+                                        with the dataset to be uploaded. If set to "False", Galaxy appends datatime
+                                        to the dataset name to prevent overwriting existing, if any, object.
+
         :param kwargs:
-        :return:
+
+        :rtype:  string
+        :return: a message confirming successful upload.
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
