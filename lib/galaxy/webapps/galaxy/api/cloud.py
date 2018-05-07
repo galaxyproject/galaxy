@@ -142,12 +142,21 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
-        if payload.get("dataset_ids", None) is None:
+        encoded_dataset_ids = payload.get("dataset_ids", None)
+        if encoded_dataset_ids is None:
             dataset_ids = None
         else:
             dataset_ids = set()
-            for encoded_id in payload.get("dataset_ids", None):
-                dataset_ids.add(self.decode_id(encoded_id))
+            invalid_dataset_ids = []
+            for encoded_id in encoded_dataset_ids:
+                try:
+                    dataset_ids.add(self.decode_id(encoded_id))
+                except exceptions.MalformedId:
+                    invalid_dataset_ids.append(encoded_id)
+            if len(invalid_dataset_ids) > 0:
+                raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
+                                       "{}".format(invalid_dataset_ids))
+
         self.cloud_manager.upload(trans,
                                   history_id,
                                   provider,
