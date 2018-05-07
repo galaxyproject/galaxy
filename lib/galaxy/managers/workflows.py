@@ -399,7 +399,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             step_order_indices[step.id] = step.order_index
         step_models = []
-        for i, step in enumerate(workflow.steps):
+        for step in workflow.steps:
             step_model = None
             if step.type == 'tool':
                 incoming = {}
