@@ -117,5 +117,17 @@ class CloudController(BaseAPIController):
         :param kwargs:
         :return:
         """
-        trans.response.status = 501
-        return 'Not Implemented'
+        history_id = self.decode_id(payload.get("history_id"))
+        if payload.get("dataset_ids", None) is None:
+            dataset_ids = None
+        else:
+            dataset_ids = set()
+            for encoded_id in payload.get("dataset_ids", None):
+                dataset_ids.add(self.decode_id(encoded_id))
+        self.cloud_manager.upload(trans,
+                                  history_id,
+                                  payload.get("provider"),
+                                  payload.get("bucket"),
+                                  payload.get("credentials"),
+                                  dataset_ids)
+        return 'The selected dataset(s) are uploaded successfully!'
