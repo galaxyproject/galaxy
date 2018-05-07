@@ -157,11 +157,11 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        self.cloud_manager.upload(trans,
-                                  history_id,
-                                  provider,
-                                  bucket,
-                                  credentials,
-                                  dataset_ids,
-                                  payload.get("overwrite_existing", False))
+        self.cloud_manager.upload(trans=trans,
+                                  history_id=history_id,
+                                  provider=provider,
+                                  bucket=bucket,
+                                  credentials=credentials,
+                                  dataset_ids=dataset_ids,
+                                  overwrite_existing=payload.get("overwrite_existing", False))
         return 'The selected dataset(s) are uploaded successfully!'
