@@ -362,6 +362,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
 
     @web.expose
+    @web.require_login("share Galaxy items")
+    def set_public_username(self, trans, id, username, **kwargs):
+        """ Set user's public username and delegate to sharing() """
+        user = trans.get_user()
+        # message from validate_publicname does not contain input, no need
+        # to escape.
+        message = validate_publicname(trans, username, user)
+        if message:
+            return trans.fill_template("/workflow/sharing.mako", item=self.get_item(trans, id), message=message, status="error")
+        user.username = username
+        trans.sa_session.flush()
+        return self.sharing(trans, id, **kwargs)
+
+    @web.expose
     @web.require_login("to import a workflow", use_panels=True)
     def imp(self, trans, id, **kwargs):
         """Imports a workflow shared by other users."""
