@@ -216,5 +216,17 @@ class CloudManager(sharable.SharableModelManager):
         os.remove(staging_file_name)
         return datasets
 
-    def upload(self, dataset, provider, bucket, obj):
-        raise NotImplementedError
+    def upload(self, trans, history_id, provider, bucket, credentials, dataset_ids=None):
+        if CloudProviderFactory is None:
+            raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+        connection = self._configure_provider(provider, credentials)
+
+        bucket_obj = connection.object_store.get(bucket)
+        if bucket_obj is None:
+            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
+
+        history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        for hda in history.datasets:
+            if dataset_ids is None or hda.dataset.id in dataset_ids:
+                created_obj = bucket_obj.create_object(hda.name)
+                created_obj.upload_from_file(hda.dataset.get_file_name())
