@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.9.dev0
+18.5.9 (2018-05-07)
 ---------------------
 
 * Update CWL linting to target CWL 1.0.
