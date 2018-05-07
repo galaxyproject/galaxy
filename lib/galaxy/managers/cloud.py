@@ -230,7 +230,7 @@ class CloudManager(sharable.SharableModelManager):
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
-                if overwrite_existing == True and bucket_obj.get(object_label) is not None:
+                if overwrite_existing == False and bucket_obj.get(object_label) is not None:
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket_obj.create_object(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
