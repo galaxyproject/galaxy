@@ -5,8 +5,8 @@ import galaxy.model
 log = getLogger(__name__)
 
 
-def set_dataset_matcher_factory(trans, tool, param_values):
-    trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool, param_values)
+def set_dataset_matcher_factory(trans, tool):
+    trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool)
 
 
 def unset_dataset_matcher_factory(trans):
@@ -21,7 +21,7 @@ def get_dataset_matcher_factory(trans):
 class DatasetMatcherFactory(object):
     """"""
 
-    def __init__(self, trans, tool=None, param_values=None):
+    def __init__(self, trans, tool=None):
         self._trans = trans
         self._tool = tool
         self._data_inputs = []
@@ -32,8 +32,9 @@ class DatasetMatcherFactory(object):
             valid_input_states = galaxy.model.Dataset.valid_input_states
         self.valid_input_states = valid_input_states
         can_process_summary = False
-        if tool is not None and param_values is not None:
-            self._collect_data_inputs(tool, param_values)
+        if tool is not None:
+            for input in tool.inputs.values():
+                self._collect_data_inputs(input)
 
             require_public = self._tool and self._tool.tool_type == 'data_destination'
             if not require_public and self._data_inputs:
@@ -62,15 +63,17 @@ class DatasetMatcherFactory(object):
 
         return formats[format]
 
-    def _collect_data_inputs(self, tool, param_values):
-        def visitor(input, value, prefix, parent=None, **kwargs):
-            type_name = type(input).__name__
-            if "DataToolParameter" in type_name:
-                self._data_inputs.append(input)
-            elif "DataCollectionToolParameter" in type_name:
-                self._data_inputs.append(input)
-
-        tool.visit_inputs(param_values, visitor)
+    def _collect_data_inputs(self, input):
+        type_name = input.type
+        if type_name == "repeat" or type_name == "upload_dataset" or type_name == "section":
+            for child_input in input.inputs.values():
+                self._collect_data_inputs(child_input)
+        elif type_name == "conditional":
+            for case in input.cases:
+                for child_input in case.inputs.values():
+                    self._collect_data_inputs(child_input)
+        elif type_name == "data" or type_name == "data_collection":
+            self._data_inputs.append(input)
 
     def dataset_matcher(self, param, other_values):
         return DatasetMatcher(self, self._trans, param, other_values)
