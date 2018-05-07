@@ -25,8 +25,8 @@ def lint_new_draft(tool_source, lint_ctx):
     cwl_version = raw_reference.process_object.get("cwlVersion", None)
     if cwl_version is None:
         lint_ctx.error("CWL file does not contain a 'cwlVersion'")
-    if cwl_version not in ["cwl:draft-3", "cwl:draft-4"]:
-        lint_ctx.warn("CWL version [%s] is not a draft-3 or draft-4" % cwl_version)
+    if cwl_version not in ["v1.0"]:
+        lint_ctx.warn("CWL version [%s] is unknown, we recommend the v1.0 the stable release." % cwl_version)
     else:
         lint_ctx.info("Modern CWL version [%s]", cwl_version)
 
