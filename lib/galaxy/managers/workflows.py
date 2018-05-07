@@ -475,7 +475,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             config_form = None
-            if trans.history:
+            if trans.history or trans.workflow_building_mode == workflow_building_modes.ENABLED:
                 # If in a web session, attach form html. No reason to do
                 # so for API requests.
                 config_form = module.get_config_form()
