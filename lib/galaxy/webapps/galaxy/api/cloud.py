@@ -117,7 +117,27 @@ class CloudController(BaseAPIController):
         :param kwargs:
         :return:
         """
-        history_id = self.decode_id(payload.get("history_id"))
+        missing_arguments = []
+        encoded_history_id = payload.get("history_id", None)
+        if encoded_history_id is None:
+            missing_arguments.append("history_id")
+
+        provider = payload.get("provider", None)
+        if provider is None:
+            missing_arguments.append("provider")
+
+        bucket = payload.get("bucket", None)
+        if bucket is None:
+            missing_arguments.append("bucket")
+
+        credentials = payload.get("credentials", None)
+        if credentials is None:
+            missing_arguments.append("credentials")
+
+        if len(missing_arguments) > 0:
+            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
+
+        history_id = self.decode_id(encoded_history_id)
         if payload.get("dataset_ids", None) is None:
             dataset_ids = None
         else:
@@ -126,8 +146,8 @@ class CloudController(BaseAPIController):
                 dataset_ids.add(self.decode_id(encoded_id))
         self.cloud_manager.upload(trans,
                                   history_id,
-                                  payload.get("provider"),
-                                  payload.get("bucket"),
-                                  payload.get("credentials"),
+                                  provider,
+                                  bucket,
+                                  credentials,
                                   dataset_ids)
         return 'The selected dataset(s) are uploaded successfully!'
