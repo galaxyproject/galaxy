@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import string
+import datetime
 from cgi import FieldStorage
 
 from galaxy.exceptions import (
@@ -216,7 +217,7 @@ class CloudManager(sharable.SharableModelManager):
         os.remove(staging_file_name)
         return datasets
 
-    def upload(self, trans, history_id, provider, bucket, credentials, dataset_ids=None):
+    def upload(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
         connection = self._configure_provider(provider, credentials)
@@ -228,5 +229,8 @@ class CloudManager(sharable.SharableModelManager):
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
-                created_obj = bucket_obj.create_object(hda.name)
+                object_label = hda.name
+                if overwrite_existing == True and bucket_obj.get(object_label) is not None:
+                    object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+                created_obj = bucket_obj.create_object(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())

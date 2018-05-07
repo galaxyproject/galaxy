@@ -162,5 +162,6 @@ class CloudController(BaseAPIController):
                                   provider,
                                   bucket,
                                   credentials,
-                                  dataset_ids)
+                                  dataset_ids,
+                                  payload.get("overwrite_existing", False))
         return 'The selected dataset(s) are uploaded successfully!'
