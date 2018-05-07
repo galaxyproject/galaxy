@@ -33,9 +33,9 @@ PRESERVE_GALAXY_ENVIRONMENT="$preserve_python_environment"
 GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
 GALAXY_PYTHON=`command -v python`
-$instrument_pre_commands
 cd $working_directory
 $memory_statement
+$instrument_pre_commands
 $command
 echo $? > $exit_code_path
 $instrument_post_commands
