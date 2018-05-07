@@ -137,7 +137,11 @@ class CloudController(BaseAPIController):
         if len(missing_arguments) > 0:
             raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
 
-        history_id = self.decode_id(encoded_history_id)
+        try:
+            history_id = self.decode_id(encoded_history_id)
+        except exceptions.MalformedId as e:
+            raise ActionInputError('Invalid history ID. {}'.format(e))
+
         if payload.get("dataset_ids", None) is None:
             dataset_ids = None
         else:
