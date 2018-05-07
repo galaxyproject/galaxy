@@ -218,6 +218,41 @@ class CloudManager(sharable.SharableModelManager):
         return datasets
 
     def upload(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+        """
+        Implements the logic of uploading dataset(s) belonging to a given history to a given cloud-based storage
+        (e.g., Amazon S3).
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type  history_id: string
+        :param history_id: the (encoded) id of history from which the object should be uploaded.
+
+        :type  provider: string
+        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
+        `SUPPORTED_PROVIDERS` variable.
+
+        :type  bucket: string
+        :param bucket: the name of a bucket to which data should be uploaded (e.g., a bucket name on AWS S3).
+
+        :type  credentials: dict
+        :param credentials: a dictionary containing all the credentials required to authenticated to the
+        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+
+        :type  dataset_ids: set
+        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given history which
+        should be uploaded to the given provider. If not provided, Galaxy uploads all the datasets belonging to the
+        given history.
+
+        :type  overwrite_existing: boolean
+        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the dataset
+        to be uploaded already exist in the bucket, Galaxy replaces the existing object with the dataset to
+        be uploaded. If set to "False", Galaxy appends datatime to the dataset name to prevent overwriting
+        existing, if any, object.
+
+        :rtype:     void
+        :return:    void
+        """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
         connection = self._configure_provider(provider, credentials)
