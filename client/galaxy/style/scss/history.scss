@@ -602,10 +602,6 @@
         &:last-child {
             margin-right: 0px;
         }
-        .dropdown-menu {
-            z-index: inherit;
-        }
-
         .panel-controls {
             width: 100%;
             height: ($mph-controls_height + 4);
