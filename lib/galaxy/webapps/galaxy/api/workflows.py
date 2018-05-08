@@ -19,6 +19,7 @@ from galaxy.managers import (
     workflows
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import (
@@ -495,6 +496,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         inputs = payload.get('inputs', {})
         module = module_factory.from_dict(trans, payload)
+        if 'tool_state' not in payload:
+            module_state = {}
+            populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
+            module.recover_state(module_state)
         return {
             'label'             : inputs.get('__label', ''),
             'annotation'        : inputs.get('__annotation', ''),
