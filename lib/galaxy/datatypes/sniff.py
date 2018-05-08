@@ -605,13 +605,26 @@ class FilePrefix(object):
 
 
 def build_sniff_from_prefix(klass):
+    # Build and attach a sniff function to this class (klass) from the sniff_prefix function
+    # expected to be defined for the class.
     def auto_sniff(self, filename):
         file_prefix = FilePrefix(filename)
         datatype_compressed = getattr(self, "compressed", False)
         if file_prefix.compressed_format and not datatype_compressed:
             return False
-        if datatype_compressed and not file_prefix.compressed_format:
-            return False
+        if datatype_compressed:
+            if not file_prefix.compressed_format:
+                # This not a compressed file we are looking but the type expects it to be
+                # must return False.
+                return False
+
+            if not getattr(klass, "sniff_compressed", True) and not self.validate_mode():
+                # This datatype indicates that it shouldn't be auto-sniffed so return False.
+                # Do not take this shortcut if validate_mode is True, in that case we aren't
+                # trying to find a datatype for a file we are trying to verify a datatype
+                # selection and so should execute the underlying sniff_prefix.
+                return False
+
         if hasattr(self, "compressed_format"):
             if self.compressed_format != file_prefix.compressed_format:
                 return False
