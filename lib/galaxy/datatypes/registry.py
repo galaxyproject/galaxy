@@ -323,7 +323,9 @@ class Registry(object):
                                     if sniff_compressed_types is None:
                                         sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
                                     if not sniff_compressed_types:
-                                        attributes["sniff_prefix"] = lambda self, file_prefix: False
+                                        # Disable sniff on this type unless in validate_mode().
+                                        attributes["sniff_compressed"] = False
+
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, binary.CompressedArchive, ), attributes)
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
