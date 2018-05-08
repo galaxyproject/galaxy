@@ -161,7 +161,7 @@ class WebApplication(base.WebApplication):
                         self.add_api_controller(controller_name, controller)
 
     def _instantiate_controller(self, T, app):
-        """ Extension point, allow apps to contstruct controllers differently,
+        """ Extension point, allow apps to construct controllers differently,
         really just used to stub out actual controllers for routes testing.
         """
         return T(app)
@@ -643,8 +643,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         self.check_user_library_import_dir(user)
 
-    def associate_user_history(self, user, prev_galaxy_session=None):
-        # Associated the current user's last accessed history (if exists) with their new session
+    def _associate_user_history(self, user, prev_galaxy_session=None):
+        """
+        Associate the user's last accessed history (if exists) with their new session
+        """
         history = None
         try:
             users_last_session = user.galaxy_sessions[0]
@@ -700,7 +702,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.galaxy_session = self.__create_new_session(prev_galaxy_session, user)
         if self.webapp.name == 'galaxy':
             cookie_name = 'galaxysession'
-            self.associate_user_history(user, prev_galaxy_session)
+            self._associate_user_history(user, prev_galaxy_session)
         else:
             cookie_name = 'galaxycommunitysession'
             self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
@@ -789,7 +791,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 default_history = history
                 break
 
-        # Set or create hsitory.
+        # Set or create history.
         if default_history:
             history = default_history
             self.set_history(history)
