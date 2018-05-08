@@ -555,7 +555,7 @@ class GalaxyInteractorApi(object):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         return requests.put("%s/%s" % (self.api_url, path), params=params, data=data)
 
-    def _get(self, path, data={}, key=None, admin=False, anon=False):
+    def _get(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         # no data for GET
         params.update(data)
