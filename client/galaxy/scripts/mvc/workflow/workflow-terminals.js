@@ -1,5 +1,7 @@
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
+import * as Toastr from "libs/toastr";
+
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
     this.isCollection = true;
@@ -524,6 +526,7 @@ var OutputCollectionTerminal = Terminal.extend({
         if (newCollectionType.collectionType != this.collectionType.collectionType) {
             _.each(this.connectors, connector => {
                 // TODO: consider checking if connection valid before removing...
+                Toastr.warning("Destroying a connection because collection type has changed.");
                 connector.destroy();
             });
         }

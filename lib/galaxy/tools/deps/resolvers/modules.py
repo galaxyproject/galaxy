@@ -7,13 +7,23 @@ it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
 import logging
-from os import environ, pathsep
-from os.path import exists, isdir, join
-from subprocess import PIPE, Popen
+from os import (
+    environ,
+    pathsep
+)
+from os.path import (
+    exists,
+    isdir,
+    join
+)
+from subprocess import (
+    PIPE,
+    Popen
+)
 
 from six import StringIO
 
-from ..resolvers import (
+from . import (
     Dependency,
     DependencyResolver,
     MappableDependencyResolver,

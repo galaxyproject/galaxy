@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Histogram (NVD3)">
+    <macros>
+        <import>../../nvd3_bar/config/nvd3_shared.xml</import>
+    </macros>
+    <description>Uses the R-based `charts` tool to derive a histogram and displays it as regular or stacked bar diagram using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_histogram"/>
+    <specs>
+        <expand macro="specs"/>
+        <use_panels>no</use_panels>
+        <confirm>True</confirm>
+    </specs>
+    <groups>
+        <input>
+            <label>Provide a label</label>
+            <name>key</name>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>y</name>
+            <label>Observations</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

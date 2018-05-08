@@ -10,8 +10,12 @@ import galaxy.queues
 import galaxy.quota
 import galaxy.security
 from galaxy import config, jobs
+from galaxy.containers import build_container_interfaces
 from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.folders import FolderManager
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tags import GalaxyTagManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
@@ -20,8 +24,10 @@ from galaxy.tools.cache import (
     ToolShedRepositoryCache
 )
 from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.deps.views import DependencyResolversView
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tools.verify import test_data
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
@@ -41,7 +47,7 @@ log = logging.getLogger(__name__)
 app = None
 
 
-class UniverseApplication(object, config.ConfiguresGalaxyMixin):
+class UniverseApplication(config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs):
@@ -88,8 +94,12 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagManager(self.model.context)
-        # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
+        self.history_manager = HistoryManager(self)
+        self.dependency_resolvers_view = DependencyResolversView(self)
+        self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
+        self.library_folder_manager = FolderManager()
+        self.library_manager = LibraryManager()
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -173,6 +183,11 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 )
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
+
+        if self.config.enable_oidc:
+            from galaxy.authnz import managers
+            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+
         self.sentry_client = None
         if self.config.sentry_dsn:
 
@@ -195,6 +210,13 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        self.containers = {}
+        if self.config.enable_beta_containers_interface:
+            self.containers = build_container_interfaces(
+                self.config.containers_config_file,
+                containers_conf=self.config.containers_conf
+            )
 
         # Configure handling of signals
         handlers = {}

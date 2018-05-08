@@ -5,6 +5,8 @@ Offload jobs to a Kubernetes cluster.
 import logging
 import re
 from os import environ as os_environ
+from time import sleep
+
 
 from six import text_type
 
@@ -49,6 +51,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
+            k8s_galaxy_instance_id=dict(map=str),
+            k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
@@ -73,6 +77,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
         self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
+
+        self._galaxy_instance_id = self.__get_galaxy_instance_id()
 
         self._supplemental_group = self.__get_supplemental_group()
         self._fs_group = self.__get_fs_group()
@@ -101,21 +107,37 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     # metadata.name is the name of the pod resource created, and must be unique
                     # http://kubernetes.io/docs/user-guide/configuring-containers/
                     "name": k8s_job_name,
-                    "namespace": "default",  # TODO this should be set
+                    "namespace": self.runner_params['k8s_namespace'],
                     "labels": {"app": k8s_job_name}
             },
             "spec": self.__get_k8s_job_spec(job_wrapper)
         }
 
-        # Checks if job exists
+        # Checks if job exists and is trusted, or if it needs re-creation.
         job = Job(self._pykube_api, k8s_job_obj)
-        if job.exists():
+        if job.exists() and not self._galaxy_instance_id:
+            # if galaxy instance id is not set, then we don't trust matching jobs and we simply delete and
+            # re-create the job
+            log.debug("Matching job exists, but Job is not trusted, so it will be deleted and a new one created.")
             job.delete()
-        # Creates the Kubernetes Job
-        # TODO if a job with that ID exists, what should we do?
-        # TODO do we trust that this is the same job and use that?
-        # TODO or create a new job as we cannot make sure
-        Job(self._pykube_api, k8s_job_obj).create()
+            elapsed_seconds = 0
+            while job.exists():
+                sleep(3)
+                elapsed_seconds += 3
+                if elapsed_seconds > self.runner_params['k8s_timeout_seconds_job_deletion']:
+                    log.debug("Timed out before k8s could delete existing untrusted job " + k8s_job_name +
+                              ", not queuing associated Galaxy job.")
+                    return
+                log.debug("Waiting for job to be deleted " + k8s_job_name)
+
+            Job(self._pykube_api, k8s_job_obj).create()
+        elif job.exists() and self._galaxy_instance_id:
+            # The job exists and we trust the identifier.
+            log.debug("Matching job exists, but Job is trusted, so we simply use the existing one for " + k8s_job_name)
+            # We simply leave the k8s job to be handled later on by the check watched-items.
+        else:
+            # Creates the Kubernetes Job if it doesn't exist.
+            job.create()
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
@@ -152,9 +174,33 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
         return None
 
+    def __get_galaxy_instance_id(self):
+        """
+        Gets the id of the Galaxy instance. This will be added to Jobs and Pods names, so it needs to be DNS friendly,
+        this means: `The Internet standards (Requests for Comments) for protocols mandate that component hostname labels
+        may contain only the ASCII letters 'a' through 'z' (in a case-insensitive manner), the digits '0' through '9',
+        and the minus sign ('-').`
+
+        It looks for the value set on self.runner_params['k8s_galaxy_instance_id'], which might or not be set. The
+        idea behind this is to allow the Galaxy instance to trust (or not) existing k8s Jobs and Pods that match the
+        setup of a Job that is being recovered or restarted after a downtime/reboot.
+        :return:
+        :rtype:
+        """
+        if "k8s_galaxy_instance_id" in self.runner_params:
+            if re.match("(?!-)[a-z\d-]{1,20}(?<!-)$", self.runner_params['k8s_galaxy_instance_id']):
+                return self.runner_params['k8s_galaxy_instance_id']
+            else:
+                log.error("Galaxy instance '" + self.runner_params['k8s_galaxy_instance_id'] + "' is either too long "
+                          + '(>20 characters) or it includes non DNS acceptable characters, ignoring it.')
+        return None
+
     def __produce_unique_k8s_job_name(self, galaxy_internal_job_id):
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
-        return "galaxy-" + galaxy_internal_job_id
+        instance_id = ""
+        if self._galaxy_instance_id and len(self._galaxy_instance_id) > 0:
+            instance_id = self._galaxy_instance_id + "-"
+        return "galaxy-" + instance_id + galaxy_internal_job_id
 
     def __get_k8s_job_spec(self, job_wrapper):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template."""
@@ -365,7 +411,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def check_watched_item(self, job_state):
         """Checks the state of a job already submitted on k8s. Job state is a AsynchronousJobState"""
-        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
+        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
             job_destination = job_state.job_wrapper.job_destination
@@ -524,6 +571,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO this needs to be implemented to override unimplemented base method
         job_id = job.get_job_runner_external_id()
+        log.debug("k8s trying to recover job: " + job_id)
         if job_id is None:
             self.put(job_wrapper)
             return

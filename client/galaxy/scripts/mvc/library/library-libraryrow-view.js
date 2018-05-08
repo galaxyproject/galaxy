@@ -29,6 +29,7 @@ var LibraryRowView = Backbone.View.extend({
     render: function(library) {
         if (typeof library === "undefined") {
             library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
+            console.log(library);
         }
         this.prepareButtons(library);
         var tmpl = this.templateRow();
@@ -44,9 +45,9 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     repaint: function(library) {
-        /* need to hide manually because of the element removal in setElement
+        /* need to dispose manually because of the element removal in setElement
     invoked in render() */
-        $(".tooltip").hide();
+        this.$el.find('[data-toggle="tooltip"]').tooltip("dispose");
         /* we need to store the old element to be able to replace it with
     new one */
         var old_element = this.$el;
@@ -55,7 +56,7 @@ var LibraryRowView = Backbone.View.extend({
         this.render();
         old_element.replaceWith(this.$el);
         /* now we attach new tooltips to the newly created row element */
-        this.$el.find("[data-toggle]").tooltip();
+        this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
     },
 
     /**
@@ -256,16 +257,16 @@ var LibraryRowView = Backbone.View.extend({
                 "<% } %>",
                 '<td class="right-center">',
                 '<% if( (library.get("public")) && (library.get("deleted") === false) ) { %>',
-                '<span data-toggle="tooltip" data-placement="top" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg"> </span>',
+                '<span data-toggle="tooltip" data-placement="left" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg"> </span>',
                 "<% }%>",
-                '<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- library.get("name") %>\'" class="primary-button btn-xs edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span> Edit</button>',
-                '<a href="#library/<%- library.get("id") %>/permissions"><button data-toggle="tooltip" data-placement="top" title="Permissions of \'<%- library.get("name") %>\'" class="primary-button btn-xs permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span> Manage</button></a>',
-                '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-xs save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"></span> Save</button>',
-                '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-xs cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"></span> Cancel</button>',
-                '<button data-toggle="tooltip" data-placement="top" title="Delete \'<%- library.get("name") %>\'" class="primary-button btn-xs delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"></span> Delete</button>',
+                '<button data-toggle="tooltip" data-placement="left" title="Modify \'<%- library.get("name") %>\'" class="btn btn-sm edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span> Edit</button>',
+                '<a data-toggle="tooltip" data-placement="left" title="Permissions of \'<%- library.get("name") %>\'" href="#library/<%- library.get("id") %>/permissions"><button class="btn btn-sm permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span> Manage</button></a>',
+                '<button data-toggle="tooltip" data-placement="left" title="Save changes" class="btn btn-sm save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"></span> Save</button>',
+                '<button data-toggle="tooltip" data-placement="left" title="Discard changes" class="btn btn-sm cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"></span> Cancel</button>',
+                '<button data-toggle="tooltip" data-placement="left" title="Delete \'<%- library.get("name") %>\'" class="btn btn-sm delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"></span> Delete</button>',
                 // For deleted libraries
-                '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey; <% if(button_config.undelete_library_btn === false) { print("display:none;") } %>" class="fa fa-ban fa-lg"></span>',
-                '<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- library.get("name") %>\' " class="primary-button btn-xs undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"></span> Undelete</button>',
+                '<span data-toggle="tooltip" data-placement="left" title="Marked deleted" style="color:grey; <% if(button_config.undelete_library_btn === false) { print("display:none;") } %>" class="fa fa-ban fa-lg"></span>',
+                '<button data-toggle="tooltip" data-placement="left" title="Undelete \'<%- library.get("name") %>\' " class="btn btn-sm undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"></span> Undelete</button>',
                 "</td>",
                 "</tr>"
             ].join("")

@@ -7,7 +7,7 @@
             </div>
         </div>
         <div class="portlet-content">
-            <div v-if="errormessage" class="ui-message alert alert-danger">
+            <div v-if="errormessage" class="ui-message ui-show alert alert-danger">
                 {{ errormessage }}
             </div>
             <div class="portlet-body">
@@ -33,7 +33,7 @@ export default {
     data() {
         return {
             errormessage: null
-        }
+        };
     },
     methods: {
         submit: function() {
@@ -45,19 +45,19 @@ export default {
                 processData: false,
                 method: "POST"
             })
-            .done(response => {
-                window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`
-            })
-            .fail(response => {
-                let message = response.responseJSON && response.responseJSON.err_msg;
-                this.errormessage = message || "Import failed for unkown reason.";
-            });
+                .done(response => {
+                    window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`;
+                })
+                .fail(response => {
+                    let message = response.responseJSON && response.responseJSON.err_msg;
+                    this.errormessage = message || "Import failed for unkown reason.";
+                });
         }
     }
 };
 </script>
 <style>
-.ui-message {
+.ui-show {
     display: block;
 }
 </style>

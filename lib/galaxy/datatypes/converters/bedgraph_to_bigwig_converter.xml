@@ -1,7 +1,7 @@
-<tool id="CONVERTER_bedgraph_to_bigwig" name="Convert BedGraph to BigWig" version="1.0.0" hidden="true">
+<tool id="CONVERTER_bedgraph_to_bigwig" name="Convert BedGraph to BigWig" version="1.0.1" hidden="true">
     <!-- Used internally to generate track indexes -->
     <requirements>
-        <requirement type="package">ucsc_tools</requirement>
+        <requirement type="package" version="357">ucsc-wigtobigwig</requirement>
     </requirements>
     <command>grep -v "^track" '$input' | wigToBigWig -clip stdin '$chromInfo' '$output'</command>
     <inputs>

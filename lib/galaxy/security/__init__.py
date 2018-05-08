@@ -22,7 +22,7 @@ class Action(object):
         self.model = model
 
 
-class RBACAgent:
+class RBACAgent(object):
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS=Action("manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset.", "grant"),
@@ -291,13 +291,13 @@ class GalaxyRBACAgent(RBACAgent):
             # If item has roles associated with the access permission, we need to start with them.
             access_roles = item.get_access_roles(trans)
             for role in access_roles:
-                if trans.user_is_admin() or self.ok_to_display(trans.user, role):
+                if self.ok_to_display(trans.user, role):
                     roles.append(role)
                     # Each role potentially has users.  We need to find all roles that each of those users have.
                     for ura in role.users:
                         user = ura.user
                         for ura2 in user.roles:
-                            if trans.user_is_admin() or self.ok_to_display(trans.user, ura2.role):
+                            if self.ok_to_display(trans.user, ura2.role):
                                 roles.append(ura2.role)
                     # Each role also potentially has groups which, in turn, have members ( users ).  We need to
                     # find all roles that each group's members have.
@@ -306,7 +306,7 @@ class GalaxyRBACAgent(RBACAgent):
                         for uga in group.users:
                             user = uga.user
                             for ura in user.roles:
-                                if trans.user_is_admin() or self.ok_to_display(trans.user, ura.role):
+                                if self.ok_to_display(trans.user, ura.role):
                                     roles.append(ura.role)
 
         # Omit duplicated roles by converting to set
@@ -777,7 +777,7 @@ class GalaxyRBACAgent(RBACAgent):
         return role
 
     def get_role(self, name, type=None):
-        type = type or self.model.Role.types.ADMIN
+        type = type or self.model.Role.types.SYSTEM
         # will raise exception if not found
         return self.sa_session.query(self.model.Role) \
             .filter(and_(self.model.Role.table.c.name == name,
@@ -785,7 +785,7 @@ class GalaxyRBACAgent(RBACAgent):
             .one()
 
     def create_role(self, name, description, in_users, in_groups, create_group_for_role=False, type=None):
-        type = type or self.model.Role.types.ADMIN
+        type = type or self.model.Role.types.SYSTEM
         role = self.model.Role(name=name, description=description, type=type)
         self.sa_session.add(role)
         # Create the UserRoleAssociations

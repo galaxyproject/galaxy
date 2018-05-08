@@ -12,6 +12,7 @@ from paste.httpexceptions import (
 )
 from six import string_types
 from sqlalchemy import and_, desc, false, or_, true
+from sqlalchemy.orm import eagerload, undefer
 
 from galaxy import managers, model, util, web
 from galaxy.datatypes.interval import Bed
@@ -212,8 +213,8 @@ class VisualizationAllPublishedGrid(grids.Grid):
     )
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
@@ -619,7 +620,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
                 v.slug = v_slug
                 v.dbkey = v_dbkey
                 if v_annotation:
-                    v_annotation = sanitize_html(v_annotation, 'utf-8', 'text/html')
+                    v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans.get_user(), v, v_annotation)
                 trans.sa_session.add(v)
                 trans.sa_session.flush()

@@ -53,10 +53,8 @@ class ToolDataPathFiles(object):
         path = os.path.abspath(path)
         if path in self.tool_data_path_files:
             return True
-        elif self.tool_data_path not in path:
-            return os.path.exists(path)
         else:
-            return False
+            return os.path.exists(path)
 
 
 class ToolDataTableManager(object):
@@ -265,9 +263,8 @@ class ToolDataTable(object):
         return self._update_version()
 
     def add_entries(self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        if entries:
-            for entry in entries:
-                self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+        for entry in entries:
+            self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
         return self._loaded_content_version
 
     def _remove_entry(self, values):
@@ -601,7 +598,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         is_error = False
         if self.largest_index < len(fields):
             fields = self._replace_field_separators(fields)
-            if fields not in self.get_fields() or (allow_duplicates and self.allow_duplicate_entries):
+            if (allow_duplicates and self.allow_duplicate_entries) or fields not in self.get_fields():
                 self.data.append(fields)
             else:
                 log.debug("Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name)
@@ -690,14 +687,14 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
     def _deduplicate_data(self):
         # Remove duplicate entries, without recreating self.data object
         dup_lines = []
-        hash_list = []
+        hash_set = set()
         for i, fields in enumerate(self.data):
             fields_hash = hash(self.separator.join(fields))
-            if fields_hash in hash_list:
+            if fields_hash in hash_set:
                 dup_lines.append(i)
                 log.debug('Found duplicate entry in tool data table "%s", but duplicates are not allowed, removing additional entry for: "%s"', self.name, fields)
             else:
-                hash_list.append(fields_hash)
+                hash_set.add(fields_hash)
         for i in reversed(dup_lines):
             self.data.pop(i)
 
@@ -713,7 +710,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return rval
 
 
-class TabularToolDataField(Dictifiable, object):
+class TabularToolDataField(Dictifiable):
 
     dict_collection_visible_keys = []
 

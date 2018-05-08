@@ -302,7 +302,7 @@ var DatasetListItemView = _super.extend(
             )}">
                         <span class="fa fa-floppy-o"></span>
                     </a>
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                    <ul class="dropdown-menu" role="menu">
                         <li>
                             <a href="${urls.download}">
                                 ${_l("Download dataset")}
@@ -326,7 +326,7 @@ var DatasetListItemView = _super.extend(
                 [
                     "<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>",
                     '<% if (tag.indexOf("name:") == 0){ %>',
-                    '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<span class="badge badge-primary badge-tags"><%- tag.slice(5) %></span>',
                     "<% } %>",
                     "<% }); %>"
                 ].join("")

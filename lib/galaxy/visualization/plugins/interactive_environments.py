@@ -15,9 +15,9 @@ import yaml
 from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
-from galaxy.containers import build_container_interfaces
+from galaxy.containers import ContainerPort
+from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
-from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
@@ -169,12 +169,8 @@ class InteractiveEnvironmentRequest(object):
             # TODO: don't hardcode this, and allow for mapping
             key = '_default_'
         if key:
-            containers = build_container_interfaces(
-                self.attr.galaxy_config.containers_config_file,
-                containers_conf=self.attr.galaxy_config.containers_conf,
-            )
             try:
-                self.attr.container_interface = containers[key]
+                self.attr.container_interface = self.trans.app.containers[key]
             except KeyError:
                 log.error("Unable to load '%s' container interface: invalid key", key)
 
@@ -254,7 +250,13 @@ class InteractiveEnvironmentRequest(object):
         return url
 
     def volume(self, host_path, container_path, **kwds):
-        return DockerVolume(host_path, container_path, **kwds)
+        if self.attr.container_interface is None:
+            return DockerVolume(host_path, container_path, **kwds)
+        else:
+            return self.attr.container_interface.volume_class(
+                container_path,
+                host_path=host_path,
+                mode=kwds.get('mode', 'ro'))
 
     def _get_env_for_run(self, env_override=None):
         if env_override is None:
@@ -359,7 +361,7 @@ class InteractiveEnvironmentRequest(object):
             args['publish_port_random'] = self.attr.docker_connect_port
         return args
 
-    def _idsToVolumes(self, ids):
+    def _ids_to_volumes(self, ids):
         if len(ids.strip()) == 0:
             return []
 
@@ -442,12 +444,19 @@ class InteractiveEnvironmentRequest(object):
         """
         run_args = self.container_run_args(image, env_override, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
-        container_port = self._find_port_mapping(container.ports)
-        log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
+        container_port = container.map_port(self.attr.docker_connect_port)
+        if not container_port:
+            log.warning("Container %s (%s) created but no port information available, readiness check will determine "
+                        "ports", container.name, container.id)
+            container_port = ContainerPort(self.attr.docker_connect_port, None, None, None)
+            # a negated docker_connect_port will be stored in the proxy to indicate that the readiness check should
+            # attempt to determine the port
+        log.debug("Container %s (%s) port %s accessible at: %s:%s", container.name, container.id, container_port.port,
+                  container_port.hostaddr, container_port.hostport)
         self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
             self.trans,
             host=container_port.hostaddr,
-            port=container_port.hostport,
+            port=container_port.hostport or -container_port.port,
             proxy_prefix=self.attr.proxy_prefix,
             route_name=self.attr.viz_id,
             container_ids=[container.id],
@@ -471,7 +480,7 @@ class InteractiveEnvironmentRequest(object):
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
+        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
         :param volumes: dictionary of docker volume mounts
 
         """
@@ -486,12 +495,8 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
-        # Do not allow a None volumes
-        if not volumes:
-            volumes = []
-
         if additional_ids is not None:
-            volumes += self._idsToVolumes(additional_ids)
+            volumes += self._ids_to_volumes(additional_ids)
 
         if self.attr.container_interface is None:
             self._launch_legacy(image, env_override, volumes)

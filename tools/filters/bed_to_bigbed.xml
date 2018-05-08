@@ -1,17 +1,17 @@
-<tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.0">
+<tool id="bed_to_bigBed" name="BED-to-bigBed" version="1.0.1">
   <description>converter</description>
   <edam_operations>
     <edam_operation>operation_3434</edam_operation>
   </edam_operations>
+  <requirements>
+    <requirement type="package" version="357">ucsc-bedtobigbed</requirement>
+  </requirements>
   <command>bedToBigBed $input1 $chromInfo $out_file1
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.unc}
     #end if
     2&gt;&amp;1 || echo "Error running bedToBigBed." >&amp;2
   </command>
-  <requirements>
-    <requirement type="package">ucsc_tools</requirement>
-  </requirements>
   <inputs>
     <param format="bed" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />

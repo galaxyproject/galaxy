@@ -7,6 +7,7 @@ import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
+import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
 // create form view
 export default Backbone.Model.extend({
@@ -30,6 +31,7 @@ export default Backbone.Model.extend({
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
+        rules: "_fieldRulesEdit",
         genomespacefile: "_fieldGenomeSpace"
     },
 
@@ -83,24 +85,17 @@ export default Backbone.Model.extend({
             });
         }
 
-        // identify display type
-        var SelectClass = Ui.Select;
-        switch (input_def.display) {
-            case "checkboxes":
-                SelectClass = Ui.Checkbox;
-                break;
-            case "radio":
-                SelectClass = Ui.Radio;
-                break;
-            case "radiobutton":
-                SelectClass = Ui.RadioButton;
-                break;
-        }
-
-        // create select field
-        return new SelectClass.View({
+        // pick selection display
+        var classes = {
+            checkboxes: Ui.Checkbox,
+            radio: Ui.Radio,
+            radiobutton: Ui.RadioButton
+        };
+        var SelectClass = classes[input_def.display] || Ui.Select;
+        var select = new SelectClass.View({
             id: `field-${input_def.id}`,
             data: data,
+            display: input_def.display,
             error_text: input_def.error_text || "No options available",
             readonly: input_def.readonly,
             multiple: input_def.multiple,
@@ -109,6 +104,7 @@ export default Backbone.Model.extend({
             individual: input_def.individual,
             searchable: input_def.flavor !== "workflow"
         });
+        return input_def.textable ? new Ui.TextSelect({ select: select }) : select;
     },
 
     /** Drill down options field */
@@ -221,12 +217,17 @@ export default Backbone.Model.extend({
     /** GenomeSpace file select field
      */
     _fieldGenomeSpace: function(input_def) {
-        var self = this;
         return new SelectGenomeSpace.View({
             id: `field-${input_def.id}`,
-            onchange: function() {
-                self.app.trigger("change");
-            }
+            onchange: input_def.onchange
+        });
+    },
+
+    _fieldRulesEdit: function(input_def) {
+        return new RulesEdit.View({
+            id: `field-${input_def.id}`,
+            onchange: input_def.onchange,
+            target: input_def.target
         });
     },
 

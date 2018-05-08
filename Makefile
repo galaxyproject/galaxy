@@ -17,7 +17,6 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-CLIENT_COMMIT_WARNING="Please remember to 'make client-production' when finished developing, before a commit!"
 YARN := $(shell command -v yarn 2> /dev/null)
 
 all: help
@@ -72,9 +71,6 @@ tool-shed-config-convert-dry-run: ## convert old style tool shed ini to yaml (dr
 tool-shed-config-convert: ## convert old style tool shed ini to yaml
 	$(CONFIG_MANAGE) convert tool_shed
 
-tool-shed-config-rebuild-sample: ## Rebuild sample tool shed yaml file from schema
-	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
-
 reports-config-validate: ## validate reports YAML configuration file
 	$(CONFIG_MANAGE) validate reports
 
@@ -84,14 +80,8 @@ reports-config-convert-dry-run: ## convert old style reports ini to yaml (dry ru
 reports-config-convert: ## convert old style reports ini to yaml
 	$(CONFIG_MANAGE) convert reports
 
-reports-config-rebuild-sample: ## Rebuild sample reports yaml file from schema
-	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
-
 reports-config-lint: ## lint reports YAML configuration file
 	$(CONFIG_MANAGE) lint reports
-
-reports-config-rebuild-rst: ## Rebuild sample reports RST docs
-	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
 
 config-validate: ## validate galaxy YAML configuration file
 	$(CONFIG_MANAGE) validate galaxy
@@ -102,14 +92,15 @@ config-convert-dry-run: ## convert old style galaxy ini to yaml (dry run)
 config-convert: ## convert old style galaxy ini to yaml
 	$(CONFIG_MANAGE) convert galaxy
 
-config-rebuild-sample: ## Rebuild sample galaxy yaml file from schema
+config-rebuild: ## Rebuild all sample YAML and RST files from config schema
 	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
+	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
+	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
+	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
+	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
 
 config-lint: ## lint galaxy YAML configuration file
 	$(CONFIG_MANAGE) lint galaxy
-
-config-rebuild-rst: ## Rebuild sample galaxy RST docs
-	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup
 ifeq (shell git remote -v | grep $(RELEASE_UPSTREAM), )
@@ -150,18 +141,17 @@ ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	cd client && yarn install --check-files
+	cd client && yarn install --network-timeout 120000 --check-files
 endif
 	
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
-	@echo $(CLIENT_COMMIT_WARNING)
 
-client-production: node-deps ## Rebuild client-side artifacts for a production deployment (or committing to the repository).
+client-production: node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
 	cd client && yarn run build-production
 
-client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment, and include sourcemaps to aid in debugging efforts.
+client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
 	cd client && yarn run build-production-maps
 
 client-format: node-deps ## Reformat client code
@@ -169,17 +159,17 @@ client-format: node-deps ## Reformat client code
 
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
-	@echo $(CLIENT_COMMIT_WARNING)
 
-client-test: client ## Run qunit tests via Karma
-	cd client && yarn run test
+_client-test-mocha:  ## Run mocha tests via karma
+	cd client && GALAXY_TEST_FRAMEWORK=mocha yarn run test
+
+_client-test-qunit:  ## Run qunit tests via karma
+	cd client && GALAXY_TEST_FRAMEWORK=qunit yarn run test
+
+client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
-
-charts: node-deps ## Rebuild charts
-	cd client && yarn run build-charts
-
 
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch

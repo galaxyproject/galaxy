@@ -763,7 +763,7 @@ export default Backbone.View.extend({
         if (type !== "subworkflow") {
             buttons.append(
                 $("<div/>")
-                    .addClass("fa-icon-button fa fa-files-o")
+                    .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
                         node.clone();
                     })
@@ -771,7 +771,7 @@ export default Backbone.View.extend({
         }
         buttons.append(
             $("<div/>")
-                .addClass("fa-icon-button fa fa-times")
+                .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
                     node.destroy();
                 })

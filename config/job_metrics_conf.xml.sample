@@ -15,7 +15,7 @@
   <!-- Core plugin captures Galaxy slots, start and end of job (in seconds
        since epoch) and computes runtime in seconds. -->
   <core />
-  
+
   <!-- Uncomment to dump processor count for each job - linux only. -->
   <!-- <cpuinfo /> -->
   <!-- Uncomment to dump information about all processors for for each
@@ -30,12 +30,26 @@
        only. -->
   <!-- <uname /> -->
 
-  <!-- Uncomment following to enable plugin dumping complete environment 
+  <!-- Uncomment following to enable plugin dumping complete environment
        for each job, potentially useful for debuging -->
   <!-- <env /> -->
   <!-- env plugin can also record more targetted, obviously useful variables
        as well. -->
   <!-- <env variables="HOSTNAME,SLURM_CPUS_ON_NODE,SLURM_JOBID" /> -->
+
+  <!-- If galaxy jobs are run in cgroups, like slurm does if memory limits
+       are enforced, we can try to grep some information from this. By default,
+       only a small set of cgroup parameters will be recorded, the list of which
+       can be found in lib/galaxy/jobs/metrics/instrumenters/cgroup.py.  -->
+  <!-- <cgroup /> -->
+  <!-- All params from the `cpuacct,cpu` and `memory` controllers can be
+       recorded.  -->
+  <!-- <cgroup verbose="true" /> -->
+  <!-- Or, specific params can be recorded. -->
+  <!-- <cgroup params="cpuacct.usage,memory.max_usage_in_bytes,memory.memsw.max_usage_in_bytes" /> -->
+
+  <!-- Uncomment to record hostname - *nix only -->
+  <!-- <hostname /> -->
 
   <!-- <collectl /> -->
   <!-- Collectl (http://collectl.sourceforge.net/) is a powerful monitoring
@@ -46,7 +60,7 @@
        is highly customiziable - both using the attributes documented below
        or simply hacking up the code in lib/galaxy/jobs/metrics.
 
-       Warning: In order to use this plugin collectl must be available on the 
+       Warning: In order to use this plugin collectl must be available on the
        compute server the job runs on and on the local Galaxy server as well
        (unless in this latter case summarize_process_data is set to False).
 
@@ -64,12 +78,12 @@
               full time-series data corresponding to a job run.
 
        'subsystems': Comma separated list of collectl subystems to collect
-              data for. Plugin doesn't currently expose all of them or offer 
-              summary data for any of them except 'process' but extensions 
-              would be welcome. May seem pointless to include subsystems 
+              data for. Plugin doesn't currently expose all of them or offer
+              summary data for any of them except 'process' but extensions
+              would be welcome. May seem pointless to include subsystems
               beside process since they won't be processed online by Galaxy -
               but if 'saved_logs_path' these files can be played back at anytime.
-              
+
               Available subsystems - 'process', 'cpu', 'memory', 'network',
               'disk', 'network'. (Default 'process').
 
@@ -108,13 +122,13 @@
 
        'flush': Interval (in seconds I think) between when collectl will
               flush its buffer to disk. Galaxy overrides this to disable
-              flushing by default if not set. 
+              flushing by default if not set.
 
        'local_collectl_path', 'remote_collectl_path', 'collectl_path':
-              By default, jobs will just assume collectl is on the PATH, but 
-              it can be overridden with 'local_collectl_path' and 
-              'remote_collectl_path' (or simply 'collectl_path' if it is not 
-              on the path but installed in the same location both locally and 
+              By default, jobs will just assume collectl is on the PATH, but
+              it can be overridden with 'local_collectl_path' and
+              'remote_collectl_path' (or simply 'collectl_path' if it is not
+              on the path but installed in the same location both locally and
               remotely).
 
         There are more and more increasingly obsecure options including -

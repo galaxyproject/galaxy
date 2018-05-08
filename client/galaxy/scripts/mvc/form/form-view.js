@@ -5,8 +5,7 @@ import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
-
-export var View = Backbone.View.extend({
+export default Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model({
             initial_errors: false,
@@ -26,10 +25,13 @@ export var View = Backbone.View.extend({
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
             var input = self.input_list[input_id];
+            var field = self.field_list[input_id];
+            if (field.refreshDefinition) {
+                field.refreshDefinition(node);
+            }
             if (input && input.options) {
                 if (!_.isEqual(input.options, node.options)) {
                     input.options = node.options;
-                    var field = self.field_list[input_id];
                     if (field.update) {
                         var new_options = [];
                         if (["data", "data_collection", "drill_down"].indexOf(input.type) != -1) {
@@ -81,7 +83,7 @@ export var View = Backbone.View.extend({
                     .first();
                 $panel.animate(
                     {
-                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - 120
+                        scrollTop: $panel.scrollTop() + input_element.$el.offset().top - $panel.position().top - 120
                     },
                     500
                 );
@@ -151,6 +153,7 @@ export var View = Backbone.View.extend({
         this.portlet = new Portlet.View({
             icon: options.icon,
             title: options.title,
+            title_id: options.title_id,
             cls: options.cls,
             operations: !options.hide_operations && options.operations,
             buttons: options.buttons,
@@ -174,5 +177,3 @@ export var View = Backbone.View.extend({
         Galaxy.emit.debug("form-view::initialize()", "Completed");
     }
 });
-
-export default View;

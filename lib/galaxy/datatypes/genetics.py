@@ -22,6 +22,7 @@ from six.moves.urllib.parse import quote_plus
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
 from galaxy.util import nice_size
@@ -35,6 +36,7 @@ VALID_GENOME_GRAPH_MARKERS = re.compile('^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
 VALID_GENOTYPES_LINE = re.compile('^([a-zA-Z0-9]+)(\\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\\s*$')
 
 
+@build_sniff_from_prefix
 class GenomeGraphs(Tabular):
     """
     Tab delimited data containing a marker id and any number of numeric values
@@ -166,7 +168,7 @@ class GenomeGraphs(Tabular):
             errors.append('row %d, %s' % (' '.join(badvals)))
             return errors
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in gg format
 
@@ -178,9 +180,7 @@ class GenomeGraphs(Tabular):
         >>> GenomeGraphs().sniff( fname )
         True
         """
-        with open(filename, 'r') as f:
-            buf = f.read(1024)
-
+        buf = file_prefix.contents_header
         rows = [l.split() for l in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
 
         if len(rows) < 1:
@@ -246,14 +246,6 @@ class rgSampleList(rgTabList):
         self.column_names[0] = 'FID'
         self.column_names[1] = 'IID'
         # this is what Plink wants as at 2009
-
-    def sniff(self, filename):
-        with open(filename, "r") as infile:
-            header = next(infile)  # header
-        if header[0] == 'FID' and header[1] == 'IID':
-            return True
-        else:
-            return False
 
 
 class rgFeatureList(rgTabList):
@@ -518,6 +510,73 @@ class Snptest(Rgenetics):
     file_ext = "snptest"
 
 
+class IdeasPre(Html):
+    """
+    This datatype defines the input format required by IDEAS:
+    https://academic.oup.com/nar/article/44/14/6721/2468150
+    The IDEAS preprocessor tool produces an output using this
+    format.  The extra_files_path of the primary input dataset
+    contains the following files and directories.
+    - chromosome_windows.txt (optional)
+    - chromosomes.bed (optional)
+    - IDEAS_input_config.txt
+    - compressed archived tmp directory containing a number of compressed bed files.
+    """
+
+    MetadataElement(name="base_name", desc="Base name for this dataset", default='IDEASData', readonly=True, set_in_upload=True)
+    MetadataElement(name="chrom_bed", desc="Bed file specifying window positions", default=None, readonly=True)
+    MetadataElement(name="chrom_windows", desc="Chromosome window positions", default=None, readonly=True)
+    MetadataElement(name="input_config", desc="IDEAS input config", default=None, readonly=True)
+    MetadataElement(name="tmp_archive", desc="Compressed archive of compressed bed files", default=None, readonly=True)
+
+    composite_type = 'auto_primary_file'
+    allow_datatype_change = False
+    file_ext = 'ideaspre'
+
+    def __init__(self, **kwd):
+        Html.__init__(self, **kwd)
+        self.add_composite_file('chromosome_windows.txt', description='Chromosome window positions', is_binary=False, optional=True)
+        self.add_composite_file('chromosomes.bed', description='Bed file specifying window positions', is_binary=False, optional=True)
+        self.add_composite_file('IDEAS_input_config.txt', description='IDEAS input config', is_binary=False)
+        self.add_composite_file('tmp.tar.gz', description='Compressed archive of compressed bed files', is_binary=True)
+
+    def set_meta(self, dataset, **kwd):
+        Html.set_meta(self, dataset, **kwd)
+        for fname in os.listdir(dataset.extra_files_path):
+            if fname.startswith("chromosomes"):
+                dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("chromosome_windows"):
+                dataset.metadata.chrom_windows = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("IDEAS_input_config"):
+                dataset.metadata.input_config = os.path.join(dataset.extra_files_path, fname)
+            elif fname.startswith("tmp"):
+                dataset.metadata.tmp_archive = os.path.join(dataset.extra_files_path, fname)
+        self.regenerate_primary_file(dataset)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head></head><body>']
+        rval.append('<h3>Files prepared for IDEAS</h3>')
+        rval.append('<ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            rval.append('<li><a href="%s>%s</a></li>' % (fn, fn))
+        rval.append('</ul></body></html>\n')
+        return "\n".join(rval)
+
+    def regenerate_primary_file(self, dataset):
+        # Cannot do this until we are setting metadata.
+        rval = ['<html><head></head><body>']
+        rval.append('<h3>Files prepared for IDEAS</h3>')
+        rval.append('<ul>')
+        for fname in os.listdir(dataset.extra_files_path):
+            fn = os.path.split(fname)[-1]
+            rval.append('<li><a href="%s">%s</a></li>' % (fn, fn))
+        rval.append('</ul></body></html>')
+        with open(dataset.file_name, 'w') as f:
+            f.write("\n".join(rval))
+            f.write('\n')
+
+
 class Pheno(Tabular):
     """
     base class for pheno files
@@ -539,7 +598,6 @@ class RexpBase(Html):
     MetadataElement(name="pheno_path", desc="Path to phenotype data for this experiment", default="rexpression.pheno", visible=True)
     file_ext = 'rexpbase'
     html_table = None
-    is_binary = True
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
 
@@ -843,6 +901,7 @@ class LinkageStudies(Text):
         self.max_lines = 10
 
 
+@build_sniff_from_prefix
 class GenotypeMatrix(LinkageStudies):
     """
     Sample matrix of genotypes
@@ -852,7 +911,6 @@ class GenotypeMatrix(LinkageStudies):
 
     def __init__(self, **kwd):
         super(GenotypeMatrix, self).__init__(**kwd)
-        self.num_cols = -1
 
     def header_check(self, fio):
         header_elems = fio.readline().split('\t')
@@ -867,7 +925,7 @@ class GenotypeMatrix(LinkageStudies):
 
         return True
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> classname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -875,7 +933,6 @@ class GenotypeMatrix(LinkageStudies):
         >>> file_true = get_test_fname("linkstudies." + extn_true)
         >>> classname().sniff(file_true)
         True
-
         >>> false_files = list(LinkageStudies.test_files)
         >>> false_files.remove("linkstudies." + extn_true)
         >>> result_true = []
@@ -888,27 +945,29 @@ class GenotypeMatrix(LinkageStudies):
         >>> result_true
         []
         """
-        with open(filename, "r") as fio:
+        fio = file_prefix.string_io()
+        num_cols = -1
 
-            if not self.header_check(fio):
+        if not self.header_check(fio):
+            return False
+
+        for lcount, line in enumerate(fio):
+            if lcount > self.max_lines:
+                return True
+
+            tokens = line.split('\t')
+
+            if num_cols == -1:
+                num_cols = len(tokens)
+            elif num_cols != len(tokens):
+                return False
+            if not VALID_GENOTYPES_LINE.match(line):
                 return False
 
-            for lcount, line in enumerate(fio):
-                if lcount > self.max_lines:
-                    return True
-
-                tokens = line.split('\t')
-
-                if self.num_cols == -1:
-                    self.num_cols = len(tokens)
-                elif self.num_cols != len(tokens):
-                    return False
-                if not VALID_GENOTYPES_LINE.match(line):
-                    return False
-
-            return True
+        return True
 
 
+@build_sniff_from_prefix
 class MarkerMap(LinkageStudies):
     """
     Map of genetic markers including physical and genetic distance
@@ -926,7 +985,7 @@ class MarkerMap(LinkageStudies):
 
         return False
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> classname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -934,7 +993,6 @@ class MarkerMap(LinkageStudies):
         >>> file_true = get_test_fname("linkstudies." + extn_true)
         >>> classname().sniff(file_true)
         True
-
         >>> false_files = list(LinkageStudies.test_files)
         >>> false_files.remove("linkstudies." + extn_true)
         >>> result_true = []
@@ -947,32 +1005,32 @@ class MarkerMap(LinkageStudies):
         >>> result_true
         []
         """
-        with open(filename, "r") as fio:
+        fio = file_prefix.string_io()
+        if not self.header_check(fio):
+            return False
 
-            if not self.header_check(fio):
-                return False
+        for lcount, line in enumerate(fio):
+            if lcount > self.max_lines:
+                return True
 
-            for lcount, line in enumerate(fio):
-                if lcount > self.max_lines:
-                    return True
+            try:
+                chrm, gpos, nam, bpos, row = line.split()
+                float(gpos)
+                int(bpos)
 
                 try:
-                    chrm, gpos, nam, bpos, row = line.split()
-                    float(gpos)
-                    int(bpos)
-
-                    try:
-                        int(chrm)
-                    except ValueError:
-                        if not chrm.lower()[0] in ('x', 'y', 'm'):
-                            return False
-
+                    int(chrm)
                 except ValueError:
-                    return False
+                    if not chrm.lower()[0] in ('x', 'y', 'm'):
+                        return False
 
-            return True
+            except ValueError:
+                return False
+
+        return True
 
 
+@build_sniff_from_prefix
 class DataIn(LinkageStudies):
     """
     Common linkage input file for intermarker distances
@@ -982,13 +1040,8 @@ class DataIn(LinkageStudies):
 
     def __init__(self, **kwd):
         super(DataIn, self).__init__(**kwd)
-        self.num_markers = None
-        self.intermarkers = 0
 
-    def eof_function(self):
-        return self.intermarkers > 0
-
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> classname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -996,7 +1049,6 @@ class DataIn(LinkageStudies):
         >>> file_true = get_test_fname("linkstudies." + extn_true)
         >>> classname().sniff(file_true)
         True
-
         >>> false_files = list(LinkageStudies.test_files)
         >>> false_files.remove("linkstudies." + extn_true)
         >>> result_true = []
@@ -1009,41 +1061,47 @@ class DataIn(LinkageStudies):
         >>> result_true
         []
         """
-        with open(filename, "r") as fio:
+        intermarkers = 0
+        num_markers = None
 
-            for lcount, line in enumerate(fio):
-                if lcount > self.max_lines:
-                    return self.eof_function()
+        def eof_function():
+            return intermarkers > 0
 
-                tokens = line.split()
-                try:
-                    if lcount == 0:
-                        self.num_markers = int(tokens[0])
-                        map(int, tokens[1:])
-                    elif lcount == 1:
-                        map(float, tokens)
+        fio = file_prefix.string_io()
+        for lcount, line in enumerate(fio):
+            if lcount > self.max_lines:
+                return eof_function()
 
-                        if len(tokens) != 4:
-                            return False
-                    elif lcount == 2:
-                        map(int, tokens)
-                        last_token = int(tokens[-1])
+            tokens = line.split()
+            try:
+                if lcount == 0:
+                    num_markers = int(tokens[0])
+                    map(int, tokens[1:])
+                elif lcount == 1:
+                    map(float, tokens)
 
-                        if self.num_markers is None:
-                            return False
-                        if len(tokens) != last_token:
-                            return False
-                        if self.num_markers != last_token:
-                            return False
-                    elif tokens[0] == "3" and tokens[1] == "2":
-                        self.intermarkers += 1
+                    if len(tokens) != 4:
+                        return False
+                elif lcount == 2:
+                    map(int, tokens)
+                    last_token = int(tokens[-1])
 
-                except (ValueError, IndexError):
-                    return False
+                    if num_markers is None:
+                        return False
+                    if len(tokens) != last_token:
+                        return False
+                    if num_markers != last_token:
+                        return False
+                elif tokens[0] == "3" and tokens[1] == "2":
+                    intermarkers += 1
 
-            return self.eof_function()
+            except (ValueError, IndexError):
+                return False
+
+        return eof_function()
 
 
+@build_sniff_from_prefix
 class AllegroLOD(LinkageStudies):
     """
     Allegro output format for LOD scores
@@ -1059,7 +1117,7 @@ class AllegroLOD(LinkageStudies):
 
         return False
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         >>> classname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1067,7 +1125,6 @@ class AllegroLOD(LinkageStudies):
         >>> file_true = get_test_fname("linkstudies." + extn_true)
         >>> classname().sniff(file_true)
         True
-
         >>> false_files = list(LinkageStudies.test_files)
         >>> false_files.remove("linkstudies." + extn_true)
         >>> result_true = []
@@ -1080,28 +1137,28 @@ class AllegroLOD(LinkageStudies):
         >>> result_true
         []
         """
-        with open(filename, "r") as fio:
+        fio = file_prefix.string_io()
 
-            if not self.header_check(fio):
+        if not self.header_check(fio):
+            return False
+
+        for lcount, line in enumerate(fio):
+            if lcount > self.max_lines:
+                return True
+
+            tokens = line.split()
+
+            try:
+                int(tokens[0])
+                float(tokens[1])
+
+                if tokens[2] != "-inf":
+                    float(tokens[2])
+
+            except (ValueError, IndexError):
                 return False
 
-            for lcount, line in enumerate(fio):
-                if lcount > self.max_lines:
-                    return True
-
-                tokens = line.split()
-
-                try:
-                    int(tokens[0])
-                    float(tokens[1])
-
-                    if tokens[2] != "-inf":
-                        float(tokens[2])
-
-                except (ValueError, IndexError):
-                    return False
-
-            return True
+        return True
 
 
 if __name__ == '__main__':

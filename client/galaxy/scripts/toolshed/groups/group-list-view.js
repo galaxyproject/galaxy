@@ -16,8 +16,6 @@ const GroupListView = Backbone.View.extend({
         window.globalTS.groups.collection = new mod_group_model.Groups();
         window.globalTS.groups.collection.fetch({
             success: function(model) {
-                console.log("received data: ");
-                console.log(model);
                 that.render();
             },
             error: function(model, response) {
@@ -41,7 +39,7 @@ const GroupListView = Backbone.View.extend({
         const template = this.templateGroupsList();
         this.$el.html(template({ length: window.globalTS.groups.collection.models.length }));
         this.renderRows(window.globalTS.groups.collection.models);
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 
@@ -105,7 +103,7 @@ const GroupListView = Backbone.View.extend({
         tmpl_array.push("<% if(length === 0) { %>");
         tmpl_array.push("<div>There are no groups yet.</div>");
         tmpl_array.push("<% } else{ %>");
-        tmpl_array.push('<table class="grid table table-condensed">');
+        tmpl_array.push('<table class="grid table table-sm">');
         tmpl_array.push("   <thead>");
         tmpl_array.push("     <th>Name</th>");
         // tmpl_array.push('     <th style="width:22%;">description</th>');

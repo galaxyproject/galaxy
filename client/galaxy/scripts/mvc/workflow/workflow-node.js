@@ -19,7 +19,8 @@ var Node = Backbone.Model.extend({
     },
     removeWorkflowOutput: function(outputName) {
         while (this.isWorkflowOutput(outputName)) {
-            this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
+            const target = this.getWorkflowOutput(outputName);
+            this.workflow_outputs.splice(_.indexOf(this.workflow_outputs, target), 1);
         }
     },
     addWorkflowOutput: function(outputName, label) {
@@ -180,7 +181,7 @@ var Node = Backbone.Model.extend({
         $(element).removeClass("toolForm-active");
     },
     set_tool_version: function() {
-        if (this.config_form) {
+        if (this.type === "tool" && this.config_form) {
             this.tool_version = this.config_form.version;
             this.content_id = this.config_form.id;
         }

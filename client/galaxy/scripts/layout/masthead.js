@@ -1,17 +1,21 @@
-import Utils from "utils/utils";
+import * as Backbone from "backbone";
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
+
+/* global Galaxy */
+/* global $ */
+
 /** Masthead **/
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
         this.options = options;
         this.setElement(this._template());
-        this.$navbarBrandLink = this.$(".navbar-brand-link");
+        this.$navbarBrandLink = this.$(".navbar-brand");
         this.$navbarBrandImage = this.$(".navbar-brand-image");
         this.$navbarBrandTitle = this.$(".navbar-brand-title");
-        this.$navbarTabs = this.$(".navbar-tabs");
+        this.$navbarTabs = this.$(".navbar-nav");
         this.$quoteMeter = this.$(".quota-meter-container");
 
         // build tabs
@@ -29,6 +33,9 @@ var View = Backbone.View.extend({
                 });
             })
             .fetch(this.options);
+
+        // highlight initial active view
+        this.highlight(options.active_view);
 
         // scratchbook
         Galaxy.frame = this.frame = new Scratchbook({
@@ -62,7 +69,9 @@ var View = Backbone.View.extend({
                 var text = "";
                 self.collection.each(model => {
                     var q = model.get("onbeforeunload") && model.get("onbeforeunload")();
-                    q && (text += `${q} `);
+                    if (q) {
+                        text += `${q} `;
+                    }
                 });
                 if (text !== "") {
                     return text;
@@ -78,23 +87,23 @@ var View = Backbone.View.extend({
         return this;
     },
 
+    highlight: function(id) {
+        this.collection.forEach(function(model) {
+            model.set("active", model.id == id);
+        });
+    },
+
     /** body template */
     _template: function() {
-        return (
-            '<div id="masthead" class="navbar navbar-fixed-top navbar-inverse">' +
-            '<div class="navbar-header">' +
-            '<div class="navbar-tabs"/>' +
-            "</div>" +
-            '<div class="navbar-brand">' +
-            '<a class="navbar-brand-link">' +
-            '<img class="navbar-brand-image"/>' +
-            '<span class="navbar-brand-title"/>' +
-            "</a>" +
-            "</div>" +
-            '<div class="quota-meter-container"/>' +
-            '<div class="navbar-icons"/>' +
-            "</div>"
-        );
+        return `
+            <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
+                <a class="navbar-brand">
+                    <img class="navbar-brand-image"/>
+                    <span class="navbar-brand-title"/>
+                </a>
+                <ul class="navbar-nav"/>
+                <div class="quota-meter-container"/>
+            </nav>`;
     }
 });
 

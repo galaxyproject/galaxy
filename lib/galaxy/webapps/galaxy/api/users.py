@@ -708,11 +708,22 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
+
+            short_description, description = None, None
+            doc_string = docstring_trim(function.__doc__)
+            split = doc_string.split('\n\n')
+            if split:
+                short_description = split[0]
+                if len(split) > 1:
+                    description = split[1]
+            else:
+                log.warning('No description specified in the __doc__ string for %s.' % filter_name)
+
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
-                'label': filter_name,
-                'help': docstring_trim(function.__doc__) or 'No description available.',
+                'label': short_description or filter_name,
+                'help': description or 'No description available.',
                 'value': 'true' if filter_name in filter_values else 'false'
             })
         if filter_inputs:

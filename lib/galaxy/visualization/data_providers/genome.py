@@ -10,9 +10,9 @@ import re
 import sys
 import tempfile
 from contextlib import contextmanager
-from distutils.version import LooseVersion
 from json import loads
 
+import packaging.version
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
@@ -27,7 +27,7 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 # Utility functions.
 #
 
-PYSAM_INDEX_SYMLINK_NECESSARY = LooseVersion(pysam.__version__) <= LooseVersion('0.13.0')
+PYSAM_INDEX_SYMLINK_NECESSARY = packaging.version.parse(pysam.__version__) <= packaging.version.parse('0.13.0')
 
 
 def float_nan(n):
@@ -270,7 +270,7 @@ class GenomeDataProvider(BaseDataProvider):
 #
 
 
-class FilterableMixin:
+class FilterableMixin(object):
     def get_filters(self):
         """ Returns a dataset's filters. """
         # Get filters.
@@ -311,7 +311,7 @@ class FilterableMixin:
         return filters
 
 
-class TabixDataProvider(FilterableMixin, GenomeDataProvider):
+class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     dataset_type = 'tabix'
 
     """
@@ -1247,7 +1247,7 @@ class BigBedDataProvider(BBIDataProvider):
         return f, BigBedFile(file=f)
 
 
-class BigWigDataProvider (BBIDataProvider):
+class BigWigDataProvider(BBIDataProvider):
     """
     Provides data from BigWig files; position data is reported in 1-based
     coordinate system, i.e. wiggle format.
@@ -1261,7 +1261,7 @@ class BigWigDataProvider (BBIDataProvider):
         return f, BigWigFile(file=f)
 
 
-class IntervalIndexDataProvider(FilterableMixin, GenomeDataProvider):
+class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
     """
     Interval index files used for GFF, Pileup files.
     """

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Line chart (jqPlot)">
+    <macros>
+        <import>../../jqplot_bar/config/jqplot_shared.xml</import>
+    </macros>
+    <description>Renders a line chart using jqPlot hosted at http://www.jqplot.com.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_line"/>
+    <specs>
+        <expand macro="specs"/>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <expand macro="groups_bar"/>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

@@ -6,16 +6,15 @@ pgcleanup.py - A script for cleaning up datasets in Galaxy efficiently, by
 """
 from __future__ import print_function
 
+import argparse
 import datetime
 import inspect
 import logging
 import os
 import shutil
 import sys
-from optparse import OptionParser
 
 import psycopg2
-from six.moves.configparser import ConfigParser
 from sqlalchemy.engine.url import make_url
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -25,6 +24,7 @@ import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.bunch import Bunch
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 log = logging.getLogger()
 
@@ -39,7 +39,6 @@ class Dataset(Bunch):
 
 class Cleanup(object):
     def __init__(self):
-        self.options = None
         self.args = None
         self.config = None
         self.conn = None
@@ -61,49 +60,38 @@ class Cleanup(object):
                 self.action_names.append(name)
 
     def __parse_args(self):
-        default_config = os.path.abspath(os.path.join(galaxy_root, 'config', 'galaxy.ini'))
+        parser = argparse.ArgumentParser()
+        populate_config_args(parser)
+        parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging', default=False)
+        parser.add_argument('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
+        parser.add_argument('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)
+        parser.add_argument('-o', '--older-than', type=int, dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
+        parser.add_argument('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
+        parser.add_argument('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
+        parser.add_argument('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
+        parser.add_argument('-l', '--log-dir', dest='log_dir', help='Log file directory', default=os.path.join(galaxy_root, 'scripts', 'cleanup_datasets'))
+        self.args = parser.parse_args()
 
-        parser = OptionParser()
-        parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
-        parser.add_option('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging', default=False)
-        parser.add_option('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
-        parser.add_option('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)
-        parser.add_option('-o', '--older-than', type='int', dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
-        parser.add_option('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
-        parser.add_option('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
-        parser.add_option('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
-        parser.add_option('-l', '--log-dir', dest='log_dir', help='Log file directory', default=os.path.join(galaxy_root, 'scripts', 'cleanup_datasets'))
-        (self.options, self.args) = parser.parse_args()
+        self.args.sequence = [x.strip() for x in self.args.sequence.split(',')]
 
-        self.options.sequence = [x.strip() for x in self.options.sequence.split(',')]
-
-        if self.options.sequence == ['']:
+        if self.args.sequence == ['']:
             print("Error: At least one action must be specified in the action sequence\n")
             parser.print_help()
             sys.exit(0)
 
     def __setup_logging(self):
         format = "%(funcName)s %(levelname)s %(asctime)s %(message)s"
-        if self.options.debug:
+        if self.args.debug:
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(level=logging.INFO, format=format)
 
     def __load_config(self):
-        log.info('Reading config from %s' % self.options.config)
-        config_parser = ConfigParser(dict(here=os.getcwd(),
-                                          database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
-        config_parser.read(self.options.config)
-
-        config_dict = {}
-        for key, value in config_parser.items('app:main'):
-            config_dict[key] = value
-        config_dict['root_dir'] = galaxy_root
-
-        self.config = galaxy.config.Configuration(**config_dict)
+        app_properties = app_properties_from_args(self.args)
+        self.config = galaxy.config.Configuration(**app_properties)
 
     def __connect_db(self):
-        url = make_url(self.config.database_connection)
+        url = make_url(galaxy.config.get_database_url(self.config))
 
         log.info('Connecting to database with URL: %s' % url)
         args = url.translate_connect_args(username='user')
@@ -118,9 +106,9 @@ class Cleanup(object):
 
     def _open_logfile(self):
         action_name = inspect.stack()[1][3]
-        logname = os.path.join(self.options.log_dir, action_name + '.log')
+        logname = os.path.join(self.args.log_dir, action_name + '.log')
 
-        if self.options.dry_run:
+        if self.args.dry_run:
             log.debug('--dry-run specified, logging changes to stdout instead of log file: %s' % logname)
             self.logs[action_name] = sys.stdout
         else:
@@ -145,7 +133,7 @@ class Cleanup(object):
         self.logs[action_name].write(message.ljust(72, '='))
         self.logs[action_name].write('\n')
 
-        if self.options.dry_run:
+        if self.args.dry_run:
             log.debug('--dry-run specified, changes were logged to stdout insted of log file')
         else:
             log.debug('Closing log file: %s' % self.logs[action_name].name)
@@ -155,14 +143,14 @@ class Cleanup(object):
 
     def _run(self):
         ok = True
-        for name in self.options.sequence:
+        for name in self.args.sequence:
             if name not in self.action_names:
                 log.error('Unknown action in sequence: %s' % name)
                 ok = False
         if not ok:
             log.critical('Exiting due to previous error(s)')
             sys.exit(1)
-        for name in self.options.sequence:
+        for name in self.args.sequence:
             log.info('Calling %s' % name)
             self.__getattribute__(name)()
             log.info('Finished %s' % name)
@@ -188,7 +176,7 @@ class Cleanup(object):
 
         cur = self.conn.cursor()
 
-        if self.options.dry_run:
+        if self.args.dry_run:
             sql = "SELECT MAX(id) FROM cleanup_event;"
             cur.execute(sql)
             max_id = cur.fetchone()[0]
@@ -217,9 +205,9 @@ class Cleanup(object):
 
         cur = self.conn.cursor()
 
-        if self.options.work_mem is not None:
-            log.info('Setting work_mem to %s' % self.options.work_mem)
-            cur.execute('SET work_mem TO %s', (self.options.work_mem,))
+        if self.args.work_mem is not None:
+            log.info('Setting work_mem to %s' % self.args.work_mem)
+            cur.execute('SET work_mem TO %s', (self.args.work_mem,))
 
         log.info('Executing SQL')
         cur.execute(sql, args)
@@ -228,7 +216,7 @@ class Cleanup(object):
         return cur
 
     def _flush(self):
-        if self.options.dry_run:
+        if self.args.dry_run:
             self.conn.rollback()
             log.info("--dry-run specified, all changes rolled back")
         else:
@@ -245,7 +233,7 @@ class Cleanup(object):
             log.error('Unable to get MetadataFile %s filename: %s' % (id, e))
             return
 
-        if not self.options.dry_run:
+        if not self.args.dry_run:
             try:
                 os.unlink(filename)
             except Exception as e:
@@ -341,7 +329,7 @@ class Cleanup(object):
         """
         Mark deleted all "anonymous" Histories (not owned by a registered user) that are older than the specified number of days.
         """
-        log.info('Marking deleted all userless Histories older than %i days' % self.options.days)
+        log.info('Marking deleted all userless Histories older than %i days' % self.args.days)
 
         event_id = self._create_event()
 
@@ -364,12 +352,12 @@ class Cleanup(object):
         """
 
         update_time_sql = ''
-        if self.options.update_time:
+        if self.args.update_time:
             update_time_sql = """,
                                   update_time = NOW()"""
 
         sql = sql % (update_time_sql, '%s', '%s')
-        args = (self.options.days, event_id)
+        args = (self.args.days, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -385,7 +373,7 @@ class Cleanup(object):
         Mark deleted all ImplicitlyConvertedDatasetAssociations whose hda_parent_id is purged in this step.
         Mark purged all HistoryDatasetAssociations for which an ImplicitlyConvertedDatasetAssociation with matching hda_id is deleted in this step.
         """
-        log.info('Marking purged all deleted HistoryDatasetAssociations older than %i days' % self.options.days)
+        log.info('Marking purged all deleted HistoryDatasetAssociations older than %i days' % self.args.days)
 
         event_id = self._create_event()
 
@@ -457,16 +445,16 @@ class Cleanup(object):
                                 AND NOT purged"""
         update_time_sql = ""
 
-        if self.options.force_retry:
+        if self.args.force_retry:
             force_retry_sql = ""
         else:
             # only update time if not doing force retry (otherwise a lot of things would have their update times reset that were actually purged a long time ago)
-            if self.options.update_time:
+            if self.args.update_time:
                 update_time_sql = """,
                               update_time = NOW()"""
 
         sql = sql % (update_time_sql, force_retry_sql, '%s', update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s')
-        args = (self.options.days, event_id, event_id, event_id, event_id)
+        args = (self.args.days, event_id, event_id, event_id, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -573,15 +561,15 @@ class Cleanup(object):
                                 AND NOT purged"""
         update_time_sql = ""
 
-        if self.options.force_retry:
+        if self.args.force_retry:
             force_retry_sql = ""
         else:
-            if self.options.update_time:
+            if self.args.update_time:
                 update_time_sql += """,
                                 update_time = NOW()"""
 
         sql = sql % (update_time_sql, force_retry_sql, '%s', update_time_sql, update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s', '%s')
-        args = (self.options.days, event_id, event_id, event_id, event_id, event_id)
+        args = (self.args.days, event_id, event_id, event_id, event_id, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -627,12 +615,12 @@ class Cleanup(object):
         """
 
         update_time_sql = ""
-        if self.options.update_time:
+        if self.args.update_time:
             update_time_sql += """,
                                   update_time = NOW()"""
 
         sql = sql % (update_time_sql, '%s', '%s')
-        args = (self.options.days, event_id)
+        args = (self.args.days, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -676,12 +664,12 @@ class Cleanup(object):
         """
 
         update_time_sql = ""
-        if self.options.update_time:
+        if self.args.update_time:
             update_time_sql += """,
                                   update_time = NOW()"""
 
         sql = sql % (update_time_sql, '%s', '%s', '%s')
-        args = (self.options.days, self.options.days, event_id)
+        args = (self.args.days, self.args.days, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -721,15 +709,15 @@ class Cleanup(object):
                                   AND NOT purged"""
         update_time_sql = ""
 
-        if self.options.force_retry:
+        if self.args.force_retry:
             force_retry_sql = ""
         else:
-            if self.options.update_time:
+            if self.args.update_time:
                 update_time_sql = """,
                                   update_time = NOW()"""
 
         sql = sql % (update_time_sql, force_retry_sql, '%s', '%s')
-        args = (self.options.days, event_id)
+        args = (self.args.days, event_id)
         cur = self._update(sql, args)
         self._flush()
 
@@ -752,7 +740,7 @@ class Cleanup(object):
 
             # don't check for existence of the dataset, it should exist
             self._log('Removing from disk: %s' % filename)
-            if not self.options.dry_run:
+            if not self.args.dry_run:
                 try:
                     os.unlink(filename)
                 except Exception as e:
@@ -761,7 +749,7 @@ class Cleanup(object):
             # extra_files_dir is optional so it's checked first
             if extra_files_dir is not None and os.path.exists(extra_files_dir):
                 self._log('Removing from disk: %s' % extra_files_dir)
-                if not self.options.dry_run:
+                if not self.args.dry_run:
                     try:
                         shutil.rmtree(extra_files_dir)
                     except Exception as e:

@@ -14,7 +14,7 @@ from ..requirements import ToolRequirement
 
 
 @six.add_metaclass(ABCMeta)
-class DependencyResolver(Dictifiable, object):
+class DependencyResolver(Dictifiable):
     """Abstract description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
@@ -43,7 +43,7 @@ class DependencyResolver(Dictifiable, object):
         """
 
 
-class MultipleDependencyResolver:
+class MultipleDependencyResolver(object):
     """Variant of DependencyResolver that can optionally resolve multiple dependencies together."""
 
     @abstractmethod
@@ -62,7 +62,7 @@ class MultipleDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class ListableDependencyResolver:
+class ListableDependencyResolver(object):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can iterate over its dependencies and generate
     requirements.
@@ -78,7 +78,7 @@ class ListableDependencyResolver:
         return ToolRequirement(name=name, type="package", version=version)
 
 
-class MappableDependencyResolver:
+class MappableDependencyResolver(object):
     """Mix this into a ``DependencyResolver`` to allow mapping files.
 
     Mapping files allow adapting generic requirements to specific local implementations.
@@ -176,7 +176,7 @@ class RequirementMapping(object):
 
 
 @six.add_metaclass(ABCMeta)
-class SpecificationAwareDependencyResolver:
+class SpecificationAwareDependencyResolver(object):
     """Mix this into a :class:`DependencyResolver` to implement URI specification matching.
 
     Allows adapting generic requirements to more specific URIs - to tailor name
@@ -188,7 +188,7 @@ class SpecificationAwareDependencyResolver:
         """Find closest matching specification for discovered resolver and return new concrete requirement."""
 
 
-class SpecificationPatternDependencyResolver:
+class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolver):
     """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
 
     @abstractproperty
@@ -220,7 +220,7 @@ class SpecificationPatternDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class InstallableDependencyResolver:
+class InstallableDependencyResolver(object):
     """ Mix this into a ``DependencyResolver`` and implement to indicate
     the dependency resolver can attempt to install new dependencies.
     """
@@ -233,7 +233,7 @@ class InstallableDependencyResolver:
 
 
 @six.add_metaclass(ABCMeta)
-class Dependency(Dictifiable, object):
+class Dependency(Dictifiable):
     dict_collection_visible_keys = ['dependency_type', 'exact', 'name', 'version', 'cacheable']
     cacheable = False
 

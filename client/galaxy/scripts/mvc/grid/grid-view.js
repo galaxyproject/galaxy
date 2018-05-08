@@ -1,12 +1,16 @@
-// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
-// not appended to the identifier of a nested array.
-jQuery.ajaxSettings.traditional = true;
-
-// dependencies
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
+import LoadingIndicator from "ui/loading-indicator";
+
+/* global $ */
+// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
+// not appended to the identifier of a nested array.
+$.ajaxSettings.traditional = true;
+
 // grid view
 export default Backbone.View.extend({
     // model
@@ -16,6 +20,7 @@ export default Backbone.View.extend({
     initialize: function(grid_config) {
         this.grid = new GridModel();
         this.title = grid_config.title;
+        this.active_tab = grid_config.active_tab;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
@@ -28,9 +33,8 @@ export default Backbone.View.extend({
             self.add_filter_condition("tags", tag);
         };
 
-        // set element
-        this.setElement("<div/>");
         if (grid_config.url_base && !grid_config.items) {
+            LoadingIndicator.markViewAsLoading(this);
             var url_data = grid_config.url_data || {};
             _.each(grid_config.filters, (v, k) => {
                 url_data[`f-${k}`] = v;
@@ -44,6 +48,8 @@ export default Backbone.View.extend({
                 }
             });
         } else {
+            // set element
+            this.setElement("<div>");
             this.init_grid(grid_config);
         }
 
@@ -98,7 +104,7 @@ export default Backbone.View.extend({
             this.$el.find("#grid-message").html(Templates.message(options));
             var self = this;
             if (options.use_hide_message) {
-                setTimeout(() => {
+                window.setTimeout(() => {
                     self.$el.find("#grid-message").html("");
                 }, 5000);
             }
@@ -232,7 +238,7 @@ export default Backbone.View.extend({
         //
         // add page click events
         //
-        this.$el.find(".page-link > a").each(function() {
+        this.$el.find(".page-link-grid > a").each(function() {
             $(this).click(function() {
                 self.set_page($(this).attr("page_num"));
                 return false;
@@ -263,13 +269,13 @@ export default Backbone.View.extend({
             var button = self.$(`#grid-${item.encode_id}-popup`).off();
             var popup = new PopupMenu(button);
             _.each(options.operations, operation => {
-                self._add_operation(popup, operation, item);
+                self.add_operation(popup, operation, item);
             });
         });
     },
 
     /** Add an operation to the items menu */
-    _add_operation: function(popup, operation, item) {
+    add_operation: function(popup, operation, item) {
         var self = this;
         var settings = item.operation_config[operation.label];
         if (settings.allowed && operation.allow_popup) {
@@ -548,7 +554,7 @@ export default Backbone.View.extend({
                 confirmation_text != "None" &&
                 confirmation_text != "null"
             )
-                if (!confirm(confirmation_text)) return false;
+                if (!window.confirm(confirmation_text)) return false;
 
             // use small characters for operation?!
             operation = operation.toLowerCase();

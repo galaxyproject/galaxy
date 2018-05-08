@@ -112,7 +112,7 @@ To get a new Galaxy repository run:
 To update an existing Galaxy repository run:
   .. code-block:: shell
 
-      $$ git checkout release_${release} && git pull --ff-only origin release_${release}
+      $$ git fetch origin && git checkout release_${release} && git pull --ff-only origin release_${release}
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
@@ -173,7 +173,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Create Release Notes**
 
-    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
+    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Amerged+no%3Amilestone+-label%3Amerge+)
     - [ ] Checkout release branch
 
           git checkout release_${version} -b ${version}_release_notes
@@ -198,12 +198,12 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
           make release-check-blocking-prs RELEASE_CURR=${version}
-    - [ ] Ensure previous release is merged into current. (TODO: Add Makefile target or this.)
+    - [ ] Ensure previous release is merged into current. [Github branch comparison](https://github.com/galaxyproject/galaxy/compare/release_${version}...release_${previous_version})
     - [ ] Create and push release tag:
 
           make release-create RELEASE_CURR=${version}
 
-    - [ ] Switch Jenkins documentation build [branch specifier](https://jenkins.galaxyproject.org/job/Sphinx-Docs/configure) to `*/release_{version}`.
+    - [ ] Add the branch `*/release_{version}` to Jenkins documentation build [configuration matrix](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/configure).
     - [ ] Trigger the documentation build.
 
 - [ ] **Do Docker Release**
@@ -222,14 +222,14 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
     - [ ] Stage annoucement content (Hub, Biostars, Bit.ly link) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
     - [ ] Create hub *highlights* and post to http://galaxyproject.org News (w/ RSS) and NewsBriefs. [An Example](https://galaxyproject.org/news/2016-04-galaxy-release).
-    - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/ (As user ``galaxyproject``, password in Galaxy password store under ``twitter.com / galaxyproject`` ). [An Example](https://twitter.com/galaxyproject/status/733029921316986881).
-    - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/17712/).
+    - [ ] Tweet docs news *highlights* via bit.ly link to https://twitter.com/galaxyproject/. [An Example](https://twitter.com/galaxyproject/status/973646125633695744).
+    - [ ] Post *highlights* type News to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/27118/).
     - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
     - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR for https://github.com/galaxyproject/galaxy-hub/
 
 - [ ] **Prepare for next release**
 
-    - [ ] Ensure milestone ``${next_version}`` exists.
+    - [ ] Close milestone ``${version}`` and ensure milestone ``${next_version}`` exists.
     - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
     - [ ] Schedule committer meeting to discuss re-alignment of priorities.
     - [ ] Close this issue.

@@ -31,7 +31,7 @@ def check_password(guess, hashed):
             return True
     else:
         # Passwords were originally encoded with sha1 and hexed
-        if hashlib.sha1(guess).hexdigest() == hashed:
+        if safe_str_cmp(hashlib.sha1(guess).hexdigest(), hashed):
             return True
     # Password does not match
     return False
