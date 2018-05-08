@@ -712,7 +712,9 @@ class JobWrapper(HasResourceParameters):
         # and job recovery fail.
         # Create the working dir if necessary
         self._create_working_directory()
-        self.dataset_path_rewriter = self._job_dataset_path_rewriter(self.working_directory)
+        # the path rewriter needs destination params, so it cannot be set up until after the destination has been
+        # resolved
+        self.dataset_path_rewriter = None
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
@@ -801,7 +803,10 @@ class JobWrapper(HasResourceParameters):
 
         :returns: ``JobDestination``
         """
-        return self.job_runner_mapper.get_job_destination(self.params)
+        dest = self.job_runner_mapper.get_job_destination(self.params)
+        if self.dataset_path_rewriter is None:
+            self.dataset_path_rewriter = self._job_dataset_path_rewriter(self.working_directory)
+        return dest
 
     def get_job(self):
         return self.sa_session.query(model.Job).get(self.job_id)
@@ -1144,8 +1149,13 @@ class JobWrapper(HasResourceParameters):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
         """
+        # this is called by self._job_dataset_path_rewriter, which is called by self.job_destination(), so to access
+        # self.job_destination directly would cause infinite recursion
+        dest_params = {}
+        if hasattr(self, 'job_runner_mapper') and hasattr(self.job_runner_mapper, 'cached_job_destination'):
+            dest_params = self.job_runner_mapper.cached_job_destination.params
         return self.get_job().get_destination_configuration(
-            self.app.config, key, default
+            dest_params, self.app.config, key, default
         )
 
     def finish(
