@@ -553,10 +553,11 @@ class GalaxyInteractorApi(object):
 
     def _get(self, path, data={}, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        params.update(data)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = "%s/%s" % (self.api_url, path)
-        return requests.get(url, params=params, data=data)
+        return requests.get(url, params=params)
 
 
 class RunToolException(Exception):
