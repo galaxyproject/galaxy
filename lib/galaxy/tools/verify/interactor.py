@@ -537,11 +537,15 @@ class GalaxyInteractorApi(object):
 
     def _post(self, path, data=None, files=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.post("%s/%s" % (self.api_url, path), params=params, data=data, files=files)
+        # no params for POST
+        data.update(params)
+        return requests.post("%s/%s" % (self.api_url, path), data=data, files=files)
 
     def _delete(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
-        return requests.delete("%s/%s" % (self.api_url, path), params=params, data=data)
+        # no data for DELETE
+        params.update(data)
+        return requests.delete("%s/%s" % (self.api_url, path), params=params)
 
     def _patch(self, path, data=None, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
@@ -553,6 +557,7 @@ class GalaxyInteractorApi(object):
 
     def _get(self, path, data={}, key=None, admin=False, anon=False):
         params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        # no data for GET
         params.update(data)
         if path.startswith("/api"):
             path = path[len("/api"):]
