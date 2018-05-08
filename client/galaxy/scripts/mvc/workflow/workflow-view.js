@@ -353,48 +353,6 @@ export default Backbone.View.extend({
                 Cancel: hide_modal
             });
         }
-        /* 
-         *
-         *  function edit_workflow_outputs() {
-         *      self.workflow.clear_active_node();
-         *      $(".right-content").hide();
-         *      var new_content = "";
-         *      for (var node_key in self.workflow.nodes) {
-         *          var node = self.workflow.nodes[node_key];
-         *          if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-         *              new_content += `<div class='toolForm' style='margin-bottom:5px;'><div class='toolFormTitle'>Step ${
-         *                  node.id
-         *              } - ${node.name}</div>`;
-         *              for (var ot_key in node.output_terminals) {
-         *                  var output = node.output_terminals[ot_key];
-         *                  if (node.isWorkflowOutput(output.name)) {
-         *                      new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${
-         *                          output.name
-         *                      }' checked /></p>`;
-         *                  } else {
-         *                      new_content += `<p>${output.name}<input type='checkbox' name='${node.id}|${
-         *                          output.name
-         *                      }' /></p>`;
-         *                  }
-         *              }
-         *              new_content += "</div>";
-         *          }
-         *      }
-         *      $("#output-fill-area").html(new_content);
-         *      $("#output-fill-area input").bind("click", function() {
-         *          var node_id = this.name.split("|")[0];
-         *          var workflowNode = this.workflow.nodes[node_id];
-         *          var output_name = this.name.split("|")[1];
-         *          if (this.checked) {
-         *              workflowNode.addWorkflowOutput(output_name);
-         *          } else {
-         *              workflowNode.removeWorkflowOutput(output_name);
-         *          }
-         *          self.workflow.has_changes = true;
-         *      });
-         *      $("#workflow-output-area").show();
-         *  }
-         */
 
         function layout_editor() {
             self.workflow.layout();
