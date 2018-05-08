@@ -128,7 +128,7 @@ var wait = function(chart, success, error) {
                 case "running":
                     chart.state(
                         "wait",
-                        "Your job is running. You may close the browser window. The job will continue in the background."
+                        "Your job is running. You may close the browser window. The job will continue in the background and results will be shown in the saved visualizations list."
                     );
             }
             if (!ready) {
