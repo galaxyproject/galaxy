@@ -195,6 +195,9 @@
 
 ## Render a tool in the tool panel
 <%def name="render_tool( tool, section )">
+    <%
+        import markupsafe
+    %>
     %if not tool.hidden:
         %if tool.is_workflow_compatible:
             %if section:
@@ -205,9 +208,9 @@
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.name | h}</a> ${tool.description}
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
