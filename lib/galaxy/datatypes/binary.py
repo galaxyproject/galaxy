@@ -1156,10 +1156,21 @@ class MzSQlite(SQlite):
 
 class BlibSQlite(SQlite):
     """Class describing a Proteomics Spectral Library Sqlite database """
+    MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
+                    readonly=True, visible=True, no_value='1.8')
     file_ext = "blib"
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(BlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
+            result = c.execute(tables_query).fetchall()
+            (majorVersion,minorVersion) = result = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.blib_version = '%s.%s' % (majorVersion,minorVersion)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
         if super(BlibSQlite, self).sniff(filename):
