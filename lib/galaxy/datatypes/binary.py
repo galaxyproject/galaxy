@@ -1166,9 +1166,8 @@ class BlibSQlite(SQlite):
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
             tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
-            result = c.execute(tables_query).fetchall()
-            (majorVersion,minorVersion) = result = c.execute(tables_query).fetchall()[0]
-            dataset.metadata.blib_version = '%s.%s' % (majorVersion,minorVersion)
+            (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.blib_version = '%s.%s' % (majorVersion, minorVersion)
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
