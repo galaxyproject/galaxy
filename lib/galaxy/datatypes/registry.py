@@ -326,6 +326,18 @@ class Registry(object):
                                         # Disable sniff on this type unless in validate_mode().
                                         attributes["sniff_compressed"] = False
 
+                                    attributes["uncompressed_datatype_class"] = datatype_class
+
+                                    def matches_any(self, target_datatypes):
+                                        potential_uncompressed_types = []
+                                        for target_datatype in target_datatypes:
+                                            if hasattr(target_datatype, "uncompressed_datatype_class") and target_datatype.compressed_format == attributes["compressed_format"]:
+                                                potential_uncompressed_types.append(target_datatype.uncompressed_datatype_class)
+
+                                        return datatype_instance.matches_any(potential_uncompressed_types)
+
+                                    attributes["matches_any"] = matches_any
+
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, binary.CompressedArchive, ), attributes)
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
