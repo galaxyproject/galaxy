@@ -692,6 +692,7 @@ class Data(object):
         """
         self_datatype = self
 
+        target_datatypes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
         if hasattr(self, "uncompressed_datatype_class"):
             # Compare using uncompressed datatype instead of self and filter comparisons
             # to only uncompressed datatypes corresponding to supplied compressed datatypes.
@@ -701,10 +702,9 @@ class Data(object):
                     potential_uncompressed_types.append(target_datatype.uncompressed_datatype_class)
 
             self_datatype = self.uncompressed_datatype_class
-            target_datatypes = potential_uncompressed_types
+            target_datatypes = tuple(potential_uncompressed_types)
 
-        datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
-        return isinstance(self_datatype, datatype_classes)
+        return isinstance(self_datatype, target_datatypes)
 
     def merge(split_files, output_file):
         """
