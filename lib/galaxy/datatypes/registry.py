@@ -13,6 +13,7 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
+from galaxy.util.bunch import Bunch
 from . import (
     binary,
     coverage,
@@ -314,9 +315,9 @@ class Registry(object):
                                     auto_compressed_type_name = datatype_class_name + upper_compressed_type
                                     attributes = {}
                                     if auto_compressed_type == "gz":
-                                        attributes["compressed_format"] = "gzip"
+                                        dynamic_parent = binary.GzDynamicCompressedArchive
                                     elif auto_compressed_type == "bz2":
-                                        attributes["compressed_format"] = "bz2"
+                                        dynamic_parent = binary.Bz2DynamicCompressedArchive
                                     else:
                                         raise Exception("Unknown auto compression type [%s]" % auto_compressed_type)
                                     attributes["file_ext"] = compressed_extension
@@ -326,7 +327,8 @@ class Registry(object):
                                         # Disable sniff on this type unless in validate_mode().
                                         attributes["sniff_compressed"] = False
 
-                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, binary.CompressedArchive, ), attributes)
+                                    attributes["uncompressed_datatype_instance"] = datatype_instance
+                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
                                     if edam_data:
@@ -964,3 +966,12 @@ class Registry(object):
             Please change it to lower case" % extension)
             extension = extension.lower()
         return extension
+
+
+def example_datatype_registry_for_sample():
+    galaxy_dir = galaxy.util.galaxy_directory()
+    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    config = Bunch(sniff_compressed_dynamic_datatypes_default=True)
+    datatypes_registry = Registry(config)
+    datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
+    return datatypes_registry

@@ -287,12 +287,8 @@ def guess_ext(fname, sniff_order, is_binary=False):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> from galaxy.datatypes import registry
-    >>> from galaxy.util.bunch import Bunch
-    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
-    >>> config = Bunch(sniff_compressed_dynamic_datatypes_default=True)
-    >>> datatypes_registry = registry.Registry(config)
-    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> datatypes_registry = example_datatype_registry_for_sample()
     >>> sniff_order = datatypes_registry.sniff_order
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)

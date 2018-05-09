@@ -159,6 +159,34 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
+class DynamicCompressedArchive(CompressedArchive):
+
+    def matches_any(self, target_datatypes):
+        """Treat two aspects of compressed datatypes separately.
+        """
+        compressed_target_datatypes = []
+        uncompressed_target_datatypes = []
+
+        for target_datatype in target_datatypes:
+            if hasattr(target_datatype, "uncompressed_datatype_instance") and target_datatype.compressed_format == self.compressed_format:
+                uncompressed_target_datatypes.append(target_datatype.uncompressed_datatype_instance)
+            else:
+                compressed_target_datatypes.append(target_datatype)
+
+        # TODO: Add gz and bz2 as proper datatypes and use those instances instead of
+        # CompressedArchive() in the following check.
+        return self.uncompressed_datatype_instance.matches_any(uncompressed_target_datatypes) or \
+            CompressedArchive().matches_any(compressed_target_datatypes)
+
+
+class GzDynamicCompressedArchive(DynamicCompressedArchive):
+    compressed_format = "gzip"
+
+
+class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
+    compressed_format = "bz2"
+
+
 class CompressedZipArchive(CompressedArchive):
     """
         Class describing an compressed binary file
