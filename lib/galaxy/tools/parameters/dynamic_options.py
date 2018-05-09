@@ -277,7 +277,7 @@ class MultipleSplitterFilter(Filter):
         Filter.__init__(self, d_option, elem)
         self.separator = elem.get("separator", ",")
         columns = elem.get("column", None)
-        assert columns is not None, "Required 'columns' attribute missing from filter"
+        assert columns is not None, "Required 'column' attribute missing from filter"
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans, other_values):
@@ -306,9 +306,9 @@ class AttributeValueSplitterFilter(Filter):
         Filter.__init__(self, d_option, elem)
         self.pair_separator = elem.get("pair_separator", ",")
         self.name_val_separator = elem.get("name_val_separator", None)
-        self.columns = elem.get("column", None)
-        assert self.columns is not None, "Required 'columns' attribute missing from filter"
-        self.columns = [int(column) for column in self.columns.split(",")]
+        columns = elem.get("column", None)
+        assert columns is not None, "Required 'column' attribute missing from filter"
+        self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans, other_values):
         attr_names = []
@@ -510,7 +510,8 @@ class DynamicOptions(object):
                     full_path = os.path.join(self.tool_param.tool.app.config.tool_data_path, data_file)
                     if os.path.exists(full_path):
                         self.index_file = data_file
-                        self.file_fields = self.parse_file_fields(open(full_path))
+                        with open(full_path) as fh:
+                            self.file_fields = self.parse_file_fields(fh)
                     else:
                         self.missing_index_file = data_file
             elif dataset_file is not None:
