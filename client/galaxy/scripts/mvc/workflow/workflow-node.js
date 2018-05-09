@@ -145,7 +145,7 @@ var Node = Backbone.Model.extend({
             data: {
                 type: this.type,
                 tool_id: this.content_id,
-                inputs: this.tool_state
+                tool_state: this.tool_state
             },
             success: data => {
                 var newData = Object.assign({}, data, copiedData);
