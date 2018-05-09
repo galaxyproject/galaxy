@@ -623,8 +623,10 @@ class DynamicOptions(object):
                 options = self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
-        else:
+        elif self.file_fields:
             options = list(self.file_fields)
+        else:
+            options = []
         for filter in self.filters:
             options = filter.filter_options(options, trans, other_values)
         return options
@@ -659,7 +661,7 @@ class DynamicOptions(object):
 
     def get_options(self, trans, other_values):
         rval = []
-        if self.file_fields is not None or self.tool_data_table is not None or self.dataset_ref_name is not None:
+        if self.file_fields is not None or self.tool_data_table is not None or self.dataset_ref_name is not None or self.missing_index_file:
             options = self.get_fields(trans, other_values)
             for fields in options:
                 rval.append((fields[self.columns['name']], fields[self.columns['value']], False))
