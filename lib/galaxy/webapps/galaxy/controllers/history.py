@@ -1055,7 +1055,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         shared_histories.append(history)
             return trans.response.send_redirect(web.url_for("/histories/sharing?id=%s" % trans.security.encode_id(shared_histories[0].id)))
 
-
     # ......................................................................... actions/orig. async
     @web.expose
     def purge_deleted_datasets(self, trans):
