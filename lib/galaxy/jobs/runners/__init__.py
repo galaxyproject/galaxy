@@ -66,6 +66,7 @@ class BaseJobRunner(object):
         """Start the job runner
         """
         self.app = app
+        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
@@ -75,7 +76,6 @@ class BaseJobRunner(object):
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
-        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -451,6 +451,7 @@ class JobState(object):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
+        self.gdpr_compliant = self.job_wrapper.app.config.gdpr_compliance_mode
 
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
