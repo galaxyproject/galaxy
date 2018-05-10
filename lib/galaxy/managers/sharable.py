@@ -321,6 +321,8 @@ class SharableModelSerializer(base.ModelSerializer,
     def __init__(self, app, **kwargs):
         super(SharableModelSerializer, self).__init__(app, **kwargs)
         self.add_view('sharing', [
+            'id',
+            'title',
             'importable',
             'published',
             'username_and_slug',
@@ -332,9 +334,8 @@ class SharableModelSerializer(base.ModelSerializer,
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
-
         self.serializers.update({
-            'user_id'           : self.serialize_id,
+            'id'                : self.serialize_id,
             'title'             : self.serialize_title,
             'username_and_slug' : self.serialize_username_and_slug,
             'users_shared_with' : self.serialize_users_shared_with
