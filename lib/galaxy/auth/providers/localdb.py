@@ -25,7 +25,8 @@ class LocalDB(AuthProvider):
         See abstract method documentation.
         """
         user_ok = user.check_password(password)
-        log.debug("User: %s, LOCALDB: %s" % (user.id if options.gdpr_compliant else user.email, user_ok))
+        print(options)
+        log.debug("User: %s, LOCALDB: %s" % (user.id if options['gdpr_compliant'] else user.email, user_ok))
         return user_ok
 
 

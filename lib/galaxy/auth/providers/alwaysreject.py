@@ -26,7 +26,7 @@ class AlwaysReject(AuthProvider):
         """
         See abstract method documentation.
         """
-        log.debug("User: %s, ALWAYSREJECT: None" % (user.id if options.gdpr_compliant else user.email))
+        log.debug("User: %s, ALWAYSREJECT: None" % (user.id if options['gdpr_compliant'] else user.email))
         return None
 
 
