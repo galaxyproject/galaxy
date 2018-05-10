@@ -35,7 +35,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (

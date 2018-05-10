@@ -1038,11 +1038,11 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def _share_histories(self, trans, user, send_to_err, histories=None):
         # histories looks like: { userA: [ historyX, historyY ], userB: [ historyY ] }
         histories = histories or {}
-        msg = ""
-        shared_histories = []
         if not histories:
-            send_to_err += "No users have been specified or no histories can be sent without changing permissions or associating a sharing role.  "
+            send_to_err += "No users have been specified or no histories can be sent without changing permissions or associating a sharing role. "
+            return trans.response.send_redirect(web.url_for("/histories/list?status=error&message=%s" % send_to_err))
         else:
+            shared_histories = []
             for send_to_user, send_to_user_histories in histories.items():
                 for history in send_to_user_histories:
                     share = trans.app.model.HistoryUserShareAssociation()
@@ -1053,9 +1053,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.sa_session.flush()
                     if history not in shared_histories:
                         shared_histories.append(history)
-        if send_to_err:
-            msg += send_to_err
-        return self.sharing(trans, histories=shared_histories, msg=msg)
+            return trans.response.send_redirect(web.url_for("/histories/sharing?id=%s" % trans.security.encode_id(shared_histories[0].id)))
+
 
     # ......................................................................... actions/orig. async
     @web.expose

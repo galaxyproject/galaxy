@@ -19,6 +19,7 @@ from galaxy import (
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import (
     FILENAME_VALID_CHARS,
