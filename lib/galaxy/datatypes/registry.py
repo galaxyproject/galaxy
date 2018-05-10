@@ -140,6 +140,11 @@ class Registry(object):
                 type_extension = elem.get('type_extension', None)
                 auto_compressed_types = galaxy.util.listify(elem.get('auto_compressed_types', ''))
                 sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
+                if sniff_compressed_types is None:
+                    sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
+                    # Make sure this is set in the elems we write out so the config option is passed ot the upload
+                    # tool which does not have a config object.
+                    elem.set("sniff_compressed_types", str(sniff_compressed_types))
                 mimetype = elem.get('mimetype', None)
                 display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
@@ -321,9 +326,6 @@ class Registry(object):
                                     else:
                                         raise Exception("Unknown auto compression type [%s]" % auto_compressed_type)
                                     attributes["file_ext"] = compressed_extension
-                                    if sniff_compressed_types is None:
-                                        sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
-
                                     attributes["uncompressed_datatype_instance"] = datatype_instance
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
                                     if edam_format:
