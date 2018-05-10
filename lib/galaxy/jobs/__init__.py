@@ -712,7 +712,9 @@ class JobWrapper(HasResourceParameters):
         # and job recovery fail.
         # Create the working dir if necessary
         self._create_working_directory()
-        self.dataset_path_rewriter = self._job_dataset_path_rewriter(self.working_directory)
+        # the path rewriter needs destination params, so it cannot be set up until after the destination has been
+        # resolved
+        self._dataset_path_rewriter = None
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
@@ -729,13 +731,19 @@ class JobWrapper(HasResourceParameters):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
-    def _job_dataset_path_rewriter(self, working_directory):
-        outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-        if outputs_to_working_directory:
-            dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(working_directory)
-        else:
-            dataset_path_rewriter = NullDatasetPathRewriter()
-        return dataset_path_rewriter
+    @property
+    def _job_dataset_path_rewriter(self):
+        if self._dataset_path_rewriter is None:
+            outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
+            if outputs_to_working_directory:
+                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory)
+            else:
+                self._dataset_path_rewriter = NullDatasetPathRewriter()
+        return self._dataset_path_rewriter
+
+    @property
+    def dataset_path_rewriter(self):
+        return self._job_dataset_path_rewriter
 
     @property
     def cleanup_job(self):
@@ -1144,8 +1152,13 @@ class JobWrapper(HasResourceParameters):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
         """
+        # this is called by self._job_dataset_path_rewriter, which is called by self.job_destination(), so to access
+        # self.job_destination directly would cause infinite recursion
+        dest_params = {}
+        if hasattr(self, 'job_runner_mapper') and hasattr(self.job_runner_mapper, 'cached_job_destination'):
+            dest_params = self.job_runner_mapper.cached_job_destination.params
         return self.get_job().get_destination_configuration(
-            self.app.config, key, default
+            dest_params, self.app.config, key, default
         )
 
     def finish(
@@ -1862,15 +1875,18 @@ class TaskWrapper(JobWrapper):
     def __init__(self, task, queue):
         super(TaskWrapper, self).__init__(task.job, queue)
         self.task_id = task.id
-        working_directory = task.working_directory
-        self.working_directory = working_directory
-        job_dataset_path_rewriter = self._job_dataset_path_rewriter(self.working_directory)
-        self.dataset_path_rewriter = TaskPathRewriter(working_directory, job_dataset_path_rewriter)
+        self.working_directory = task.working_directory
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
         else:
             self.prepare_input_files_cmds = None
         self.status = task.states.NEW
+
+    @property
+    def dataset_path_rewriter(self):
+        if self._dataset_path_rewriter is None:
+            self._dataset_path_rewriter = TaskPathRewriter(self.working_directory, self._job_dataset_path_rewriter)
+        return self._dataset_path_rewriter
 
     def can_split(self):
         # Should the job handler split this job up? TaskWrapper should
