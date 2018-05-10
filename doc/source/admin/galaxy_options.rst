@@ -2693,7 +2693,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If gdpr_compliance_mode is
+    set to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2709,7 +2710,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If gdpr_compliance_mode is
+    set to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2738,7 +2740,12 @@
 :Description:
     Enables GDPR Compliance mode. This makes several changes to the
     way Galaxy logs and exposes data externally such as removing
-    emails/usernames from logs and bug reports.
+    emails/usernames from logs and bug reports. It also causes the
+    delete user admin action to permanently redact their username and
+    password, but not to delete data associated with the account as
+    this is not currently easily implementable.  You are responsible
+    for removing the data from backups.  This automatically disabled
+    expose_user_email and expose_user_name
 :Default: ``false``
 :Type: bool
 
