@@ -509,6 +509,11 @@
           <!-- Following command can be used to tweak singularity command. -->
           <!-- <param id="singularity_cmd">/usr/local/custom_docker/docker</param> -->
 
+          <!-- By default, images will be searched for, built, and cached in
+               database/container_cache/singularity/mulled. This path can be
+               overridden. -->
+          <!-- <param id="singularity_images_dir">/cvmfs/singularity.galaxyproject.org</param> -->
+
           <!-- If deployer wants to use singularity for isolation, but does not
                trust tool's specified container - a destination wide override
                can be set. This will cause all jobs on this destination to use
