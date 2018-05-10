@@ -2008,6 +2008,9 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
+          If gdpr_compliance_mode is set to True, then this option will be
+          overridden and set to False.
+
       expose_user_email:
         type: bool
         default: false
@@ -2019,6 +2022,9 @@ mapping:
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
+
+          If gdpr_compliance_mode is set to True, then this option will be
+          overridden and set to False.
 
       fetch_url_whitelist:
         type: str
@@ -2043,6 +2049,8 @@ mapping:
           user admin action to permanently delete all information stored on a
           user, removing all related rows from the database. (You are
           responsible for removing the data from backups.)
+
+          This automatically disabled expose_user_email and expose_user_name
 
       enable_beta_ts_api_install:
         type: bool

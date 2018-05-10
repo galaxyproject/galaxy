@@ -229,8 +229,13 @@ class Configuration(object):
         self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
         self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
-        self.expose_user_name = kwargs.get("expose_user_name", False)
-        self.expose_user_email = kwargs.get("expose_user_email", False)
+        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", "False"))
+        if self.gdpr_compliance_mode:
+            self.expose_user_name = False
+            self.expose_user_email = False
+        else:
+            self.expose_user_name = kwargs.get("expose_user_name", False)
+            self.expose_user_email = kwargs.get("expose_user_email", False)
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
@@ -286,7 +291,6 @@ class Configuration(object):
             for ip in kwargs.get("fetch_url_whitelist", "").split(',')
             if len(ip.strip()) > 0
         ]
-        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", "False"))
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
         self.allow_user_dataset_purge = string_as_bool(kwargs.get("allow_user_dataset_purge", "True"))
