@@ -22,6 +22,7 @@ from galaxy.util import (
     sanitize_text,
     url_get
 )
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
@@ -1402,10 +1403,22 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             return self.message_exception(trans, 'Please specify user ids.')
 
     def _delete_user(self, trans, ids):
+        gdpr_compliant = self.app.config.gdpr_compliance_mode
+
         message = 'Deleted %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
+
+            if gdpr_compliant:
+                # Replace email + username with a (theoretically) unreversable
+                # hash. If provided with the username we can probably re-hash
+                # to identify if it is needed for some reason.
+                #
+                # Deleting multiple times will re-hash the username/email
+                user.email = new_secure_hash(user.email)
+                user.username = new_secure_hash(user.username)
+
             trans.sa_session.add(user)
             trans.sa_session.flush()
             message += ' %s ' % user.email
