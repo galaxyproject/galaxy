@@ -139,7 +139,7 @@ class Registry(object):
                 dtype = elem.get('type', None)
                 type_extension = elem.get('type_extension', None)
                 auto_compressed_types = galaxy.util.listify(elem.get('auto_compressed_types', ''))
-                sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", False))
+                sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
                 mimetype = elem.get('mimetype', None)
                 display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
@@ -323,9 +323,6 @@ class Registry(object):
                                     attributes["file_ext"] = compressed_extension
                                     if sniff_compressed_types is None:
                                         sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
-                                    if not sniff_compressed_types:
-                                        # Disable sniff on this type unless in validate_mode().
-                                        attributes["sniff_compressed"] = False
 
                                     attributes["uncompressed_datatype_instance"] = datatype_instance
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
@@ -346,7 +343,8 @@ class Registry(object):
                                     self.converters.append(("%s_to_uncompressed.xml" % auto_compressed_type, compressed_extension, extension))
                                     if datatype_class not in compressed_sniffers:
                                         compressed_sniffers[datatype_class] = []
-                                    compressed_sniffers[datatype_class].append(compressed_datatype_instance)
+                                    if sniff_compressed_types:
+                                        compressed_sniffers[datatype_class].append(compressed_datatype_instance)
                                 # Processing the new datatype elem is now complete, so make sure the element defining it is retained by appending
                                 # the new datatype to the in-memory list of datatype elems to enable persistence.
                                 self.datatype_elems.append(elem)
@@ -374,9 +372,12 @@ class Registry(object):
             sniff_order_classes = set(type(_) for _ in self.sniff_order)
             for datatype in self.datatypes_by_extension.values():
                 # Add a datatype only if it is not already in sniff_order, it
-                # has a sniff() method and was not defined with subclass="true"
+                # has a sniff() method and was not defined with subclass="true".
+                # Do not add dynamic compressed types - these were carefully added or not
+                # to the sniff order in the proper position above.
                 if type(datatype) not in sniff_order_classes and \
-                        hasattr(datatype, 'sniff') and not datatype.is_subclass:
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass and \
+                        not hasattr(datatype, "uncompressed_datatype_instance"):
                     self.sniff_order.append(datatype)
 
         append_to_sniff_order()
@@ -515,8 +516,8 @@ class Registry(object):
                                             self.sniff_order.append(aclass)
                                             self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
                                     else:
-                                        if compressed_sniffers and aclass in compressed_sniffers:
-                                            for compressed_sniffer in compressed_sniffers[aclass]:
+                                        if compressed_sniffers and aclass.__class__ in compressed_sniffers:
+                                            for compressed_sniffer in compressed_sniffers[aclass.__class__]:
                                                 self.sniff_order.append(compressed_sniffer)
                                         self.sniff_order.append(aclass)
                                         self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
@@ -968,10 +969,10 @@ class Registry(object):
         return extension
 
 
-def example_datatype_registry_for_sample():
+def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
     sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
-    config = Bunch(sniff_compressed_dynamic_datatypes_default=True)
+    config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
     return datatypes_registry
