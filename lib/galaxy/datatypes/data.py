@@ -690,8 +690,21 @@ class Data(object):
         Check if this datatype is of any of the target_datatypes or is
         a subtype thereof.
         """
-        datatype_classes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
-        return isinstance(self, datatype_classes)
+        self_datatype = self
+
+        target_datatypes = tuple(datatype if isclass(datatype) else datatype.__class__ for datatype in target_datatypes)
+        if hasattr(self, "uncompressed_datatype_class"):
+            # Compare using uncompressed datatype instead of self and filter comparisons
+            # to only uncompressed datatypes corresponding to supplied compressed datatypes.
+            potential_uncompressed_types = []
+            for target_datatype in target_datatypes:
+                if hasattr(target_datatype, "uncompressed_datatype_class") and target_datatype.compressed_format == self.compressed_format:
+                    potential_uncompressed_types.append(target_datatype.uncompressed_datatype_class)
+
+            self_datatype = self.uncompressed_datatype_class
+            target_datatypes = tuple(potential_uncompressed_types)
+
+        return isinstance(self_datatype, target_datatypes)
 
     def merge(split_files, output_file):
         """

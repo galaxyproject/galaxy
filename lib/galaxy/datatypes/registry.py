@@ -326,6 +326,7 @@ class Registry(object):
                                         # Disable sniff on this type unless in validate_mode().
                                         attributes["sniff_compressed"] = False
 
+                                    attributes["uncompressed_datatype_class"] = datatype_class
                                     compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, binary.CompressedArchive, ), attributes)
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
