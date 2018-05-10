@@ -654,7 +654,7 @@ class PageController(BaseUIController, SharableMixin,
                 page_title = escape(page.title)
                 other_email = escape(other.email)
                 trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
-                return trans.response.send_redirect(url_for(controller='page', action='sharing', id=id))
+                return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
