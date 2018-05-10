@@ -1,6 +1,7 @@
 import imp
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
@@ -1411,13 +1412,33 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             user.deleted = True
 
             if gdpr_compliant:
+                # Maybe there is some case in the future where an admin needs
+                # to prove that a user was using a server for some reason (e.g.
+                # a court case.) So we make this painfully hard to recover (and
+                # not immediately reversable) in line with GDPR, but still
+                # leave open the possibility to prove someone was part of the
+                # server just in case. By knowing the exact email + approximate
+                # time of deletion, one could run through hashes for every
+                # second of the surrounding days/weeks.
+                pseudorandom_value = str(int(time.time()))
                 # Replace email + username with a (theoretically) unreversable
                 # hash. If provided with the username we can probably re-hash
                 # to identify if it is needed for some reason.
                 #
                 # Deleting multiple times will re-hash the username/email
-                user.email = new_secure_hash(user.email)
-                user.username = new_secure_hash(user.username)
+                email_hash = new_secure_hash(user.email + pseudorandom_value)
+                uname_hash = new_secure_hash(user.username + pseudorandom_value)
+
+                # We must also redact username
+                for role in user.all_roles():
+                    role.name = role.name.replace(user.email, email_hash) \
+                        .replace(user.username, uname_hash)
+                    role.description = role.description \
+                        .replace(user.email, email_hash) \
+                        .replace(user.username, uname_hash)
+
+                user.email = email_hash
+                user.username = uname_hash
 
             trans.sa_session.add(user)
             trans.sa_session.flush()
