@@ -714,7 +714,7 @@ class JobWrapper(HasResourceParameters):
         self._create_working_directory()
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
-        self.__dataset_path_rewriter = None
+        self._dataset_path_rewriter = None
         self.output_paths = None
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
@@ -733,13 +733,13 @@ class JobWrapper(HasResourceParameters):
 
     @property
     def _job_dataset_path_rewriter(self):
-        if self.__dataset_path_rewriter is None:
+        if self._dataset_path_rewriter is None:
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
             if outputs_to_working_directory:
-                self.__dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory)
+                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory)
             else:
-                self.__dataset_path_rewriter = NullDatasetPathRewriter()
-        return self.__dataset_path_rewriter
+                self._dataset_path_rewriter = NullDatasetPathRewriter()
+        return self._dataset_path_rewriter
 
     @property
     def dataset_path_rewriter(self):
@@ -1884,9 +1884,9 @@ class TaskWrapper(JobWrapper):
 
     @property
     def dataset_path_rewriter(self):
-        if self.__dataset_path_rewriter is None:
-            self.__dataset_path_rewriter = TaskPathRewriter(self.working_directory, self._job_dataset_path_rewriter)
-        return self.__dataset_path_rewriter
+        if self._dataset_path_rewriter is None:
+            self._dataset_path_rewriter = TaskPathRewriter(self.working_directory, self._job_dataset_path_rewriter)
+        return self._dataset_path_rewriter
 
     def can_split(self):
         # Should the job handler split this job up? TaskWrapper should
