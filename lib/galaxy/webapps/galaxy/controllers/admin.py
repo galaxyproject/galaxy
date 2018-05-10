@@ -39,6 +39,7 @@ from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
+gdpr_log = logging.getLogger('GDPR')
 
 
 class UserListGrid(grids.Grid):
@@ -1412,6 +1413,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             user.deleted = True
 
             if gdpr_compliant:
+                gdpr_log.info('delete-user-event: %s' % user_id)
                 # Maybe there is some case in the future where an admin needs
                 # to prove that a user was using a server for some reason (e.g.
                 # a court case.) So we make this painfully hard to recover (and
