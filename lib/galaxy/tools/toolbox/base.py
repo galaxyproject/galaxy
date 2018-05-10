@@ -562,10 +562,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
                 tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
-                    # Only load tools if the repository is not deactivated or uninstalled.
-                    can_load_into_panel_dict = not tool_shed_repository.deleted
-                    repository_id = self.app.security.encode_id(tool_shed_repository.id)
-                    tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
+            #        # Only load tools if the repository is not deactivated or uninstalled.
+            #        can_load_into_panel_dict = not tool_shed_repository.deleted
+            #        repository_id = self.app.security.encode_id(tool_shed_repository.id)
+            #        tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
+                    tool = self.load_tool(concrete_path, guid=guid, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get('hidden', False)):
@@ -595,6 +596,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             log.exception("Error reading tool from path: %s", path)
 
     def get_tool_repository_from_xml_item(self, item, path):
+        from collections import namedtuple
+        ToolShedRepository = namedtuple('ToolShedRepository', ('tool_shed', 'name', 'owner', 'installed_changeset_revision'))
         tool_shed = item.elem.find("tool_shed").text
         repository_name = item.elem.find("repository_name").text
         repository_owner = item.elem.find("repository_owner").text
@@ -603,6 +606,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
             installed_changeset_revision_elem = item.elem.find("changeset_revision")
         installed_changeset_revision = installed_changeset_revision_elem.text
+        repository = ToolShedRepository(tool_shed, repository_name, repository_owner, installed_changeset_revision)
+        return repository
         if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
             try:
                 tool_shed_path, reduced_path = path.split('/repos/', 1)
@@ -626,7 +631,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                                                     installed_changeset_revision=installed_changeset_revision)
         if not repository:
             msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (repository_name, repository_owner)
-            raise Exception(msg)
+            log.warning(msg)
         return repository
 
     def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
