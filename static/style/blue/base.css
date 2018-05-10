@@ -14561,8 +14561,6 @@ pre.peek {
       margin-left: 328px; }
     .multi-panel-history .history-column:last-child {
       margin-right: 0px; }
-    .multi-panel-history .history-column .dropdown-menu {
-      z-index: inherit; }
     .multi-panel-history .history-column .panel-controls {
       width: 100%;
       height: 24px;
