@@ -1173,7 +1173,25 @@ class Tool(Dictifiable):
                 inputs.append(resource_xml)
 
     def populate_tool_shed_info(self):
-        if self.repository_id is not None and self.app.name == 'galaxy':
+        from six.moves.urllib.parse import urljoin
+        from tool_shed.util import common_util
+        def get_sharable_url(app):
+            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, self.tool_shed)
+            if tool_shed_url:
+                # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
+                # the last part of a URL if it does not end with a forward slash.
+                tool_shed_url = '%s/' % tool_shed_url
+                return urljoin(tool_shed_url, 'view/%s/%s' % (self.repository_owner, self.repository_name))
+            return tool_shed_url
+        if self.repository_id is not None and self.app.name == 'galaxy' and not isinstance(self.repository_id, str):
+            self.tool_shed = self.repository_id.tool_shed
+            self.repository_name = self.repository_id.name
+            self.repository_owner = self.repository_id.owner
+            self.changeset_revision = self.repository_id.changeset_revision
+            self.installed_changeset_revision = self.repository_id.installed_changeset_revision
+            self.repository_id = None
+            self.sharable_url = get_sharable_url(self.app)
+        elif self.repository_id is not None and self.app.name == 'galaxy':
             repository_id = self.app.security.decode_id(self.repository_id)
             if hasattr(self.app, 'tool_shed_repository_cache'):
                 tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(repository_id=repository_id)

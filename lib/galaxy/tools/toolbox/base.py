@@ -566,7 +566,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             #        can_load_into_panel_dict = not tool_shed_repository.deleted
             #        repository_id = self.app.security.encode_id(tool_shed_repository.id)
             #        tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
-                    tool = self.load_tool(concrete_path, guid=guid, use_cached=False)
+                    tool = self.load_tool(concrete_path, guid=guid, repository_id=tool_shed_repository, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get('hidden', False)):
@@ -597,16 +597,17 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def get_tool_repository_from_xml_item(self, item, path):
         from collections import namedtuple
-        ToolShedRepository = namedtuple('ToolShedRepository', ('tool_shed', 'name', 'owner', 'installed_changeset_revision'))
+        ToolShedRepository = namedtuple('ToolShedRepository', ('tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision'))
         tool_shed = item.elem.find("tool_shed").text
         repository_name = item.elem.find("repository_name").text
         repository_owner = item.elem.find("repository_owner").text
         installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
+        changeset_revision = item.attributes['file'].split('/')[-3]    # FIXME: ugh
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
             installed_changeset_revision_elem = item.elem.find("changeset_revision")
         installed_changeset_revision = installed_changeset_revision_elem.text
-        repository = ToolShedRepository(tool_shed, repository_name, repository_owner, installed_changeset_revision)
+        repository = ToolShedRepository(tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision)
         return repository
         if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
             try:
