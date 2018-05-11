@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.10.dev0
+18.5.10 (2018-05-10)
 ---------------------
 
 * Docker logging API fix for Planemo.
