@@ -251,7 +251,7 @@ class InteractiveEnvironmentRequest(object):
 
     def volume(self, host_path, container_path, **kwds):
         if self.attr.container_interface is None:
-            return DockerVolume(host_path, container_path, **kwds)
+            return DockerVolume(container_path, host_path, **kwds)
         else:
             return self.attr.container_interface.volume_class(
                 container_path,
