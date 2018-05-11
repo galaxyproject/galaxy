@@ -142,7 +142,7 @@ class Registry(object):
                 sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
                 if sniff_compressed_types is None:
                     sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
-                    # Make sure this is set in the elems we write out so the config option is passed ot the upload
+                    # Make sure this is set in the elems we write out so the config option is passed to the upload
                     # tool which does not have a config object.
                     elem.set("sniff_compressed_types", str(sniff_compressed_types))
                 mimetype = elem.get('mimetype', None)
@@ -513,11 +513,7 @@ class Registry(object):
                                                 del self.sniff_order[conflict_loc]
                                                 self.log.debug("Removed conflicting sniffer for datatype '%s'" % dtype)
                                             break
-                                    if conflict:
-                                        if override:
-                                            self.sniff_order.append(aclass)
-                                            self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
-                                    else:
+                                    if not conflict or override:
                                         if compressed_sniffers and aclass.__class__ in compressed_sniffers:
                                             for compressed_sniffer in compressed_sniffers[aclass.__class__]:
                                                 self.sniff_order.append(compressed_sniffer)
