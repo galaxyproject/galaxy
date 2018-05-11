@@ -2,6 +2,7 @@ import logging
 import os
 import string
 import time
+from collections import namedtuple
 from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
@@ -34,6 +35,12 @@ from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
 
 log = logging.getLogger(__name__)
+
+# A fake ToolShedRepository constructed from a shed tool conf
+ToolConfRepository = namedtuple(
+    'ToolConfRepository',
+    ('tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'repo_path')
+)
 
 
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
@@ -94,7 +101,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         interacting with the rest of the Galaxy app or message queues, etc....
         """
 
-    def create_tool(self, config_file, repository_id=None, guid=None, **kwds):
+    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
 
     def _init_tools_from_configs(self, config_filenames):
@@ -560,13 +567,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path, concrete_path)
                 if tool_shed_repository:
-            #        # Only load tools if the repository is not deactivated or uninstalled.
-            #        can_load_into_panel_dict = not tool_shed_repository.deleted
-            #        repository_id = self.app.security.encode_id(tool_shed_repository.id)
-            #        tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
-                    tool = self.load_tool(concrete_path, guid=guid, repository_id=tool_shed_repository, use_cached=False)
+                    if hasattr(tool_shed_repository, 'deleted'):
+                        # The shed tool is in the install database
+                        # Only load tools if the repository is not deactivated or uninstalled.
+                        can_load_into_panel_dict = not tool_shed_repository.deleted
+                    tool = self.load_tool(concrete_path, guid=guid, tool_shed_repository=tool_shed_repository, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(concrete_path, use_cached=False)
             if string_as_bool(item.get('hidden', False)):
@@ -595,20 +602,15 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
-    def get_tool_repository_from_xml_item(self, item, path):
-        from collections import namedtuple
-        ToolShedRepository = namedtuple('ToolShedRepository', ('tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision'))
+    def get_tool_repository_from_xml_item(self, item, path, concrete_path):
         tool_shed = item.elem.find("tool_shed").text
         repository_name = item.elem.find("repository_name").text
         repository_owner = item.elem.find("repository_owner").text
         installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
-        changeset_revision = item.attributes['file'].split('/')[-3]    # FIXME: ugh
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
             installed_changeset_revision_elem = item.elem.find("changeset_revision")
         installed_changeset_revision = installed_changeset_revision_elem.text
-        repository = ToolShedRepository(tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision)
-        return repository
         if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
             try:
                 tool_shed_path, reduced_path = path.split('/repos/', 1)
@@ -631,8 +633,23 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                                                     owner=repository_owner,
                                                     installed_changeset_revision=installed_changeset_revision)
         if not repository:
-            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found in database" % (repository_name, repository_owner)
-            log.warning(msg)
+            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
+                  "in database. Tool will be loaded without install database."
+            log.warning(msg, repository_name, repository_owner)
+            pre = '{shed}/repos/{owner}/{name}/'.format(
+                shed=tool_shed,
+                owner=repository_owner,
+                name=repository_name
+            )
+            try:
+                changeset_revision, name2 = path[path.index(pre) + len(pre):].split('/')[0:1]
+            except ValueError as exc:
+                raise Exception("Cannont determine changeset revision from path '%s': %s" % (path, exc))
+            pre = '/'.join([pre, changeset_revision, name2])
+            repo_path = concrete_path[concrete_path.index(pre) + len(pre):]
+            repository = ToolConfRepository(
+                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision, repo_path
+            )
         return repository
 
     def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
@@ -750,7 +767,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if (tool_loaded or force_watch) and self._tool_watcher:
             self._tool_watcher.watch_directory(directory, quick_load)
 
-    def load_tool(self, config_file, guid=None, repository_id=None, use_cached=False, **kwds):
+    def load_tool(self, config_file, guid=None, tool_shed_repository=None, use_cached=False, **kwds):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tool = None
@@ -758,7 +775,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             tool = self.load_tool_from_cache(config_file)
         if not tool or guid and guid != tool.guid:
             try:
-                tool = self.create_tool(config_file=config_file, repository_id=repository_id, guid=guid, **kwds)
+                tool = self.create_tool(config_file=config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds)
             except Exception:
                 # If the tool is broken but still exists we can load it from the cache
                 tool = self.load_tool_from_cache(config_file, recover_tool=True)

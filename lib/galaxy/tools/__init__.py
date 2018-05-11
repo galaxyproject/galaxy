@@ -390,13 +390,14 @@ class Tool(Dictifiable):
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
+    def __init__(self, config_file, tool_source, app, guid=None, tool_shed_repository=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname(config_file)
         self.app = app
-        self.repository_id = repository_id
+        self.repository_id = None
+        self._tool_shed_repository = tool_shed_repository
         self._allow_code_files = allow_code_files
         # setup initial attribute values
         self.inputs = odict()
@@ -422,6 +423,7 @@ class Tool(Dictifiable):
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
         # Attributes of tools installed from Galaxy tool sheds.
+        self.repository_path = None
         self.tool_shed = None
         self.repository_name = None
         self.repository_owner = None
@@ -521,7 +523,7 @@ class Tool(Dictifiable):
         preserve_python_environment = config.preserve_python_environment
         if preserve_python_environment == "always":
             return True
-        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
             return True
         else:
             unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
@@ -1173,35 +1175,24 @@ class Tool(Dictifiable):
                 inputs.append(resource_xml)
 
     def populate_tool_shed_info(self):
-        from six.moves.urllib.parse import urljoin
-        from tool_shed.util import common_util
-        def get_sharable_url(app):
-            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, self.tool_shed)
-            if tool_shed_url:
-                # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
-                # the last part of a URL if it does not end with a forward slash.
-                tool_shed_url = '%s/' % tool_shed_url
-                return urljoin(tool_shed_url, 'view/%s/%s' % (self.repository_owner, self.repository_name))
-            return tool_shed_url
-        if self.repository_id is not None and self.app.name == 'galaxy' and not isinstance(self.repository_id, str):
-            self.tool_shed = self.repository_id.tool_shed
-            self.repository_name = self.repository_id.name
-            self.repository_owner = self.repository_id.owner
-            self.changeset_revision = self.repository_id.changeset_revision
-            self.installed_changeset_revision = self.repository_id.installed_changeset_revision
-            self.repository_id = None
-            self.sharable_url = get_sharable_url(self.app)
-        elif self.repository_id is not None and self.app.name == 'galaxy':
-            repository_id = self.app.security.decode_id(self.repository_id)
-            if hasattr(self.app, 'tool_shed_repository_cache'):
-                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(repository_id=repository_id)
-                if tool_shed_repository:
-                    self.tool_shed = tool_shed_repository.tool_shed
-                    self.repository_name = tool_shed_repository.name
-                    self.repository_owner = tool_shed_repository.owner
-                    self.changeset_revision = tool_shed_repository.changeset_revision
-                    self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-                    self.sharable_url = tool_shed_repository.get_sharable_url(self.app)
+        if self._tool_shed_repository is not None and self.app.name == 'galaxy':
+            if hasattr(self._tool_shed_repository, 'id') and hasattr(self.app, 'tool_shed_repository_cache'):
+                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(
+                    repository_id=self._tool_shed_repository.id
+                )
+                self.repository_id = tool_shed_repository.id
+                self.repository_path = tool_shed_repository.repo_path(self.app)
+            else:
+                tool_shed_repository = self._tool_shed_repository
+                self.repository_path = tool_shed_repository.repo_path
+            self.tool_shed = tool_shed_repository.tool_shed
+            self.repository_name = tool_shed_repository.name
+            self.repository_owner = tool_shed_repository.owner
+            self.changeset_revision = tool_shed_repository.changeset_revision
+            self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            self.sharable_url = common_util.get_tool_shed_repository_url(
+                self.app, self.tool_shed, self.repository_owner, self.repository_name
+            )
 
     @property
     def help(self):
@@ -1228,12 +1219,16 @@ class Tool(Dictifiable):
         help_footer = ""
         help_text = tool_source.parse_help()
         if help_text is not None:
-            if self.repository_id and help_text.find('.. image:: ') >= 0:
+            try:
+                if self.repository_id and help_text.find('.. image:: ') >= 0:
                 # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
-                try:
-                    help_text = tool_shed.util.shed_util_common.set_image_paths(self.app, self.repository_id, help_text)
-                except Exception:
-                    log.exception("Exception in parse_help, so images may not be properly displayed")
+                    help_text = tool_shed.util.shed_util_common.set_image_paths(self.app, help_text, repository_id=self.repository_id)
+                elif self._tool_shed_repository and help_text.find('.. image:: ') >= 0:
+                    help_text = tool_shed.util.shed_util_common.set_image_paths(
+                        self.app, help_text, tool_shed_repository=self._tool_shed_repository, version=self.version
+                    )
+            except Exception:
+                log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        default_filters=['decode.utf8'],

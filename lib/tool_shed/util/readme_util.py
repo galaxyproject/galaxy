@@ -54,8 +54,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                             lock.acquire(True)
                             try:
                                 text_of_reasonable_length = suc.set_image_paths(app,
-                                                                                app.security.encode_id(repository.id),
-                                                                                text_of_reasonable_length)
+                                                                                text_of_reasonable_length,
+                                                                                repository_id=app.security.encode_id(repository.id))
                             except Exception:
                                 log.exception("Exception in build_readme_files_dict, so images may not be properly displayed")
                             finally:
