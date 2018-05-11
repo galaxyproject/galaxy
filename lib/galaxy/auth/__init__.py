@@ -119,7 +119,7 @@ class AuthManager(object):
                     if not passed_filter:
                         continue  # skip to next
                 options = authenticator.options
-                options['gdpr_compliant'] = self.gdpr_compliant
+                options['redact_username_in_logs'] = self.redact_username_in_logs
                 yield authenticator.plugin, options
         except Exception:
             log.exception("Active Authenticators Failure")
