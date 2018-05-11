@@ -20,7 +20,7 @@ class JsonPlugin(ErrorPlugin):
     def __init__(self, **kwargs):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', False))
-        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
+        self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         self.report_directory = kwargs.get("directory", tempfile.gettempdir())
         if not os.path.exists(self.report_directory):
@@ -44,7 +44,7 @@ class JsonPlugin(ErrorPlugin):
                 'tool_version': job.tool_version,
                 'tool_xml': str(tool.config_file) if tool else None
             }
-            if self.gdpr_compliant:
+            if self.redact_user_details_in_bugreport:
                 data['user'] = {
                     'id': job.get_user().id
                 }

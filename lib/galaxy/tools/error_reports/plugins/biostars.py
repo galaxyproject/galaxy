@@ -18,14 +18,13 @@ class BiostarsPlugin(ErrorPlugin):
 
     def __init__(self, **kwargs):
         self.app = kwargs['app']
-        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
         self.verbose = string_as_bool(kwargs.get('verbose', True))
         self.user_submission = string_as_bool(kwargs.get('user_submission', True))
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Doesn't do anything, just shows a link to submit on biostars.
         """
-        # This class specifically does nothing special for GDPR compliance
+        # This class specifically does nothing special for compliance purposes
         # because the user is willingly posting their data on a public
         # first/third-party site. Maybe should do something about the dialog
         # linking to the biostars privacy policy during the "submit to

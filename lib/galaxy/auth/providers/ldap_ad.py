@@ -189,7 +189,7 @@ class LDAP(AuthProvider):
         """
         See abstract method documentation.
         """
-        if not options['gdpr_compliant']:
+        if not options['redact_username_in_logs']:
             log.debug("LDAP authenticate: email is %s" % email)
             log.debug("LDAP authenticate: username is %s" % username)
 
@@ -230,7 +230,7 @@ class LDAP(AuthProvider):
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
-                if not options['gdpr_compliant']:
+                if not options['redact_username_in_logs']:
                     log.debug("LDAP authenticate: whoami is %s", whoami)
 
                 if whoami is None:

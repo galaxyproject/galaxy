@@ -47,7 +47,7 @@ class InteractiveEnvironmentRequest(object):
         self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
-        self.attr.gdpr_compliant = trans.app.config.gdpr_compliance_mode
+        self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
@@ -401,7 +401,7 @@ class InteractiveEnvironmentRequest(object):
         """
         raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
         redacted_command = raw_cmd
-        if self.attr.gdpr_compliant:
+        if self.attr.redact_username_in_logs:
             def make_safe(param):
                 if 'USER_EMAIL' in param:
                     return re.sub('USER_EMAIL=[^ ]*', 'USER_EMAIL=*********', param)

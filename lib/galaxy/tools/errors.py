@@ -154,7 +154,7 @@ class ErrorReporter(object):
             roles = []
         return self.app.security_agent.can_access_dataset(roles, self.hda.dataset)
 
-    def create_report(self, user, email='', message='', gdpr_compliant=False, **kwd):
+    def create_report(self, user, email='', message='', redact_user_details_in_bugreport=False, **kwd):
         hda = self.hda
         job = self.job
         host = web.url_for('/', qualified=True)
@@ -163,7 +163,7 @@ class ErrorReporter(object):
         hda_id_encoded = self.app.security.encode_id(hda.id)
         hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
-        if self.gdpr_compliant:
+        if self.redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
             # the github posting method more than the traditional email plugin.
             # There is no way around CCing the person with the traditional
@@ -172,13 +172,13 @@ class ErrorReporter(object):
             #
             # A secondary system with access to the github issue and access to
             # the galaxy database can shuttle email back and forth between
-            # github comments and user-emails. Something like
-            # https://github.com/erasche/github-issue-to-mailgun-gateway
+            # github comments and user-emails.
+            #
             # Thus preventing issue helpers from every knowing the identity of
             # the bug reporter (and preventing information about the bug
             # reporter from leaving the EU until it hits email directly to the
             # user.)
-            email_str = 'gdpr-redacted'
+            email_str = 'redacted'
             if user:
                 email_str += ' (user: %s)' % user.id
         else:

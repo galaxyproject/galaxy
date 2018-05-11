@@ -229,13 +229,9 @@ class Configuration(object):
         self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
         self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
-        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", "False"))
-        if self.gdpr_compliance_mode:
-            self.expose_user_name = False
-            self.expose_user_email = False
-        else:
-            self.expose_user_name = kwargs.get("expose_user_name", False)
-            self.expose_user_email = kwargs.get("expose_user_email", False)
+        self.expose_user_name = kwargs.get("expose_user_name", False)
+        self.expose_user_email = kwargs.get("expose_user_email", False)
+
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
@@ -684,6 +680,27 @@ class Configuration(object):
         self.citation_cache_lock_dir = self.resolve_path(kwargs.get("citation_cache_lock_dir", "database/citations/locks"))
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
+
+        # Compliance/Policy variables
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_ip_address = False
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.redact_user_details_in_bugreport = False
+        # GDPR compliance mode changes values on a number of variables. Other
+        # policies could change (non)overlapping subsets of these variables.
+        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", False))
+        if self.gdpr_compliance_mode:
+            self.expose_user_name = False
+            self.expose_user_email = False
+
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_ip_address = True
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+            self.redact_user_details_in_bugreport = True
 
     @property
     def sentry_dsn_public(self):

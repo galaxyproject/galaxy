@@ -15,7 +15,7 @@ class AuthManager(object):
 
     def __init__(self, app):
         self.__app = app
-        self.gdpr_compliant = app.config.gdpr_compliance_mode
+        self.redact_username_in_logs = app.config.redact_username_in_logs
         self.authenticators = get_authenticators(app.config.auth_config_file)
 
     def check_registration_allowed(self, email, username, password):

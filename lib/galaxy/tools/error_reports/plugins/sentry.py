@@ -29,7 +29,7 @@ class SentryPlugin(ErrorPlugin):
 
     def __init__(self, **kwargs):
         self.app = kwargs['app']
-        self.gdpr_compliant = self.app.config.gdpr_compliance_mode
+        self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         self.custom_dsn = kwargs.get('custom_dsn', None)
@@ -62,8 +62,8 @@ class SentryPlugin(ErrorPlugin):
                 'tool_version': unicodify(job.tool_version),
                 'tool_xml': unicodify(tool.config_file) if tool else None
             }
-            if self.gdpr_compliant:
-                extra['email'] = 'gdpr-redacted'
+            if self.redact_user_details_in_bugreport:
+                extra['email'] = 'redacted'
             else:
                 if 'email' in kwargs:
                     extra['email'] = unicodify(kwargs['email'])
@@ -90,7 +90,7 @@ class SentryPlugin(ErrorPlugin):
                 # The above does not work when handlers are separate from the web handlers
                 url = None
 
-            if self.gdpr_compliant:
+            if self.redact_user_details_in_bugreport:
                 if user:
                     # Opauqe identifier
                     context['user'] = {

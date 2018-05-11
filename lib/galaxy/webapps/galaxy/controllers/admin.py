@@ -39,7 +39,7 @@ from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
-gdpr_log = logging.getLogger('GDPR')
+compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class UserListGrid(grids.Grid):
@@ -1405,41 +1405,45 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             return self.message_exception(trans, 'Please specify user ids.')
 
     def _delete_user(self, trans, ids):
-        gdpr_compliant = self.app.config.gdpr_compliance_mode
-
         message = 'Deleted %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
 
-            if gdpr_compliant:
-                gdpr_log.info('delete-user-event: %s' % user_id)
-                # Maybe there is some case in the future where an admin needs
-                # to prove that a user was using a server for some reason (e.g.
-                # a court case.) So we make this painfully hard to recover (and
-                # not immediately reversable) in line with GDPR, but still
-                # leave open the possibility to prove someone was part of the
-                # server just in case. By knowing the exact email + approximate
-                # time of deletion, one could run through hashes for every
-                # second of the surrounding days/weeks.
-                pseudorandom_value = str(int(time.time()))
-                # Replace email + username with a (theoretically) unreversable
-                # hash. If provided with the username we can probably re-hash
-                # to identify if it is needed for some reason.
-                #
-                # Deleting multiple times will re-hash the username/email
-                email_hash = new_secure_hash(user.email + pseudorandom_value)
-                uname_hash = new_secure_hash(user.username + pseudorandom_value)
+            compliance_log.info('delete-user-event: %s' % user_id)
 
-                # We must also redact username
-                for role in user.all_roles():
-                    role.name = role.name.replace(user.email, email_hash) \
-                        .replace(user.username, uname_hash)
-                    role.description = role.description \
-                        .replace(user.email, email_hash) \
-                        .replace(user.username, uname_hash)
 
+            # Maybe there is some case in the future where an admin needs
+            # to prove that a user was using a server for some reason (e.g.
+            # a court case.) So we make this painfully hard to recover (and
+            # not immediately reversable) in line with GDPR, but still
+            # leave open the possibility to prove someone was part of the
+            # server just in case. By knowing the exact email + approximate
+            # time of deletion, one could run through hashes for every
+            # second of the surrounding days/weeks.
+            pseudorandom_value = str(int(time.time()))
+            # Replace email + username with a (theoretically) unreversable
+            # hash. If provided with the username we can probably re-hash
+            # to identify if it is needed for some reason.
+            #
+            # Deleting multiple times will re-hash the username/email
+            email_hash = new_secure_hash(user.email + pseudorandom_value)
+            uname_hash = new_secure_hash(user.username + pseudorandom_value)
+
+            # We must also redact username
+            for role in user.all_roles():
+                if self.app.config.redact_username_during_deletion:
+                    role.name = role.name.replace(user.username, uname_hash)
+                    role.description = role.description.replace(user.username, uname_hash)
+
+                if self.app.config.redact_email_during_deletion:
+                    role.name = role.name.replace(user.email, email_hash)
+                    role.description = role.description.replace(user.email, email_hash)
+
+
+            if self.app.config.redact_email_during_deletion:
                 user.email = email_hash
+            if self.app.config.redact_username_during_deletion:
                 user.username = uname_hash
 
             trans.sa_session.add(user)
