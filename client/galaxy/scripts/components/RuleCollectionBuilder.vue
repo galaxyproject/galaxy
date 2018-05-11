@@ -1328,6 +1328,7 @@ export default {
                     this.state = "error";
                     this.errorMessage =
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
+                    this.doFullJobCheck(jobId);
                 } else {
                     const history =
                         parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
@@ -1342,6 +1343,24 @@ export default {
                     .catch(this.renderFetchError);
             };
             setTimeout(doJobCheck, 1000);
+        },
+        doFullJobCheck(jobId) {
+            const handleJobShow = jobResponse => {
+                const stderr = jobResponse.data.stderr;
+                if (stderr) {
+                    let errorMessage = "An error was encountered while running your upload job. ";
+                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
+                        errorMessage +=
+                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
+                    }
+                    errorMessage += "Upload job completed with standard error: " + stderr;
+                    this.errorMessage = errorMessage;
+                }
+            };
+            axios
+                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .then(handleJobShow)
+                .catch(this.renderFetchError);
         },
         renderFetchError(error) {
             this.state = "error";
