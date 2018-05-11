@@ -15,6 +15,7 @@ var View = Backbone.View.extend({
         value: null,
         multiple: false,
         minimumInputLength: 0,
+        maximumTextLength: 100,
         // example format of initial data: "id:name,55:anotherrole@role.com,27:role@role.com"
         initialData: ""
     },
@@ -148,6 +149,16 @@ var View = Backbone.View.extend({
     _refresh: function() {
         // add select2 data based on type of input
         if (!this.options.multiple) {
+            if (this.select_data) {
+                this.select_data.map(value => {
+                    let mx = this.options.maximumTextLength + 3;
+                    if (value.text && value.text.length > mx) {
+                        let pos = value.text.indexOf(`(${value.id})`);
+                        pos = pos != -1 && pos < mx ? pos : mx;
+                        value.text = `${value.text.substring(0, pos)}...(${value.id})`;
+                    }
+                });
+            }
             var selected = this._getValue();
             var select_opt = {
                 data: this.select_data,
