@@ -249,9 +249,9 @@ class InteractiveEnvironmentRequest(object):
             .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
-    def volume(self, host_path, container_path, **kwds):
+    def volume(self, container_path, host_path, **kwds):
         if self.attr.container_interface is None:
-            return DockerVolume(host_path, container_path, **kwds)
+            return DockerVolume(container_path, host_path, **kwds)
         else:
             return self.attr.container_interface.volume_class(
                 container_path,
@@ -374,7 +374,7 @@ class InteractiveEnvironmentRequest(object):
             decoded_id = self.trans.security.decode_id(id)
             dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            volumes.append(self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext)))
+            volumes.append(self.volume('/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
         return volumes
 
     def _find_port_mapping(self, port_mappings):
