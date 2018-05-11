@@ -124,7 +124,7 @@ def add_file(dataset, registry, output_path):
     # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
     # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
     if not link_data_only:
-        if is_zip(dataset.path) and not is_single_file_zip(dataset.path):
+        if auto_decompress and is_zip(dataset.path) and not is_single_file_zip(dataset.path):
             stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
         try:
             ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file(
@@ -155,7 +155,7 @@ def add_file(dataset, registry, output_path):
     if dataset.file_type != 'auto':
         datatype = registry.get_datatype_by_extension(dataset.file_type)
         # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
-        if hasattr(datatype, 'sniff') and not datatype.sniff(dataset.path):
+        if check_content and hasattr(datatype, 'sniff') and not datatype.sniff(dataset.path):
             stdout = ("Warning: The file 'Type' was set to '{ext}' but the file does not appear to be of that"
                       " type".format(ext=dataset.file_type))
 
