@@ -223,18 +223,18 @@ export default Backbone.View.extend({
         this.$status.removeClass().addClass(this.status_classes[status]);
         this.model.set("enabled", status != "running");
         this.$text_content.attr("disabled", !this.model.get("enabled"));
-        this.$el.removeClass("success danger warning");
+        this.$el.removeClass("table-success table-danger table-warning");
         if (status == "running" || status == "ready") {
             this.model.set("percentage", 0);
         }
         this.$source.find(".button")[status == "running" ? "addClass" : "removeClass"]("disabled");
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.model.set("percentage", 100);
             this.$percentage.html("100%");
         }
         if (status == "error") {
-            this.$el.addClass("danger");
+            this.$el.addClass("table-danger");
             this.model.set("percentage", 0);
             this.$info_progress.hide();
             this.$info_text.show();
