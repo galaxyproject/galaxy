@@ -144,11 +144,7 @@ def add_file(dataset, registry, output_path):
         except sniff.InappropriateDatasetContentError as exc:
             raise UploadProblemException(str(exc))
     elif dataset.file_type == 'auto':
-        # Link mode can't decompress anyway, so enable sniffing for keep-compressed datatypes even when auto_decompress
-        # is enabled
-        os.environ['GALAXY_SNIFFER_VALIDATE_MODE'] = '1'
         ext = sniff.guess_ext(dataset.path, registry.sniff_order, is_binary=is_binary)
-        os.environ.pop('GALAXY_SNIFFER_VALIDATE_MODE')
     else:
         ext = dataset.file_type
 
@@ -159,11 +155,9 @@ def add_file(dataset, registry, output_path):
     if dataset.file_type != 'auto':
         datatype = registry.get_datatype_by_extension(dataset.file_type)
         # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
-        os.environ['GALAXY_SNIFFER_VALIDATE_MODE'] = '1'
         if hasattr(datatype, 'sniff') and not datatype.sniff(dataset.path):
             stdout = ("Warning: The file 'Type' was set to '{ext}' but the file does not appear to be of that"
                       " type".format(ext=dataset.file_type))
-        os.environ.pop('GALAXY_SNIFFER_VALIDATE_MODE')
 
     # Handle unsniffable binaries
     if is_binary and ext == 'binary':

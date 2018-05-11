@@ -1,3 +1,4 @@
+from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 
 
@@ -80,3 +81,36 @@ def test_matches_any():
     # Test mismatches in multiple args.
     assert not fasta_datatype.matches_any([fastq_datatype, h5_datatype])
     assert not fasta_datatype.matches_any([fastq_datatype.__class__, h5_datatype.__class__])
+
+
+def test_sniff_compressed_dynamic_datatypes_default_on():
+    # With auto sniffing on, verify the sniffers work and the files match what is expected
+    # when coming from guess_ext.
+    datatypes_registry = example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True)
+
+    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.gz')
+    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    assert fastqsangergz_datatype.sniff(fname)
+
+    sniff_order = datatypes_registry.sniff_order
+    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    assert sniff.guess_ext(fname, sniff_order) == 'fastqsanger.gz'
+    fname = sniff.get_test_fname('1.fastqsanger.bz2')
+    assert sniff.guess_ext(fname, sniff_order) == 'fastqsanger.bz2'
+
+
+def test_sniff_compressed_dynamic_datatypes_default_off():
+    # Redo last tests with auto compressed sniffing disabled and they should not longer result from guess_ext.
+    datatypes_registry = example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=False)
+
+    # sniffer still returns True for these files...
+    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.gz')
+    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    assert fastqsangergz_datatype.sniff(fname)
+
+    # but they don't report as matching the specified sniff_order.
+    sniff_order = datatypes_registry.sniff_order
+    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    assert 'fastq' not in sniff.guess_ext(fname, sniff_order)
+    fname = sniff.get_test_fname('1.fastqsanger.bz2')
+    assert 'fastq' not in sniff.guess_ext(fname, sniff_order)
