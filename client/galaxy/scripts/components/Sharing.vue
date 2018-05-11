@@ -1,9 +1,9 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{model_class}} `{{item.title}}`</h2>
-        <div v-if="err_msg" class="ui-message ui-show alert alert-danger">
+        <b-alert variant="danger" :show="err_msg">
             {{ err_msg }}
-        </div>
+        </b-alert>
         </br>
         <div v-if="!has_username">
             <div>To make a {{model_class_lc}} accessible via link or publish it, you must create a public username:</div>
@@ -91,6 +91,11 @@
 <script>
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: {
         id: {
@@ -235,9 +240,3 @@ export default {
     }
 };
 </script>
-
-<style>
-.ui-show {
-    display: block;
-}
-</style>
