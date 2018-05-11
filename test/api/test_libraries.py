@@ -34,7 +34,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_has_keys(library, "deleted")
         assert library["deleted"] is True
         # Test undeleting
-        data = dict(undelete='true')
+        data = dict(undelete=True)
         create_response = self._delete("libraries/%s" % library["id"], data=data, admin=True)
         library = create_response.json()
         self._assert_status_code_is(create_response, 200)

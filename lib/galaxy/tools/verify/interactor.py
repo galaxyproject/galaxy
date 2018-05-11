@@ -525,54 +525,44 @@ class GalaxyInteractorApi(object):
 
         return fetcher
 
-    def _post(self, path, data={}, files=None, key=None, admin=False, anon=False):
+    def __inject_api_key(self, data, key, admin, anon):
+        if data is None:
+            data = {}
+        params = {}
         if not anon:
             if not key:
                 key = self.api_key if not admin else self.master_api_key
-            data = data.copy()
-            data['key'] = key
+            params['key'] = key
+        return params, data
+
+    def _post(self, path, data=None, files=None, key=None, admin=False, anon=False):
+        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        # no params for POST
+        data.update(params)
         return requests.post("%s/%s" % (self.api_url, path), data=data, files=files)
 
-    def _delete(self, path, data={}, key=None, admin=False, anon=False):
-        if not anon:
-            if not key:
-                key = self.api_key if not admin else self.master_api_key
-            data = data.copy()
-            data['key'] = key
-        return requests.delete("%s/%s" % (self.api_url, path), params=data)
+    def _delete(self, path, data=None, key=None, admin=False, anon=False):
+        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        # no data for DELETE
+        params.update(data)
+        return requests.delete("%s/%s" % (self.api_url, path), params=params)
 
-    def _patch(self, path, data={}, key=None, admin=False, anon=False):
-        if not anon:
-            if not key:
-                key = self.api_key if not admin else self.master_api_key
-            params = dict(key=key)
-            data = data.copy()
-            data['key'] = key
-        else:
-            params = {}
+    def _patch(self, path, data=None, key=None, admin=False, anon=False):
+        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         return requests.patch("%s/%s" % (self.api_url, path), params=params, data=data)
 
-    def _put(self, path, data={}, key=None, admin=False, anon=False):
-        if not anon:
-            if not key:
-                key = self.api_key if not admin else self.master_api_key
-            params = dict(key=key)
-            data = data.copy()
-            data['key'] = key
-        else:
-            params = {}
+    def _put(self, path, data=None, key=None, admin=False, anon=False):
+        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
         return requests.put("%s/%s" % (self.api_url, path), params=params, data=data)
 
-    def _get(self, path, data={}, key=None, admin=False, anon=False):
-        if not anon:
-            if not key:
-                key = self.api_key if not admin else self.master_api_key
-            data = data.copy()
-            data['key'] = key
+    def _get(self, path, data=None, key=None, admin=False, anon=False):
+        params, data = self.__inject_api_key(data=data, key=key, admin=admin, anon=anon)
+        # no data for GET
+        params.update(data)
         if path.startswith("/api"):
             path = path[len("/api"):]
         url = "%s/%s" % (self.api_url, path)
-        return requests.get(url, params=data)
+        return requests.get(url, params=params)
 
 
 class RunToolException(Exception):
