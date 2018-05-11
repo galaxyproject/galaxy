@@ -953,17 +953,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             def pack_track(track_dict):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
-                if hda_ldda == 'ldda':
-                    # HACK: need to encode library dataset ID because get_hda_or_ldda
-                    # only works for encoded datasets.
-                    dataset_id = trans.security.encode_id(dataset_id)
+                dataset_id = trans.security.encode_id(dataset_id)
                 dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-
                 try:
                     prefs = track_dict['prefs']
                 except KeyError:
                     prefs = {}
-
                 track_data_provider = trans.app.data_provider_registry.get_data_provider(trans,
                                                                                          original_dataset=dataset,
                                                                                          source='data')
