@@ -40,6 +40,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     """
     Interface/service object for serializing pages into dictionaries.
     """
+    model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
     def __init__(self, app):
