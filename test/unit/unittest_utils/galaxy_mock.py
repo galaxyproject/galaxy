@@ -123,6 +123,9 @@ class MockAppConfig(Bunch):
 
         self.umask = 0o77
 
+        # Compliance related config
+        self.redact_email_in_job_name = False
+
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')

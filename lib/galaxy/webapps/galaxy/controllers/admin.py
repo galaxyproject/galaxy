@@ -1412,7 +1412,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
             compliance_log.info('delete-user-event: %s' % user_id)
 
-
             # Maybe there is some case in the future where an admin needs
             # to prove that a user was using a server for some reason (e.g.
             # a court case.) So we make this painfully hard to recover (and
@@ -1439,7 +1438,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 if self.app.config.redact_email_during_deletion:
                     role.name = role.name.replace(user.email, email_hash)
                     role.description = role.description.replace(user.email, email_hash)
-
 
             if self.app.config.redact_email_during_deletion:
                 user.email = email_hash
