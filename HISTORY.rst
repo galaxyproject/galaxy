@@ -9,7 +9,7 @@ History
 18.5.10.dev0
 ---------------------
 
-    
+* Docker logging API fix for Planemo.
 
 ---------------------
 18.5.9 (2018-05-07)
