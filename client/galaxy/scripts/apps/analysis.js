@@ -134,11 +134,13 @@ window.app = function app(options, bootstrapped) {
             var sharingInstance = Vue.extend(Sharing);
             var vm = document.createElement("div");
             this.page.display(vm);
-            new sharingInstance({ propsData: {
-                id: QueryStringParsing.get("id"),
-                plural_name: "Visualizations",
-                model_class: "Visualization",
-            } }).$mount(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Visualizations",
+                    model_class: "Visualization"
+                }
+            }).$mount(vm);
         },
 
         show_workflows_published: function() {
@@ -188,11 +190,13 @@ window.app = function app(options, bootstrapped) {
             var sharingInstance = Vue.extend(Sharing);
             var vm = document.createElement("div");
             this.page.display(vm);
-            new sharingInstance({ propsData: {
-                id: QueryStringParsing.get("id"),
-                plural_name: "Histories",
-                model_class: "History",
-            } }).$mount(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Histories",
+                    model_class: "History"
+                }
+            }).$mount(vm);
         },
 
         show_histories_import: function() {
@@ -265,11 +269,13 @@ window.app = function app(options, bootstrapped) {
             var sharingInstance = Vue.extend(Sharing);
             var vm = document.createElement("div");
             this.page.display(vm);
-            new sharingInstance({ propsData: {
-                id: QueryStringParsing.get("id"),
-                plural_name: "Pages",
-                model_class: "Page",
-            } }).$mount(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Pages",
+                    model_class: "Page"
+                }
+            }).$mount(vm);
         },
 
         show_plugins: function() {

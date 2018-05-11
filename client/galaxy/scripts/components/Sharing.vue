@@ -117,7 +117,9 @@ export default {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
-            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${Galaxy.root}${this.item.username_and_slug}`;
+            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${Galaxy.root}${
+                this.item.username_and_slug
+            }`;
         },
         item_url_parts() {
             let str = this.item_url;
@@ -141,12 +143,12 @@ export default {
             new_username: "",
             err_msg: null,
             pencil_url: `${Galaxy.root}static/images/fugue/pencil.png`,
-            item : {
+            item: {
                 title: "title",
                 username_and_slug: "username_and_slug",
                 importable: false,
                 published: false,
-                users_shared_with: [],
+                users_shared_with: []
             }
         };
     },
@@ -165,19 +167,19 @@ export default {
                     this.item = response.data;
                     this.ready = true;
                 })
-                .catch(error => this.err_msg = error.response.data.err_msg)
+                .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setUsername: function() {
             axios
                 .put(`${Galaxy.root}api/users/${Galaxy.user.id}/information/inputs`, {
-                    username: this.new_username || ''
+                    username: this.new_username || ""
                 })
                 .then(response => {
                     this.err_msg = null;
                     this.has_username = true;
                     this.getModel();
                 })
-                .catch(error => this.err_msg = error.response.data.err_msg);
+                .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setSharing: function(action, user_id) {
             axios
@@ -188,33 +190,47 @@ export default {
                 .then(response => {
                     Object.assign(this.item, response.data);
                 })
-                .catch(error => this.err_msg = error.response.data.err_msg);
+                .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         createSlugHandler: function() {
-            var on_start = function( text_elt ) {
+            var on_start = function(text_elt) {
                 // Replace URL with URL text.
-                $('#item-url').hide();
-                $('#item-url-text').show();
+                $("#item-url").hide();
+                $("#item-url-text").show();
 
                 // Allow only lowercase alphanumeric and '-' characters in slug.
-                text_elt.keyup(function(){
-                    text_elt.val( $(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() )
+                text_elt.keyup(function() {
+                    text_elt.val(
+                        $(this)
+                            .val()
+                            .replace(/\s+/g, "-")
+                            .replace(/[^a-zA-Z0-9\-]/g, "")
+                            .toLowerCase()
+                    );
                 });
             };
-            var on_finish = function( text_elt ) {
+            var on_finish = function(text_elt) {
                 // Replace URL text with URL.
-                $('#item-url-text').hide();
-                $('#item-url').show();
+                $("#item-url-text").hide();
+                $("#item-url").show();
 
                 // Set URL to new value.
-                var new_url = $('#item-url-text').text();
-                var item_url_obj = $('#item-url');
-                item_url_obj.attr( "href", new_url );
-                item_url_obj.text( new_url );
+                var new_url = $("#item-url-text").text();
+                var item_url_obj = $("#item-url");
+                item_url_obj.attr("href", new_url);
+                item_url_obj.text(new_url);
             };
-            async_save_text("edit-identifier", "item-identifier",
-                            this.slug_url, "new_slug", null, false, 0,
-                            on_start, on_finish);
+            async_save_text(
+                "edit-identifier",
+                "item-identifier",
+                this.slug_url,
+                "new_slug",
+                null,
+                false,
+                0,
+                on_start,
+                on_finish
+            );
         }
     }
 };

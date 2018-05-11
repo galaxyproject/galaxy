@@ -784,7 +784,7 @@ const RuleModalHeader = {
 
 const RuleModalMiddle = {
     template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
-}
+};
 
 const RuleModalFooter = {
     template: `
