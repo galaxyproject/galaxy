@@ -318,14 +318,25 @@ class SharableModelSerializer(base.ModelSerializer,
     # TODO: stub
     SINGLE_CHAR_ABBR = None
 
+    def __init__(self, app, **kwargs):
+        super(SharableModelSerializer, self).__init__(app, **kwargs)
+        self.add_view('sharing', [
+            'id',
+            'title',
+            'importable',
+            'published',
+            'username_and_slug',
+            'users_shared_with'
+        ])
+
     def add_serializers(self):
         super(SharableModelSerializer, self).add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
-
         self.serializers.update({
-            'user_id'           : self.serialize_id,
+            'id'                : self.serialize_id,
+            'title'             : self.serialize_title,
             'username_and_slug' : self.serialize_username_and_slug,
             'users_shared_with' : self.serialize_users_shared_with
         })
@@ -333,6 +344,12 @@ class SharableModelSerializer(base.ModelSerializer,
         self.serializable_keyset.update([
             'importable', 'published', 'slug'
         ])
+
+    def serialize_title(self, item, key, **context):
+        if hasattr(item, "title"):
+            return item.title
+        elif hasattr(item, "name"):
+            return item.name
 
     def serialize_username_and_slug(self, item, key, **context):
         if not (item.user and item.slug and self.SINGLE_CHAR_ABBR):

@@ -108,7 +108,7 @@
                         <input type="submit" value="Share"></input>
                     </div>
                     <div class="form-row">
-                        <a href="${h.url_for(controller=item_controller, action="sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
+                        <a href="${h.url_for(controller="", action="%s/sharing" % item_class_plural_name_lc, id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
                     </div>
                 </form>
             </div>

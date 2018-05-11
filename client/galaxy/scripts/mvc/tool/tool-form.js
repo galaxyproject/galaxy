@@ -139,7 +139,7 @@ var View = Backbone.View.extend({
             if (options.job_remap === "job_produced_collection_elements") {
                 var label = "Replace elements in collection ?";
                 var help =
-                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
+                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
                 var label = "Resume dependencies from this job ?";
                 var help =

@@ -1,5 +1,9 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
+
+/* global $ */
 
 var logNamespace = "user";
 //==============================================================================
@@ -68,7 +72,7 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             // OVER QUOTA: color the quota bar and show the quota error message
             if (this.isOverQuota()) {
                 //this.log( '\t over quota' );
-                $bar.attr("class", "progress-bar progress-bar-danger");
+                $bar.attr("class", "progress-bar bg-danger");
                 $meter.find(".quota-meter-text").css("color", "white");
                 //TODO: only trigger event if state has changed
                 this.trigger("quota:over", modelJson);
@@ -76,13 +80,13 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 // APPROACHING QUOTA: color the quota bar
             } else if (percent >= this.options.warnAtPercent) {
                 //this.log( '\t approaching quota' );
-                $bar.attr("class", "progress-bar progress-bar-warning");
+                $bar.attr("class", "progress-bar bg-warning");
                 //TODO: only trigger event if state has changed
                 this.trigger("quota:under quota:under:approaching", modelJson);
 
                 // otherwise, hide/don't use the msg box
             } else {
-                $bar.attr("class", "progress-bar progress-bar-success");
+                $bar.attr("class", "progress-bar bg-success");
                 //TODO: only trigger event if state has changed
                 this.trigger("quota:under quota:under:ok", modelJson);
             }

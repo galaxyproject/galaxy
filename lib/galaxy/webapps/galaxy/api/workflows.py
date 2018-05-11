@@ -527,9 +527,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         inputs = payload.get('inputs', {})
         module = module_factory.from_dict(trans, payload)
-        module_state = {}
-        populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
-        module.recover_state(module_state)
+        if 'tool_state' not in payload:
+            module_state = {}
+            populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
+            module.recover_state(module_state)
         return {
             'label'             : inputs.get('__label', ''),
             'annotation'        : inputs.get('__annotation', ''),

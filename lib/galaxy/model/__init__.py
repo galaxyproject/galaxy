@@ -66,9 +66,10 @@ _datatypes_registry = None
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
 
-# The column sizes for job metrics
+# The column sizes for job metrics. Note: changing these values does not change the column sizes, a migration must be
+# performed to do that.
 JOB_METRIC_MAX_LENGTH = 1023
-JOB_METRIC_PRECISION = 22
+JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 
 
@@ -873,12 +874,14 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
 
-    def get_destination_configuration(self, config, key, default=None):
+    def get_destination_configuration(self, dest_params, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
         in specified config if it needs to be applied globally.
         """
         param_unspecified = object()
         config_value = (self.destination_params or {}).get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = dest_params.get(key, param_unspecified)
         if config_value is param_unspecified:
             config_value = getattr(config, key, param_unspecified)
         if config_value is param_unspecified:
@@ -4727,10 +4730,6 @@ class UserAuthnzToken(UserMixin):
         return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
     def set_extra_data(self, extra_data=None):
-        # Note: the following unicode conversion is a temporary solution for a
-        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
-        if extra_data is not None:
-            extra_data = str(extra_data)
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self.trans.sa_session.add(self)
             self.trans.sa_session.flush()

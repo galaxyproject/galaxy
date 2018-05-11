@@ -25,7 +25,7 @@ class ToolsTestCase(api.ApiTestCase):
         assert "upload1" in tool_ids
 
     def test_no_panel_index(self):
-        index = self._get("tools", data=dict(in_panel="false"))
+        index = self._get("tools", data=dict(in_panel=False))
         tools_index = index.json()
         # No need to flatten out sections, with in_panel=False, only tools are
         # returned.
