@@ -244,7 +244,8 @@ class CondaContext(installable.InstallableContext):
         Return the process exit code (i.e. 0 in case of success).
         """
         create_base_args = [
-            "-y"
+            "-y",
+            "--quiet"
         ]
         if allow_local and self.use_local:
             create_base_args.extend(["--use-local"])
