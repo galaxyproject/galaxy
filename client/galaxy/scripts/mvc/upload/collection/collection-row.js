@@ -128,11 +128,11 @@ export default Backbone.View.extend({
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.$percentage.html("100%");
         }
         if (status == "error") {
-            this.$el.addClass("danger");
+            this.$el.addClass("table-danger");
             this.$info_progress.hide();
         }
     },
