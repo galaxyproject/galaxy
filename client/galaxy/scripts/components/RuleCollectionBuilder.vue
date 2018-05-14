@@ -364,8 +364,11 @@
         </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
-        <rule-modal-header>
-            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
+        <rule-modal-header v-if="importType == 'datasets'">
+            {{ l("Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete.") }}
+        </rule-modal-header>
+        <rule-modal-header v-else-if="importType == 'collections'">
+            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete.") }}
         </rule-modal-header>
         <rule-modal-footer>
             <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
