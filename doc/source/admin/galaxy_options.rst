@@ -2693,8 +2693,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If gdpr_compliance_mode is
-    set to True, then this option will be overridden and set to False.
+    username and not email, or vice versa.  If gdpr_compliance is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2710,8 +2710,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If gdpr_compliance_mode is
-    set to True, then this option will be overridden and set to False.
+    username and not email, or vice versa.  If gdpr_compliance is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2733,19 +2733,22 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``gdpr_compliance_mode``
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+``gdpr_compliance``
+~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enables GDPR Compliance mode. This makes several changes to the
     way Galaxy logs and exposes data externally such as removing
-    emails/usernames from logs and bug reports. It also causes the
+    emails and usernames from logs and bug reports. It also causes the
     delete user admin action to permanently redact their username and
     password, but not to delete data associated with the account as
     this is not currently easily implementable.  You are responsible
-    for removing personal data from backups.  This automatically
-    disabled expose_user_email and expose_user_name
+    for removing personal data from backups.  This forces
+    expose_user_email and expose_user_name to be false, and forces
+    user_deletion to be true to support the right to erasure.  Please
+    read the GDPR section under the special topics area of the admin
+    documentation.
 :Default: ``false``
 :Type: bool
 
