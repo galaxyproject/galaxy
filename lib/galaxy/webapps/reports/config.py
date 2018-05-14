@@ -52,6 +52,14 @@ class Configuration(object):
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
 
+        # Security/Policy Compliance
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", False))
+        if self.gdpr_compliance_mode:
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+
     def get(self, key, default):
         return self.config_dict.get(key, default)
 
