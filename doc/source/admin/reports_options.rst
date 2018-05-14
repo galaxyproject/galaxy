@@ -153,4 +153,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``gdpr_compliance_mode``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables GDPR Compliance mode. This makes several changes to the
+    way Galaxy logs and exposes data externally such as removing
+    emails/usernames from logs and bug reports.  You are responsible
+    for removing personal data from backups.
+:Default: ``false``
+:Type: bool
+
+
 

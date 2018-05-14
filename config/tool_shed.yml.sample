@@ -263,3 +263,9 @@ tool_shed:
   # Serving static files (needed if running standalone)
   #static_style_dir: static/style/blue
 
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.  You are responsible for
+  # removing personal data from backups.
+  #gdpr_compliance_mode: false
+
