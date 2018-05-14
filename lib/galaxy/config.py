@@ -705,6 +705,21 @@ class Configuration(object):
             self.redact_user_address_during_deletion = True
             self.allow_user_deletion = True
 
+            LOGGING_CONFIG_DEFAULT['formatters']['brief'] = {
+                'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+            }
+            LOGGING_CONFIG_DEFAULT['handlers']['compliance_log'] = {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'brief',
+                'filename': 'compliance.log',
+                'backupCount': 0,
+            }
+            LOGGING_CONFIG_DEFAULT['loggers']['COMPLIANCE'] = {
+                'handlers': ['compliance_log'],
+                'level': 'DEBUG',
+                'qualname': 'COMPLIANCE'
+            }
+
     @property
     def sentry_dsn_public(self):
         """
