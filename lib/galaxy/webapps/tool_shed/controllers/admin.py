@@ -1,6 +1,7 @@
 import logging
 
 import tool_shed.grids.admin_grids as admin_grids
+from galaxy.web.framework.helpers import grids
 from galaxy import (
     util,
     web
@@ -27,6 +28,10 @@ class AdminController(BaseUIController, Admin):
     manage_category_grid = admin_grids.ManageCategoryGrid()
     repository_grid = admin_grids.AdminRepositoryGrid()
     repository_metadata_grid = admin_grids.RepositoryMetadataGrid()
+
+    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
+    undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
+    purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
 
     @web.expose
     @web.require_admin
