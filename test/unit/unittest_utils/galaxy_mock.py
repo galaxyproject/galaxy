@@ -132,7 +132,7 @@ class MockAppConfig(Bunch):
 
         self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
-        self.gdpr_compliance_mode = False
+        self.gdpr_compliance = False
 
         # set by MockDir
         self.root = root

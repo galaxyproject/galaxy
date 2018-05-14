@@ -691,8 +691,8 @@ class Configuration(object):
         self.redact_user_address_during_deletion = False
         # GDPR compliance mode changes values on a number of variables. Other
         # policies could change (non)overlapping subsets of these variables.
-        self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", False))
-        if self.gdpr_compliance_mode:
+        self.gdpr_compliance = string_as_bool(kwargs.get("gdpr_compliance", False))
+        if self.gdpr_compliance:
             self.expose_user_name = False
             self.expose_user_email = False
 

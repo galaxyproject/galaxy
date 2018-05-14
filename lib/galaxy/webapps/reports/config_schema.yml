@@ -102,7 +102,7 @@ mapping:
         desc: |
           Mail
 
-      gdpr_compliance_mode:
+      gdpr_compliance:
         type: bool
         default: false
         required: false
@@ -112,3 +112,6 @@ mapping:
           emails/usernames from logs and bug reports.
 
           You are responsible for removing personal data from backups.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.
