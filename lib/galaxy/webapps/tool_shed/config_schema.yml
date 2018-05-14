@@ -385,3 +385,14 @@ mapping:
         required: false
         desc: |
           Serving static files (needed if running standalone)
+
+      gdpr_compliance_mode:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing
+          emails/usernames from logs and bug reports.
+
+          You are responsible for removing personal data from backups.
