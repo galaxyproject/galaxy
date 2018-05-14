@@ -143,12 +143,14 @@ class Configuration(object):
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Security/Policy Compliance
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
         self.redact_username_in_logs = False
-        self.redact_email_in_job_name = False
         self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", False))
         if self.gdpr_compliance_mode:
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
             self.redact_username_in_logs = True
-            self.redact_email_in_job_name = True
 
     @property
     def shed_tool_data_path(self):
