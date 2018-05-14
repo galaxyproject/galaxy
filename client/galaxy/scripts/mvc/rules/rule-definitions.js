@@ -166,11 +166,22 @@ const RULES = {
         },
         apply: (rule, data, sources, columns) => {
             const ruleValue = rule.value;
-            const identifierIndex = parseInt(ruleValue.substring("identifier".length));
-            function newRow(row, index) {
-                const newRow = row.slice();
-                newRow.push(sources[index]["identifiers"][identifierIndex]);
-                return newRow;
+            let newRow;
+            if (ruleValue.startsWith("identifier")) {
+                const identifierIndex = parseInt(ruleValue.substring("identifier".length));
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    newRow.push(sources[index]["identifiers"][identifierIndex]);
+                    return newRow;
+                };
+            } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path") {
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    newRow.push(sources[index][ruleValue]);
+                    return newRow;
+                };
+            } else {
+                return { error: `Unknown metadata type [${ruleValue}}]` };
             }
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
