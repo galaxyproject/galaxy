@@ -59,6 +59,7 @@ class Configuration(object):
         if self.gdpr_compliance:
             self.redact_username_in_logs = True
             self.redact_email_in_job_name = True
+            self.allow_user_deletion = True
 
     def get(self, key, default):
         return self.config_dict.get(key, default)

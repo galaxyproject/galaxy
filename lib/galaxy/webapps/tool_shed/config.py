@@ -151,6 +151,7 @@ class Configuration(object):
             self.redact_username_during_deletion = True
             self.redact_email_during_deletion = True
             self.redact_username_in_logs = True
+            self.allow_user_deletion = True
 
     @property
     def shed_tool_data_path(self):

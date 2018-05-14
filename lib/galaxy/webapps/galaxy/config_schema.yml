@@ -906,7 +906,7 @@ mapping:
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
-         
+
       default_locale:
         type: str
         default: auto

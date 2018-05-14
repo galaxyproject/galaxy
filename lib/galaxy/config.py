@@ -703,6 +703,7 @@ class Configuration(object):
             self.redact_email_in_job_name = True
             self.redact_user_details_in_bugreport = True
             self.redact_user_address_during_deletion = True
+            self.allow_user_deletion = True
 
     @property
     def sentry_dsn_public(self):
