@@ -1444,6 +1444,23 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             if self.app.config.redact_username_during_deletion:
                 user.username = uname_hash
 
+            # Redact user addresses as well
+            if self.app.config.redact_user_address_during_deletion:
+                user_addresses = trans.sa_session.query(trans.app.model.UserAddress) \
+                    .filter(trans.app.model.UserAddress.user_id == user.id).all()
+
+                for addr in user_addresses:
+                    addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
+                    addr.name = new_secure_hash(addr.name + pseudorandom_value)
+                    addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
+                    addr.address = new_secure_hash(addr.address + pseudorandom_value)
+                    addr.city = new_secure_hash(addr.city + pseudorandom_value)
+                    addr.state = new_secure_hash(addr.state + pseudorandom_value)
+                    addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
+                    addr.country = new_secure_hash(addr.country + pseudorandom_value)
+                    addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
+                    trans.sa_session.add(addr)
+
             trans.sa_session.add(user)
             trans.sa_session.flush()
             message += ' %s ' % user.email

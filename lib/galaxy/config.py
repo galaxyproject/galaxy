@@ -688,6 +688,7 @@ class Configuration(object):
         self.redact_username_in_logs = False
         self.redact_email_in_job_name = False
         self.redact_user_details_in_bugreport = False
+        self.redact_user_address_during_deletion = False
         # GDPR compliance mode changes values on a number of variables. Other
         # policies could change (non)overlapping subsets of these variables.
         self.gdpr_compliance_mode = string_as_bool(kwargs.get("gdpr_compliance_mode", False))
@@ -701,6 +702,7 @@ class Configuration(object):
             self.redact_username_in_logs = True
             self.redact_email_in_job_name = True
             self.redact_user_details_in_bugreport = True
+            self.redact_user_address_during_deletion = True
 
     @property
     def sentry_dsn_public(self):
