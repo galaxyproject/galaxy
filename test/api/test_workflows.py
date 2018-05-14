@@ -406,7 +406,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         updated_workflow_content = self._download_workflow(workflow_id)
         map(check_step, updated_workflow_content['steps'].items())
 
-        # Re-update against original worklfow...
+        # Re-update against original workflow...
         update(original_workflow)
 
         updated_workflow_content = self._download_workflow(workflow_id)
@@ -695,7 +695,7 @@ steps:
         assert unpaused_dataset['state'] == 'ok'
 
     @skip_without_tool("job_properties")
-    @skip_without_tool("identifier_multiple_in_conditional")
+    @skip_without_tool("identifier_collection")
     def test_workflow_resume_from_failed_step_with_hdca_input(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -728,7 +728,7 @@ steps:
             assert unpaused_dataset['state'] == 'ok'
 
     @skip_without_tool("fail_identifier")
-    @skip_without_tool("identifier_multiple_in_conditional")
+    @skip_without_tool("identifier_collection")
     def test_workflow_resume_with_mapped_over_input(self):
         with self.dataset_populator.test_history() as history_id:
             job_summary = self._run_jobs("""
@@ -777,6 +777,7 @@ test_data:
             contents = self.dataset_populator.get_history_dataset_content(history_id, hid=7, assert_ok=False)
             assert contents == 'fail\nsuccess\n', contents
 
+    @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
         workflow_id = self._upload_yaml_workflow("""
@@ -807,6 +808,7 @@ steps:
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
+    @skip_without_tool("cat_list")
     @skip_without_tool("collection_split_on_column")
     def test_workflow_run_dynamic_output_collections(self):
         history_id = self.dataset_populator.new_history()
@@ -896,6 +898,7 @@ steps:
             content = self.dataset_populator.get_history_dataset_content(history_id, hid=11)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0")
 
+    @skip_without_tool("cat")
     @skip_without_tool("collection_split_on_column")
     def test_workflow_run_dynamic_output_collections_3(self):
         # Test a workflow that create a list:list:list followed by a mapping step.
@@ -1123,6 +1126,7 @@ test_data:
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=invocation["outputs"]["wf_output_1"]["id"])
         assert "hello world" == output_content.strip()
 
+    @skip_without_tool("cat")
     def test_workflow_output_dataset_collection(self):
         history_id = self.dataset_populator.new_history()
         summary = self._run_jobs("""
@@ -1165,7 +1169,8 @@ test_data:
         elements0 = elements[0]
         assert elements0["element_identifier"] == "el1"
 
-    def test_worklfow_input_mapping(self):
+    @skip_without_tool("cat")
+    def test_workflow_input_mapping(self):
         history_id = self.dataset_populator.new_history()
         summary = self._run_jobs("""
 class: GalaxyWorkflow
@@ -2388,11 +2393,11 @@ test_data:
 
         content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
         assert content["history_content_type"] == "dataset"
-        assert content["visible"] is False
+        assert not content["visible"]
 
         content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
         assert content["history_content_type"] == "dataset_collection", content
-        assert content["visible"] is False
+        assert not content["visible"]
 
     @skip_without_tool("collection_creates_pair")
     def test_run_add_tag_on_collection_output(self):
@@ -2421,7 +2426,7 @@ test_data:
             assert details1["history_content_type"] == "dataset_collection"
             assert details1["tags"][0] == "name:foo", details1
 
-    @skip_without_tool("collection_creates_pair")
+    @skip_without_tool("cat")
     def test_run_add_tag_on_mapped_over_collection(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs("""
