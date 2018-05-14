@@ -768,14 +768,17 @@ test_data:
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset['creating_job']}
-            self.dataset_populator.run_tool(tool_id='fail_identifier',
-                                            inputs=inputs,
-                                            history_id=history_id,
-                                            assert_ok=True)
+            run_dict = self.dataset_populator.run_tool(tool_id='fail_identifier',
+                                                       inputs=inputs,
+                                                       history_id=history_id,
+                                                       assert_ok=True)
             unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=False)
             assert unpaused_dataset['state'] == 'ok'
             contents = self.dataset_populator.get_history_dataset_content(history_id, hid=7, assert_ok=False)
             assert contents == 'fail\nsuccess\n', contents
+            replaced_hda_id = run_dict['outputs'][0]['id']
+            replaced_hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False)
+            assert not replaced_hda['visible'], replaced_hda
 
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_pair")
