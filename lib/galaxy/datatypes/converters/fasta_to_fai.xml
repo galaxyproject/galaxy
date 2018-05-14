@@ -2,12 +2,15 @@
     <requirements>
         <requirement type="package" version="0.1.19">samtools</requirement>
     </requirements>
-    <command><![CDATA[ln -s '$input' temp.fasta && samtools faidx temp.fasta && mv temp.fasta.fai '$output' && rm temp.fasta ]]></command>
+    <command><![CDATA[
+ln -s '$input' temp.fasta &&
+samtools faidx temp.fasta
+    ]]></command>
     <inputs>
-        <param name="input" type="data" format="fasta" label="Fasta file"/>
+        <param name="input" type="data" format="fasta" label="FASTA file"/>
     </inputs>
     <outputs>
-        <data name="output" format="fai"/>
+        <data name="output" format="fai" from_work_dir="temp.fasta.fai" />
     </outputs>
     <help>
     </help>
