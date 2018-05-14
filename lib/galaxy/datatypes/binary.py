@@ -1173,7 +1173,7 @@ class BlibSQlite(SQlite):
 
     def sniff(self, filename):
         if super(BlibSQlite, self).sniff(filename):
-            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'RetentionTimes', 'ScoreTypes', 'SpectrumSourceFiles']
+            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
             try:
                 conn = sqlite.connect(filename)
                 c = conn.cursor()
