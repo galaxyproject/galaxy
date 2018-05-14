@@ -451,7 +451,10 @@ class JobState(object):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
-        self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
+
+        self.redact_email_in_job_name = True
+        if self.job_wrapper:
+            self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
