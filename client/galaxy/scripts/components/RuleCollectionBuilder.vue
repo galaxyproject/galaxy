@@ -870,7 +870,7 @@ export default {
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
