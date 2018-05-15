@@ -1174,11 +1174,11 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
-            } else if ( this.elementsType == "ftp" ) {
+            } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
-            } else if ( this.elementsType == "library_datasets" ) {
+            } else if (this.elementsType == "library_datasets") {
                 metadataOptions["name"] = _l("Name");
-            } else if ( this.elementsType == "datasets" ) {
+            } else if (this.elementsType == "datasets") {
                 metadataOptions["hid"] = _l("History ID (hid)");
                 metadataOptions["name"] = _l("Name");
             } else {
