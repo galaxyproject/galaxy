@@ -1,13 +1,13 @@
 import logging
 
 import tool_shed.grids.admin_grids as admin_grids
-from galaxy.web.framework.helpers import grids
 from galaxy import (
     util,
     web
 )
 from galaxy.util import inflector
 from galaxy.web.base.controller import BaseUIController
+from galaxy.web.framework.helpers import grids
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.util import (
     metadata_util,
