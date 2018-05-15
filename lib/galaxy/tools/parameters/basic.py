@@ -1853,8 +1853,12 @@ class DataToolParameter(BaseDataToolParameter):
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
         for hdca in history.active_visible_dataset_collections:
-            if dataset_collection_matcher.hdca_match(hdca, reduction=multiple):
-                append(d['options']['hdca'], hdca, hdca.name, 'hdca')
+            match = dataset_collection_matcher.hdca_match(hdca, reduction=multiple)
+            if match:
+                name = hdca.name
+                if match.implicit_conversion:
+                    name = "%s (with implicit datatype conversion)" % name
+                append(d['options']['hdca'], hdca, name, 'hdca')
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
@@ -1892,18 +1896,19 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         dataset_collections = trans.app.dataset_collections_service.history_dataset_collections(history, self._history_query(trans))
 
         for dataset_collection_instance in dataset_collections:
-            if not dataset_collection_matcher.hdca_match(dataset_collection_instance):
+            match = dataset_collection_matcher.hdca_match(dataset_collection_instance)
+            if not match:
                 continue
-            yield dataset_collection_instance
+            yield dataset_collection_instance, match.implicit_conversion
 
     def match_multirun_collections(self, trans, history, dataset_collection_matcher):
         for history_dataset_collection in history.active_visible_dataset_collections:
             if not self._history_query(trans).can_map_over(history_dataset_collection):
                 continue
 
-            datasets_match = dataset_collection_matcher.hdca_match(history_dataset_collection)
-            if datasets_match:
-                yield history_dataset_collection
+            match = dataset_collection_matcher.hdca_match(history_dataset_collection)
+            if match:
+                yield history_dataset_collection, match.implicit_conversion
 
     def from_json(self, value, trans, other_values={}):
         rval = None
@@ -1978,22 +1983,28 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
 
         # append directly matched collections
-        for hdca in self.match_collections(trans, history, dataset_collection_matcher):
+        for hdca, implicit_conversion in self.match_collections(trans, history, dataset_collection_matcher):
+            name = hdca.name
+            if implicit_conversion:
+                name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
                 'id'   : trans.security.encode_id(hdca.id),
                 'hid'  : hdca.hid,
-                'name' : hdca.name,
+                'name' : name,
                 'src'  : 'hdca',
                 'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags]
             })
 
         # append matching subcollections
-        for hdca in self.match_multirun_collections(trans, history, dataset_collection_matcher):
+        for hdca, implicit_conversion in self.match_multirun_collections(trans, history, dataset_collection_matcher):
             subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
+            name = hdca.name
+            if implicit_conversion:
+                name = "%s (with implicit datatype conversion)" % name
             d['options']['hdca'].append({
                 'id'   : trans.security.encode_id(hdca.id),
                 'hid'  : hdca.hid,
-                'name' : hdca.name,
+                'name' : name,
                 'src'  : 'hdca',
                 'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hdca.tags],
                 'map_over_type': subcollection_type
