@@ -1182,6 +1182,41 @@ class MzSQlite(SQlite):
         return False
 
 
+class BlibSQlite(SQlite):
+    """Class describing a Proteomics Spectral Library Sqlite database """
+    MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
+                    readonly=True, visible=True, no_value='1.8')
+    file_ext = "blib"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(BlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
+            (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.blib_version = '%s.%s' % (majorVersion, minorVersion)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if super(BlibSQlite, self).sniff(filename):
+            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in blib_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
 class IdpDB(SQlite):
     """
     Class describing an IDPicker 3 idpDB (sqlite) database

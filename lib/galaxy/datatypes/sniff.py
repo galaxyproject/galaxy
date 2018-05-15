@@ -445,6 +445,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.xmfa')
     >>> guess_ext(fname, sniff_order)
     'xmfa'
+    >>> fname = get_test_fname('test.blib')
+    >>> guess_ext(fname, sniff_order)
+    'blib'
     >>> fname = get_test_fname('test.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'

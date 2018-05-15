@@ -214,6 +214,7 @@
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true"/>
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
+    <datatype extension="blib" type="galaxy.datatypes.binary:BlibSQlite" display_in_upload="true"/>
     <datatype extension="hlf" type="galaxy.datatypes.proteomics:XHunterAslFormat" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="idpdb" type="galaxy.datatypes.binary:IdpDB" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true"/>
@@ -691,6 +692,7 @@
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
+    <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>

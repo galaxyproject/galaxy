@@ -782,6 +782,7 @@ class Registry(object):
                 'axt'           : 'text/plain',
                 'bam'           : 'application/octet-stream',
                 'bed'           : 'text/plain',
+                'blib'          : 'application/octet-stream',
                 'customtrack'   : 'text/plain',
                 'csfasta'       : 'text/plain',
                 'db3'           : 'application/octet-stream',
