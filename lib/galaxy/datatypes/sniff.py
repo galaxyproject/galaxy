@@ -701,7 +701,7 @@ def handle_compressed_file(
             # Replace the compressed file with the uncompressed file
             shutil.move(uncompressed, filename)
             uncompressed = filename
-    elif not is_compressed:
+    elif not is_compressed or not check_content:
         is_valid = True
     return is_valid, ext, uncompressed, compressed_type
 
@@ -739,7 +739,7 @@ def handle_uploaded_dataset_file(
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
 
-        if not is_binary and convert_to_posix_lines:
+        if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             if convert_spaces_to_tabs:
                 convert_fxn = convert_newlines_sep2tabs
