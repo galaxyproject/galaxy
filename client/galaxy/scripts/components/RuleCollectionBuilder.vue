@@ -285,7 +285,7 @@
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
-                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="elementsType == 'collection_contents'"/>
+                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="metadataOptions"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -833,6 +833,27 @@ export default {
                         value: "identifier0"
                     });
                 }
+            } else if (this.elementsType == "datasets") {
+                rules.push(
+                    {
+                        type: "add_column_metadata",
+                        value: "hid"
+                    },
+                    {
+                        type: "add_column_metadata",
+                        value: "name"
+                    }
+                );
+            } else if (this.elementsType == "library_datasets") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "name"
+                });
+            } else if (this.elementsType == "ftp") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "path"
+                });
             }
         }
         return {
@@ -1061,14 +1082,14 @@ export default {
         },
         hotData() {
             let data, sources, columns;
-            if (this.elementsType == "datasets") {
-                data = this.initialElements.map(el => [el["hid"], el["name"]]);
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                data = this.initialElements.map(el => []);
                 sources = this.initialElements.slice();
-                columns = ["new", "new"];
-            } else if (this.elementsType == "library_datasets") {
-                data = this.initialElements.map(el => [el["name"]]);
-                sources = this.initialElements.slice();
-                columns = ["new"];
+                columns = [];
             } else if (this.elementsType == "collection_contents") {
                 const collection = this.initialElements;
                 if (collection) {
@@ -1134,7 +1155,7 @@ export default {
             return asDict;
         },
         metadataOptions() {
-            const metadataOptions = {};
+            let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
                 let collectionType;
                 if (this.initialElements) {
@@ -1153,6 +1174,15 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
+            } else if ( this.elementsType == "ftp" ) {
+                metadataOptions["path"] = _l("Path");
+            } else if ( this.elementsType == "library_datasets" ) {
+                metadataOptions["name"] = _l("Name");
+            } else if ( this.elementsType == "datasets" ) {
+                metadataOptions["hid"] = _l("History ID (hid)");
+                metadataOptions["name"] = _l("Name");
+            } else {
+                metadataOptions = null;
             }
             return metadataOptions;
         },
