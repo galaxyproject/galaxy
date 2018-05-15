@@ -569,6 +569,8 @@ class DefaultToolAction(object):
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
             for jtodc in old_job.output_dataset_collection_instances:
+                # Update JobToOutputDatasetCollectionAssociation to the current job
+                jtodc.job = current_job
                 hdca = jtodc.dataset_collection_instance
                 hdca.collection.replace_failed_elements(remapped_hdas)
                 if hdca.implicit_collection_jobs:
