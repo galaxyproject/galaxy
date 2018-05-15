@@ -1,8 +1,8 @@
 GDPR Compliance
 ===============
 
-With the new GDPR regulations that are in effect as of May 25, 2018, there are
-some extra steps you as an admin need to take to protect your Galaxy.
+To comply with the European Union law known as General Data Protection Regulation or [GDPR](http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679) starting on May 25, 2018 there are
+some extra steps you as an admin need to take to protect information of users in your Galaxy.
 
 Audience
 --------
@@ -10,14 +10,13 @@ Audience
 Anyone with users from the EU.
 
 The Galaxy Project cares about privacy preserving regulations and meeting the
-requirements within. Many smaller companies in the US are choosing to block the
-EU completely, this is obviously not ideal. We have attempted to make
-compliance as easy as possible so you can continue to serve EU users.
+requirements of law. We have attempted to make compliance as easy as possible
+so you can continue to serve EU users.
 
 Configuration
 -------------
 
-The Galaxy GDPR compliance is behind the ``gdpr_compliance`` flag available in
+The Galaxy GDPR compliance is enabled by switching the ``gdpr_compliance`` flag available in
 the configuration of Galaxy, Reports, and the Tool Shed. If you intend to serve
 users from anywhere in the EU, you should set this to true. This has some
 important implications of which you must be aware:
@@ -25,13 +24,12 @@ important implications of which you must be aware:
 Log Redaction
 -------------
 
-We attempt to redact all occurances of username or email in the logs. Instead
+We attempt to redact all occurences of ``username`` or ``email`` in the logs. Instead
 we opt to log the user ID number which cannot be reversed into personally
 identifying information (PII) without access to the database. This is to
 pseudonymise the data and reduce risk of PII being leaked.
 
-We may change this redaction method to use encoded user IDs in the future once
-we can obtain more legal advice.
+We may change this redaction method to use encoded user IDs in the future.
 
 You can configure the location of the compliance log like so:
 
@@ -94,9 +92,9 @@ Which will produce logging events like this:
 User Deletion
 -------------
 
-User deletion is forced on when ``gdpr_compliance`` is enabled, as you must be
-able to comply with the right to erasure. When users are deleted, their PII is
-obscured. In practice this means:
+User deletion is always enabled when ``gdpr_compliance`` is enabled to comply with
+the right to erasure. When users are deleted, their PII is obscured.
+In practice this means:
 
 - username
 - email
@@ -130,4 +128,4 @@ their username will be redacted as well.
 This will break any future updates for Galaxies consuming the tool and they
 will be stuck on the old version. Additionally due to how Galaxy builds
 toolshed repository paths on disk, it will break any access even if you try and
-install again from this tool.
+install again from this repository owned by a redacted user.
