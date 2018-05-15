@@ -1174,10 +1174,12 @@ export default {
         validInput() {
             const identifierColumns = this.identifierColumns();
             const mappingAsDict = this.mappingAsDict;
-            const buildingCollection = identifierColumns.length > 0 && this.elementsType != "collection_contents";
+            const buildingCollection = this.importType == "collections";
+            const requiresName =
+                buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
 
             let valid = true;
-            if (buildingCollection && !mappingAsDict.collection_name) {
+            if (requiresName) {
                 valid = this.collectionName.length > 0;
             }
 
@@ -1186,16 +1188,17 @@ export default {
                 valid = false;
             }
 
+            const requiresSourceColumn = this.elementsType == "ftp" || this.elementsType == "raw";
+            if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
+                valid = false;
+            }
             for (var rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
             }
 
-            // raw tabular variant can build stand-alone datasets without identifier
-            // columns for the collection builder for existing datasets cannot do this.
-            const fromDatasets = this.elementsType == "datasets" || this.elementsType == "library_datasets";
-            if (fromDatasets && identifierColumns.length == 0) {
+            if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
