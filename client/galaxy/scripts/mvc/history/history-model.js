@@ -36,8 +36,6 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 contents_states: {}
             },
 
-            urlRoot: `${Galaxy.root}api/histories`,
-
             contentsClass: HISTORY_CONTENTS.HistoryContents,
 
             /** What model fields to search with */
@@ -59,6 +57,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this.logger = options.logger || null;
                 this.log(`${this}.initialize:`, historyJSON, options);
 
+                this.urlRoot = `${Galaxy.root}api/histories`;
                 /** HistoryContents collection of the HDAs contained in this history. */
                 this.contents = new this.contentsClass([], {
                     history: this,
@@ -390,6 +389,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     initialize: function(models, options) {
         options = options || {};
         this.log("HistoryCollection.initialize", models, options);
+        this.urlRoot = `${Galaxy.root}api/histories`;
         _collectionSuper.prototype.initialize.call(this, models, options);
 
         /** @type {boolean} should deleted histories be included */
@@ -403,7 +403,6 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         // the collection *is empty*
     },
 
-    urlRoot: `${Galaxy.root}api/histories`,
     url: function() {
         return this.urlRoot;
     },
