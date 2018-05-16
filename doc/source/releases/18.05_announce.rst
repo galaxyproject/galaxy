@@ -88,9 +88,12 @@ If you have this repository installed in your Galaxy please update to the revisi
 Breaking Changes
 ================
 
-The ``charts`` repository that powers Galaxy built-in visualizations that need backend computation has been moved
+* The ``charts`` repository that powers Galaxy built-in visualizations that need backend computation has been moved
 to the IUC account. In order for these visualization options to keep working admins need to install the following repository: `iuc/charts <https://toolshed.g2.bx.psu.edu/view/iuc/charts/>`__.
 
+* Removed support for Graphite statistics middleware. We continue further with supporting statsd middleware.
+
+* We reworked how compressed archives (zip, gz, bz etc.) are being defined and handled in Galaxy. As a result if you have a custom ``datatypes_conf.xml`` configuration file you should remove the compressed sniffers that used to be in the sample but `now are not <https://github.com/galaxyproject/galaxy/blob/release_18.05/config/datatypes_conf.xml.sample>`__. Otherwise you will encounter non-breaking errors in the logs.
 
 Release Notes
 =============
