@@ -9,7 +9,8 @@ History
 18.5.11.dev0
 ---------------------
 
-    
+* Parse CWL SoftwareRequirements to Galaxy requirements (required to fix various Planemo functionality
+  for CWL tools).
 
 ---------------------
 18.5.10 (2018-05-10)

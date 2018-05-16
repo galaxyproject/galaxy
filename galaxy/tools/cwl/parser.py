@@ -320,6 +320,21 @@ class CommandLineToolProxy(ToolProxy):
                     return hint["dockerPull"]
         return None
 
+    def software_requirements(self):
+        # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
+        # multiple versions, etc...
+        tool = self._tool.tool
+        reqs_and_hints = tool.get("requirements", []) + tool.get("hints", [])
+        requirements = []
+        for hint in reqs_and_hints:
+            if hint["class"] == "SoftwareRequirement":
+                packages = hint.get("packages", [])
+                for package in packages:
+                    versions = package.get("version", [])
+                    first_version = None if not versions else versions[0]
+                    requirements.append((package["package"], first_version))
+        return requirements
+
     @property
     def requirements(self):
         return getattr(self._tool, "requirements", [])
