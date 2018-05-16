@@ -9,7 +9,7 @@ Highlights
 ===========================================================
 
 **New Interface Style Library**
-  The design of many components of the Galaxy UI has been subtly improved as the result
+  The design of many components of the Galaxy user interface has been subtly improved as the result
   of upgrading to Bootstrap 4 style library. The upgrade process was a large community effort
   with commits from six contributors and testing and bug reports from many others. A huge
   thanks goes out to everyone who helped - it is a great step forward toward a more
@@ -27,7 +27,7 @@ Highlights
   `Pull Request 5516`_
 
 **New Powerful Rule-Based Data Uploader**
-  The Galaxy UI features a powerful new widget for manipulating lists of rules for processing metadata
+  The Galaxy features a powerful new interface for manipulating lists of rules for processing metadata
   that can be used to describe the upload of arbitrarily complex collections as well as individual
   datasets. These rules can be used to build collections from lists of URLs, FTP directory contents,
   data library folders, and tabular sample sheets or exports from external data sources. The same
