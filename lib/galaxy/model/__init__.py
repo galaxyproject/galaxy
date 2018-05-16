@@ -3371,6 +3371,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             if element.element_object in replacements:
                 if element.element_type == 'hda':
                     element.hda = replacements[element.element_object]
+                    element.hda.visible = False
                 # TODO: handle the case where elements are collections
 
     def set_from_dict(self, new_data):
