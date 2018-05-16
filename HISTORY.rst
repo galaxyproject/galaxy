@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.11.dev0
+18.5.11 (2018-05-16)
 ---------------------
 
 * Parse CWL SoftwareRequirements to Galaxy requirements (required to fix various Planemo functionality
