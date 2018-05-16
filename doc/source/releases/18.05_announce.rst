@@ -70,8 +70,25 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Security
+========
+
+vcffilter by devteam allowed RCE
+--------------------------------
+Tracked as ``GX-2018-0004``.
+
+Older versions of the VCF filter tool in the `vcffilter repository by devteam <https://toolshed.g2.bx.psu.edu/view/devteam/vcffilter/>`__ allowed remote code execution due to missing character escaping.
+If you have this repository installed in your Galaxy please update to the revision ``4:6b935ab36d7b`` or newer and disable/uninstall all older versions.
+
+Breaking Changes
+================
+
+The ``charts`` repository that powers Galaxy built-in visualizations that need backend computation has been moved
+to the IUC account. In order for these visualization options to keep working admins need to install the following repository: `iuc/charts <https://toolshed.g2.bx.psu.edu/view/iuc/charts/>`__.
+
+
 Release Notes
-===========================================================
+=============
 
 .. include:: 18.05.rst
    :start-after: announce_start
