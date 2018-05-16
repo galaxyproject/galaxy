@@ -8,8 +8,9 @@ May 2018 Galaxy Release (v 18.05)
 Highlights
 ===========================================================
 
-* The styling of many components of the Galaxy UI has been subtlety improved as the result
-  of upgrading to Bootstrap 4. The upgrade process was a large community effort
+**New Interface Style Library**
+  The design of many components of the Galaxy UI has been subtly improved as the result
+  of upgrading to Bootstrap 4 style library. The upgrade process was a large community effort
   with commits from six contributors and testing and bug reports from many others. A huge
   thanks goes out to everyone who helped - it is a great step forward toward a more
   standardized Galaxy client infrastructure built on reactive `VueJS <https://vuejs.org/>`__
@@ -19,12 +20,14 @@ Highlights
   `Pull Request 5807`_, `Galaxy Project Board for Bootstrap 4
   <https://github.com/galaxyproject/galaxy/projects/10>`__.
 
-* Support for chunked and resumable file uploads out-of-the-box. This should effectively
+**Unlimited Browser Upload Size**
+  Support for chunked and resumable file uploads out-of-the-box. This should effectively
   eliminate browser-based limitations on the size of files that can be uploaded to Galaxy.
 
   `Pull Request 5516`_
 
-* The Galaxy UI features a powerful new widget for manipulating lists of rules for processing metadata
+**New Powerful Rule-Based Data Uploader**
+  The Galaxy UI features a powerful new widget for manipulating lists of rules for processing metadata
   that can be used to describe the upload of arbitrarily complex collections as well as individual
   datasets. These rules can be used to build collections from lists of URLs, FTP directory contents,
   data library folders, and tabular sample sheets or exports from external data sources. The same
@@ -39,19 +42,21 @@ Highlights
   `Pull Request 5365`_, `Pull Request 5220`_, `Pull Request 5819`_, `Pull Request 5823`_,
   `Pull Request 5929`_, `Pull Request 5940`_
 
-* The charts and generic visualization frameworks have been merged together into a single coherent
-  one. You can use a new menu option to list and search all available visualizations together.
-
-  `Pull Request 5633`_, `Pull Request 5505`_
-
-* Introduction of basic GDPR compliance mode. Admins can enable it to help them comply with the European Union law known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__ which goes into effect on May 25, 2018. Thanks to `@erasche <https://github.com/erasche>`__.
+**GDPR Compliance Mode**
+ We introduce basic GDPR compliance mode. Admins can enable it to help them comply with the European Union law known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__ which goes into effect on May 25, 2018. Thanks to `@erasche <https://github.com/erasche>`__.
 
   `Pull Request 6069`_
 
-* Integration of a new visualization plugin - HIV-TRACE. Thanks to `@veg <https://github.com/veg>`__!
+**New HIV-TRACE Plugin**
+  Integration of a new visualization plugin - HIV-TRACE. Thanks to `@veg <https://github.com/veg>`__!
 
   `Pull Request 5869`_
 
+**Viz Frameworks Unified**
+  The charts and generic visualization frameworks have been merged together into a single coherent
+  one. You can use a new menu option to list and search all available visualizations together.
+
+  `Pull Request 5633`_, `Pull Request 5505`_
 
 Get Galaxy
 ==========
