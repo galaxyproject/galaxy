@@ -102,7 +102,7 @@ mapping:
         desc: |
           Mail
 
-      gdpr_compliance:
+      enable_beta_gdpr:
         type: bool
         default: false
         required: false

@@ -42,8 +42,8 @@ Highlights
   `Pull Request 5365`_, `Pull Request 5220`_, `Pull Request 5819`_, `Pull Request 5823`_,
   `Pull Request 5929`_, `Pull Request 5940`_
 
-**GDPR Compliance Mode**
-  We introduce basic GDPR compliance mode. Admins can enable it to help comply with the European Union law
+**GDPR Beta Mode**
+  We introduce beta GDPR privacy mode. Admins can enable it to help them comply with the European Union law
   known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__,
   which goes into effect on May 25, 2018. Thanks to `@erasche <https://github.com/erasche>`__.
 
