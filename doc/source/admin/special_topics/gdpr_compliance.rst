@@ -24,7 +24,7 @@ important implications of which you must be aware:
 Log Redaction
 -------------
 
-We attempt to redact all occurences of ``username`` or ``email`` in the logs. Instead
+We attempt to redact all occurrences of ``username`` or ``email`` in the logs. Instead
 we opt to log the user ID number which cannot be reversed into personally
 identifying information (PII) without access to the database. This is to
 pseudonymise the data and reduce risk of PII being leaked.
@@ -100,7 +100,7 @@ In practice this means:
 - email
 - user_address (when supplied)
 
-All have their values that consitute PII permanently redacted with a one-way
+All have their values that constitute PII permanently redacted with a one-way
 hash function.
 
 This does not automatically remove their histories or datasets or any data they
