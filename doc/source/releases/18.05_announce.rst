@@ -40,16 +40,15 @@ Highlights
   `Pull Request 5929`_, `Pull Request 5940`_
 
 * The charts and generic visualization frameworks have been merged together into a single coherent
-  framework. A new masthead option for listing and searching all available visualizations together
-  is now available.
-
-  .. image:: 18.05_new_viz.png
+  one. You can use a new menu option to list and search all available visualizations together.
 
   `Pull Request 5633`_, `Pull Request 5505`_
 
-* Integration of a new visualization plugin - HIV-TRACE. Thanks to `@veg <https://github.com/veg>`__!
+* Introduction of basic GDPR compliance mode. Admins can enable it to help them comply with the European Union law known as `General Data Protection Regulation <http://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX:32016R0679>`__ which goes into effect on May 25, 2018. Thanks to `@erasche <https://github.com/erasche>`__.
 
-  .. image:: https://user-images.githubusercontent.com/535261/38517356-bae56f4a-3c07-11e8-8b7f-0ca9bc6b6cf2.gif
+  `Pull Request 6069`_
+
+* Integration of a new visualization plugin - HIV-TRACE. Thanks to `@veg <https://github.com/veg>`__!
 
   `Pull Request 5869`_
 

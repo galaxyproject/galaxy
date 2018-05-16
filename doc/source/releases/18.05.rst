@@ -235,6 +235,11 @@ Fixes
 
 .. bug
 
+* Fix workflow step cloning.
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6085`_
+* Fix tool state performance for large collections.
+  `Pull Request 5997`_
 * Fix overly strict sanitizing in the filter tool
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 5872`_
@@ -602,3 +607,7 @@ Fixes
 .. _Pull Request 5980: https://github.com/galaxyproject/galaxy/pull/5980
 .. _Pull Request 5986: https://github.com/galaxyproject/galaxy/pull/5986
 .. _Pull Request 5991: https://github.com/galaxyproject/galaxy/pull/5991
+.. _Pull Request 5991: https://github.com/galaxyproject/galaxy/pull/5997
+.. _Pull Request 5991: https://github.com/galaxyproject/galaxy/pull/6007
+.. _Pull Request 5991: https://github.com/galaxyproject/galaxy/pull/6069
+.. _Pull Request 5991: https://github.com/galaxyproject/galaxy/pull/6085
