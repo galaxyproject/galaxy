@@ -2,7 +2,7 @@
 
 This file checks upload options that require different non-default Galaxy
 configuration options. More vanilla upload options and behaviors are tested
-with the API test framework (located in test_tools.py).
+with the API test framework (located in test_tools_upload.py).
 
 These options include:
  - The config options ``check_upload_content`` and ``allow_path_paste``.

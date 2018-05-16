@@ -66,6 +66,7 @@ class BaseJobRunner(object):
         """Start the job runner
         """
         self.app = app
+        self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
@@ -451,6 +452,10 @@ class JobState(object):
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
 
+        self.redact_email_in_job_name = True
+        if self.job_wrapper:
+            self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
+
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
     def set_defaults(self, files_dir):
@@ -464,7 +469,7 @@ class JobState(object):
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
+            if not self.redact_email_in_job_name and self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
             self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 

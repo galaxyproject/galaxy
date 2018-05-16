@@ -906,7 +906,7 @@ mapping:
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
-         
+
       default_locale:
         type: str
         default: auto
@@ -1973,6 +1973,9 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
+          If gdpr_compliance is set to True, then this option will be
+          overridden and set to False.
+
       expose_user_email:
         type: bool
         default: false
@@ -1984,6 +1987,9 @@ mapping:
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
+
+          If gdpr_compliance is set to True, then this option will be
+          overridden and set to False.
 
       fetch_url_whitelist:
         type: str
@@ -1997,6 +2003,25 @@ mapping:
           It should be a comma separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
+      gdpr_compliance:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing emails and
+          usernames from logs and bug reports. It also causes the delete user
+          admin action to permanently redact their username and password, but
+          not to delete data associated with the account as this is not
+          currently easily implementable.
+
+          You are responsible for removing personal data from backups.
+
+          This forces expose_user_email and expose_user_name to be false, and
+          forces user_deletion to be true to support the right to erasure.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.
       enable_beta_ts_api_install:
         type: bool
         default: true
@@ -2659,4 +2684,3 @@ mapping:
         required: false
         desc: |
           persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-

@@ -870,7 +870,7 @@ export default {
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
@@ -1174,11 +1174,11 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
-            } else if ( this.elementsType == "ftp" ) {
+            } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
-            } else if ( this.elementsType == "library_datasets" ) {
+            } else if (this.elementsType == "library_datasets") {
                 metadataOptions["name"] = _l("Name");
-            } else if ( this.elementsType == "datasets" ) {
+            } else if (this.elementsType == "datasets") {
                 metadataOptions["hid"] = _l("History ID (hid)");
                 metadataOptions["name"] = _l("Name");
             } else {
@@ -1481,7 +1481,8 @@ export default {
                     axios
                         .post(`${Galaxy.root}api/tools/fetch`, {
                             history_id: historyId,
-                            targets: targets
+                            targets: targets,
+                            auto_decompress: true,
                         })
                         .then(this.refreshAndWait)
                         .catch(this.renderFetchError);

@@ -189,8 +189,10 @@ class LDAP(AuthProvider):
         """
         See abstract method documentation.
         """
-        log.debug("LDAP authenticate: email is %s" % email)
-        log.debug("LDAP authenticate: username is %s" % username)
+        if not options['redact_username_in_logs']:
+            log.debug("LDAP authenticate: email is %s" % email)
+            log.debug("LDAP authenticate: username is %s" % username)
+
         log.debug("LDAP authenticate: options are %s" % options)
 
         failure_mode, params = self.ldap_search(email, username, options)
@@ -228,7 +230,9 @@ class LDAP(AuthProvider):
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
-                log.debug("LDAP authenticate: whoami is %s", whoami)
+                if not options['redact_username_in_logs']:
+                    log.debug("LDAP authenticate: whoami is %s", whoami)
+
                 if whoami is None:
                     raise RuntimeError('LDAP authenticate: anonymous bind')
         except Exception:

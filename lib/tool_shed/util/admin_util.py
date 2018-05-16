@@ -1,14 +1,17 @@
 import logging
+import time
 
 from sqlalchemy import false, func
 
 from galaxy import util, web
 from galaxy.util import inflector
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
+compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class Admin(object):
@@ -725,6 +728,27 @@ class Admin(object):
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
+
+            compliance_log.info('delete-user-event: %s' % user_id)
+            # See lib/galaxy/webapps/tool_shed/controllers/admin.py
+            pseudorandom_value = str(int(time.time()))
+            email_hash = new_secure_hash(user.email + pseudorandom_value)
+            uname_hash = new_secure_hash(user.username + pseudorandom_value)
+            for role in user.all_roles():
+                print(role, self.app.config.redact_username_during_deletion, self.app.config.redact_email_during_deletion)
+                if self.app.config.redact_username_during_deletion:
+                    role.name = role.name.replace(user.username, uname_hash)
+                    role.description = role.description.replace(user.username, uname_hash)
+
+                if self.app.config.redact_email_during_deletion:
+                    role.name = role.name.replace(user.email, email_hash)
+                    role.description = role.description.replace(user.email, email_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                user.email = email_hash
+            if self.app.config.redact_username_during_deletion:
+                user.username = uname_hash
+
             trans.sa_session.add(user)
             trans.sa_session.flush()
             message += " %s " % user.email
@@ -852,6 +876,7 @@ class Admin(object):
                 return self.create_new_user(trans, **kwd)
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user(trans, **kwd)
+
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
