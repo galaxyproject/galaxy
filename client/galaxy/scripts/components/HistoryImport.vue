@@ -8,14 +8,14 @@
         </div>
         <div class="portlet-content">
             <b-form @submit="submit">
-                <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+                <b-alert class="ui-message visible d-block" :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
                 <div class="ui-form-element">
                     <div class="ui-form-title">Archived History URL</div>
-                    <b-form-input type="url" v-model="sourceURL" placeholder="Archive History URL"/>
+                    <b-form-input type="url" v-model="sourceURL"/>
                 </div>
                 <div class="ui-form-element">
                     <div class="ui-form-title">Archived History file</div>
-                    <b-form-file v-model="sourceFile" placeholder="Archived History File"/>
+                    <b-form-file v-model="sourceFile"/>
                 </div>
                 <div class="portlet-buttons">
                     <b-button type="submit">Import history</b-button>
@@ -63,8 +63,3 @@ export default {
     }
 };
 </script>
-<style>
-.ui-show {
-    display: block;
-}
-</style>
