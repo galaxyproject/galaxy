@@ -235,6 +235,7 @@ class Configuration(object):
 
         self.expose_user_name = kwargs.get("expose_user_name", False)
         self.expose_user_email = kwargs.get("expose_user_email", False)
+
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
@@ -685,6 +686,45 @@ class Configuration(object):
         self.citation_cache_lock_dir = self.resolve_path(kwargs.get("citation_cache_lock_dir", "database/citations/locks"))
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
+
+        # Compliance/Policy variables
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_ip_address = False
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.redact_user_details_in_bugreport = False
+        self.redact_user_address_during_deletion = False
+        # GDPR compliance mode changes values on a number of variables. Other
+        # policies could change (non)overlapping subsets of these variables.
+        self.gdpr_compliance = string_as_bool(kwargs.get("gdpr_compliance", False))
+        if self.gdpr_compliance:
+            self.expose_user_name = False
+            self.expose_user_email = False
+
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_ip_address = True
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+            self.redact_user_details_in_bugreport = True
+            self.redact_user_address_during_deletion = True
+            self.allow_user_deletion = True
+
+            LOGGING_CONFIG_DEFAULT['formatters']['brief'] = {
+                'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+            }
+            LOGGING_CONFIG_DEFAULT['handlers']['compliance_log'] = {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'brief',
+                'filename': 'compliance.log',
+                'backupCount': 0,
+            }
+            LOGGING_CONFIG_DEFAULT['loggers']['COMPLIANCE'] = {
+                'handlers': ['compliance_log'],
+                'level': 'DEBUG',
+                'qualname': 'COMPLIANCE'
+            }
 
     @property
     def sentry_dsn_public(self):

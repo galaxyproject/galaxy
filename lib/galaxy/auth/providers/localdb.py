@@ -25,7 +25,7 @@ class LocalDB(AuthProvider):
         See abstract method documentation.
         """
         user_ok = user.check_password(password)
-        log.debug("User: %s, LOCALDB: %s" % (user.email, user_ok))
+        log.debug("User: %s, LOCALDB: %s" % (user.id if options['redact_username_in_logs'] else user.email, user_ok))
         return user_ok
 
 
