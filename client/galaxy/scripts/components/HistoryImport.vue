@@ -52,7 +52,7 @@ export default {
                 axios
                     .post(`${Galaxy.root}api/histories`, formData)
                     .then(response => {
-                        //window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`;
+                        window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`;
                     })
                     .catch(response => {
                         let message = response.responseJSON && response.responseJSON.err_msg;
