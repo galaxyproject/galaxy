@@ -55,13 +55,14 @@ var HistoryContentMixin = {
     // ........................................................................ ajax
     //TODO?: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
+    urlRoot: `${Galaxy.root}api/histories/`,
 
     /** full url spec. for this content */
     url: function() {
         var historyContentType = this.get("history_content_type");
         var historyId = this.get("history_id");
         var historyContentId = this.get("id");
-        var url = `${Galaxy.root}/api/histories/${historyId}/contents/${historyContentType}s/${historyContentId}`;
+        var url = `${this.urlRoot}${historyId}/contents/${historyContentType}s/${historyContentId}`;
         if (historyContentType == "dataset_collection") {
             // Don't fetch whole collection - just enought to render outline. Backbone will
             // make a detailed request if any datasets are expanded beyond that point.

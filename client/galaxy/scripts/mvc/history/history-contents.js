@@ -35,9 +35,12 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     /** @type {String} order used here and when fetching from server */
     order: "hid",
 
+    /** root api url */
+    urlRoot: `${Galaxy.root}api/histories`,
+
     /** complete api url */
     url: function() {
-        return `${Galaxy.root}api/histories/${this.historyId}/contents`;
+        return `${this.urlRoot}/${this.historyId}/contents`;
     },
 
     /** Set up */
