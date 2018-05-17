@@ -548,7 +548,6 @@ var HistoryViewEdit = _super.extend(
             ev.preventDefault();
             //ev.stopPropagation();
 
-            var self = this;
             var dataTransfer = ev.originalEvent.dataTransfer;
             var data = dataTransfer.getData("text");
 
@@ -556,22 +555,21 @@ var HistoryViewEdit = _super.extend(
             try {
                 data = JSON.parse(data);
             } catch (err) {
-                self.warn("error parsing JSON from drop:", data);
+                this.warn("error parsing JSON from drop:", data);
             }
 
-            self.trigger("droptarget:drop", ev, data, self);
+            this.trigger("droptarget:drop", ev, data);
             return false;
         },
 
         /** handler that copies data into the contents */
         dataDropped: function(data) {
-            var self = this;
             // HDA: dropping will copy it to the history
             if (_.isObject(data) && data.model_class === "HistoryDatasetAssociation" && data.id) {
-                if (self.contents.currentPage !== 0) {
-                    return self.contents.fetchPage(0).then(() => self.model.contents.copy(data.id));
+                if (this.contents.currentPage !== 0) {
+                    return this.contents.fetchPage(0).then(() => this.model.contents.copy(data.id));
                 }
-                return self.model.contents.copy(data.id);
+                return this.model.contents.copy(data.id);
             }
             return jQuery.when();
         },
