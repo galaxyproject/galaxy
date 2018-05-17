@@ -430,7 +430,7 @@ mapping:
         desc: |
           Serving static files (needed if running standalone)
 
-      gdpr_compliance:
+      enable_beta_gdpr:
         type: bool
         default: false
         required: false

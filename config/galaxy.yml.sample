@@ -52,8 +52,7 @@ uwsgi:
   # --daemon and/or production deployments.
   master: false
 
-  # Path to the application's Python virtual environment. If using Conda for
-  # Galaxy's framework dependencies (not tools!), do not set this.
+  # Path to the application's Python virtual environment.
   virtualenv: .venv
 
   # Path to the application's Python library.
@@ -1293,7 +1292,7 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.  If gdpr_compliance is set to True, then this
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
   # option will be overridden and set to False.
   #expose_user_name: false
 
@@ -1303,7 +1302,7 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.  If gdpr_compliance is set to True, then this
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
   # option will be overridden and set to False.
   #expose_user_email: false
 
@@ -1327,7 +1326,7 @@ galaxy:
   # expose_user_name to be false, and forces user_deletion to be true to
   # support the right to erasure.  Please read the GDPR section under
   # the special topics area of the admin documentation.
-  #gdpr_compliance: false
+  #enable_beta_gdpr: false
 
   # Enable the new interface for installing tools from Tool Shed via the
   # API. Admin menu will list both if enabled.
