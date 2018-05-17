@@ -129,7 +129,7 @@ equivalent to a +1 vote:
 - approving the pull request when submitting a
   `review <https://help.github.com/articles/reviewing-proposed-changes-in-a-pull-request/>`__.
 
-Tha latter is the preferred method because it is integrated in GitHub, it allows
+The latter is the preferred method because it is integrated in GitHub, it allows
 tracking the moment when the review was submitted and it sends a notification to
 subscribers.
 
