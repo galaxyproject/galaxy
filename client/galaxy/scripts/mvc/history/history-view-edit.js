@@ -1,6 +1,5 @@
+import * as _ from "underscore";
 import HISTORY_VIEW from "mvc/history/history-view";
-import HISTORY_CONTENTS from "mvc/history/history-contents";
-import STATES from "mvc/dataset/states";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
@@ -10,10 +9,13 @@ import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import faIconButton from "ui/fa-icon-button";
-import PopupMenu from "mvc/ui/popup-menu";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
+
+/* global Galaxy */
+/* global jQuery */
+/* global $ */
 
 /* =============================================================================
 TODO:
@@ -275,7 +277,9 @@ var HistoryViewEdit = _super.extend(
                 actions.push({
                     html: _l("Permanently delete datasets"),
                     func: function() {
-                        if (confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))) {
+                        if (
+                            window.confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))
+                        ) {
                             var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                             const historyContents = panel.getSelectedModels();
                             const selectedDatasets = historyContents.filter(
@@ -316,8 +320,8 @@ var HistoryViewEdit = _super.extend(
 
         buildCollection: function(collectionType, selection, hideSourceItems) {
             var panel = this;
-            var selection = selection || panel.getSelectedModels();
-            var hideSourceItems = hideSourceItems || false;
+            selection = selection || panel.getSelectedModels();
+            hideSourceItems = hideSourceItems || false;
             var createFunc;
             if (collectionType == "list") {
                 createFunc = LIST_COLLECTION_CREATOR.createListCollection;
