@@ -236,7 +236,7 @@ var Collection = Backbone.Collection.extend({
                         {
                             title: _l("Login"),
                             url: "user/login",
-                            target: "galaxy_main",
+                            target: "_top",
                             noscratchbook: true
                         },
                         {

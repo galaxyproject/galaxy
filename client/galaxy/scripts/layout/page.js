@@ -3,6 +3,7 @@ import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
+import Vue from "vue";
 
 var View = Backbone.View.extend({
     el: "body",
@@ -69,6 +70,7 @@ var View = Backbone.View.extend({
                 var panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
                 var panel_class = options[panel_class_name];
                 if (panel_class) {
+                    window.console.log(panel_class instanceof Vue);
                     var panel_instance = new panel_class(self, options);
                     var panel_el = self.$(`#${panel_id}`);
                     self[panel_instance.toString()] = panel_instance;

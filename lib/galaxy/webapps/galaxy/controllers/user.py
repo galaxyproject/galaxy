@@ -433,7 +433,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return self.user_openid_grid(trans, **kwd)
 
     @web.expose
-    def login(self, trans, refresh_frames=[], **kwd):
+    def loginoff(self, trans, refresh_frames=[], **kwd):
         '''Handle Galaxy Log in'''
         referer = trans.request.referer or ''
         redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
