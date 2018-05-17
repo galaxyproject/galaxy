@@ -54,7 +54,7 @@ Members
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
 - Anton Nekrutenko (@nekrut)
-- Eric Rasche (@erasche)
+- Helena Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Marius van den Beek (@mvdbeek)
