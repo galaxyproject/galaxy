@@ -147,8 +147,9 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
   *-1* binding votes.
 - Should be titled with the prefix *[PROCEDURES]* and tagged with
   the *procedures* tag in Github.
-- Should not be modified once open. If changes are needed, the pull request
-  should be closed, re-opened with modifications, and votes reset.
+- Should not be modified once open, except for spelling and formatting fixes.
+  If other changes are needed, the pull request should be closed, re-opened with
+  modifications, and the votes reset.
 - Should be restricted to just modifying the procedures and generally should not
   contain code modifications.
 - If the pull request adds or removes *committers*, there must be a separate
