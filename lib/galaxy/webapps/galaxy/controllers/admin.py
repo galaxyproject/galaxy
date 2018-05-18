@@ -801,7 +801,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             return trans.show_error_message("User impersonation is not enabled in this instance of Galaxy.")
         message = ''
         status = 'done'
-        emails = None
+        show_emails = True
         user = None
         user_id = kwd.get('id', None)
         if user_id is not None:
@@ -812,13 +812,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             trans.handle_user_logout()
             trans.handle_user_login(user)
             message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root'))
-            emails = []
+            show_emails = False
         elif user_id or email:
             message = 'Invalid user selected'
             status = 'error'
-        if emails is None:
-            emails = [u.email for u in trans.sa_session.query(trans.app.model.User).enable_eagerloads(False).all()]
-        return trans.fill_template('admin/impersonate.mako', emails=emails, message=message, status=status)
+        return trans.fill_template('admin/impersonate.mako', show_emails=show_emails, message=message, status=status)
 
     def check_for_tool_dependencies(self, trans, migration_stage):
         # Get the 000x_tools.xml file associated with migration_stage.

@@ -5,7 +5,7 @@
     ${render_msg( message, status )}
 %endif
 
-%if emails:
+%if show_emails:
     <div class="toolForm">
         <div class="toolFormTitle">Impersonate another user</div>
         <div class="toolFormBody">
