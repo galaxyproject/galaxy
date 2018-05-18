@@ -146,8 +146,8 @@ class Configuration(object):
         self.redact_username_during_deletion = False
         self.redact_email_during_deletion = False
         self.redact_username_in_logs = False
-        self.gdpr_compliance = string_as_bool(kwargs.get("gdpr_compliance", False))
-        if self.gdpr_compliance:
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
             self.redact_username_during_deletion = True
             self.redact_email_during_deletion = True
             self.redact_username_in_logs = True

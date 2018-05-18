@@ -2645,7 +2645,7 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If gdpr_compliance is set
+    username and not email, or vice versa.  If enable_beta_gdpr is set
     to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
@@ -2662,7 +2662,7 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If gdpr_compliance is set
+    username and not email, or vice versa.  If enable_beta_gdpr is set
     to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
@@ -2685,9 +2685,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~
-``gdpr_compliance``
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enables GDPR Compliance mode. This makes several changes to the

@@ -294,7 +294,7 @@ tool_shed:
   # emails/usernames from logs and bug reports.  You are responsible for
   # removing personal data from backups.  Please read the GDPR section
   # under the special topics area of the admin documentation.
-  #gdpr_compliance: false
+  #enable_beta_gdpr: false
 
   # For help on configuring the Advanced proxy features, see:
   # http://usegalaxy.org/production  Apache can handle file downloads

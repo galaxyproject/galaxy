@@ -1126,7 +1126,7 @@ class ToolsTestCase(api.ApiTestCase):
         }
         self._check_simple_cat1_over_nested_collections(history_id, inputs)
 
-    @skip_without_tool("paired_collection_map_over_structured_like")
+    @skip_without_tool("collection_paired_structured_like")
     def test_paired_input_map_over_nested_collections(self):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_nested_list(history_id)
@@ -1134,7 +1134,26 @@ class ToolsTestCase(api.ApiTestCase):
             "input1": {'batch': True, 'values': [dict(map_over_type='paired', src="hdca", id=hdca_id)]},
         }
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        create = self._run("paired_collection_map_over_structured_like", history_id, inputs, assert_ok=True)
+        create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 2)
+        self.assertEquals(len(implicit_collections), 1)
+        implicit_collection = implicit_collections[0]
+        assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
+        outer_elements = implicit_collection["elements"]
+        assert len(outer_elements) == 2
+
+    @skip_without_tool("collection_paired_conditional_structured_like")
+    def test_paired_input_conditional_map_over_nested_collections(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_nested_list(history_id)
+        inputs = {
+            "cond|cond_param": "paired",
+            "cond|input1": {'batch': True, 'values': [dict(map_over_type='paired', src="hdca", id=hdca_id)]},
+        }
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        create = self._run("collection_paired_conditional_structured_like", history_id, inputs, assert_ok=True)
         jobs = create['jobs']
         implicit_collections = create['implicit_collections']
         self.assertEquals(len(jobs), 2)

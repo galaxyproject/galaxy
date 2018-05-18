@@ -877,14 +877,21 @@ class Registry(object):
             return converters[target_ext]
         return None
 
-    def find_conversion_destination_for_dataset_by_extensions(self, dataset, accepted_formats, converter_safe=True):
+    def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
         """Returns ( target_ext, existing converted dataset )"""
-        for convert_ext in self.get_converters_by_datatype(dataset.ext):
+        if hasattr(dataset_or_ext, "ext"):
+            ext = dataset_or_ext.ext
+            dataset = dataset_or_ext
+        else:
+            ext = dataset_or_ext
+            dataset = None
+
+        for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
             elif convert_ext_datatype.matches_any(accepted_formats):
-                converted_dataset = dataset.get_converted_files_by_type(convert_ext)
+                converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
                     ret_data = converted_dataset
                 elif not converter_safe:

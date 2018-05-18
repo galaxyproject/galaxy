@@ -1973,7 +1973,7 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
-          If gdpr_compliance is set to True, then this option will be
+          If enable_beta_gdpr is set to True, then this option will be
           overridden and set to False.
 
       expose_user_email:
@@ -1988,7 +1988,7 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
-          If gdpr_compliance is set to True, then this option will be
+          If enable_beta_gdpr is set to True, then this option will be
           overridden and set to False.
 
       fetch_url_whitelist:
@@ -2003,7 +2003,7 @@ mapping:
           It should be a comma separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
-      gdpr_compliance:
+      enable_beta_gdpr:
         type: bool
         default: false
         required: false

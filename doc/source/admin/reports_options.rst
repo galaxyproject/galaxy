@@ -153,9 +153,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~
-``gdpr_compliance``
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enables GDPR Compliance mode. This makes several changes to the
