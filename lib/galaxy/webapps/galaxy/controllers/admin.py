@@ -796,27 +796,23 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def impersonate(self, trans, email=None, **kwd):
+    def impersonate(self, trans, **kwd):
         if not trans.app.config.allow_user_impersonation:
             return trans.show_error_message("User impersonation is not enabled in this instance of Galaxy.")
-        message = ''
-        status = 'done'
-        show_emails = True
         user = None
         user_id = kwd.get('id', None)
         if user_id is not None:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        elif email is not None:
-            user = trans.sa_session.query(trans.app.model.User).filter_by(email=email).first()
-        if user:
-            trans.handle_user_logout()
-            trans.handle_user_login(user)
-            message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root'))
-            show_emails = False
-        elif user_id or email:
-            message = 'Invalid user selected'
-            status = 'error'
-        return trans.fill_template('admin/impersonate.mako', show_emails=show_emails, message=message, status=status)
+            try:
+                user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+                if user:
+                    trans.handle_user_logout()
+                    trans.handle_user_login(user)
+                    return trans.show_message('You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root')), use_panels=True)
+            except Exception:
+                log.exception("Error fetching user for impersonation")
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='users',
+                                                        message="Invalid user selected", status="error"))
 
     def check_for_tool_dependencies(self, trans, migration_stage):
         # Get the 000x_tools.xml file associated with migration_stage.
