@@ -246,7 +246,7 @@
         el.append(
             $input.change(e => {
                 opts.onchange(e.target.files);
-                $(this).val("");
+                e.target.value = null;
             })
         );
 
