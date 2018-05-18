@@ -517,6 +517,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
     undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
+    impersonate_operation = grids.GridOperation(
+        "Impersonate",
+        url_args=dict(controller="admin", action="impersonate"),
+        allow_multiple=False
+    )
 
     @web.expose
     @web.require_admin
@@ -583,6 +588,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 self.user_list_grid.operations.append(self.undelete_operation)
             if self.purge_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.purge_operation)
+        if trans.app.config.allow_user_impersonation:
+            if self.impersonate_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append(self.impersonate_operation)
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
@@ -794,16 +802,20 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = ''
         status = 'done'
         emails = None
-        if email is not None:
+        user = None
+        user_id = kwd.get('id', None)
+        if user_id is not None:
+            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+        elif email is not None:
             user = trans.sa_session.query(trans.app.model.User).filter_by(email=email).first()
-            if user:
-                trans.handle_user_logout()
-                trans.handle_user_login(user)
-                message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (email, url_for(controller='root'))
-                emails = []
-            else:
-                message = 'Invalid user selected'
-                status = 'error'
+        if user:
+            trans.handle_user_logout()
+            trans.handle_user_login(user)
+            message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root'))
+            emails = []
+        elif user_id or email:
+            message = 'Invalid user selected'
+            status = 'error'
         if emails is None:
             emails = [u.email for u in trans.sa_session.query(trans.app.model.User).enable_eagerloads(False).all()]
         return trans.fill_template('admin/impersonate.mako', emails=emails, message=message, status=status)
