@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from galaxy import exceptions
 from galaxy import model
 from galaxy import util
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -26,6 +27,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
+        self.dataset_manager = DatasetManager(app)
         self.job_search = JobSearch(app)
 
     @expose_api
