@@ -128,7 +128,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             if "|" in details:
-                raise Exception("Cannot build Markdown table")
+                details.replace("|", "\|")
             details = details.replace("\n", " ").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
