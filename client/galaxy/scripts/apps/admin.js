@@ -9,7 +9,6 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
 import Vue from "vue";
 
@@ -28,7 +27,6 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/api_keys": "show_user_api_keys",
             "(/)admin/data_tables": "show_data_tables"
         },
 
@@ -88,12 +86,6 @@ window.app = function app(options, bootstrapped) {
                     url_data: Galaxy.params
                 })
             );
-        },
-
-        show_user_api_keys: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(UserAPIKeys).$mount(vueMount);
         },
 
         show_data_tables: function() {
