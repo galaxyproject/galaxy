@@ -1,5 +1,11 @@
+import DataDialog from "components/DataDialog.vue";
+import Vue from "vue";
+
 export default class Data {
     dialog(options) {
-        alert('here');
+        var instance = Vue.extend(DataDialog);
+        var vm = document.createElement("div");
+        $('body').empty().append(vm);
+        new instance().$mount(vm);
     }
 }

@@ -1,9 +1,7 @@
 <template>
-    <div>
-      <b-modal ref="modal" title="Dataset Selector">
+    <b-modal ref="modal" title="Dataset Selector">
         <p class="my-4">Content</p>
-      </b-modal>
-    </div>
+    </b-modal>
 </template>
 
 <script>
@@ -23,6 +21,7 @@ export default {
         };
     },
     created: function() {
+        this.show();
     },
     updated: function() {
     },

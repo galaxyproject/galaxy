@@ -24,7 +24,7 @@ var View = Backbone.View.extend({
         // attach global objects, build mastheads
         Galaxy.modal = this.modal = new Modal.View();
         Galaxy.router = this.router = options.Router && new options.Router(self, options);
-        Galaxy.data = this.data = new Data();
+        Galaxy.data = this.data = new Data(this);
         this.masthead = new Masthead.View(this.config);
         this.center = new Panel.CenterPanel();
 
