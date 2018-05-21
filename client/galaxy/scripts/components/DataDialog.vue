@@ -1,5 +1,5 @@
 <template>
-    <b-modal ref="modal" title="Dataset Selector">
+    <b-modal v-model="modalShow" ref="modal" title="Dataset Selector">
         <p class="my-4">Content</p>
     </b-modal>
 </template>
@@ -12,26 +12,15 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    props: {
-    },
-    computed: {
-    },
+    props: {},
+    computed: {},
     data() {
         return {
+            modalShow: true
         };
     },
-    created: function() {
-        this.show();
-    },
-    updated: function() {
-    },
-    methods: {
-        show() {
-          this.$refs.modal.show()
-        },
-        hide() {
-          this.$refs.modal.hide()
-        }
-    }
+    created: function() {},
+    updated: function() {},
+    methods: {}
 };
 </script>

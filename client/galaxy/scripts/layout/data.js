@@ -5,7 +5,7 @@ export default class Data {
     dialog(options) {
         var instance = Vue.extend(DataDialog);
         var vm = document.createElement("div");
-        $('body').empty().append(vm);
+        $('body').append(vm);
         new instance().$mount(vm);
     }
 }
