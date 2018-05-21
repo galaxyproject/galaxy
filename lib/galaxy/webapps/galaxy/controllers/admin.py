@@ -97,6 +97,13 @@ class UserListGrid(grids.Grid):
             else:
                 return 'N'
 
+    class APIKeyColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            if user.api_keys:
+                return user.api_keys[0].key
+            else:
+                return ""
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -122,6 +129,7 @@ class UserListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         TimeCreatedColumn("Created", attach_popup=False),
         ActivatedColumn("Activated", attach_popup=False),
+        APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
@@ -149,7 +157,13 @@ class UserListGrid(grids.Grid):
                             target="top"),
         grids.GridOperation("Recalculate Disk Usage",
                             condition=(lambda item: not item.deleted),
-                            allow_multiple=False)
+                            allow_multiple=False),
+        grids.GridOperation(
+            "Generate New API Key",
+            allow_multiple=False,
+            async_compatible=True
+        )
+
     ]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
@@ -581,6 +595,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._purge_user(trans, ids)
             elif operation == 'recalculate disk usage':
                 message, status = self._recalculate_user(trans, id)
+            elif operation == 'generate new api key':
+                message, status = self._new_user_apikey(trans, id)
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
@@ -1550,6 +1566,15 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         else:
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
+
+    def _new_user_apikey(self, trans, uid):
+        new_key = trans.app.model.APIKeys(
+            user_id=trans.security.decode_id(uid),
+            key=trans.app.security.get_new_guid()
+        )
+        trans.sa_session.add(new_key)
+        trans.sa_session.flush()
+        return ('New key %s generated for requested user.', 'done')
 
     @web.expose_api
     @web.require_admin
