@@ -1565,14 +1565,17 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
 
-    def _new_user_apikey(self, trans, uid):
+    def _new_user_apikey(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
         new_key = trans.app.model.APIKeys(
-            user_id=trans.security.decode_id(uid),
+            user_id=trans.security.decode_id(user_id),
             key=trans.app.security.get_new_guid()
         )
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
-        return ("New key '%s' generated for requested user." % new_key.key, "done")
+        return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
 
     @web.expose_api
     @web.require_admin
