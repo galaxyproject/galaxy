@@ -1572,7 +1572,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
         trans.sa_session.add(new_key)
         trans.sa_session.flush()
-        return ('New key %s generated for requested user.', 'done')
+        return ("New key '%s' generated for requested user." % new_key.key, "done")
 
     @web.expose_api
     @web.require_admin
