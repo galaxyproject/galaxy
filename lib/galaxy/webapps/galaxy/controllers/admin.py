@@ -158,11 +158,9 @@ class UserListGrid(grids.Grid):
         grids.GridOperation("Recalculate Disk Usage",
                             condition=(lambda item: not item.deleted),
                             allow_multiple=False),
-        grids.GridOperation(
-            "Generate New API Key",
-            allow_multiple=False,
-            async_compatible=True
-        )
+        grids.GridOperation("Generate New API Key",
+                            allow_multiple=False,
+                            async_compatible=True)
 
     ]
     standard_filters = [
