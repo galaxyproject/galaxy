@@ -47,9 +47,6 @@ Please visit <a href="https://galaxyproject.org/admin" target="_blank">the Galax
                 <li>
                     <strong>Forms</strong> - Manage local form definitions.
                 </li>
-                <li>
-                    <strong>API keys</strong> - A view of all generated API keys with an option to re-generate.
-                </li>
             </ul>
 
         <h4>Tool Management</h4>
