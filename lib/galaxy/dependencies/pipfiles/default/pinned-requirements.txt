@@ -118,7 +118,7 @@ sqlalchemy-utils==0.33.2
 sqlalchemy==1.2.6
 sqlparse==0.2.4
 stevedore==1.28.0
-subprocess32==3.2.7; python_version < '3.0'
+subprocess32==3.5.0; python_version < '3.0'
 svgwrite==1.1.12
 tempita==0.5.2
 tzlocal==1.5.1
