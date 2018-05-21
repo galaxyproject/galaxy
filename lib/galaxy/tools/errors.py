@@ -163,7 +163,7 @@ class ErrorReporter(object):
         hda_id_encoded = self.app.security.encode_id(hda.id)
         hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
-        if self.redact_user_details_in_bugreport:
+        if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
             # the github posting method more than the traditional email plugin.
             # There is no way around CCing the person with the traditional
