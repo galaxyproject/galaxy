@@ -1,6 +1,6 @@
 <template>
     <b-modal v-model="modalShow" :title="modalTitle" @ok="handleOk" :ok-only="!optionsShow">
-        <b-alert v-if="errorMessage" variant="danger" :show="errorMessage">
+        <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
             {{ errorMessage }}
         </b-alert>
         <div v-else>
@@ -41,6 +41,7 @@ export default {
     data() {
         return {
             errorMessage: null,
+            errorShow: true,
             historyId: null,
             modalShow: true,
             options: [],
@@ -59,6 +60,7 @@ export default {
         loadOptions: function() {
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             this.selected = null;
+            this.options = [];
             if (this.historyId) {
                 axios
                     .get(`${Galaxy.root}api/histories/${this.historyId}/contents`)
@@ -72,7 +74,7 @@ export default {
                         this.optionsShow = true;
                     })
                     .catch(e => {
-                        this.errorMessage = e.response.data.err_msg;
+                        this.errorMessage = e.response.data.err_msg || "Server request failed.";
                     });
             } else {
                 this.errorMessage = "History not accessible.";
