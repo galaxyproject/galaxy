@@ -58,6 +58,24 @@ def _handle_pseudo_location(properties, pseduo_location):
         properties["location"] = properties["basename"]
 
 
+def abs_path_or_uri(path_or_uri, relative_to):
+    """Return an absolute path if this isn't a URI, otherwise keep the URI the same.
+    """
+    is_uri = "://" in path_or_uri
+    if not is_uri and not os.path.isabs(path_or_uri):
+        path_or_uri = os.path.join(relative_to, path_or_uri)
+    if not is_uri:
+        _ensure_file_exists(path_or_uri)
+    return path_or_uri
+
+
+def path_or_uri_to_uri(path_or_uri):
+    if "://" not in path_or_uri:
+        return "file://%s" % path_or_uri
+    else:
+        return path_or_uri
+
+
 def galactic_job_json(
     job, test_data_directory, upload_func, collection_create_func, tool_or_workflow="workflow"
 ):
@@ -74,9 +92,7 @@ def galactic_job_json(
     dataset_collections = []
 
     def upload_file(file_path, secondary_files):
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(test_data_directory, file_path)
-        _ensure_file_exists(file_path)
+        file_path = abs_path_or_uri(file_path, test_data_directory)
         target = FileUploadTarget(file_path, secondary_files)
         upload_response = upload_func(target)
         dataset = upload_response["outputs"][0]
@@ -85,9 +101,7 @@ def galactic_job_json(
         return {"src": "hda", "id": dataset_id}
 
     def upload_tar(file_path):
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(test_data_directory, file_path)
-        _ensure_file_exists(file_path)
+        file_path = abs_path_or_uri(file_path, test_data_directory)
         target = DirectoryUploadTarget(file_path)
         upload_response = upload_func(target)
         dataset = upload_response["outputs"][0]
