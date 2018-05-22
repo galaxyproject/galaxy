@@ -13308,8 +13308,8 @@ div.debug {
 .submit-image {
   background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
   background-color: #eee;
-  width: 9.5;
-  height: 9.5;
+  width: 1.5rem;
+  height: 1.5rem;
   cursor: pointer;
   margin: 0;
   padding: 0;
