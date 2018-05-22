@@ -66,7 +66,7 @@ export default {
                     .get(`${Galaxy.root}api/histories/${this.historyId}/contents`)
                     .then(response => {
                         for(let item of response.data) {
-                            this.options.push({value: item.url, text: item.name});
+                            this.options.push({value: item.url, text: `${item.hid}: ${item.name}`});
                             if (!this.selected) {
                                 this.selected = item.url;
                             }
