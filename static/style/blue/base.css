@@ -13718,6 +13718,13 @@ div.permissionContainer {
     padding: 6px 10px 6px 8px; }
   .list-item .warnings:not(:empty) {
     padding-top: 4px; }
+  .list-item .warnings [class$="messagesmall"] {
+    margin: 6px 10px 2px 8px;
+    font-size: 90%; }
+    .list-item .warnings [class$="messagesmall"]:first-child {
+      margin-top: 0px; }
+    .list-item .warnings [class$="messagesmall"]:last-child {
+      margin-bottom: 0px; }
   .list-item .help-text, .list-item .details .prompt {
     font-weight: normal;
     color: #555; }
