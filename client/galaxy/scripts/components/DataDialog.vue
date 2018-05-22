@@ -74,7 +74,11 @@ export default {
                         this.optionsShow = true;
                     })
                     .catch(e => {
-                        this.errorMessage = e.response.data.err_msg || "Server request failed.";
+                        if (e.response) {
+                            this.errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                        } else {
+                            this.errorMessage = "Server unavailable.";
+                        }
                     });
             } else {
                 this.errorMessage = "History not accessible.";
