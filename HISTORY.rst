@@ -9,7 +9,7 @@ History
 18.5.12.dev0
 ---------------------
 
-    
+* Update test data processing to allow URIs in Galaxy workflow tests.
 
 ---------------------
 18.5.11 (2018-05-16)
