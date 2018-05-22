@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.12.dev0
+18.5.12 (2018-05-22)
 ---------------------
 
 * Update test data processing to allow URIs in Galaxy workflow tests.
