@@ -14373,7 +14373,7 @@ pre.peek {
   table-layout: fixed;
   width: 100%;
   cursor: pointer;
-  border-bottom: 1px solid fade(grey, % 50); }
+  border-bottom: 1px solid rgba(128, 128, 128, 0.5); }
   .annotated-history-panel .contents-container > * {
     display: table-cell;
     vertical-align: top;
