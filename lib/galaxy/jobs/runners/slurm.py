@@ -37,7 +37,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ['sacct', '-n', '-o state%-32']
+            cmd = ['sacct', '-n', '-o', 'state%-32']
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
@@ -77,7 +77,20 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return job_state
                     return 'NOT_FOUND'
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            job_info_dict = dict([out_param.split('=', 1) for out_param in stdout.split()])
+            stdout = stdout.strip()
+            # stdout is a single line in format "key1=value1 key2=value2 ..."
+            job_info_keys = []
+            job_info_values = []
+            for job_info in stdout.split():
+                try:
+                    # Some value may contain `=` (e.g. `StdIn=StdIn=/dev/null`)
+                    k, v = job_info.split('=', 1)
+                    job_info_keys.append(k)
+                    job_info_values.append(v)
+                except ValueError:
+                    # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
+                    job_info_values[-1] += ' ' + job_info
+            job_info_dict = dict(zip(job_info_keys, job_info_values))
             return job_info_dict['JobState']
 
         try:
