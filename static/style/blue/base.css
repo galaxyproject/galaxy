@@ -14214,7 +14214,7 @@ pre.peek {
   .history-panel > .controls .annotation-display .annotation {
     background: white;
     border-radius: 3px;
-    border: 1px solid fadeout(#999, 50%);
+    border: 1px solid rgba(153, 153, 153, 0.5);
     padding: 4px;
     white-space: pre-wrap;
     overflow: auto; }
