@@ -1,7 +1,7 @@
 <template>
-    <b-modal v-model="modalShow" :title="modalTitle" @ok="handleOk" ok-only="!errMsg">
-        <b-alert v-if="errMsg" variant="danger" :show="errMsg">
-            {{ errMsg }}
+    <b-modal v-model="modalShow" :title="modalTitle" @ok="handleOk" :ok-only="!optionsShow">
+        <b-alert v-if="errorMessage" variant="danger" :show="errorMessage">
+            {{ errorMessage }}
         </b-alert>
         <div v-else>
             <b-form-select v-if="optionsShow" v-model="selected" :options="options"/>
@@ -29,7 +29,7 @@ export default {
     },
     computed: {
         modalTitle() {
-            if (this.errMsg) {
+            if (this.errorMessage) {
                 return "Failed to load datasets";
             }
             if (this.optionsShow) {
@@ -40,12 +40,12 @@ export default {
     },
     data() {
         return {
-            optionsShow: false,
-            modalShow: true,
+            errorMessage: null,
             historyId: null,
-            selected: null,
-            errMsg: null,
-            options: []
+            modalShow: true,
+            options: [],
+            optionsShow: false,
+            selected: null
         };
     },
     created: function() {this.loadOptions()},
@@ -72,10 +72,10 @@ export default {
                         this.optionsShow = true;
                     })
                     .catch(e => {
-                        this.errMsg = e.response.data.err_msg;
+                        this.errorMessage = e.response.data.err_msg;
                     });
             } else {
-                this.errMsg = "History not accessible.";
+                this.errorMessage = "History not accessible.";
             }
         }
     }
