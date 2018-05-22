@@ -13305,17 +13305,6 @@ div.debug {
   font-weight: bold;
   color: #000; }
 
-.submit-image {
-  background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
-  background-color: #eee;
-  width: 1.5rem;
-  height: 1.5rem;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-  border: 1px solid #aaa;
-  border-left: none; }
-
 #advanced-search td {
   padding: 3px; }
 
