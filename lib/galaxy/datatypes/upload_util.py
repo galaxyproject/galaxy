@@ -40,7 +40,7 @@ def handle_upload(
         if auto_decompress and is_zip(path) and not is_single_file_zip(path):
             stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
         try:
-            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file(
+            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file_internal(
                 path,
                 registry,
                 ext=requested_ext,
