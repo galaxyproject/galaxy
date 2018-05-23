@@ -122,6 +122,7 @@ def galactic_job_json(
         item_class = None if not is_dict else value.get("class", None)
         is_file = item_class == "File"
         is_directory = item_class == "Directory"
+        is_collection = item_class == "Collection"  # Galaxy extension.
 
         if force_to_file:
             if is_file:
@@ -142,6 +143,8 @@ def galactic_job_json(
             return replacement_file(value)
         elif is_directory:
             return replacement_directory(value)
+        elif is_collection:
+            return replacement_collection(value)
         else:
             return replacement_record(value)
 
@@ -199,7 +202,28 @@ def galactic_job_json(
             collection_element["name"] = str(i)
             collection_element_identifiers.append(collection_element)
 
+        # TODO: handle nested lists/arrays
         collection = collection_create_func(collection_element_identifiers, "list")
+        dataset_collections.append(collection)
+        hdca_id = collection["id"]
+        return {"src": "hdca", "id": hdca_id}
+
+    def replacement_collection(value):
+        collection_element_identifiers = []
+        assert "collection_type" in value
+        assert "elements" in value
+
+        collection_type = value["collection_type"]
+        elements = value["elements"]
+
+        for element in elements:
+            dataset = replacement_item(element, force_to_file=True)
+            collection_element = dataset.copy()
+            collection_element["name"] = element["identifier"]
+            collection_element_identifiers.append(collection_element)
+
+        # TODO: handle nested lists/arrays
+        collection = collection_create_func(collection_element_identifiers, collection_type)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
