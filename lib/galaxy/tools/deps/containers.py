@@ -224,7 +224,9 @@ class ContainerRegistry(object):
         return self.__parse_resolver_conf_xml(plugin_source)
 
     def __parse_resolver_conf_xml(self, plugin_source):
-        extra_kwds = {}
+        extra_kwds = {
+            'app_info': self.app_info
+        }
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
     def __default_containers_resolvers(self):
