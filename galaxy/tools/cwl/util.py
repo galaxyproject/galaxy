@@ -91,9 +91,9 @@ def galactic_job_json(
     datasets = []
     dataset_collections = []
 
-    def upload_file(file_path, secondary_files):
+    def upload_file(file_path, secondary_files, **kwargs):
         file_path = abs_path_or_uri(file_path, test_data_directory)
-        target = FileUploadTarget(file_path, secondary_files)
+        target = FileUploadTarget(file_path, secondary_files, **kwargs)
         upload_response = upload_func(target)
         dataset = upload_response["outputs"][0]
         datasets.append((dataset, target))
@@ -150,6 +150,7 @@ def galactic_job_json(
         if file_path is None:
             return value
 
+        filetype = value.get('filetype', None)
         secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
         if secondary_files:
@@ -173,7 +174,7 @@ def galactic_job_json(
             tf.close()
             secondary_files_tar_path = tmp.name
 
-        return upload_file(file_path, secondary_files_tar_path)
+        return upload_file(file_path, secondary_files_tar_path, filetype=filetype)
 
     def replacement_directory(value):
         file_path = value.get("location", None) or value.get("path", None)
@@ -245,12 +246,13 @@ def _ensure_file_exists(file_path):
 @python_2_unicode_compatible
 class FileUploadTarget(object):
 
-    def __init__(self, path, secondary_files=None):
+    def __init__(self, path, secondary_files=None, **kwargs):
         self.path = path
         self.secondary_files = secondary_files
+        self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path=%s]" % self.path
+        return "FileUploadTarget[path=%s] with %s" % (self.path, self.properties)
 
 
 @python_2_unicode_compatible
