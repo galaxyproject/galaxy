@@ -78,11 +78,12 @@ class ContainerFinder(object):
     def __enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
 
-    def find_best_container_description(self, enabled_container_types, tool_info):
+    def find_best_container_description(self, enabled_container_types, tool_info, destination_info):
         """Regardless of destination properties - find best container for tool.
 
         Given container types and container.ToolInfo description of the tool."""
-        container_description = self.container_registry.find_best_container_description(enabled_container_types, tool_info)
+        container_description = self.container_registry.find_best_container_description(enabled_container_types,
+                tool_info, destination_info)
         return container_description
 
     def find_container(self, tool_info, destination_info, job_info):
@@ -124,7 +125,8 @@ class ContainerFinder(object):
                     return container
 
         # Otherwise lets see if we can find container for the tool.
-        container_description = self.find_best_container_description(enabled_container_types, tool_info)
+        container_description = self.find_best_container_description(enabled_container_types, tool_info,
+                destination_info)
         container = __destination_container(container_description)
         if container:
             return container
@@ -247,13 +249,13 @@ class ContainerRegistry(object):
         import galaxy.tools.deps.container_resolvers
         return plugin_config.plugins_dict(galaxy.tools.deps.container_resolvers, 'resolver_type')
 
-    def find_best_container_description(self, enabled_container_types, tool_info):
+    def find_best_container_description(self, enabled_container_types, tool_info, destination_info):
         """Yield best container description of supplied types matching tool info."""
         for container_resolver in self.container_resolvers:
             if hasattr(container_resolver, "container_type"):
                 if container_resolver.container_type not in enabled_container_types:
                     continue
-            container_description = container_resolver.resolve(enabled_container_types, tool_info)
+            container_description = container_resolver.resolve(enabled_container_types, tool_info, destination_info)
             log.info("Checking with container resolver [%s] found description [%s]" % (container_resolver, container_description))
             if container_description:
                 assert container_description.type in enabled_container_types

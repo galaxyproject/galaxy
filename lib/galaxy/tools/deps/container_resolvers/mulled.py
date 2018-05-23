@@ -224,7 +224,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, destination_info):
         if tool_info.requires_galaxy_python_environment:
             return None
 
@@ -246,12 +246,13 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
         self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, destination_info):
         if tool_info.requires_galaxy_python_environment:
             return None
 
         targets = mulled_targets(tool_info)
-        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
+        cache_directory = destination_info.get("singularity_image_dir", self.cache_directory)
+        return singularity_cached_container_description(targets, cache_directory, hash_func=self.hash_func)
 
     def __str__(self):
         return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
@@ -269,7 +270,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, destination_info):
         if tool_info.requires_galaxy_python_environment:
             return None
 
@@ -356,7 +357,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         }
         self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, destination_info):
         if tool_info.requires_galaxy_python_environment:
             return None
 
@@ -403,7 +404,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         }
         self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, destination_info):
         if tool_info.requires_galaxy_python_environment:
             return None
 
@@ -416,7 +417,8 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
             involucro_context=self._get_involucro_context(),
             **self._mulled_kwds
         )
-        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
+        cache_directory = destination_info.get("singularity_image_dir", self.cache_directory)
+        return singularity_cached_container_description(targets, cache_directory, hash_func=self.hash_func)
 
     def _get_involucro_context(self):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
