@@ -189,14 +189,13 @@ $vertical-gap: 8px;
         }
         .messages {
             @include clearfix();
-            // TODO: Another fixme for Dannon.
-            // [class$:message],
-            // [class$:messagesmall] {
-            //     margin: 0px;
-            //     &:not(:last-child) {
-            //         margin-bottom: 8px;
-            //     }
-            // }
+            [class$="message"],
+            [class$="messagesmall"] {
+                margin: 0px;
+                &:not(:last-child) {
+                    margin-bottom: 8px;
+                }
+            }
         }
         .list-actions {
             display: none;

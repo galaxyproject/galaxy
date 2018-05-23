@@ -13802,6 +13802,12 @@ div.permissionContainer {
     display: block;
     clear: both;
     content: ""; }
+  .list-panel .controls .messages [class$="message"],
+  .list-panel .controls .messages [class$="messagesmall"] {
+    margin: 0px; }
+    .list-panel .controls .messages [class$="message"]:not(:last-child),
+    .list-panel .controls .messages [class$="messagesmall"]:not(:last-child) {
+      margin-bottom: 8px; }
   .list-panel .controls .list-actions {
     display: none; }
     .list-panel .controls .list-actions .btn, .list-panel .controls .list-actions input[type="submit"], .list-panel .controls .list-actions
