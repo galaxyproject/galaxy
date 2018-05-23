@@ -109,6 +109,8 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 var shown = contentsActive.active || 0;
                 shown += this.contents.includeDeleted ? contentsActive.deleted : 0;
                 shown += this.contents.includeHidden ? contentsActive.hidden : 0;
+
+                Galaxy.data.dialog(function(url){alert(url)});
                 return shown;
             },
 
