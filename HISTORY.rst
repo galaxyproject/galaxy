@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.13.dev0
+18.5.13 (2018-05-23)
 ---------------------
 
 * Small updates to test parsing to support Galaxy workflow testing.
