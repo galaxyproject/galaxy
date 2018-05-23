@@ -166,6 +166,7 @@ class Sbml(GenericXml):
         System Biology Markup Language
         http://sbml.org
     """
+    edam_format = "format_2585"
     file_ext = "sbml"
 
     def set_peek(self, dataset, is_multi_byte=False):
