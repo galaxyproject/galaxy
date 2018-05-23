@@ -9,7 +9,7 @@ History
 18.5.13.dev0
 ---------------------
 
-    
+* Small updates to test parsing to support Galaxy workflow testing.
 
 ---------------------
 18.5.12 (2018-05-22)
