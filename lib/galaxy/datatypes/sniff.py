@@ -706,7 +706,12 @@ def handle_compressed_file(
     return is_valid, ext, uncompressed, compressed_type
 
 
-def handle_uploaded_dataset_file(
+def handle_uploaded_dataset_file(*args, **kwds):
+    """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
+    return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
+
+
+def handle_uploaded_dataset_file_internal(
         filename,
         datatypes_registry,
         ext='auto',
