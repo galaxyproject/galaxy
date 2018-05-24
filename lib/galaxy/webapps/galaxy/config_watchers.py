@@ -33,7 +33,7 @@ class ConfigWatchers(object):
         self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
         self.tool_watcher = get_tool_watcher(self, app.config)
-        if self.app.is_job_handler:
+        if getattr(self.app, 'is_job_handler', False):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
