@@ -12,12 +12,18 @@ function createPNG(options) {
 }
 
 
-function _downloadImageData(imageData, filename){
-    filename = filename || "GalaxyImage";
+function _downloadData(imageData, filename){
     let link = document.createElement('a');
-    link.download = `${ filename }.png`;
-    link.href = imageData.replace("image/png", "image/octet-stream");
+    link.download = filename;
+    link.href = imageData;
     link.click();
+}
+function _downloadPNGData(imageData, filename){
+    _downloadData(
+        imageData.replace("image/png", "image/octet-stream"),
+        `${ filename || "GalaxyImage"}.png`
+    );
+
 }
 
 function _toImage($el, x_offset, y_offset, newContext) {
@@ -65,7 +71,7 @@ function _canvas2png(options) {
             });
             const imgData = newCanvas.toDataURL("image/png");
             if (imgData) {
-                _downloadImageData(imgData, options.title);
+                _downloadPNGData(imgData, options.title);
             }
         }
     } catch (err) {
@@ -91,14 +97,16 @@ function _svg2png(options) {
     source.onload = function() {
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
         let imageData = canvas.toDataURL("image/png");
-        _downloadImageData(imageData, options.title);
+        _downloadPNGData(imageData, options.title);
         $container.remove();
     };
 }
 
 /** SVG export */
 function createSVG(options) {
-    window.location.href = "data:none/none;base64," + window.btoa(toXML(options).string);
+    const imageData = `data:none/none;base64,${window.btoa(toXML(options).string)}`;
+    const filename = `${ options.title || "GalaxyImage" }.svg`;
+    _downloadData(imageData, filename);
 }
 
 /** PDF export */
