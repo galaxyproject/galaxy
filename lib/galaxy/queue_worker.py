@@ -4,11 +4,14 @@ reloading the toolbox, etc., across multiple processes.
 """
 
 import logging
+import sys
 import threading
+from inspect import ismodule
 
 from kombu import Connection
 from kombu.mixins import ConsumerMixin
 from kombu.pools import producers
+from six.moves import reload_module
 
 import galaxy.queues
 from galaxy import util
@@ -171,6 +174,19 @@ def rebuild_toolbox_search_index(app, **kwargs):
         app.reindex_tool_search()
 
 
+def reload_job_rules(app, **kwargs):
+    reload_timer = util.ExecutionTimer()
+    default = 'galaxy.jobs.rules'
+    rules_module_name = default
+    if app.job_config.dynamic_params is not None:
+        rules_module_name = app.job_config.dynamic_params.get('rules_module', default)
+    for name, module in sys.modules.items():
+        if (name == rules_module_name or name.startswith(rules_module_name + '.')) and ismodule(module):
+            log.debug("Reloading job rules module: %s", name)
+            reload_module(module)
+    log.debug("Job rules reloaded %s", reload_timer)
+
+
 def admin_job_lock(app, **kwargs):
     job_lock = kwargs.get('job_lock', False)
     # job_queue is exposed in the root app, but this will be 'fixed' at some
@@ -186,6 +202,7 @@ control_message_to_task = {'create_panel_section': create_panel_section,
                            'reload_data_managers': reload_data_managers,
                            'reload_display_application': reload_display_application,
                            'reload_tool_data_tables': reload_tool_data_tables,
+                           'reload_job_rules': reload_job_rules,
                            'admin_job_lock': admin_job_lock,
                            'reload_sanitize_whitelist': reload_sanitize_whitelist,
                            'recalculate_user_disk_usage': recalculate_user_disk_usage,

@@ -446,6 +446,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``watch_job_rules``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to True to enable monitoring of dynamic job rules. If changes
+    are found, rules are automatically reloaded. Takes the same values
+    as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
