@@ -1,5 +1,8 @@
 /** This class enables users to export/download a chart as PNG, SVG or PDF. */
 /** PNG export */
+
+/* global $ */
+
 function createPNG(options) {
     if (options.$el.find("svg").length > 0) {
         _svg2png(options);
@@ -8,6 +11,37 @@ function createPNG(options) {
     }
 }
 
+
+function _downloadImageData(imageData, filename){
+    let link = document.createElement('a');
+    link.download = `${ filename || "GalaxyImage" }.png`;
+    link.href = imageData.replace("image/png", "image/octet-stream");
+    link.click();
+}
+
+function _toImage($el, x_offset, y_offset, newContext) {
+    var tagname = $el.prop("tagName").toLowerCase();
+    var p = $el.position();
+    var left =
+        x_offset +
+        p.left +
+        parseInt($el.css("marginLeft"), 10) +
+        parseInt($el.css("borderLeftWidth"), 10) +
+        parseInt($el.css("paddingLeft"), 10);
+    var top =
+        y_offset +
+        p.top +
+        parseInt($el.css("marginTop"), 10) +
+        parseInt($el.css("borderTopWidth"), 10) +
+        parseInt($el.css("paddingTop"), 10);
+    if (tagname == "div" || tagname == "span") {
+        $el.children().each(function() {
+            _toImage($(this), left, top);
+        });
+    } else if (tagname == "canvas") {
+        newContext.drawImage($el[0], left, top);
+    }
+}
 
 /** Convert canvas to png */
 function _canvas2png(options) {
@@ -25,39 +59,12 @@ function _canvas2png(options) {
             newContext.translate(0, 0);
             newContext.textAlign = "left";
             newContext.textBaseline = "top";
-            function _toImage($el, x_offset, y_offset) {
-                var tagname = $el.prop("tagName").toLowerCase();
-                var p = $el.position();
-                var left =
-                    x_offset +
-                    p.left +
-                    parseInt($el.css("marginLeft"), 10) +
-                    parseInt($el.css("borderLeftWidth"), 10) +
-                    parseInt($el.css("paddingLeft"), 10);
-                var top =
-                    y_offset +
-                    p.top +
-                    parseInt($el.css("marginTop"), 10) +
-                    parseInt($el.css("borderTopWidth"), 10) +
-                    parseInt($el.css("paddingTop"), 10);
-                var w = newCanvas.width;
-                if (tagname == "div" || tagname == "span") {
-                    $el.children().each(function() {
-                        _toImage($(this), left, top);
-                    });
-                } else if (tagname == "canvas") {
-                    newContext.drawImage($el[0], left, top);
-                }
-            }
             $canvas.children().each(function() {
-                _toImage($(this), 0, 0);
+                _toImage($(this), 0, 0, newContext);
             });
-            var imgData = newCanvas.toDataURL("image/png");
+            const imgData = newCanvas.toDataURL("image/png");
             if (imgData) {
-                let link = document.createElement('a');
-                link.download = `${ options.title || "GalaxyImage" }.png`;
-                link.href = imgData.replace("image/png", "image/octet-stream");
-                link.click();
+                _downloadImageData(imgData, options.title);
             }
         }
     } catch (err) {
@@ -79,20 +86,18 @@ function _svg2png(options) {
     $("body").append($container);
     canvas.width = xml.width * scale;
     canvas.height = xml.height * scale;
-    source.src = "data:image/svg+xml;base64," + btoa(xml.string);
+    source.src = "data:image/svg+xml;base64," + window.btoa(xml.string);
     source.onload = function() {
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
-        let link = document.createElement('a');
-        link.download = `${ options.title || "GalaxyImage" }.png`;
-        link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-        link.click();
+        let imageData = canvas.toDataURL("image/png");
+        _downloadImageData(imageData, options.title);
         $container.remove();
     };
 }
 
 /** SVG export */
 function createSVG(options) {
-    window.location.href = "data:none/none;base64," + btoa(toXML(options).string);
+    window.location.href = "data:none/none;base64," + window.btoa(toXML(options).string);
 }
 
 /** PDF export */
@@ -142,7 +147,6 @@ function toXML(options) {
             return;
         }
     }
-    var $el = options.$el;
     var nsvgs = $svg.length;
     var height = parseInt($svg.first().css("height"));
     var width = parseInt($svg.first().css("width"));
@@ -153,7 +157,6 @@ function toXML(options) {
         width: width * nsvgs,
         height: height
     });
-    var xmlString = "";
     var offsetX = 0;
     $svg.each(function() {
         var $svg = $(this).clone();
