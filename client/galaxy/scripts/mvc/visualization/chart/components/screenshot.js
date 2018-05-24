@@ -4,12 +4,14 @@ function createPNG(options) {
     if (options.$el.find("svg").length > 0) {
         _svg2png(options);
     } else {
-        _canvas2png(options.$el.find(".charts-viewer-canvas"));
+        _canvas2png(options);
     }
 }
 
+
 /** Convert canvas to png */
-function _canvas2png($canvas) {
+function _canvas2png(options) {
+    let $canvas = options.$el.find(".charts-viewer-canvas");
     try {
         if ($canvas.width() !== 0 && $canvas.height() !== 0) {
             var newCanvas = document.createElement("canvas");
@@ -52,7 +54,10 @@ function _canvas2png($canvas) {
             });
             var imgData = newCanvas.toDataURL("image/png");
             if (imgData) {
-                window.location.href = imgData.replace("image/png", "image/octet-stream");
+                let link = document.createElement('a');
+                link.download = `${ options.title || "GalaxyImage" }.png`;
+                link.href = imgData.replace("image/png", "image/octet-stream");
+                link.click();
             }
         }
     } catch (err) {
@@ -77,7 +82,10 @@ function _svg2png(options) {
     source.src = "data:image/svg+xml;base64," + btoa(xml.string);
     source.onload = function() {
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
-        window.location.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        let link = document.createElement('a');
+        link.download = `${ options.title || "GalaxyImage" }.png`;
+        link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+        link.click();
         $container.remove();
     };
 }
