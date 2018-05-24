@@ -11,19 +11,14 @@ function createPNG(options) {
     }
 }
 
-
-function _downloadData(imageData, filename){
-    let link = document.createElement('a');
+function _downloadData(imageData, filename) {
+    let link = document.createElement("a");
     link.download = filename;
     link.href = imageData;
     link.click();
 }
-function _downloadPNGData(imageData, filename){
-    _downloadData(
-        imageData.replace("image/png", "image/octet-stream"),
-        `${ filename || "GalaxyImage"}.png`
-    );
-
+function _downloadPNGData(imageData, filename) {
+    _downloadData(imageData.replace("image/png", "image/octet-stream"), `${filename || "GalaxyImage"}.png`);
 }
 
 function _toImage($el, x_offset, y_offset, newContext) {
@@ -105,7 +100,7 @@ function _svg2png(options) {
 /** SVG export */
 function createSVG(options) {
     const imageData = `data:none/none;base64,${window.btoa(toXML(options).string)}`;
-    const filename = `${ options.title || "GalaxyImage" }.svg`;
+    const filename = `${options.title || "GalaxyImage"}.svg`;
     _downloadData(imageData, filename);
 }
 
