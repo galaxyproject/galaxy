@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 OWL_MARKER = re.compile(r'\<owl:')
 SBML_MARKER = re.compile(r'\<sbml')
 
+
 @dataproviders.decorators.has_dataproviders
 @sniff.build_sniff_from_prefix
 class GenericXml(data.Text):
