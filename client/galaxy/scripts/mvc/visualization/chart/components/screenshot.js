@@ -13,8 +13,9 @@ function createPNG(options) {
 
 
 function _downloadImageData(imageData, filename){
+    filename = filename || "GalaxyImage";
     let link = document.createElement('a');
-    link.download = `${ filename || "GalaxyImage" }.png`;
+    link.download = `${ filename }.png`;
     link.href = imageData.replace("image/png", "image/octet-stream");
     link.click();
 }
