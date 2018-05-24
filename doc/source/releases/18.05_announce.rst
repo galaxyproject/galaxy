@@ -96,7 +96,7 @@ Breaking Changes
 
 * We reworked how compressed archives (zip, gz, bz etc.) are being defined and handled in Galaxy. As a result, if you have a custom ``datatypes_conf.xml`` configuration file, you should remove the compressed sniffers that used to be in the sample file but `now are not <https://github.com/galaxyproject/galaxy/blob/release_18.05/config/datatypes_conf.xml.sample>`__. Otherwise you will encounter non-breaking errors in the logs.
 
-* We have removed the deprecated symlink `static/scripts/packed -> .` If you used it please change your (proxy) configuration. An example can be seen [here](https://github.com/galaxyproject/ansible-galaxy-extras/pull/206/files).
+* We have removed the deprecated symlink `static/scripts/packed -> .` If you used it please change your (proxy) configuration. An example can be seen `here <https://github.com/galaxyproject/ansible-galaxy-extras/pull/206/files>`__.
 
 Release Notes
 =============
