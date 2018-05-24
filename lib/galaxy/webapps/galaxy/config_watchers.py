@@ -48,7 +48,7 @@ class ConfigWatchers(object):
                 job_rules_directory,
                 callback=partial(reload_job_rules, self.app),
                 recursive=True,
-                extensions=('.py',))
+                ignore_extensions=('.pyc', '.pyo', '.pyd'))
 
     def shutdown(self):
         self.tool_config_watcher.shutdown()

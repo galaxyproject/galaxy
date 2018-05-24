@@ -7,6 +7,8 @@ import logging
 import os.path
 import time
 
+from six.moves import filter
+
 try:
     from watchdog.events import FileSystemEventHandler
     from watchdog.observers import Observer
@@ -71,7 +73,7 @@ class Watcher(object):
         self.path_hash = {}
         self.file_callbacks = {}
         self.dir_callbacks = {}
-        self.extensions = {}
+        self.ignore_extensions = {}
         self.observer = observer_class()
         self.event_handler = event_handler_class(self)
         self.start()
@@ -96,13 +98,13 @@ class Watcher(object):
             self.monitor(dir)
             log.debug("Watching for changes to file: %s", file)
 
-    def watch_directory(self, dir, callback=None, recursive=False, extensions=None):
+    def watch_directory(self, dir, callback=None, recursive=False, ignore_extensions=None):
         dir = os.path.abspath(dir)
         if dir not in self.monitored_dirs:
             if callback is not None:
                 self.dir_callbacks[dir] = callback
-            if extensions:
-                self.extensions[dir] = extensions
+            if ignore_extensions:
+                self.ignore_extensions[dir] = ignore_extensions
             self.monitored_dirs[dir] = dir
             self.monitor(dir, recursive=recursive)
             log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir)
@@ -117,12 +119,7 @@ class EventHandler(FileSystemEventHandler):
         self._handle(event)
 
     def _extension_check(self, key, path):
-        if key not in self.watcher.extensions:
-            return True
-        for ext in self.watcher.extensions[key]:
-            if path.endswith(ext):
-                return True
-        return False
+        return not any(filter(path.endswith, self.watcher.ignore_extensions.get(key, [])))
 
     def _handle(self, event):
         # modified events will only have src path, move events will
