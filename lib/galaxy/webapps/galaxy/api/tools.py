@@ -87,7 +87,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def show(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}
-        Returns tool information, including parameters and inputs.
+
+        Returns tool information
+
+            parameters:
+
+                io_details   - if true, parameters and inputs are returned
+                link_details - if true, hyperlink to the tool is returned
         """
         io_details = util.string_as_bool(kwd.get('io_details', False))
         link_details = util.string_as_bool(kwd.get('link_details', False))
