@@ -63,9 +63,9 @@
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
-                            <input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.<br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.</label><br />
                             <regular-expression-input :target.sync="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType=='groups'">
                                 {{ l("Number of Groups") }}
