@@ -859,9 +859,7 @@ class SelectToolParameter(ToolParameter):
             if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
                 workflow_building_mode = workflow_building_modes.ENABLED
                 break
-        if not legal_values:
-            if not workflow_building_mode:
-                raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
+        if not legal_values and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -880,6 +878,8 @@ class SelectToolParameter(ToolParameter):
             if self.optional:
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
+        elif not legal_values:
+            raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
             if not self.multiple:
                 raise ValueError("Multiple values provided but parameter %s is not expecting multiple values." % self.name)
