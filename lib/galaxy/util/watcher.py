@@ -128,6 +128,8 @@ class EventHandler(FileSystemEventHandler):
         path = getattr(event, 'dest_path', None) or event.src_path
         path = os.path.abspath(path)
         callback = self.watcher.file_callbacks.get(path, None)
+        if os.path.basename(path).startswith('.'):
+            return
         if callback:
             ext_ok = self._extension_check(path, path)
         else:
