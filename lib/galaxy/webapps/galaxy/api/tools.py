@@ -104,7 +104,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             kwd = kwd.get('payload')
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return tool.to_json(trans, kwd.get('inputs', kwd))
+        return tool.to_json(trans, kwd.get('inputs', kwd), tool=tool)
 
     @expose_api
     @web.require_admin
