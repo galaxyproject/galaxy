@@ -1725,7 +1725,7 @@ export default {
             if (mappingAsDict.file_type) {
                 const fileTypeColumn = mappingAsDict.file_type.columns[0];
                 const fileType = data[dataIndex][fileTypeColumn];
-                res["ext"] = file_type;
+                res["ext"] = fileType;
             } else if (this.extension) {
                 res["ext"] = this.extension;
             }
