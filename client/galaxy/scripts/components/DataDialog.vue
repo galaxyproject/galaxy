@@ -1,13 +1,18 @@
 <template>
-    <b-modal  class="data-dialog-modal" v-model="modalShow" :title="modalTitle" @ok="handleOk" :ok-only="!optionsShow">
+    <b-modal class="data-dialog-modal" v-model="modalShow" :title="modalTitle" :ok-only="true" ok-title="Close">
         <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
             {{ errorMessage }}
         </b-alert>
         <div v-else>
             <div v-if="optionsShow">
-                <b-form-input v-model="filter" placeholder="Type to Search" />
+                <b-input-group>
+                    <b-input v-model="filter" placeholder="Type to Search"/>
+                    <b-input-group-append>
+                        <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
+                    </b-input-group-append>
+                </b-input-group>
                 <br/>
-                <b-table small striped hover :items="items" :fields="fields">
+                <b-table small hover :items="items" :fields="fields" :filter="filter" @row-clicked="handleRow">
                     <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
                     </template>
@@ -79,9 +84,7 @@ export default {
             errorShow: true,
             historyId: null,
             modalShow: true,
-            options: [],
-            optionsShow: false,
-            selected: null
+            optionsShow: false
         };
     },
     created: function() {this.loadOptions()},
@@ -90,28 +93,18 @@ export default {
             let r = dateString.substring(0, 16);
             return r;
         },
-        handleOk: function() {
-            if (this.selected) {
-                let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-                this.callback(`${host}${this.selected}/display`);
-            }
+        handleRow: function(record) {
+            let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+            this.callback(`${host}/${record.url}/display`);
+            this.modalShow = false;
         },
         loadOptions: function() {
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-            this.selected = null;
-            this.options = [];
             if (this.historyId) {
                 axios
                     .get(`${Galaxy.root}api/histories/${this.historyId}/contents`)
                     .then(response => {
                         this.items = response.data;
-                        window.console.log(this.items);
-                        /*for(let item of response.data) {
-                            this.options.push({value: item.url, text: `${item.hid}: ${item.name}`});
-                            if (!this.selected) {
-                                this.selected = item.url;
-                            }
-                        }*/
                         this.optionsShow = true;
                     })
                     .catch(e => {
@@ -129,8 +122,11 @@ export default {
 };
 </script>
 <style>
-.data-dialog-modal .modal-body{
+.data-dialog-modal .modal-body {
     max-height: 50vh;
     overflow-y: auto;
+}
+.data-dialog-modal .modal-body hover tr {
+    font-weight: bold;
 }
 </style>
