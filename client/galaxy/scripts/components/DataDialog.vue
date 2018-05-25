@@ -1,17 +1,19 @@
 <template>
-    <b-modal class="data-dialog-modal" v-model="modalShow" :title="modalTitle" :ok-only="true" ok-title="Close">
+    <b-modal class="data-dialog-modal" v-model="modalShow" :ok-only="true" ok-title="Close">
+        <template slot="modal-header">
+            <h5 class="modal-title">{{modalTitle}}</h5>
+            <b-input-group v-if="optionsShow">
+                <b-input v-model="filter" placeholder="Type to Search"/>
+                <b-input-group-append>
+                    <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
+                </b-input-group-append>
+            </b-input-group>
+        </template>
         <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
             {{ errorMessage }}
         </b-alert>
         <div v-else>
             <div v-if="optionsShow">
-                <b-input-group>
-                    <b-input v-model="filter" placeholder="Type to Search"/>
-                    <b-input-group-append>
-                        <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
-                    </b-input-group-append>
-                </b-input-group>
-                <br/>
                 <b-table small hover :items="items" :fields="fields" :filter="filter" @row-clicked="handleRow">
                     <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
@@ -47,11 +49,9 @@ export default {
         modalTitle() {
             if (this.errorMessage) {
                 return "Failed to load datasets";
+            } else if (!this.optionsShow) {
+                return "Loading datasets";
             }
-            if (this.optionsShow) {
-                return "Select a dataset";
-            }
-            return "Loading datasets";
         }
     },
     data() {
