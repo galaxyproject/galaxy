@@ -1822,7 +1822,7 @@ class Tool(Dictifiable):
 
         return tool_dict
 
-    def to_json(self, trans, kwd={}, job=None, workflow_building_mode=False):
+    def to_json(self, trans, kwd={}, job=None, tool=None, workflow_building_mode=False):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
         """
@@ -1830,17 +1830,19 @@ class Tool(Dictifiable):
         history = None
         if workflow_building_mode is workflow_building_modes.USE_HISTORY or workflow_building_mode is workflow_building_modes.DISABLED:
             # We don't need a history when exporting a workflow for the workflow editor or when downloading a workflow
-            try:
-                if history_id is not None:
-                    history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-                else:
-                    history = trans.get_history()
-                if history is None and job is not None:
-                    history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
-                if history is None:
-                    raise exceptions.MessageException('History unavailable. Please specify a valid history id')
-            except Exception as e:
-                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
+            if tool is None:
+                # We don't need a history to display tool model
+                try:
+                    if history_id is not None:
+                        history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+                    else:
+                        history = trans.get_history()
+                    if history is None and job is not None:
+                        history = self.history_manager.get_owned(job.history.id, trans.user, current_history=trans.history)
+                    if history is None:
+                        raise exceptions.MessageException('History unavailable. Please specify a valid history id')
+                except Exception as e:
+                    raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
