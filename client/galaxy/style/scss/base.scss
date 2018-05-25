@@ -1138,15 +1138,15 @@ div.odd_row {
 // Tool panel stuff
 
 // Extra label colors
-.label-beta {
+.badge-beta {
     @extend .badge-warning;
 }
 
-.label-new {
+.badge-new {
     @extend .badge-info;
 }
 
-.sm-label-pad {
+.sm-badge-pad {
     margin-right: 2px;
 }
 

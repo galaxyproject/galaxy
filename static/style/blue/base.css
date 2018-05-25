@@ -3717,18 +3717,18 @@ button .badge, .action-button .badge, .menubutton .badge {
     text-decoration: none;
     background-color: #198e19; }
 
-.badge-info, .label-new {
+.badge-info, .badge-new {
   color: #fff;
   background-color: #1cbceb; }
-  .badge-info[href]:hover, [href].label-new:hover, .badge-info[href]:focus, [href].label-new:focus {
+  .badge-info[href]:hover, [href].badge-new:hover, .badge-info[href]:focus, [href].badge-new:focus {
     color: #fff;
     text-decoration: none;
     background-color: #119ac3; }
 
-.badge-warning, .label-beta {
+.badge-warning, .badge-beta {
   color: #212529;
   background-color: #f69713; }
-  .badge-warning[href]:hover, [href].label-beta:hover, .badge-warning[href]:focus, [href].label-beta:focus {
+  .badge-warning[href]:hover, [href].badge-beta:hover, .badge-warning[href]:focus, [href].badge-beta:focus {
     color: #212529;
     text-decoration: none;
     background-color: #ce7b08; }
@@ -13364,7 +13364,7 @@ div.odd_row {
 #footer {
   display: none; }
 
-.sm-label-pad {
+.sm-badge-pad {
   margin-right: 2px; }
 
 span.toolParameterExpandableCollapsable {
