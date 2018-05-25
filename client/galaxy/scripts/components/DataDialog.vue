@@ -15,6 +15,10 @@
         <div v-else>
             <div v-if="optionsShow">
                 <b-table small hover :items="items" :fields="fields" :filter="filter" @row-clicked="handleRow">
+                    <template slot="name" slot-scope="data">
+                        <div class="fa fa-file-o"/>
+                        {{ data.item.hid }}: {{ data.value }}
+                    </template>
                     <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
                     </template>
@@ -57,22 +61,13 @@ export default {
     data() {
         return {
             fields: {
-                hid: {
-                    label: "Id",
-                    sortable: true
-                },
                 name: {
-                    sortable: true
-                },
-                history_content_type: {
-                    label: "Type",
                     sortable: true
                 },
                 extension: {
                     sortable: true
                 },
                 update_time: {
-                    label: "Last Changed",
                     sortable: true
                 }
             },
