@@ -1306,6 +1306,13 @@ a.action-button {
     @extend .btn-sm;
 }
 
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
+}
+
 //.action-button > * {
 //    vertical-align: middle;
 //}

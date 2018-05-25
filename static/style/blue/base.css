@@ -1736,45 +1736,47 @@ button.btn-primary {
       box-shadow: 0 0 0 0.2rem rgba(37, 83, 123, 0.5); }
 
 .btn-secondary, input[type="submit"],
-button, .action-button, .menubutton {
+button, .action-button, .btn-default, .menubutton {
   color: #212529;
   background-color: #dee2e6;
   border-color: #dee2e6; }
   .btn-secondary:hover, input[type="submit"]:hover,
-  button:hover, .action-button:hover, .menubutton:hover {
+  button:hover, .action-button:hover, .btn-default:hover, .menubutton:hover {
     color: #212529;
     background-color: #c8cfd6;
     border-color: #c1c9d0; }
   .btn-secondary:focus, input[type="submit"]:focus,
-  button:focus, .action-button:focus, .menubutton:focus, .btn-secondary.focus, input.focus[type="submit"],
-  button.focus, .focus.action-button, .focus.menubutton {
+  button:focus, .action-button:focus, .btn-default:focus, .menubutton:focus, .btn-secondary.focus, input.focus[type="submit"],
+  button.focus, .focus.action-button, .focus.btn-default, .focus.menubutton {
     box-shadow: 0 0 0 0.2rem rgba(222, 226, 230, 0.5); }
   .btn-secondary.disabled, input.disabled[type="submit"],
-  button.disabled, .disabled.action-button, .disabled.menubutton, .btn-secondary:disabled, input[type="submit"]:disabled,
-  button:disabled, .action-button:disabled, .menubutton:disabled {
+  button.disabled, .disabled.action-button, .disabled.btn-default, .disabled.menubutton, .btn-secondary:disabled, input[type="submit"]:disabled,
+  button:disabled, .action-button:disabled, .btn-default:disabled, .menubutton:disabled {
     color: #212529;
     background-color: #dee2e6;
     border-color: #dee2e6; }
   .btn-secondary:not(:disabled):not(.disabled):active, input[type="submit"]:not(:disabled):not(.disabled):active,
-  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
-  button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled).active,
+  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .btn-default:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
+  button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .btn-default:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled).active,
   .show > .btn-secondary.dropdown-toggle,
   .show > input.dropdown-toggle[type="submit"],
   .show >
   button.dropdown-toggle,
   .show > .dropdown-toggle.action-button,
+  .show > .dropdown-toggle.btn-default,
   .show > .dropdown-toggle.menubutton {
     color: #212529;
     background-color: #c1c9d0;
     border-color: #bac2cb; }
     .btn-secondary:not(:disabled):not(.disabled):active:focus, input[type="submit"]:not(:disabled):not(.disabled):active:focus,
-    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input[type="submit"]:not(:disabled):not(.disabled).active:focus,
-    button:not(:disabled):not(.disabled).active:focus, .action-button:not(:disabled):not(.disabled).active:focus, .menubutton:not(:disabled):not(.disabled).active:focus,
+    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .btn-default:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input[type="submit"]:not(:disabled):not(.disabled).active:focus,
+    button:not(:disabled):not(.disabled).active:focus, .action-button:not(:disabled):not(.disabled).active:focus, .btn-default:not(:disabled):not(.disabled).active:focus, .menubutton:not(:disabled):not(.disabled).active:focus,
     .show > .btn-secondary.dropdown-toggle:focus,
     .show > input.dropdown-toggle[type="submit"]:focus,
     .show >
     button.dropdown-toggle:focus,
     .show > .dropdown-toggle.action-button:focus,
+    .show > .dropdown-toggle.btn-default:focus,
     .show > .dropdown-toggle.menubutton:focus {
       box-shadow: 0 0 0 0.2rem rgba(222, 226, 230, 0.5); }
 
@@ -9003,7 +9005,7 @@ button, .action-button, .menubutton {
   white-space: normal; }
 
 .btn-secondary, input[type="submit"],
-button, .action-button, .menubutton {
+button, .action-button, .btn-default, .menubutton {
   border: 1px solid #bfbfbf; }
 
 .dropdown-menu {
