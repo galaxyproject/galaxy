@@ -47,7 +47,7 @@ const TOURPAGE_TEMPLATE = `
             </a>
              - <%- tour.attributes.description || "No description given." %>
              <% _.each(tour.attributes.tags, function(tag) { %>
-                <span class="badge badge-primary sm-badge-pad">
+                <span class="badge badge-primary">
                     <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
                 </span>
              <% }); %>
