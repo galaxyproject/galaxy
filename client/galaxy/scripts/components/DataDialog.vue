@@ -16,7 +16,8 @@
             <div v-if="optionsShow">
                 <b-table small hover :items="items" :fields="fields" :filter="filter" @row-clicked="handleRow">
                     <template slot="name" slot-scope="data">
-                        <div class="fa fa-file-o"/>
+                        <i v-if="data.item.history_content_type == 'dataset'" class="fa fa-file-o"/>
+                        <i v-else class="fa fa-copy"/>
                         {{ data.item.hid }}: {{ data.value }}
                     </template>
                     <template slot="extension" slot-scope="data">
@@ -120,8 +121,5 @@ export default {
 .data-dialog-modal .modal-body {
     max-height: 50vh;
     overflow-y: auto;
-}
-.data-dialog-modal .modal-body hover tr {
-    font-weight: bold;
 }
 </style>
