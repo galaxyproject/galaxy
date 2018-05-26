@@ -314,7 +314,7 @@ do
       has_next_arg=1
     fi
     pass_through_next=0
-    if [ $# -gt 1 -a "$2" == "--" ];
+    if [ $# -gt 1 -a "$2" = "--" ];
     then
       pass_through_next=1
     fi
