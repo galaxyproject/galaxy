@@ -292,7 +292,8 @@ then
     # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
-    echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
+    echo "Launching docker container for testing with command:"
+    echo "docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e BUILD_NUMBER=$BUILD_NUMBER -e GALAXY_TEST_DATABASE_TYPE=$db_type --rm -v `pwd`:/galaxy $DOCKER_IMAGE $@"
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
 fi
@@ -308,6 +309,16 @@ run_default_functional_tests="1"
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
 do
+    has_next_arg=0
+    if [ $# -gt 1 -a "$2" != "--" ];
+    then
+      has_next_arg=1
+    fi
+    pass_through_next=0
+    if [ $# -gt 1 -a "$2" = "--" ];
+    then
+      pass_through_next=1
+    fi
     case "$1" in
       -h|--help|-\?)
           show_help
@@ -318,7 +329,7 @@ do
           exit 0
           ;;
       -id|--id)
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               test_id=$2;
               shift 2
           else
@@ -327,7 +338,7 @@ do
           fi
           ;;
       -s|-sid|--sid)
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               section_id=$2
               shift 2
           else
@@ -339,9 +350,12 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               api_script=$2
               shift 2
+          elif [ $pass_through_next -ne 0 ]; then
+              api_script=""
+              shift 1
           else
               api_script="./test/api"
               shift 1
@@ -353,9 +367,12 @@ do
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           selenium_test=1;
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               selenium_script=$2
               shift 2
+          elif [ $pass_through_next -ne 0 ]; then
+              selenium_script=""
+              shift 1
           else
               selenium_script="./test/selenium_tests"
               shift 1
@@ -364,9 +381,12 @@ do
       -t|-toolshed|--toolshed)
           test_script="./test/shed_functional/functional_tests.py"
           report_file="run_toolshed_tests.html"
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               toolshed_script=$2
               shift 2
+          elif [ $pass_through_next -ne 0 ]; then
+              toolshed_script=""
+              shift 1
           else
               toolshed_script="./test/shed_functional/functional"
               shift 1
@@ -416,7 +436,7 @@ do
           shift
           ;;
       -r|--report_file)
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               report_file=$2
               shift 2
           else
@@ -425,7 +445,7 @@ do
           fi
           ;;
       --xunit_report_file)
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               xunit_report_file=$2
               shift 2
           else
@@ -434,7 +454,7 @@ do
           fi
           ;;
       --structured_data_report_file)
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               structured_data_report_file=$2
               shift 2
           else
@@ -463,9 +483,12 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="./scripts/nosetests.py"
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               unit_extra=$2
               shift 2
+          elif [ $pass_through_next -ne 0 ]; then
+              unit_extra=""
+              shift 1
           else
               unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
               shift 1
@@ -474,9 +497,12 @@ do
       -i|-integration|--integration)
           report_file="run_integration_tests.html"
           test_script="./scripts/nosetests.py"
-          if [ $# -gt 1 ]; then
+          if [ $has_next_arg -ne 0 ]; then
               integration_extra=$2
               shift 2
+          elif [ $pass_through_next -ne 0 ]; then
+              integration_extra=""
+              shift 1
           else
               integration_extra='test/integration'
               shift 1
@@ -524,7 +550,6 @@ do
           # Do not default to running the functional tests in this case, caller
           # is opting to run specific tests so don't interfere with that by default.
           unset run_default_functional_tests;
-          shift
           break
           ;;
       -*)
@@ -605,6 +630,7 @@ if [ -n "$with_framework_test_tools_arg" ]; then
     GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     export GALAXY_TEST_TOOL_CONF
 fi
+echo "Invoking test with: python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args $@"
 python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
