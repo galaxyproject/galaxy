@@ -188,8 +188,8 @@ class ToolOutputCollectionStructure(object):
             raise ValueError("Cannot set both type and type_source on collection output.")
         if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None and collection_type_from_rules is None:
             raise ValueError("Output collection types must specify source of collection type information (e.g. structured_like or type_source).")
-        if dataset_collector_descriptions and (structured_like or collection_type_source or collection_type_from_rules):
-            raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type source attributes such as structured_like or type_source.")
+        if dataset_collector_descriptions and (structured_like or collection_type_from_rules):
+            raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type attributes structured_like or collection_type_from_rules.")
         self.dynamic = dataset_collector_descriptions is not None
 
     def collection_prototype(self, inputs, type_registry):
