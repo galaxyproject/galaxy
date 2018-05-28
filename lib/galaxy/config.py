@@ -210,8 +210,8 @@ class Configuration(object):
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # Galaxy OIDC settings.
         self.enable_oidc = kwargs.get("enable_oidc", False)
-        self.oidc_config = kwargs.get('oidc_config_file', None)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
+        self.oidc_config = kwargs.get('oidc_config_file', "config/oidc_config.xml")
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", "config/oidc_backends_config.xml")
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
