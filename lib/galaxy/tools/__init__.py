@@ -2593,7 +2593,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
-                default = element_identifier if strict else None
+                default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
                     raise Exception("Failed to find new label for identifier [%s]" % element_identifier)
