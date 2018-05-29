@@ -2,7 +2,6 @@ import logging
 
 from markupsafe import escape
 from six import string_types
-from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload, eagerload_all, undefer
 
