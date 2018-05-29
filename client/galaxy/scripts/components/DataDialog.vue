@@ -14,7 +14,12 @@
         </b-alert>
         <div v-else>
             <div v-if="optionsShow">
-                <b-table small hover :items="items" :fields="fields" :filter="filter" @row-clicked="handleRow">
+                <b-table small hover
+                    :items="items"
+                    :fields="fields"
+                    :filter="filter"
+                    @row-clicked="clicked"
+                    @filtered="filtered">
                     <template slot="name" slot-scope="data">
                         <i v-if="data.item.history_content_type == 'dataset'" class="fa fa-file-o"/>
                         <i v-else class="fa fa-copy"/>
@@ -27,6 +32,9 @@
                         {{ data.value ? data.value.substring(0, 16).replace("T", " ") : "-" }}
                     </template>
                 </b-table>
+                <div v-if="nItems == 0">
+                    No search results found for: {{ this.filter }}.
+                </div>
             </div>
             <div v-else>
                 <span class="fa fa-spinner fa-spin"/>
@@ -73,6 +81,7 @@ export default {
                 }
             },
             filter: null,
+            nItems: 0,
             currentPage: 0,
             perPage: 10,
             items: [],
@@ -83,18 +92,17 @@ export default {
             optionsShow: false
         };
     },
-    created: function() {this.loadOptions()},
+    created: function() {this.load()},
     methods: {
-        formatDate: function(dateString) {
-            let r = dateString.substring(0, 16);
-            return r;
+        filtered: function(items) {
+            this.nItems = items.length;
         },
-        handleRow: function(record) {
+        clicked: function(record) {
             let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
             this.callback(`${host}/${record.url}/display`);
             this.modalShow = false;
         },
-        loadOptions: function() {
+        load: function() {
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (this.historyId) {
                 axios
