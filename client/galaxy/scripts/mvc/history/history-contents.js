@@ -36,7 +36,6 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     order: "hid",
 
     /** root api url */
-    urlRoot: `${Galaxy.root}api/histories`,
 
     /** complete api url */
     url: function() {
@@ -50,6 +49,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         });
 
         options = options || {};
+        this.urlRoot = `${Galaxy.root}api/histories`;
         _super.prototype.initialize.call(this, models, options);
 
         this.history = options.history || null;
