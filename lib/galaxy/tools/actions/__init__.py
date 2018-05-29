@@ -158,7 +158,7 @@ class DefaultToolAction(object):
                 if not isinstance(values, list):
                     values = [value]
                 for i, value in enumerate(values):
-                    if isinstance(value, model.HistoryDatasetCollectionAssociation):
+                    if isinstance(value, model.HistoryDatasetCollectionAssociation) or isinstance(value, model.DatasetCollectionElement):
                         append_to_key(input_dataset_collections, prefixed_name, (value, True))
                         target_dict = parent
                         if not target_dict:
@@ -167,7 +167,12 @@ class DefaultToolAction(object):
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        dataset_instances = value.collection.dataset_instances
+                        if hasattr(value, 'child_collection'):
+                            # if we are mapping a collection over a tool, we only require the child_collection
+                            dataset_instances = value.child_collection.dataset_instances
+                        else:
+                            # else the tool takes a collection as input so we need everything
+                            dataset_instances = value.collection.dataset_instances
                         if i == 0:
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
@@ -667,7 +672,10 @@ class DefaultToolAction(object):
 
                 target_dict[input.name] = []
                 for reduced_collection in reductions[prefixed_name]:
-                    target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
+                    if hasattr(reduced_collection, "child_collection"):
+                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'dce'})
+                    else:
+                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
 
         if reductions:
             tool.visit_inputs(incoming, restore_reduction_visitor)
