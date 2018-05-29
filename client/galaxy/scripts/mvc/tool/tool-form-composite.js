@@ -686,7 +686,6 @@ var View = Backbone.View.extend({
     /** Templates */
     _templateSuccess: function(response) {
         if ($.isArray(response) && response.length > 0) {
-            console.debug(response);
             let timesExecuted = "";
             // Default destination blurb, used for a single execution, same history.
             let destinationBlurb = "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
