@@ -81,15 +81,15 @@ def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
         h.update(x)
         digest = h.digest()
         if six.PY2:
-            digest = [ord(_) for _ in digest]
-        return digest
+            return digest, [ord(_) for _ in digest]
+        return digest, digest
 
     buf = []
     salt = smart_str(salt)
     for block in range(1, -(-keylen // mac.digest_size) + 1):
-        rv = u = _pseudorandom(salt + _pack_int(block))
+        digest, rv = _pseudorandom(salt + _pack_int(block))
         for _ in range(iterations - 1):
-            u = _pseudorandom(bytearray(u))
+            digest, u = _pseudorandom(digest)
             rv = starmap(xor, zip(rv, u))
         buf.extend(rv)
-    return bytearray(buf)[:keylen]
+    return bytes(bytearray(buf))[:keylen]
