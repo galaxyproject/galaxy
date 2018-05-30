@@ -720,22 +720,25 @@ var View = Backbone.View.extend({
             // Default destination blurb, used for a single execution, same history.
             let destinationBlurb =
                 "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
+            let newHistoryTarget =
+                (response[0].history_id &&
+                    Galaxy.currHistoryPanel &&
+                    Galaxy.currHistoryPanel.model.id != response[0].history_id) ||
+                false;
             if (response.length > 1) {
                 // Executed more than one time, build blurb but skip history link.
                 timesExecuted = `<em> - ${response.length} times</em>`;
-                destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
-                    Galaxy.root
-                }/history/view_multiple">history multi-view</a>.`;
-            } else if (
-                response[0].history_id &&
-                Galaxy.currHistoryPanel &&
-                Galaxy.currHistoryPanel.model.id != response[0].history_id
-            ) {
+                if (newHistoryTarget) {
+                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
+                        Galaxy.root
+                    }history/view_multiple">history multi-view</a>.`;
+                }
+            } else if (newHistoryTarget) {
                 // Single execution, with a destination other than the
                 // current history.  Present a link.
                 destinationBlurb = `This workflow will generate results in a new history. <a href="${
                     Galaxy.root
-                }/history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
+                }history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
             }
             return $(`
                 <div class="donemessagelarge">
