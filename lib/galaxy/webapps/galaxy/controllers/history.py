@@ -2,7 +2,6 @@ import logging
 
 from markupsafe import escape
 from six import string_types
-from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload, eagerload_all, undefer
 
@@ -560,38 +559,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             'history_json': hda_dicts,
             'template': html_template
         }
-
-    @web.expose
-    def structure(self, trans, id=None, **kwargs):
-        """
-        """
-        unencoded_history_id = trans.history.id
-        if id:
-            unencoded_history_id = self.decode_id(id)
-        history_to_view = self.history_manager.get_accessible(unencoded_history_id, trans.user,
-            current_history=trans.history)
-
-        history_dictionary = self.history_serializer.serialize_to_view(history_to_view,
-            view='dev-detailed', user=trans.user, trans=trans)
-        contents = self.history_serializer.serialize_contents(history_to_view,
-            'contents', trans=trans, user=trans.user)
-
-        jobs = (trans.sa_session.query(trans.app.model.Job)
-            .filter(trans.app.model.Job.user == history_to_view.user)
-            .filter(trans.app.model.Job.history_id == unencoded_history_id)).all()
-        jobs = [self.encode_all_ids(trans, j.to_dict('element'), True) for j in jobs]
-
-        tools = {}
-        for tool_id in set(j['tool_id'] for j in jobs):
-            unquoted_id = unquote_plus(tool_id)
-            tool = self.app.toolbox.get_tool(unquoted_id)
-            if not tool:
-                raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % tool_id)
-                # TODO: some fallback for tool information
-            tools[tool_id] = tool.to_dict(trans, io_details=True, link_details=True)
-
-        return trans.fill_template("history/structure.mako", historyId=history_dictionary['id'],
-            history=history_dictionary, contents=contents, jobs=jobs, tools=tools, **kwargs)
 
     @web.expose
     @web.json
