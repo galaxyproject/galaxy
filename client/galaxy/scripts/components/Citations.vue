@@ -143,7 +143,7 @@ export default {
             }
             var doiUrl = "";
             if (fields.doi) {
-                doiUrl = `http://dx.doi.org/${fields.doi}`;
+                doiUrl = `https://doi.org/${fields.doi}`;
                 ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
             }
             var url = fields.url || doiUrl;

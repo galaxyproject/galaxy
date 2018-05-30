@@ -834,7 +834,7 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
+    fetched from external sources such as https://doi.org/ by Galaxy
     - the following parameters can be used to control the caching used
     to store this information.
 :Default: ``file``
@@ -847,7 +847,7 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
+    fetched from external sources such as https://doi.org/ by Galaxy
     - the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/data``
@@ -860,7 +860,7 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
+    fetched from external sources such as https://doi.org/ by Galaxy
     - the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/lock``

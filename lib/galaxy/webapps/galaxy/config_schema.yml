@@ -641,7 +641,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_data_dir:
@@ -650,7 +650,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_lock_dir:
@@ -659,7 +659,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       collect_outputs_from:
