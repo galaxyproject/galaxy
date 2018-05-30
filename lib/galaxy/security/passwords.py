@@ -10,7 +10,8 @@ import six
 
 from galaxy.util import (
     safe_str_cmp,
-    smart_str
+    smart_str,
+    unicodify
 )
 
 SALT_LENGTH = 12
@@ -46,13 +47,10 @@ def hash_password_PBKDF2(password):
     # Generate a random salt
     salt = b64encode(urandom(SALT_LENGTH))
     # Apply the pbkdf2 encoding
-    hashed = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, getattr(hashlib, HASH_FUNCTION))
-    hashed_b64 = b64encode(hashed)
-    if six.PY3:
-        salt = salt.decode('utf-8')
-        hashed_b64 = hashed_b64.decode('utf-8')
+    hashed_password = pbkdf2_bin(password, salt, COST_FACTOR, KEY_LENGTH, getattr(hashlib, HASH_FUNCTION))
+    encoded_password = unicodify(b64encode(hashed_password))
     # Format
-    return 'PBKDF2${0}${1}${2}${3}'.format(HASH_FUNCTION, COST_FACTOR, salt, hashed_b64)
+    return 'PBKDF2${0}${1}${2}${3}'.format(HASH_FUNCTION, COST_FACTOR, unicodify(salt), encoded_password)
 
 
 def check_password_PBKDF2(guess, hashed):
@@ -60,9 +58,7 @@ def check_password_PBKDF2(guess, hashed):
     name, hash_function, cost_factor, salt, encoded_original = hashed.split('$', 5)
     # Hash the guess using the same parameters
     hashed_guess = pbkdf2_bin(guess, salt, int(cost_factor), KEY_LENGTH, getattr(hashlib, hash_function))
-    encoded_guess = b64encode(hashed_guess)
-    if six.PY3:
-        encoded_guess = encoded_guess.decode('utf-8')
+    encoded_guess = unicodify(b64encode(hashed_guess))
     return safe_str_cmp(encoded_original, encoded_guess)
 
 
