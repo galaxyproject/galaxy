@@ -12,14 +12,14 @@ To cite ModelFinder please use:
 Subha Kalyaanamoorthy, Bui Quang Minh, Thomas KF Wong, Arndt von Haeseler,
 and Lars S Jermiin (2017) ModelFinder: Fast model selection for
 accurate phylogenetic estimates. Nature Methods, 14:587–589.
-http://dx.doi.org/10.1038/nmeth.4285
+https://doi.org/10.1038/nmeth.4285
 
 To cite IQ-TREE please use:
 
 Lam-Tung Nguyen, Heiko A. Schmidt, Arndt von Haeseler, and Bui Quang Minh
 (2015) IQ-TREE: A fast and effective stochastic algorithm for estimating
 maximum likelihood phylogenies. Mol Biol Evol, 32:268-274.
-http://dx.doi.org/10.1093/molbev/msu300
+https://doi.org/10.1093/molbev/msu300
 
 SEQUENCE ALIGNMENT
 ------------------

@@ -5118,7 +5118,7 @@ well. Likewise, the history menu includes an option allowing users to aggregate
 all such citations across an analysis in a list of citations.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
-https://dx.doi.org/ and cached.
+https://doi.org/ and cached.
 
 ```xml
 <citations>
