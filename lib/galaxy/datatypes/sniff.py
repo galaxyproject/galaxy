@@ -463,6 +463,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
     'phyloxml'
+    >>> fname = get_test_fname('1.tiff')
+    >>> guess_ext(fname, sniff_order)
+    'tiff'
     >>> fname = get_test_fname('1.fastqsanger.gz')
     >>> guess_ext(fname, sniff_order)  # See test_datatype_registry for more compressed type tests.
     'fastqsanger.gz'

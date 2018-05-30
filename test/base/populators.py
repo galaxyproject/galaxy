@@ -141,6 +141,7 @@ class BaseDatasetPopulator(object):
 
     def new_dataset(self, history_id, content=None, wait=False, **kwds):
         run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
+        assert run_response.status_code == 200, "Failed to create new dataset with response: %s" % run_response.content
         return run_response.json()["outputs"][0]
 
     def new_dataset_request(self, history_id, content=None, wait=False, **kwds):

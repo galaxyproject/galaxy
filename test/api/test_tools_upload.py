@@ -167,6 +167,13 @@ class ToolsUploadTestCase(api.ApiTestCase):
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
         self.assertEquals(csv_metadata["file_ext"], "csv")
 
+    @skip_without_datatype("tiff")
+    def test_image_upload_auto(self):
+        tiff_path = TestDataResolver().get_filename("1.tiff")
+        with open(tiff_path, "rb") as fh:
+            tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
+        self.assertEquals(tiff_metadata["file_ext"], "tiff")
+
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
         with self.dataset_populator.test_history() as history_id:
