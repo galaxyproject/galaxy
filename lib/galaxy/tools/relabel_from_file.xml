@@ -96,6 +96,7 @@
                     </element>
                 </collection>
             </param>
+            <param name="strict" value="true" />
             <param name="how_select" value="tabular" />
             <param name="labels" value="new_labels_2.txt" ftype="tabular" />
         </test>
