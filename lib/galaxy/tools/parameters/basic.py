@@ -59,6 +59,20 @@ def is_runtime_value(value):
         and value.get("__class__") == "RuntimeValue")
 
 
+def is_runtime_context(trans, other_values):
+    if trans.workflow_building_mode:
+        return True
+    for context_value in other_values.values():
+        if is_runtime_value(context_value):
+            return True
+        for v in util.listify(context_value):
+            if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+                ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
+                hasattr(v, 'implicit_conversion')):
+            return True
+return False
+
+
 def parse_dynamic_options(param, input_source):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
@@ -817,19 +831,6 @@ class SelectToolParameter(ToolParameter):
             call_other_values.update(other_values.dict)
         return call_other_values
 
-    def _is_runtime_context(self, trans, other_values):
-        if trans.workflow_building_mode:
-            return True
-        for context_value in other_values.values():
-            if is_runtime_value(context_value):
-                return True
-            for v in util.listify(context_value):
-                if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                    hasattr(v, 'implicit_conversion')):
-                return True
-    return False
-
     def get_options(self, trans, other_values):
         if self.options:
             return self.options.get_options(trans, other_values)
@@ -858,8 +859,7 @@ class SelectToolParameter(ToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        workflow_building_mode = self._is_runtime_context(trans, other_values)
-        if not legal_values and workflow_building_mode:
+        if not legal_values and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -972,7 +972,7 @@ class SelectToolParameter(ToolParameter):
         d['options'] = options
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['textable'] = self._is_runtime_context(trans, other_values)
+        d['textable'] = is_runtime_context(trans, other_values)
         return d
 
 
