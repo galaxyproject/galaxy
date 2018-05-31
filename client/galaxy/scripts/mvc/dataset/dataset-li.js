@@ -503,7 +503,7 @@ DatasetListItemView.prototype.templates = (() => {
     );
     summaryTemplates[STATES.PAUSED] = BASE_MVC.wrapTemplate(
         ["<div>", _l('This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'), "</div>",
-        '<div><%- dataset.misc_info %></div>'],
+        '<div class="info"><%- dataset.misc_info %></div>'],
         "dataset"
     );
     summaryTemplates[STATES.ERROR] = BASE_MVC.wrapTemplate(
