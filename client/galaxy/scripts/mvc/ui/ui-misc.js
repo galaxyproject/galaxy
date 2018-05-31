@@ -202,7 +202,7 @@ export var TextSelect = Backbone.View.extend({
                 .append(this.select.$el)
                 .append(this.text.$el)
         );
-        this.update(this.model.get("data"));
+        this.update(this.model.attributes);
     },
     wait: function() {
         this.select.wait();
@@ -214,12 +214,13 @@ export var TextSelect = Backbone.View.extend({
         var element = this.textmode ? this.text : this.select;
         return element.value(new_val);
     },
-    update: function(options) {
+    update: function(input_def) {
         var v = this.value();
+        var options = input_def.options;
         this.textmode = !$.isArray(options) || options.length === 0;
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
-        this.select.update(options);
+        this.select.update(input_def);
         this.value(v);
     }
 });
