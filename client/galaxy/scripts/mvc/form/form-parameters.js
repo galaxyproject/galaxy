@@ -85,6 +85,7 @@ export default Backbone.Model.extend({
         var SelectClass = classes[input_def.display] || Ui.Select;
         var select = new SelectClass.View({
             id: `field-${input_def.id}`,
+            data: input_def.data,
             options: input_def.options,
             display: input_def.display,
             error_text: input_def.error_text || "No options available",
