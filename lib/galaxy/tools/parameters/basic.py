@@ -59,15 +59,6 @@ def is_runtime_value(value):
         and value.get("__class__") == "RuntimeValue")
 
 
-def has_runtime_datasets(trans, value):
-    for v in util.listify(value):
-        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
-                hasattr(v, "implicit_conversion")):
-            return True
-    return False
-
-
 def parse_dynamic_options(param, input_source):
     options_elem = input_source.parse_dynamic_options_elem()
     if options_elem is not None:
@@ -828,8 +819,14 @@ class SelectToolParameter(ToolParameter):
 
     def _is_runtime_context(self, trans, other_values):
         for context_value in other_values.values():
-            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
+            if is_runtime_value(context_value):
                 return True
+            for v in util.listify(context_value):
+                if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
+                    hasattr(v, 'implicit_conversion')):
+                return True
+    return False
 
     def get_options(self, trans, other_values):
         if self.options:
