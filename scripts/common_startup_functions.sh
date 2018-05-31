@@ -23,7 +23,7 @@ parse_common_args() {
                 ;;
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
-                paster_args="$paster_args --pid-file $PID_FILE --stop-daemon"
+                paster_args="$paster_args --stop-daemon"
                 uwsgi_args="$uwsgi_args --stop $PID_FILE"
                 stop_daemon_arg_set=1
                 shift
@@ -41,7 +41,7 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                paster_args="$paster_args --pid-file $PID_FILE --log-file $LOG_FILE --daemon"
+                paster_args="$paster_args --daemon"
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
                 uwsgi_args="--master --daemonize2 $LOG_FILE --pidfile2 $PID_FILE $uwsgi_args"
@@ -148,7 +148,7 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     else
         run_server="python"
-        server_args="./scripts/paster.py serve $server_config $paster_args"
+        server_args="./scripts/paster.py serve $server_config --pid-file $PID_FILE --log-file $LOG_FILE $paster_args"
     fi
 }
 
