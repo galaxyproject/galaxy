@@ -117,6 +117,6 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     else
         run_server="python"
-        server_args="./scripts/paster.py serve $server_config $paster_args"
+        server_args="./scripts/paster.py serve $server_config --pid-file $PID_FILE --log-file $LOG_FILE $paster_args"
     fi
 }
