@@ -67,8 +67,8 @@ def is_runtime_context(trans, other_values):
             return True
         for v in util.listify(context_value):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
-                hasattr(v, 'implicit_conversion')):
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
+                    hasattr(v, 'implicit_conversion')):
                 return True
     return False
 
