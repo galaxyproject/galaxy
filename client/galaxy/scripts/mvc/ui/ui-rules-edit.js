@@ -114,14 +114,9 @@ var View = Backbone.View.extend({
     },
 
     // update
-    refreshDefinition: function(input_def) {
+    update: function(input_def) {
         self.target = input_def.target;
-        // refresh
-        this._refresh();
     },
-
-    // refresh
-    _refresh: function() {},
 
     // get value
     _getValue: function() {
