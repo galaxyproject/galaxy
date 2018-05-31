@@ -826,6 +826,11 @@ class SelectToolParameter(ToolParameter):
             call_other_values.update(other_values.dict)
         return call_other_values
 
+    def _is_runtime_context(self, trans, other_values):
+        for context_value in other_values.values():
+            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
+                return True
+
     def get_options(self, trans, other_values):
         if self.options:
             return self.options.get_options(trans, other_values)
@@ -854,11 +859,7 @@ class SelectToolParameter(ToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        workflow_building_mode = trans.workflow_building_mode
-        for context_value in other_values.values():
-            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
-                workflow_building_mode = workflow_building_modes.ENABLED
-                break
+        workflow_building_mode = trans.workflow_building_mode or self._is_runtime_context(trans, other_values)
         if not legal_values and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
@@ -972,7 +973,7 @@ class SelectToolParameter(ToolParameter):
         d['options'] = options
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['textable'] = True
+        d['textable'] = self._is_runtime_context(trans, other_values)
         return d
 
 
