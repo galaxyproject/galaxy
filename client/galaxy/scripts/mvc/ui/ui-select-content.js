@@ -223,8 +223,8 @@ var View = Backbone.View.extend({
     },
 
     /** Update data representing selectable options */
-    update: function(options) {
-        this.model.set("data", options);
+    update: function(input_def) {
+        this.model.set("data", input_def.options);
     },
 
     /** Return the currently selected dataset values */
