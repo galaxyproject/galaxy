@@ -83,7 +83,7 @@ export default Backbone.Model.extend({
             radiobutton: Ui.RadioButton
         };
         var SelectClass = classes[input_def.display] || Ui.Select;
-        var select = new SelectClass.View({
+        return new Ui.TextSelect({
             id: `field-${input_def.id}`,
             data: input_def.data,
             options: input_def.options,
@@ -94,9 +94,10 @@ export default Backbone.Model.extend({
             optional: input_def.optional,
             onchange: input_def.onchange,
             individual: input_def.individual,
-            searchable: input_def.flavor !== "workflow"
+            searchable: input_def.flavor !== "workflow",
+            textable: input_def.textable,
+            SelectClass: SelectClass
         });
-        return input_def.textable ? new Ui.TextSelect({ select: select }) : select;
     },
 
     /** Drill down options field */
