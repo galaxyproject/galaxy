@@ -54,7 +54,7 @@ var View = Backbone.View.extend({
             }
         });
         this.instance.$mount(vm);
-        this.workflowRuntimeCompatible = false;
+        this.collapsible_disabled = true;
     },
 
     _fetcCollectionAndEdit: function() {
