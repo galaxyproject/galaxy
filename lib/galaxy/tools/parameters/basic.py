@@ -69,8 +69,8 @@ def is_runtime_context(trans, other_values):
             if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
                 ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
                 hasattr(v, 'implicit_conversion')):
-            return True
-return False
+                return True
+    return False
 
 
 def parse_dynamic_options(param, input_source):
