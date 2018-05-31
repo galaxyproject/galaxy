@@ -42,7 +42,7 @@ def main(argv):
 
     # Contact the server and check auth details.
     headers = {
-        'AUTHORIZATION': GRT_INSTANCE_ID + ':' + GRT_API_KEY
+        'AUTHORIZATION': '%s:%s' % (GRT_INSTANCE_ID, GRT_API_KEY)
     }
     r = requests.post(GRT_URL + 'api/whoami', headers=headers)
     data = r.json()
