@@ -6,7 +6,7 @@
                     <span v-if="historyData.user_is_owner == false" >
                         <button id="import" class="btn btn-secondary">Import and start using history</button>
                     </span>
-                    <span v-if="historyData.history_is_current == false">
+                    <span v-if="historyData.user_is_owner && historyData.history_is_current == false">
                         <button id="switch-history" class="btn btn-secondary" v-on:click="switchHistory">Switch to this history</button>
                     </span>
                     <button id="show-structure" class="btn btn-secondary" v-on:click="showStructure">Show structure</button>
