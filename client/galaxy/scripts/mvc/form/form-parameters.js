@@ -76,15 +76,6 @@ export default Backbone.Model.extend({
             input_def.error_text = "Missing columns in referenced dataset.";
         }
 
-        // identify available options
-        var data = input_def.data;
-        if (!data) {
-            data = [];
-            _.each(input_def.options, option => {
-                data.push({ label: option[0], value: option[1] });
-            });
-        }
-
         // pick selection display
         var classes = {
             checkboxes: Ui.Checkbox,
@@ -94,7 +85,7 @@ export default Backbone.Model.extend({
         var SelectClass = classes[input_def.display] || Ui.Select;
         var select = new SelectClass.View({
             id: `field-${input_def.id}`,
-            data: data,
+            options: input_def.options,
             display: input_def.display,
             error_text: input_def.error_text || "No options available",
             readonly: input_def.readonly,
