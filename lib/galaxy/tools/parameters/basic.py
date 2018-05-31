@@ -818,6 +818,8 @@ class SelectToolParameter(ToolParameter):
         return call_other_values
 
     def _is_runtime_context(self, trans, other_values):
+        if trans.workflow_building_mode:
+            return True
         for context_value in other_values.values():
             if is_runtime_value(context_value):
                 return True
@@ -856,7 +858,7 @@ class SelectToolParameter(ToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        workflow_building_mode = trans.workflow_building_mode or self._is_runtime_context(trans, other_values)
+        workflow_building_mode = self._is_runtime_context(trans, other_values)
         if not legal_values and workflow_building_mode:
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
