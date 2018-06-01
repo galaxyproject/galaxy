@@ -83,14 +83,19 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
         if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
             while true; do
                 sleep 1
-                printf "."
-                # Grab the current pid from the pid file
-                if ! current_pid_in_file=$(cat "$server.pid"); then
+                # Grab the current pid from the pid file and remove any trailing space
+                if ! current_pid_in_file=$(sed -e 's/[[:space:]]*$//' "$server.pid"); then
                     echo "A Galaxy process died, interrupting" >&2
                     exit 1
                 fi
+                if [ -n "$current_pid_in_file" ]; then
+                    echo "Found PID $current_pid_in_file in '$server.pid', monitoring '$server.log'"
+                else
+                    echo "No PID found in '$server.pid' yet"
+                    continue
+                fi
                 # Search for all pids in the logs and tail for the last one
-                latest_pid=$(egrep '^Starting server in PID [0-9]+\.$' "$server.log" -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1)
+                latest_pid=$(grep '^Starting server in PID [0-9]\+\.$' "$server.log" | sed 's/^Starting server in PID \([0-9]\+\).$/\1/' | tail -n 1)
                 # If they're equivalent, then the current pid file agrees with our logs
                 # and we've succesfully started
                 [ -n "$latest_pid" ] && [ "$latest_pid" -eq "$current_pid_in_file" ] && break
