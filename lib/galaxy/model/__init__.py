@@ -822,6 +822,15 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
 
+    def resume(self, flush=True):
+        if self.state == self.states.PAUSED:
+            self.set_state(self.states.NEW)
+            object_session(self).add(self)
+            for dataset in self.output_datasets:
+                dataset.info = None
+            if flush:
+                object_session(self).flush()
+
     def to_dict(self, view='collection', system_details=False):
         rval = super(Job, self).to_dict(view=view)
         rval['tool_id'] = self.tool_id
@@ -1515,10 +1524,18 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             dataset.mark_unhidden()
 
     def resume_paused_jobs(self):
-        for dataset in self.datasets:
-            job = dataset.creating_job
-            if job is not None and job.state == Job.states.PAUSED:
-                job.set_state(Job.states.NEW)
+        job = None
+        for i, job in self.paused_jobs:
+            job.resume(flush=False)
+        if job is not None:
+            # We'll flush once if there was a paused job
+            object_session(job).flush()
+
+    @property
+    def paused_jobs(self):
+        db_session = object_session(self)
+        return db_session.query(Job).filter(Job.history_id == self.id,
+                                            Job.state == Job.states.PAUSED).all()
 
     @hybrid.hybrid_property
     def disk_size(self):
