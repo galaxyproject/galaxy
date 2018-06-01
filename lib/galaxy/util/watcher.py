@@ -88,26 +88,26 @@ class Watcher(object):
     def monitor(self, dir, recursive=False):
         self.observer.schedule(self.event_handler, dir, recursive=recursive)
 
-    def watch_file(self, file, callback=None):
-        file = os.path.abspath(file)
-        dir = os.path.dirname(file)
-        if dir not in self.monitored_dirs:
+    def watch_file(self, file_path, callback=None):
+        file_path = os.path.abspath(file_path)
+        dir_path = os.path.dirname(file_path)
+        if dir_path not in self.monitored_dirs:
             if callback is not None:
-                self.file_callbacks[file] = callback
-            self.monitored_dirs[dir] = dir
-            self.monitor(dir)
-            log.debug("Watching for changes to file: %s", file)
+                self.file_callbacks[file_path] = callback
+            self.monitored_dirs[dir_path] = dir_path
+            self.monitor(dir_path)
+            log.debug("Watching for changes to file: %s", file_path)
 
-    def watch_directory(self, dir, callback=None, recursive=False, ignore_extensions=None):
-        dir = os.path.abspath(dir)
-        if dir not in self.monitored_dirs:
+    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None):
+        dir_path = os.path.abspath(dir_path)
+        if dir_path not in self.monitored_dirs:
             if callback is not None:
-                self.dir_callbacks[dir] = callback
+                self.dir_callbacks[dir_path] = callback
             if ignore_extensions:
-                self.ignore_extensions[dir] = ignore_extensions
-            self.monitored_dirs[dir] = dir
-            self.monitor(dir, recursive=recursive)
-            log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir)
+                self.ignore_extensions[dir_path] = ignore_extensions
+            self.monitored_dirs[dir_path] = dir_path
+            self.monitor(dir_path, recursive=recursive)
+            log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir_path)
 
 
 class EventHandler(FileSystemEventHandler):
