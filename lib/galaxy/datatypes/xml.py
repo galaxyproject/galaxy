@@ -13,6 +13,7 @@ from . import (
 log = logging.getLogger(__name__)
 
 OWL_MARKER = re.compile(r'\<owl:')
+SBML_MARKER = re.compile(r'\<sbml')
 
 
 @dataproviders.decorators.has_dataproviders
@@ -159,3 +160,27 @@ class Owl(GenericXml):
             Checking for keyword - '<owl' in the first 200 lines.
         """
         return file_prefix.search(OWL_MARKER)
+
+
+class Sbml(GenericXml):
+    """
+        System Biology Markup Language
+        http://sbml.org
+    """
+    file_ext = "sbml"
+    edam_data = "data_2024"
+    edam_format = "format_2585"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.blurb = "System Biology Markup Language SBML"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff_prefix(self, file_prefix):
+        """
+            Checking for keyword - '<sbml' in the first 200 lines.
+        """
+        return file_prefix.search(SBML_MARKER)
