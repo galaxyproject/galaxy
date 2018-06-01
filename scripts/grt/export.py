@@ -411,9 +411,9 @@ def main(argv):
             "tools": toolbox
         }, handle)
 
-    # # Write our checkpoint file so we know where to start next time.
-    # with open(CHECK_POINT_FILE, 'w') as handle:
-    #     handle.write(str(end_job_id))
+    # Write our checkpoint file so we know where to start next time.
+    with open(CHECK_POINT_FILE, 'w') as handle:
+        handle.write(str(end_job_id))
 
 
 if __name__ == '__main__':
