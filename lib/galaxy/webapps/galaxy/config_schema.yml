@@ -355,6 +355,15 @@ mapping:
           a less efficient monitoring scheme that may work in wider range of scenarios
           than the watchdog default.
 
+      watch_job_rules:
+        type: str
+        default: false
+        required: false
+        desc: |
+          Set to True to enable monitoring of dynamic job rules. If changes are
+          found, rules are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
+
       enable_beta_mulled_containers:
         type: bool
         default: false

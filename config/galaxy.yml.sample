@@ -291,6 +291,11 @@ galaxy:
   # wider range of scenarios than the watchdog default.
   #watch_tools: false
 
+  # Set to True to enable monitoring of dynamic job rules. If changes
+  # are found, rules are automatically reloaded. Takes the same values
+  # as the 'watch_tools' option.
+  #watch_job_rules: false
+
   # Enable Galaxy to fetch Docker containers registered with quay.io
   # generated from tool requirements resolved through conda. These
   # containers (when available) have been generated using mulled -
