@@ -48,5 +48,5 @@ if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
 fi
 
 find_server ${GALAXY_REPORTS_CONFIG:-none} reports
-echo "executing: $run_server $server_args"
-eval $run_server $server_args
+echo "Executing: $run_server $server_args $pid_log_paster_args"
+eval $run_server $server_args $pid_log_paster_args

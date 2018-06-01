@@ -78,8 +78,9 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
         exit 1
     fi
     for server in $servers; do
+        echo "Executing: python $server_args --server-name=\"$server\" --pid-file=\"$server.pid\" --log-file=\"$server.log\""
+        python $server_args --server-name="$server" --pid-file="$server.pid" --log-file="$server.log"
         if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
-            python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" --server-name="$server" --pid-file="$server.pid" --log-file="$server.log" $paster_args
             while true; do
                 sleep 1
                 printf "."
@@ -95,13 +96,10 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
                 [ -n "$latest_pid" ] && [ "$latest_pid" -eq "$current_pid_in_file" ] && break
             done
             echo
-        else
-            echo "Handling $server with log file $server.log..."
-            python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" --server-name="$server" --pid-file="$server.pid" --log-file="$server.log" $paster_args
         fi
     done
 else
-    echo "executing: $run_server $server_args"
+    echo "Executing: $run_server $server_args $pid_log_paster_args"
     # args are properly quoted so use eval
-    eval $run_server $server_args
+    eval $run_server $server_args $pid_log_paster_args
 fi

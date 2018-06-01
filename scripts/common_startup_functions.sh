@@ -22,28 +22,31 @@ parse_common_args() {
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
                 paster_args="$paster_args --stop-daemon"
-                uwsgi_args="$uwsgi_args --stop $PID_FILE"
+                pid_log_paster_args="--pid-file \"$PID_FILE\""
+                uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
                 stop_daemon_arg_set=1
                 shift
                 ;;
             --restart|restart)
-                if [ "$1" = "--restart" ]
-                then
-                    paster_args="$paster_args restart"
-                else
-                    paster_args="$paster_args $1"
-                fi
-                uwsgi_args="$uwsgi_args --reload $PID_FILE"
+                paster_args="$paster_args restart"
+                pid_log_paster_args="--pid-file \"$PID_FILE\" --log-file \"$LOG_FILE\""
+                uwsgi_args="$uwsgi_args --reload \"$PID_FILE\""
                 restart_arg_set=1
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
             --daemon|start)
                 paster_args="$paster_args --daemon"
+                pid_log_paster_args="--pid-file \"$PID_FILE\" --log-file \"$LOG_FILE\""
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
-                uwsgi_args="--master --daemonize2 $LOG_FILE --pidfile2 $PID_FILE $uwsgi_args"
+                uwsgi_args="--master --daemonize2 \"$LOG_FILE\" --pidfile2 \"$PID_FILE\" $uwsgi_args"
                 daemon_or_restart_arg_set=1
+                shift
+                ;;
+            --status|status)
+                paster_args="$paster_args $1"
+                pid_log_paster_args="--pid-file \"$PID_FILE\""
                 shift
                 ;;
             --wait)
@@ -115,8 +118,9 @@ find_server() {
             server_args="$(python ./scripts/get_uwsgi_args.py $arg_getter_args)"
         fi
         server_args="$server_args $uwsgi_args"
+        pid_log_paster_args=""
     else
         run_server="python"
-        server_args="./scripts/paster.py serve $server_config --pid-file $PID_FILE --log-file $LOG_FILE $paster_args"
+        server_args="./scripts/paster.py serve $server_config $paster_args"
     fi
 }
