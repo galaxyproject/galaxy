@@ -32,7 +32,7 @@ def _init(args, need_app=False):
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
-        logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.ini")
+        logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
     if need_app:
         config_file = config_file_from_args(args)
@@ -205,6 +205,7 @@ def main(argv):
 
     annotate('galaxy_init', 'Loading Galaxy...')
     model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
+    
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
     sa_session = model.context.current
@@ -277,6 +278,47 @@ def main(argv):
     handle_job.close()
     annotate('export_jobs_end')
 
+    annotate('export_datasets_start', 'Exporting Datasets')
+    handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
+    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'name', 'param_name')) + '\n')
+    for offset_start in range(last_job_sent, end_job_id, args.batch_size):
+        logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
+        for job in sa_session.query(model.Job) \
+                .filter(model.Job.id > offset_start) \
+                .filter(model.Job.id <= min(end_job_id, offset_start + args.batch_size)) \
+                .all():
+
+            # If the tool is blacklisted, exclude everywhere
+            if job.tool_id in blacklisted_tools:
+                continue
+
+            input_datasets=(job.input_datasets)
+            for input_dataset in input_datasets:
+                hda = input_dataset.dataset
+                dataset = hda.dataset
+                datasets=({'dataset_id': str(hda.dataset_id),
+                           'extension': hda.extension,
+                           'file_size': int(dataset.file_size),
+                           'name': hda.name,
+                           'param_name': input_dataset.name})
+
+                handle_datasets.write(str(job.id))
+                handle_datasets.write('\t')
+                handle_datasets.write(datasets['dataset_id'])
+                handle_datasets.write('\t')
+                handle_datasets.write(datasets['extension'])
+                handle_datasets.write('\t')
+                handle_datasets.write(str(datasets['file_size']))
+                handle_datasets.write('\t')
+                handle_datasets.write(datasets['name'])
+                handle_datasets.write('\t')
+                handle_datasets.write(datasets['param_name'])
+                handle_datasets.write('\n')
+
+
+    handle_datasets.close()
+    annotate('export_datasets_end')
+
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
     handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
     handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
@@ -333,10 +375,10 @@ def main(argv):
 
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
-        for name in ('jobs', 'metric_num', 'params'):
+        for name in ('jobs', 'metric_num', 'params', 'datasets'):
             handle.add(REPORT_BASE + '.' + name + '.tsv')
 
-    for name in ('jobs', 'metric_num', 'params'):
+    for name in ('jobs', 'metric_num', 'params', 'datasets'):
         os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
@@ -369,9 +411,9 @@ def main(argv):
             "tools": toolbox
         }, handle)
 
-    # Write our checkpoint file so we know where to start next time.
-    with open(CHECK_POINT_FILE, 'w') as handle:
-        handle.write(str(end_job_id))
+    # # Write our checkpoint file so we know where to start next time.
+    # with open(CHECK_POINT_FILE, 'w') as handle:
+    #     handle.write(str(end_job_id))
 
 
 if __name__ == '__main__':
