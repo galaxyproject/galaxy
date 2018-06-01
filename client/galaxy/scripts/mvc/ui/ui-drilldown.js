@@ -8,6 +8,11 @@ var View = Options.BaseIcons.extend({
         Options.BaseIcons.prototype.initialize.call(this, options);
     },
 
+    /** Update available options */
+    update: function(input_def) {
+        this.model.set("data", input_def.options);
+    },
+
     /** Set states for selected values */
     _setValue: function(new_value) {
         Options.BaseIcons.prototype._setValue.call(this, new_value);

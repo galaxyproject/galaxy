@@ -108,14 +108,11 @@ export default Backbone.View.extend({
                 style: this.model.get("style")
             });
         // render collapsible options
-        const workflowRuntimeCompatible =
-            this.field.workflowRuntimeCompatible === undefined ? true : this.field.workflowRuntimeCompatible;
         if (
-            workflowRuntimeCompatible &&
+            !this.field.collapsible_disabled &&
             !this.model.get("disabled") &&
             this.model.get("collapsible_value") !== undefined
         ) {
-            console.log(this.field);
             var collapsible_state = this.field.collapsed ? "enable" : "disable";
             this.$title_text.hide();
             this.$collapsible.show();

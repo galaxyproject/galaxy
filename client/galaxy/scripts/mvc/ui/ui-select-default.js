@@ -340,8 +340,8 @@ var View = Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function(options) {
-        this.model.set("data", options);
+    update: function(input_def) {
+        this.model.set("data", input_def.data);
     },
 
     /** Set the custom onchange callback function */

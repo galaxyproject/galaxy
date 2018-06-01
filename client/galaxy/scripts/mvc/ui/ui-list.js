@@ -122,8 +122,8 @@ var View = Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function(options) {
-        this.select.update(options);
+    update: function(input_def) {
+        this.select.update(input_def);
     },
 
     /** Refresh view */
