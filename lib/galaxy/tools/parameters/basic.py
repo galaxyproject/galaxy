@@ -1868,8 +1868,10 @@ class DataToolParameter(BaseDataToolParameter):
             if match:
                 subcollection_type = None
                 if multiple:
-                    subcollection_type = self._history_query(trans).can_map_over(hdca).collection_type
-                    if not subcollection_type:
+                    collection_type_description = self._history_query(trans).can_map_over(hdca)
+                    if collection_type_description:
+                        subcollection_type = collection_type_description.collection_type
+                    else:
                         continue
 
                 name = hdca.name
