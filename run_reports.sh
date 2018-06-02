@@ -31,15 +31,7 @@ run_common_start_up
 setup_python
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
-    if [ -f reports_wsgi.ini ]; then
-        GALAXY_REPORTS_CONFIG=reports_wsgi.ini
-    elif [ -f config/reports_wsgi.ini ]; then
-        GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
-    elif [ -f config/reports.ini ]; then
-        GALAXY_REPORTS_CONFIG=config/reports.ini
-    elif [ -f config/reports.yml ]; then
-        GALAXY_REPORTS_CONFIG=config/reports.yml
-    fi
+    GALAXY_REPORTS_CONFIG=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['reports', 'reports_wsgi']) or '')")
     export GALAXY_REPORTS_CONFIG
 fi
 

@@ -87,9 +87,16 @@ setup_python() {
     python ./scripts/check_python.py || exit 1
 }
 
+set_galaxy_config_file_var() {
+    if [ -z "$GALAXY_CONFIG_FILE" ]; then
+        GALAXY_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['galaxy', 'universe_wsgi']) or '')")
+        export GALAXY_CONFIG_FILE
+    fi
+}
+
 find_server() {
-    server_config="$1"
-    server_app="$2"
+    server_config=$1
+    server_app=$2
     arg_getter_args=
     default_webserver="paste"
     case "$server_config" in
@@ -110,17 +117,17 @@ find_server() {
             echo 'ERROR: Could not find uwsgi executable'
             exit 1
         fi
-        [ "$server_config" != "none" ] && arg_getter_args="-c $server_config"
+        [ "$server_config" != "none" ] && arg_getter_args="-c \"$server_config\""
         [ -n "$server_app" ] && arg_getter_args="--app $server_app"
         run_server="$UWSGI"
         server_args=
         if [ -z "$stop_daemon_arg_set" -a -z "$restart_arg_set" ]; then
-            server_args="$(python ./scripts/get_uwsgi_args.py $arg_getter_args)"
+            server_args="$(eval python ./scripts/get_uwsgi_args.py $arg_getter_args)"
         fi
         server_args="$server_args $uwsgi_args"
         pid_log_paster_args=""
     else
         run_server="python"
-        server_args="./scripts/paster.py serve $server_config $paster_args"
+        server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
     fi
 }

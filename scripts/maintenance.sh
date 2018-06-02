@@ -52,8 +52,13 @@ do
   esac
 done
 
-SCRIPTLOCATION="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source ${SCRIPTLOCATION}/common_startup_variables.sh
+cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"/../
+
+. scripts/common_startup_functions.sh
+
+setup_python
+
+set_galaxy_config_file_var
 
 if [ "$DRYRUN" = true ]; then
   MODE="--info_only"
@@ -61,14 +66,14 @@ else
   MODE="-r"
 fi
 
-MAINTENANCE_LOG="$SCRIPTLOCATION/../maintenance.log"
+MAINTENANCE_LOG=maintenance.log
 COMMANDS=(
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_userless_histories >> $MAINTENANCE_LOG"
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_histories >> $MAINTENANCE_LOG"
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG"
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_folders >> $MAINTENANCE_LOG"
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_datasets >> $MAINTENANCE_LOG"
-"python $SCRIPTLOCATION/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG")
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_userless_histories >> $MAINTENANCE_LOG"
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_histories >> $MAINTENANCE_LOG"
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG"
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_folders >> $MAINTENANCE_LOG"
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --delete_datasets >> $MAINTENANCE_LOG"
+"python scripts/cleanup_datasets/cleanup_datasets.py $GALAXY_CONFIG_FILE -d $DAYS $MODE --purge_datasets >> $MAINTENANCE_LOG")
 
 printf "\nDry run: $DRYRUN\nDays: $DAYS\n\n"
 echo "Will run following commands and output in $MAINTENANCE_LOG"
@@ -77,15 +82,14 @@ for (( i = 0; i < ${#COMMANDS[@]} ; i++ )); do
 done
 
 if [ "$DRYRUN" = false ]; then
-  echo "python $SCRIPTLOCATION/set_user_disk_usage.py >> $MAINTENANCE_LOG"
+  echo "python scripts/set_user_disk_usage.py >> $MAINTENANCE_LOG"
 fi
 
 # Run the commands
-cd $SCRIPTLOCATION/../
 for (( i = 0; i < ${#COMMANDS[@]} ; i++ )); do
   eval "${COMMANDS[$i]}"
 done
 
 if [ "$DRYRUN" = false ]; then
-  python $SCRIPTLOCATION/set_user_disk_usage.py >> $MAINTENANCE_LOG
+  python scripts/set_user_disk_usage.py >> $MAINTENANCE_LOG
 fi

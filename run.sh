@@ -18,9 +18,9 @@ then
     GALAXY_LOCAL_ENV_FILE='./config/local_env.sh'
 fi
 
-if [ -f $GALAXY_LOCAL_ENV_FILE ];
+if [ -f "$GALAXY_LOCAL_ENV_FILE" ];
 then
-    . $GALAXY_LOCAL_ENV_FILE
+    . "$GALAXY_LOCAL_ENV_FILE"
 fi
 
 GALAXY_PID=${GALAXY_PID:-galaxy.pid}
@@ -46,30 +46,15 @@ if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
 fi
 
-if [ -z "$GALAXY_CONFIG_FILE" ]; then
-    if [ -f universe_wsgi.ini ]; then
-        GALAXY_CONFIG_FILE=universe_wsgi.ini
-    elif [ -f config/galaxy.ini ]; then
-        GALAXY_CONFIG_FILE=config/galaxy.ini
-    elif [ -f config/galaxy.yml ]; then
-        GALAXY_CONFIG_FILE=config/galaxy.yml
-    elif [ -f config/galaxy.ini.sample -a -z "$GALAXY_UWSGI" ]; then
-        GALAXY_CONFIG_FILE=config/galaxy.ini.sample
-    fi
-    export GALAXY_CONFIG_FILE
-fi
+set_galaxy_config_file_var
 
-if [ -n "$GALAXY_CONFIG_FILE" ]; then
-    config_file_arg="-c $GALAXY_CONFIG_FILE"
-fi
-
-if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
+if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
     # Install Conda environment if needed.
-    python ./scripts/manage_tool_dependencies.py $config_file_arg init_if_needed
+    python ./scripts/manage_tool_dependencies.py init_if_needed
 fi
 
 [ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
-find_server ${GALAXY_CONFIG_FILE:-none} galaxy
+find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
 
 if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
