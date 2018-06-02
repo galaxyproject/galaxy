@@ -879,6 +879,10 @@ class SelectToolParameter(ToolParameter):
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         elif not legal_values:
+            if self.optional and self.tool.profile < 18.09:
+                # Covers optional parameters with default values that reference other optional parameters.
+                # These will have a value but no legal_values.
+                return None
             raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
             if not self.multiple:
