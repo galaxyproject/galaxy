@@ -78,7 +78,7 @@ positional==1.2.1
 prettytable==0.7.2
 psutil==5.4.3
 pulsar-galaxy-lib==0.8.3
-py2-ipaddress==3.4.1
+py2-ipaddress==3.4.1; python_version < '3'
 pyasn1==0.4.2
 pycparser==2.18
 pycrypto==2.6.1
