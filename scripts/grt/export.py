@@ -205,7 +205,7 @@ def main(argv):
 
     annotate('galaxy_init', 'Loading Galaxy...')
     model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
-    
+
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
     sa_session = model.context.current
@@ -286,46 +286,47 @@ def main(argv):
 
         # four queries: JobToInputDatasetAssociation, JobToOutputDatasetAssociation, HistoryDatasetAssociation, Dataset
 
-        job_to_input_hda_ids=sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
+        # /scripts/grt/export.py:291:17: E127 continuation line over-indented for visual indent
+        job_to_input_hda_ids = sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
                 model.JobToInputDatasetAssociation.name) \
                 .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
                 .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all()
 
-        job_to_output_hda_ids=sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
+        # ./scripts/grt/export.py:297:17: E127 continuation line over-indented for visual indent
+        job_to_output_hda_ids = sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
                 model.JobToOutputDatasetAssociation.name) \
                 .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
                 .filter(model.JobToOutputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all()
 
-    
         # add type and concat
-        job_to_hda_ids=[[list(i),"input"] for i in job_to_input_hda_ids]+[[list(i),"output"] for i in job_to_output_hda_ids]
-        
-        # put all of the hda_ids into a list
-        hda_ids=[i[0][1] for i in job_to_hda_ids]
+        job_to_hda_ids = [[list(i), "input"] for i in job_to_input_hda_ids] + [[list(i), "output"] for i in job_to_output_hda_ids]
 
-        hdas=sa_session.query(model.HistoryDatasetAssociation.id, model.HistoryDatasetAssociation.dataset_id, 
-                model.HistoryDatasetAssociation.extension) \
-                .filter(model.HistoryDatasetAssociation.id.in_(hda_ids)) \
-                .all()
+        # put all of the hda_ids into a list
+        hda_ids = [i[0][1] for i in job_to_hda_ids]
+
+        hdas = sa_session.query(model.HistoryDatasetAssociation.id, model.HistoryDatasetAssociation.dataset_id,
+            model.HistoryDatasetAssociation.extension) \
+            .filter(model.HistoryDatasetAssociation.id.in_(hda_ids)) \
+            .all()
 
         # put all the dataset ids into a list
-        dataset_ids=[i[1] for i in hdas]
+        dataset_ids = [i[1] for i in hdas]
 
         # get the sizes of the datasets
-        datasets=sa_session.query(model.Dataset.id, model.Dataset.total_size) \
+        datasets = sa_session.query(model.Dataset.id, model.Dataset.total_size) \
                 .filter(model.Dataset.id.in_(dataset_ids)) \
                 .all()
 
         # datasets to dictionay for easy search
-        hdas={i[0]:i[1:] for i in hdas}
-        datasets={i[0]:i[1:] for i in datasets}
+        hdas = {i[0]:i[1: ] for i in hdas}
+        datasets = {i[0]:i[1: ] for i in datasets}
 
         for job in job_to_hda_ids:
 
-            filetype=job[1]
-            job=job[0]
+            filetype = job[1]
+            job = job[0]
 
             # No associated job
             if job[0] not in job_tool_map:
@@ -334,8 +335,8 @@ def main(argv):
             if job_tool_map[job[0]] in blacklisted_tools:
                 continue
 
-            hda_id=job[1]
-            dataset_id=hdas[hda_id][0]
+            hda_id = job[1]
+            dataset_id = hdas[hda_id][0]
 
             handle_datasets.write(str(job[0]))
             handle_datasets.write('\t')
