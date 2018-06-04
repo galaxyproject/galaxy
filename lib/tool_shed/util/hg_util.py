@@ -102,18 +102,6 @@ def get_changectx_for_changeset(repo, changeset_revision, **kwd):
     return None
 
 
-def get_config(config_file, repo, ctx, dir):
-    """Return the latest version of config_filename from the repository manifest."""
-    config_file = basic_util.strip_path(config_file)
-    for changeset in reversed_upper_bounded_changelog(repo, ctx):
-        changeset_ctx = repo.changectx(changeset)
-        for ctx_file in changeset_ctx.files():
-            ctx_file_name = basic_util.strip_path(ctx_file)
-            if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx(changeset_ctx, ctx_file, dir)
-    return None
-
-
 def get_config_from_disk(config_file, relative_install_dir):
     for root, dirs, files in os.walk(relative_install_dir):
         if root.find('.hg') < 0:
