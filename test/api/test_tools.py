@@ -1028,6 +1028,27 @@ class ToolsTestCase(api.ApiTestCase):
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         self.assertEquals(output1_content.strip(), "forward\nreverse")
 
+    @skip_without_tool("identifier_single_in_repeat")
+    def test_identifier_single_in_repeat(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_pair(history_id, ["123", "456"])
+        inputs = {
+            "the_repeat_0|the_data|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]}
+        }
+        create_response = self._run("identifier_single_in_repeat", history_id, inputs)
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 2)
+        self.assertEquals(len(implicit_collections), 1)
+        output_collection = implicit_collections[0]
+        elements = output_collection["elements"]
+        assert len(elements) == 2
+        forward_output = elements[0]["object"]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=forward_output)
+        assert output1_content.strip() == "forward", output1_content
+
     @skip_without_tool("identifier_multiple_in_conditional")
     def test_identifier_multiple_in_conditional(self):
         history_id = self.dataset_populator.new_history()

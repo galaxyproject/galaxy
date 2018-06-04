@@ -1,0 +1,25 @@
+<tool id="identifier_single_in_repeat" name="identifier_single_in_repeat">
+    <command><![CDATA[
+#for $repeat_instance in $the_repeat#
+    echo '$repeat_instance.the_data.input1.element_identifier' >> 'output1';
+#end for#
+    ]]></command>
+    <inputs>
+        <repeat name="the_repeat" title="Repeat Inputs">
+            <conditional name="the_data">
+                <param name="cond_param" type="boolean" />
+                <when value="true">
+                    <param type="data" name="input1" label="The Input" />
+                </when>
+                <when value="false">
+                    <param type="data" name="input1" label="The Input" />
+                </when>
+            </conditional>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" from_work_dir="output1" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>
