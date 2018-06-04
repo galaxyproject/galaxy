@@ -135,15 +135,14 @@ class ExportRepositoryManager(object):
         tdah = attribute_handlers.ToolDependencyAttributeHandler(self.app, unpopulate=True)
         file_type_str = basic_util.get_file_type_str(changeset_revision, self.file_type)
         file_name = '%s-%s' % (repository.name, file_type_str)
-        return_code, error_message = hg_util.archive_repository_revision(self.app,
-                                                                         repository,
-                                                                         work_dir,
-                                                                         changeset_revision)
-        if return_code:
-            return None, error_message
+        try:
+            hg_util.archive_repository_revision(self.app, repository, work_dir, changeset_revision)
+        except Exception as e:
+            return None, str(e)
         repository_archive_name = os.path.join(work_dir, file_name)
         # Create a compressed tar archive that will contain only valid files and possibly altered dependency definition files.
         repository_archive = tarfile.open(repository_archive_name, "w:%s" % self.file_type)
+        error_message = ''
         for root, dirs, files in os.walk(work_dir):
             if root.find('.hg') < 0 and root.find('hgrc') < 0:
                 for dir in dirs:
