@@ -288,17 +288,17 @@ def main(argv):
 
         # /scripts/grt/export.py:291:17: E127 continuation line over-indented for visual indent
         job_to_input_hda_ids = sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
-                model.JobToInputDatasetAssociation.name) \
-                .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
-                .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all()
+            model.JobToInputDatasetAssociation.name) \
+            .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
+            .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+            .all()
 
         # ./scripts/grt/export.py:297:17: E127 continuation line over-indented for visual indent
         job_to_output_hda_ids = sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
-                model.JobToOutputDatasetAssociation.name) \
-                .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
-                .filter(model.JobToOutputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all()
+            model.JobToOutputDatasetAssociation.name) \
+            .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
+            .filter(model.JobToOutputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+            .all()
 
         # add type and concat
         job_to_hda_ids = [[list(i), "input"] for i in job_to_input_hda_ids] + [[list(i), "output"] for i in job_to_output_hda_ids]
@@ -316,12 +316,12 @@ def main(argv):
 
         # get the sizes of the datasets
         datasets = sa_session.query(model.Dataset.id, model.Dataset.total_size) \
-                .filter(model.Dataset.id.in_(dataset_ids)) \
-                .all()
+            .filter(model.Dataset.id.in_(dataset_ids)) \
+            .all()
 
         # datasets to dictionay for easy search
-        hdas = {i[0]:i[1: ] for i in hdas}
-        datasets = {i[0]:i[1: ] for i in datasets}
+        hdas = {i[0]: i[1:] for i in hdas}
+        datasets = {i[0]: i[1:] for i in datasets}
 
         for job in job_to_hda_ids:
 
@@ -342,7 +342,7 @@ def main(argv):
             handle_datasets.write('\t')
             handle_datasets.write(str(hda_id))
             handle_datasets.write('\t')
-            handle_datasets.write(hdas[hda_id][1]) 
+            handle_datasets.write(hdas[hda_id][1])
             handle_datasets.write('\t')
             handle_datasets.write(str(datasets[dataset_id][0]))
             handle_datasets.write('\t')
