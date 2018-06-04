@@ -63,7 +63,6 @@ class Sanitization:
         # SA Stuff
         self.model = model
         self.sa_session = sa_session
-        self.filesize_cache = {}
 
         if 'tool_params' not in self.sanitization_config:
             self.sanitization_config['tool_params'] = {}
@@ -99,37 +98,7 @@ class Sanitization:
         self.tool_id = tool_id
         return json.dumps(self._sanitize_value(unsanitized))
 
-    def _file_dict(self, data):
-        key = '{src}-{id}'.format(**data)
-        if key in self.filesize_cache:
-            return self.filesize_cache[data]
-        if data['src'] == 'hda':
-            try:
-                dataset = self.sa_session.query(self.model.Dataset.id, self.model.Dataset.total_size) \
-                    .filter_by(id=data['id']) \
-                    .first()
-                if dataset and dataset[1]:
-                    data['size'] = int(dataset[1])
-                else:
-                    data['size'] = None
-            except sa.orm.exc.NoResultFound:
-                data['size'] = None
-
-            # Push to cache for later.
-            self.filesize_cache[data['id']] = data
-            return data
-        else:
-            logging.warning("Cannot handle {src} yet".format(data))
-            return data
-
     def _sanitize_dict(self, unsanitized_dict, path=""):
-        # if it is a file dictionary, handle specially.
-        if len(unsanitized_dict.keys()) == 2 and \
-                'id' in unsanitized_dict and \
-                'src' in unsanitized_dict and \
-                unsanitized_dict['src'] in ('hda', 'ldda'):
-            return self._file_dict(unsanitized_dict)
-
         return {
             k: self._sanitize_value(v, path=path + '.' + k)
             for (k, v)
@@ -286,14 +255,12 @@ def main(argv):
 
         # four queries: JobToInputDatasetAssociation, JobToOutputDatasetAssociation, HistoryDatasetAssociation, Dataset
 
-        # /scripts/grt/export.py:291:17: E127 continuation line over-indented for visual indent
         job_to_input_hda_ids = sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
             model.JobToInputDatasetAssociation.name) \
             .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
             .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
             .all()
 
-        # ./scripts/grt/export.py:297:17: E127 continuation line over-indented for visual indent
         job_to_output_hda_ids = sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
             model.JobToOutputDatasetAssociation.name) \
             .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
