@@ -313,6 +313,14 @@ def main(argv):
         datasets={i[0]:i[1:] for i in datasets}
 
         for job in job_to_hda_ids:
+
+            # No associated job
+            if job[0] not in job_tool_map:
+                continue
+            # If the tool is blacklisted, exclude everywhere
+            if job_tool_map[job[0]] in blacklisted_tools:
+                continue
+
             hda_id=job[1]
             dataset_id=hdas[hda_id][0]
 
@@ -320,7 +328,7 @@ def main(argv):
             handle_datasets.write('\t')
             handle_datasets.write(str(hda_id))
             handle_datasets.write('\t')
-            handle_datasets.write(hdas[hda_id][1])  
+            handle_datasets.write(hdas[hda_id][1]) 
             handle_datasets.write('\t')
             handle_datasets.write(str(datasets[dataset_id][0]))
             handle_datasets.write('\t')
