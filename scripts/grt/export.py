@@ -12,7 +12,6 @@ import tarfile
 import time
 from collections import defaultdict
 
-import sqlalchemy as sa
 import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
