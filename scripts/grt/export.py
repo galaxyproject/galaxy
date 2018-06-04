@@ -280,20 +280,30 @@ def main(argv):
 
     annotate('export_datasets_start', 'Exporting Datasets')
     handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
-    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name')) + '\n')
+    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
 
-        # three queries: JobToInputDatasetAssociation, HistoryDatasetAssociation, Dataset
+        # four queries: JobToInputDatasetAssociation, JobToOutputDatasetAssociation, HistoryDatasetAssociation, Dataset
 
-        job_to_hda_ids=sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
+        job_to_input_hda_ids=sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
                 model.JobToInputDatasetAssociation.name) \
                 .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
                 .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
                 .all()
 
+        job_to_output_hda_ids=sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
+                model.JobToOutputDatasetAssociation.name) \
+                .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
+                .filter(model.JobToOutputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+                .all()
+
+    
+        # add type and concat
+        job_to_hda_ids=[[list(i),"input"] for i in job_to_input_hda_ids]+[[list(i),"output"] for i in job_to_output_hda_ids]
+        
         # put all of the hda_ids into a list
-        hda_ids=[i[1] for i in job_to_hda_ids]
+        hda_ids=[i[0][1] for i in job_to_hda_ids]
 
         hdas=sa_session.query(model.HistoryDatasetAssociation.id, model.HistoryDatasetAssociation.dataset_id, 
                 model.HistoryDatasetAssociation.extension) \
@@ -305,7 +315,7 @@ def main(argv):
 
         # get the sizes of the datasets
         datasets=sa_session.query(model.Dataset.id, model.Dataset.total_size) \
-                .filter(model.HistoryDatasetAssociation.id.in_(dataset_ids)) \
+                .filter(model.Dataset.id.in_(dataset_ids)) \
                 .all()
 
         # datasets to dictionay for easy search
@@ -313,6 +323,9 @@ def main(argv):
         datasets={i[0]:i[1:] for i in datasets}
 
         for job in job_to_hda_ids:
+
+            filetype=job[1]
+            job=job[0]
 
             # No associated job
             if job[0] not in job_tool_map:
@@ -333,6 +346,8 @@ def main(argv):
             handle_datasets.write(str(datasets[dataset_id][0]))
             handle_datasets.write('\t')
             handle_datasets.write(job[2])
+            handle_datasets.write('\t')
+            handle_datasets.write(filetype)
             handle_datasets.write('\n')
 
     handle_datasets.close()
