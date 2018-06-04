@@ -1,15 +1,11 @@
-import json
 import logging
 import os
-import struct
 import subprocess
 import tempfile
 from datetime import datetime
 from time import gmtime
 
 from mercurial import cmdutil, commands, hg, ui
-from mercurial.changegroup import readexactly
-from mercurial.exchange import readbundle
 
 from tool_shed.util import basic_util
 
@@ -36,17 +32,6 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
             (str(changeset_revision), str(repository.name), str(e), str(return_code))
         log.exception(error_message)
     return return_code, error_message
-
-
-def bundle_to_json(fh):
-    """
-    Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the
-    command line) to a json object.
-    """
-    # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle(get_configured_ui(), fh, None)
-    groups = [group for group in unpack_groups(hg_unbundle10_obj)]
-    return json.dumps(groups, indent=4)
 
 
 def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
@@ -376,68 +361,6 @@ def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revis
     included_upper_bounds_changeset_revision.
     """
     return reversed_lower_upper_bounded_changelog(repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
-
-
-def unpack_chunks(hg_unbundle10_obj):
-    """
-    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
-    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
-    is read using readbundle.
-    """
-    while True:
-        length, = struct.unpack('>l', readexactly(hg_unbundle10_obj, 4))
-        if length <= 4:
-            # We found a "null chunk", which ends the group.
-            break
-        if length < 84:
-            raise Exception("negative data length")
-        node, p1, p2, cs = struct.unpack('20s20s20s20s', readexactly(hg_unbundle10_obj, 80))
-        yield {'node': node.encode('hex'),
-               'p1': p1.encode('hex'),
-               'p2': p2.encode('hex'),
-               'cs': cs.encode('hex'),
-               'data': [patch for patch in unpack_patches(hg_unbundle10_obj, length - 84)]}
-
-
-def unpack_groups(hg_unbundle10_obj):
-    """
-    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
-    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
-    line is read using readbundle.
-    """
-    # Process the changelog group.
-    yield [chunk for chunk in unpack_chunks(hg_unbundle10_obj)]
-    # Process the manifest group.
-    yield [chunk for chunk in unpack_chunks(hg_unbundle10_obj)]
-    while True:
-        length, = struct.unpack('>l', readexactly(hg_unbundle10_obj, 4))
-        if length <= 4:
-            # We found a "null meta chunk", which ends the changegroup.
-            break
-        filename = readexactly(hg_unbundle10_obj, length - 4).encode('string_escape')
-        # Process the file group.
-        yield (filename, [chunk for chunk in unpack_chunks(hg_unbundle10_obj)])
-
-
-def unpack_patches(hg_unbundle10_obj, remaining):
-    """
-    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
-    for this data field, a length argument is required.
-    """
-    while remaining >= 12:
-        start, end, blocklen = struct.unpack('>lll', readexactly(hg_unbundle10_obj, 12))
-        remaining -= 12
-        if blocklen > remaining:
-            raise Exception("unexpected end of patch stream")
-        block = readexactly(hg_unbundle10_obj, blocklen)
-        remaining -= blocklen
-        yield {'start': start,
-               'end': end,
-               'blocklen': blocklen,
-               'block': block.encode('string_escape')}
-    if remaining > 0:
-        log.error("Unexpected end of patch stream, %s remaining", remaining)
-        raise Exception("unexpected end of patch stream")
 
 
 def update_repository(repo, ctx_rev=None):
