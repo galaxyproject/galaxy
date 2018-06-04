@@ -320,7 +320,7 @@ def main(argv):
             handle_datasets.write('\t')
             handle_datasets.write(str(hda_id))
             handle_datasets.write('\t')
-            handle_datasets.write(hdas[hda_id][1])  # not sure if this results in a query, but this was the only way I managed to retrive it.
+            handle_datasets.write(hdas[hda_id][1])  
             handle_datasets.write('\t')
             handle_datasets.write(str(datasets[dataset_id][0]))
             handle_datasets.write('\t')
