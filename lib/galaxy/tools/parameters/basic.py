@@ -261,7 +261,7 @@ class TextToolParameter(ToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
     """
 
     def __init__(self, tool, input_source):
@@ -278,7 +278,7 @@ class TextToolParameter(ToolParameter):
         if value is None:
             rval = ''
         else:
-            rval = util.smart_str(value)
+            rval = unicodify(value)
         return rval
 
     def validate(self, value, trans=None):
@@ -306,7 +306,7 @@ class IntegerToolParameter(TextToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', '10')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
     >>> type(p.from_json("10", trans))
     <type 'int'>
     >>> type(p.from_json("_string", trans))
@@ -382,7 +382,7 @@ class FloatToolParameter(TextToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', '3.141592')]
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
     >>> type(p.from_json("36.1", trans))
     <type 'float'>
     >>> type(p.from_json("_string", trans))
