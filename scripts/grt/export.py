@@ -280,41 +280,52 @@ def main(argv):
 
     annotate('export_datasets_start', 'Exporting Datasets')
     handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
-    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'name', 'param_name')) + '\n')
+    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
-        for job in sa_session.query(model.Job) \
-                .filter(model.Job.id > offset_start) \
-                .filter(model.Job.id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all():
 
-            # If the tool is blacklisted, exclude everywhere
-            if job.tool_id in blacklisted_tools:
-                continue
+        # three queries: JobToInputDatasetAssociation, HistoryDatasetAssociation, Dataset
 
-            input_datasets=(job.input_datasets)
-            for input_dataset in input_datasets:
-                hda = input_dataset.dataset
-                dataset = hda.dataset
-                datasets=({'dataset_id': str(hda.dataset_id),
-                           'extension': hda.extension,
-                           'file_size': int(dataset.file_size),
-                           'name': hda.name,
-                           'param_name': input_dataset.name})
+        job_to_hda_ids=sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
+                model.JobToInputDatasetAssociation.name) \
+                .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
+                .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+                .all()
 
-                handle_datasets.write(str(job.id))
-                handle_datasets.write('\t')
-                handle_datasets.write(datasets['dataset_id'])
-                handle_datasets.write('\t')
-                handle_datasets.write(datasets['extension'])
-                handle_datasets.write('\t')
-                handle_datasets.write(str(datasets['file_size']))
-                handle_datasets.write('\t')
-                handle_datasets.write(datasets['name'])
-                handle_datasets.write('\t')
-                handle_datasets.write(datasets['param_name'])
-                handle_datasets.write('\n')
+        # put all of the hda_ids into a list
+        hda_ids=[i[1] for i in job_to_hda_ids]
 
+        hdas=sa_session.query(model.HistoryDatasetAssociation.id, model.HistoryDatasetAssociation.dataset_id, 
+                model.HistoryDatasetAssociation.extension) \
+                .filter(model.HistoryDatasetAssociation.id.in_(hda_ids)) \
+                .all()
+
+        # put all the dataset ids into a list
+        dataset_ids=[i[1] for i in hdas]
+
+        # get the sizes of the datasets
+        datasets=sa_session.query(model.Dataset.id, model.Dataset.total_size) \
+                .filter(model.HistoryDatasetAssociation.id.in_(dataset_ids)) \
+                .all()
+
+        # datasets to dictionay for easy search
+        hdas={i[0]:i[1:] for i in hdas}
+        datasets={i[0]:i[1:] for i in datasets}
+
+        for job in job_to_hda_ids:
+            hda_id=job[1]
+            dataset_id=hdas[hda_id][0]
+
+            handle_datasets.write(str(job[0]))
+            handle_datasets.write('\t')
+            handle_datasets.write(str(hda_id))
+            handle_datasets.write('\t')
+            handle_datasets.write(hdas[hda_id][1])  # not sure if this results in a query, but this was the only way I managed to retrive it.
+            handle_datasets.write('\t')
+            handle_datasets.write(str(datasets[dataset_id][0]))
+            handle_datasets.write('\t')
+            handle_datasets.write(job[2])
+            handle_datasets.write('\n')
 
     handle_datasets.close()
     annotate('export_datasets_end')
