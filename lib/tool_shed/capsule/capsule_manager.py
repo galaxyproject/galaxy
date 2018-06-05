@@ -93,20 +93,24 @@ class ExportRepositoryManager(object):
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
             tmp_export_info = xml_util.create_and_write_tmp_file(export_elem, use_indent=True)
-            repositories_archive.add(tmp_export_info, arcname='export_info.xml')
+            try:
+                repositories_archive.add(tmp_export_info, arcname='export_info.xml')
+            finally:
+                if os.path.exists(tmp_export_info):
+                    os.remove(tmp_export_info)
             # Write the manifest, which must preserve the order in which the repositories should be imported.
             exported_repository_root = xml_util.create_element('repositories')
             for exported_repository_elem in exported_repository_registry.exported_repository_elems:
                 exported_repository_root.append(exported_repository_elem)
             tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root, use_indent=True)
-            repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+            try:
+                repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+            finally:
+                if os.path.exists(tmp_manifest):
+                    os.remove(tmp_manifest)
         except Exception as e:
             log.exception(str(e))
         finally:
-            if os.path.exists(tmp_export_info):
-                os.remove(tmp_export_info)
-            if os.path.exists(tmp_manifest):
-                os.remove(tmp_manifest)
             lock.release()
         if repositories_archive is not None:
             repositories_archive.close()
