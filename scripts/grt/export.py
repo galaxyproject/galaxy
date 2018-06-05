@@ -302,6 +302,9 @@ def main(argv):
                 continue
 
             hda_id = job[1]
+            # catch hda_id's where 
+            if hda_id == None:
+                continue
             dataset_id = hdas[hda_id][0]
 
             handle_datasets.write(str(job[0]))
