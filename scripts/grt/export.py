@@ -12,7 +12,6 @@ import tarfile
 import time
 from collections import defaultdict
 
-import sqlalchemy as sa
 import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
@@ -32,7 +31,7 @@ def _init(args, need_app=False):
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
-        logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.ini")
+        logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
     if need_app:
         config_file = config_file_from_args(args)
@@ -63,7 +62,6 @@ class Sanitization:
         # SA Stuff
         self.model = model
         self.sa_session = sa_session
-        self.filesize_cache = {}
 
         if 'tool_params' not in self.sanitization_config:
             self.sanitization_config['tool_params'] = {}
@@ -99,37 +97,7 @@ class Sanitization:
         self.tool_id = tool_id
         return json.dumps(self._sanitize_value(unsanitized))
 
-    def _file_dict(self, data):
-        key = '{src}-{id}'.format(**data)
-        if key in self.filesize_cache:
-            return self.filesize_cache[data]
-        if data['src'] == 'hda':
-            try:
-                dataset = self.sa_session.query(self.model.Dataset.id, self.model.Dataset.total_size) \
-                    .filter_by(id=data['id']) \
-                    .first()
-                if dataset and dataset[1]:
-                    data['size'] = int(dataset[1])
-                else:
-                    data['size'] = None
-            except sa.orm.exc.NoResultFound:
-                data['size'] = None
-
-            # Push to cache for later.
-            self.filesize_cache[data['id']] = data
-            return data
-        else:
-            logging.warning("Cannot handle {src} yet".format(data))
-            return data
-
     def _sanitize_dict(self, unsanitized_dict, path=""):
-        # if it is a file dictionary, handle specially.
-        if len(unsanitized_dict.keys()) == 2 and \
-                'id' in unsanitized_dict and \
-                'src' in unsanitized_dict and \
-                unsanitized_dict['src'] in ('hda', 'ldda'):
-            return self._file_dict(unsanitized_dict)
-
         return {
             k: self._sanitize_value(v, path=path + '.' + k)
             for (k, v)
@@ -205,6 +173,7 @@ def main(argv):
 
     annotate('galaxy_init', 'Loading Galaxy...')
     model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
+
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
     sa_session = model.context.current
@@ -277,6 +246,83 @@ def main(argv):
     handle_job.close()
     annotate('export_jobs_end')
 
+    annotate('export_datasets_start', 'Exporting Datasets')
+    handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
+    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
+    for offset_start in range(last_job_sent, end_job_id, args.batch_size):
+        logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
+
+        # four queries: JobToInputDatasetAssociation, JobToOutputDatasetAssociation, HistoryDatasetAssociation, Dataset
+
+        job_to_input_hda_ids = sa_session.query(model.JobToInputDatasetAssociation.job_id, model.JobToInputDatasetAssociation.dataset_id,
+            model.JobToInputDatasetAssociation.name) \
+            .filter(model.JobToInputDatasetAssociation.job_id > offset_start) \
+            .filter(model.JobToInputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+            .all()
+
+        job_to_output_hda_ids = sa_session.query(model.JobToOutputDatasetAssociation.job_id, model.JobToOutputDatasetAssociation.dataset_id,
+            model.JobToOutputDatasetAssociation.name) \
+            .filter(model.JobToOutputDatasetAssociation.job_id > offset_start) \
+            .filter(model.JobToOutputDatasetAssociation.job_id <= min(end_job_id, offset_start + args.batch_size)) \
+            .all()
+
+        # add type and concat
+        job_to_hda_ids = [[list(i), "input"] for i in job_to_input_hda_ids] + [[list(i), "output"] for i in job_to_output_hda_ids]
+
+        # put all of the hda_ids into a list
+        hda_ids = [i[0][1] for i in job_to_hda_ids]
+
+        hdas = sa_session.query(model.HistoryDatasetAssociation.id, model.HistoryDatasetAssociation.dataset_id,
+            model.HistoryDatasetAssociation.extension) \
+            .filter(model.HistoryDatasetAssociation.id.in_(hda_ids)) \
+            .all()
+
+        # put all the dataset ids into a list
+        dataset_ids = [i[1] for i in hdas]
+
+        # get the sizes of the datasets
+        datasets = sa_session.query(model.Dataset.id, model.Dataset.total_size) \
+            .filter(model.Dataset.id.in_(dataset_ids)) \
+            .all()
+
+        # datasets to dictionay for easy search
+        hdas = {i[0]: i[1:] for i in hdas}
+        datasets = {i[0]: i[1:] for i in datasets}
+
+        for job in job_to_hda_ids:
+
+            filetype = job[1]
+            job = job[0]
+
+            # No associated job
+            if job[0] not in job_tool_map:
+                continue
+            # If the tool is blacklisted, exclude everywhere
+            if job_tool_map[job[0]] in blacklisted_tools:
+                continue
+
+            hda_id = job[1]
+            # catch hda_id's where
+            if hda_id is None:
+                continue
+            dataset_id = hdas[hda_id][0]
+
+            handle_datasets.write(str(job[0]))
+            handle_datasets.write('\t')
+            handle_datasets.write(str(hda_id))
+            handle_datasets.write('\t')
+            handle_datasets.write(hdas[hda_id][1])
+            handle_datasets.write('\t')
+            handle_datasets.write(str(datasets[dataset_id][0]))
+            handle_datasets.write('\t')
+            handle_datasets.write(job[2])
+            handle_datasets.write('\t')
+            handle_datasets.write(filetype)
+            handle_datasets.write('\n')
+
+    handle_datasets.close()
+    annotate('export_datasets_end')
+
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
     handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
     handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
@@ -333,10 +379,10 @@ def main(argv):
 
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
-        for name in ('jobs', 'metric_num', 'params'):
+        for name in ('jobs', 'metric_num', 'params', 'datasets'):
             handle.add(REPORT_BASE + '.' + name + '.tsv')
 
-    for name in ('jobs', 'metric_num', 'params'):
+    for name in ('jobs', 'metric_num', 'params', 'datasets'):
         os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
