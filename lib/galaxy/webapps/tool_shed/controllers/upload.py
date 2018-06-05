@@ -209,10 +209,7 @@ class UploadController(BaseUIController):
                             else:
                                 content_alert_str = ''
                             hg_util.add_changeset(repo.ui, repo, full_path)
-                            # Convert from unicode to prevent "TypeError: array item must be char"
-                            full_path = full_path.encode('ascii', 'replace')
-                            hg_util.commit_changeset(repo.ui,
-                                                     repo,
+                            hg_util.commit_changeset(repo_dir,
                                                      full_path_to_changeset=full_path,
                                                      username=trans.user.username,
                                                      message=commit_message)

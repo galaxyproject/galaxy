@@ -55,8 +55,14 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
         return False, error_message
 
 
-def commit_changeset(repo_ui, repo, full_path_to_changeset, username, message):
-    commands.commit(repo_ui, repo, full_path_to_changeset, user=username, message=message)
+def commit_changeset(repo_path, full_path_to_changeset, username, message):
+    try:
+        subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
 
 
 def copy_file_from_manifest(repo, ctx, filename, dir):

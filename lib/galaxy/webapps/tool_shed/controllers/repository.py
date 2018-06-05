@@ -2404,8 +2404,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
-                hg_util.commit_changeset(repo.ui,
-                                         repo,
+                hg_util.commit_changeset(repo_dir,
                                          full_path_to_changeset=repo_dir,
                                          username=trans.user.username,
                                          message=commit_message)
