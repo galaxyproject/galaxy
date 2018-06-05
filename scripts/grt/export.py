@@ -291,8 +291,8 @@ def main(argv):
 
         for job_to_hda in job_to_hda_ids:
 
-            job = job_to_hda[0] # job_id, hda_id, name
-            filetype = job_to_hda[1] # input|output
+            job = job_to_hda[0]  # job_id, hda_id, name
+            filetype = job_to_hda[1]  # input|output
 
             # No associated job
             if job[0] not in job_tool_map:
