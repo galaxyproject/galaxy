@@ -59,12 +59,17 @@ def is_runtime_value(value):
         and value.get("__class__") == "RuntimeValue")
 
 
-def has_runtime_datasets(trans, value):
-    for v in util.listify(value):
-        if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
-                ((hasattr(v, "state") and v.state != galaxy.model.Dataset.states.OK) or
-                hasattr(v, "implicit_conversion")):
+def is_runtime_context(trans, other_values):
+    if trans.workflow_building_mode:
+        return True
+    for context_value in other_values.values():
+        if is_runtime_value(context_value):
             return True
+        for v in util.listify(context_value):
+            if isinstance(v, trans.app.model.HistoryDatasetAssociation) and \
+                    ((hasattr(v, 'state') and v.state != galaxy.model.Dataset.states.OK) or
+                    hasattr(v, 'implicit_conversion')):
+                return True
     return False
 
 
@@ -770,7 +775,7 @@ class SelectToolParameter(ToolParameter):
     Parameter that takes on one (or many) or a specific set of values.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch())
+    >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False)
     >>> p = SelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="select">
@@ -782,7 +787,7 @@ class SelectToolParameter(ToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]), ('refresh_on_change', False), ('textable', True), ('type', 'select'), ('value', 'y')]
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', False), ('name', '_name'), ('optional', False), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', False)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', 'y')]
     >>> p = SelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="select" multiple="true">
@@ -794,7 +799,7 @@ class SelectToolParameter(ToolParameter):
     >>> print(p.name)
     _name
     >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', True), ('type', 'select'), ('value', ['y', 'z'])]
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
     """
@@ -854,12 +859,7 @@ class SelectToolParameter(ToolParameter):
 
     def from_json(self, value, trans, other_values={}):
         legal_values = self.get_legal_values(trans, other_values)
-        workflow_building_mode = trans.workflow_building_mode
-        for context_value in other_values.values():
-            if is_runtime_value(context_value) or has_runtime_datasets(trans, context_value):
-                workflow_building_mode = workflow_building_modes.ENABLED
-                break
-        if not legal_values and workflow_building_mode:
+        if not legal_values and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -972,7 +972,7 @@ class SelectToolParameter(ToolParameter):
         d['options'] = options
         d['display'] = self.display
         d['multiple'] = self.multiple
-        d['textable'] = True
+        d['textable'] = is_runtime_context(trans, other_values)
         return d
 
 
