@@ -2514,47 +2514,56 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        hdca = incoming["input"]
-        remove_empty = incoming["remove_empty"]
+    def element_is_valid(self, element):
+        return element.element_object.is_ok
 
-        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
-
+    def get_new_elements(self, history, elements_to_copy):
         new_elements = odict()
+        for dce in elements_to_copy:
+            element_identifier = dce.element_identifier
+            copied_value = dce.element_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[element_identifier] = copied_value
+        return new_elements
 
-        for dce in hdca.collection.elements:
-            element = dce.element_object
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        collection = incoming["input"]
 
-            valid = False
+        if hasattr(collection, 'element_object'):
+            # A list
+            elements = collection.element_object.elements
+            collection_type = collection.element_object.collection_type
+        else:
+            # A pair
+            elements = collection.collection.elements
+            collection_type = collection.collection.collection_type
+        # We only process list or paired collections. Higher order collection will be mapped over
+        assert collection_type in ("list", "paired")
 
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if remove_empty == "Yes":
-                    if element.is_ok and element.has_data():
-                        valid = True
-                elif remove_empty == "No":
-                    if element.is_ok :
-                        valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if remove_empty == "Yes":
-                    if forward_o.is_ok and reverse_o.is_ok and forward_o.has_data() and reverse_o.has_data():
-                        valid = True
-                elif remove_empty == "No":
-                    if forward_o.is_ok and reverse_o.is_ok:
-                        valid = True
+        elements_to_copy = []
+        for element in elements:
+            if self.element_is_valid(element):
+                elements_to_copy.append(element)
+            elif collection_type == 'paired':
+                # One of the pairs is not OK, skip creating output for this pair
+                return
 
-            if valid:
-                element_identifier = dce.element_identifier
-                copied_value = element.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[element_identifier] = copied_value
+        new_elements = self.get_new_elements(elements_to_copy=elements_to_copy, history=history)
 
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
+            next(iter(self.outputs.values())),
+            "output",
+            collection_type=collection_type,
+            elements=new_elements
         )
+
+
+class FilterEmptyDatasetsTool(DatabaseOperationTool):
+    tool_type = 'filter_empty_datasets_collection'
+
+    def element_is_valid(self, element):
+        return element.element_object.has_data()
 
 
 class FlattenTool(DatabaseOperationTool):
