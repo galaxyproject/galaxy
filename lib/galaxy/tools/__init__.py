@@ -2510,12 +2510,7 @@ class MergeCollectionTool(DatabaseOperationTool):
         )
 
 
-class FilterFailedDatasetsTool(DatabaseOperationTool):
-    tool_type = 'filter_failed_datasets_collection'
-    require_dataset_ok = False
-
-    def element_is_valid(self, element):
-        return element.element_object.is_ok
+class FilterDatasetsTool(DatabaseOperationTool):
 
     def get_new_elements(self, history, elements_to_copy):
         new_elements = odict()
@@ -2559,8 +2554,17 @@ class FilterFailedDatasetsTool(DatabaseOperationTool):
         )
 
 
-class FilterEmptyDatasetsTool(DatabaseOperationTool):
+class FilterFailedDatasetsTool(FilterDatasetsTool):
+    tool_type = 'filter_failed_datasets_collection'
+    require_dataset_ok = False
+
+    def element_is_valid(self, element):
+        return element.element_object.is_ok
+
+
+class FilterEmptyDatasetsTool(FilterDatasetsTool):
     tool_type = 'filter_empty_datasets_collection'
+    require_dataset_ok = False
 
     def element_is_valid(self, element):
         return element.element_object.has_data()
