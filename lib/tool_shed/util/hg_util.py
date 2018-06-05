@@ -20,7 +20,7 @@ def add_changeset(repo_ui, repo, path_to_filename_in_archive):
 
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
     '''Create an un-versioned archive of a repository.'''
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(app, repository=repository)
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo.root)
     except Exception as e:
@@ -76,7 +76,7 @@ def create_hgrc_file(app, repository):
     # not being tracked by mercurial in the current repository.  It'll remove unknown
     # files and empty directories.  This is not currently used because it is not supported
     # in the mercurial API.
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(app, repository=repository)
     fp = repo.opener('hgrc', 'wb')
     fp.write('[paths]\n')
     fp.write('default = .\n')
@@ -235,7 +235,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     Return a string consisting of the human read-able changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None)
+    repo = get_repo_for_repository(app, repository=repository)
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
@@ -250,7 +250,7 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
                                                               include_date=True, include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
-    repo = hg.repository(get_configured_ui(), repository.repo_path(app))
+    repo = get_repo_for_repository(app, repository=repository)
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:

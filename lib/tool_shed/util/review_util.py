@@ -72,7 +72,7 @@ def get_previous_repository_reviews(app, repository, changeset_revision):
     Return an ordered dictionary of repository reviews up to and including the
     received changeset revision.
     """
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
     previous_reviews_dict = odict()
     for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
@@ -122,7 +122,7 @@ def has_previous_repository_reviews(app, repository, changeset_revision):
     Determine if a repository has a changeset revision review prior to the
     received changeset revision.
     """
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
     for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
         previous_changeset_revision = str(repo.changectx(changeset))

@@ -248,10 +248,7 @@ class ExportRepositoryManager(object):
         # a dependent package are included in the capsule.
         rb.set_filter_dependencies_needed_for_compiling(False)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        repo = hg_util.get_repo_for_repository(self.app,
-                                               repository=self.repository,
-                                               repo_path=None,
-                                               create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=self.repository)
         ctx = hg_util.get_changectx_for_changeset(repo, self.changeset_revision)
         repo_info_dict = {}
         # Cast unicode to string.
@@ -590,10 +587,7 @@ class ImportRepositoryManager(object):
                                             # The defined changeset_revision is not associated with a repository_metadata
                                             # record, so updates must be necessary.
                                             defined_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
-                                            defined_repo = hg_util.get_repo_for_repository(self.app,
-                                                                                           repository=defined_repository,
-                                                                                           repo_path=None,
-                                                                                           create=False)
+                                            defined_repo = hg_util.get_repo_for_repository(self.app, repository=defined_repository)
                                             updated_changeset_revision = \
                                                 metadata_util.get_next_downloadable_changeset_revision(defined_repository,
                                                                                                        defined_repo,
@@ -720,7 +714,7 @@ class ImportRepositoryManager(object):
         archive_file_path = os.path.join(file_path, archive_file_name)
         archive = tarfile.open(archive_file_path, 'r:*')
         repo_dir = repository.repo_path(self.app)
-        hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        hg_util.get_repo_for_repository(self.app, repo_path=repo_dir)
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         check_results = commit_util.check_archive(repository, archive)

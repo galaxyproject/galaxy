@@ -1,7 +1,6 @@
 import logging
 
-from mercurial import hg
-from mercurial import ui
+from tool_shed.util import hg_util
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ class Metadata(object):
         self.type = None
 
     def get_changesets_for_setting_metadata(self, app, repository):
-        repo = hg.repository(ui.ui(), repository.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=repository)
         return repo.changelog
 
     def is_valid_for_type(self, app, repository, revisions_to_check=None):
@@ -25,5 +24,5 @@ class TipOnly(Metadata):
         self.type = None
 
     def get_changesets_for_setting_metadata(self, app, repository):
-        repo = hg.repository(ui.ui(), repository.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=repository)
         return [repo.changelog.tip()]

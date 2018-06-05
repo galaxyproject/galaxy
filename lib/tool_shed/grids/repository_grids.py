@@ -85,7 +85,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the current repository heads."""
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
             heads = hg_util.get_repository_heads(repo)
             multiple_heads = len(heads) > 1
             if multiple_heads:
@@ -1010,10 +1010,7 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
                                                                                                               required_repository_id,
                                                                                                               changeset_revision)
                                 if not required_repository_metadata:
-                                    repo = hg_util.get_repo_for_repository(trans.app,
-                                                                           repository=required_repository,
-                                                                           repo_path=None,
-                                                                           create=False)
+                                    repo = hg_util.get_repo_for_repository(trans.app, repository=required_repository)
                                     updated_changeset_revision = \
                                         metadata_util.get_next_downloadable_changeset_revision(required_repository,
                                                                                                repo,

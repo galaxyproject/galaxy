@@ -9,7 +9,7 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
                commit_message, new_repo_alert):
     # Upload a tar archive of files.
     repo_dir = repository.repo_path(trans.app)
-    hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
+    hg_util.get_repo_for_repository(trans.app, repo_path=repo_dir)
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
     check_results = commit_util.check_archive(repository, tar)

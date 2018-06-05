@@ -260,7 +260,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local repository.
-    hg_util.get_repo_for_repository(app, repository=None, repo_path=repository_path, create=True)
+    hg_util.get_repo_for_repository(app, repo_path=repository_path, create=True)
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % (repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)
@@ -430,7 +430,7 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
 
 def get_repo_info_dict(app, user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
                                                                                       repository_id,

@@ -141,10 +141,7 @@ class RepositoryRevisionsController(BaseAPIController):
                 if repository_dependency_repository_metadata is None:
                     # The changeset_revision column in the repository_metadata table has been updated with a new
                     # value value, so find the changeset_revision to which we need to update.
-                    repo = hg_util.get_repo_for_repository(trans.app,
-                                                           repository=repository_dependency,
-                                                           repo_path=None,
-                                                           create=False)
+                    repo = hg_util.get_repo_for_repository(trans.app, repository=repository_dependency)
                     new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository_dependency,
                                                                                                     repo,
                                                                                                     changeset_revision)

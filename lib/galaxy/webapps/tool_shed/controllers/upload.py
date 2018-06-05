@@ -43,7 +43,7 @@ class UploadController(BaseUIController):
         repository_id = kwd.get('repository_id', '')
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         repo_dir = repository.repo_path(trans.app)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repo_path=repo_dir)
         uncompress_file = util.string_as_bool(kwd.get('uncompress_file', 'true'))
         remove_repo_files_not_in_tar = util.string_as_bool(kwd.get('remove_repo_files_not_in_tar', 'true'))
         uploaded_file = None
