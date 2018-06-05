@@ -6,6 +6,8 @@ import tempfile
 from datetime import date
 
 from mercurial import (
+    cmdutil,
+    commands,
     mdiff,
     patch
 )
@@ -51,6 +53,17 @@ log = logging.getLogger(__name__)
 
 malicious_error = "  This changeset cannot be downloaded because it potentially produces malicious behavior or contains inappropriate content."
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
+
+
+def get_mercurial_default_options_dict(command):
+    '''Borrowed from repoman - get default parameters for a mercurial command.'''
+    possible = cmdutil.findpossible(command, commands.table)
+    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
+    if type(possible) is tuple:
+        possible = possible[0]
+    if len(possible) != 1:
+        raise Exception('unable to find mercurial command "%s"' % command)
+    return dict((r[1].replace('-', '_'), r[2]) for r in next(iter(possible.values()))[1][1])
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -907,7 +920,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     @web.expose
     def download(self, trans, repository_id, changeset_revision, file_type, **kwd):
         """Download an archive of the repository files compressed as zip, gz or bz2."""
-        # FIXME: thgis will currently only download the repository tip, no matter which installable changeset_revision is being viewed.
+        # FIXME: this will currently only download the repository tip, no matter which installable changeset_revision is being viewed.
         # This should be enhanced to use the export method below, which accounts for the currently viewed changeset_revision.
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         # Allow hgweb to handle the download.  This requires the tool shed
@@ -2722,7 +2735,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             ctx_child = None
         diffs = []
-        options_dict = hg_util.get_mercurial_default_options_dict('diff')
+        options_dict = get_mercurial_default_options_dict('diff')
         # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
         # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
         options_dict['maxfile'] = basic_util.MAXDIFFSIZE

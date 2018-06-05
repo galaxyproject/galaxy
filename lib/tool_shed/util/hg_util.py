@@ -6,7 +6,6 @@ from datetime import datetime
 from time import gmtime
 
 from mercurial import (
-    cmdutil,
     commands,
     hg,
     ui
@@ -165,22 +164,6 @@ def get_file_context_from_ctx(ctx, filename):
     if deleted:
         return 'DELETED'
     return None
-
-
-def get_mercurial_default_options_dict(command, command_table=None, **kwd):
-    '''Borrowed from repoman - get default parameters for a mercurial command.'''
-    if command_table is None:
-        command_table = commands.table
-    possible = cmdutil.findpossible(command, command_table)
-    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
-    if type(possible) is tuple:
-        possible = possible[0]
-    if len(possible) != 1:
-        raise Exception('unable to find mercurial command "%s"' % command)
-    default_options_dict = dict((r[1].replace('-', '_'), r[2]) for r in next(iter(possible.values()))[1][1])
-    for option in kwd:
-        default_options_dict[option] = kwd[option]
-    return default_options_dict
 
 
 def get_named_tmpfile_from_ctx(ctx, filename, dir):
