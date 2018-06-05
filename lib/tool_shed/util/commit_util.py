@@ -182,7 +182,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             # Remove files in the repository (relative to the upload point) that are not in
             # the uploaded archive.
             try:
-                hg_util.remove_file(repo.ui, repo, repo_file, force=True)
+                hg_util.remove_file(repo_path, repo_file, force=True)
             except Exception as e:
                 log.debug("Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str(e))
                 relative_selected_file = repo_file.split('repo_%d' % repository.id)[1].lstrip('/')

@@ -6,7 +6,6 @@ from datetime import datetime
 from time import gmtime
 
 from mercurial import (
-    commands,
     hg,
     ui
 )
@@ -309,8 +308,18 @@ def pull_repository(repo_path, repository_clone_url, ctx_rev):
         raise Exception(error_message)
 
 
-def remove_file(repo_ui, repo, selected_file, force=True):
-    commands.remove(repo_ui, repo, selected_file, force=force)
+def remove_file(repo_path, selected_file, force=True):
+    cmd = ['hg', 'remove']
+    if force:
+        cmd.append('--force')
+    cmd.append(selected_file)
+    try:
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = "Error removing file '%s': %s" % (selected_file, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
 
 
 def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision):

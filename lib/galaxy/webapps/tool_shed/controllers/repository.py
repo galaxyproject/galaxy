@@ -2378,7 +2378,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 tip = repository.tip(trans.app)
                 for selected_file in selected_files_to_delete:
                     try:
-                        hg_util.remove_file(repo.ui, repo, selected_file, force=True)
+                        hg_util.remove_file(repo_dir, selected_file, force=True)
                     except Exception as e:
                         log.debug("Error removing the following file using the mercurial API:\n %s" % str(selected_file))
                         log.debug("The error was: %s" % str(e))
