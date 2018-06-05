@@ -128,17 +128,6 @@ def get_config_from_disk(config_file, relative_install_dir):
     return None
 
 
-def get_configured_ui():
-    """Configure any desired ui settings."""
-    _ui = ui.ui()
-    # The following will suppress all messages.  This is
-    # the same as adding the following setting to the repo
-    # hgrc file' [ui] section:
-    # quiet = True
-    _ui.setconfig('ui', 'quiet', True)
-    return _ui
-
-
 def get_ctx_file_path_from_manifest(filename, repo, changeset_revision):
     """
     Get the ctx file path for the latest revision of filename from the repository manifest up
@@ -215,9 +204,9 @@ def get_readable_ctx_date(ctx):
 
 def get_repo_for_repository(app, repository=None, repo_path=None, create=False):
     if repository is not None:
-        return hg.repository(get_configured_ui(), repository.repo_path(app), create=create)
+        return hg.repository(ui.ui(), repository.repo_path(app), create=create)
     if repo_path is not None:
-        return hg.repository(get_configured_ui(), repo_path, create=create)
+        return hg.repository(ui.ui(), repo_path, create=create)
 
 
 def get_repository_heads(repo):
@@ -309,9 +298,15 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     return rev, label
 
 
-def pull_repository(repo, repository_clone_url, ctx_rev):
+def pull_repository(repo_path, repository_clone_url, ctx_rev):
     """Pull changes from a remote repository to a local one."""
-    commands.pull(get_configured_ui(), repo, source=repository_clone_url, rev=[ctx_rev])
+    try:
+        subprocess.check_output(['hg', 'pull', '-r', ctx_rev, repository_clone_url], stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = "Error pulling revision '%s': %s" % (ctx_rev, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
 
 
 def remove_file(repo_ui, repo, selected_file, force=True):
