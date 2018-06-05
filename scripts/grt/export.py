@@ -302,8 +302,8 @@ def main(argv):
                 continue
 
             hda_id = job[1]
-            # catch hda_id's where 
-            if hda_id == None:
+            # catch hda_id's where
+            if hda_id is None:
                 continue
             dataset_id = hdas[hda_id][0]
 
