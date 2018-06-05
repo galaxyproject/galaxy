@@ -210,7 +210,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
         # Check file content to ensure it is appropriate.
         if check_contents and os.path.isfile(filename_in_archive):
             content_alert_str += check_file_content_for_html_and_images(filename_in_archive)
-        hg_util.add_changeset(repo.ui, repo, filename_in_archive)
+        hg_util.add_changeset(repo_path, filename_in_archive)
         if filename_in_archive.endswith('tool_data_table_conf.xml.sample'):
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables

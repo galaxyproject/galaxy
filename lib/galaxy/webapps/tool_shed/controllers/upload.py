@@ -208,7 +208,7 @@ class UploadController(BaseUIController):
                                 content_alert_str = commit_util.check_file_content_for_html_and_images(full_path)
                             else:
                                 content_alert_str = ''
-                            hg_util.add_changeset(repo.ui, repo, full_path)
+                            hg_util.add_changeset(repo_dir, full_path)
                             hg_util.commit_changeset(repo_dir,
                                                      full_path_to_changeset=full_path,
                                                      username=trans.user.username,

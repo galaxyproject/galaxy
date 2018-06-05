@@ -18,8 +18,14 @@ log = logging.getLogger(__name__)
 INITIAL_CHANGELOG_HASH = '000000000000'
 
 
-def add_changeset(repo_ui, repo, path_to_filename_in_archive):
-    commands.add(repo_ui, repo, str(path_to_filename_in_archive))
+def add_changeset(repo_path, path_to_filename_in_archive):
+    try:
+        subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = "Error adding '%s' to repository: %s" % (path_to_filename_in_archive, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
 
 
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
