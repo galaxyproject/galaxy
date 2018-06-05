@@ -5,7 +5,6 @@ import tarfile
 import tempfile
 
 import requests
-from mercurial import commands
 
 from galaxy import (
     util,
@@ -65,11 +64,9 @@ class UploadController(BaseUIController):
                 # Use mercurial clone to fetch repository, contents will then be copied over.
                 uploaded_directory = tempfile.mkdtemp()
                 repo_url = 'http%s' % url[len('hg'):]
-                repo_url = repo_url.encode('ascii', 'replace')
-                try:
-                    commands.clone(hg_util.get_configured_ui(), repo_url, uploaded_directory)
-                except Exception as e:
-                    message = 'Error uploading via mercurial clone: %s' % basic_util.to_html_string(str(e))
+                cloned_ok, error_message = hg_util.clone_repository(repo_url, uploaded_directory)
+                if not cloned_ok:
+                    message = 'Error uploading via mercurial clone: %s' % error_message
                     status = 'error'
                     basic_util.remove_dir(uploaded_directory)
                     uploaded_directory = None

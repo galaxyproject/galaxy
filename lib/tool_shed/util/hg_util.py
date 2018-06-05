@@ -5,7 +5,12 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from mercurial import cmdutil, commands, hg, ui
+from mercurial import (
+    cmdutil,
+    commands,
+    hg,
+    ui
+)
 
 from tool_shed.util import basic_util
 
@@ -31,13 +36,17 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
         raise Exception(error_message)
 
 
-def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
+def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
+    cmd = ['hg', 'clone']
+    if ctx_rev:
+        cmd.extend(['-r', ctx_rev])
+    cmd.extend([repository_clone_url, repository_file_dir])
     try:
-        subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % e
