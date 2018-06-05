@@ -932,7 +932,7 @@ class Newick(Text):
     """New Hampshire/Newick Format"""
     edam_data = "data_0872"
     edam_format = "format_1910"
-    file_ext = "nhx"
+    file_ext = "newick"
 
     def __init__(self, **kwd):
         """Initialize foobar datatype"""
