@@ -159,13 +159,16 @@ var View = Backbone.View.extend({
         }
         if (this.model.get("searchable")) {
             this.data2 = [];
+            this.data2index = {};
             _.each(this.data, (option, index) => {
-                this.data2.push({
+                let d = {
                     order: index,
                     id: option.value,
                     text: option.label,
                     tags: option.tags
-                });
+                }
+                this.data2.push(d);
+                this.data2index[d.id] = d;
             });
             if (this.$select.data("select2")) {
                 this.$select.select2("destroy");
@@ -372,15 +375,14 @@ var View = Backbone.View.extend({
             if ($.isArray(new_value)) {
                 var val = [];
                 _.each(new_value, v => {
-                    var d = _.findWhere(this.data2, { id: v });
+                    var d = this.data2index[v];
                     if (d) {
                         val.push(d);
                     }
                 });
                 new_value = val;
             } else {
-                var d = _.findWhere(this.data2, { id: new_value });
-                new_value = d;
+                new_value = this.data2index[new_value];
             }
             this.$select.select2("data", new_value);
         } else {
