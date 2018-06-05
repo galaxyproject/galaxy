@@ -183,6 +183,9 @@ def dict_map(func, input_dict):
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):
     if leaf_subcollection_type:
         collection_type_description = collection_type_description.effective_collection_type_description(leaf_subcollection_type)
+        if hasattr(dataset_collection_instance, 'child_collection'):
+            collection_type_description = collection_type_description.collection_type_description_factory.for_collection_type(leaf_subcollection_type)
+            return UnitializedTree(collection_type_description)
 
     collection = dataset_collection_instance.collection
     return Tree.for_dataset_collection(collection, collection_type_description)
