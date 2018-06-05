@@ -93,20 +93,24 @@ class ExportRepositoryManager(object):
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
             tmp_export_info = xml_util.create_and_write_tmp_file(export_elem, use_indent=True)
-            repositories_archive.add(tmp_export_info, arcname='export_info.xml')
+            try:
+                repositories_archive.add(tmp_export_info, arcname='export_info.xml')
+            finally:
+                if os.path.exists(tmp_export_info):
+                    os.remove(tmp_export_info)
             # Write the manifest, which must preserve the order in which the repositories should be imported.
             exported_repository_root = xml_util.create_element('repositories')
             for exported_repository_elem in exported_repository_registry.exported_repository_elems:
                 exported_repository_root.append(exported_repository_elem)
             tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root, use_indent=True)
-            repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+            try:
+                repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+            finally:
+                if os.path.exists(tmp_manifest):
+                    os.remove(tmp_manifest)
         except Exception as e:
             log.exception(str(e))
         finally:
-            if os.path.exists(tmp_export_info):
-                os.remove(tmp_export_info)
-            if os.path.exists(tmp_manifest):
-                os.remove(tmp_manifest)
             lock.release()
         if repositories_archive is not None:
             repositories_archive.close()
@@ -135,15 +139,14 @@ class ExportRepositoryManager(object):
         tdah = attribute_handlers.ToolDependencyAttributeHandler(self.app, unpopulate=True)
         file_type_str = basic_util.get_file_type_str(changeset_revision, self.file_type)
         file_name = '%s-%s' % (repository.name, file_type_str)
-        return_code, error_message = hg_util.archive_repository_revision(self.app,
-                                                                         repository,
-                                                                         work_dir,
-                                                                         changeset_revision)
-        if return_code:
-            return None, error_message
+        try:
+            hg_util.archive_repository_revision(self.app, repository, work_dir, changeset_revision)
+        except Exception as e:
+            return None, str(e)
         repository_archive_name = os.path.join(work_dir, file_name)
         # Create a compressed tar archive that will contain only valid files and possibly altered dependency definition files.
         repository_archive = tarfile.open(repository_archive_name, "w:%s" % self.file_type)
+        error_message = ''
         for root, dirs, files in os.walk(work_dir):
             if root.find('.hg') < 0 and root.find('hgrc') < 0:
                 for dir in dirs:
