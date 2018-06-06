@@ -21,7 +21,7 @@
             'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
             'workflow_index'      : h.url_for( '/workflows/list' ),
             'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
-            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as') 
+            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as')
         },
         'workflows' : [{
             'id'                  : trans.security.encode_id( workflow.id ),
@@ -286,6 +286,7 @@
                     <div id="tool-search">
                 %endif
                     <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
+                    <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
                     <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
                 </div>
 
