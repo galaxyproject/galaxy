@@ -289,35 +289,38 @@ def main(argv):
         hdas = {i[0]: i[1:] for i in hdas}
         datasets = {i[0]: i[1:] for i in datasets}
 
-        for job in job_to_hda_ids:
+        for job_to_hda in job_to_hda_ids:
 
-            filetype = job[1]
-            job = job[0]
+            job = job_to_hda[0]  # job_id, hda_id, name
+            filetype = job_to_hda[1]  # input|output
 
             # No associated job
             if job[0] not in job_tool_map:
                 continue
+
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[job[0]] in blacklisted_tools:
                 continue
 
             hda_id = job[1]
-            # catch hda_id's where
             if hda_id is None:
                 continue
+
             dataset_id = hdas[hda_id][0]
+            if dataset_id is None:
+                continue
 
             handle_datasets.write(str(job[0]))
             handle_datasets.write('\t')
             handle_datasets.write(str(hda_id))
             handle_datasets.write('\t')
-            handle_datasets.write(hdas[hda_id][1])
+            handle_datasets.write(str(hdas[hda_id][1]))
             handle_datasets.write('\t')
             handle_datasets.write(str(datasets[dataset_id][0]))
             handle_datasets.write('\t')
-            handle_datasets.write(job[2])
+            handle_datasets.write(str(job[2]))
             handle_datasets.write('\t')
-            handle_datasets.write(filetype)
+            handle_datasets.write(str(filetype))
             handle_datasets.write('\n')
 
     handle_datasets.close()
