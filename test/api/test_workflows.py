@@ -943,7 +943,7 @@ test_data:
             def filter_jobs_by_tool(tool_id):
                 return [j for j in summary.jobs if j["tool_id"] == tool_id]
 
-            assert len(filter_jobs_by_tool("upload1")) == 2, jobs
+            assert len(filter_jobs_by_tool("__DATA_FETCH__")) == 1, jobs
             assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
             assert len(filter_jobs_by_tool("__FILTER_FAILED_DATASETS__")) == 1, jobs
             # Follow proves one job was filtered out of the result of cat1
@@ -1393,7 +1393,7 @@ test_data:
   text_input1:
     type: "list:paired"
         """, history_id=history_id)
-            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=5)
+            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=1)
             assert hdca['collection_type'] == 'list:paired'
             assert len(hdca['elements'][0]['object']["elements"]) == 2
 
