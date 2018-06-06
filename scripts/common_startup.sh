@@ -103,17 +103,6 @@ else
     DEV_WHEELS=1
 fi
 
-: ${GALAXY_CONFIG_FILE:=config/galaxy.yml}
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.ini
-fi
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=universe_wsgi.ini
-fi
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.yml.sample
-fi
-
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 

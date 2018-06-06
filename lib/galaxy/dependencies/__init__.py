@@ -1,6 +1,9 @@
 """
 Determine what optional dependencies are needed.
 """
+from __future__ import print_function
+
+import sys
 from os.path import dirname, join
 from xml.etree import ElementTree
 
@@ -8,7 +11,10 @@ import pkg_resources
 
 from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
-from galaxy.util.properties import load_app_properties
+from galaxy.util.properties import (
+    find_config_file,
+    load_app_properties
+)
 
 
 class ConditionalDependencies(object):
@@ -141,7 +147,12 @@ class ConditionalDependencies(object):
                  'docker_swarm' in self.container_interface_types))
 
 
-def optional(config_file):
+def optional(config_file=None):
+    if not config_file:
+        config_file = find_config_file(['galaxy', 'universe_wsgi'])
+    if not config_file:
+        print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
+        return []
     rval = []
     conditional = ConditionalDependencies(config_file)
     for opt in conditional.conditional_reqs:
