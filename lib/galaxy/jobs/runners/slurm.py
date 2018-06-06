@@ -3,7 +3,10 @@ SLURM job control via the DRMAA API.
 """
 import logging
 import os
+import re
+import shutil
 import subprocess
+import tempfile
 import time
 
 from galaxy import model
@@ -25,6 +28,7 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
+SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE = re.compile(r"""slurmstepd: error: task/cgroup: unable to add task\[pid=\d+\] to memory cg '\(null\)'$""")
 
 # These messages are returned to the user
 OUT_OF_MEMORY_MSG = 'This job was terminated because it used more memory than it was allocated.'
@@ -149,6 +153,14 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
+                with open(ajs.error_file, 'r') as rfh:
+                    first_line = rfh.readline()
+                    if SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE.match(first_line):
+                        with tempfile.NamedTemporaryFile('w', delete=False) as wfh:
+                            shutil.copyfileobj(rfh, wfh)
+                            wf_name = wfh.name
+                        shutil.move(wf_name, ajs.error_file)
+                        log.debug('(%s/%s) Job completed, removing SLURM spurious warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, first_line)
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
                         f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
