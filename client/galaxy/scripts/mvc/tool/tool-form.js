@@ -338,6 +338,7 @@ var View = Backbone.View.extend({
 
     _templateRow: function(list, max = 3) {
         var blurb = "";
+        list.sort(function(a, b){return b.hid - a.hid});
         for (let item of list) {
             let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
             blurb += `<p class="messagerow">
