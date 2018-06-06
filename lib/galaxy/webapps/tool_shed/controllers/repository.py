@@ -435,9 +435,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         commit_message = escape(kwd.get('commit_message', 'Deleted selected files'))
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+        repo_path = repository.repo_path(trans.app)
         # Update repository files for browsing.
-        hg_util.update_repository(repo)
+        hg_util.update_repository(repo_path)
         changeset_revision = repository.tip(trans.app)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                              id,
@@ -2410,7 +2410,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                          message=commit_message)
                 suc.handle_email_alerts(trans.app, trans.request.host, repository)
                 # Update the repository files for browsing.
-                hg_util.update_repository(repo)
+                hg_util.update_repository(repo_dir)
                 # Get the new repository tip.
                 if tip == repository.tip(trans.app):
                     message += 'No changes to repository.  '

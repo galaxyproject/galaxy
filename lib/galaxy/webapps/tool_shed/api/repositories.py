@@ -1066,7 +1066,7 @@ class RepositoriesController(BaseAPIController):
                 "err_msg": "You do not have permission to update this repository.",
             }
 
-        repo = hg_util.get_repo_for_repository(self.app, repository=repository)
+        repo_dir = repository.repo_path(self.app)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
         tip = repository.tip(self.app)
@@ -1117,7 +1117,7 @@ class RepositoriesController(BaseAPIController):
             )
         if ok:
             # Update the repository files for browsing.
-            hg_util.update_repository(repo)
+            hg_util.update_repository(repo_dir)
             # Get the new repository tip.
             if tip == repository.tip(self.app):
                 trans.response.status = 400

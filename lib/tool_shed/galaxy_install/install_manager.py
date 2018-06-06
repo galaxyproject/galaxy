@@ -880,9 +880,8 @@ class InstallRepositoryManager(object):
                 current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
                 if current_ctx_rev != ctx_rev:
                     repo_path = os.path.abspath(install_dir)
-                    repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_path)
                     hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
-                    hg_util.update_repository(repo, ctx_rev=current_ctx_rev)
+                    hg_util.update_repository(repo_path, ctx_rev=current_ctx_rev)
             self.__handle_repository_contents(tool_shed_repository=tool_shed_repository,
                                               tool_path=tool_path,
                                               repository_clone_url=repository_clone_url,

@@ -29,9 +29,9 @@ def add_changeset(repo_path, path_to_filename_in_archive):
 
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
     '''Create an un-versioned archive of a repository.'''
-    repo = get_repo_for_repository(app, repository=repository)
+    repo_path = repository.repo_path(app)
     try:
-        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo.root)
+        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
         error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, e)
         if isinstance(e, subprocess.CalledProcessError):
@@ -88,25 +88,24 @@ def copy_file_from_manifest(repo, ctx, filename, dir):
 
 
 def create_hgrc_file(app, repository):
-    # At this point, an entry for the repository is required to be in the hgweb.config
-    # file so we can call repository.repo_path( trans.app ).  Since we support both
-    # http and https, we set push_ssl to False to override the default (which is True)
-    # in the mercurial api.  The hg purge extension purges all files and directories
-    # not being tracked by mercurial in the current repository.  It'll remove unknown
-    # files and empty directories.  This is not currently used because it is not supported
-    # in the mercurial API.
-    repo = get_repo_for_repository(app, repository=repository)
-    fp = repo.opener('hgrc', 'wb')
-    fp.write('[paths]\n')
-    fp.write('default = .\n')
-    fp.write('default-push = .\n')
-    fp.write('[web]\n')
-    fp.write('allow_push = %s\n' % repository.user.username)
-    fp.write('name = %s\n' % repository.name)
-    fp.write('push_ssl = false\n')
-    fp.write('[extensions]\n')
-    fp.write('hgext.purge=')
-    fp.close()
+    # Since we support both http and https, we set `push_ssl` to False to
+    # override the default (which is True) in the Mercurial API.
+    # The hg purge extension purges all files and directories not being tracked
+    # by Mercurial in the current repository. It will remove unknown files and
+    # empty directories. This is not currently used because it is not supported
+    # in the Mercurial API.
+    repo_path = repository.repo_path(app)
+    hgrc_path = os.path.join(repo_path, '.hg', 'hgrc')
+    with open(hgrc_path, 'wb') as fp:
+        fp.write('[paths]\n')
+        fp.write('default = .\n')
+        fp.write('default-push = .\n')
+        fp.write('[web]\n')
+        fp.write('allow_push = %s\n' % repository.user.username)
+        fp.write('name = %s\n' % repository.name)
+        fp.write('push_ssl = false\n')
+        fp.write('[extensions]\n')
+        fp.write('hgext.purge=')
 
 
 def get_changectx_for_changeset(repo, changeset_revision, **kwd):
@@ -356,7 +355,7 @@ def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revis
     return reversed_lower_upper_bounded_changelog(repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
 
 
-def update_repository(repo, ctx_rev=None):
+def update_repository(repo_path, ctx_rev=None):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired
     changeset_revision before metadata is set because the process for setting metadata uses the repository files on disk.
@@ -376,7 +375,7 @@ def update_repository(repo, ctx_rev=None):
     if ctx_rev:
         cmd.extend(['-r', ctx_rev])
     try:
-        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo.root)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
         error_message = 'Error updating repository: %s' % e
         if isinstance(e, subprocess.CalledProcessError):
