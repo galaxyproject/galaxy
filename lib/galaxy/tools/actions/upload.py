@@ -66,7 +66,10 @@ class FetchUploadToolAction(BaseUploadToolAction):
         def replace_file_srcs(request_part):
             if isinstance(request_part, dict):
                 if request_part.get("src", None) == "files":
-                    path_def = next(files_iter)
+                    try:
+                        path_def = next(files_iter)
+                    except StopIteration:
+                        path_def = None
                     if path_def is None or path_def["file_data"] is None:
                         raise RequestParameterMissingException("Failed to find uploaded file matching target with src='files'")
                     request_part["path"] = path_def["file_data"]["local_filename"]
