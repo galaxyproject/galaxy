@@ -1359,6 +1359,26 @@ test_data:
 """, history_id=history_id, wait=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
+    @skip_without_tool("collection_type_source_map_over")
+    def test_mapping_and_subcollection_mapping(self):
+        with self.dataset_populator.test_history() as history_id:
+            jobs_summary = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - label: text_input1
+    type: input_collection
+  - tool_id: collection_type_source_map_over
+    state:
+      input_collect:
+        $link: text_input1
+test_data:
+  text_input1:
+    type: "list:paired"
+        """, history_id=history_id)
+            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=5)
+            assert hdca['collection_type'] == 'list:paired'
+            assert len(hdca['elements'][0]['object']["elements"]) == 2
+
     @skip_without_tool("empty_list")
     @skip_without_tool("count_multi_file")
     @skip_without_tool("random_lines1")
