@@ -59,12 +59,12 @@ find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
 if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then
-        echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon' or 'restart' arguments to run.sh"
+        echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon', 'restart', 'start' or 'stop' arguments to run.sh"
         exit 1
     fi
     for server in $servers; do
         echo "Executing: python $server_args --server-name=\"$server\" --pid-file=\"$server.pid\" --log-file=\"$server.log\""
-        python $server_args --server-name="$server" --pid-file="$server.pid" --log-file="$server.log"
+        eval python $server_args --server-name="$server" --pid-file="$server.pid" --log-file="$server.log"
         if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
             while true; do
                 sleep 1
