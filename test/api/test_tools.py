@@ -736,6 +736,23 @@ class ToolsTestCase(api.ApiTestCase):
             assert output1_details["file_ext"] == "txt" if (use_action == "do") else "data"
             assert output2_details["file_ext"] == "txt" if (use_action == "do") else "data"
 
+    @skip_without_tool("output_action_change_format_paired")
+    def test_map_over_with_nested_paired_output_format_actions(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self.__build_nested_list(history_id)
+        inputs = {
+            "input": {'batch': True, 'values': [dict(map_over_type='paired', src="hdca", id=hdca_id)]}
+        }
+        create = self._run('output_action_change_format_paired', history_id, inputs).json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 2)
+        self.assertEquals(len(outputs), 2)
+        self.assertEquals(len(implicit_collections), 1)
+        for output in outputs:
+            assert output["file_ext"] == "txt"
+
     @skip_without_tool("output_filter_with_input")
     def test_map_over_with_output_filter_no_filtering(self):
         with self.dataset_populator.test_history() as history_id:
