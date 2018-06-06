@@ -396,6 +396,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             'inputs': {
                 'request_version': request_version,
                 'request_json': request,
+                'file_count': str(len(files_payload))
             },
         }
         create_payload.update(files_payload)
