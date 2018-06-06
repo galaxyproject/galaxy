@@ -336,16 +336,19 @@ var View = Backbone.View.extend({
         return inputs;
     },
 
-    _templateRow: function(list, max = 3) {
+    _templateRow: function(list, title, max = 3) {
         var blurb = "";
         list.sort(function(a, b){return b.hid - a.hid});
-        for (let item of list) {
-            let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
-            blurb += `<p class="messagerow">
-                        <b>${rowString}</b>
-                      </p>`;
-            if (max-- <= 0) {
-                break;
+        if (list.length > 0) {
+            blurb += `<p>${title}:</p>`;
+            for (let item of list) {
+                let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
+                blurb += `<p class="messagerow">
+                            <b>${rowString}</b>
+                          </p>`;
+                if (max-- <= 0) {
+                    break;
+                }
             }
         }
         return blurb;
@@ -365,14 +368,8 @@ var View = Backbone.View.extend({
                         <p>
                             Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
                         </p>
-                        <p>
-                            The tool uses ${ninputsText}:
-                        </p>
-                        ${this._templateRow(inputs)}
-                        <p>
-                            and produces ${noutputsText}:
-                        </p>
-                        ${this._templateRow(response.outputs)}
+                        ${this._templateRow(inputs,`The tool uses ${ninputsText}`)}
+                        ${this._templateRow(response.outputs, `It produces ${noutputsText}`)}
                         <p>
                             You can check the status of queued jobs and view the resulting data by refreshing the History panel. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered.
                         </p>
