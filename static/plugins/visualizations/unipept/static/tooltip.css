@@ -1,0 +1,10 @@
+.tip {
+  background-color: #ffffff;
+  padding: 2px;
+  border: 1px solid #dddddd;
+  border-radius: 3px;
+}
+
+.tip-title {
+  text-align:center;
+}
