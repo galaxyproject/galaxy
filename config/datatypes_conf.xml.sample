@@ -328,7 +328,8 @@
     </datatype>
     <!-- Phylogenetic tree datatypes -->
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true"/>
-    <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true"/>
+    <datatype extension="newick" type="galaxy.datatypes.data:Newick" display_in_upload="true"/>
+    <datatype extension="nhx" type="galaxy.datatypes.data:Newick" subclass="true" display_in_upload="true"/>
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true"/>
     <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree"/>
     <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
