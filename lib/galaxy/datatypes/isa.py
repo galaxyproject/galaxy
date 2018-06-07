@@ -315,7 +315,8 @@ class _Isa(data.Data):
                         html += '<p>Data files:</p>'
                         html += '<ul>'
                         for data_file in assay.data_files:
-                            html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
+                            if data_file.filename != '':
+                                html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
                         html += '</ul>'
 
             html += '</body></html>'
