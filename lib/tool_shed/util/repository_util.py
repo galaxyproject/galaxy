@@ -260,7 +260,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local repository.
-    hg_util.get_repo_for_repository(app, repo_path=repository_path, create=True)
+    hg_util.init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % (repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)

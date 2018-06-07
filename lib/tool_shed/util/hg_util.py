@@ -200,11 +200,11 @@ def get_readable_ctx_date(ctx):
     return ctx_date
 
 
-def get_repo_for_repository(app, repository=None, repo_path=None, create=False):
+def get_repo_for_repository(app, repository=None, repo_path=None):
     if repository is not None:
-        return hg.repository(ui.ui(), repository.repo_path(app), create=create)
+        return hg.repository(ui.ui(), repository.repo_path(app))
     if repo_path is not None:
-        return hg.repository(ui.ui(), repo_path, create=create)
+        return hg.repository(ui.ui(), repo_path)
 
 
 def get_repository_heads(repo):
@@ -378,6 +378,19 @@ def update_repository(repo_path, ctx_rev=None):
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
         error_message = 'Error updating repository: %s' % e
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
+
+
+def init_repository(repo_path):
+    """
+    Create a new Mercurial repository in the given directory.
+    """
+    try:
+        subprocess.check_output(['hg', 'init'], stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = 'Error initializing repository: %s' % e
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % e.output
         raise Exception(error_message)
