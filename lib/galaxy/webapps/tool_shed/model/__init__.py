@@ -5,11 +5,6 @@ from datetime import (
     timedelta
 )
 
-from mercurial import (
-    hg,
-    ui
-)
-
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
 from galaxy.model.orm.now import now
@@ -18,7 +13,10 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_secure_hash
 from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import metadata_util
+from tool_shed.util import (
+    hg_util,
+    metadata_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -202,7 +200,7 @@ class Repository(Dictifiable):
                         (str(self.name), str(self.user.username)))
 
     def allow_push(self, app):
-        repo = hg.repository(ui.ui(), self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         return repo.ui.config('web', 'allow_push')
 
     def can_change_type(self, app):
@@ -251,7 +249,7 @@ class Repository(Dictifiable):
         return app.repository_types_registry.get_class_by_label(self.type)
 
     def get_tool_dependencies(self, app, changeset_revision):
-        repo = hg.repository(ui.ui(), self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         changeset_revision = metadata_util.get_next_downloadable_changeset_revision(self, repo, changeset_revision)
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
@@ -260,11 +258,11 @@ class Repository(Dictifiable):
 
     def installable_revisions(self, app, sort_revisions=True):
         return metadata_util.get_metadata_revisions(self,
-                                                    hg.repository(ui.ui(), self.repo_path(app)),
+                                                    hg_util.get_repo_for_repository(app, repository=self),
                                                     sort_revisions=sort_revisions)
 
     def is_new(self, app):
-        repo = hg.repository(ui.ui(), self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         tip_ctx = repo.changectx(repo.changelog.tip())
         return tip_ctx.rev() < 0
 
@@ -272,7 +270,7 @@ class Repository(Dictifiable):
         return app.hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
 
     def revision(self, app):
-        repo = hg.repository(ui.ui(), self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         tip_ctx = repo.changectx(repo.changelog.tip())
         return "%s:%s" % (str(tip_ctx.rev()), str(repo.changectx(repo.changelog.tip())))
 
@@ -285,7 +283,7 @@ class Repository(Dictifiable):
                 if username not in allow_push:
                     allow_push.append(username)
         allow_push = '%s\n' % ','.join(allow_push)
-        repo = hg.repository(ui.ui(), path=self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         # Why doesn't the following work?
         # repo.ui.setconfig( 'web', 'allow_push', allow_push )
         lines = repo.opener('hgrc', 'rb').readlines()
@@ -298,7 +296,7 @@ class Repository(Dictifiable):
         fp.close()
 
     def tip(self, app):
-        repo = hg.repository(ui.ui(), self.repo_path(app))
+        repo = hg_util.get_repo_for_repository(app, repository=self)
         return str(repo.changectx(repo.changelog.tip()))
 
     def to_dict(self, view='collection', value_mapper=None):

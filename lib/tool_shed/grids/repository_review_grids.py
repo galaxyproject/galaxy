@@ -56,7 +56,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)

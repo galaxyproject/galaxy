@@ -26,7 +26,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
     if app.name == 'galaxy':
         can_use_disk_files = True
     else:
-        repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(app, repository=repository)
         latest_downloadable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(app, repository, repo)
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}

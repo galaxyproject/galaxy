@@ -156,7 +156,7 @@ def handle_bz2(repository, uploaded_file_name):
 
 def handle_directory_changes(app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
                              new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed):
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [os.path.join(full_path, name) for name in filenames_in_archive]

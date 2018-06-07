@@ -195,7 +195,7 @@ class RelationBuilder(object):
                         updated_key_rd_dicts.append(key_rd_dict)
                     else:
                         # The repository changeset_revision is no longer installable, so see if there's been an update.
-                        repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
+                        repo = hg_util.get_repo_for_repository(self.app, repository=repository)
                         changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, rd_changeset_revision)
                         if changeset_revision != rd_changeset_revision:
                             repository_metadata = \

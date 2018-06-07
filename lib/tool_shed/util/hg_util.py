@@ -5,7 +5,12 @@ import tempfile
 from datetime import datetime
 from time import gmtime
 
-from mercurial import cmdutil, commands, hg, ui
+from mercurial import (
+    cmdutil,
+    commands,
+    hg,
+    ui
+)
 
 from tool_shed.util import basic_util
 
@@ -20,7 +25,7 @@ def add_changeset(repo_ui, repo, path_to_filename_in_archive):
 
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
     '''Create an un-versioned archive of a repository.'''
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(app, repository=repository)
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo.root)
     except Exception as e:
@@ -31,13 +36,17 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
         raise Exception(error_message)
 
 
-def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
+def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     """
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
+    cmd = ['hg', 'clone']
+    if ctx_rev:
+        cmd.extend(['-r', ctx_rev])
+    cmd.extend([repository_clone_url, repository_file_dir])
     try:
-        subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % e
@@ -76,7 +85,7 @@ def create_hgrc_file(app, repository):
     # not being tracked by mercurial in the current repository.  It'll remove unknown
     # files and empty directories.  This is not currently used because it is not supported
     # in the mercurial API.
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = get_repo_for_repository(app, repository=repository)
     fp = repo.opener('hgrc', 'wb')
     fp.write('[paths]\n')
     fp.write('default = .\n')
@@ -235,7 +244,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     Return a string consisting of the human read-able changeset rev and the changeset revision string
     which includes the revision date if the receive include_date is True.
     """
-    repo = get_repo_for_repository(app, repository=repository, repo_path=None)
+    repo = get_repo_for_repository(app, repository=repository)
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
@@ -250,7 +259,7 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
                                                               include_date=True, include_hash=True):
     if repository is None:
         repository = repository_metadata.repository
-    repo = hg.repository(get_configured_ui(), repository.repo_path(app))
+    repo = get_repo_for_repository(app, repository=repository)
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:

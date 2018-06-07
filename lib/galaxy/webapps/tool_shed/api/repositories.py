@@ -216,7 +216,7 @@ class RepositoriesController(BaseAPIController):
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
-                repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
+                repo = hg_util.get_repo_for_repository(self.app, repository=repository)
                 new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
                 repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
                                                                                                   encoded_repository_id,
@@ -800,7 +800,7 @@ class RepositoriesController(BaseAPIController):
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
@@ -1066,8 +1066,7 @@ class RepositoriesController(BaseAPIController):
                 "err_msg": "You do not have permission to update this repository.",
             }
 
-        repo_dir = repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=repository)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
         tip = repository.tip(self.app)
