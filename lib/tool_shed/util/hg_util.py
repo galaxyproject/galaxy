@@ -330,7 +330,7 @@ def reversed_lower_upper_bounded_changelog(repo, excluded_lower_bounds_changeset
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value
     # of changeset_revision is a downloadable changeset_revision.
     # excluded_lower_bounds_changeset_revision = \
-    #     metadata_util.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=? )
+    #     metadata_util.get_previous_metadata_changeset_revision(app, repository, changeset_revision, downloadable=?)
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:
@@ -394,3 +394,17 @@ def init_repository(repo_path):
         if isinstance(e, subprocess.CalledProcessError):
             error_message += "\nOutput was:\n%s" % e.output
         raise Exception(error_message)
+
+
+def changeset2rev(repo_path, changeset_revision):
+    """
+    Return the revision number corresponding to a specified changeset revision.
+    """
+    try:
+        rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
+    except Exception as e:
+        error_message = "Error looking for changeset '%s': %s" % (changeset_revision, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)
+    return int(rev.strip())

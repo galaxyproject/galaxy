@@ -121,10 +121,7 @@ def get_latest_downloadable_repository_metadata(trans, repository):
             return repository_metadata
         return None
     except Exception:
-        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                              repo,
-                                                                                              tip_ctx,
-                                                                                              downloadable=True)
+        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, tip_ctx, downloadable=True)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
@@ -160,10 +157,7 @@ def get_latest_repository_metadata(trans, repository):
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, encoded_repository_id, tip_ctx)
         return repository_metadata
     except Exception:
-        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                              repo,
-                                                                                              tip_ctx,
-                                                                                              downloadable=False)
+        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, tip_ctx, downloadable=False)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,

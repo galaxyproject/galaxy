@@ -1354,8 +1354,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if repository_name is not None and repository_owner is not None:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
             if repository:
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
-                return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository, repo)
+                return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository)
         return hg_util.INITIAL_CHANGELOG_HASH
 
     @web.json
@@ -1565,20 +1564,18 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
         repository_id = trans.security.encode_id(repository.id)
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if not repository_metadata:
             # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
             # changelog that is associated with metadata.
-            changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository,
-                                                                                        repo,
-                                                                                        after_changeset_revision=changeset_revision)
+            changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, after_changeset_revision=changeset_revision)
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
-        ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
+        repo_path = repository.repo_path(trans.app)
+        ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
         repo_info_dict = repository_util.create_repo_info_dict(app=trans.app,
                                                                repository_clone_url=repository_clone_url,
                                                                changeset_revision=changeset_revision,
-                                                               ctx_rev=str(ctx.rev()),
+                                                               ctx_rev=ctx_rev,
                                                                repository_owner=repository.user.username,
                                                                repository_name=repository.name,
                                                                repository=repository,
@@ -1979,7 +1976,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous
                 # changeset in the changelog.
                 previous_changeset_revision = \
-                    metadata_util.get_previous_metadata_changeset_revision(repository, repo, changeset_revision, downloadable=False)
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=False)
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, id, previous_changeset_revision)
                     if repository_metadata:
@@ -2078,12 +2075,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined
                 # in a previous changeset in the changelog.
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
                 previous_changeset_revision = \
-                    metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                           repo,
-                                                                           changeset_revision,
-                                                                           downloadable=False)
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=False)
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                                       id,
@@ -2155,9 +2148,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         # Get the next installable changeset_revision beyond the received changeset_revision.
-        next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+        next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
         if next_changeset_revision and next_changeset_revision != changeset_revision:
             return next_changeset_revision
         return ''
@@ -2259,10 +2251,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if changeset_revision is not None:
                 repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
                 # Get the lower bound changeset revision.
-                lower_bound_changeset_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                                        repo,
-                                                                                                        changeset_revision,
-                                                                                                        downloadable=True)
+                lower_bound_changeset_revision = \
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=True)
                 # Build the list of changeset revision hashes.
                 changeset_hashes = []
                 for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
@@ -2604,8 +2594,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                                             changeset_revision)
             if not repository_metadata:
                 # Get updates to the received changeset_revision if any exist.
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
-                upper_bound_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                upper_bound_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
                 if upper_bound_changeset_revision and upper_bound_changeset_revision != changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,

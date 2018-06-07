@@ -216,8 +216,7 @@ class RepositoriesController(BaseAPIController):
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
-                repo = hg_util.get_repo_for_repository(self.app, repository=repository)
-                new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(self.app, repository, changeset_revision)
                 repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
                                                                                                   encoded_repository_id,
                                                                                                   new_changeset_revision)
@@ -800,7 +799,6 @@ class RepositoriesController(BaseAPIController):
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
@@ -808,7 +806,7 @@ class RepositoriesController(BaseAPIController):
             if changeset_revision == repository.tip(trans.app):
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
             else:
-                next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
                 if repository_metadata is None:
                     if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict['latest_installable_revision'] = 'True'
@@ -828,7 +826,7 @@ class RepositoriesController(BaseAPIController):
                 else:
                     tool_shed_status_dict['revision_update'] = 'False'
             # Handle revision upgrades.
-            metadata_revisions = [revision[1] for revision in metadata_util.get_metadata_revisions(repository, repo)]
+            metadata_revisions = [revision[1] for revision in metadata_util.get_metadata_revisions(trans.app, repository)]
             num_metadata_revisions = len(metadata_revisions)
             for index, metadata_revision in enumerate(metadata_revisions):
                 if index == num_metadata_revisions:
