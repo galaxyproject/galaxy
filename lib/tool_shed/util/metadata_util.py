@@ -116,26 +116,6 @@ def get_latest_repository_metadata(app, decoded_repository_id, downloadable=Fals
                                                          changeset_revision)
 
 
-def get_metadata_by_id(app, metadata_id):
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryMetadata).filter(app.model.RepositoryMetadata.table.c.id == metadata_id).one()
-
-
-def get_metadata_changeset_revisions(repository, repo):
-    """
-    Return an unordered list of changeset_revisions and changeset numbers that are defined as installable.
-    """
-    changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
-        ctx = hg_util.get_changectx_for_changeset(repo, repository_metadata.changeset_revision)
-        if ctx:
-            rev = ctx.rev()
-        else:
-            rev = -1
-        changeset_tups.append((rev, repository_metadata.changeset_revision))
-    return sorted(changeset_tups)
-
-
 def get_metadata_revisions(repository, repo, sort_revisions=True, reverse=False, downloadable=True):
     """
     Return a list of changesets for the provided repository.
@@ -202,12 +182,6 @@ def get_previous_metadata_changeset_revision(repository, repo, before_changeset_
                 return hg_util.INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
-
-
-def get_repository_dependencies(app, metadata_id):
-    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryDependency).filter(app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id).all()
 
 
 def get_repository_dependency_tups_from_repository_metadata(app, repository_metadata, deprecated_only=False):
