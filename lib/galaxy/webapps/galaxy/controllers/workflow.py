@@ -706,7 +706,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         parser = SingleTagContentsParser('id')
         parser.feed(response_data)
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflow', action='list')
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
         if myexp_workflow_id:
             return trans.show_message(
                 """Workflow '%s' successfully exported to myExperiment. <br/>
