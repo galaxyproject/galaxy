@@ -969,6 +969,13 @@ class ToolsTestCase(api.ApiTestCase):
         self.assertEquals(output1_content.strip(), "Plain HDA")
 
     @skip_without_tool("identifier_multiple")
+    def test_list_selectable_in_multidata_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_collection_populator.create_list_in_history(history_id, contents=["123", "456"])
+            build = self._post("tools/identifier_multiple/build?history_id=%s" % history_id).json()
+            assert len(build['inputs'][0]['options']['hdca']) == 1
+
+    @skip_without_tool("identifier_multiple")
     def test_identifier_in_multiple_reduce(self):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_pair(history_id, ["123", "456"])
