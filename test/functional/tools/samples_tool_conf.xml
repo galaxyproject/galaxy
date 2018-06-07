@@ -106,6 +106,7 @@
   <tool file="fail_writing_work_dir_file.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
+  <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
   <tool file="collection_paired_structured_like.xml" />
   <tool file="collection_paired_conditional_structured_like.xml" />
