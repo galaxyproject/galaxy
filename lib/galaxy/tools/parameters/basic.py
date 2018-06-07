@@ -1867,7 +1867,7 @@ class DataToolParameter(BaseDataToolParameter):
             match = dataset_collection_matcher.hdca_match(hdca)
             if match:
                 subcollection_type = None
-                if multiple:
+                if multiple and hdca.collection.collection_type != 'list':
                     collection_type_description = self._history_query(trans).can_map_over(hdca)
                     if collection_type_description:
                         subcollection_type = collection_type_description.collection_type
