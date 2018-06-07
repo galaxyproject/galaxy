@@ -70,12 +70,12 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
         raise Exception(error_message)
 
 
-def copy_file_from_manifest(repo, ctx, filename, dir):
+def copy_file_from_manifest(repo, changeset_revision, filename, dir):
     """
     Copy the latest version of the file named filename from the repository manifest to the directory
     to which dir refers.
     """
-    for changeset in reversed_upper_bounded_changelog(repo, ctx):
+    for changeset in reversed_upper_bounded_changelog(repo, changeset_revision):
         changeset_ctx = repo.changectx(changeset)
         fctx = get_file_context_from_ctx(changeset_ctx, filename)
         if fctx and fctx not in ['DELETED']:
