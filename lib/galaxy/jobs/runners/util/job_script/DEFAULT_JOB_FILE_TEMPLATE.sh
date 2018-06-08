@@ -3,8 +3,8 @@
 $headers
 
 _galaxy_setup_environment() {
-    $env_setup_commands
     local _use_framework_galaxy="$1"
+    $env_setup_commands
     if [ "$GALAXY_LIB" != "None" -a "$_use_framework_galaxy" = "True" ]; then
         if [ -n "$PYTHONPATH" ]; then
             PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
