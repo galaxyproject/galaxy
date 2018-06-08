@@ -41,7 +41,7 @@ var HDCAListItemEdit = _super.extend(
                         <span class="fa fa-times"></span>
                     </a>
                     <div class="dropdown-menu" role="menu">
-                            <a href="#" class="dropdown-item" delete-collection">
+                            <a href="#" class="dropdown-item delete-collection">
                                 ${_l("Collection Only")}
                             </a>
                             <a href="#" class="dropdown-item delete-collection-and-datasets">
