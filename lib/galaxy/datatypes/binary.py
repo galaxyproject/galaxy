@@ -1161,8 +1161,8 @@ class CuffDiffSQlite(SQlite):
     """Class describing a CuffDiff SQLite database """
     MetadataElement(name="cuffdiff_version", default='2.2.1', param=MetadataParameter, desc="CuffDiff Version",
                     readonly=True, visible=True, no_value='2.2.1')
-    MetadataElement(name="genes", default={}, param=MetadataParameter, desc="Genes",
-                    readonly=True, visible=True, no_value={})
+    MetadataElement(name="genes", default=[], param=MetadataParameter, desc="Genes",
+                    readonly=True, visible=True, no_value=[])
     MetadataElement(name="samples", default=[], param=MetadataParameter, desc="Samples",
                     readonly=True, visible=True, no_value=[])
     file_ext = "cuffdiff.sqlite"
@@ -1172,7 +1172,7 @@ class CuffDiffSQlite(SQlite):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(CuffDiffSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            genes = {}
+            genes = []
             samples = []
             conn = sqlite.connect(dataset.file_name)
             c = conn.cursor()
@@ -1183,8 +1183,11 @@ class CuffDiffSQlite(SQlite):
             genes_query = 'SELECT gene_id, gene_short_name FROM genes ORDER BY gene_short_name'
             result = c.execute(genes_query).fetchall()
             for gene_id, gene_name in result:
-                if gene_id not in genes and gene_name is not None:
-                    genes[gene_id] = gene_name
+                if gene_name is None:
+                    continue
+                gene = '%s: %s' % (gene_id, gene_name)
+                if gene not in genes:
+                    genes.append(gene)
             samples_query = 'SELECT DISTINCT(sample_name) as sample_name FROM samples ORDER BY sample_name'
             result = c.execute(samples_query).fetchall()
             for sample_name, in result:
