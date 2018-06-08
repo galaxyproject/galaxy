@@ -13305,17 +13305,6 @@ div.debug {
   font-weight: bold;
   color: #000; }
 
-.submit-image {
-  background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
-  background-color: #eee;
-  width: 9.5;
-  height: 9.5;
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
-  border: 1px solid #aaa;
-  border-left: none; }
-
 #advanced-search td {
   padding: 3px; }
 
@@ -13718,6 +13707,13 @@ div.permissionContainer {
     padding: 6px 10px 6px 8px; }
   .list-item .warnings:not(:empty) {
     padding-top: 4px; }
+  .list-item .warnings [class$="messagesmall"] {
+    margin: 6px 10px 2px 8px;
+    font-size: 90%; }
+    .list-item .warnings [class$="messagesmall"]:first-child {
+      margin-top: 0px; }
+    .list-item .warnings [class$="messagesmall"]:last-child {
+      margin-bottom: 0px; }
   .list-item .help-text, .list-item .details .prompt {
     font-weight: normal;
     color: #555; }
@@ -13806,6 +13802,12 @@ div.permissionContainer {
     display: block;
     clear: both;
     content: ""; }
+  .list-panel .controls .messages [class$="message"],
+  .list-panel .controls .messages [class$="messagesmall"] {
+    margin: 0px; }
+    .list-panel .controls .messages [class$="message"]:not(:last-child),
+    .list-panel .controls .messages [class$="messagesmall"]:not(:last-child) {
+      margin-bottom: 8px; }
   .list-panel .controls .list-actions {
     display: none; }
     .list-panel .controls .list-actions .btn, .list-panel .controls .list-actions input[type="submit"], .list-panel .controls .list-actions
@@ -14207,7 +14209,7 @@ pre.peek {
   .history-panel > .controls .annotation-display .annotation {
     background: white;
     border-radius: 3px;
-    border: 1px solid fadeout(#999, 50%);
+    border: 1px solid rgba(153, 153, 153, 0.5);
     padding: 4px;
     white-space: pre-wrap;
     overflow: auto; }
@@ -14373,7 +14375,7 @@ pre.peek {
   table-layout: fixed;
   width: 100%;
   cursor: pointer;
-  border-bottom: 1px solid fade(grey, % 50); }
+  border-bottom: 1px solid rgba(128, 128, 128, 0.5); }
   .annotated-history-panel .contents-container > * {
     display: table-cell;
     vertical-align: top;

@@ -1482,7 +1482,7 @@ export default {
                         .post(`${Galaxy.root}api/tools/fetch`, {
                             history_id: historyId,
                             targets: targets,
-                            auto_decompress: true,
+                            auto_decompress: true
                         })
                         .then(this.refreshAndWait)
                         .catch(this.renderFetchError);

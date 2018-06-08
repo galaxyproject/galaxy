@@ -103,7 +103,11 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
             });
         } else {
             this.on({
-                add: model => { if(!this.active) { model.fetch() } }
+                add: model => {
+                    if (!this.active) {
+                        model.fetch();
+                    }
+                }
             });
         }
 
