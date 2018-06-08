@@ -1127,16 +1127,12 @@ div.odd_row {
 // Tool panel stuff
 
 // Extra label colors
-.label-beta {
+.badge-beta {
     @extend .badge-warning;
 }
 
-.label-new {
+.badge-new {
     @extend .badge-info;
-}
-
-.sm-label-pad {
-    margin-right: 2px;
 }
 
 span.toolParameterExpandableCollapsable {
@@ -1287,6 +1283,19 @@ a.action-button {
 }
 .action-button > img {
     vertical-align: middle;
+}
+
+.btn-xs {
+    // The 'new' bootstrap 4 btn-sm is about the same size as the old btn-xs,
+    // should serve as a replacement for anything expecting this.
+    @extend .btn-sm;
+}
+
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
 }
 
 //.action-button > * {

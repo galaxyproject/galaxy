@@ -1736,45 +1736,47 @@ button.btn-primary {
       box-shadow: 0 0 0 0.2rem rgba(37, 83, 123, 0.5); }
 
 .btn-secondary, input[type="submit"],
-button, .action-button, .menubutton {
+button, .action-button, .btn-default, .menubutton {
   color: #212529;
   background-color: #dee2e6;
   border-color: #dee2e6; }
   .btn-secondary:hover, input[type="submit"]:hover,
-  button:hover, .action-button:hover, .menubutton:hover {
+  button:hover, .action-button:hover, .btn-default:hover, .menubutton:hover {
     color: #212529;
     background-color: #c8cfd6;
     border-color: #c1c9d0; }
   .btn-secondary:focus, input[type="submit"]:focus,
-  button:focus, .action-button:focus, .menubutton:focus, .btn-secondary.focus, input.focus[type="submit"],
-  button.focus, .focus.action-button, .focus.menubutton {
+  button:focus, .action-button:focus, .btn-default:focus, .menubutton:focus, .btn-secondary.focus, input.focus[type="submit"],
+  button.focus, .focus.action-button, .focus.btn-default, .focus.menubutton {
     box-shadow: 0 0 0 0.2rem rgba(222, 226, 230, 0.5); }
   .btn-secondary.disabled, input.disabled[type="submit"],
-  button.disabled, .disabled.action-button, .disabled.menubutton, .btn-secondary:disabled, input[type="submit"]:disabled,
-  button:disabled, .action-button:disabled, .menubutton:disabled {
+  button.disabled, .disabled.action-button, .disabled.btn-default, .disabled.menubutton, .btn-secondary:disabled, input[type="submit"]:disabled,
+  button:disabled, .action-button:disabled, .btn-default:disabled, .menubutton:disabled {
     color: #212529;
     background-color: #dee2e6;
     border-color: #dee2e6; }
   .btn-secondary:not(:disabled):not(.disabled):active, input[type="submit"]:not(:disabled):not(.disabled):active,
-  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
-  button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled).active,
+  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .btn-default:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
+  button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .btn-default:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled).active,
   .show > .btn-secondary.dropdown-toggle,
   .show > input.dropdown-toggle[type="submit"],
   .show >
   button.dropdown-toggle,
   .show > .dropdown-toggle.action-button,
+  .show > .dropdown-toggle.btn-default,
   .show > .dropdown-toggle.menubutton {
     color: #212529;
     background-color: #c1c9d0;
     border-color: #bac2cb; }
     .btn-secondary:not(:disabled):not(.disabled):active:focus, input[type="submit"]:not(:disabled):not(.disabled):active:focus,
-    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input[type="submit"]:not(:disabled):not(.disabled).active:focus,
-    button:not(:disabled):not(.disabled).active:focus, .action-button:not(:disabled):not(.disabled).active:focus, .menubutton:not(:disabled):not(.disabled).active:focus,
+    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .btn-default:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input[type="submit"]:not(:disabled):not(.disabled).active:focus,
+    button:not(:disabled):not(.disabled).active:focus, .action-button:not(:disabled):not(.disabled).active:focus, .btn-default:not(:disabled):not(.disabled).active:focus, .menubutton:not(:disabled):not(.disabled).active:focus,
     .show > .btn-secondary.dropdown-toggle:focus,
     .show > input.dropdown-toggle[type="submit"]:focus,
     .show >
     button.dropdown-toggle:focus,
     .show > .dropdown-toggle.action-button:focus,
+    .show > .dropdown-toggle.btn-default:focus,
     .show > .dropdown-toggle.menubutton:focus {
       box-shadow: 0 0 0 0.2rem rgba(222, 226, 230, 0.5); }
 
@@ -2125,7 +2127,7 @@ button, .btn-group-lg > .action-button, .btn-group-lg > .menubutton {
   border-radius: 0.3rem; }
 
 .btn-sm, .btn-group-sm > .btn, .btn-group-sm > input[type="submit"], .btn-group-sm >
-button, .btn-group-sm > .action-button, .btn-group-sm > .menubutton, .multi-panel-history .control-column .btn, .multi-panel-history .control-column input[type="submit"], .multi-panel-history .control-column
+button, .btn-group-sm > .action-button, .btn-group-sm > .menubutton, .btn-xs, .multi-panel-history .control-column .btn, .multi-panel-history .control-column input[type="submit"], .multi-panel-history .control-column
 button, .multi-panel-history .control-column .action-button, .multi-panel-history .control-column .menubutton, .multi-panel-history .history-column .panel-controls .btn, .multi-panel-history .history-column .panel-controls input[type="submit"], .multi-panel-history .history-column .panel-controls
 button, .multi-panel-history .history-column .panel-controls .action-button, .multi-panel-history .history-column .panel-controls .menubutton {
   padding: 0.25rem 0.5rem;
@@ -2505,7 +2507,7 @@ button,
     margin-right: 0; }
 
 .btn-sm + .dropdown-toggle-split, .btn-group-sm > .btn + .dropdown-toggle-split, .btn-group-sm > input[type="submit"] + .dropdown-toggle-split, .btn-group-sm >
-button + .dropdown-toggle-split, .btn-group-sm > .action-button + .dropdown-toggle-split, .btn-group-sm > .menubutton + .dropdown-toggle-split, .multi-panel-history .control-column .btn + .dropdown-toggle-split, .multi-panel-history .control-column input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .control-column
+button + .dropdown-toggle-split, .btn-group-sm > .action-button + .dropdown-toggle-split, .btn-group-sm > .menubutton + .dropdown-toggle-split, .btn-xs + .dropdown-toggle-split, .multi-panel-history .control-column .btn + .dropdown-toggle-split, .multi-panel-history .control-column input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .control-column
 button + .dropdown-toggle-split, .multi-panel-history .control-column .action-button + .dropdown-toggle-split, .multi-panel-history .control-column .menubutton + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .btn + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls
 button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .action-button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .menubutton + .dropdown-toggle-split {
   padding-right: 0.375rem;
@@ -3715,18 +3717,18 @@ button .badge, .action-button .badge, .menubutton .badge {
     text-decoration: none;
     background-color: #198e19; }
 
-.badge-info, .label-new {
+.badge-info, .badge-new {
   color: #fff;
   background-color: #1cbceb; }
-  .badge-info[href]:hover, [href].label-new:hover, .badge-info[href]:focus, [href].label-new:focus {
+  .badge-info[href]:hover, [href].badge-new:hover, .badge-info[href]:focus, [href].badge-new:focus {
     color: #fff;
     text-decoration: none;
     background-color: #119ac3; }
 
-.badge-warning, .label-beta {
+.badge-warning, .badge-beta {
   color: #212529;
   background-color: #f69713; }
-  .badge-warning[href]:hover, [href].label-beta:hover, .badge-warning[href]:focus, [href].label-beta:focus {
+  .badge-warning[href]:hover, [href].badge-beta:hover, .badge-warning[href]:focus, [href].badge-beta:focus {
     color: #212529;
     text-decoration: none;
     background-color: #ce7b08; }
@@ -9003,7 +9005,7 @@ button, .action-button, .menubutton {
   white-space: normal; }
 
 .btn-secondary, input[type="submit"],
-button, .action-button, .menubutton {
+button, .action-button, .btn-default, .menubutton {
   border: 1px solid #bfbfbf; }
 
 .dropdown-menu {
@@ -13350,9 +13352,6 @@ div.odd_row {
 
 #footer {
   display: none; }
-
-.sm-label-pad {
-  margin-right: 2px; }
 
 span.toolParameterExpandableCollapsable {
   font-weight: bold;
