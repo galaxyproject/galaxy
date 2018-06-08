@@ -441,6 +441,16 @@ class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 1
 
 
+class BuildListToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/build_list.xml")
+    source_contents = None
+
+    def test_tool_type(self):
+        tool_module = self._tool_source.parse_tool_module()
+        assert tool_module[0] == "galaxy.tools"
+        assert tool_module[1] == "BuildListCollectionTool"
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
