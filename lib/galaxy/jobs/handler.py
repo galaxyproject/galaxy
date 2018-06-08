@@ -213,6 +213,9 @@ class JobHandlerQueue(Monitors):
                     self.__monitor_step()
             except Exception:
                 log.exception("Exception in monitor_step")
+                # With sqlite backends we can run into locked databases occasionally
+                # To avoid that the monitor step locks again we backoff a little longer.
+                self._monitor_sleep(5)
             self._monitor_sleep(1)
 
     def __monitor_step(self):
