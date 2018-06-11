@@ -1831,6 +1831,37 @@ class NetCDF(Binary):
             return False
 
 
+class DAA(Binary):
+    """
+    Class describing an DAA (diamond alignment archive) file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( 'diamond.daa' )
+    >>> DAA().sniff( fname )
+    True
+    >>> fname = get_test_fname( 'interval.interval' )
+    >>> DMND().sniff( fname )
+    False
+    """
+    file_ext = "dmnd"
+    edam_format = ""
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+                                          
+        self._magic = binascii.unhexlify("6be33e6d47530e3c")
+
+    def sniff(self, filename):
+        # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
+
+        try:
+            header = open(filename, 'rb').read(8)
+            if header == self._magic:
+                return True
+            return False
+        except Exception:
+            return False
+
+
 class DMND(Binary):
     """
     Class describing an DMND file
