@@ -240,9 +240,9 @@ function _makeSection(output_id, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>${input_terminal_names.join(
-                    ", "
-                ).replace(/\|/g, ".")}</strong>.`
+                help: `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>${input_terminal_names
+                    .join(", ")
+                    .replace(/\|/g, ".")}</strong>.`
             },
             {
                 action: "ChangeDatatypeAction",

@@ -166,7 +166,7 @@ var View = Backbone.View.extend({
                     id: option.value,
                     text: option.label,
                     tags: option.tags
-                }
+                };
                 this.data2.push(d);
                 this.data2index[d.id] = d;
             });
