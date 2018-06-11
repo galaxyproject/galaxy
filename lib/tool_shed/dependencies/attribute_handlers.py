@@ -109,9 +109,8 @@ class RepositoryDependencyAttributeHandler(object):
             # revision to ensure that the contents of the revision are valid.
             repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
             if repository:
-                repo = hg_util.get_repo_for_repository(self.app, repository=repository)
                 lastest_installable_changeset_revision = \
-                    metadata_util.get_latest_downloadable_changeset_revision(self.app, repository, repo)
+                    metadata_util.get_latest_downloadable_changeset_revision(self.app, repository)
                 if lastest_installable_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     elem.attrib['changeset_revision'] = lastest_installable_changeset_revision
                     altered = True

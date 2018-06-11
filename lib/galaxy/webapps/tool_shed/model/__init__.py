@@ -249,17 +249,14 @@ class Repository(Dictifiable):
         return app.repository_types_registry.get_class_by_label(self.type)
 
     def get_tool_dependencies(self, app, changeset_revision):
-        repo = hg_util.get_repo_for_repository(app, repository=self)
-        changeset_revision = metadata_util.get_next_downloadable_changeset_revision(self, repo, changeset_revision)
+        changeset_revision = metadata_util.get_next_downloadable_changeset_revision(app, self, changeset_revision)
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 return downloadable_revision.metadata.get('tool_dependencies', {})
         return {}
 
     def installable_revisions(self, app, sort_revisions=True):
-        return metadata_util.get_metadata_revisions(self,
-                                                    hg_util.get_repo_for_repository(app, repository=self),
-                                                    sort_revisions=sort_revisions)
+        return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
     def is_new(self, app):
         repo = hg_util.get_repo_for_repository(app, repository=self)

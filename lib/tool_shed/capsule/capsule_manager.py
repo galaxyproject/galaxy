@@ -587,11 +587,8 @@ class ImportRepositoryManager(object):
                                             # The defined changeset_revision is not associated with a repository_metadata
                                             # record, so updates must be necessary.
                                             defined_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
-                                            defined_repo = hg_util.get_repo_for_repository(self.app, repository=defined_repository)
                                             updated_changeset_revision = \
-                                                metadata_util.get_next_downloadable_changeset_revision(defined_repository,
-                                                                                                       defined_repo,
-                                                                                                       changeset_revision)
+                                                metadata_util.get_next_downloadable_changeset_revision(self.app, defined_repository, changeset_revision)
                                             if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append(downloadable_revision)
         return dependent_downloadable_revisions
