@@ -13,7 +13,7 @@ PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
 Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
-pycrypto = "*"
+pycryptodome = "*"
 uWSGI = "*"
 pysam = "==0.14.1"
 bdbag = "*"

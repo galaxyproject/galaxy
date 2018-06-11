@@ -81,8 +81,8 @@ pulsar-galaxy-lib==0.8.3
 py2-ipaddress==3.4.1; python_version < '3'
 pyasn1==0.4.2
 pycparser==2.18
-pycrypto==2.6.1
-pycryptodomex==3.6.0
+pycryptodome==3.6.1
+pycryptodomex==3.6.1
 pyjwkest==1.4.0
 pyjwt==1.6.1
 pykwalify==1.6.1
