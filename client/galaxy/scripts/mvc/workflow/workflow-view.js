@@ -135,7 +135,7 @@ export default Backbone.View.extend({
 
         // Clear search by clicking X button
         $("#search-clear-btn").click(function() {
-            $("#tool-search-query").val('');
+            $("#tool-search-query").val("");
             reset_tool_search(false);
         });
 
@@ -148,7 +148,7 @@ export default Backbone.View.extend({
             .keyup(function(e) {
                 // If ESC is pressed clear the search field
                 if (e.keyCode == 27) {
-                    this.value='';
+                    this.value = "";
                 }
                 // Remove italics.
                 $(this).css("font-style", "normal");

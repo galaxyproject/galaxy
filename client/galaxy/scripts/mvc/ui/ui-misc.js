@@ -226,7 +226,7 @@ export var TextSelect = Backbone.View.extend({
         this.textmode = input_def.textable && (!$.isArray(data) || data.length === 0);
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
-        this.select.update({data: data});
+        this.select.update({ data: data });
         this.value(v);
     }
 });
