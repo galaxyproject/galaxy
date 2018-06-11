@@ -137,7 +137,7 @@ export default Backbone.View.extend({
         $("#search-clear-btn").click(function() {
             $("#tool-search-query").val('');
             reset_tool_search(false);
-        })
+        });
 
         // Init searching.
         $("#tool-search-query")
