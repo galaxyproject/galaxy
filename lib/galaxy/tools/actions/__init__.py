@@ -797,8 +797,11 @@ class OutputCollections(object):
                 raise Exception("Could not determine collection type to create.")
             if collection_type_source not in input_collections:
                 raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
-
-            collection_type = input_collections[collection_type_source].collection.collection_type
+            collection_type_description = self.tool.inputs[collection_type_source]._history_query(self.trans).can_map_over(input_collections[collection_type_source])
+            if collection_type_description:
+                collection_type = collection_type_description.collection_type
+            else:
+                collection_type = input_collections[collection_type_source].collection.collection_type
 
         if "elements" in element_kwds:
             def check_elements(elements):
