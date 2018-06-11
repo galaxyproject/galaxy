@@ -798,7 +798,25 @@ class OutputCollections(object):
             if collection_type_source not in input_collections:
                 raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
 
-            collection_type = input_collections[collection_type_source].collection.collection_type
+            # Using the collection_type_source string we get the DataCollectionToolParameter
+            data_param = self.tool.inputs
+            groups = collection_type_source.split('|')
+            for group in groups:
+                values = group.split('_')
+                if values[-1].isdigit():
+                    key = ("_".join(values[0:-1]))
+                    # We don't care about the repeat index, we just need to find the correct DataCollectionToolParameter
+                else:
+                    key = group
+                if isinstance(data_param, odict):
+                    data_param = data_param.get(key)
+                else:
+                    data_param = data_param.inputs.get(key)
+            collection_type_description = data_param._history_query(self.trans).can_map_over(input_collections[collection_type_source])
+            if collection_type_description:
+                collection_type = collection_type_description.collection_type
+            else:
+                collection_type = input_collections[collection_type_source].collection.collection_type
 
         if "elements" in element_kwds:
             def check_elements(elements):
