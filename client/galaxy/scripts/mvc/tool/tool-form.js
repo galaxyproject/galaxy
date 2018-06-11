@@ -222,7 +222,7 @@ var View = Backbone.View.extend({
             success: function(response) {
                 callback && callback();
                 self.$el.children().hide();
-                self.$el.append(self._templateSuccess(response));
+                self.$el.append(self._templateSuccess(response, job_def));
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
@@ -319,32 +319,63 @@ var View = Backbone.View.extend({
         return true;
     },
 
-    _templateSuccess: function(response) {
-        if (response.jobs && response.jobs.length > 0) {
-            var njobs = response.jobs.length;
-            var njobs_text = njobs == 1 ? "1 job has" : `${njobs} jobs have`;
-            var $message = $("<div/>")
-                .addClass("donemessagelarge")
-                .append(
-                    $("<p/>").text(
-                        `${njobs_text} been successfully added to the queue - resulting in the following datasets:`
-                    )
-                );
-            _.each(response.outputs, output => {
-                $message.append(
-                    $("<p/>")
-                        .addClass("messagerow")
-                        .append($("<b/>").text(`${output.hid}: ${output.name}`))
-                );
-            });
-            $message.append(
-                $("<p/>")
-                    .append("<b/>")
-                    .text(
-                        "You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered."
-                    )
-            );
-            return $message;
+    _getInputs: function(job_def) {
+        var inputs = [];
+        var index = {};
+        for (let i in job_def.inputs) {
+            let input = job_def.inputs[i];
+            if ($.isArray(input.values)) {
+                for (let j of input.values) {
+                    if (j.src && !index[j.id]) {
+                        inputs.push(j);
+                        index[j.id] = true;
+                    }
+                }
+            }
+        }
+        return inputs;
+    },
+
+    _templateRow: function(list, title, max = 3) {
+        var blurb = "";
+        list.sort(function(a, b) {
+            return b.hid - a.hid;
+        });
+        if (list.length > 0) {
+            blurb += `<p>${title}:</p>`;
+            for (let item of list) {
+                let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
+                blurb += `<p class="messagerow">
+                            <b>${rowString}</b>
+                          </p>`;
+                if (max-- <= 0) {
+                    break;
+                }
+            }
+        }
+        return blurb;
+    },
+
+    _templateSuccess: function(response, job_def) {
+        var njobs = response.jobs.length;
+        if (njobs > 0) {
+            var inputs = this._getInputs(job_def);
+            var ninputs = inputs.length;
+            var noutputs = response.outputs.length;
+            var njobsText = njobs > 1 ? `${njobs} jobs` : `1 job`;
+            var ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
+            var noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
+            var tool_name = this.form.model.get("name");
+            return `<div class="donemessagelarge">
+                        <p>
+                            Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
+                        </p>
+                        ${this._templateRow(inputs, `The tool uses ${ninputsText}`)}
+                        ${this._templateRow(response.outputs, `It produces ${noutputsText}`)}
+                        <p>
+                            You can check the status of queued jobs and view the resulting data by refreshing the History panel. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered.
+                        </p>
+                    </div>`;
         } else {
             return this._templateError(response, "Invalid success response. No jobs found.");
         }
