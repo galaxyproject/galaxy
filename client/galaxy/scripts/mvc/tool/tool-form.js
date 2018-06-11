@@ -338,7 +338,9 @@ var View = Backbone.View.extend({
 
     _templateRow: function(list, title, max = 3) {
         var blurb = "";
-        list.sort(function(a, b){return b.hid - a.hid;});
+        list.sort(function(a, b) {
+            return b.hid - a.hid;
+        });
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
             for (let item of list) {
@@ -368,7 +370,7 @@ var View = Backbone.View.extend({
                         <p>
                             Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
                         </p>
-                        ${this._templateRow(inputs,`The tool uses ${ninputsText}`)}
+                        ${this._templateRow(inputs, `The tool uses ${ninputsText}`)}
                         ${this._templateRow(response.outputs, `It produces ${noutputsText}`)}
                         <p>
                             You can check the status of queued jobs and view the resulting data by refreshing the History panel. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered.
