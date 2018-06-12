@@ -15,7 +15,6 @@ var View = Backbone.View.extend({
         // link this
         this.options = options;
         this.target = options.target;
-        this.reset = null;
         const view = this;
 
         // create insert new list element button
@@ -132,14 +131,10 @@ var View = Backbone.View.extend({
             this._value = new_value;
             this.trigger("change");
             this.instance.inputRules = new_value;
-            if (this.reset) {
-                this.reset();
-                this.reset = null;
-            }
         }
     },
 
-    validate: function(reset) {
+    validate: function() {
         const value = this._value;
         let message = null;
         if (!value || value.rules.length === 0) {
@@ -154,8 +149,7 @@ var View = Backbone.View.extend({
                 }
             }
         }
-        this.reset = reset;
-        return { valid: !message, message: message };
+        return message;
     }
 });
 
