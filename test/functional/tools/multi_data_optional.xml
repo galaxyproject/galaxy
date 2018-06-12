@@ -7,6 +7,8 @@ touch '$out1';
             cat '$input' >> '$out1';
         #end if
     #end for
+#else
+    echo "No input selected" >> '$out1'
 #end if
   </command>
   <inputs>
@@ -22,6 +24,13 @@ touch '$out1';
         <assert_contents>
           <has_line line="This is a line of text." />
           <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="No input selected" />
         </assert_contents>
       </output>
     </test>
