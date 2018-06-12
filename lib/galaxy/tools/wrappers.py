@@ -352,6 +352,11 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     def __str__(self):
         return ','.join(map(str, self))
 
+    def __bool__(self):
+        # Fail `#if $param` checks in cheetah if optional input is not provided
+        return any(self)
+    __nonzero__ = __bool__
+
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
