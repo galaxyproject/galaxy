@@ -52,7 +52,15 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
-NO_REPLACEMENT = object()
+
+
+class NoReplacement(object):
+
+    def __str__(self):
+        return "NO_REPLACEMENT singleton"
+
+
+NO_REPLACEMENT = NoReplacement()
 
 
 class WorkflowModule(object):

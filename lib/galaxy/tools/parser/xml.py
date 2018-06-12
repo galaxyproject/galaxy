@@ -382,6 +382,9 @@ class XmlToolSource(ToolSource):
         help_elem = self.root.find('help')
         return help_elem.text if help_elem is not None else None
 
+    def macro_paths(self):
+        return self._macro_paths
+
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
         tests = []
