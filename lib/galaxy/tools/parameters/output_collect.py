@@ -9,7 +9,7 @@ import re
 from collections import namedtuple
 
 from galaxy import util
-from galaxy.dataset_collections.structure import UnitializedTree
+from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -233,7 +233,7 @@ def collect_dynamic_outputs(
                 name = unnamed_output_dict.get("name", "unnamed collection")
                 collection_type = unnamed_output_dict["collection_type"]
                 collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
-                structure = UnitializedTree(collection_type_description)
+                structure = UninitializedTree(collection_type_description)
                 hdca = collections_service.precreate_dataset_collection_instance(
                     trans, history, name, structure=structure
                 )
