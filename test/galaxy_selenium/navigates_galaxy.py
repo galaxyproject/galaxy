@@ -1036,7 +1036,7 @@ class NavigatesGalaxy(HasDriver):
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
-        if expected_type == "data":
+        if expected_type in ["data", "data_collection"]:
             div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
             self.select2_set_value(div_selector, value)
         else:
@@ -1139,6 +1139,19 @@ class NavigatesGalaxy(HasDriver):
             menu_element.find_element_by_link_text(action.text).click()
 
         _click_action_in_menu()
+
+    def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
+        self.components.history_panel.multi_view_button.wait_for_and_click()
+
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        self.click(selector)
+        next_level_element_selector = selector
+        for i in range(len(collection_type.split(":")) - 1):
+            next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
+            self.wait_for_and_click(next_level_element_selector)
+
+        dataset_selector = next_level_element_selector.descendant(".dataset")
+        self.wait_for_and_click(dataset_selector)
 
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
