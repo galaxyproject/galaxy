@@ -354,7 +354,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
 
     def __bool__(self):
         # Fail `#if $param` checks in cheetah if optional input is not provided
-        return len(self) > 0
+        return any(self)
     __nonzero__ = __bool__
 
 
