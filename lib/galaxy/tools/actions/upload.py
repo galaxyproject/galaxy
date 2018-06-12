@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from galaxy.dataset_collections.structure import UnitializedTree
+from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
@@ -138,7 +138,7 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
 
     collections_service = trans.app.dataset_collections_service
     collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
-    structure = UnitializedTree(collection_type_description)
+    structure = UninitializedTree(collection_type_description)
     hdca = collections_service.precreate_dataset_collection_instance(
         trans, history, name, structure=structure
     )
