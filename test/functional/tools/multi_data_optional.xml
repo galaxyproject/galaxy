@@ -1,11 +1,13 @@
 <tool id="multi_data_optional" name="multi_data_optional" version="0.1.0">
   <command>
-    touch $out1;
+touch '$out1';
+#if $input1
     #for $input in $input1
-    #if $input
-    cat $input >> $out1;
-    #end if
+        #if $input
+            cat '$input' >> '$out1';
+        #end if
     #end for
+#end if
   </command>
   <inputs>
     <param name="input1" type="data" format="txt" multiple="true" label="Data 1" optional="true" />
