@@ -256,7 +256,8 @@ class ToolsTestCase(api.ApiTestCase):
             zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
             assert zipped_hdca["collection_type"] == "list:paired"
 
-    def test_filter_failed(self):
+    @skip_without_tool('__FILTER_FAILED_DATASETS__')
+    def test_filter_failed_list(self):
         with self.dataset_populator.test_history() as history_id:
             ok_hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()["id"]
             response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
@@ -271,17 +272,61 @@ class ToolsTestCase(api.ApiTestCase):
 
             mixed_states = [get_state(_) for _ in mixed_hdca["elements"]]
             assert mixed_states == [u"ok", u"error", u"ok", u"error"], mixed_states
-            inputs = {
-                "input": {"src": "hdca", "id": mixed_hdca["id"]},
-            }
-            response = self._run("__FILTER_FAILED_DATASETS__", history_id, inputs, assert_ok=False).json()
-            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
-            filter_output_collections = response["output_collections"]
-            self.assertEquals(len(filter_output_collections), 1)
-            filtered_hid = filter_output_collections[0]["hid"]
-            filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
+
+            filtered_hdca = self._run_filter(history_id=history_id, failed_hdca_id=mixed_hdca['id'])
             filtered_states = [get_state(_) for _ in filtered_hdca["elements"]]
             assert filtered_states == [u"ok", u"ok"], filtered_states
+
+    @skip_without_tool('__FILTER_FAILED_DATASETS__')
+    def test_filter_failed_list_paired(self):
+        with self.dataset_populator.test_history() as history_id:
+            pair1 = self.dataset_collection_populator.create_pair_in_history(history_id, contents=["0", "0"]).json()["id"]
+            pair2 = self.dataset_collection_populator.create_pair_in_history(history_id, contents=["0", "1"]).json()["id"]
+            ok_hdca_id = self.dataset_collection_populator.create_list_from_pairs(history_id, [pair1, pair2]).json()['id']
+            response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
+
+            mixed_implicit_collections = response["implicit_collections"]
+            self.assertEquals(len(mixed_implicit_collections), 1)
+            mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
+            mixed_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=mixed_hdca_hid, wait=False)
+
+            def get_state(dce):
+                return dce["object"]["state"]
+
+            mixed_states = [get_state(element) for _ in mixed_hdca["elements"] for element in _['object']['elements']]
+            assert mixed_states == [u"ok", u"ok", u"ok", u"error"], mixed_states
+
+            filtered_hdca = self._run_filter(history_id=history_id, failed_hdca_id=mixed_hdca['id'])
+            filtered_states = [get_state(element) for _ in filtered_hdca["elements"] for element in _['object']['elements']]
+            assert filtered_states == [u"ok", u"ok"], filtered_states
+
+            # Also try list:list:paired
+            llp = self.dataset_collection_populator.create_nested_collection(history_id=history_id,
+                                                                  collection_type="list:list:paired",
+                                                                  collection=[mixed_hdca['id']]).json()
+
+            filtered_nested_hdca = self._run_filter(history_id=history_id, failed_hdca_id=llp['id'], batch=True)
+            filtered_states = [get_state(element) for _ in filtered_nested_hdca["elements"] for parent_element in _['object']['elements'] for element in parent_element['object']['elements']]
+            assert filtered_states == [u"ok", u"ok"], filtered_states
+
+    def _run_filter(self, history_id, failed_hdca_id, batch=False):
+        if batch:
+            inputs = {
+                "input": {"batch": batch, "values": [{"map_over_type": "list:paired", "src": "hdca", "id": failed_hdca_id}]},
+            }
+        else:
+            inputs = {
+                "input": {"batch": batch, "src": "hdca", "id": failed_hdca_id},
+            }
+        response = self._run("__FILTER_FAILED_DATASETS__", history_id, inputs, assert_ok=False).json()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+        filter_output_collections = response["output_collections"]
+        if batch:
+            return response['implicit_collections'][0]
+        self.assertEquals(len(filter_output_collections), 1)
+        filtered_hid = filter_output_collections[0]["hid"]
+        filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
+        return filtered_hdca
 
     def _apply_rules_and_check(self, example):
         with self.dataset_populator.test_history() as history_id:
