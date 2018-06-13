@@ -3,8 +3,8 @@
 from galaxy.web import security
 
 
-test_helper_1 = security.SecurityHelper(id_secret="sec1")
-test_helper_2 = security.SecurityHelper(id_secret="sec2")
+test_helper_1 = security.SecurityHelper(id_secret="secu1")
+test_helper_2 = security.SecurityHelper(id_secret="secu2")
 
 
 def test_maximum_length_handling_ascii():

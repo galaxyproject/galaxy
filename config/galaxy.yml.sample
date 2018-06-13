@@ -475,19 +475,19 @@ galaxy:
   #default_job_shell: /bin/bash
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_type: file
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_data_dir: database/citations/data
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
@@ -1178,10 +1178,10 @@ galaxy:
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should
   # set a key to be used by the algorithm that encodes and decodes these
-  # values.  It can be any string up to 448 bits long. One simple way to
-  # generate a value for this is with the shell command:   python -c
-  # 'from __future__ import print_function; import time;
-  # print(time.time())' | md5sum | cut -f 1 -d ' '
+  # values. It can be any string with a length between 5 and 56 bytes.
+  # One simple way to generate a value for this is with the shell
+  # command:   python -c 'from __future__ import print_function; import
+  # time; print(time.time())' | md5sum | cut -f 1 -d ' '
   #id_secret: USING THE DEFAULT IS NOT SECURE!
 
   # User authentication can be delegated to an upstream proxy server

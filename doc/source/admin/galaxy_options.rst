@@ -846,8 +846,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as https://doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``file``
 :Type: str
@@ -859,8 +859,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as https://doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/data``
 :Type: str
@@ -872,8 +872,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as https://doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/lock``
 :Type: str
@@ -2440,10 +2440,11 @@
     Galaxy encodes various internal values when these values will be
     output in some format (for example, in a URL or cookie).  You
     should set a key to be used by the algorithm that encodes and
-    decodes these values.  It can be any string up to 448 bits long.
-    One simple way to generate a value for this is with the shell
-    command:   python -c 'from __future__ import print_function;
-    import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+    decodes these values. It can be any string with a length between 5
+    and 56 bytes. One simple way to generate a value for this is with
+    the shell command:   python -c 'from __future__ import
+    print_function; import time; print(time.time())' | md5sum | cut -f
+    1 -d ' '
 :Default: ``USING THE DEFAULT IS NOT SECURE!``
 :Type: str
 

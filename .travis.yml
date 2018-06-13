@@ -14,6 +14,15 @@ env:
 
 matrix:
   include:
+    - env: TOX_ENV=py34-first_startup
+      addons:
+        apt:
+          packages:
+            # For psutil, pyyaml, uwsgi...
+            - libpython3.4-dev
+            # For python-lzo
+            - liblzo2-dev
+            - zlib1g-dev
     - env: TOX_ENV=validate_test_tools
       addons:
         apt:

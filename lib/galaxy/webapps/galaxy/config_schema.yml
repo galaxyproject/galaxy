@@ -1821,8 +1821,8 @@ mapping:
         desc: |
           Galaxy encodes various internal values when these values will be output in
           some format (for example, in a URL or cookie).  You should set a key to be
-          used by the algorithm that encodes and decodes these values.  It can be any
-          string up to 448 bits long.
+          used by the algorithm that encodes and decodes these values. It can be any
+          string with a length between 5 and 56 bytes.
           One simple way to generate a value for this is with the shell command:
             python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
 

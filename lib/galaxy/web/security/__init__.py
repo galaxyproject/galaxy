@@ -23,7 +23,7 @@ class SecurityHelper(object):
     def __init__(self, **config):
         id_secret = config['id_secret']
         self.id_secret = id_secret
-        self.id_cipher = Blowfish.new(self.id_secret)
+        self.id_cipher = Blowfish.new(smart_str(self.id_secret), mode=Blowfish.MODE_ECB)
 
         per_kind_id_secret_base = config.get('per_kind_id_secret_base', self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
@@ -116,7 +116,7 @@ class _cipher_cache(collections.defaultdict):
     def __missing__(self, key):
         assert len(key) < 15, KIND_TOO_LONG_MESSAGE
         secret = self.secret_base + "__" + key
-        return Blowfish.new(_last_bits(secret))
+        return Blowfish.new(_last_bits(secret), mode=Blowfish.MODE_ECB)
 
 
 def _last_bits(secret):

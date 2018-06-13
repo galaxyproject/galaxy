@@ -4,7 +4,7 @@ asn1crypto==0.24.0
 babel==2.5.3
 bagit==1.6.4
 bcrypt==3.1.4
-bdbag==1.2.4
+bdbag==1.3.0
 beaker==1.9.1
 bioblend==0.10.0
 bleach==2.1.3
@@ -55,7 +55,7 @@ monotonic==1.4
 msgpack==0.5.6
 munch==2.3.1
 netaddr==0.7.19
-netifaces==0.10.6
+netifaces==0.10.7
 nose==1.3.7
 numpy==1.14.2
 oauthlib==2.0.7
@@ -81,8 +81,8 @@ pulsar-galaxy-lib==0.8.3
 py2-ipaddress==3.4.1; python_version < '3'
 pyasn1==0.4.2
 pycparser==2.18
-pycrypto==2.6.1
-pycryptodomex==3.6.0
+pycryptodome==3.6.1
+pycryptodomex==3.6.1
 pyjwkest==1.4.0
 pyjwt==1.6.1
 pykwalify==1.6.1
