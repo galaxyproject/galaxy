@@ -2512,7 +2512,7 @@ class MergeCollectionTool(DatabaseOperationTool):
 
 class FilterDatasetsTool(DatabaseOperationTool):
 
-    def get_new_elements(self, history, elements_to_copy):
+    def _get_new_elements(self, history, elements_to_copy):
         new_elements = odict()
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
@@ -2544,7 +2544,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
                 # One of the pairs is not OK, skip creating output for this pair
                 return
 
-        new_elements = self.get_new_elements(elements_to_copy=elements_to_copy, history=history)
+        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
 
         output_collections.create_collection(
             next(iter(self.outputs.values())),
