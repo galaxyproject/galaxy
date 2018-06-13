@@ -31,7 +31,7 @@
     </tests>
     <help><![CDATA[
 
-This tool takes a list dataset collection and filters out empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
+This tool takes a dataset collection and filters out empty datasets. This is useful for continuing a multi-sample analysis when downstream tools require datasets to have content.
 
 .. class:: infomark
 
