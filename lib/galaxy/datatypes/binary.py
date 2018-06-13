@@ -1847,18 +1847,13 @@ class DAA(Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-                                          
         self._magic = binascii.unhexlify("6be33e6d47530e3c")
 
     def sniff(self, filename):
         # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
-
-        try:
-            header = open(filename, 'rb').read(8)
-            if header == self._magic:
+        with open(filename, 'rb') as f:
+            if f.read(8) == self._magic:
                 return True
-            return False
-        except Exception:
             return False
 
 
@@ -1882,13 +1877,9 @@ class DMND(Binary):
 
     def sniff(self, filename):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
-
-        try:
-            header = open(filename, 'rb').read(8)
-            if header == self._magic:
+        with open(filename, 'rb') as f:
+            if f.read(8) == self._magic:
                 return True
-            return False
-        except Exception:
             return False
 
 
