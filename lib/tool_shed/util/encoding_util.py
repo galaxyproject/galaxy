@@ -2,6 +2,7 @@ import binascii
 import json
 import logging
 
+from galaxy.util import unicodify
 from galaxy.util.hash_util import hmac_new
 
 log = logging.getLogger(__name__)
@@ -12,12 +13,14 @@ encoding_sep2 = '__esepii__'
 
 def tool_shed_decode(value):
     # Extract and verify hash
+    value = unicodify(value)
     a, b = value.split(":")
     value = binascii.unhexlify(b)
-    test = hmac_new('ToolShedAndGalaxyMustHaveThisSameKey', value)
+    test = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', value)
     assert a == test
     # Restore from string
     values = None
+    value = unicodify(value)
     try:
         values = json.loads(value)
     except Exception:
