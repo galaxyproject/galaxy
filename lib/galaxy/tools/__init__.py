@@ -2530,10 +2530,10 @@ class FilterDatasetsTool(DatabaseOperationTool):
             elements = collection.element_object.elements
             collection_type = collection.element_object.collection_type
         else:
-            # A pair
+            # A list of pairs
             elements = collection.collection.elements
             collection_type = collection.collection.collection_type
-        # We only process list or paired collections. Higher order collection will be mapped over
+        # We only process list or list of pair collections. Higher order collection will be mapped over
         assert collection_type in ("list", "list:paired")
 
         elements_to_copy = []
