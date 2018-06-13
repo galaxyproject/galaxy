@@ -115,7 +115,7 @@ var View = Backbone.View.extend({
 
     // update
     update: function(input_def) {
-        self.target = input_def.target;
+        this.target = input_def.target;
     },
 
     // get value
