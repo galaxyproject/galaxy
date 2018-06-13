@@ -7,7 +7,7 @@
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <inputs>
-        <param type="data_collection" collection_type="list,paired" name="input" label="Input Collection" />
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >

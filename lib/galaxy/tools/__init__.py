@@ -2534,22 +2534,26 @@ class FilterDatasetsTool(DatabaseOperationTool):
             elements = collection.collection.elements
             collection_type = collection.collection.collection_type
         # We only process list or paired collections. Higher order collection will be mapped over
-        assert collection_type in ("list", "paired")
+        assert collection_type in ("list", "list:paired")
 
         elements_to_copy = []
         for element in elements:
-            if self.element_is_valid(element):
-                elements_to_copy.append(element)
-            elif collection_type == 'paired':
-                # One of the pairs is not OK, skip creating output for this pair
-                return
+            if collection_type == 'list':
+                if self.element_is_valid(element):
+                    elements_to_copy.append(element)
+            else:
+                valid = True
+                for child_element in element.child_collection.elements:
+                    if not self.element_is_valid(child_element):
+                        valid = False
+                if valid:
+                    elements_to_copy.append(element)
 
         new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
 
         output_collections.create_collection(
             next(iter(self.outputs.values())),
             "output",
-            collection_type=collection_type,
             elements=new_elements
         )
 
