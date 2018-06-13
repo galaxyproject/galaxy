@@ -1852,9 +1852,7 @@ class DAA(Binary):
     def sniff(self, filename):
         # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
         with open(filename, 'rb') as f:
-            if f.read(8) == self._magic:
-                return True
-            return False
+            return (f.read(8) == self._magic)
 
 
 class DMND(Binary):
@@ -1878,9 +1876,7 @@ class DMND(Binary):
     def sniff(self, filename):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
         with open(filename, 'rb') as f:
-            if f.read(8) == self._magic:
-                return True
-            return False
+            return (f.read(8) == self._magic)
 
 
 class ICM(Binary):
