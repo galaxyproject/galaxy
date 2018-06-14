@@ -13,6 +13,37 @@ DETECTED_JOB_STATE = Bunch(
     GENERIC_ERROR='generic_error',
 )
 
+def check_output_regex(regex, stream, max_error_level):
+    """
+    check a single regex against a stream
+    returns a message (which can be prepended to the stream and 
+    the max of the error_level of the regex and the given max_error_level
+    """
+    regex_match = re.search(regex.match, stream, re.IGNORECASE)
+    if regex_match:
+        rexmsg = __regex_err_msg(regex_match, regex)
+        log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
+        rexmsg += "\n"
+        return rexmsg, max(max_error_level, regex.error_level)
+    return "", max_error_level
+
+def check_output_regex_byline(regex, stream, max_error_level):
+    """
+    check a single regex against a stream line by line, since errors
+    are expected to appear in the end of the stream we start with 
+    the last line
+    returns a message (which can be prepended to the stream and 
+    the max of the error_level of the regex and the given max_error_level
+    """
+    for line in reversed( stream.split("\n") ):
+        regex_match = re.search(regex.match, line, re.IGNORECASE)
+        if regex_match:
+            rexmsg = __regex_err_msg(regex_match, regex)
+            log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
+            rexmsg += "\n"
+            return rexmsg, max(max_error_level, regex.error_level)
+    return "", max_error_level
+
 
 def check_output(tool, stdout, stderr, tool_exit_code, job):
     """
@@ -65,7 +96,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
-            if max_error_level < StdioErrorLevel.FATAL:
+            if max_error_level < StdioErrorLevel.FATAL_OOM:
                 # We'll examine every regex. Each regex specifies whether
                 # it is to be run on stdout, stderr, or both. (It is
                 # possible for neither stdout nor stderr to be scanned,
@@ -81,32 +112,20 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                     #   - If it matched, then determine the error level.
                     #       o If it was fatal, then we're done - break.
                     # Repeat the stdout stuff for stderr.
-                    # TODO: Collapse this into a single function.
+                    #TODO could test for stderr first? Reason: I would expect it to be smaller and contain the errors
                     if regex.stdout_match:
-                        regex_match = re.search(regex.match, stdout,
-                                                re.IGNORECASE)
-                        if regex_match:
-                            rexmsg = __regex_err_msg(regex_match, regex)
-                            log.info("Job %s: %s"
-                                     % (job.get_id_tag(), rexmsg))
-                            stdout = rexmsg + "\n" + stdout
-                            max_error_level = max(max_error_level,
-                                                  regex.error_level)
-                            if max_error_level >= StdioErrorLevel.FATAL:
-                                break
+                        rexmsg, max_error_level = check_output_regex_byline(regex, stdout, max_error_level)
+                        stdout = rexmsg + stdout
+                        #TODO could test for FATAL_OOM as well or require tool authors 
+                        # to order regexes carefully
+                        if max_error_level >= StdioErrorLevel.FATAL:
+                           break
 
                     if regex.stderr_match:
-                        regex_match = re.search(regex.match, stderr,
-                                                re.IGNORECASE)
-                        if regex_match:
-                            rexmsg = __regex_err_msg(regex_match, regex)
-                            log.info("Job %s: %s"
-                                     % (job.get_id_tag(), rexmsg))
-                            stderr = rexmsg + "\n" + stderr
-                            max_error_level = max(max_error_level,
-                                                  regex.error_level)
-                            if max_error_level >= StdioErrorLevel.FATAL:
-                                break
+                        rexmsg, max_error_level = check_output_regex_byline(regex, stderr, max_error_level)
+                        stderr = rexmsg + stderr
+                        if max_error_level >= StdioErrorLevel.FATAL:
+                           break
 
             # If we encountered a fatal error, then we'll need to set the
             # job state accordingly. Otherwise the job is ok:
