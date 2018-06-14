@@ -37,5 +37,7 @@ cd $working_directory
 $memory_statement
 $instrument_pre_commands
 $command
-echo $? > $exit_code_path
+return_code=$?
+echo $return_code > $exit_code_path
 $instrument_post_commands
+sh -c "exit $return_code"
