@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 
 class UploadsAPIController(BaseAPIController):
 
-    READ_CHUNK_SIZE = 2 ** 16
+    READ_CHUNK_SIZE = 1024 * 1024
 
     @expose_api_anonymous
     def index(self, trans, **kwd):
