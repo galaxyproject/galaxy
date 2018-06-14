@@ -116,15 +116,13 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                     if regex.stdout_match:
                         rexmsg, max_error_level = check_output_regex_byline(regex, stdout, max_error_level)
                         stdout = rexmsg + stdout
-                        #TODO could test for FATAL_OOM as well or require tool authors 
-                        # to order regexes carefully
-                        if max_error_level >= StdioErrorLevel.FATAL:
+                        if max_error_level >= StdioErrorLevel.MAX:
                            break
 
                     if regex.stderr_match:
                         rexmsg, max_error_level = check_output_regex_byline(regex, stderr, max_error_level)
                         stderr = rexmsg + stderr
-                        if max_error_level >= StdioErrorLevel.FATAL:
+                        if max_error_level >= StdioErrorLevel.MAX:
                            break
 
             # If we encountered a fatal error, then we'll need to set the
