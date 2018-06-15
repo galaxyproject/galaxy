@@ -246,4 +246,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
+else
+    echo "Regenerating static plugin directories."
+    python ./scripts/plugin_staging.py
 fi
