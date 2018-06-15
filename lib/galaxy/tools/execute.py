@@ -64,6 +64,8 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
             execution_tracker.record_success(execution_slice, job, result)
+            trans.sa_session.flush()
+            trans.sa_session.expunge(job)
         else:
             execution_tracker.record_error(result)
 
@@ -369,7 +371,7 @@ class ExecutionTracker(object):
 
     def record_success(self, execution_slice, job, outputs):
         # TODO: successful_jobs need to be inserted in the correct place...
-        self.successful_jobs.append(job)
+        self.successful_jobs.append(job.to_dict(view='collection'))  # dictify so can be detached.
         self.output_datasets.extend(outputs)
         for job_output in job.output_dataset_collection_instances:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
@@ -430,7 +432,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         if self.collection_info:
             self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
         else:
-            self.invocation_step.job = job
+            self.invocation_step.job_id = job.id
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
