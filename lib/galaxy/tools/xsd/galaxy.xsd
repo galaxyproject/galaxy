@@ -5339,6 +5339,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Documentation for LevelType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
+      <xs:enumeration value="fatal_oom"/>
       <xs:enumeration value="fatal"/>
       <xs:enumeration value="warning"/>
       <xs:enumeration value="log"/>
