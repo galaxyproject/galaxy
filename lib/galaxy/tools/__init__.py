@@ -1402,7 +1402,7 @@ class Tool(Dictifiable):
             return dict(out_data=execution_tracker.output_datasets,
                         num_jobs=len(execution_tracker.successful_jobs),
                         job_errors=execution_tracker.execution_errors,
-                        jobs=execution_tracker.successful_jobs,
+                        job_dicts=execution_tracker.successful_jobs,
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 

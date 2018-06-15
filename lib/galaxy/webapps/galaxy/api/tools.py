@@ -494,8 +494,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        for job in vars.get('jobs', []):
-            rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
+        for job_dict in vars.get('job_dicts', []):
+            rval['jobs'].append(self.encode_all_ids(trans, job_dict, recursive=True))
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
