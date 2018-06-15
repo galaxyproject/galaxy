@@ -2,13 +2,13 @@ import glob
 import os
 import shutil
 
-GXY_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../'))
+GXY_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
 
 
 def link_up_static(f):
     src = os.path.join(GXY_ROOT, 'config/plugins', f)
     dest = os.path.join(GXY_ROOT, 'static/plugins', f)
-    dest_parent = os.path.abspath(os.path.join(dest, "../"))
+    dest_parent = os.path.abspath(os.path.join(dest, os.pardir))
     if os.path.exists(dest):
         # We have to clear out the old staged or linked static to relink.
         if os.path.islink(dest):
