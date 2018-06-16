@@ -1258,7 +1258,7 @@ class JobWrapper(HasResourceParameters):
                             trynum = self.app.config.retry_job_output_collection
                         except (OSError, ObjectNotFound) as e:
                             trynum += 1
-                            log.warning('Error accessing %s, will retry: %s', dataset.dataset.file_name, e)
+                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
                             time.sleep(2)
                 if getattr(dataset, "hidden_beneath_collection_instance", None):
                     dataset.visible = False
