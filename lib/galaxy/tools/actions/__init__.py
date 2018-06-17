@@ -491,7 +491,7 @@ class DefaultToolAction(object):
         # results back and update the association objects.
         bulk_job_input_assocs = None
         handler = None
-        if len(job.input_datasets) > 0:
+        if len(job.input_datasets) > 10:
             bulk_job_input_assocs = job.input_datasets
             job.input_datasets = []
 
@@ -527,7 +527,7 @@ class DefaultToolAction(object):
             job.handler = handler
             trans.sa_session.flush()
 
-        log.info("Flushed transaction for job %s %s %s" % (job.log_str(), job_flush_timer, job.handler))
+        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
