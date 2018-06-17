@@ -662,6 +662,15 @@ class Configuration(object):
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
+        if kwargs.get("log_destination", None):
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': kwargs['log_destination'],
+                'filters': ['stack']
+            }
+
     @property
     def sentry_dsn_public(self):
         """
