@@ -2510,42 +2510,68 @@ class MergeCollectionTool(DatabaseOperationTool):
         )
 
 
-class FilterFailedDatasetsTool(DatabaseOperationTool):
+class FilterDatasetsTool(DatabaseOperationTool):
+
+    def _get_new_elements(self, history, elements_to_copy):
+        new_elements = odict()
+        for dce in elements_to_copy:
+            element_identifier = dce.element_identifier
+            copied_value = dce.element_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[element_identifier] = copied_value
+        return new_elements
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        collection = incoming["input"]
+
+        if hasattr(collection, 'element_object'):
+            # A list
+            elements = collection.element_object.elements
+            collection_type = collection.element_object.collection_type
+        else:
+            # A list of pairs
+            elements = collection.collection.elements
+            collection_type = collection.collection.collection_type
+        # We only process list or list of pair collections. Higher order collection will be mapped over
+        assert collection_type in ("list", "list:paired")
+
+        elements_to_copy = []
+        for element in elements:
+            if collection_type == 'list':
+                if self.element_is_valid(element):
+                    elements_to_copy.append(element)
+            else:
+                valid = True
+                for child_element in element.child_collection.elements:
+                    if not self.element_is_valid(child_element):
+                        valid = False
+                if valid:
+                    elements_to_copy.append(element)
+
+        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
+
+        output_collections.create_collection(
+            next(iter(self.outputs.values())),
+            "output",
+            elements=new_elements
+        )
+
+
+class FilterFailedDatasetsTool(FilterDatasetsTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        hdca = incoming["input"]
+    def element_is_valid(self, element):
+        return element.element_object.is_ok
 
-        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
 
-        new_elements = odict()
+class FilterEmptyDatasetsTool(FilterDatasetsTool):
+    tool_type = 'filter_empty_datasets_collection'
+    require_dataset_ok = False
 
-        for dce in hdca.collection.elements:
-            element = dce.element_object
-
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-                copied_value = element.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[element_identifier] = copied_value
-
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+    def element_is_valid(self, element):
+        return element.element_object.has_data()
 
 
 class FlattenTool(DatabaseOperationTool):
