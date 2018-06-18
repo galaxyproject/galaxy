@@ -141,6 +141,7 @@ class BaseDatasetPopulator(object):
 
     def new_dataset(self, history_id, content=None, wait=False, **kwds):
         run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
+        assert run_response.status_code == 200, "Failed to create new dataset with response: %s" % run_response.content
         return run_response.json()["outputs"][0]
 
     def new_dataset_request(self, history_id, content=None, wait=False, **kwds):
@@ -276,9 +277,14 @@ class BaseDatasetPopulator(object):
         return self._get("remote_files", data={"target": target}).json()
 
     def run_tool_payload(self, tool_id, inputs, history_id, **kwds):
-        if "files_0|file_data" in inputs:
-            kwds["__files"] = {"files_0|file_data": inputs["files_0|file_data"]}
-            del inputs["files_0|file_data"]
+        # Remove files_%d|file_data parameters from inputs dict and attach
+        # as __files dictionary.
+        for key, value in list(inputs.items()):
+            if key.startswith("files_") and key.endswith("|file_data"):
+                if "__files" not in kwds:
+                    kwds["__files"] = {}
+                kwds["__files"][key] = value
+                del inputs[key]
 
         return dict(
             tool_id=tool_id,

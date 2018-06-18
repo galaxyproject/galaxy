@@ -82,10 +82,9 @@ $galaxy-bs3-danger: #c8524f;
 $galaxy-bs3-info: #3189a3;
 
 // Lightening and saturating gets to alert backgrounds that are *very close*
-// to the Boostrap 3 Galaxy styles. $brand-success is still a little bright
-// for a card background color.
+// to the Boostrap 3 Galaxy styles.
 $brand-primary: $galaxy-bs3-primary;
-$brand-success: saturate(lighten($galaxy-bs3-success, 10%), 30%);
+$brand-success: saturate(lighten($galaxy-bs3-success, 5%), 30%);
 $brand-info: saturate(lighten($galaxy-bs3-info, 10%), 30%);
 $brand-warning: saturate(lighten($galaxy-bs3-warning, 10%), 30%);
 $brand-danger: saturate(lighten($galaxy-bs3-danger, 10%), 30%);
@@ -172,8 +171,7 @@ $headings-line-height: 1.1; // default 1.2
 // Increase contrast of dropdown items
 $dropdown-link-hover-color: white;
 $dropdown-link-hover-bg: $brand-primary;
-$dropdown-link-active-color: black;
-$dropdown-link-active-bg: $brand-success;
+$dropdown-link-active-color: gold;
 
 // BOOTSTRAP 4 STYLE REFACTORING BREAK POINT
 // Anything that is actually used should be moved above this line and

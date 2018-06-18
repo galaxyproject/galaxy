@@ -1241,7 +1241,8 @@ var FolderToolbarView = Backbone.View.extend({
             data: [
                 { id: "list", text: "List" },
                 { id: "paired", text: "Paired" },
-                { id: "list:paired", text: "List of Pairs" }
+                { id: "list:paired", text: "List of Pairs" },
+                { id: "rules", text: "From Rules" }
             ],
             value: "list",
             onchange: collectionType => {
@@ -1351,6 +1352,14 @@ var FolderToolbarView = Backbone.View.extend({
             PAIRED_CREATOR.pairedCollectionCreatorModal(elements, {
                 historyId: history_id,
                 title: modal_title,
+                defaultHideSourceItems: true
+            });
+        } else if (this.collectionType === "rules") {
+            const creationFn = (elements, collectionType, name, hideSourceItems) => {
+                return this.createHDCA(elements, collectionType, name, hideSourceItems, history_id);
+            };
+            LIST_CREATOR.ruleBasedCollectionCreatorModal(collection_elements, "library_datasets", "collections", {
+                creationFn: creationFn,
                 defaultHideSourceItems: true
             });
         }
@@ -1844,6 +1853,9 @@ var FolderToolbarView = Backbone.View.extend({
                 "</li>",
                 "<li>",
                 "List of Pairs: Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.",
+                "</li>",
+                "<li>",
+                "From Rules: Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.",
                 "</li>",
                 "</ul>",
                 "</div>",

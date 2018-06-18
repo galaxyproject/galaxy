@@ -14,3 +14,4 @@ Special Topics
    webhooks
    performance_tracking
    bug_reports
+   gdpr_compliance

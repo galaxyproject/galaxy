@@ -1,5 +1,7 @@
-import _l from "utils/localization";
 /** This is the run workflow tool form view. */
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
@@ -9,10 +11,13 @@ import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
 import Webhooks from "mvc/webhooks";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
+
+/* global $ */
+/* global Galaxy */
+
 var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
-        this.modal = parent.Galaxy.modal || new Modal.View();
+        this.modal = window.parent.Galaxy.modal || new Modal.View();
         this.model = (options && options.model) || new Backbone.Model(options);
         this.deferred = new Deferred();
         if (options && options.active_tab) {
@@ -89,7 +94,9 @@ var View = Backbone.View.extend({
         _.each(this.steps, (step, i) => {
             _.each(step.output_connections, output_connection => {
                 _.each(self.steps, (sub_step, j) => {
-                    sub_step.step_index === output_connection.input_step_index && self.links[i].push(sub_step);
+                    if (sub_step.step_index === output_connection.input_step_index) {
+                        self.links[i].push(sub_step);
+                    }
                 });
             });
         });
@@ -100,8 +107,9 @@ var View = Backbone.View.extend({
             _.each(self.steps, (sub_step, j) => {
                 var connections_by_name = {};
                 _.each(step.output_connections, connection => {
-                    sub_step.step_index === connection.input_step_index &&
-                        (connections_by_name[connection.input_name] = connection);
+                    if (sub_step.step_index === connection.input_step_index) {
+                        connections_by_name[connection.input_name] = connection;
+                    }
                 });
                 _.each(self.parms[j], (input, name) => {
                     var connection = connections_by_name[name];
@@ -162,16 +170,25 @@ var View = Backbone.View.extend({
                     var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
                     var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                     var data_ref = context[input.data_ref];
-                    input.step_linked && !self._isDataStep(input.step_linked) && (data_resolved = false);
-                    input.options &&
-                        ((input.options.length == 0 && !data_resolved) || input.wp_linked) &&
-                        (input.is_workflow = true);
-                    data_ref &&
-                        (input.is_workflow =
-                            (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) || input.wp_linked);
-                    (is_data_input || (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)) &&
-                        (step.collapsed = false);
-                    is_runtime_value && (input.value = input.default_value);
+                    if (input.step_linked && !self._isDataStep(input.step_linked)) {
+                        data_resolved = false;
+                    }
+                    if (input.options && ((input.options.length == 0 && !data_resolved) || input.wp_linked)) {
+                        input.is_workflow = true;
+                    }
+                    if (data_ref) {
+                        input.is_workflow =
+                            (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) || input.wp_linked;
+                    }
+                    if (
+                        is_data_input ||
+                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
+                    ) {
+                        step.collapsed = false;
+                    }
+                    if (is_runtime_value) {
+                        input.value = input.default_value;
+                    }
                     input.flavor = "workflow";
                     if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
                         if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
@@ -358,7 +375,6 @@ var View = Backbone.View.extend({
             self.$steps.addClass("ui-steps");
             if (step.step_type == "tool") {
                 step.postchange = function(process, form) {
-                    var self = this;
                     var current_state = {
                         tool_id: step.id,
                         tool_version: step.version,
@@ -434,22 +450,25 @@ var View = Backbone.View.extend({
                         step
                     )
                 );
-                if(step.step_label) {
+                if (step.step_label) {
                     form.$el.attr("step-label", step.step_label);
                 }
             }
             self.forms[step.index] = form;
             self._append(self.$steps, form.$el);
-            step.needs_refresh && self._refreshStep(step);
+            if (step.needs_refresh) {
+                self._refreshStep(step);
+            }
             form.portlet[!self.show_progress ? "enable" : "disable"]();
-            self.show_progress &&
+            if (self.show_progress) {
                 self.execute_btn.model.set({
                     wait: true,
                     wait_text: "Preparing...",
                     percentage: (step.index + 1) * 100.0 / self.steps.length
                 });
+            }
             Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);
-            setTimeout(() => {
+            window.setTimeout(() => {
                 promise.resolve();
             }, 0);
         });
@@ -464,16 +483,17 @@ var View = Backbone.View.extend({
                 if (input.step_linked || input.wp_linked) {
                     var field = form.field_list[form.data.match(name)];
                     if (field) {
-                        var new_value = undefined;
+                        var new_value;
                         if (input.step_linked) {
                             new_value = { values: [] };
                             _.each(input.step_linked, source_step => {
                                 if (self._isDataStep(source_step)) {
                                     var value = self.forms[source_step.index].data.create().input;
-                                    value &&
+                                    if (value) {
                                         _.each(value.values, v => {
                                             new_value.values.push(v);
                                         });
+                                    }
                                 }
                             });
                             if (!input.multiple && new_value.values.length > 0) {
@@ -508,12 +528,17 @@ var View = Backbone.View.extend({
     /** Refresh the history after job submission while form is shown */
     _refreshHistory: function() {
         var self = this;
-        var history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
-        this._refresh_history && clearTimeout(this._refresh_history);
+        var history =
+            window.parent.Galaxy &&
+            window.parent.Galaxy.currHistoryPanel &&
+            window.parent.Galaxy.currHistoryPanel.model;
+        if (this._refresh_history) {
+            window.clearTimeout(this._refresh_history);
+        }
         if (history) {
             history.refresh().success(() => {
                 if (history.numOfUnfinishedShownContents() === 0) {
-                    self._refresh_history = setTimeout(() => {
+                    self._refresh_history = window.setTimeout(() => {
                         self._refreshHistory();
                     }, history.UPDATE_DELAY);
                 }
@@ -527,7 +552,7 @@ var View = Backbone.View.extend({
         this.show_progress = true;
         this._enabled(false);
         this.deferred.execute(promise => {
-            setTimeout(() => {
+            window.setTimeout(() => {
                 promise.resolve();
                 self._submit();
             }, 0);
@@ -555,7 +580,7 @@ var View = Backbone.View.extend({
             batch: true
         };
         if (this.display_use_cached_job_checkbox) {
-            job_def["use_cached_job"] = this.job_options_form.data.create()["use_cached_job|check"] === "true";
+            job_def.use_cached_job = this.job_options_form.data.create()["use_cached_job|check"] === "true";
         }
         var validated = true;
         for (var i in this.forms) {
@@ -567,7 +592,6 @@ var View = Backbone.View.extend({
             for (var job_input_id in job_inputs) {
                 var input_value = job_inputs[job_input_id];
                 var input_id = form.data.match(job_input_id);
-                var input_field = form.field_list[input_id];
                 var input_def = form.input_list[input_id];
                 if (!input_def.step_linked) {
                     if (this._isDataStep(step)) {
@@ -607,7 +631,7 @@ var View = Backbone.View.extend({
                     // Show Webhook if job is running
                     if ($.isArray(response) && response.length > 0) {
                         self.$el.append($("<div/>", { id: "webhook-view" }));
-                        var WebhookApp = new Webhooks.WebhookView({
+                        new Webhooks.WebhookView({
                             type: "workflow",
                             toolId: job_def.tool_id,
                             toolVersion: job_def.tool_version
@@ -664,10 +688,16 @@ var View = Backbone.View.extend({
             wait_text: "Sending...",
             percentage: -1
         });
-        this.wp_form && this.wp_form.portlet[enabled ? "enable" : "disable"]();
-        this.history_form && this.history_form.portlet[enabled ? "enable" : "disable"]();
+        if (this.wp_form) {
+            this.wp_form.portlet[enabled ? "enable" : "disable"]();
+        }
+        if (this.history_form) {
+            this.history_form.portlet[enabled ? "enable" : "disable"]();
+        }
         _.each(this.forms, form => {
-            form && form.portlet[enabled ? "enable" : "disable"]();
+            if (form) {
+                form.portlet[enabled ? "enable" : "disable"]();
+            }
         });
     },
 
@@ -686,22 +716,39 @@ var View = Backbone.View.extend({
     /** Templates */
     _templateSuccess: function(response) {
         if ($.isArray(response) && response.length > 0) {
-            return $("<div/>")
-                .addClass("donemessagelarge")
-                .append(
-                    $("<p/>").html(
-                        `Successfully invoked workflow <b>${Utils.sanitize(this.model.get("name"))}</b>${
-                            response.length > 1 ? ` <b>${response.length} times</b>` : ""
-                        }.`
-                    )
-                )
-                .append(
-                    $("<p/>")
-                        .append("<b/>")
-                        .text(
-                            "You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered."
-                        )
-                );
+            let timesExecuted = "";
+            // Default destination blurb, used for a single execution, same history.
+            let destinationBlurb =
+                "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
+            let newHistoryTarget =
+                (response[0].history_id &&
+                    Galaxy.currHistoryPanel &&
+                    Galaxy.currHistoryPanel.model.id != response[0].history_id) ||
+                false;
+            if (response.length > 1) {
+                // Executed more than one time, build blurb but skip history link.
+                timesExecuted = `<em> - ${response.length} times</em>`;
+                if (newHistoryTarget) {
+                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
+                        Galaxy.root
+                    }history/view_multiple">history multi-view</a>.`;
+                }
+            } else if (newHistoryTarget) {
+                // Single execution, with a destination other than the
+                // current history.  Present a link.
+                destinationBlurb = `This workflow will generate results in a new history. <a href="${
+                    Galaxy.root
+                }history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
+            }
+            return $(`
+                <div class="donemessagelarge">
+                    <p>
+                        Successfully invoked workflow <b>${Utils.sanitize(this.model.get("name"))}</b>${timesExecuted}.
+                    </p>
+                    <p>
+                        ${destinationBlurb}
+                    </p>
+                </div>`);
         } else {
             return this._templateError(response, "Invalid success response. No invocations found.");
         }

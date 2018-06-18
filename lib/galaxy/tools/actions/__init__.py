@@ -158,7 +158,7 @@ class DefaultToolAction(object):
                 if not isinstance(values, list):
                     values = [value]
                 for i, value in enumerate(values):
-                    if isinstance(value, model.HistoryDatasetCollectionAssociation):
+                    if isinstance(value, model.HistoryDatasetCollectionAssociation) or isinstance(value, model.DatasetCollectionElement):
                         append_to_key(input_dataset_collections, prefixed_name, (value, True))
                         target_dict = parent
                         if not target_dict:
@@ -167,7 +167,12 @@ class DefaultToolAction(object):
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        dataset_instances = value.collection.dataset_instances
+                        if hasattr(value, 'child_collection'):
+                            # if we are mapping a collection over a tool, we only require the child_collection
+                            dataset_instances = value.child_collection.dataset_instances
+                        else:
+                            # else the tool takes a collection as input so we need everything
+                            dataset_instances = value.collection.dataset_instances
                         if i == 0:
                             target_dict[input.name] = []
                         target_dict[input.name].extend(dataset_instances)
@@ -569,6 +574,8 @@ class DefaultToolAction(object):
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
             for jtodc in old_job.output_dataset_collection_instances:
+                # Update JobToOutputDatasetCollectionAssociation to the current job
+                jtodc.job = current_job
                 hdca = jtodc.dataset_collection_instance
                 hdca.collection.replace_failed_elements(remapped_hdas)
                 if hdca.implicit_collection_jobs:
@@ -665,7 +672,10 @@ class DefaultToolAction(object):
 
                 target_dict[input.name] = []
                 for reduced_collection in reductions[prefixed_name]:
-                    target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
+                    if hasattr(reduced_collection, "child_collection"):
+                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'dce'})
+                    else:
+                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
 
         if reductions:
             tool.visit_inputs(incoming, restore_reduction_visitor)
@@ -775,10 +785,10 @@ class OutputCollections(object):
         self.out_collection_instances = {}
         self.tags = tags
 
-    def create_collection(self, output, name, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, **element_kwds):
         input_collections = self.input_collections
         collections_manager = self.trans.app.dataset_collections_service
-        collection_type = output.structure.collection_type
+        collection_type = collection_type or output.structure.collection_type
         if collection_type is None:
             collection_type_source = output.structure.collection_type_source
             if collection_type_source is None:
@@ -788,18 +798,42 @@ class OutputCollections(object):
             if collection_type_source not in input_collections:
                 raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
 
-            collection_type = input_collections[collection_type_source].collection.collection_type
+            # Using the collection_type_source string we get the DataCollectionToolParameter
+            data_param = self.tool.inputs
+            groups = collection_type_source.split('|')
+            for group in groups:
+                values = group.split('_')
+                if values[-1].isdigit():
+                    key = ("_".join(values[0:-1]))
+                    # We don't care about the repeat index, we just need to find the correct DataCollectionToolParameter
+                else:
+                    key = group
+                if isinstance(data_param, odict):
+                    data_param = data_param.get(key)
+                else:
+                    data_param = data_param.inputs.get(key)
+            collection_type_description = data_param._history_query(self.trans).can_map_over(input_collections[collection_type_source])
+            if collection_type_description:
+                collection_type = collection_type_description.collection_type
+            else:
+                collection_type = input_collections[collection_type_source].collection.collection_type
 
         if "elements" in element_kwds:
+            def check_elements(elements):
+                if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
+                    for value in elements.values():
+                        # Either a HDA (if) or a DatasetCollection or a recursive dict.
+                        if getattr(value, "history_content_type", None) == "dataset":
+                            assert value.history is not None
+                        elif hasattr(value, "dataset_instances"):
+                            for dataset in value.dataset_instances:
+                                assert dataset.history is not None
+                        else:
+                            assert value["src"] == "new_collection"
+                            check_elements(value["elements"])
+
             elements = element_kwds["elements"]
-            if hasattr(elements, "items"):  # else it is ELEMENTS_UNINITIALIZED object.
-                for value in elements.values():
-                    # Either a HDA (if) or a DatasetCollection (the else)
-                    if getattr(value, "history_content_type", None) == "dataset":
-                        assert value.history is not None
-                    else:
-                        for dataset in value.dataset_instances:
-                            assert dataset.history is not None
+            check_elements(elements)
 
         if self.dataset_collection_elements is not None:
             dc = collections_manager.create_dataset_collection(

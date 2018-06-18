@@ -1,11 +1,15 @@
+/** This class renders the grid list. */
 import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
-/** This class renders the grid list. */
 import GridView from "mvc/grid/grid-view";
 import HistoryModel from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
+import * as Backbone from "backbone";
+
+/* global $ */
+/* global Galaxy */
 
 var HistoryGridView = GridView.extend({
     initialize: function(grid_config) {
@@ -28,7 +32,7 @@ var HistoryGridView = GridView.extend({
                     options.url = url;
                     options.type = "GET";
                     options.success = req => {
-                        const contentsStates = req["contents_states"];
+                        const contentsStates = req.contents_states;
                         let stateHtml = "";
                         for (let state of ["ok", "running", "queued", "new", "error"]) {
                             const stateCount = contentsStates[state];
@@ -36,19 +40,19 @@ var HistoryGridView = GridView.extend({
                                 stateHtml += `<div class="count-box state-color-${state}" title="Datasets in ${state} state">${stateCount}</div> `;
                             }
                         }
-                        const contentsActive = req["contents_active"];
-                        const deleted = contentsActive["deleted"];
+                        const contentsActive = req.contents_active;
+                        const deleted = contentsActive.deleted;
                         if (deleted) {
                             stateHtml += `<div class="count-box state-color-deleted" title="Deleted datasets">${deleted}</div> `;
                         }
-                        const hidden = contentsActive["hidden"];
+                        const hidden = contentsActive.hidden;
                         if (hidden) {
                             stateHtml += `<div class="count-box state-color-hidden" title="Hidden datasets">${hidden}</div> `;
                         }
                         $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
-                        $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req["nice_size"]);
+                        $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req.nice_size);
                     };
-                    var xhr = jQuery.ajax(options);
+                    var xhr = $.ajax(options);
                     return xhr;
                 };
             })
@@ -74,11 +78,9 @@ var HistoryGridView = GridView.extend({
     },
     /** Add an operation to the items menu */
     add_operation: function(popup, operation, item) {
-        var self = this;
-        var settings = item.operation_config[operation.label];
         if (operation.label == "Copy") {
             operation.onclick = id => {
-                self._showCopyDialog(id);
+                this._showCopyDialog(id);
             };
         }
         GridView.prototype.add_operation.call(this, popup, operation, item);
@@ -88,20 +90,19 @@ var HistoryGridView = GridView.extend({
 var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
-        var self = this;
         LoadingIndicator.markViewAsLoading(this);
 
         if (options.action_id == "list_published") {
             this.active_tab = "shared";
-        } else if ((options.action_id = "list")) {
+        } else if (options.action_id == "list") {
             this.active_tab = "user";
         }
         this.model = new Backbone.Model();
         Utils.get({
             url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,
-            success: function(response) {
-                self.model.set(response);
-                self.render();
+            success: response => {
+                this.model.set(response);
+                this.render();
             }
         });
     },

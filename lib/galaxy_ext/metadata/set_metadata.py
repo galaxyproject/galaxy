@@ -44,7 +44,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
     if extension == "_sniff_":
         try:
             from galaxy.datatypes import sniff
-            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.external_filename, datatypes_registry)[0]
+            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.external_filename, datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)

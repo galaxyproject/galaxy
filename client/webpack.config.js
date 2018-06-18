@@ -71,7 +71,7 @@ let buildconfig = {
             },
             {
                 test: /\.js$/,
-                exclude: [/(node_modules\/(?!(vue-handsontable-official)\/)|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -85,6 +85,13 @@ let buildconfig = {
                         loader: "expose-loader",
                         options: "$"
                     }
+                ]
+            },
+            {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader'
                 ]
             }
         ]

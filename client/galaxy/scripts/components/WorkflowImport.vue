@@ -41,8 +41,10 @@ export default {
     data() {
         return {
             errormessage: null,
-            myexperiment_target_url: `http://${Galaxy.config.myexperiment_target_url}/galaxy?galaxy_url=${window.location.protocol}//${window.location.host}`
-        }
+            myexperiment_target_url: `http://${Galaxy.config.myexperiment_target_url}/galaxy?galaxy_url=${
+                window.location.protocol
+            }//${window.location.host}`
+        };
     },
     methods: {
         submit: function() {
@@ -54,13 +56,15 @@ export default {
                 processData: false,
                 method: "POST"
             })
-            .done(response => {
-                window.location = `${Galaxy.root}workflows/list?message=${response.message}&status=${response.status}`
-            })
-            .fail(response => {
-                let message = response.responseJSON && response.responseJSON.err_msg;
-                this.errormessage = message || "Import failed for unkown reason.";
-            });
+                .done(response => {
+                    window.location = `${Galaxy.root}workflows/list?message=${response.message}&status=${
+                        response.status
+                    }`;
+                })
+                .fail(response => {
+                    let message = response.responseJSON && response.responseJSON.err_msg;
+                    this.errormessage = message || "Import failed for unkown reason.";
+                });
         }
     }
 };

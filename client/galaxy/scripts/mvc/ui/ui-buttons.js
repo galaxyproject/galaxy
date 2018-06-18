@@ -308,7 +308,7 @@ var ButtonMenu = ButtonDefault.extend({
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
-                .addClass("menu dropdown-menu")
+                .addClass("menu dropdown-menu dropdown-menu-right")
                 .addClass(`pull-${this.model.get("pull")}`)
                 .attr("role", "menu");
             this.$el.append(this.$menu);

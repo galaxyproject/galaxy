@@ -938,6 +938,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     True
     >>> unicodify(3) == u'3'
     True
+    >>> unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
+    True
     >>> unicodify(Exception('message')) == u'message'
     True
     >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
@@ -952,7 +954,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     if value is None:
         return None
     try:
-        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+        if isinstance(value, bytearray):
+            value = bytes(value)
+        elif not isinstance(value, string_types) and not isinstance(value, binary_type):
             # In Python 2, value is not an instance of basestring
             # In Python 3, value is not an instance of bytes or str
             value = str(value)
@@ -1270,7 +1274,7 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ['bytes', 'KB', 'MB', 'GB', 'TB']
+    words = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']
     prefix = ''
     try:
         size = float(size)

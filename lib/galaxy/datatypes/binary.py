@@ -159,6 +159,34 @@ class CompressedArchive(Binary):
             return "Compressed binary file (%s)" % (nice_size(dataset.get_size()))
 
 
+class DynamicCompressedArchive(CompressedArchive):
+
+    def matches_any(self, target_datatypes):
+        """Treat two aspects of compressed datatypes separately.
+        """
+        compressed_target_datatypes = []
+        uncompressed_target_datatypes = []
+
+        for target_datatype in target_datatypes:
+            if hasattr(target_datatype, "uncompressed_datatype_instance") and target_datatype.compressed_format == self.compressed_format:
+                uncompressed_target_datatypes.append(target_datatype.uncompressed_datatype_instance)
+            else:
+                compressed_target_datatypes.append(target_datatype)
+
+        # TODO: Add gz and bz2 as proper datatypes and use those instances instead of
+        # CompressedArchive() in the following check.
+        return self.uncompressed_datatype_instance.matches_any(uncompressed_target_datatypes) or \
+            CompressedArchive().matches_any(compressed_target_datatypes)
+
+
+class GzDynamicCompressedArchive(DynamicCompressedArchive):
+    compressed_format = "gzip"
+
+
+class Bz2DynamicCompressedArchive(DynamicCompressedArchive):
+    compressed_format = "bz2"
+
+
 class CompressedZipArchive(CompressedArchive):
     """
         Class describing an compressed binary file
@@ -1146,6 +1174,41 @@ class MzSQlite(SQlite):
                 result = c.execute(tables_query).fetchall()
                 result = [_[0] for _ in result]
                 for table_name in mz_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+
+class BlibSQlite(SQlite):
+    """Class describing a Proteomics Spectral Library Sqlite database """
+    MetadataElement(name="blib_version", default='1.8', param=MetadataParameter, desc="Blib Version",
+                    readonly=True, visible=True, no_value='1.8')
+    file_ext = "blib"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(BlibSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT majorVersion,minorVersion FROM LibInfo"
+            (majorVersion, minorVersion) = c.execute(tables_query).fetchall()[0]
+            dataset.metadata.blib_version = '%s.%s' % (majorVersion, minorVersion)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if super(BlibSQlite, self).sniff(filename):
+            blib_table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra', 'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in blib_table_names:
                     if table_name not in result:
                         return False
                 return True

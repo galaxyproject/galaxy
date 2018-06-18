@@ -1,35 +1,39 @@
 import Connector from "mvc/workflow/workflow-connector";
 import * as Toastr from "libs/toastr";
-function Workflow(app, canvas_container) {
-    this.app = app;
-    this.canvas_container = canvas_container;
-    this.id_counter = 0;
-    this.nodes = {};
-    this.name = null;
-    this.has_changes = false;
-    this.active_form_has_changes = false;
-    this.workflowOutputLabels = {};
-}
-$.extend(Workflow.prototype, {
-    canLabelOutputWith: function(label) {
+
+/* global $ */
+/* global Galaxy */
+
+class Workflow {
+    constructor(app, canvas_container) {
+        this.app = app;
+        this.canvas_container = canvas_container;
+        this.id_counter = 0;
+        this.nodes = {};
+        this.name = null;
+        this.has_changes = false;
+        this.active_form_has_changes = false;
+        this.workflowOutputLabels = {};
+    }
+    canLabelOutputWith(label) {
         if (label) {
             return !(label in this.workflowOutputLabels);
         } else {
             // empty labels are non-exclusive, so allow this one.
             return true;
         }
-    },
-    registerOutputLabel: function(label) {
+    }
+    registerOutputLabel(label) {
         if (label) {
             this.workflowOutputLabels[label] = true;
         }
-    },
-    unregisterOutputLabel: function(label) {
+    }
+    unregisterOutputLabel(label) {
         if (label) {
             delete this.workflowOutputLabels[label];
         }
-    },
-    updateOutputLabel: function(fromLabel, toLabel) {
+    }
+    updateOutputLabel(fromLabel, toLabel) {
         if (fromLabel) {
             this.unregisterOutputLabel(fromLabel);
         }
@@ -41,8 +45,8 @@ $.extend(Workflow.prototype, {
         if (toLabel) {
             this.registerOutputLabel(toLabel);
         }
-    },
-    attemptUpdateOutputLabel: function(node, outputName, label) {
+    }
+    attemptUpdateOutputLabel(node, outputName, label) {
         if (this.canLabelOutputWith(label)) {
             node.labelWorkflowOutput(outputName, label);
             node.nodeView.redrawWorkflowOutputs();
@@ -50,16 +54,16 @@ $.extend(Workflow.prototype, {
         } else {
             return false;
         }
-    },
-    create_node: function(type, title_text, content_id) {
+    }
+    create_node(type, title_text, content_id) {
         var node = this.app.prebuildNode(type, title_text, content_id);
         this.add_node(node);
         this.fit_canvas_to_nodes();
         this.app.canvas_manager.draw_overview();
         this.activate_node(node);
         return node;
-    },
-    add_node: function(node) {
+    }
+    add_node(node) {
         node.id = this.id_counter;
         node.element.attr("id", `wf-node-step-${node.id}`);
         node.element.attr("node-label", node.label);
@@ -67,22 +71,22 @@ $.extend(Workflow.prototype, {
         this.nodes[node.id] = node;
         this.has_changes = true;
         node.workflow = this;
-    },
-    remove_node: function(node) {
+    }
+    remove_node(node) {
         if (this.active_node == node) {
             this.clear_active_node();
         }
         delete this.nodes[node.id];
         this.has_changes = true;
-    },
-    remove_all: function() {
+    }
+    remove_all() {
         var wf = this;
         $.each(this.nodes, (k, v) => {
             v.destroy();
             wf.remove_node(v);
         });
-    },
-    rectify_workflow_outputs: function() {
+    }
+    rectify_workflow_outputs() {
         // Find out if we're using workflow_outputs or not.
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
@@ -98,7 +102,6 @@ $.extend(Workflow.prototype, {
         });
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
-            var self = this;
             $.each(this.nodes, (k, node) => {
                 if (node.type === "tool") {
                     var node_changed = false;
@@ -134,14 +137,14 @@ $.extend(Workflow.prototype, {
                         });
                     }
                     // lastly, if this is the active node, and we made changes, reload the display at right.
-                    if (self.active_node == node && node_changed === true) {
-                        self.reload_active_node();
+                    if (this.active_node == node && node_changed === true) {
+                        this.reload_active_node();
                     }
                 }
             });
         }
-    },
-    to_simple: function() {
+    }
+    to_simple() {
         var nodes = {};
         $.each(this.nodes, (i, node) => {
             var input_connections = {};
@@ -158,7 +161,7 @@ $.extend(Workflow.prototype, {
                         };
                         var input_subworkflow_step_id = t.attributes.input.input_subworkflow_step_id;
                         if (input_subworkflow_step_id !== undefined) {
-                            con_dict["input_subworkflow_step_id"] = input_subworkflow_step_id;
+                            con_dict.input_subworkflow_step_id = input_subworkflow_step_id;
                         }
                         cons[i] = con_dict;
                         input_connections[t.name] = cons;
@@ -199,8 +202,8 @@ $.extend(Workflow.prototype, {
             nodes[node.id] = node_data;
         });
         return { steps: nodes };
-    },
-    from_simple: function(data, initialImport_) {
+    }
+    from_simple(data, initialImport_) {
         var initialImport = initialImport_ === undefined ? true : initialImport_;
         var wf = this;
         var offset = 0;
@@ -277,8 +280,8 @@ $.extend(Workflow.prototype, {
                 });
             }
         });
-    },
-    check_changes_in_active_form: function() {
+    }
+    check_changes_in_active_form() {
         // If active form has changed, save it
         if (this.active_form_has_changes) {
             this.has_changes = true;
@@ -288,23 +291,23 @@ $.extend(Workflow.prototype, {
                 .submit();
             this.active_form_has_changes = false;
         }
-    },
-    reload_active_node: function() {
+    }
+    reload_active_node() {
         if (this.active_node) {
             var node = this.active_node;
             this.clear_active_node();
             this.activate_node(node);
         }
-    },
-    clear_active_node: function() {
+    }
+    clear_active_node() {
         if (this.active_node) {
             this.active_node.make_inactive();
             this.active_node = null;
         }
         document.activeElement.blur();
         this.app.showAttributes();
-    },
-    activate_node: function(node) {
+    }
+    activate_node(node) {
         if (this.active_node != node) {
             this.check_changes_in_active_form();
             this.clear_active_node();
@@ -312,8 +315,8 @@ $.extend(Workflow.prototype, {
             node.make_active();
             this.active_node = node;
         }
-    },
-    node_changed: function(node, force) {
+    }
+    node_changed(node, force) {
         this.has_changes = true;
         if (this.active_node == node && force) {
             // Force changes to be saved even on new connection (previously dumped)
@@ -321,8 +324,8 @@ $.extend(Workflow.prototype, {
             this.app.showForm(node.config_form, node);
         }
         this.app.showWorkflowParameters();
-    },
-    layout: function() {
+    }
+    layout() {
         this.check_changes_in_active_form();
         this.has_changes = true;
         // Prepare predecessor / successor tracking
@@ -352,7 +355,7 @@ $.extend(Workflow.prototype, {
         });
         // Assemble order, tracking levels
         var node_ids_by_level = [];
-        while (true) {
+        for (;;) {
             // Everything without a predecessor
             var level_parents = [];
             for (var pred_k in n_pred) {
@@ -403,8 +406,8 @@ $.extend(Workflow.prototype, {
         $.each(all_nodes, (_, node) => {
             node.redraw();
         });
-    },
-    bounds_for_all_nodes: function() {
+    }
+    bounds_for_all_nodes() {
         var xmin = Infinity;
         var xmax = -Infinity;
         var ymin = Infinity;
@@ -419,8 +422,8 @@ $.extend(Workflow.prototype, {
             ymax = Math.max(ymax, p.top + e.width());
         });
         return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
-    },
-    fit_canvas_to_nodes: function() {
+    }
+    fit_canvas_to_nodes() {
         // Math utils
         function round_up(x, n) {
             return Math.ceil(x / n) * n;
@@ -463,5 +466,6 @@ $.extend(Workflow.prototype, {
             $(this).css("top", p.top + ymin_delta);
         });
     }
-});
+}
+
 export default Workflow;

@@ -1,11 +1,19 @@
+import sys
+from functools import partial
+from os.path import dirname
+
 from galaxy.queue_worker import (
     reload_data_managers,
+    reload_job_rules,
     reload_toolbox,
 )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
     get_tool_data_dir_watcher,
     get_tool_watcher,
+)
+from galaxy.util.watcher import (
+    get_watcher,
 )
 
 
@@ -25,12 +33,22 @@ class ConfigWatchers(object):
         self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
         self.tool_watcher = get_tool_watcher(self, app.config)
+        if getattr(self.app, 'is_job_handler', False):
+            self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
+        else:
+            self.job_rule_watcher = get_watcher(app.config, '__invalid__')
         self.start()
 
     def start(self):
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
         [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
+        for job_rules_directory in self.job_rules_paths:
+            self.job_rule_watcher.watch_directory(
+                job_rules_directory,
+                callback=partial(reload_job_rules, self.app),
+                recursive=True,
+                ignore_extensions=('.pyc', '.pyo', '.pyd'))
 
     def shutdown(self):
         self.tool_config_watcher.shutdown()
@@ -71,3 +89,19 @@ class ConfigWatchers(object):
             if self.app.config.migrated_tools_config not in tool_config_paths:
                 tool_config_paths.append(self.app.config.migrated_tools_config)
         return tool_config_paths
+
+    @property
+    def job_rules_paths(self):
+        job_rules_paths = []
+        default = 'galaxy.jobs.rules'
+        rules_module_name = default
+        if self.app.job_config.dynamic_params is not None:
+            rules_module_name = self.app.job_config.dynamic_params.get('rules_module', default)
+        rules_module = sys.modules.get(rules_module_name, None)
+        if not rules_module:
+            # if using a non-default module, it's not imported until a JobRunnerMapper is instantiated when the first
+            # JobWrapper is created
+            rules_module = __import__(rules_module_name)
+        job_rules_dir = dirname(rules_module.__file__)
+        job_rules_paths.append(job_rules_dir)
+        return job_rules_paths

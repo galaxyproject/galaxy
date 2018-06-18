@@ -39,17 +39,16 @@ $vertical-gap: 8px;
         &:not(:empty) {
             padding-top: 4px;
         }
-        // TODO: FIXME
-        // [class$:messagesmall] {
-        //     margin: $spacing-top $spacing-right ( $spacing-bottom - 4 ) $spacing-left;
-        //     font-size: 90%;
-        //     &:first-child {
-        //         margin-top: 0px;
-        //     }
-        //     &:last-child {
-        //         margin-bottom: 0px;
-        //     }
-        // }
+        [class$="messagesmall"] {
+            margin: $spacing-top $spacing-right ($spacing-bottom - 4) $spacing-left;
+            font-size: 90%;
+            &:first-child {
+                margin-top: 0px;
+            }
+            &:last-child {
+                margin-bottom: 0px;
+            }
+        }
     }
 
     .help-text {
@@ -190,14 +189,13 @@ $vertical-gap: 8px;
         }
         .messages {
             @include clearfix();
-            // TODO: Another fixme for Dannon.
-            // [class$:message],
-            // [class$:messagesmall] {
-            //     margin: 0px;
-            //     &:not(:last-child) {
-            //         margin-bottom: 8px;
-            //     }
-            // }
+            [class$="message"],
+            [class$="messagesmall"] {
+                margin: 0px;
+                &:not(:last-child) {
+                    margin-bottom: 8px;
+                }
+            }
         }
         .list-actions {
             display: none;

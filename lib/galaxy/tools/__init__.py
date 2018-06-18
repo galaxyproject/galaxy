@@ -55,6 +55,10 @@ from galaxy.tools.parameters.basic import (
     ToolParameter,
     workflow_building_modes,
 )
+from galaxy.tools.parameters.dataset_matcher import (
+    set_dataset_matcher_factory,
+    unset_dataset_matcher_factory,
+)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
@@ -80,6 +84,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
+from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
 from galaxy.web import url_for
@@ -135,7 +140,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_interval_0",
     "CONVERTER_wiggle_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
-    "lastz_wrapper_2",
     "qualityFilter",
     "winSplitter",
     "pileup_interval",
@@ -167,6 +171,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "fetchflank": packaging.version.parse("1.0.1"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "lastz_wrapper_2": packaging.version.parse("1.3"),
 }
 
 
@@ -749,7 +754,7 @@ class Tool(Dictifiable):
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
-        self._macro_paths = tool_source._macro_paths
+        self._macro_paths = tool_source.macro_paths()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1866,6 +1871,7 @@ class Tool(Dictifiable):
         if self.input_translator:
             self.input_translator.translate(params)
 
+        set_dataset_matcher_factory(request_context, self)
         # create tool state
         state_inputs = {}
         state_errors = {}
@@ -1875,6 +1881,7 @@ class Tool(Dictifiable):
         tool_model = self.to_dict(request_context)
         tool_model['inputs'] = []
         self.populate_model(request_context, self.inputs, state_inputs, tool_model['inputs'])
+        unset_dataset_matcher_factory(request_context)
 
         # create tool help
         tool_help = ''
@@ -2503,42 +2510,68 @@ class MergeCollectionTool(DatabaseOperationTool):
         )
 
 
-class FilterFailedDatasetsTool(DatabaseOperationTool):
+class FilterDatasetsTool(DatabaseOperationTool):
+
+    def _get_new_elements(self, history, elements_to_copy):
+        new_elements = odict()
+        for dce in elements_to_copy:
+            element_identifier = dce.element_identifier
+            copied_value = dce.element_object.copy()
+            if getattr(copied_value, "history_content_type", None) == "dataset":
+                history.add_dataset(copied_value, set_hid=False)
+            new_elements[element_identifier] = copied_value
+        return new_elements
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        collection = incoming["input"]
+
+        if hasattr(collection, 'element_object'):
+            # A list
+            elements = collection.element_object.elements
+            collection_type = collection.element_object.collection_type
+        else:
+            # A list of pairs
+            elements = collection.collection.elements
+            collection_type = collection.collection.collection_type
+        # We only process list or list of pair collections. Higher order collection will be mapped over
+        assert collection_type in ("list", "list:paired")
+
+        elements_to_copy = []
+        for element in elements:
+            if collection_type == 'list':
+                if self.element_is_valid(element):
+                    elements_to_copy.append(element)
+            else:
+                valid = True
+                for child_element in element.child_collection.elements:
+                    if not self.element_is_valid(child_element):
+                        valid = False
+                if valid:
+                    elements_to_copy.append(element)
+
+        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
+
+        output_collections.create_collection(
+            next(iter(self.outputs.values())),
+            "output",
+            elements=new_elements
+        )
+
+
+class FilterFailedDatasetsTool(FilterDatasetsTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        hdca = incoming["input"]
+    def element_is_valid(self, element):
+        return element.element_object.is_ok
 
-        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
 
-        new_elements = odict()
+class FilterEmptyDatasetsTool(FilterDatasetsTool):
+    tool_type = 'filter_empty_datasets_collection'
+    require_dataset_ok = False
 
-        for dce in hdca.collection.elements:
-            element = dce.element_object
-
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-                copied_value = element.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[element_identifier] = copied_value
-
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+    def element_is_valid(self, element):
+        return element.element_object.has_data()
 
 
 class FlattenTool(DatabaseOperationTool):
@@ -2650,6 +2683,29 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class ApplyRulesTool(DatabaseOperationTool):
+    tool_type = 'apply_rules'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        log.info(incoming)
+        hdca = incoming["input"]
+        rule_set = RuleSet(incoming["rules"])
+
+        def copy_dataset(dataset):
+            copied_dataset = dataset.copy()
+            copied_dataset.visible = False
+            history.add_dataset(copied_dataset, set_hid=True)
+            return copied_dataset
+
+        new_elements = self.app.dataset_collections_service.apply_rules(
+            hdca, rule_set, copy_dataset
+        )
+        log.info(new_elements)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements
         )
 
 

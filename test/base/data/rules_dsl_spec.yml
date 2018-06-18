@@ -27,6 +27,16 @@
     sources: [1,2]
   final:
     data: [["foo", "the os oo"], ["cow", "the os o"]]
+- rules: 
+    - type: add_column_regex
+      target_column: 0
+      expression: '.*(o)(o)'
+      group_count: 2
+  initial:
+    data: [[foo], [boo]]
+    sources: [1,2]
+  final:
+    data: [["foo", "o", "o"], ["boo", "o", "o"]]
 - rules:
     - type: add_column_substr
       target_column: 0
@@ -356,4 +366,50 @@
   final:
     data: [["bark", "Dog"], ["meow", "cat"], ["moo", "cow"]]
     sources: [3, 2, 1]
-
+- rules:
+    - type: swap_columns
+      target_column_0: 0
+      target_column_1: 1
+  initial:
+    data: [["moo", "cow"], ["meow", "cat"], ["bark", "Dog"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["cow", "moo"], ["cat", "meow"], ["Dog", "bark"]]
+    sources: [1, 2, 3]
+- rules:
+    - type: split_columns
+      target_columns_0: [0]
+      target_columns_1: [1]
+  initial:
+    data: [["moo", "cow", "A"], ["meow", "cat", "B"], ["bark", "Dog", "C"]]
+    sources: [1, 2, 3]
+  final:
+    data: [["moo", "A"], ["cow", "A"], ["meow", "B"], ["cat", "B"], ["bark", "C"], ["Dog", "C"]]
+    sources: [1, 1, 2, 2, 3, 3]
+- rules:
+    - type: invalid_rule_type
+  error: true
+- rules:
+    - type: add_filter_compare
+      target_column: 0
+      value: 13
+      compare_type: invalid_compare_type
+  error: true
+- rules:
+    - type: add_column_concatenate
+      target_column: 0
+  error: true
+- rules:
+    - type: add_column_basename
+      target_column_0: 0
+  error: true
+- rules:
+    - type: add_column_regex
+      target_column: 0
+      regex: '(o)+'
+  error: true
+- rules:
+    - type: add_column_regex
+      target_column: 0
+      expression: '(o+'
+  error: true

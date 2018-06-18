@@ -735,10 +735,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
     def reset_all_metadata_on_repository_in_tool_shed(self):
         """Reset all metadata on a single repository in a tool shed."""
         log.debug("Resetting all metadata on repository: %s" % self.repository.name)
-        repo = hg_util.get_repo_for_repository(self.app,
-                                               repository=None,
-                                               repo_path=self.repository.repo_path(self.app),
-                                               create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=self.repository)
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
@@ -908,7 +905,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         status = 'done'
         encoded_id = self.app.security.encode_id(self.repository.id)
         repo_dir = self.repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_dir)
         self.generate_metadata_for_changeset_revision()
         if self.metadata_dict:
             repository_metadata = None

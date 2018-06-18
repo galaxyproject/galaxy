@@ -683,7 +683,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
-                        log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
+                        log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
                         raise exceptions.InternalServerError("Unknown error. " + str(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'

@@ -609,7 +609,7 @@ class NavigatesGalaxy(HasDriver):
         name_element.send_keys(name)
 
     def rule_builder_set_extension(self, extension):
-        self.select2_set_value(".rule-option-extension", extension)
+        self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
 
     def rule_builder_filter_count(self, count=1):
         rule_builder = self.components.rule_builder
@@ -765,6 +765,19 @@ class NavigatesGalaxy(HasDriver):
             if screenshot_name:
                 self.screenshot(screenshot_name)
         rule_builder.mapping_ok.wait_for_and_click()
+
+    def rule_builder_set_source(self, json):
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        self.rule_builder_enter_source_text(json)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_enter_source_text(self, json):
+        rule_builder = self.components.rule_builder
+        text_area_elem = rule_builder.source.wait_for_visible()
+        text_area_elem.clear()
+        text_area_elem.send_keys(json)
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
@@ -1005,16 +1018,25 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
-    def tool_open(self, tool_id):
-        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+    def tool_open(self, tool_id, outer=False):
+        if outer:
+            tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
+        else:
+            tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+
+    def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
+        rules_div_element = self.tool_parameter_div("rules")
+        edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
+        edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
-        if expected_type == "data":
+        if expected_type in ["data", "data_collection"]:
             div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
             self.select2_set_value(div_selector, value)
         else:
@@ -1117,6 +1139,19 @@ class NavigatesGalaxy(HasDriver):
             menu_element.find_element_by_link_text(action.text).click()
 
         _click_action_in_menu()
+
+    def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
+        self.components.history_panel.multi_view_button.wait_for_and_click()
+
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        self.click(selector)
+        next_level_element_selector = selector
+        for i in range(len(collection_type.split(":")) - 1):
+            next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
+            self.wait_for_and_click(next_level_element_selector)
+
+        dataset_selector = next_level_element_selector.descendant(".dataset")
+        self.wait_for_and_click(dataset_selector)
 
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
@@ -1372,6 +1407,8 @@ class NavigatesGalaxy(HasDriver):
         #                     why.
         # with_click seems to work in all situtations - the enter methods
         # doesn't seem to work with the tool form for some reason.
+        if hasattr(container_selector_or_elem, "selector"):
+            container_selector_or_elem = container_selector_or_elem.selector
         if not hasattr(container_selector_or_elem, "find_element_by_css_selector"):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:

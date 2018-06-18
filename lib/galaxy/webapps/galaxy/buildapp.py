@@ -116,18 +116,21 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/openids/list')
     webapp.add_client_route('/visualizations')
     webapp.add_client_route('/visualizations/edit')
+    webapp.add_client_route('/visualizations/sharing')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/pages/sharing')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/sharing')
     webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/histories/view')
     webapp.add_client_route('/histories/show_structure')
@@ -312,6 +315,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
+    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
@@ -319,6 +323,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
+    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.connect(
         'dynamic_tool_confs',
         '/api/configuration/dynamic_tool_confs',
@@ -356,6 +361,7 @@ def populate_api_routes(webapp, app):
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
+    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('revision', 'revisions',
                            path_prefix='/api/pages/{page_id}',
                            controller='page_revisions',
@@ -979,15 +985,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                     conf.get('statsd_prefix', 'galaxy'),
                                     conf.get('statsd_influxdb', False)))
         log.debug("Enabling 'statsd' middleware")
-    # graphite request timing and profiling
-    graphite_host = conf.get('graphite_host', None)
-    if graphite_host:
-        from galaxy.web.framework.middleware.graphite import GraphiteMiddleware
-        app = wrap_if_allowed(app, stack, GraphiteMiddleware,
-                              args=(graphite_host,
-                                    conf.get('graphite_port', 2003),
-                                    conf.get('graphite_prefix', 'galaxy')))
-        log.debug("Enabling 'graphite' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server

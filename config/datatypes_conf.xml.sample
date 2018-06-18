@@ -52,6 +52,7 @@
       <converter file="len_to_linecount.xml" target_datatype="linecount"/>
     </datatype>
     <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
+    <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml"/>
       <display file="igb/bb.xml"/>
@@ -79,7 +80,7 @@
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="dbn" type="galaxy.datatypes.sequence:DotBracket" display_in_upload="true" description="Dot-Bracket format is a text-based format for storing both an RNA sequence and its corresponding 2D structure." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Dbn"/>
     <datatype extension="fai" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description="A Fasta Index File is a text file consisting of lines each with five TAB-delimited columns : Name, Length, offset, linebases, Linewidth" description_url="http://www.htslib.org/doc/faidx.html"/>
-    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('&gt;') symbol in the first column. All lines should be shorter than 80 characters." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fasta">
+    <datatype extension="fasta" auto_compressed_types="gz" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true" description="A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('&gt;') symbol in the first column. All lines should be shorter than 80 characters." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fasta">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
       <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
       <converter file="fasta_to_bowtie_color_index_converter.xml" target_datatype="bowtie_color_index"/>
@@ -88,53 +89,20 @@
       <converter file="fasta_to_fai.xml" target_datatype="fai"/>
       <display file="igv/genome_fasta.xml" inherit="true"/>
     </datatype>
-    <datatype extension="fasta.gz" type="galaxy.datatypes.sequence:FastaGz" display_in_upload="true">
-      <converter file="fastagz_to_fasta.xml" target_datatype="fasta"/>
-    </datatype>
-    <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
+    <datatype extension="fastq" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true">
+    <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
+    <datatype extension="fastqsolexa" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" description="FastqSolexa is the Illumina (Solexa) variant of the Fastq format, which stores sequences and quality scores in a single file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#FastqSolexa">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true">
+    <datatype extension="fastqcssanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
-    <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true">
+    <datatype extension="fastqillumina" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
-    </datatype>
-    <datatype extension="fastq.gz" type="galaxy.datatypes.sequence:FastqGz" display_in_upload="true">
-      <converter file="fastqgz_to_fastq.xml" target_datatype="fastq"/>
-    </datatype>
-    <datatype extension="fastqsanger.gz" type="galaxy.datatypes.sequence:FastqSangerGz" display_in_upload="true">
-      <converter file="fastqsangergz_to_fastqsanger.xml" target_datatype="fastqsanger"/>
-    </datatype>
-    <datatype extension="fastqsolexa.gz" type="galaxy.datatypes.sequence:FastqSolexaGz" display_in_upload="true">
-      <converter file="fastqsolexagz_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
-    </datatype>
-    <datatype extension="fastqcssanger.gz" type="galaxy.datatypes.sequence:FastqCSSangerGz" display_in_upload="true">
-      <converter file="fastqcssangergz_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
-    </datatype>
-    <datatype extension="fastqillumina.gz" type="galaxy.datatypes.sequence:FastqIlluminaGz" display_in_upload="true">
-      <converter file="fastqilluminagz_to_fastqillumina.xml" target_datatype="fastqillumina"/>
-    </datatype>
-    <datatype extension="fastq.bz2" type="galaxy.datatypes.sequence:FastqBz2" display_in_upload="true">
-      <converter file="fastqbz2_to_fastq.xml" target_datatype="fastq"/>
-    </datatype>
-    <datatype extension="fastqsanger.bz2" type="galaxy.datatypes.sequence:FastqSangerBz2" display_in_upload="true">
-      <converter file="fastqsangerbz2_to_fastqsanger.xml" target_datatype="fastqsanger"/>
-    </datatype>
-    <datatype extension="fastqsolexa.bz2" type="galaxy.datatypes.sequence:FastqSolexaBz2" display_in_upload="true">
-      <converter file="fastqsolexabz2_to_fastqsolexa.xml" target_datatype="fastqsolexa"/>
-    </datatype>
-    <datatype extension="fastqcssanger.bz2" type="galaxy.datatypes.sequence:FastqCSSangerBz2" display_in_upload="true">
-      <converter file="fastqcssangerbz2_to_fastqcssanger.xml" target_datatype="fastqcssanger"/>
-    </datatype>
-    <datatype extension="fastqillumina.bz2" type="galaxy.datatypes.sequence:FastqIlluminaBz2" display_in_upload="true">
-      <converter file="fastqilluminabz2_to_fastqillumina.xml" target_datatype="fastqillumina"/>
     </datatype>
     <datatype extension="fqtoc" type="galaxy.datatypes.sequence:SequenceSplitLocations" display_in_upload="true"/>
     <datatype extension="eland" type="galaxy.datatypes.tabular:Eland" display_in_upload="true"/>
@@ -247,6 +215,7 @@
     <datatype extension="msp" type="galaxy.datatypes.proteomics:Msp" display_in_upload="true"/>
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
+    <datatype extension="blib" type="galaxy.datatypes.binary:BlibSQlite" display_in_upload="true"/>
     <datatype extension="hlf" type="galaxy.datatypes.proteomics:XHunterAslFormat" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="idpdb" type="galaxy.datatypes.binary:IdpDB" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true"/>
@@ -359,7 +328,8 @@
     </datatype>
     <!-- Phylogenetic tree datatypes -->
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true"/>
-    <datatype extension="nhx" type="galaxy.datatypes.data:Newick" display_in_upload="true"/>
+    <datatype extension="newick" type="galaxy.datatypes.data:Newick" display_in_upload="true"/>
+    <datatype extension="nhx" type="galaxy.datatypes.data:Newick" subclass="true" display_in_upload="true"/>
     <datatype extension="nex" type="galaxy.datatypes.data:Nexus" display_in_upload="true"/>
     <datatype extension="iqtree" type="galaxy.datatypes.text:IQTree"/>
     <datatype extension="mldist" type="galaxy.datatypes.mothur:SquareDistanceMatrix"/>
@@ -487,10 +457,7 @@
     <datatype extension="embl" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="fitch" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="gcg" type="galaxy.datatypes.data:Text" subclass="true"/>
-    <datatype extension="genbank" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True"/>
-    <datatype extension="genbank.gz" type="galaxy.datatypes.sequence:GenbankGz" display_in_upload="true">
-      <converter file="genbankgz_to_genbank.xml" target_datatype="genbank"/>
-    </datatype>
+    <datatype extension="genbank" auto_compressed_types="gz" sniff_compressed_types="true" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True"/>
     <datatype extension="hennig86" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="ig" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="jackknifer" type="galaxy.datatypes.data:Text" subclass="true"/>
@@ -693,6 +660,7 @@
     <!-- IDEAS datatypes -->
     <datatype extension="ideaspre" type="galaxy.datatypes.genetics:IdeasPre" display_in_upload="true"/>
     <!-- End IDEAS datatypes -->
+    <datatype extension="sbml" type="galaxy.datatypes.xml:Sbml" mimetype="application/xml" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -727,6 +695,7 @@
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
+    <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
@@ -742,11 +711,13 @@
     <sniffer type="galaxy.datatypes.binary:Fast5Archive"/>
     <sniffer type="galaxy.datatypes.binary:PostgresqlArchive"/>
     <sniffer type="galaxy.datatypes.binary:ICM"/>
+    <sniffer type="galaxy.datatypes.binary:Idat"/>
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.xml:Phyloxml"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
+    <sniffer type="galaxy.datatypes.xml:Sbml"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
     <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
     <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
@@ -781,19 +752,13 @@
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
-    <sniffer type="galaxy.datatypes.sequence:FastaGz"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSangerGz"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqSangerBz2"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqGz"/>
-    <sniffer type="galaxy.datatypes.sequence:FastqBz2"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
     <sniffer type="galaxy.datatypes.text:Html"/>
     <sniffer type="galaxy.datatypes.images:Pdf"/>
     <sniffer type="galaxy.datatypes.sequence:Axt"/>
     <sniffer type="galaxy.datatypes.sequence:Genbank"/>
-    <sniffer type="galaxy.datatypes.sequence:GenbankGz"/>
     <sniffer type="galaxy.datatypes.interval:Bed"/>
     <sniffer type="galaxy.datatypes.interval:CustomTrack"/>
     <sniffer type="galaxy.datatypes.interval:Gtf"/>

@@ -1,8 +1,8 @@
 FROM ubuntu:16.04
 MAINTAINER John Chilton <jmchilton@gmail.com>
 
-ARG CHROME_VERSION="google-chrome-stable"
-ARG CHROME_DRIVER_VERSION="2.35"
+ARG CHROME_VERSION="google-chrome-beta"
+ARG CHROME_DRIVER_VERSION="2.38"
 
 # TODO: merge with first ENV statement.
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -30,10 +30,10 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
     apt-get update -y && \
     apt-get install -y libpq-dev postgresql postgresql-client \
             ansible wget mysql-server="${MYSQL_MAJOR}"* libmysqlclient-dev="${MYSQL_MAJOR}"* \
-            slurm-llnl libmunge-dev slurm-drmaa-dev ant atop axel bioperl cmake curl \
-            g++ gcc gfortran git-core htop iftop iotop ipython libffi-dev liblapack-dev \
+            slurm-llnl libmunge-dev slurm-drmaa-dev ant cmake curl \
+            g++ gcc gfortran git-core libffi-dev liblapack-dev \
             libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
-            mercurial nginx-extras nmon patch postgresql postgresql \
+            mercurial nginx-extras patch postgresql postgresql \
             postgresql-client python-boto python-dev \
             python-prettytable python-psycopg2 python-virtualenv python-pip \
             rsync slurm-drmaa-dev swig sysstat unzip \

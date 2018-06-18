@@ -19,6 +19,7 @@ from galaxy import (
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -362,6 +363,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
 
     @web.expose
+    @web.require_login("share Galaxy items")
+    def set_public_username(self, trans, id, username, **kwargs):
+        """ Set user's public username and delegate to sharing() """
+        user = trans.get_user()
+        # message from validate_publicname does not contain input, no need
+        # to escape.
+        message = validate_publicname(trans, username, user)
+        if message:
+            return trans.fill_template("/workflow/sharing.mako", item=self.get_item(trans, id), message=message, status="error")
+        user.username = username
+        trans.sa_session.flush()
+        return self.sharing(trans, id, **kwargs)
+
+    @web.expose
     @web.require_login("to import a workflow", use_panels=True)
     def imp(self, trans, id, **kwargs):
         """Imports a workflow shared by other users."""
@@ -691,7 +706,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         parser = SingleTagContentsParser('id')
         parser.feed(response_data)
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflow', action='list')
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
         if myexp_workflow_id:
             return trans.show_message(
                 """Workflow '%s' successfully exported to myExperiment. <br/>

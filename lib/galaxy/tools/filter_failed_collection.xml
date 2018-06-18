@@ -2,12 +2,12 @@
       name="Filter failed"
       version="1.0.0"
       tool_type="filter_failed_datasets_collection">
-    <description>datasets from a list</description>
+    <description>datasets from a collection</description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <inputs>
-        <param type="data_collection" name="input" label="Input Collection" />
+        <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (filtered failed datasets)" >
@@ -36,7 +36,7 @@
     </tests>
     <help><![CDATA[
 
-This tool takes a list dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
 
 .. class:: infomark
 

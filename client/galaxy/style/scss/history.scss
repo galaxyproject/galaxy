@@ -71,7 +71,7 @@
             .annotation {
                 background: white;
                 border-radius: 3px;
-                border: 1px solid fadeout($layout-border-color, 50%);
+                border: 1px solid fade-out($layout-border-color, 0.5);
                 padding: 4px;
                 white-space: pre-wrap;
                 overflow: auto;
@@ -321,7 +321,7 @@
 
         // show clickable for expansion
         cursor: pointer;
-        border-bottom: 1px solid fade(grey, %50);
+        border-bottom: 1px solid rgba(grey, 0.5);
         & > * {
             display: table-cell;
             vertical-align: top;
@@ -602,10 +602,6 @@
         &:last-child {
             margin-right: 0px;
         }
-        .dropdown-menu {
-            z-index: inherit;
-        }
-
         .panel-controls {
             width: 100%;
             height: ($mph-controls_height + 4);

@@ -44,6 +44,7 @@ ie_request.launch(
 # Access URLs for the notebook from within galaxy.
 notebook_access_url = ie_request.url_template('${PROXY_URL}/ipython/notebooks/ipython_galaxy_notebook.ipynb')
 notebook_login_url = ie_request.url_template('${PROXY_URL}/ipython/login?next=${PROXY_PREFIX}%2Fipython%2Ftree')
+notebook_keepalive_url = ie_request.url_template('${PROXY_URL}/ipython/tree')
 
 %>
 <html>
@@ -56,6 +57,7 @@ ${ ie.load_default_js() }
 ${ ie.default_javascript_variables() }
 var notebook_login_url = '${ notebook_login_url }';
 var notebook_access_url = '${ notebook_access_url }';
+var notebook_keepalive_url = '${ notebook_keepalive_url }';
 ${ ie.plugin_require_config() }
 
 // Load notebook

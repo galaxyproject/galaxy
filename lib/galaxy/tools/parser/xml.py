@@ -260,6 +260,7 @@ class XmlToolSource(ToolSource):
             default_format = collection_elem.get("format", "data")
             collection_type = collection_elem.get("type", None)
             collection_type_source = collection_elem.get("type_source", None)
+            collection_type_from_rules = collection_elem.get("type_from_rules", None)
             structured_like = collection_elem.get("structured_like", None)
             inherit_format = False
             inherit_metadata = False
@@ -276,6 +277,7 @@ class XmlToolSource(ToolSource):
             structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
+                collection_type_from_rules=collection_type_from_rules,
                 structured_like=structured_like,
                 dataset_collector_descriptions=dataset_collector_descriptions,
             )
@@ -379,6 +381,9 @@ class XmlToolSource(ToolSource):
     def parse_help(self):
         help_elem = self.root.find('help')
         return help_elem.text if help_elem is not None else None
+
+    def macro_paths(self):
+        return self._macro_paths
 
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")

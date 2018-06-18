@@ -848,12 +848,6 @@ class SharingStatusColumn(GridColumn):
 
         return item.users_shared_with
 
-    def get_link(self, trans, grid, item):
-        is_shared = self._is_shared(item)
-        if not item.deleted and (is_shared or item.importable or item.published):
-            return dict(operation="share or publish", id=item.id)
-        return None
-
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter histories by sharing status. """
         if column_filter == "All":

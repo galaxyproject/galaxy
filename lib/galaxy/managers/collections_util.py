@@ -139,26 +139,26 @@ def dictify_element_reference(element, rank_fuzzy_counts=None):
     dictified = element.to_dict(view="element")
     element_object = element.element_object
     if element_object is not None:
-        object_detials = dict(
+        object_details = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,
         )
         if element.child_collection:
-            object_detials["collection_type"] = element_object.collection_type
+            object_details["collection_type"] = element_object.collection_type
             child_collection = element.child_collection
             elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
             # Recursively yield elements for each nested collection...
-            object_detials["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
-            object_detials["element_count"] = child_collection.element_count
+            object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+            object_details["element_count"] = child_collection.element_count
         else:
-            object_detials["state"] = element_object.state
-            object_detials["hda_ldda"] = 'hda'
-            object_detials["history_id"] = element_object.history_id
+            object_details["state"] = element_object.state
+            object_details["hda_ldda"] = 'hda'
+            object_details["history_id"] = element_object.history_id
 
     else:
-        object_detials = None
+        object_details = None
 
-    dictified["object"] = object_detials
+    dictified["object"] = object_details
     return dictified
 
 
@@ -166,20 +166,20 @@ def dictify_element(element, rank_fuzzy_counts=None):
     dictified = element.to_dict(view="element")
     element_object = element.element_object
     if element_object is not None:
-        object_detials = element.element_object.to_dict()
+        object_details = element.element_object.to_dict()
         if element.child_collection:
             child_collection = element.child_collection
             elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
 
             # Recursively yield elements for each nested collection...
             child_collection = element.child_collection
-            object_detials["elements"] = [dictify_element(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
-            object_detials["populated"] = child_collection.populated
-            object_detials["element_count"] = child_collection.element_count
+            object_details["elements"] = [dictify_element(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+            object_details["populated"] = child_collection.populated
+            object_details["element_count"] = child_collection.element_count
     else:
-        object_detials = None
+        object_details = None
 
-    dictified["object"] = object_detials
+    dictified["object"] = object_details
     return dictified
 
 

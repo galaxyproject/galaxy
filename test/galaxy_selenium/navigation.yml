@@ -159,6 +159,12 @@ history_panel:
     new_name: 'Unnamed history'
     new_size: '(empty)'
 
+tool_panel:
+
+  selectors:
+    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
+
 multi_history_view:
 
   selectors:
@@ -215,6 +221,7 @@ tool_form:
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
     bibtex_area: '.citations-bibtex textarea'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -382,6 +389,7 @@ rule_builder:
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
     table: '#hot-table .htCore'
+    extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
   selectors:

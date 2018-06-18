@@ -131,7 +131,7 @@ model.UserAuthnzToken.table = Table(
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
     Column('provider', VARCHAR(32)),
-    Column('extra_data', TEXT),
+    Column('extra_data', JSONType, nullable=True),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
@@ -667,16 +667,13 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-
-JOB_METRIC_MAX_LENGTH = 1023
-
 model.JobMetricText.table = Table(
     "job_metric_text", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.TaskMetricText.table = Table(
     "task_metric_text", metadata,
@@ -684,7 +681,7 @@ model.TaskMetricText.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.JobMetricNumeric.table = Table(
     "job_metric_numeric", metadata,
@@ -692,7 +689,7 @@ model.JobMetricNumeric.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 model.TaskMetricNumeric.table = Table(
     "task_metric_numeric", metadata,
@@ -700,7 +697,7 @@ model.TaskMetricNumeric.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 
 model.GenomeIndexToolData.table = Table(
@@ -891,7 +888,6 @@ model.WorkflowStep.table = Table(
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
-    # Reserved for future
     Column("tool_version", TEXT),
     Column("tool_inputs", JSONType),
     Column("tool_errors", JSONType),

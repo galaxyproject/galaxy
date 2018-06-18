@@ -3,7 +3,10 @@ SLURM job control via the DRMAA API.
 """
 import logging
 import os
+import re
+import shutil
 import subprocess
+import tempfile
 import time
 
 from galaxy import model
@@ -25,6 +28,11 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
+SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE = re.compile(r"""slurmstepd: error: task/cgroup: unable to add task\[pid=\d+\] to memory cg '\(null\)'$""")
+
+# These messages are returned to the user
+OUT_OF_MEMORY_MSG = 'This job was terminated because it used more memory than it was allocated.'
+PROBABLY_OUT_OF_MEMORY_MSG = 'This job was cancelled probably because it used more memory than it was allocated.'
 
 
 class SlurmJobRunner(DRMAAJobRunner):
@@ -33,7 +41,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ['sacct', '-n', '-o state']
+            cmd = ['sacct', '-n', '-o', 'state%-32']
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
@@ -49,8 +57,8 @@ class SlurmJobRunner(DRMAAJobRunner):
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
             first_line = stdout.splitlines()[0]
-            # Strip whitespaces and the final '+' (if present)
-            return first_line.strip().rstrip('+')
+            # Strip whitespaces and the final '+' (if present), only return the first word
+            return first_line.strip().rstrip('+').split()[0]
 
         def _get_slurm_state():
             cmd = ['scontrol', '-o']
@@ -73,7 +81,20 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return job_state
                     return 'NOT_FOUND'
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            job_info_dict = dict([out_param.split('=', 1) for out_param in stdout.split()])
+            stdout = stdout.strip()
+            # stdout is a single line in format "key1=value1 key2=value2 ..."
+            job_info_keys = []
+            job_info_values = []
+            for job_info in stdout.split():
+                try:
+                    # Some value may contain `=` (e.g. `StdIn=StdIn=/dev/null`)
+                    k, v = job_info.split('=', 1)
+                    job_info_keys.append(k)
+                    job_info_values.append(v)
+                except ValueError:
+                    # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
+                    job_info_values[-1] += ' ' + job_info
+            job_info_dict = dict(zip(job_info_keys, job_info_values))
             return job_info_dict['JobState']
 
         try:
@@ -106,11 +127,15 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return
                     except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
+                elif slurm_state == 'OUT_OF_MEMORY':
+                    log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    ajs.fail_message = OUT_OF_MEMORY_MSG
+                    ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
                     check_memory_limit_msg = self.__check_memory_limit(ajs.error_file)
                     if check_memory_limit_msg:
-                        log.info('(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                        log.info('(%s/%s) Job hit memory limit (SLURM state: CANCELLED)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                         ajs.fail_message = check_memory_limit_msg
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
@@ -128,6 +153,14 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
+                with open(ajs.error_file, 'r') as rfh:
+                    first_line = rfh.readline()
+                    if SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE.match(first_line):
+                        with tempfile.NamedTemporaryFile('w', delete=False) as wfh:
+                            shutil.copyfileobj(rfh, wfh)
+                            wf_name = wfh.name
+                        shutil.move(wf_name, ajs.error_file)
+                        log.debug('(%s/%s) Job completed, removing SLURM spurious warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, first_line)
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
                         f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
@@ -161,9 +194,9 @@ class SlurmJobRunner(DRMAAJobRunner):
                 for line in f.readlines():
                     stripped_line = line.strip()
                     if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return 'This job was terminated because it used more memory than it was allocated.'
+                        return OUT_OF_MEMORY_MSG
                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                        return 'This job was cancelled probably because it used more memory than it was allocated.'
+                        return PROBABLY_OUT_OF_MEMORY_MSG
         except Exception:
             log.exception('Error reading end of %s:', efile_path)
 

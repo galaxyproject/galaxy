@@ -11,16 +11,10 @@
         <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" />
-    <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" />
+    <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" />
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" />
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" />
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
-    <datatype extension="fastqsanger.gz" type="galaxy.datatypes.sequence:FastqSangerGz" display_in_upload="true">
-        <converter file="fastqsangergz_to_fastqsanger.xml" target_datatype="fastqsanger"/>
-    </datatype>
-    <datatype extension="fastqsanger.bz2" type="galaxy.datatypes.sequence:FastqSangerBz2" display_in_upload="true">
-        <converter file="fastqsangerbz2_to_fastqsanger.xml" target_datatype="fastqsanger"/>
-    </datatype>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
         <converter file="sam_to_unsorted_bam.xml" target_datatype="unsorted.bam"/>
         <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>

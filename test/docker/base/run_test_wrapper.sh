@@ -3,20 +3,8 @@ set -e
 
 if [ ! -z "$USE_SELENIUM" ];
 then
-    sudo -E -u seluser /opt/bin/entry_point.sh &
-    # TODO:...
-    while ! curl -s "http://localhost:4444";
-    do
-        printf "."
-        sleep 4;
-    done;
-    GALAXY_TEST_SELENIUM_REMOTE=1
-    GALAXY_TEST_SELENIUM_REMOTE_HOST=localhost
-    GALAXY_TEST_SELENIUM_REMOTE_PORT=4444
-
-    export GALAXY_TEST_SELENIUM_REMOTE
-    export GALAXY_TEST_SELENIUM_REMOTE_HOST
-    export GALAXY_TEST_SELENIUM_REMOTE_PORT
+    # Start Selenium.
+    sudo -H -E -u seluser /opt/bin/entry_point.sh &
 fi
 
 echo "Deleting galaxy user - it may not exist and this is fine."
@@ -75,6 +63,22 @@ sudo -E -u "#${GALAXY_TEST_UID}" GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GA
 echo "Upgrading tool shed database... $TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION"
 sudo -E -u "#${GALAXY_TEST_UID}" TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI" sh manage_db.sh upgrade tool_shed
 
+# Ensure Selenium is running before starting tests.
+if [ ! -z "$USE_SELENIUM" ];
+then
+    while ! curl -s "http://localhost:4444";
+    do
+        printf "."
+        sleep 4;
+    done;
+    GALAXY_TEST_SELENIUM_REMOTE=1
+    GALAXY_TEST_SELENIUM_REMOTE_HOST=localhost
+    GALAXY_TEST_SELENIUM_REMOTE_PORT=4444
+
+    export GALAXY_TEST_SELENIUM_REMOTE
+    export GALAXY_TEST_SELENIUM_REMOTE_HOST
+    export GALAXY_TEST_SELENIUM_REMOTE_PORT
+fi
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then

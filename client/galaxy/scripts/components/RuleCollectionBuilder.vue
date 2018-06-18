@@ -1,37 +1,37 @@
 <template>
     <state-div v-if="state == 'build'">
-        <!-- Different instructions if building up from individual datasets vs. 
+        <!-- Different instructions if building up from individual datasets vs.
              initial data import. -->
-        <div class="header flex-row no-flex" v-if="ruleView == 'source'">
-            The is an advanced setting, below is a raw JSON description of the rules to apply to the tabular data used. The alternative graphical editor is recommended for most usages.
-        </div>
-        <div class="header flex-row no-flex" v-else-if="elementsType == 'datasets'">
-            Use this form to describe rules for building a collection from the specified datasets.
-        </div>
+        <rule-modal-header v-if="ruleView == 'source'">
+            Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
+        </rule-modal-header>
+        <rule-modal-header v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
+            Use this form to describe rules for building collection(s) from the specified datasets. <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+        </rule-modal-header>
         <!-- This modality allows importing individual datasets, multiple collections,
              and requires a data source - note that. -->
-        <div class="header flex-row no-flex" v-else-if="importType == 'datasets'">
+        <rule-modal-header v-else-if="importType == 'datasets'">
             Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...).
-        </div>
-        <div class="header flex-row no-flex" v-else>
-            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). Be sure to specify at least one column as a list identifier - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
-        </div>
-        <div class="middle flex-row flex-row-container" v-if="ruleView == 'source'">
-            <p class="alert-message" v-if="ruleSourceError">{{ ruleSourceError }}</p>
+        </rule-modal-header>
+        <rule-modal-header v-else>
+            Use this form to describe rules for import datasets. At least one column should be defined to a source to fetch data from (URLs, FTP files, etc...). <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
+        </rule-modal-header>
+        <rule-modal-middle v-if="ruleView == 'source'">
+            <p class="errormessagelarge" v-if="ruleSourceError">{{ ruleSourceError }}</p>
             <textarea class="rule-source" v-model="ruleSource"></textarea>
-        </div>
-        <div class="middle flex-row flex-row-container" v-else>
+        </rule-modal-middle>
+        <rule-modal-middle v-else>
             <!-- column-headers -->
             <div class="rule-builder-body vertically-spaced"
                  v-bind:class="{ 'flex-column-container': vertical }" v-if="ruleView == 'normal'">
                 <!-- width: 30%; -->
                 <div class="rule-column" v-bind:class="orientation">
-                    <div class="rules-container" v-bind:class="{'rules-container-vertical': vertical, 'rules-container-horizontal': horizontal}">
+                    <div class="rules-container" v-bind:class="{'rules-container-vertical': initialElements && vertical, 'rules-container-horizontal': initialElements && horizontal, 'rules-container-full': initialElements == null}">
                         <rule-component rule-type="sort"
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
-                            <label :title="titleNumericSort">
+                            <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input type="checkbox" v-model="addSortingNumeric" />
                                 {{ l("Numeric sorting.") }}
                             </label>
@@ -49,13 +49,23 @@
                                 <input type="number" v-model="addColumnRownumStart" min="0" />
                             </label>
                         </rule-component>
+                        <rule-component rule-type="add_column_metadata"
+                                        :display-rule-type="displayRuleType"
+                                        :builder="this">
+                            <label>
+                                {{ l("For") }}
+                                <select v-model="addColumnMetadataValue">
+                                    <option v-for="(col, index) in metadataOptions" :value="index">{{ col }}</option>
+                                </select>
+                            </label>
+                        </rule-component>
                         <rule-component rule-type="add_column_regex"
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
-                            <input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.<br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.</label><br />
                             <regular-expression-input :target.sync="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType=='groups'">
                                 {{ l("Number of Groups") }}
@@ -119,7 +129,7 @@
                                         :builder="this">
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <regular-expression-input :target.sync="addFilterRegexExpression" />
-                            <label :title="titleInvertFilterRegex">
+                            <label v-b-tooltip.hover :title="titleInvertFilterRegex">
                                 <input type="checkbox" v-model="addFilterRegexInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -129,7 +139,7 @@
                                         :builder="this">
                             <column-selector :target.sync="addFilterMatchesTarget" :col-headers="activeRuleColHeaders" />
                             <input type="text" v-model="addFilterMatchesValue" />
-                            <label :title="titleInvertFilterMatches">
+                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input type="checkbox" v-model="addFilterMatchesInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -163,7 +173,7 @@
                                 Filter how many rows?
                                 <input type="number" v-model="addFilterCountN" />
                             </label>
-                            <label :title="titleInvertFilterMatches">
+                            <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input type="checkbox" v-model="addFilterCountInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
@@ -172,46 +182,51 @@
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
-                            <label :title="titleInvertFilterEmpty">
+                            <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input type="checkbox" v-model="addFilterEmptyInvert" />
                                 {{ l("Invert filter.") }}
                             </label>
                         </rule-component>
                         <div v-if="displayRuleType == 'mapping'">
                             <div class="map"
-                                 v-for="map in mapping"
-                                 v-bind:index="map.index"
+                                 v-for="(map, index) in mapping"
+                                 v-bind:index="index"
                                  v-bind:key="map.type">
-                                <column-selector 
+                                <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
                                     :label="mappingTargets()[map.type].label"
+                                    :help="mappingTargets()[map.type].help"
                                     :target.sync="map.columns"
                                     :ordered-edit.sync="map.editing"
                                     :col-headers="colHeaders"
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(index)"></span>
                                 </column-selector>
                             </div>
-                            <div class="buttons btn-group float-right rule-edit-buttons">
-                                <button type="button" class="dropdown-toggle btn btn-default" data-toggle="dropdown" style="margin-right: 5px;" v-if="unmappedTargets.length > 0">
+                            <div class="buttons rule-edit-buttons d-flex justify-content-end">
+                                <button v-b-tooltip.hover :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
-                                <ul class="dropdown-menu" role="menu">
-                                    <li v-for="target in unmappedTargets"
+                                <div class="dropdown-menu" role="menu">
+                                    <a v-for="target in unmappedTargets"
                                         v-bind:index="target"
-                                        v-bind:key="target">
-                                      <a :class="'rule-add-mapping-' + target.replace(/_/g, '-')" @click="addIdentifier(target)">{{ mappingTargets()[target].label }}</a>
-                                    </li>
-                                </ul>
-                                <button type="button" class="btn btn-default btn-secondary rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null"> {{ l("Apply") }}</button>
+                                        v-bind:key="target"
+                                        class="dropdown-item"
+                                        href="javascript:void(0)"
+                                        :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
+                                        @click="addIdentifier(target)">
+                                      {{ mappingTargets()[target].label }}
+                                    </a>
+                                </div>
+                                <b-button v-b-tooltip.hover.bottom :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
                             <span class="title">
                                 {{ l("Rules") }}
-                                <span class="fa fa-wrench rule-builder-view-source" :title="titleViewSource" @click="viewSource"></span>
+                                <span v-b-tooltip.hover class="fa fa-wrench rule-builder-view-source" :title="titleViewSource" @click="viewSource"></span>
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -236,54 +251,55 @@
                                                     v-on:mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
                                                     :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
-                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="#" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
+                                    One or more column definitions must be specified. These are required to specify how to build collections and datasets from rows and columns of the table. <a href="javascript:void(0)" @click="displayRuleType = 'mapping'">Click here</a> to manage column definitions.
                                 </div>
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
-                                  <button type="button" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                  <button type="button" v-b-tooltip.hover.bottom :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
-                                  <ul class="dropdown-menu" role="menu">
+                                  <div class="dropdown-menu" role="menu">
                                     <rule-target-component :builder="this" rule-type="sort" />
                                     <rule-target-component :builder="this" rule-type="remove_columns" />
                                     <rule-target-component :builder="this" rule-type="split_columns" />
                                     <rule-target-component :builder="this" rule-type="swap_columns" />
-                                    <li><a class="rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a></li>
-                                  </ul>
+                                    <a href="javascript:void(0)" class="dropdown-item rule-link rule-link-mapping" @click="displayRuleType = 'mapping'">Add / Modify Column Definitions</a>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_filter_regex" />
                                         <rule-target-component :builder="this" rule-type="add_filter_matches" />
                                         <rule-target-component :builder="this" rule-type="add_filter_compare" />
                                         <rule-target-component :builder="this" rule-type="add_filter_empty" />
                                         <rule-target-component :builder="this" rule-type="add_filter_count" />
-                                  </ul>
+                                  </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
-                                    <ul class="dropdown-menu" role="menu">
+                                    <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
+                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="metadataOptions"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
                                         <rule-target-component :builder="this" rule-type="add_column_value" />
                                         <rule-target-component :builder="this" rule-type="add_column_substr" />
-                                  </ul>
-                                </div> 
-                            </div>                               
+                                  </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
-                <div class="table-column" v-bind:class="orientation" style="width: 100%;">
+                <div class="table-column" v-bind:class="orientation" style="width: 100%;" v-if="initialElements !== null">
                     <hot-table id="hot-table"
                                ref="hotTable"
                                :data="hotData['data']"
@@ -293,85 +309,104 @@
                     </hot-table>
                 </div>
             </div>
-        </div>
-        <div class="footer flex-row no-flex vertically-spaced" v-if="ruleView == 'source'">
-            <option-buttons-div>
-                <button @click="resetSource" class="creator-reset-btn btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </button>
-               <button @click="attemptRulePreview" class="btn btn-primary rule-btn-okay">
-                    {{ l("Okay")}}
-                </button>
-            </option-buttons-div>
-        </div>
-        <div class="footer flex-row no-flex vertically-spaced"
-             v-else-if="ruleView == 'normal'">
-            <div class="attributes clear"/>
-            <label class="rule-option" v-if="elementsType == 'datasets'">
-                {{ l("Hide original elements") }}:
-                <input type="checkbox" v-model="hideSourceItems" />
-            </label>
-            <label class="rule-option rule-option-extension" v-if="showFileTypeSelector">
-                {{ l("Type") }}:
-                <select2 name="extension" style="width: 120px" v-model="extension" v-if="extension">
-                    <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
-                </select2>
-            </label>
-            <label class="rule-option" v-if="showGenomeSelector">
-                {{ l("Genome") }}:
-                <select2 id="genome-selector" style="width: 120px" v-model="genome" v-if="genome">
-                    <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
-                </select2>
-            </label>
-            <label class="rule-option float-right" v-if="showCollectionNameInput">
-                {{ l("Name") }}:
-                <input class="collection-name" style="width: 260px" 
-                :placeholder="namePlaceholder" v-model="collectionName" />
-            </label>
-            <option-buttons-div>
-                <button @click="swapOrientation" class="creator-orient-btn btn rule-btn-reorient" tabindex="-1">
-                    {{ l("Re-orient") }}
-                </button>
-                <button @click="cancel" class="creator-cancel-btn btn rule-btn-cancel" tabindex="-1">
-                    {{ l("Cancel") }}
-                </button>
-                <button @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn btn rule-btn-reset">
-                    {{ l("Reset") }}
-                </button>
-                <button @click="createCollection" :title="titleFinish" class="create-collection btn btn-primary rule-btn-okay" v-bind:class="{ disabled: !validInput }">
-                    {{ finishButtonTitle }}
-                </button>
-            </option-buttons-div>
-        </div>
+        </rule-modal-middle>
+        <rule-modal-footer v-if="ruleView == 'source'">
+            <b-button v-b-tooltip.hover :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+           <b-button v-b-tooltip.hover :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
+                {{ l("Apply")}}
+            </b-button>
+        </rule-modal-footer>
+        <rule-modal-footer v-else-if="ruleView == 'normal'">
+            <div class="rule-footer-inputs" slot="inputs">
+                <label v-if="elementsType == 'datasets'">
+                    {{ l("Hide original elements") }}:
+                </label>
+                <input type="checkbox" v-model="hideSourceItems" v-if="elementsType == 'datasets'"/>
+                <div class="rule-footer-extension-group" v-if="extension && showFileTypeSelector">
+                    <label>
+                        {{ l("Type") }}:
+                    </label>
+                    <select2 name="extension" class="extension-select" v-model="extension" >
+                        <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
+                    </select2>
+                </div>
+                <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
+                    <label>
+                        {{ l("Genome") }}:
+                    </label>
+                    <select2 class="genome-select" v-model="genome">
+                        <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
+                    </select2>
+                </div>
+                <div class="rule-footer-name-group" v-if="showCollectionNameInput">
+                    <b-input class="collection-name"
+                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover v-model="collectionName" />
+                    <label>
+                        {{ l("Name") }}:
+                    </label>
+                </div>
+            </div>
+
+            <b-button v-b-tooltip.hover :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+                {{ l("Cancel") }}
+            </b-button>
+            <b-button v-b-tooltip.hover @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </b-button>
+            <b-button v-b-tooltip.hover @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
+                {{ finishButtonTitle }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
-        <div class="header flex-row no-flex">
-            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
-        </div>
-        <div class="footer flex-row no-flex">
-            <option-buttons-div>
-                <button @click="cancel" class="creator-cancel-btn btn" tabindex="-1">
-                    {{ l("Close") }}
-                </button>
-            </option-buttons-div>
-        </div>
+        <rule-modal-header v-if="importType == 'datasets'">
+            {{ l("Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete.") }}
+        </rule-modal-header>
+        <rule-modal-header v-else-if="importType == 'collections'">
+            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete.") }}
+        </rule-modal-header>
+        <rule-modal-footer>
+            <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'error'">
         <!-- TODO: steal styling from paired collection builder warning... -->
-        <div>
-            {{ errorMessage }}
-        </div>
+        <rule-modal-header>
+            A problem was encountered.
+        </rule-modal-header>
+        <rule-modal-middle>
+            <p class="errormessagelarge">{{ errorMessage }}</p>
+        </rule-modal-middle>
+        <rule-modal-footer>
+            <b-button v-b-tooltip.hover :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+                {{ l("Close") }}
+            </b-button>
+            <b-button v-b-tooltip.hover :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+                {{ l("Okay") }}
+            </b-button>
+        </rule-modal-footer>
     </state-div>
 </template>
 <script>
+import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
-import HotTable from "vue-handsontable-official";
+import HotTable from "@handsontable/vue";
 import Popover from "mvc/ui/ui-popover";
 import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
@@ -419,16 +454,16 @@ const Select2 = {
 const ColumnSelector = {
     template: `
         <div class="rule-column-selector" v-if="!multiple || !ordered">
-            <label>
-                {{ label }}
-                <select2 :value="target" @input="handleInput" :multiple="multiple">
+            <label class="d-flex justify-content-end align-items-center">
+                <span class="mr-auto" v-b-tooltip.hover :title="help">{{ label }}</span>
+                <div class="mr-1" v-b-tooltip.hover :title="title"><select2 :value="target" @input="handleInput" :multiple="multiple">
                     <option v-for="(col, index) in colHeaders" :value="index">{{ col }}</option>
-                </select2>
+                </select2></div>
                 <slot></slot>
             </label>
         </div>
         <div class="rule-column-selector" v-else>
-            {{ label }}
+            <span>{{ label }}</span>
             <slot></slot>
             <ol>
                 <li v-for="(targetEl, index) in target"
@@ -468,6 +503,9 @@ const ColumnSelector = {
             type: String,
             default: _l("From Column")
         },
+        help: {
+            required: false
+        },
         colHeaders: {
             type: Array,
             required: true
@@ -506,6 +544,9 @@ const ColumnSelector = {
                 }
             }
             return remaining;
+        },
+        title() {
+            return _l("Select a column");
         }
     },
     methods: {
@@ -542,14 +583,31 @@ const ColumnSelector = {
 
 const RegularExpressionInput = {
     template: `
-        <div><label>
-            Regular Expression
-            <input class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
-        </label></div>
+        <div>
+            <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
+            <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
+            <input v-b-tooltip.hover.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
+        </div>
     `,
     props: {
         target: {
             required: true
+        }
+    },
+    computed: {
+        label() {
+            return _l("Regular Expression");
+        },
+        title() {
+            return _l("Enter a regular expression.");
+        },
+        popoverTitle() {
+            return _l("Regular Expressions");
+        },
+        popoverContent() {
+            return _l(
+                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/regular-expressions/">this Python for Biologists tutorial</a>.`
+            );
         }
     }
 };
@@ -557,9 +615,10 @@ const RegularExpressionInput = {
 const RuleDisplay = {
     template: `
         <li class="rule">
-            <span class="rule-display">{{ title }}
-                <span class="fa fa-edit" @click="edit"></span>
-                <span class="fa fa-times" @click="remove"></span>
+            <span class="rule-display">
+                <span class="mr-1">{{ title }}</span>
+                <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
+                <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
             </span>
             <span class="rule-warning" v-if="rule.warn">
                 {{ rule.warn }}
@@ -583,6 +642,12 @@ const RuleDisplay = {
         title() {
             const ruleType = this.rule.type;
             return RULES[ruleType].display(this.rule, this.colHeaders);
+        },
+        editTitle() {
+            return _l("Edit this rule.");
+        },
+        removeTitle() {
+            return _l("Remove this rule.");
         }
     },
     methods: {
@@ -597,10 +662,10 @@ const RuleDisplay = {
 
 const IdentifierDisplay = {
     template: `
-      <li class="rule" :title="help">
-        Set {{ columnsLabel }} as {{ typeDisplay }}
-        <span class="fa fa-edit" @click="edit"></span>
-        <span class="fa fa-times" @click="remove"></span>
+      <li class="rule">
+        <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
+        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
+        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
       </li>
     `,
     props: {
@@ -631,28 +696,20 @@ const IdentifierDisplay = {
         help() {
             return MAPPING_TARGETS[this.type].help || "";
         },
+        titleEdit() {
+            return _l("Edit column definition");
+        },
+        titleRemove() {
+            return _l("Remove this column definition");
+        },
         columnsLabel() {
-            let columnNames;
-            if (typeof this.columns == "object") {
-                columnNames = this.columns.map(idx => this.colHeaders[idx]);
-            } else {
-                columnNames = [this.colHeaders[this.columns]];
-            }
-            if (columnNames.length == 2) {
-                return "columns " + columnNames[0] + " and " + columnNames[1];
-            } else if (columnNames.length > 2) {
-                return (
-                    "columns " + columnNames.slice(0, -1).join(", ") + ", and " + columnNames[columnNames.length - 1]
-                );
-            } else {
-                return "column " + columnNames[0];
-            }
+            return RuleDefs.columnDisplay(this.columns, this.colHeaders);
         }
     }
 };
 
 const RuleTargetComponent = {
-    template: `<li><a class="rule-link" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a></li>`,
+    template: `<a class="rule-link dropdown-item" href="javascript:void(0)" :class="linkClassName" @click="builder.addNewRule(ruleType)">{{title}}</a>`,
     props: {
         ruleType: {
             type: String,
@@ -676,9 +733,9 @@ const RuleComponent = {
     template: `
     <div v-if="ruleType == displayRuleType" class="rule-editor" :class="typeToClass">
         <slot></slot>
-        <div class="buttons float-right rule-edit-buttons">
-           <button type="button" class="btn rule-editor-cancel" @click="cancel">{{ cancelLabel }}</button>
-           <button type="button" class="btn btn-secondary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
+        <div class="buttons rule-edit-buttons d-flex justify-content-end">
+           <button type="button" class="btn rule-editor-cancel mr-1" @click="cancel">{{ cancelLabel }}</button>
+           <button type="button" class="btn btn-primary rule-editor-ok" @click="okay">{{ applyLabel }}</button>
         </div>
     </div>`,
     data: function() {
@@ -716,47 +773,121 @@ const RuleComponent = {
 };
 
 const StateDiv = {
-    template: `<div class="rule-collection-creator collection-creator flex-row-container"><slot></slot></div>`
+    template: `
+        <div class="rule-collection-creator collection-creator flex-row-container">
+            <slot></slot>
+        </div>`
 };
 
-const OptionButtonsDiv = {
-    template: `<div class="actions clear vertically-spaced"><div class="main-options float-right"><slot></slot></div></div>`
+const RuleModalHeader = {
+    template: `<div class="header flex-row no-flex"><slot></slot></div>`
+};
+
+const RuleModalMiddle = {
+    template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
+};
+
+const RuleModalFooter = {
+    template: `
+        <div class="rule-footer footer flex-row no-flex">
+            <slot name="inputs"></slot>
+            <div class="actions clear vertically-spaced">
+                <div class="main-options float-right">
+                    <slot></slot>
+                </div>
+            </div>
+        </div>`
 };
 
 export default {
     data: function() {
-        let mapping;
-        if (this.elementsType == "ftp") {
-            mapping = [{ type: "ftp_path", columns: [0] }];
-        } else if (this.elementsType == "datasets") {
-            mapping = [{ type: "list_identifiers", columns: [1] }];
+        let orientation = "vertical";
+        let mapping, rules;
+        if (this.initialRules) {
+            mapping = this.initialRules.mapping.slice();
+            rules = this.initialRules.rules.slice();
         } else {
-            mapping = [];
+            if (this.elementsType == "ftp") {
+                mapping = [{ type: "ftp_path", columns: [0] }];
+            } else if (this.elementsType == "datasets") {
+                mapping = [{ type: "list_identifiers", columns: [1] }];
+            } else {
+                mapping = [];
+            }
+            rules = [];
+            if (this.elementsType == "collection_contents") {
+                if (this.initialElements !== null) {
+                    const collectionType = this.initialElements.collection_type;
+                    const collectionTypeRanks = collectionType.split(":");
+                    for (let index in collectionTypeRanks) {
+                        rules.push({
+                            type: "add_column_metadata",
+                            value: "identifier" + index
+                        });
+                    }
+                } else {
+                    orientation = "horizontal";
+                    // just assume a list is given by default.
+                    rules.push({
+                        type: "add_column_metadata",
+                        value: "identifier0"
+                    });
+                }
+            } else if (this.elementsType == "datasets") {
+                rules.push(
+                    {
+                        type: "add_column_metadata",
+                        value: "hid"
+                    },
+                    {
+                        type: "add_column_metadata",
+                        value: "name"
+                    }
+                );
+            } else if (this.elementsType == "library_datasets") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "name"
+                });
+            } else if (this.elementsType == "ftp") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "path"
+                });
+            }
         }
         return {
-            rules: [],
+            rules: rules,
             colHeadersPerRule: [],
             mapping: mapping,
             state: "build", // 'build', 'error', 'wait',
             ruleView: "normal", // 'normal' or 'source'
             ruleSource: "",
+            ruleSourceJson: null,
             ruleSourceError: null,
             errorMessage: "",
-            hasRuleErrors: false,
             jaggedData: false,
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers."
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
-            titleInvertFilterRegex: _l(
-                "Remove rows not matching the specified regular expression at specified column."
-            ),
-            titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column."),
-            titleInvertFilterMatches: _l("Remove rows not matching supplied value."),
+            titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
+            titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
+            titleInvertFilterMatches: _l("Remove rows not matching supplied value"),
             titleViewSource: _l(
-                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data."
+                "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
             ),
+            titleSourceCancel: _l("Stop editing rules and dismiss changes"),
+            titleSourceReset: _l("Reset text area to current set of rules"),
+            titleSourceApply: _l("Apply changes to rule source and return to rule preview"),
+            titleRulesMenu: _l("General rules to apply"),
+            titleFilterMenu: _l("Rules that filter rows from the data"),
+            titleColumMenu: _l("Rules that generate new columns"),
+            titleRemoveMapping: _l("Remove column definition assignment"),
+            titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
+            titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
+            titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
             addColumnRegexTarget: 0,
@@ -765,6 +896,7 @@ export default {
             addColumnRegexReplacement: null,
             addColumnRegexGroupCount: null,
             addColumnRegexType: "global",
+            addColumnMetadataValue: 0,
             addColumnConcatenateTarget0: 0,
             addColumnConcatenateTarget1: 0,
             addColumnRownumStart: 1,
@@ -800,12 +932,11 @@ export default {
             genomes: [],
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
-            orientation: "vertical"
+            orientation: orientation
         };
     },
     props: {
         initialElements: {
-            type: Array,
             required: true
         },
         importType: {
@@ -823,6 +954,16 @@ export default {
         creationFn: {
             required: false,
             type: Function
+        },
+        // required if elementsType is "collection_contents" - hook into tool form to update
+        // rule parameter
+        saveRulesFn: {
+            required: false,
+            type: Function
+        },
+        initialRules: {
+            required: false,
+            type: Object
         },
         defaultHideSourceItems: {
             type: Boolean,
@@ -847,7 +988,11 @@ export default {
     computed: {
         exisistingDatasets() {
             const elementsType = this.elementsType;
-            return elementsType === "datasets";
+            return (
+                elementsType === "datasets" ||
+                elementsType === "collection_contents" ||
+                elementsType === "library_datasets"
+            );
         },
         showFileTypeSelector() {
             return !this.exisistingDatasets && !this.mappingAsDict.file_type;
@@ -856,18 +1001,33 @@ export default {
             return !this.exisistingDatasets && !this.mappingAsDict.dbkey;
         },
         showCollectionNameInput() {
-            return this.importType == "collections" && !this.mappingAsDict.collection_name;
+            return (
+                this.importType == "collections" &&
+                this.elementsType != "collection_contents" &&
+                !this.mappingAsDict.collection_name
+            );
         },
         titleFinish() {
-            if (this.elementsType == "datasets") {
-                return _l("Create new collection from specified rules and datasets.");
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
+                return _l("Create new collection from specified rules and datasets");
+            } else if (this.elementsType == "collection_contents") {
+                return _l("Save rules and return to tool form");
             } else {
-                return _l("Upload collection using specified rules.");
+                return _l("Upload collection using specified rules");
+            }
+        },
+        titleCancel() {
+            if (this.importType == "datasets") {
+                return _l("Close this modal and do not upload any datasets");
+            } else {
+                return _l("Close this modal and do not create any collections");
             }
         },
         finishButtonTitle() {
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create");
+            } else if (this.elementsType == "collection_contents") {
+                return _l("Save");
             } else {
                 return _l("Upload");
             }
@@ -921,47 +1081,48 @@ export default {
             return targets;
         },
         hotData() {
-            let data, sources;
-            if (this.elementsType == "datasets") {
-                data = this.initialElements.map(el => [el["hid"], el["name"]]);
+            let data, sources, columns;
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                data = this.initialElements.map(el => []);
                 sources = this.initialElements.slice();
+                columns = [];
+            } else if (this.elementsType == "collection_contents") {
+                const collection = this.initialElements;
+                if (collection) {
+                    const obj = this.populateElementsFromCollectionDescription(
+                        collection.elements,
+                        collection.collection_type
+                    );
+                    data = obj.data;
+                    sources = obj.sources;
+                    columns = [];
+                } else {
+                    data = [];
+                    sources = [];
+                    columns = [];
+                }
             } else {
                 data = this.initialElements.slice();
                 sources = data.map(el => null);
-            }
-
-            let hasRuleError = false;
-            this.colHeadersPerRule = [];
-            for (var ruleIndex in this.rules) {
-                const ruleHeaders = this.colHeadersFor(data);
-                this.colHeadersPerRule[ruleIndex] = ruleHeaders;
-
-                const rule = this.rules[ruleIndex];
-                rule.error = null;
-                rule.warn = null;
-                if (hasRuleError) {
-                    rule.warn = _l("Skipped due to previous errors.");
-                    continue;
-                }
-                var ruleType = rule.type;
-                const ruleDef = RULES[ruleType];
-                const res = ruleDef.apply(rule, data, sources);
-                if (res.error) {
-                    hasRuleError = true;
-                    rule.error = res.error;
-                } else {
-                    if (res.warn) {
-                        rule.warn = res.warn;
+                columns = [];
+                if (this.initialElements) {
+                    for (var columnIndex in this.initialElements[0]) {
+                        columns.push("new");
                     }
-                    data = res.data || data;
-                    sources = res.sources || sources;
                 }
             }
-            return { data, sources };
+
+            this.colHeadersPerRule = [];
+            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
         },
         colHeaders() {
             const data = this.hotData["data"];
-            return this.colHeadersFor(data);
+            const columns = this.hotData["columns"];
+            return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
             const formattedHeaders = [];
@@ -993,6 +1154,38 @@ export default {
             }
             return asDict;
         },
+        metadataOptions() {
+            let metadataOptions = {};
+            if (this.elementsType == "collection_contents") {
+                let collectionType;
+                if (this.initialElements) {
+                    collectionType = this.initialElements.collection_type;
+                } else {
+                    // give a bunch of different options if not constrained with given input
+                    collectionType = "list:list:list:paired";
+                }
+                const collectionTypeRanks = collectionType.split(":");
+                for (let index in collectionTypeRanks) {
+                    const collectionTypeRank = collectionTypeRanks[index];
+                    if (collectionTypeRank == "list") {
+                        // TODO: drop the numeral at the end if only flat list
+                        metadataOptions["identifier" + index] = _l("List Identifier ") + (parseInt(index) + 1);
+                    } else {
+                        metadataOptions["identifier" + index] = _l("Paired Identifier");
+                    }
+                }
+            } else if (this.elementsType == "ftp") {
+                metadataOptions["path"] = _l("Path");
+            } else if (this.elementsType == "library_datasets") {
+                metadataOptions["name"] = _l("Name");
+            } else if (this.elementsType == "datasets") {
+                metadataOptions["hid"] = _l("History ID (hid)");
+                metadataOptions["name"] = _l("Name");
+            } else {
+                metadataOptions = null;
+            }
+            return metadataOptions;
+        },
         collectionType() {
             let identifierColumns = [];
             if (this.mappingAsDict.list_identifiers) {
@@ -1000,17 +1193,23 @@ export default {
             }
             let collectionType = identifierColumns.map(col => "list").join(":");
             if (this.mappingAsDict.paired_identifier) {
-                collectionType += ":paired";
+                if (collectionType) {
+                    collectionType += ":paired";
+                } else {
+                    collectionType = "paired";
+                }
             }
             return collectionType;
         },
         validInput() {
             const identifierColumns = this.identifierColumns();
             const mappingAsDict = this.mappingAsDict;
-            const buildingCollection = identifierColumns.length > 0;
+            const buildingCollection = this.importType == "collections";
+            const requiresName =
+                buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
 
             let valid = true;
-            if (buildingCollection && !mappingAsDict.collection_name) {
+            if (requiresName) {
                 valid = this.collectionName.length > 0;
             }
 
@@ -1019,15 +1218,17 @@ export default {
                 valid = false;
             }
 
+            const requiresSourceColumn = this.elementsType == "ftp" || this.elementsType == "raw";
+            if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
+                valid = false;
+            }
             for (var rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
             }
 
-            // raw tabular variant can build stand-alone datasets without identifier
-            // columns for the collection builder for existing datasets cannot do this.
-            if (this.elementsType == "datasets" && identifierColumns.length == 0) {
+            if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
@@ -1084,12 +1285,15 @@ export default {
                 rules: this.rules,
                 mapping: this.mapping
             };
-            if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
-                asJson.extension = this.extension;
+            if (!this.exisistingDatasets) {
+                if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
+                    asJson.extension = this.extension;
+                }
+                if (this.genome !== UploadUtils.DEFAULT_GENOME) {
+                    asJson.genome = this.genome;
+                }
             }
-            if (this.genome !== UploadUtils.DEFAULT_GENOME) {
-                asJson.genome = this.genome;
-            }
+            this.ruleSourceJson = asJson;
             this.ruleSource = JSON.stringify(asJson, replacer, "  ");
             this.ruleSourceError = null;
         },
@@ -1106,6 +1310,10 @@ export default {
             this.updateFromSource(asJson);
             this.ruleView = "normal";
         },
+        cancelSourceEdit() {
+            this.ruleSourceError = null;
+            this.ruleView = "normal";
+        },
         updateFromSource(asJson) {
             this.resetRules();
             if (asJson.extension) {
@@ -1119,14 +1327,6 @@ export default {
             }
             if (asJson.mapping) {
                 this.mapping = asJson.mapping;
-            }
-        },
-        handleColumnMapping() {},
-        colHeadersFor(data) {
-            if (data.length == 0) {
-                return [];
-            } else {
-                return data[0].map((el, i) => String.fromCharCode(65 + i));
             }
         },
         addIdentifier(identifier) {
@@ -1164,6 +1364,7 @@ export default {
                     this.state = "error";
                     this.errorMessage =
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
+                    this.doFullJobCheck(jobId);
                 } else {
                     const history =
                         parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
@@ -1178,6 +1379,24 @@ export default {
                     .catch(this.renderFetchError);
             };
             setTimeout(doJobCheck, 1000);
+        },
+        doFullJobCheck(jobId) {
+            const handleJobShow = jobResponse => {
+                const stderr = jobResponse.data.stderr;
+                if (stderr) {
+                    let errorMessage = "An error was encountered while running your upload job. ";
+                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
+                        errorMessage +=
+                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
+                    }
+                    errorMessage += "Upload job completed with standard error: " + stderr;
+                    this.errorMessage = errorMessage;
+                }
+            };
+            axios
+                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .then(handleJobShow)
+                .catch(this.renderFetchError);
         },
         renderFetchError(error) {
             this.state = "error";
@@ -1212,11 +1431,26 @@ export default {
             this.state = "wait";
             const name = this.collectionName;
             const collectionType = this.collectionType;
-            if (this.elementsType == "datasets") {
+            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
-                const response = this.creationFn(elements, collectionType, name);
-                response.done(this.oncreate);
-                response.error(this.renderFetchError);
+                if (this.state !== "error") {
+                    new AjaxQueue.AjaxQueue(
+                        _.map(elements, (elements, name) => {
+                            return () => {
+                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                                return response;
+                            };
+                        })
+                    )
+                        .done(this.oncreate)
+                        .fail(this.renderFetchError);
+                }
+            } else if (this.elementsType == "collection_contents") {
+                this.resetSource();
+                if (this.state !== "error") {
+                    this.saveRulesFn(this.ruleSourceJson);
+                    this.oncreate();
+                }
             } else {
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
@@ -1243,13 +1477,16 @@ export default {
                     ];
                 }
 
-                axios
-                    .post(`${Galaxy.root}api/tools/fetch`, {
-                        history_id: historyId,
-                        targets: targets
-                    })
-                    .then(this.refreshAndWait)
-                    .catch(this.renderFetchError);
+                if (this.state !== "error") {
+                    axios
+                        .post(`${Galaxy.root}api/tools/fetch`, {
+                            history_id: historyId,
+                            targets: targets,
+                            auto_decompress: true
+                        })
+                        .then(this.refreshAndWait)
+                        .catch(this.renderFetchError);
+                }
             }
         },
         identifierColumns() {
@@ -1294,6 +1531,7 @@ export default {
 
             for (let collectionName in dataByCollection) {
                 const elements = [];
+                const identifiers = [];
 
                 for (let dataIndex in dataByCollection[collectionName]) {
                     const rowData = data[dataIndex];
@@ -1301,13 +1539,17 @@ export default {
                     // For each row, find place in depth for this element.
                     let collectionTypeAtDepth = collectionType;
                     let elementsAtDepth = elements;
+                    let identifiersAtDepth = identifiers;
 
                     for (
                         let identifierColumnIndex = 0;
                         identifierColumnIndex < numIdentifierColumns;
                         identifierColumnIndex++
                     ) {
-                        let identifier = rowData[identifierColumns[identifierColumnIndex]];
+                        // typeof indicates identifier is a string, but the raw string value coming from this data
+                        // structure sometimes does not work as expected with indexOf below, I don't understand why
+                        // but as a result this cast here seems needed.
+                        let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
                             if (collectionTypeAtDepth === "paired") {
@@ -1319,10 +1561,18 @@ export default {
                                     this.state = "error";
                                     this.errorMessage =
                                         "Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.";
+                                    return;
                                 }
                             }
                             const element = createDatasetDescription(dataIndex, identifier);
                             elementsAtDepth.push(element);
+                            if (identifiersAtDepth.indexOf(identifier) >= 0) {
+                                this.state = "error";
+                                this.errorMessage =
+                                    "Duplicate identifiers detected, collection identifiers must be unique.";
+                                return;
+                            }
+                            identifiersAtDepth.push(identifier);
                         } else {
                             // Create nesting for this element.
                             collectionTypeAtDepth = collectionTypeAtDepth
@@ -1333,6 +1583,7 @@ export default {
                             for (let element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
                                     elementsAtDepth = element[subElementProp];
+                                    identifiersAtDepth = identifiersAtDepth[identifier];
                                     found = true;
                                     break;
                                 }
@@ -1340,10 +1591,12 @@ export default {
                             if (!found) {
                                 const subcollection = createSubcollectionDescription(identifier);
                                 elementsAtDepth.push(subcollection);
+                                identifiersAtDepth[identifier] = [];
                                 const childCollectionElements = [];
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
                                 elementsAtDepth = childCollectionElements;
+                                identifiersAtDepth = identifiersAtDepth[identifier];
                             }
                         }
                     }
@@ -1361,15 +1614,15 @@ export default {
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
-                    return { id: source["id"], name: identifier, src: "hda" };
+                    const src = this.elementsType == "datasets" ? "hda" : "ldda";
+                    return { id: source["id"], name: identifier, src: src };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
                 },
                 "element_identifiers"
             );
-            // This modality only allows a single collection to be created currently.
-            return elementsByCollectionName[this.collectionName];
+            return elementsByCollectionName;
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
@@ -1405,6 +1658,35 @@ export default {
 
             return datasets;
         },
+        populateElementsFromCollectionDescription(elements, collectionType, parentIdentifiers_) {
+            const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
+            let data = [];
+            let sources = [];
+            for (let element of elements) {
+                const elementObject = element.object;
+                const identifiers = parentIdentifiers.concat([element.element_identifier]);
+                const collectionTypeLevelSepIndex = collectionType.indexOf(":");
+                if (collectionTypeLevelSepIndex === -1) {
+                    // Flat collection at this depth.
+                    // sources are the elements
+                    // TOOD: right thing is probably this: data.push([]);
+                    data.push([]);
+                    sources.push({ identifiers: identifiers, dataset: elementObject });
+                } else {
+                    const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
+                    let elementObj = this.populateElementsFromCollectionDescription(
+                        elementObject.elements,
+                        restCollectionType,
+                        identifiers
+                    );
+                    const elementData = elementObj.data;
+                    const elementSources = elementObj.sources;
+                    data = data.concat(elementData);
+                    sources = sources.concat(elementSources);
+                }
+            }
+            return { data, sources };
+        },
         highlightColumn(n) {
             const headerSelection = $(`.htCore > thead > tr > th:nth-child(${n + 1})`);
             headerSelection.addClass("ht__highlight");
@@ -1431,7 +1713,7 @@ export default {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;
-                res["src"] = "ftp_path";
+                res["src"] = "ftp_import";
             }
             if (mappingAsDict.dbkey) {
                 const dbkeyColumn = mappingAsDict.dbkey.columns[0];
@@ -1443,7 +1725,7 @@ export default {
             if (mappingAsDict.file_type) {
                 const fileTypeColumn = mappingAsDict.file_type.columns[0];
                 const fileType = data[dataIndex][fileTypeColumn];
-                res["ext"] = file_type;
+                res["ext"] = fileType;
             } else if (this.extension) {
                 res["ext"] = this.extension;
             }
@@ -1461,39 +1743,41 @@ export default {
         }
     },
     created() {
-        let columnCount = null;
-        if (this.elementsType == "datasets") {
-            for (let element of this.initialElements) {
-                if (element.history_content_type == "dataset_collection") {
-                    this.errorMessage =
-                        "This component can only be used with datasets, you have specified one or more collections.";
-                    this.state = "error";
+        if (this.elementsType !== "collection_contents") {
+            let columnCount = null;
+            if (this.elementsType == "datasets") {
+                for (let element of this.initialElements) {
+                    if (element.history_content_type == "dataset_collection") {
+                        this.errorMessage =
+                            "This component can only be used with datasets, you have specified one or more collections.";
+                        this.state = "error";
+                    }
                 }
-            }
-        } else {
-            for (let row of this.initialElements) {
-                if (columnCount == null) {
-                    columnCount = row.length;
-                } else {
-                    if (columnCount != row.length) {
-                        this.jaggedData = true;
-                        break;
+            } else {
+                for (let row of this.initialElements) {
+                    if (columnCount == null) {
+                        columnCount = row.length;
+                    } else {
+                        if (columnCount != row.length) {
+                            this.jaggedData = true;
+                            break;
+                        }
                     }
                 }
             }
+            UploadUtils.getUploadDatatypes(
+                extensions => {
+                    this.extensions = extensions;
+                    this.extension = UploadUtils.DEFAULT_EXTENSION;
+                },
+                false,
+                UploadUtils.AUTO_EXTENSION
+            );
+            UploadUtils.getUploadGenomes(genomes => {
+                this.genomes = genomes;
+                this.genome = UploadUtils.DEFAULT_GENOME;
+            }, UploadUtils.DEFAULT_GENOME);
         }
-        UploadUtils.getUploadDatatypes(
-            extensions => {
-                this.extensions = extensions;
-                this.extension = UploadUtils.DEFAULT_EXTENSION;
-            },
-            false,
-            UploadUtils.AUTO_EXTENSION
-        );
-        UploadUtils.getUploadGenomes(genomes => {
-            this.genomes = genomes;
-            this.genome = UploadUtils.DEFAULT_GENOME;
-        }, UploadUtils.DEFAULT_GENOME);
     },
     watch: {
         addColumnRegexType: function(val) {
@@ -1514,16 +1798,23 @@ export default {
         ColumnSelector,
         RegularExpressionInput,
         StateDiv,
-        OptionButtonsDiv,
+        RuleModalHeader,
+        RuleModalMiddle,
+        RuleModalFooter,
         Select2
     }
 };
 </script>
 
+<style src="../../../node_modules/handsontable/dist/handsontable.full.css">
+</style>
 <style>
 .table-column {
     width: 100%;
     /* overflow: scroll; */
+}
+.select2-container {
+    min-width: 60px;
 }
 .vertical #hot-table {
     width: 100%;
@@ -1544,6 +1835,10 @@ export default {
 .rule-column.horizontal {
     height: 150px;
 }
+.rules-container-full {
+    width: 100%;
+    height: 400px;
+}
 .rules-container {
     border: 1px dashed #ccc;
     padding: 5px;
@@ -1559,9 +1854,6 @@ export default {
 .rules-container .title {
     font-weight: bold;
 }
-.rule-option {
-    padding-left: 20px;
-}
 .rule-summary {
     height: 100%;
     display: flex;
@@ -1569,7 +1861,6 @@ export default {
 }
 .rule-edit-buttons {
     margin: 5px;
-    height: 25px;
 }
 .rules {
     flex-grow: 1;
@@ -1613,5 +1904,53 @@ export default {
 }
 .rules-buttons {
 }
-/* .dropdown-menu {position:absolute;} */
+.rule-footer-inputs label {
+    padding-left: 20px;
+    align-self: baseline;
+}
+.rule-footer-inputs .select2-container {
+    align-self: baseline;
+}
+.rule-footer-inputs {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+.rule-footer-inputs input {
+    align-self: baseline;
+}
+.extension-select {
+    flex: 1;
+    max-width: 120px;
+    min-width: 60px;
+}
+.genome-select {
+    flex: 1;
+    max-width: 300px;
+    min-width: 120px;
+}
+.collection-name {
+    flex: 1;
+    min-width: 120px;
+    max-width: 500px;
+}
+.rule-footer-genome-group {
+    flex: 2;
+    display: flex;
+}
+.rule-footer-extension-group {
+    flex: 1;
+    display: flex;
+}
+.rule-footer-name-group {
+    flex: 3;
+    display: flex;
+    flex-direction: row-reverse;
+}
+.fa-edit,
+.fa-times,
+.fa-wrench {
+    cursor: pointer;
+}
 </style>

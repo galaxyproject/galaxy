@@ -492,7 +492,6 @@ div.unified-panel-body-background {
     right: 8px;
     height: 16px;
     width: 100px;
-    background-color: $progress-bg;
 }
 
 .quota-meter-bar {
@@ -512,16 +511,21 @@ div.unified-panel-body-background {
 }
 
 .quota-meter-text {
+    @extend .text-light;
     position: absolute;
     top: 50%;
     left: 0;
     width: 100px;
     height: 16px;
-    margin-top: -6px;
+    margin-top: -7px;
     text-align: center;
     z-index: 9001;
-    color: $black;
     white-space: nowrap;
+    a {
+        @extend .text-dark;
+        font-size: 12px;
+        text-decoration: none;
+    }
 }
 
 // ==== Tool form styles ====
@@ -1060,7 +1064,7 @@ div.debug {
     -webkit-border-radius: 0.5em;
     font-style: italic;
 }
-.page-link a,
+.page-link-grid a,
 .inactive-link {
     padding: 0px 7px 0px 7px;
     color: #555;
@@ -1069,17 +1073,6 @@ div.debug {
 .current-filter {
     font-weight: bold;
     color: #000;
-}
-.submit-image {
-    background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
-    background-color: #eee;
-    width: $line-height-base + 8;
-    height: $line-height-base + 8;
-    cursor: pointer;
-    margin: 0;
-    padding: 0;
-    border: 1px solid #aaa;
-    border-left: none;
 }
 #advanced-search td {
     padding: 3px;
@@ -1134,16 +1127,12 @@ div.odd_row {
 // Tool panel stuff
 
 // Extra label colors
-.label-beta {
+.badge-beta {
     @extend .badge-warning;
 }
 
-.label-new {
+.badge-new {
     @extend .badge-info;
-}
-
-.sm-label-pad {
-    margin-right: 2px;
 }
 
 span.toolParameterExpandableCollapsable {
@@ -1296,6 +1285,19 @@ a.action-button {
     vertical-align: middle;
 }
 
+.btn-xs {
+    // The 'new' bootstrap 4 btn-sm is about the same size as the old btn-xs,
+    // should serve as a replacement for anything expecting this.
+    @extend .btn-sm;
+}
+
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
+}
+
 //.action-button > * {
 //    vertical-align: middle;
 //}
@@ -1423,7 +1425,6 @@ div.popmenu-wrapper {
 
 // For all dropdowns, define some additional item types
 ul.dropdown-menu {
-    // No underlines in dropdown menus
     a {
         text-decoration: none;
     }
@@ -1442,7 +1443,7 @@ ul.dropdown-menu {
         border-color: transparent;
     }
 
-    li {
+    li > a {
         @extend .dropdown-item;
     }
 }

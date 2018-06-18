@@ -13,12 +13,19 @@
         <confirm>True</confirm>
     </specs>
     <groups>
-        <expand macro="groups"/>
-        <x>
+        <input>
+            <label>Provide a label</label>
+            <name>key</name>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>x</name>
             <label>Observations</label>
             <type>data_column</type>
-            <is_numeric>true</is_numeric>
-        </x>
+            <is_label>true</is_label>
+        </input>
     </groups>
     <settings>
         <expand macro="settings"/>

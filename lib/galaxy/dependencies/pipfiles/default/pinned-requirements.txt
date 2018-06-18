@@ -4,7 +4,7 @@ asn1crypto==0.24.0
 babel==2.5.3
 bagit==1.6.4
 bcrypt==3.1.4
-bdbag==1.2.4
+bdbag==1.3.0
 beaker==1.9.1
 bioblend==0.10.0
 bleach==2.1.3
@@ -55,7 +55,7 @@ monotonic==1.4
 msgpack==0.5.6
 munch==2.3.1
 netaddr==0.7.19
-netifaces==0.10.6
+netifaces==0.10.7
 nose==1.3.7
 numpy==1.14.2
 oauthlib==2.0.7
@@ -78,11 +78,11 @@ positional==1.2.1
 prettytable==0.7.2
 psutil==5.4.3
 pulsar-galaxy-lib==0.8.3
-py2-ipaddress==3.4.1
+py2-ipaddress==3.4.1; python_version < '3'
 pyasn1==0.4.2
 pycparser==2.18
-pycrypto==2.6.1
-pycryptodomex==3.6.0
+pycryptodome==3.6.1
+pycryptodomex==3.6.1
 pyjwkest==1.4.0
 pyjwt==1.6.1
 pykwalify==1.6.1
@@ -92,7 +92,7 @@ pyperclip==1.6.0
 pysam==0.14.1
 python-cinderclient==2.0.1
 python-dateutil==2.7.2
-python-genomespaceclient==1.0.0
+python-genomespaceclient==0.2
 python-glanceclient==2.6.0
 python-keystoneclient==3.10.0
 python-lzo==1.11
@@ -118,7 +118,7 @@ sqlalchemy-utils==0.33.2
 sqlalchemy==1.2.6
 sqlparse==0.2.4
 stevedore==1.28.0
-subprocess32==3.2.7; python_version < '3.0'
+subprocess32==3.5.0; python_version < '3.0'
 svgwrite==1.1.12
 tempita==0.5.2
 tzlocal==1.5.1

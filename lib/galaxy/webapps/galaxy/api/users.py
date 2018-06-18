@@ -320,7 +320,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
     @expose_api
     def get_information(self, trans, id, **kwd):
         """
-        GET /api/users/{id}/information
+        GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
 
         :param id: the encoded id of the user
@@ -403,7 +403,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
     @expose_api
     def set_information(self, trans, id, payload={}, **kwd):
         """
-        POST /api/users/{id}/information
+        PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
 
         :param id: the encoded id of the user
@@ -413,12 +413,10 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         :type  payload: dict
         """
         user = self._get_user(trans, id)
-        email = payload.get('email')
-        username = payload.get('username')
-        if email or username:
-            message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
-            if not message and username:
-                message = validate_publicname(trans, username, user)
+        # Update email
+        if 'email' in payload:
+            email = payload.get('email')
+            message = self._validate_email(email) or validate_email(trans, email, user)
             if message:
                 raise MessageException(message)
             if user.email != email:
@@ -440,8 +438,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                         if trans.app.config.error_email_to is not None:
                             message += ' Contact: %s' % trans.app.config.error_email_to
                         raise MessageException(message)
+        # Update public name
+        if 'username' in payload:
+            username = payload.get('username')
+            message = self._validate_publicname(username) or validate_publicname(trans, username, user)
+            if message:
+                raise MessageException(message)
             if user.username != username:
-                # Update public name
                 user.username = username
         # Update user custom form
         user_info_form_id = payload.get('info|form_id')
@@ -564,16 +567,18 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             trans.sa_session.flush()
         return activation_token
 
-    def _validate_email_publicname(self, email, username):
+    def _validate_email(self, email):
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
             return 'Please provide your email address.'
-        if not re.match('^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
             return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
+
+    def _validate_publicname(self, username):
+        if not re.match('^[a-z0-9\-]{3,255}$', username):
+            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
 
     @expose_api
     def get_password(self, trans, id, payload={}, **kwd):

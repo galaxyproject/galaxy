@@ -425,7 +425,7 @@ class Sam(Tabular):
     data_sources = {"data": "bam", "index": "bigwig"}
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize sam datatype"""
         super(Sam, self).__init__(**kwd)
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
@@ -783,7 +783,7 @@ class Eland(Tabular):
     MetadataElement(name="barcodes", default=[], param=metadata.ListParameter, desc="Set of barcodes", readonly=True, visible=False, no_value=[])
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize eland datatype"""
         super(Eland, self).__init__(**kwd)
         self.column_names = ['MACHINE', 'RUN_NO', 'LANE', 'TILE', 'X', 'Y',
                              'INDEX', 'READ_NO', 'SEQ', 'QUAL', 'CHROM', 'CONTIG',

@@ -40,8 +40,10 @@ from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
-from tool_shed.galaxy_install import update_repository_manager
-
+from tool_shed.galaxy_install import (
+    installed_repository_manager,
+    update_repository_manager
+)
 
 log = logging.getLogger(__name__)
 app = None
@@ -84,7 +86,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
-        from tool_shed.galaxy_install import installed_repository_manager
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
@@ -94,7 +95,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagManager(self.model.context)
-        # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)

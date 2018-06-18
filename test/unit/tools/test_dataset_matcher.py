@@ -13,32 +13,6 @@ from ..tools_support import UsesApp
 
 class DatasetMatcherTestCase(TestCase, UsesApp):
 
-    def test_hda_accessible(self):
-        # Cannot access errored or discard datasets.
-        self.mock_hda.dataset.state = model.Dataset.states.ERROR
-        assert not self.test_context.hda_accessible(self.mock_hda)
-
-        self.mock_hda.dataset.state = model.Dataset.states.DISCARDED
-        assert not self.test_context.hda_accessible(self.mock_hda)
-
-        # Can access datasets in other states.
-        self.mock_hda.dataset.state = model.Dataset.states.OK
-        assert self.test_context.hda_accessible(self.mock_hda)
-
-        self.mock_hda.dataset.state = model.Dataset.states.QUEUED
-        assert self.test_context.hda_accessible(self.mock_hda)
-
-        # Cannot access dataset if security agent says no.
-        self.app.security_agent.can_access_dataset = lambda roles, dataset: False
-        assert not self.test_context.hda_accessible(self.mock_hda)
-
-    def test_selected(self):
-        self.test_context.value = []
-        assert not self.test_context.selected(self.mock_hda)
-
-        self.test_context.value = [self.mock_hda]
-        assert self.test_context.selected(self.mock_hda)
-
     def test_hda_mismatches(self):
         # Datasets not visible are not "valid" for param.
         self.mock_hda.visible = False
@@ -46,13 +20,13 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
 
         # Datasets that don't match datatype are not valid.
         self.mock_hda.visible = True
-        self.mock_hda.datatype_matches = False
+        self.mock_hda.extension = 'data'
         assert not self.test_context.hda_match(self.mock_hda)
 
     def test_valid_hda_direct_match(self):
         # Datasets that visible and matching are valid
         self.mock_hda.visible = True
-        self.mock_hda.datatype_matches = True
+        self.mock_hda.extension = 'txt'
         hda_match = self.test_context.hda_match(self.mock_hda, check_implicit_conversions=False)
         assert hda_match
 
@@ -64,7 +38,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
     def test_valid_hda_implicit_convered(self):
         # Find conversion returns an HDA to an already implicitly converted
         # dataset.
-        self.mock_hda.datatype_matches = False
+        self.mock_hda.extension = 'data'
         converted_hda = model.HistoryDatasetAssociation()
         self.mock_hda.conversion_destination = ("tabular", converted_hda)
         hda_match = self.test_context.hda_match(self.mock_hda)
@@ -77,7 +51,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
     def test_hda_match_implicit_can_convert(self):
         # Find conversion returns a target extension to convert to, but not
         # a previously implicitly converted dataset.
-        self.mock_hda.datatype_matches = False
+        self.mock_hda.extension = 'data'
         self.mock_hda.conversion_destination = ("tabular", None)
         hda_match = self.test_context.hda_match(self.mock_hda)
 
@@ -87,7 +61,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         assert hda_match.target_ext == "tabular"
 
     def test_hda_match_properly_skips_conversion(self):
-        self.mock_hda.datatype_matches = False
+        self.mock_hda.extension = 'data'
         self.mock_hda.conversion_destination = ("tabular", bunch.Bunch())
         hda_match = self.test_context.hda_match(self.mock_hda, check_implicit_conversions=False)
         assert not hda_match
@@ -148,20 +122,18 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
             option_xml = ""
             if self.filtered_param:
                 option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
-            param_xml = XML('''<param name="data2" type="data" ext="txt">%s</param>''' % option_xml)
+            param_xml = XML('''<param name="data2" type="data" format="txt">%s</param>''' % option_xml)
             self.param = basic.DataToolParameter(
                 self.tool,
                 param_xml,
             )
-
-            self._test_context = dataset_matcher.DatasetMatcher(
-                trans=bunch.Bunch(
-                    app=self.app,
-                    get_current_user_roles=lambda: self.current_user_roles,
-                    workflow_building_mode=True,
-                ),
+            trans = bunch.Bunch(
+                app=self.app,
+                get_current_user_roles=lambda: self.current_user_roles,
+                workflow_building_mode=True,
+            )
+            self._test_context = dataset_matcher.get_dataset_matcher_factory(trans).dataset_matcher(
                 param=self.param,
-                value=[],
                 other_values=self.other_values
             )
 

@@ -1,5 +1,7 @@
 from Crypto.Cipher import Blowfish
 
+from galaxy.util import smart_str
+
 
 def encode_dataset_user(trans, dataset, user):
     # encode dataset id as usual
@@ -11,7 +13,7 @@ def encode_dataset_user(trans, dataset, user):
         user_hash = str(user.id)
         # Pad to a multiple of 8 with leading "!"
         user_hash = ("!" * (8 - len(user_hash) % 8)) + user_hash
-        cipher = Blowfish.new(str(dataset.create_time))
+        cipher = Blowfish.new(smart_str(dataset.create_time), mode=Blowfish.MODE_ECB)
         user_hash = cipher.encrypt(user_hash).encode('hex')
     return dataset_hash, user_hash
 
@@ -25,7 +27,7 @@ def decode_dataset_user(trans, dataset_hash, user_hash):
     if user_hash in [None, 'None']:
         user = None
     else:
-        cipher = Blowfish.new(str(dataset.create_time))
+        cipher = Blowfish.new(smart_str(dataset.create_time), mode=Blowfish.MODE_ECB)
         user_id = cipher.decrypt(user_hash.decode('hex')).lstrip("!")
         user = trans.sa_session.query(trans.app.model.User).get(int(user_id))
         assert user, "A Bad user id was passed to decode_dataset_user"

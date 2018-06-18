@@ -139,7 +139,7 @@ var View = Backbone.View.extend({
             if (options.job_remap === "job_produced_collection_elements") {
                 var label = "Replace elements in collection ?";
                 var help =
-                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collectio that were produced during the previous tool run.";
+                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
                 var label = "Resume dependencies from this job ?";
                 var help =
@@ -222,7 +222,7 @@ var View = Backbone.View.extend({
             success: function(response) {
                 callback && callback();
                 self.$el.children().hide();
-                self.$el.append(self._templateSuccess(response));
+                self.$el.append(self._templateSuccess(response, job_def));
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
@@ -280,6 +280,17 @@ var View = Backbone.View.extend({
                 this.form.highlight(input_id);
                 return false;
             }
+            if (input_field.validate) {
+                // wish there was a way to just reset this input field
+                const reset = () => {
+                    this.form.trigger("reset");
+                };
+                const validateObject = input_field.validate(reset);
+                if (!validateObject.valid) {
+                    this.form.highlight(input_id, validateObject.message);
+                    return false;
+                }
+            }
             if (input_value && input_value.batch) {
                 var n = input_value.values.length;
                 var src = n > 0 && input_value.values[0] && input_value.values[0].src;
@@ -308,32 +319,63 @@ var View = Backbone.View.extend({
         return true;
     },
 
-    _templateSuccess: function(response) {
-        if (response.jobs && response.jobs.length > 0) {
-            var njobs = response.jobs.length;
-            var njobs_text = njobs == 1 ? "1 job has" : `${njobs} jobs have`;
-            var $message = $("<div/>")
-                .addClass("donemessagelarge")
-                .append(
-                    $("<p/>").text(
-                        `${njobs_text} been successfully added to the queue - resulting in the following datasets:`
-                    )
-                );
-            _.each(response.outputs, output => {
-                $message.append(
-                    $("<p/>")
-                        .addClass("messagerow")
-                        .append($("<b/>").text(`${output.hid}: ${output.name}`))
-                );
-            });
-            $message.append(
-                $("<p/>")
-                    .append("<b/>")
-                    .text(
-                        "You can check the status of queued jobs and view the resulting data by refreshing the History pane. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered."
-                    )
-            );
-            return $message;
+    _getInputs: function(job_def) {
+        var inputs = [];
+        var index = {};
+        for (let i in job_def.inputs) {
+            let input = job_def.inputs[i];
+            if ($.isArray(input.values)) {
+                for (let j of input.values) {
+                    if (j.src && !index[j.id]) {
+                        inputs.push(j);
+                        index[j.id] = true;
+                    }
+                }
+            }
+        }
+        return inputs;
+    },
+
+    _templateRow: function(list, title, max = 3) {
+        var blurb = "";
+        list.sort(function(a, b) {
+            return b.hid - a.hid;
+        });
+        if (list.length > 0) {
+            blurb += `<p>${title}:</p>`;
+            for (let item of list) {
+                let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
+                blurb += `<p class="messagerow">
+                            <b>${rowString}</b>
+                          </p>`;
+                if (max-- <= 0) {
+                    break;
+                }
+            }
+        }
+        return blurb;
+    },
+
+    _templateSuccess: function(response, job_def) {
+        var njobs = response.jobs.length;
+        if (njobs > 0) {
+            var inputs = this._getInputs(job_def);
+            var ninputs = inputs.length;
+            var noutputs = response.outputs.length;
+            var njobsText = njobs > 1 ? `${njobs} jobs` : `1 job`;
+            var ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
+            var noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
+            var tool_name = this.form.model.get("name");
+            return `<div class="donemessagelarge">
+                        <p>
+                            Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
+                        </p>
+                        ${this._templateRow(inputs, `The tool uses ${ninputsText}`)}
+                        ${this._templateRow(response.outputs, `It produces ${noutputsText}`)}
+                        <p>
+                            You can check the status of queued jobs and view the resulting data by refreshing the History panel. When the job has been run the status will change from 'running' to 'finished' if completed successfully or 'error' if problems were encountered.
+                        </p>
+                    </div>`;
         } else {
             return this._templateError(response, "Invalid success response. No jobs found.");
         }

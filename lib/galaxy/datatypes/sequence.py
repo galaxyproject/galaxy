@@ -17,8 +17,7 @@ import bx.align.maf
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import (
-    Binary,
-    CompressedArchive
+    Binary
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -31,7 +30,6 @@ from galaxy.util import (
     nice_size
 )
 from galaxy.util.checkers import (
-    is_bz2,
     is_gzip
 )
 from galaxy.util.image_util import check_image_type
@@ -41,10 +39,6 @@ if sys.version_info > (3,):
     long = int
 
 log = logging.getLogger(__name__)
-
-SNIFF_COMPRESSED_FASTQS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTQ_SNIFFING", "0") == "1"
-SNIFF_COMPRESSED_FASTAS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_FASTA_SNIFFING", "0") == "1"
-SNIFF_COMPRESSED_GENBANKS = os.environ.get("GALAXY_ENABLE_BETA_COMPRESSED_GENBANK_SNIFFING", "0") == "1"
 
 
 @build_sniff_from_prefix
@@ -315,21 +309,6 @@ class Alignment(data.Text):
         if split_params is None:
             return None
         raise NotImplementedError("Can't split generic alignment files")
-
-
-class FastaGz(Sequence, CompressedArchive):
-    """Class representing a generic compressed FASTA sequence"""
-    edam_format = "format_1929"
-    file_ext = "fasta.gz"
-    compressed = True
-
-    def sniff(self, filename):
-        """Determines whether the file is in gzip-compressed FASTA format"""
-        if not SNIFF_COMPRESSED_FASTAS and not self.validate_mode:
-            return False
-        if not is_gzip(filename):
-            return False
-        return Sequence.sniff(self, filename)
 
 
 @build_sniff_from_prefix
@@ -630,7 +609,7 @@ class BaseFastq(Sequence):
             return False
         headers = iter_headers(file_prefix, None, count=1000)
         # If this is a FastqSanger-derived class, then check to see if the base qualities match
-        if isinstance(self, FastqSanger) or isinstance(self, FastqSangerGz) or isinstance(self, FastqSangerBz2):
+        if isinstance(self, FastqSanger):
             if not self.sangerQualities(headers):
                 return False
 
@@ -744,82 +723,6 @@ class FastqIllumina(Fastq):
 class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
-
-
-class FastqGz(BaseFastq, CompressedArchive):
-    """Class representing a generic compressed FASTQ sequence"""
-    edam_format = "format_1930"
-    file_ext = "fastq.gz"
-    compressed = True
-
-    def sniff(self, filename):
-        """Determines whether the file is in gzip-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
-            return False
-        if not is_gzip(filename):
-            return False
-        return BaseFastq.sniff(self, filename)
-
-
-class FastqSangerGz(FastqGz):
-    """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
-    edam_format = "format_1932"
-    file_ext = "fastqsanger.gz"
-
-
-class FastqSolexaGz(FastqGz):
-    """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
-    edam_format = "format_1933"
-    file_ext = "fastqsolexa.gz"
-
-
-class FastqIlluminaGz(FastqGz):
-    """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
-    edam_format = "format_1931"
-    file_ext = "fastqillumina.gz"
-
-
-class FastqCSSangerGz(FastqGz):
-    """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
-    file_ext = "fastqcssanger.gz"
-
-
-class FastqBz2(BaseFastq, CompressedArchive):
-    """Class representing a generic compressed FASTQ sequence"""
-    edam_format = "format_1930"
-    file_ext = "fastq.bz2"
-    compressed = True
-
-    def sniff(self, filename):
-        """Determine whether the file is in bzip2-compressed FASTQ format"""
-        if not SNIFF_COMPRESSED_FASTQS and not self.validate_mode:
-            return False
-        if not is_bz2(filename):
-            return False
-        return BaseFastq.sniff(self, filename)
-
-
-class FastqSangerBz2(FastqBz2):
-    """Class representing a compressed FASTQ sequence ( the Sanger variant )"""
-    edam_format = "format_1932"
-    file_ext = "fastqsanger.bz2"
-
-
-class FastqSolexaBz2(FastqBz2):
-    """Class representing a compressed FASTQ sequence ( the Solexa variant )"""
-    edam_format = "format_1933"
-    file_ext = "fastqsolexa.bz2"
-
-
-class FastqIlluminaBz2(FastqBz2):
-    """Class representing a compressed FASTQ sequence ( the Illumina 1.3+ variant )"""
-    edam_format = "format_1931"
-    file_ext = "fastqillumina.bz2"
-
-
-class FastqCSSangerBz2(FastqBz2):
-    """Class representing a Color Space compressed FASTQ sequence ( e.g a SOLiD variant )"""
-    file_ext = "fastqcssanger.bz2"
 
 
 @build_sniff_from_prefix
@@ -1222,29 +1125,6 @@ class Genbank(data.Text):
         if compressed and not isinstance(self, Binary):
             return False
         return 'LOCUS ' == file_prefix.contents_header[0:6]
-
-
-class GenbankGz(Genbank, CompressedArchive):
-    """Class representing a compressed Genbank sequence"""
-    edam_format = "format_1936"
-    edam_data = "data_0849"
-    file_ext = "genbank.gz"
-    compressed = True
-
-    def sniff(self, filename):
-        """
-        Determines whether the file is in gzip-compressed Genbank format
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( '1.genbank.gz' )
-        >>> GenbankGz().sniff( fname )
-        True
-        """
-        if not SNIFF_COMPRESSED_GENBANKS and not self.validate_mode:
-            return False
-        if not is_gzip(filename):
-            return False
-        return Genbank.sniff(self, filename)
 
 
 @build_sniff_from_prefix

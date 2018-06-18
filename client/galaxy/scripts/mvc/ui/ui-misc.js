@@ -187,7 +187,7 @@ export var Hidden = Backbone.View.extend({
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
-        this.select = options.select;
+        this.select = new options.SelectClass.View(options);
         this.model = this.select.model;
         this.text = new Input({
             onchange: this.model.get("onchange")
@@ -202,7 +202,7 @@ export var TextSelect = Backbone.View.extend({
                 .append(this.select.$el)
                 .append(this.text.$el)
         );
-        this.update(this.model.get("data"));
+        this.update(options);
     },
     wait: function() {
         this.select.wait();
@@ -214,12 +214,19 @@ export var TextSelect = Backbone.View.extend({
         var element = this.textmode ? this.text : this.select;
         return element.value(new_val);
     },
-    update: function(options) {
+    update: function(input_def) {
+        var data = input_def.data;
+        if (!data) {
+            data = [];
+            _.each(input_def.options, option => {
+                data.push({ label: option[0], value: option[1] });
+            });
+        }
         var v = this.value();
-        this.textmode = !$.isArray(options) || options.length === 0;
+        this.textmode = input_def.textable && (!$.isArray(data) || data.length === 0);
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
-        this.select.update(options);
+        this.select.update({ data: data });
         this.value(v);
     }
 });

@@ -218,6 +218,22 @@
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
 
+            <!-- <param id="k8s_galaxy_instance_id">my-instance</param> -->
+            <!-- Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
+                 will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
+                 to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
+                 in this context is understood as a running Galaxy setup that is bound to a particular database stored
+                 state. This is mostly relevant for long term running instances. When resetting a long term running
+                 instance to zero (database and files deleted), one would want to change this instance id to avoid
+                 clashing with previous jobs in the same k8s cluster where the older setup run. -->
+
+            <!-- <param id="k8s_timeout_seconds_job_deletion">30</param> -->
+            <!-- If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
+                 id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
+                 then to create the new job (the old job is not trusted to have been instructed to do the same as the
+                 new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
+                 exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue. -->
+
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
             <!-- <param id="k8s_fs_group_id">0</param> -->
             <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access

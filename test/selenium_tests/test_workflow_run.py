@@ -1,9 +1,11 @@
 import yaml
+from base import rules_test_data
 from base.populators import load_data_dict
 from base.workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
+    WORKFLOW_WITH_RULES_1,
 )
 
 from .framework import (
@@ -54,6 +56,18 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_rules(self):
+        history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_RULES_1)
+        self.open_in_workflow_run(WORKFLOW_WITH_RULES_1)
+        self.workflow_run_specify_inputs(inputs)
+        self.screenshot("workflow_run_rules")
+        self.workflow_run_submit()
+        self.history_panel_wait_for_hid_ok(6, allowed_force_refreshes=1)
+        output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+        rules_test_data.check_example_2(output_content, self.dataset_populator)
 
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)

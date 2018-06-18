@@ -61,8 +61,10 @@ var Base = Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function(options) {
-        this.model.set("data", options);
+    update: function(input_def) {
+        if (input_def.data) {
+            this.model.set("data", input_def.data);
+        }
     },
 
     _changeData: function() {

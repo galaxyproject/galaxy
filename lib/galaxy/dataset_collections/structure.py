@@ -41,7 +41,7 @@ class BaseTree(object):
 
 
 @six.python_2_unicode_compatible
-class UnitializedTree(BaseTree):
+class UninitializedTree(BaseTree):
     children_known = False
 
     def clone(self):
@@ -59,10 +59,10 @@ class UnitializedTree(BaseTree):
             return self.clone()
 
         new_collection_type = self.collection_type_description.multiply(other_structure.collection_type_description)
-        return UnitializedTree(new_collection_type)
+        return UninitializedTree(new_collection_type)
 
     def __str__(self):
-        return "UnitializedTree[collection_type=%s]" % self.collection_type_description
+        return "UninitializedTree[collection_type=%s]" % self.collection_type_description
 
 
 @six.python_2_unicode_compatible
@@ -158,7 +158,7 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
             if collection_type and tree.collection_type_description.collection_type != collection_type:
                 # See tool paired_collection_map_over_structured_like - type should
                 # override structured_like if they disagree.
-                tree = UnitializedTree(collection_type_descriptions.for_collection_type(collection_type))
+                tree = UninitializedTree(collection_type_descriptions.for_collection_type(collection_type))
         else:
             # Can't pre-compute the structure in this case, see if we can find a collection type.
             if collection_type is None and tool_output.structure.collection_type_source:
@@ -167,10 +167,10 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
             if not collection_type:
                 raise Exception("Failed to determine collection type for mapping over output %s" % tool_output.name)
 
-            tree = UnitializedTree(collection_type_descriptions.for_collection_type(collection_type))
+            tree = UninitializedTree(collection_type_descriptions.for_collection_type(collection_type))
 
     if not tree.children_known and tree.collection_type_description.collection_type == "paired":
-        # TODO: We don't need to return unitializedtree for pairs I think, we should build
+        # TODO: We don't need to return UninitializedTree for pairs I think, we should build
         # a paired tree for the known structure here.
         pass
     return tree
@@ -183,6 +183,9 @@ def dict_map(func, input_dict):
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):
     if leaf_subcollection_type:
         collection_type_description = collection_type_description.effective_collection_type_description(leaf_subcollection_type)
+        if hasattr(dataset_collection_instance, 'child_collection'):
+            collection_type_description = collection_type_description.collection_type_description_factory.for_collection_type(leaf_subcollection_type)
+            return UninitializedTree(collection_type_description)
 
     collection = dataset_collection_instance.collection
     return Tree.for_dataset_collection(collection, collection_type_description)
