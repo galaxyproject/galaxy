@@ -1157,6 +1157,81 @@ class GeminiSQLite(SQlite):
             return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
 
 
+class CuffDiffSQlite(SQlite):
+    """Class describing a CuffDiff SQLite database """
+    MetadataElement(name="cuffdiff_version", default='2.2.1', param=MetadataParameter, desc="CuffDiff Version",
+                    readonly=True, visible=True, no_value='2.2.1')
+    MetadataElement(name="genes", default=[], param=MetadataParameter, desc="Genes",
+                    readonly=True, visible=True, no_value=[])
+    MetadataElement(name="samples", default=[], param=MetadataParameter, desc="Samples",
+                    readonly=True, visible=True, no_value=[])
+    file_ext = "cuffdiff.sqlite"
+    # TODO: Update this when/if there is a specific EDAM format for CuffDiff SQLite data.
+    edam_format = "format_3621"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(CuffDiffSQlite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            genes = []
+            samples = []
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            tables_query = "SELECT value FROM runInfo where param = 'version'"
+            result = c.execute(tables_query).fetchall()
+            for version, in result:
+                dataset.metadata.cuffdiff_version = version
+            genes_query = 'SELECT gene_id, gene_short_name FROM genes ORDER BY gene_short_name'
+            result = c.execute(genes_query).fetchall()
+            for gene_id, gene_name in result:
+                if gene_name is None:
+                    continue
+                gene = '%s: %s' % (gene_id, gene_name)
+                if gene not in genes:
+                    genes.append(gene)
+            samples_query = 'SELECT DISTINCT(sample_name) as sample_name FROM samples ORDER BY sample_name'
+            result = c.execute(samples_query).fetchall()
+            for sample_name, in result:
+                if sample_name not in samples:
+                    samples.append(sample_name)
+            dataset.metadata.genes = genes
+            dataset.metadata.samples = samples
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        if super(CuffDiffSQlite, self).sniff(filename):
+            # These tables should be in any CuffDiff SQLite output.
+            cuffdiff_table_names = ['CDS', 'genes', 'isoforms', 'replicates',
+                                    'runInfo', 'samples', 'TSS']
+            try:
+                conn = sqlite.connect(filename)
+                c = conn.cursor()
+                tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                result = c.execute(tables_query).fetchall()
+                result = [_[0] for _ in result]
+                for table_name in cuffdiff_table_names:
+                    if table_name not in result:
+                        return False
+                return True
+            except Exception as e:
+                log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or 'unknown')
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.gemini_version or 'unknown')
+
+
 class MzSQlite(SQlite):
     """Class describing a Proteomics Sqlite database """
     file_ext = "mz.sqlite"
