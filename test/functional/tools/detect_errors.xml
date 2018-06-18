@@ -50,7 +50,6 @@
             <assert_stdout>
                 <has_line line="Warning: Branch A was taken in execution"/>
             </assert_stdout>
-(.venv) ➜  tools git:(topic/regex-for-oom) ✗ 
             <assert_stderr>
                 <has_line line="Fatal error: Exit code 23 (Bad input dataset)"/>
             </assert_stderr>
