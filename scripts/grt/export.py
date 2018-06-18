@@ -239,7 +239,7 @@ def main(argv):
                 handle_job.write('\t')
                 handle_job.write(str(job[5]))  # create_time
                 handle_job.write('\n')
-            except Exception as e:
+            except Exception:
                 logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
                 continue
             # meta counts
@@ -327,7 +327,7 @@ def main(argv):
                 handle_datasets.write('\t')
                 handle_datasets.write(str(filetype))
                 handle_datasets.write('\n')
-            except Exception as e:
+            except Exception:
                 logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
                 continue
     handle_datasets.close()
@@ -358,7 +358,7 @@ def main(argv):
                 handle_metric_num.write('\t')
                 handle_metric_num.write(str(metric[3]))
                 handle_metric_num.write('\n')
-            except Exception as e:
+            except Exception:
                 logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
                 continue
     handle_metric_num.close()
@@ -389,7 +389,7 @@ def main(argv):
                 handle_params.write('\t')
                 handle_params.write(json.dumps(sanitized))
                 handle_params.write('\n')
-            except Exception as e:
+            except Exception:
                 logging.warning("Unable to write out a 'handle_params' row. Ignoring the row.", exc_info=True)
                 continue
     handle_params.close()
