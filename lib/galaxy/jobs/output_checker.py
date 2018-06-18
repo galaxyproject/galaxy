@@ -14,36 +14,39 @@ DETECTED_JOB_STATE = Bunch(
     GENERIC_ERROR='generic_error',
 )
 
-def check_output_regex(regex, stream, max_error_level):
+def check_output_regex(job, regex, stream, stream_append, max_error_level):
     """
     check a single regex against a stream
-    returns a message (which can be prepended to the stream and 
-    the max of the error_level of the regex and the given max_error_level
+
+    regex the regex to check
+    stream the stream to search in
+    stream_append a list where the descriptions of the detected regexes can be appended
+    max_error_level the maximum error level that has been detected so far
+    returns the max of the error_level of the regex and the given max_error_level
     """
     regex_match = re.search(regex.match, stream, re.IGNORECASE)
     if regex_match:
         rexmsg = __regex_err_msg(regex_match, regex)
         log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
-        rexmsg += "\n"
-        return rexmsg, max(max_error_level, regex.error_level)
-    return "", max_error_level
+        stream_append.append(rexmsg)
+        return max(max_error_level, regex.error_level)
+    return max_error_level
 
-def check_output_regex_byline(regex, stream, max_error_level):
+def check_output_regex_byline(job, regex, stream, stream_append, max_error_level):
     """
     check a single regex against a stream line by line, since errors
     are expected to appear in the end of the stream we start with 
     the last line
-    returns a message (which can be prepended to the stream and 
-    the max of the error_level of the regex and the given max_error_level
+    returns the max of the error_level of the regex and the given max_error_level
     """
     for line in reversed( stream.split("\n") ):
         regex_match = re.search(regex.match, line, re.IGNORECASE)
         if regex_match:
             rexmsg = __regex_err_msg(regex_match, regex)
             log.info("Job %s: %s" % (job.get_id_tag(), rexmsg))
-            rexmsg += "\n"
-            return rexmsg, max(max_error_level, regex.error_level)
-    return "", max_error_level
+            stream_append.append(rexmsg)
+            return max(max_error_level, regex.error_level)
+    return max_error_level
 
 
 ERROR_PEAK = 2000
@@ -67,6 +70,13 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
 
     stdout = unicodify(stdout)
     stderr = unicodify(stderr)
+
+    # messages (descriptions of the detected exit_code and regexes) 
+    # to be prepended to the stdout/stderr after all exit code and regex tests 
+    # are done (otherwise added messages are searched again).
+    # messages are added it the order of detection
+    stderr_toolmsg = []
+    stdout_toolmsg = []
 
     try:
         # Check exit codes and match regular expressions against stdout and
@@ -97,7 +107,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                             tool_exit_code,
                             code_desc))
                         log.info("Job %s: %s" % (job.get_id_tag(), tool_msg))
-                        stderr = tool_msg + "\n" + stderr
+                        stderr_toolmsg.append(tool_msg)
                         max_error_level = max(max_error_level,
                                               stdio_exit_code.error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
@@ -121,14 +131,12 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                     # Repeat the stdout stuff for stderr.
                     #TODO could test for stderr first? Reason: I would expect it to be smaller and contain the errors
                     if regex.stdout_match:
-                        rexmsg, max_error_level = check_output_regex_byline(regex, stdout, max_error_level)
-                        stdout = rexmsg + stdout
+                        max_error_level = check_output_regex_byline(job, regex, stdout, stdout_toolmsg, max_error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
                            break
 
                     if regex.stderr_match:
-                        rexmsg, max_error_level = check_output_regex_byline(regex, stderr, max_error_level)
-                        stderr = rexmsg + stderr
+                        max_error_level = check_output_regex_byline(job, regex, stderr, stderr_toolmsg, max_error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
                            break
 
@@ -167,8 +175,12 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
         state = DETECTED_JOB_STATE.OK
 
     # Store the modified stdout and stderr in the job:
+    if len(stdout_toolmsg)>0:
+        stdout = "%s\n### END of messages added by Galaxy AND START of original stdout\n%s" % ("\n".join(stdout_toolmsg),stdout)
+    if len(stderr_toolmsg)>0:
+        stderr = "%s\n### END of messages added by Galaxy AND START of original stderr\n%s" % ("\n".join(stderr_toolmsg),stderr)
     if job is not None:
-        job.set_streams(stdout, stderr)
+        job.set_streams(stdout,stderr)
 
     return state
 
