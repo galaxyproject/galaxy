@@ -64,6 +64,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
             execution_tracker.record_success(execution_slice, job, result)
+            trans.sa_session.expunge(job)
         else:
             execution_tracker.record_error(result)
 
@@ -369,14 +370,21 @@ class ExecutionTracker(object):
 
     def record_success(self, execution_slice, job, outputs):
         # TODO: successful_jobs need to be inserted in the correct place...
-        self.successful_jobs.append(job)
+        self.successful_jobs.append(job.to_dict(view='collection'))  # dictify so can be detached.
         self.output_datasets.extend(outputs)
+        sa_session = self.trans.sa_session
+        # TODO: in 18.05 after SA upgrade, try bulk_save_objects or a batch insert method to create
+        # these JobToOutputDatasetCollectionAssociation, ImplicitCollectionJobsJobAssociation rows
+        # instead of adding them to the SA session and ignoring them (in this thread).
         for job_output in job.output_dataset_collection_instances:
             self.output_collections.append((job_output.name, job_output.dataset_collection_instance))
         if self.implicit_collections:
             implicit_collection_jobs = None
             for output_name, collection_instance in self.implicit_collections.items():
-                job.add_output_dataset_collection(output_name, collection_instance)
+                output_assoc = model.JobToOutputDatasetCollectionAssociation(output_name, collection_instance)
+                output_assoc.job_id = job.id
+                sa_session.add(output_assoc)
+
                 if implicit_collection_jobs is None:
                     implicit_collection_jobs = collection_instance.implicit_collection_jobs
 
@@ -384,7 +392,7 @@ class ExecutionTracker(object):
             job_assoc.order_index = execution_slice.job_index
             job_assoc.implicit_collection_jobs = implicit_collection_jobs
             job_assoc.job_id = job.id
-            self.trans.sa_session.add(job_assoc)
+            sa_session.add(job_assoc)
 
 
 # Seperate these because workflows need to track their jobs belong to the invocation
@@ -430,7 +438,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         if self.collection_info:
             self.invocation_step.implicit_collection_jobs = self.implicit_collection_jobs
         else:
-            self.invocation_step.job = job
+            self.invocation_step.job_id = job.id
         self.job_callback(job)
 
     def new_collection_execution_slices(self):

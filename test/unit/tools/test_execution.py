@@ -156,7 +156,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
 
     def __assert_executed(self, vars):
         self.__assert_no_errors(vars)
-        assert len(vars['jobs']) > 0
+        assert len(vars['job_dicts']) > 0
 
     def __assert_no_errors(self, vars):
         assert "job_errors" in vars
@@ -185,7 +185,9 @@ class MockAction(object):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return galaxy.model.Job(), odict(dict(out1="1"))
+        job = galaxy.model.Job()
+        trans.sa_session.add(job)
+        return job, odict(dict(out1="1"))
 
     def raise_exception(self, after_execution=0):
         self.exception_after_exection = after_execution
