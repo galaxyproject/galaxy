@@ -51,7 +51,7 @@
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
       <converter file="len_to_linecount.xml" target_datatype="linecount"/>
     </datatype>
-    <datatype extension="daa" type="galaxy.datatypes.binary:DAA" display_in_upload="false"/>
+    <datatype extension="daa" type="galaxy.datatypes.binary:DAA" display_in_upload="true"/>
     <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
@@ -708,6 +708,7 @@
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
+    <sniffer type="galaxy.datatypes.binary:DAA"/>
     <sniffer type="galaxy.datatypes.binary:DMND"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2"/>
