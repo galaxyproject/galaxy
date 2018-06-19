@@ -68,28 +68,26 @@ $.extend(Modal.prototype, {
         this.$body.html(body);
     },
     show: function(options, callback) {
-        if (!this.$dialog.is(":visible")) {
-            if (options.backdrop) {
-                this.$backdrop.addClass("in");
-            } else {
-                this.$backdrop.removeClass("in");
-            }
-            this.$overlay.show();
-            this.$dialog.show();
-            this.$overlay.addClass("in");
-            // Fix min-width so that modal cannot shrink considerably if new content is loaded.
-            this.$body.css("min-width", this.$body.width());
-            // Set max-height so that modal does not exceed window size and is in middle of page.
-            // TODO: this could perhaps be handled better using CSS.
-            this.$body.css(
-                "max-height",
-                $(window).height() -
-                    this.$footer.outerHeight() -
-                    this.$header.outerHeight() -
-                    parseInt(this.$dialog.css("padding-top"), 10) -
-                    parseInt(this.$dialog.css("padding-bottom"), 10)
-            );
+        if (options.backdrop) {
+            this.$backdrop.addClass("in");
+        } else {
+            this.$backdrop.removeClass("in");
         }
+        this.$overlay.show();
+        this.$dialog.show();
+        this.$overlay.addClass("in");
+        // Fix min-width so that modal cannot shrink considerably if new content is loaded.
+        this.$body.css("min-width", this.$body.width());
+        // Set max-height so that modal does not exceed window size and is in middle of page.
+        // TODO: this could perhaps be handled better using CSS.
+        this.$body.css(
+            "max-height",
+            $(window).height() -
+                this.$footer.outerHeight() -
+                this.$header.outerHeight() -
+                parseInt(this.$dialog.css("padding-top"), 10) -
+                parseInt(this.$dialog.css("padding-bottom"), 10)
+        );
         // Callback on init
         if (callback) {
             callback();
