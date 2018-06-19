@@ -732,7 +732,6 @@ class Configuration(object):
                 'filters': ['stack']
             }
 
-
     @property
     def sentry_dsn_public(self):
         """
