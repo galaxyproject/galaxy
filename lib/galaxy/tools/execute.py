@@ -64,7 +64,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
