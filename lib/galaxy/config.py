@@ -214,7 +214,7 @@ class Configuration(object):
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
+        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'config/integrated_tool_panel.xml'), self.root)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory', None)
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = resolve_path(integrated_tool_panel_tracking_directory, self.root)

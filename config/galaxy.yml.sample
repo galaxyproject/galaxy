@@ -196,7 +196,7 @@ galaxy:
   # panel layout.  This file can be changed by the Galaxy administrator
   # to alter the layout of the tool panel.  If not present, Galaxy will
   # create it.
-  #integrated_tool_panel_config: integrated_tool_panel.xml
+  #integrated_tool_panel_config: config/integrated_tool_panel.xml
 
   # Default path to the directory containing the tools defined in
   # tool_conf.xml. Other tool config files must include the tool_path as
