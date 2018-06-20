@@ -149,7 +149,7 @@ class DefaultToolAction(object):
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
-                for i, v in enumerate(collection.dataset_instances):
+                for i, v in enumerate(collection.dataset_instances_with_tags):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.

@@ -34,7 +34,7 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.orm import aliased, joinedload, object_session, undefer
 from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
@@ -3424,6 +3424,26 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             else:
                 instance = element.dataset_instance
                 instances.append(instance)
+        return instances
+
+    @property
+    def dataset_instances_with_tags(self):
+        instances = []
+        if ":" not in self.collection_type:
+            db_session = object_session(self)
+            elements = db_session.query(
+                DatasetCollectionElement
+            ).filter_by(
+                dataset_collection_id=self.id
+            ).options(
+                joinedload("hda"),
+                joinedload("hda.tags"),
+                undefer("hda._metadata"),
+            ).all()
+            for element in elements:
+                instances.append(element.hda)
+        else:
+            instances.extend(element.child_collection.dataset_instances_with_tags)
         return instances
 
     @property

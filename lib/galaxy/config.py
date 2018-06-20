@@ -918,6 +918,7 @@ def get_database_engine_options(kwargs, model_prefix=''):
         'pool_size': int,
         'max_overflow': int,
         'pool_threadlocal': string_as_bool,
+        'use_batch_mode': string_as_bool,
         'server_side_cursors': string_as_bool
     }
     prefix = "%sdatabase_engine_option_" % model_prefix
