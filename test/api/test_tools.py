@@ -547,7 +547,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self):
         history_id = self.dataset_populator.new_history()
-        hdca_id = self.__build_pair(history_id, ["123", "456"])
+        hdca_id = self.__build_pair(history_id, ["123\n", "456\n"])
         inputs = {
             "f1": {"src": "hdca", "id": hdca_id},
         }
@@ -1278,8 +1278,8 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("cat1")
     def test_map_over_two_collections(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
-        hdca2_id = self.__build_pair(history_id, ["789", "0ab"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
+        hdca2_id = self.__build_pair(history_id, ["789\n", "0ab\n"])
         inputs = {
             "input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca1_id}]},
             "queries_0|input2": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca2_id}]},
@@ -1306,8 +1306,8 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("cat1")
     def test_map_over_two_collections_unlinked(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
-        hdca2_id = self.__build_pair(history_id, ["789", "0ab"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
+        hdca2_id = self.__build_pair(history_id, ["789\n", "0ab\n"])
         inputs = {
             "input1": {'batch': True, 'linked': False, 'values': [{'src': 'hdca', 'id': hdca1_id}]},
             "queries_0|input2": {'batch': True, 'linked': False, 'values': [{'src': 'hdca', 'id': hdca2_id}]},
@@ -1358,7 +1358,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("cat1")
     def test_map_over_collected_and_individual_datasets(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         new_dataset1 = self.dataset_populator.new_dataset(history_id, content='789')
         new_dataset2 = self.dataset_populator.new_dataset(history_id, content='0ab')
 
@@ -1438,7 +1438,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("cat1")
     def test_cannot_map_over_incompatible_collections(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         hdca2_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
         inputs = {
             "input1": {
@@ -1496,7 +1496,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_param")
     def test_reduce_collections_legacy(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         hdca2_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
         inputs = {
             "f1": "__collection_reduce__|%s" % hdca1_id,
@@ -1507,7 +1507,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_param")
     def test_reduce_collections(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         hdca2_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
         inputs = {
             "f1": {'src': 'hdca', 'id': hdca1_id},
@@ -1518,7 +1518,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_param")
     def test_implicit_reduce_with_mapping(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         hdca2_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()["id"]
         inputs = {
             "f1": {'src': 'hdca', 'id': hdca1_id},
@@ -1538,7 +1538,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_repeat")
     def test_reduce_collections_in_repeat(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         inputs = {
             "outer_repeat_0|f1": {'src': 'hdca', 'id': hdca1_id},
         }
@@ -1554,7 +1554,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_repeat")
     def test_reduce_collections_in_repeat_legacy(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         inputs = {
             "outer_repeat_0|f1": "__collection_reduce__|%s" % hdca1_id,
         }
@@ -1570,7 +1570,7 @@ class ToolsTestCase(api.ApiTestCase):
     @skip_without_tool("multi_data_param")
     def test_reduce_multiple_lists_on_multi_data(self):
         history_id = self.dataset_populator.new_history()
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca1_id = self.__build_pair(history_id, ["123\n", "456\n"])
         hdca2_id = self.dataset_collection_populator.create_list_in_history(history_id).json()["id"]
         inputs = {
             "f1": [{'src': 'hdca', 'id': hdca1_id}, {'src': 'hdca', 'id': hdca2_id}],
@@ -1628,7 +1628,7 @@ class ToolsTestCase(api.ApiTestCase):
     def test_combined_mapping_and_subcollection_mapping(self):
         history_id = self.dataset_populator.new_history()
         nested_list_id = self.__build_nested_list(history_id)
-        create_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["xxx", "yyy"])
+        create_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["xxx\n", "yyy\n"])
         list_id = create_response.json()["id"]
         inputs = {
             "f1": {
@@ -1712,15 +1712,15 @@ class ToolsTestCase(api.ApiTestCase):
             {
                 "name": "test0",
                 "elements": [
-                    {"src": "pasted", "paste_content": "123", "name": "forward", "ext": "txt"},
-                    {"src": "pasted", "paste_content": "456", "name": "reverse", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "txt"},
                 ]
             },
             {
                 "name": "test1",
                 "elements": [
-                    {"src": "pasted", "paste_content": "789", "name": "forward", "ext": "txt"},
-                    {"src": "pasted", "paste_content": "0ab", "name": "reverse", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "txt"},
                 ]
             }
         ])
