@@ -204,10 +204,8 @@ class SummaryDatasetCollectionMatcher(object):
         self._trans = trans
         self.dataset_matcher = dataset_matcher
 
-    def hdca_match(self, history_dataset_collection_association, reduction=False):
+    def hdca_match(self, history_dataset_collection_association):
         dataset_collection = history_dataset_collection_association.collection
-        if reduction and dataset_collection.collection_type.find(":") > 0:
-            return False
 
         if not dataset_collection.populated_optimized:
             return False
@@ -256,12 +254,9 @@ class DatasetCollectionMatcher(object):
         hda_match = self.dataset_matcher.hda_match(hda, ensure_visible=False)
         return hda_match
 
-    def hdca_match(self, history_dataset_collection_association, reduction=False):
+    def hdca_match(self, history_dataset_collection_association):
         dataset_collection = history_dataset_collection_association.collection
-        if reduction and dataset_collection.collection_type.find(":") > 0:
-            return False
-        else:
-            return self.dataset_collection_match(dataset_collection)
+        return self.dataset_collection_match(dataset_collection)
 
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it

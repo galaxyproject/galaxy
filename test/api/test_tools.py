@@ -969,6 +969,13 @@ class ToolsTestCase(api.ApiTestCase):
         self.assertEquals(output1_content.strip(), "Plain HDA")
 
     @skip_without_tool("identifier_multiple")
+    def test_list_selectable_in_multidata_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_collection_populator.create_list_in_history(history_id, contents=["123", "456"])
+            build = self._post("tools/identifier_multiple/build?history_id=%s" % history_id).json()
+            assert len(build['inputs'][0]['options']['hdca']) == 1
+
+    @skip_without_tool("identifier_multiple")
     def test_identifier_in_multiple_reduce(self):
         history_id = self.dataset_populator.new_history()
         hdca_id = self.__build_pair(history_id, ["123", "456"])
@@ -1441,6 +1448,26 @@ class ToolsTestCase(api.ApiTestCase):
             "f2": {'src': 'hdca', 'id': hdca2_id},
         }
         self._check_simple_reduce_job(history_id, inputs)
+
+    @skip_without_tool("multi_data_param")
+    def test_implicit_reduce_with_mapping(self):
+        history_id = self.dataset_populator.new_history()
+        hdca1_id = self.__build_pair(history_id, ["123", "456"])
+        hdca2_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()["id"]
+        inputs = {
+            "f1": {'src': 'hdca', 'id': hdca1_id},
+            "f2": {
+                'batch': True,
+                'values': [{'src': 'hdca', 'map_over_type': 'list', 'id': hdca2_id}],
+            }
+        }
+        create = self._run("multi_data_param", history_id, inputs, assert_ok=True)
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 1)
+        self.assertEquals(len(implicit_collections), 2)
+        output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=implicit_collections[0]["hid"])
+        assert output_hdca["collection_type"] == "list"
 
     @skip_without_tool("multi_data_repeat")
     def test_reduce_collections_in_repeat(self):

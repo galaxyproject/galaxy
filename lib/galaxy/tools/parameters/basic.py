@@ -1517,7 +1517,7 @@ class BaseDataToolParameter(ToolParameter):
             else:
                 dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
                 for hdca in reversed(history.active_visible_dataset_collections):
-                    if dataset_collection_matcher.hdca_match(hdca, reduction=self.multiple):
+                    if dataset_collection_matcher.hdca_match(hdca):
                         return hdca
 
     def to_json(self, value, app, use_security):
@@ -1653,6 +1653,8 @@ class DataToolParameter(BaseDataToolParameter):
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
                 elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
                     rval.append(single_value)
+                elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
+                    rval.append(single_value)
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
                     rval.append(single_value)
                 else:
@@ -1678,7 +1680,7 @@ class DataToolParameter(BaseDataToolParameter):
             for decoded_id in decoded_ids:
                 hdca = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(decoded_id)
                 rval.append(hdca)
-        elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation):
+        elif isinstance(value, trans.app.model.HistoryDatasetCollectionAssociation) or isinstance(value, trans.app.model.DatasetCollectionElement):
             rval = value
         else:
             rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(value)
@@ -1687,7 +1689,7 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in values:
             if v:
-                if v.deleted:
+                if hasattr(v, "deleted") and v.deleted:
                     raise ValueError("The previously selected dataset has been deleted.")
                 elif hasattr(v, "dataset") and v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]:
                     raise ValueError("The previously selected dataset has entered an unusable state")
@@ -1734,6 +1736,10 @@ class DataToolParameter(BaseDataToolParameter):
                 for v in value:
                     if isinstance(v, galaxy.model.HistoryDatasetCollectionAssociation):
                         for dataset_instance in v.collection.dataset_instances:
+                            dataset_count += 1
+                            do_validate(dataset_instance)
+                    elif isinstance(v, galaxy.model.DatasetCollectionElement):
+                        for dataset_instance in v.child_collection.dataset_instances:
                             dataset_count += 1
                             do_validate(dataset_instance)
                     else:
@@ -1822,13 +1828,18 @@ class DataToolParameter(BaseDataToolParameter):
         multiple = self.multiple
 
         # build and append a new select option
-        def append(list, hda, name, src, keep=False):
-            return list.append({'id'   : trans.security.encode_id(hda.id),
-                                'hid'  : hda.hid,
-                                'name' : name,
-                                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
-                                'src'  : src,
-                                'keep' : keep})
+        def append(list, hda, name, src, keep=False, subcollection_type=None):
+            value = {
+                'id'   : trans.security.encode_id(hda.id),
+                'hid'  : hda.hid,
+                'name' : name,
+                'tags' : [t.user_tname if not t.value else "%s:%s" % (t.user_tname, t.value) for t in hda.tags],
+                'src'  : src,
+                'keep' : keep
+            }
+            if subcollection_type:
+                value["map_over_type"] = subcollection_type
+            return list.append(value)
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
@@ -1853,12 +1864,21 @@ class DataToolParameter(BaseDataToolParameter):
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
         for hdca in history.active_visible_dataset_collections:
-            match = dataset_collection_matcher.hdca_match(hdca, reduction=multiple)
+            match = dataset_collection_matcher.hdca_match(hdca)
             if match:
+                subcollection_type = None
+                if multiple and hdca.collection.collection_type != 'list':
+                    collection_type_description = self._history_query(trans).can_map_over(hdca)
+                    if collection_type_description:
+                        subcollection_type = collection_type_description.collection_type
+                    else:
+                        continue
+
                 name = hdca.name
                 if match.implicit_conversion:
                     name = "%s (with implicit datatype conversion)" % name
-                append(d['options']['hdca'], hdca, name, 'hdca')
+                append(d['options']['hdca'], hdca, name, 'hdca', subcollection_type=subcollection_type)
+                continue
 
         # sort both lists
         d['options']['hda'] = sorted(d['options']['hda'], key=lambda k: k['hid'], reverse=True)
@@ -1866,6 +1886,12 @@ class DataToolParameter(BaseDataToolParameter):
 
         # return final dictionary
         return d
+
+    def _history_query(self, trans):
+        assert self.multiple
+        dataset_collection_type_descriptions = trans.app.dataset_collections_service.collection_type_descriptions
+        # If multiple data parameter, treat like a list parameter.
+        return history_query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
 
 
 class DataCollectionToolParameter(BaseDataToolParameter):

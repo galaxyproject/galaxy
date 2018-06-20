@@ -125,6 +125,7 @@
   <tool file="collection_creates_dynamic_nested_from_json_elements.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
+  <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="cheetah_casting.xml" />

@@ -467,7 +467,7 @@ var View = Backbone.View.extend({
         result["batch"] = false;
         var current = this.model.get("current");
         var config = this.config[current];
-        if (config.src == "hdca" && !config.multiple) {
+        if (config.src == "hdca") {
             var hdca = this.history[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
