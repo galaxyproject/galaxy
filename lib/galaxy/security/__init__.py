@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, false, not_, or_
 from sqlalchemy.orm import eagerload_all
 
+from galaxy.model import cached_id
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
 
@@ -607,6 +608,17 @@ class GalaxyRBACAgent(RBACAgent):
         retval = self.dataset_is_public(dataset) or self.allow_action(user_roles, self.permitted_actions.DATASET_ACCESS, dataset)
         return retval
 
+    def can_access_datasets(self, user_roles, action_tuples):
+        user_role_ids = [cached_id(r) for r in user_roles]
+
+        # For DATASET_ACCESS, user must have ALL associated roles
+        for action, user_role_id in action_tuples:
+            if action == self.permitted_actions.DATASET_ACCESS:
+                if user_role_id not in user_role_ids:
+                    return False
+
+        return True
+
     def can_manage_dataset(self, roles, dataset):
         return self.allow_action(roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset)
 
@@ -715,6 +727,29 @@ class GalaxyRBACAgent(RBACAgent):
                     elif action.model == 'restrict':
                         # join existing roles with new roles
                         perms[action].extend([_ for _ in roles if _ not in perms[action]])
+        return perms
+
+    def guess_derived_permissions(self, all_input_permissions):
+        """Returns a dict of { action : [ role_id, role_id, ... ] } for the output dataset based upon input dataset permissions.
+
+        all_input_permissions should be of the form {action_name: set(role_ids)}
+        """
+        perms = {}
+        for action in self.get_actions():
+            perms[action] = []
+
+        for action_name, role_ids in all_input_permissions.items():
+            action = self.get_action(action_name)
+            if action not in perms.keys():
+                perms[action] = list(role_ids)
+            else:
+                if action.model == 'grant':
+                    # intersect existing roles with new roles
+                    perms[action] = [role_id for role_id in role_ids if role_id in perms[action]]
+                elif action.model == 'restrict':
+                    # join existing roles with new roles
+                    perms[action].extend([role_id for role_id in role_ids if role_id not in perms[action]])
+
         return perms
 
     def associate_components(self, **kwd):
@@ -922,7 +957,11 @@ class GalaxyRBACAgent(RBACAgent):
             if isinstance(action, Action):
                 action = action.action
             for role in roles:
-                dp = self.model.DatasetPermissions(action, dataset, role_id=role.id)
+                if hasattr(role, "id"):
+                    role_id = role.id
+                else:
+                    role_id = role
+                dp = self.model.DatasetPermissions(action, dataset, role_id=role_id)
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed and flush:
