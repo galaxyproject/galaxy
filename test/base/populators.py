@@ -805,7 +805,7 @@ class BaseDatasetCollectionPopulator(object):
                 for value in contents.values():
                     paste_content_to_simluated_files(value)
 
-        paste_content_to_simluated_files(elements)
+        # paste_content_to_simluated_files(elements)
         name = kwds.get("name", "Test Dataset Collection")
 
         files_request_part = {}
