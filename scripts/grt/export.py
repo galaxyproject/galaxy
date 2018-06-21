@@ -11,6 +11,7 @@ import sys
 import tarfile
 import time
 from collections import defaultdict
+import csv
 
 import yaml
 
@@ -214,10 +215,12 @@ def main(argv):
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
     blacklisted_tools = config['sanitization']['tools']
+    print('here')
 
     annotate('export_jobs_start', 'Exporting Jobs')
     handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
-    handle_job.write('\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
+    writer = csv.writer(handle_job, delimiter='\t')
+    writer.writerow(['id', 'user_id', 'tool_id', 'tool_version', 'state', 'create_time'])
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for job in sa_session.query(model.Job.id, model.Job.user_id, model.Job.tool_id, model.Job.tool_version, model.Job.state, model.Job.create_time) \
@@ -228,16 +231,16 @@ def main(argv):
             if job[2] in blacklisted_tools:
                 continue
 
-            handle_job.write(str(job[0]))  # id
-            handle_job.write('\t')
-            handle_job.write(job[2])  # tool_id
-            handle_job.write('\t')
-            handle_job.write(job[3])  # tool_version
-            handle_job.write('\t')
-            handle_job.write(job[4])  # state
-            handle_job.write('\t')
-            handle_job.write(str(job[5]))  # create_time
-            handle_job.write('\n')
+            result = []
+            for i in range(len(job)):
+                try:
+                    s = str(job[i]).strip('"')
+                except UnicodeEncodeError:
+                    s = job[i].encode('utf-8').strip('"')
+                result.append(s)
+                
+            writer.writerow(result)
+
             # meta counts
             job_state_data[job[4]] += 1
             active_users[job[1]] += 1
@@ -248,7 +251,8 @@ def main(argv):
 
     annotate('export_datasets_start', 'Exporting Datasets')
     handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
-    handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
+    writer = csv.writer(handle_datasets, delimiter='\t')
+    writer.writerow(['job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type'])
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
 
@@ -289,43 +293,46 @@ def main(argv):
         hdas = {i[0]: i[1:] for i in hdas}
         datasets = {i[0]: i[1:] for i in datasets}
 
-        for job in job_to_hda_ids:
+        for job_to_hda in job_to_hda_ids:
 
-            filetype = job[1]
-            job = job[0]
+            job = job_to_hda[0]  # job_id, hda_id, name
+            filetype = job_to_hda[1]  # input|output
 
             # No associated job
             if job[0] not in job_tool_map:
                 continue
+
             # If the tool is blacklisted, exclude everywhere
             if job_tool_map[job[0]] in blacklisted_tools:
                 continue
 
             hda_id = job[1]
-            # catch hda_id's where
             if hda_id is None:
                 continue
-            dataset_id = hdas[hda_id][0]
 
-            handle_datasets.write(str(job[0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(hda_id))
-            handle_datasets.write('\t')
-            handle_datasets.write(hdas[hda_id][1])
-            handle_datasets.write('\t')
-            handle_datasets.write(str(datasets[dataset_id][0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(job[2])
-            handle_datasets.write('\t')
-            handle_datasets.write(filetype)
-            handle_datasets.write('\n')
+            dataset_id = hdas[hda_id][0]
+            if dataset_id is None:
+                continue
+
+            record = [job[0], hda_id, hdas[hda_id][1], datasets[dataset_id][0], job[2], filetype]
+
+            result = []
+            for i in range(len(record)):
+                try:
+                    s = str(record[i]).strip('"')
+                except UnicodeEncodeError:
+                    s = record[i].encode('utf-8').strip('"')
+                result.append(s)
+                
+            writer.writerow(result)
 
     handle_datasets.close()
     annotate('export_datasets_end')
 
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
     handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
-    handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
+    writer = csv.writer(handle_metric_num, delimiter='\t')
+    writer.writerow(['job_id', 'plugin', 'name', 'value'])
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for metric in sa_session.query(model.JobMetricNumeric.job_id, model.JobMetricNumeric.plugin, model.JobMetricNumeric.metric_name, model.JobMetricNumeric.metric_value) \
@@ -339,20 +346,23 @@ def main(argv):
             if job_tool_map[metric[0]] in blacklisted_tools:
                 continue
 
-            handle_metric_num.write(str(metric[0]))
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[1])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[2])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(str(metric[3]))
-            handle_metric_num.write('\n')
+            result = []
+            for i in range(len(metric)):
+                try:
+                    s = str(metric[i]).strip('"')
+                except UnicodeEncodeError:
+                    s = metric[i].encode('utf-8').strip('"')
+                result.append(s)
+                
+            writer.writerow(result)
+
     handle_metric_num.close()
     annotate('export_metric_num_end')
 
     annotate('export_params_start', 'Export Job Parameters')
     handle_params = open(REPORT_BASE + '.params.tsv', 'w')
-    handle_params.write('\t'.join(('job_id', 'name', 'value')) + '\n')
+    writer = csv.writer(handle_params, delimiter='\t')
+    writer.writerow(['job_id', 'name', 'value'])
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
         for param in sa_session.query(model.JobParameter.job_id, model.JobParameter.name, model.JobParameter.value) \
@@ -368,12 +378,23 @@ def main(argv):
 
             sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
 
-            handle_params.write(str(param[0]))
-            handle_params.write('\t')
-            handle_params.write(param[1])
-            handle_params.write('\t')
-            handle_params.write(json.dumps(sanitized))
-            handle_params.write('\n')
+            result = []
+            for i in range(len(param)):
+                if i == 2:
+                    try:
+                        s = str(sanitized).strip('"')
+                    except UnicodeEncodeError:
+                        s = sanitized.encode('utf-8').strip('"')
+                else:
+                    try:
+                        s = str(param[i]).strip('"')
+                    except UnicodeEncodeError:
+                        s = param[i].encode('utf-8').strip('"')
+                result.append(s)
+                
+            writer.writerow(result)
+
+            
     handle_params.close()
     annotate('export_params_end')
 
@@ -419,6 +440,7 @@ def main(argv):
     with open(CHECK_POINT_FILE, 'w') as handle:
         handle.write(str(end_job_id))
 
+    print('done')
 
 if __name__ == '__main__':
     main(sys.argv)
