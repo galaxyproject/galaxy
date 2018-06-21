@@ -965,7 +965,7 @@ class SelectToolParameter(ToolParameter):
             return []
 
     def to_dict(self, trans, other_values={}):
-        d = super(SelectToolParameter, self).to_dict(trans)
+        d = super(SelectToolParameter, self).to_dict(trans, other_values)
 
         # Get options, value.
         options = self.get_options(trans, other_values)
