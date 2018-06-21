@@ -1320,6 +1320,8 @@ class Tool(Dictifiable):
                 log.error(str(exception))
                 raise exceptions.MessageException('Failure executing tool (attempting to rerun invalid job).')
 
+        set_dataset_matcher_factory(request_context, self)
+
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
@@ -1348,13 +1350,14 @@ class Tool(Dictifiable):
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
                 populate_state(request_context, self.inputs, expanded_incoming, params, errors)
-
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook('validate_input')
                 if validate_input:
                     validate_input(request_context, errors, params, self.inputs)
             all_errors.append(errors)
             all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
         log.debug('Validated and populated state for tool request %s' % validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
