@@ -16,7 +16,7 @@ from xml.etree import ElementTree
 import packaging.version
 from mako.template import Template
 from paste import httpexceptions
-from six import string_types
+from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 
 import tool_shed.util.repository_util as repository_util
@@ -2378,6 +2378,15 @@ class DatabaseOperationTool(Tool):
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 
+    def _add_datasets_to_history(self, history, elements):
+        datasets = []
+        for element_object in elements:
+            if getattr(element_object, "history_content_type", None) == "dataset":
+                datasets.append(element_object)
+
+        if datasets:
+            history.add_datasets(self.sa_session, datasets, set_hid=True)
+
     def produce_outputs(self, trans, out_data, output_collections, incoming, history):
         return self._outputs_dict()
 
@@ -2400,10 +2409,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
         forward, reverse = forward_o.copy(copy_tags=tags), reverse_o.copy(copy_tags=tags)
-
-        # TODO: rename...
-        history.add_dataset(forward, set_hid=True)
-        history.add_dataset(reverse, set_hid=True)
+        self._add_datasets_to_history(history, [forward, reverse])
 
         out_data["forward"] = forward
         out_data["reverse"] = reverse
@@ -2420,9 +2426,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         new_elements = odict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
-        history.add_dataset(forward, set_hid=False)
-        history.add_dataset(reverse, set_hid=False)
-
+        self._add_datasets_to_history(history, [forward, reverse])
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2500,11 +2504,14 @@ class MergeCollectionTool(DatabaseOperationTool):
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
         for key, value in new_element_structure.items():
-            copied_value = value.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(value, "history_content_type", None) == "dataset":
+                copied_value = value.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = value.copy()
             new_elements[key] = copied_value
 
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2517,8 +2524,11 @@ class FilterDatasetsTool(DatabaseOperationTool):
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
             copied_value = dce.element_object.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_value = dce.element_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce.element_object.copy()
             new_elements[element_identifier] = copied_value
         return new_elements
 
@@ -2550,7 +2560,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
                     elements_to_copy.append(element)
 
         new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
-
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())),
             "output",
@@ -2581,6 +2591,7 @@ class FlattenTool(DatabaseOperationTool):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = odict()
+        copied_datasets = []
 
         def add_elements(collection, prefix=""):
             for dce in collection.elements:
@@ -2590,10 +2601,13 @@ class FlattenTool(DatabaseOperationTool):
                 if dce.is_collection:
                     add_elements(dce_object, prefix=identifier)
                 else:
-                    copied_dataset = dce_object.copy()
-                    history.add_dataset(copied_dataset, set_hid=False)
+                    copied_dataset = dce_object.copy(force_flush=False)
+                    copied_dataset.visible = False
                     new_elements[identifier] = copied_dataset
+                    copied_datasets.append(copied_dataset)
+
         add_elements(hdca.collection)
+        self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2629,9 +2643,11 @@ class SortTool(DatabaseOperationTool):
 
         for dce in sorted_elements:
             dce_object = dce.element_object
-            copied_dataset = dce_object.copy()
-            history.add_dataset(copied_dataset, set_hid=False)
+            copied_dataset = dce_object.copy(force_flush=False)
+            copied_dataset.visible = False
             new_elements[dce.element_identifier] = copied_dataset
+
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2651,9 +2667,11 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_label = new_label.strip()
             if new_label in new_elements:
                 raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
-            copied_value = dce_object.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_value = dce_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
@@ -2681,6 +2699,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         for key in new_elements.keys():
             if not re.match("^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2693,17 +2712,18 @@ class ApplyRulesTool(DatabaseOperationTool):
         log.info(incoming)
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
+        copied_datasets = []
 
         def copy_dataset(dataset):
-            copied_dataset = dataset.copy()
+            copied_dataset = dataset.copy(force_flush=False)
             copied_dataset.visible = False
-            history.add_dataset(copied_dataset, set_hid=True)
+            copied_datasets.append(copied_dataset)
             return copied_dataset
 
         new_elements = self.app.dataset_collections_service.apply_rules(
             hdca, rule_set, copy_dataset
         )
-        log.info(new_elements)
+        self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements
         )
@@ -2718,13 +2738,14 @@ class TagFromFileTool(DatabaseOperationTool):
         new_tags_dataset_assoc = incoming["tags"]
         new_elements = odict()
         tags_manager = GalaxyTagManager(trans.app.model.context)
+        new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
-                copied_value = dce.element_object.copy()
+                copied_value = dce.element_object.copy(force_flush=False)
                 # copy should never be visible, since part of a collection
                 copied_value.visble = False
-                history.add_dataset(copied_value, copied_value, set_hid=False)
+                new_datasets.append(copied_value)
                 new_tags = new_tags_dict.get(dce.element_identifier)
                 if new_tags:
                     if how in ('add', 'remove') and dce.element_object.tags:
@@ -2763,6 +2784,7 @@ class TagFromFileTool(DatabaseOperationTool):
         new_tags_dict = {item[0]: item[1:] for item in source_new_tags}
         for i, dce in enumerate(hdca.collection.elements):
             add_copied_value_to_new_elements(new_tags_dict, dce)
+        self._add_datasets_to_history(history, new_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2791,13 +2813,18 @@ class FilterFromFileTool(DatabaseOperationTool):
 
             copied_value = dce_object.copy()
             if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+                copied_value = dce_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce_object.copy()
 
             if passes_filter:
                 filtered_elements[element_identifier] = copied_value
             else:
                 discarded_elements[element_identifier] = copied_value
 
+        self._add_datasets_to_history(history, itervalues(filtered_elements))
+        self._add_datasets_to_history(history, itervalues(discarded_elements))
         output_collections.create_collection(
             self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
         )
