@@ -490,6 +490,20 @@ class DefaultToolAction(object):
         job.set_handler(tool.get_job_handler(job_params))
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
+        # We don't need IDs for these input associations in this thread anyway, so use SQLachemy's
+        # bulk insert functionality to place these input datasets in the database more rapidly if there
+        # are many of them. This uses optimized INSERTs and prevents Galaxy from needing to read the
+        # results back and update the association objects.
+        bulk_job_input_assocs = None
+        handler = None
+        if len(job.input_datasets) > 10:
+            bulk_job_input_assocs = job.input_datasets
+            job.input_datasets = []
+
+            handler = job.handler
+            job.handler = "*noneyet*"
+
+        sa_session = trans.sa_session
         trans.sa_session.add(job)
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
@@ -500,9 +514,24 @@ class DefaultToolAction(object):
                                      current_job=job,
                                      out_data=out_data)
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
-
         job_flush_timer = ExecutionTimer()
         trans.sa_session.flush()
+        if bulk_job_input_assocs is not None:
+            for input_assoc in bulk_job_input_assocs:
+                input_assoc.job_id = job.id
+                assert job.id
+
+            t = sa_session.begin()
+            try:
+                sa_session.bulk_save_objects(bulk_job_input_assocs)
+                t.commit()
+            except Exception:
+                t.rollback()
+                raise
+
+            job.handler = handler
+            trans.sa_session.flush()
+
         log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
