@@ -1341,6 +1341,39 @@ class IdpDB(SQlite):
             return "IDPickerDB SQLite file (%s)" % (nice_size(dataset.get_size()))
 
 
+class GAFASQLite(SQlite):
+    """Class describing a GAFA SQLite database"""
+    MetadataElement(name='gafa_schema_version', default='0.1.0', param=MetadataParameter, desc='GAFA schema version',
+                    readonly=True, visible=True, no_value='0.1.0')
+    file_ext = 'gafa.sqlite'
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(GAFASQLite, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            conn = sqlite.connect(dataset.file_name)
+            c = conn.cursor()
+            version_query = 'SELECT version FROM meta'
+            results = c.execute(version_query).fetchall()
+            if len(results) == 0:
+                raise Exception('version not found in meta table')
+            elif len(results) > 1:
+                raise Exception('Multiple versions found in meta table')
+            dataset.metadata.gafa_schema_version = results[0][0]
+        except Exception as e:
+            log.warn("%s, set_meta Exception: %s", self, e)
+
+    def sniff(self, filename):
+        if super(GAFASQLite, self).sniff(filename):
+            gafa_table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
+            conn = sqlite.connect(filename)
+            c = conn.cursor()
+            tables_query = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            results = c.execute(tables_query).fetchall()
+            found_table_names = frozenset(_[0] for _ in results)
+            return gafa_table_names <= found_table_names
+        return False
+
+
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
     file_ext = "xlsx"
