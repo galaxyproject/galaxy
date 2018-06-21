@@ -1839,7 +1839,7 @@ class DAA(Binary):
     >>> DAA().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')
-    >>> DMND().sniff(fname)
+    >>> DAA().sniff(fname)
     False
     """
     file_ext = "dmnd"
@@ -1851,7 +1851,9 @@ class DAA(Binary):
     def sniff(self, filename):
         # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
         with open(filename, 'rb') as f:
-            return f.read(8) == self._magic
+            x = f.read(8)
+            log.debug("=====================================SNIFF DAA %s"%x)
+            return x == self._magic
 
 
 class DMND(Binary):
@@ -1874,7 +1876,9 @@ class DMND(Binary):
     def sniff(self, filename):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
         with open(filename, 'rb') as f:
-            return f.read(8) == self._magic
+            x = f.read(8)
+            log.debug("=================================SNIFF DMND %s"%x)
+            return x == self._magic
 
 
 class ICM(Binary):
