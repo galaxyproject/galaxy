@@ -215,7 +215,6 @@ def main(argv):
     # Unfortunately we have to keep this mapping for the sanitizer to work properly.
     job_tool_map = {}
     blacklisted_tools = config['sanitization']['tools']
-    print('here')
 
     annotate('export_jobs_start', 'Exporting Jobs')
     handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
