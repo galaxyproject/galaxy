@@ -361,15 +361,10 @@ class DefaultToolAction(object):
                     dataset_collection_elements[name].hda = data
                 trans.sa_session.add(data)
                 if not completed_job:
-                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
+                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True, flush=False)
             data.copy_tags_to(preserved_tags)
-
-            # Must flush before setting object store id currently.
-            # TODO: optimize this.
-
-            trans.sa_session.flush()
             if not completed_job:
-                object_store_populator.set_object_store_id(data)
+                object_store_populator.register(data)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -491,6 +486,14 @@ class DefaultToolAction(object):
             parent_dataset.children.append(child_dataset)
 
         log.info("Added output datasets to history %s" % add_datasets_timer)
+
+        create_files_timer = ExecutionTimer()
+        # This flush is needed to assign IDs to all the output datasets so the object store
+        # can be used to create empty files needed before the job is created and dispatched.
+        trans.sa_session.flush()
+        object_store_populator.create_datasets()
+        log.info("Flushed and created output datasets in object store %s" % create_files_timer)
+
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
@@ -756,17 +759,24 @@ class ObjectStorePopulator(object):
     def __init__(self, app):
         self.object_store = app.object_store
         self.object_store_id = None
+        self.objects = []
 
-    def set_object_store_id(self, data):
+    def register(self, data):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
+        dataset = data.dataset
+        dataset.object_store_id = self.object_store_id
+        self.objects.append(dataset)
         try:
-            self.object_store.create(data.dataset)
+            self.object_store.set_object_store_id(dataset)
         except ObjectInvalid:
-            raise Exception('Unable to create output dataset: object store is full')
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
+            raise Exception('Unable to set object store id for output dataset: object store is full')
+        self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
+
+    def create_datasets(self):
+        for obj in self.objects:
+            self.object_store.create(obj)
 
 
 class OutputCollections(object):

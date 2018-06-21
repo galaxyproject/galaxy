@@ -260,9 +260,11 @@ class MockObjectStore(object):
 
     def create(self, dataset):
         self.created_datasets.append(dataset)
+        if hasattr(dataset, "object_store_id") and dataset.object_store_id:
+            assert dataset.object_store_id == self.object_store_id
         if self.first_create:
             self.first_create = False
-            assert dataset.object_store_id is None
-            dataset.object_store_id = self.object_store_id
-        else:
-            assert dataset.object_store_id == self.object_store_id
+            self.set_object_store_id(dataset)
+
+    def set_object_store_id(self, dataset):
+        self.object_store_id = self.object_store_id
