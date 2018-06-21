@@ -499,7 +499,8 @@ class JobContext(object):
         else:
             primary_data.link_to(filename)
 
-        primary_data.set_size()
+        # We are sure there are no extra files, so optimize things that follow by settting total size also.
+        primary_data.set_size(no_extra_files=True)
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
@@ -586,7 +587,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             sa_session.flush()
             # Move data from temp location to dataset location
             app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-            primary_data.set_size()
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
             # If match specified a name use otherwise generate one from
             # designation.
             primary_data.name = fields_match.name or "%s (%s)" % (outdata.name, designation)
