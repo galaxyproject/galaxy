@@ -214,7 +214,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             style = "legacy"
         else:
             style = "instance"
-        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style)
+        version = kwd.get('version')
+        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -400,7 +401,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
-        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style)
+        version = kwd.get('version')
+        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
         if download_format == 'json-download':
             sname = stored_workflow.name
             sname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
