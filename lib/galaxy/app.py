@@ -193,7 +193,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
             def postfork_sentry_client():
                 import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn)
+                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
