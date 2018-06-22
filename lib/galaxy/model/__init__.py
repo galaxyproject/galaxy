@@ -2164,6 +2164,10 @@ class DatasetInstance(object):
             self._metadata_collection = galaxy.model.metadata.MetadataCollection(self)
         return self._metadata_collection
 
+    @property
+    def set_metadata_requires_flush(self):
+        return self.metadata.requires_dataset_id
+
     def set_metadata(self, bunch):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
@@ -2554,7 +2558,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True):
         """
         Create a copy of this HDA.
         """
@@ -2574,15 +2578,23 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # update init non-keywords as well
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
-        object_session(self).add(hda)
-        object_session(self).flush()
+        # This next line seems unneeded. -John
         hda.set_size()
-        # Need to set after flushed, as MetadataFiles require dataset.id
+        object_session(self).add(hda)
+        flushed = False
+        # May need to set after flushed, as MetadataFiles require dataset.id
+        if hda.set_metadata_requires_flush:
+            object_session(self).flush()
+            flushed = True
         hda.metadata = self.metadata
+        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            if not flushed:
+                object_session(self).flush()
+
             hda.set_peek()
-        object_session(self).flush()
+        if force_flush:
+            object_session(self).flush()
         return hda
 
     def copy_tags_to(self, copy_tags=None):

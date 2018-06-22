@@ -144,6 +144,14 @@ class MetadataCollection(object):
                 rval[key] = self.spec[key].param.make_copy(value, target_context=self, source_context=to_copy)
         return rval
 
+    @property
+    def requires_dataset_id(self):
+        for key in self.spec:
+            if isinstance(self.spec[key].param, FileParameter):
+                return True
+
+        return False
+
     def from_JSON_dict(self, filename=None, path_rewriter=None, json_dict=None):
         dataset = self.parent
         if filename is not None:
