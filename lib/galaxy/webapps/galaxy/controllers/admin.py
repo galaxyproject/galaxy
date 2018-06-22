@@ -585,7 +585,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                            key=lambda dtype: dtype.get('extension')):
             datatypes.append(dtype.attrib)
             keys |= set(dtype.attrib)
-        return { 'keys': list(keys), 'data': datatypes, 'message': message, 'status': status }
+        return {'keys': list(keys), 'data': datatypes, 'message': message, 'status': status}
 
     @web.expose
     @web.json
