@@ -2523,7 +2523,6 @@ class FilterDatasetsTool(DatabaseOperationTool):
         new_elements = odict()
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
-            copied_value = dce.element_object.copy()
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(force_flush=False)
                 copied_value.visible = False
@@ -2811,7 +2810,6 @@ class FilterFromFileTool(DatabaseOperationTool):
             in_filter_file = element_identifier in filtered_identifiers
             passes_filter = in_filter_file if how_filter == "remove_if_absent" else not in_filter_file
 
-            copied_value = dce_object.copy()
             if getattr(copied_value, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(force_flush=False)
                 copied_value.visible = False
