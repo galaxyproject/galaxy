@@ -18,7 +18,8 @@ var AdminPanel = Backbone.View.extend({
                 items: [
                     {
                         title: _l("Data types"),
-                        url: "admin/view_datatypes_registry",
+                        url: "admin/data_types",
+                        target: "__use_router__",
                         id: "admin-link-datatypes"
                     },
                     {
