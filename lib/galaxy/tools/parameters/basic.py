@@ -1162,7 +1162,8 @@ class ColumnListParameter(SelectToolParameter):
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
             dataset = other_values.get(self.data_ref, None)
             try:
-                head = open(dataset.get_file_name(), 'r').readline()
+                with open(dataset.get_file_name(), 'r') as f:
+                    head = f.readline()
                 cnames = head.rstrip().split('\t')
                 column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
