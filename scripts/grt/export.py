@@ -380,9 +380,9 @@ def main(argv):
             if job_tool_map[param[0]] in blacklisted_tools:
                 continue
 
-            sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
-
             try:
+                sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
+
                 handle_params.write(str(param[0]))
                 handle_params.write('\t')
                 handle_params.write(param[1])

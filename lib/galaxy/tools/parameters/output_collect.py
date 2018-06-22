@@ -404,7 +404,7 @@ class JobContext(object):
                 dbkey = self.input_dbkey
 
             # Create new primary dataset
-            name = fields_match.name or designation
+            dataset_name = fields_match.name or designation
 
             link_data = discovered_file.match.link_data
 
@@ -413,7 +413,7 @@ class JobContext(object):
                 designation=designation,
                 visible=visible,
                 dbkey=dbkey,
-                name=name,
+                name=dataset_name,
                 filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
