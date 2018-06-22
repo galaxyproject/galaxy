@@ -18,6 +18,7 @@
       <display file="igb/bam.xml" />
       <display file="iobio/bam.xml" />
     </datatype>
+    <datatype extension="bai" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="false"/>
     <datatype extension="qname_input_sorted.bam" type="galaxy.datatypes.binary:BamInputSorted" mimetype="application/octet-stream" display_in_upload="false" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted based on the aligner output." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
     </datatype>
     <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
