@@ -281,7 +281,7 @@
                     module_sections = load_module_sections( trans )
                 %>
                 %if trans.app.config.message_box_visible:
-                    <div id="tool-search" style="top: 95px;">
+                    <div id="tool-search">
                 %else:
                     <div id="tool-search">
                 %endif
@@ -358,7 +358,7 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
+        <div class="panel-header-buttons" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">

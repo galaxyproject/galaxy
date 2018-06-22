@@ -168,9 +168,11 @@ var View = Backbone.View.extend({
                 <div id="masthead"/>
                 <div id="messagebox"/>
                 <div id="inactivebox" class="panel-warning-message" />
-                <div id="left" />
-                <div id="center" />
-                <div id="right" />
+                <div id="columns">
+                    <div id="left" />
+                    <div id="center" />
+                    <div id="right" />
+                </div>
             </div>
             <div id="dd-helper" />`
         ].join("");
