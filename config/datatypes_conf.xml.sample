@@ -288,6 +288,8 @@
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="cuffdiff.sqlite" type="galaxy.datatypes.binary:CuffDiffSQlite" display_in_upload="true"/>
+    <datatype extension="gafa.sqlite" type="galaxy.datatypes.binary:GAFASQLite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true" description="Any text file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Plain_text"/>
     <datatype extension="linecount" type="galaxy.datatypes.data:LineCount" display_in_upload="false"/>
     <datatype extension="memepsp" type="galaxy.datatypes.sequence:MemePsp" display_in_upload="true" description="The MEME Position Specific Priors (PSP) format includes the name of the sequence for which a prior distribution corresponds." description_url="http://meme-suite.org/doc/psp-format.html"/>
@@ -696,6 +698,8 @@
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
     <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:CuffDiffSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>

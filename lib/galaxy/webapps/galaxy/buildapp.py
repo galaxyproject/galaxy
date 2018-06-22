@@ -787,6 +787,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict(method=['GET']))
     webapp.mapper.connect('job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict(method=['GET']))
     webapp.mapper.connect('build_for_rerun', '/api/jobs/{id}/build_for_rerun', controller='jobs', action='build_for_rerun', conditions=dict(method=['GET']))
+    webapp.mapper.connect('resume', '/api/jobs/{id}/resume', controller='jobs', action='resume', conditions=dict(method=['PUT']))
     webapp.mapper.connect('job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict(method=['POST']))
 
     # Job files controllers. Only for consumption by remote job runners.

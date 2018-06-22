@@ -1403,7 +1403,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if quota and self.user:
                 disk_usage = sum([d.get_total_size() for d in datasets])
                 self.user.adjust_total_disk_usage(disk_usage)
-
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -1981,10 +1980,17 @@ class Dataset(StorableObject):
             else:
                 return self._calculate_size()
 
-    def set_size(self):
-        """Sets the size of the data on disk"""
+    def set_size(self, no_extra_files=False):
+        """Sets the size of the data on disk.
+
+        If the caller is sure there are no extra files, pass no_extra_files as True to optimize subsequent
+        calls to get_total_size or set_total_size - potentially avoiding both a database flush and check against
+        the file system.
+        """
         if not self.file_size:
             self.file_size = self._calculate_size()
+            if no_extra_files:
+                self.total_size = self.file_size
 
     def get_total_size(self):
         if self.total_size is not None:
@@ -2189,9 +2195,9 @@ class DatasetInstance(object):
             return galaxy.util.nice_size(self.dataset.get_size())
         return self.dataset.get_size()
 
-    def set_size(self):
+    def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""
-        return self.dataset.set_size()
+        return self.dataset.set_size(**kwds)
 
     def get_total_size(self):
         return self.dataset.get_total_size()
