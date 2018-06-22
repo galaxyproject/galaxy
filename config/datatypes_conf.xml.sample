@@ -9,6 +9,7 @@
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true" description="blastz pairwise alignment format.  Each alignment block in an axt file contains three lines: a summary line and 2 sequence lines.  Blocks are separated from one another by blank lines.  The summary line contains chromosomal position and size information about the alignment. It consists of 9 required fields." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Axt"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+      <converter file="bam_to_bai.xml" target_datatype="bai"/>
       <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
       <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
       <display file="ucsc/bam.xml"/>
@@ -17,6 +18,7 @@
       <display file="igb/bam.xml"/>
       <display file="iobio/bam.xml"/>
     </datatype>
+    <datatype extension="bai" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="false"/>
     <datatype extension="qname_input_sorted.bam" type="galaxy.datatypes.binary:BamInputSorted" mimetype="application/octet-stream" display_in_upload="false" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted based on the aligner output." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
     </datatype>
     <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
