@@ -350,6 +350,8 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
+        if version == '':
+            version = None
         if version is not None:
             version = int(version)
         if style == "editor":
@@ -367,7 +369,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         Builds workflow dictionary used by run workflow form
         """
-        workflow = stored.latest_workflow if version is None else stored.workflows[version]
+        workflow = stored.get_internal_version(version)
         if len(workflow.steps) == 0:
             raise exceptions.MessageException('Workflow cannot be run because it does not have any steps.')
         if attach_ordered_steps(workflow, workflow.steps):
@@ -451,11 +453,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
     def _workflow_to_dict_editor(self, trans, stored, version=None):
-        if version is None:
-            workflow = stored.latest_workflow
-        else:
-            version = int(version)
-            workflow = stored.workflows[version]
+        workflow = stored.get_internal_version(version)
         # Pack workflow data into a dictionary and return
         data = {}
         data['name'] = workflow.name
@@ -567,10 +565,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if workflow is None:
             assert stored is not None
-            if version is None:
-                workflow = stored.latest_workflow
-            else:
-                workflow = stored.workflows[version]
+            workflow = stored.get_internal_version(version)
 
         annotation_str = ""
         tag_str = ""
@@ -740,7 +735,7 @@ class WorkflowContentsManager(UsesAnnotations):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view='element', value_mapper={'id': encode})
-        workflow = stored.latest_workflow if version == None else stored.workflows[version]
+        workflow = stored.get_internal_version(version)
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}
