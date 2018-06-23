@@ -250,7 +250,7 @@ export default Backbone.View.extend({
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
         // Load workflow definition
-        this._workflowLoadAjax(self.options.id, {
+        this._workflowLoadAjax(self.options.id, self.options.version, {
             success: function(data) {
                 self.reset();
                 self.workflow.from_simple(data, true);
@@ -543,7 +543,7 @@ export default Backbone.View.extend({
     copy_into_workflow: function(workflowId) {
         // Load workflow definition
         var self = this;
-        this._workflowLoadAjax(workflowId, {
+        this._workflowLoadAjax(workflowId, None, {
             success: function(data) {
                 self.workflow.from_simple(data, false);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -595,11 +595,11 @@ export default Backbone.View.extend({
         cc.css({ left: left, top: top });
     },
 
-    _workflowLoadAjax: function(workflowId, options) {
+    _workflowLoadAjax: function(workflowId, version, options) {
         $.ajax(
             Utils.merge(options, {
                 url: this.urls.load_workflow,
-                data: { id: workflowId, _: "true" },
+                data: { id: workflowId, _: "true", version: version },
                 dataType: "json",
                 cache: false
             })
