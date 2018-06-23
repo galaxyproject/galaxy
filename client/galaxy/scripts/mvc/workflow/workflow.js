@@ -152,19 +152,27 @@ const WorkflowItemView = Backbone.View.extend({
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a>
                         <a class="dropdown-item" href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a>
-                        <a class="dropdown-item" href="${Galaxy.root}api/workflows/${this.model.id}/download?format=json-download">Download</a>
+                        <a class="dropdown-item" href="${Galaxy.root}workflows/sharing?id=${this.model.id}">Share</a>
+                        <a class="dropdown-item" href="${Galaxy.root}api/workflows/${
+                this.model.id
+            }/download?format=json-download">Download</a>
                         <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
                         <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/display_by_id?id=${this.model.id}">View</a>
+                        <a class="dropdown-item" href="${Galaxy.root}workflow/display_by_id?id=${
+                this.model.id
+            }">View</a>
                         <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
                     </div>`;
         } else {
             return `<ul class="dropdown-menu">
-                        <li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get("owner")}&slug=${this.model.ge("slug")}">View</a></li>
+                        <li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get(
+                "owner"
+            )}&slug=${this.model.get("slug")}">View</a></li>
                         <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
                         <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a class="link-confirm-shared-${this.model.id}" href="${Galaxy.root}workflows/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
+                        <li><a class="link-confirm-shared-${this.model.id}" href="${
+                Galaxy.root
+            }api/workflows/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
                     </ul>`;
         }
     }
@@ -361,3 +369,4 @@ const WorkflowListView = Backbone.View.extend({
 export default {
     View: WorkflowListView
 };
+

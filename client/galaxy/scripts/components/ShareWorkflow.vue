@@ -1,9 +1,9 @@
 <template>
     <div>
         <div class="page-container share-wf">
-            <h2> 
+            <h4> 
               Workflow: {{ workflowItem.name }}
-            </h2>
+            </h4>
         </div>
         <ul class="manage-table-actions">
             <li>
@@ -18,9 +18,9 @@
         </ul>
         <hr>
         <div v-if="workflowItem.user_name !== ''">
-            <h3>
+            <h4>
                 Share
-            </h3>
+            </h4>
             <div v-if="workflowItem.importable">
 		This workflow is currently <strong>{{ shareStatus }}</strong>.
 		<div>
@@ -138,7 +138,7 @@
         </div>
         <div class="export-wf">
             <hr/>
-            <h3>Export</h3>
+            <h4>Export</h4>
             <div class="sharing-section">
                 <div v-if="workflowItem.importable">
                     Use this URL to import the workflow directly into another Galaxy server:

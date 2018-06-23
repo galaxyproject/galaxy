@@ -453,7 +453,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                  .filter_by(user=trans.user, stored_workflow=stored).one()
             session.delete(association)
             session.flush()
-            return self.list(trans)
+            return trans.response.send_redirect(url_for('/') + 'workflows/list')
         else:
             # Get session and workflow.
             stored = self.get_stored_workflow(trans, id)
