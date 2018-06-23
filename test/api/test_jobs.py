@@ -267,6 +267,50 @@ class JobsApiTestCase(api.ApiTestCase):
         assert_status_code_is_ok(update_response)
         return update_response
 
+    def test_resume_job(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
+            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n")
+            # Submit first job
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id='cat_data_and_sleep',
+                inputs={
+                    'sleep_time': 15,
+                    'input1': {'src': 'hda', 'id': hda2['id']},
+                    'queries_0|input2': {'src': 'hda', 'id': hda2['id']}
+                },
+                history_id=history_id,
+            )
+            run_response = self._post("tools", data=payload).json()
+            output = run_response["outputs"][0]
+            # Submit second job that waits on job1
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id='cat1',
+                inputs={
+                    'input1': {'src': 'hda', 'id': hda1['id']},
+                    'queries_0|input2': {'src': 'hda', 'id': output['id']}
+                },
+                history_id=history_id,
+            )
+            run_response = self._post("tools", data=payload).json()
+            job_id = run_response['jobs'][0]['id']
+            output = run_response["outputs"][0]
+            # Delete second jobs input while second job is waiting for first job
+            delete_response = self._delete("histories/%s/contents/%s" % (history_id, hda1['id']))
+            self._assert_status_code_is(delete_response, 200)
+            self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
+            dataset_details = self._get("histories/%s/contents/%s" % (history_id, output['id'])).json()
+            assert dataset_details['state'] == 'paused'
+            # Undelete input dataset
+            undelete_response = self._put("histories/%s/contents/%s" % (history_id, hda1['id']),
+                                          data=json.dumps({'deleted': False}))
+            self._assert_status_code_is(undelete_response, 200)
+            resume_response = self._put("jobs/%s/resume" % job_id)
+            self._assert_status_code_is(resume_response, 200)
+            self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=True)
+            dataset_details = self._get("histories/%s/contents/%s" % (history_id, output['id'])).json()
+            assert dataset_details['state'] == 'ok'
+
     def _get_history_item_as_admin(self, history_id, item_id):
         response = self._get("histories/%s/contents/%s?view=detailed" % (history_id, item_id), admin=True)
         assert_status_code_is_ok(response)

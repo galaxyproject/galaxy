@@ -38,9 +38,18 @@
   <!-- <env variables="HOSTNAME,SLURM_CPUS_ON_NODE,SLURM_JOBID" /> -->
 
   <!-- If galaxy jobs are run in cgroups, like slurm does if memory limits
-       are enforced, we can try to grep some information from this. -->
+       are enforced, we can try to grep some information from this. By default,
+       only a small set of cgroup parameters will be recorded, the list of which
+       can be found in lib/galaxy/jobs/metrics/instrumenters/cgroup.py.  -->
   <!-- <cgroup /> -->
+  <!-- All params from the `cpuacct,cpu` and `memory` controllers can be
+       recorded.  -->
   <!-- <cgroup verbose="true" /> -->
+  <!-- Or, specific params can be recorded. -->
+  <!-- <cgroup params="cpuacct.usage,memory.max_usage_in_bytes,memory.memsw.max_usage_in_bytes" /> -->
+
+  <!-- Uncomment to record hostname - *nix only -->
+  <!-- <hostname /> -->
 
   <!-- <collectl /> -->
   <!-- Collectl (http://collectl.sourceforge.net/) is a powerful monitoring

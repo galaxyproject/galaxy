@@ -1,13 +1,20 @@
 """
 Determine what optional dependencies are needed.
 """
+from __future__ import print_function
+
+import sys
 from os.path import dirname, join
 from xml.etree import ElementTree
 
 import pkg_resources
 
+from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
-from galaxy.util.properties import load_app_properties
+from galaxy.util.properties import (
+    find_config_file,
+    load_app_properties
+)
 
 
 class ConditionalDependencies(object):
@@ -18,6 +25,7 @@ class ConditionalDependencies(object):
         self.authenticators = []
         self.object_stores = []
         self.conditional_reqs = []
+        self.container_interface_types = []
         self.parse_configs()
         self.get_conditional_requirements()
 
@@ -53,6 +61,13 @@ class ConditionalDependencies(object):
                     self.authenticators.append(auth_type.text)
         except (OSError, IOError):
             pass
+
+        # Parse containers config
+        containers_conf_yml = self.config.get(
+            "containers_config_file",
+            join(dirname(self.config_file), 'containers_conf.yml'))
+        containers_conf = parse_containers_config(containers_conf_yml)
+        self.container_interface_types = [c.get('type', None) for c in containers_conf.values()]
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
@@ -94,9 +109,6 @@ class ConditionalDependencies(object):
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
 
-    def check_graphite(self):
-        return self.config.get("graphite_host", None) is not None
-
     def check_weberror(self):
         return (asbool(self.config["debug"]) and
                 asbool(self.config["use_interactive"]))
@@ -126,8 +138,18 @@ class ConditionalDependencies(object):
         return (self.config['watch_tools'] in install_set or
                 self.config['watch_tool_data_dir'] in install_set)
 
+    def check_docker(self):
+        return (self.config.get("enable_beta_containers_interface", False) and
+                ('docker' in self.container_interface_types or
+                 'docker_swarm' in self.container_interface_types))
 
-def optional(config_file):
+
+def optional(config_file=None):
+    if not config_file:
+        config_file = find_config_file(['galaxy', 'universe_wsgi'])
+    if not config_file:
+        print("galaxy.dependencies.optional: no config file found", file=sys.stderr)
+        return []
     rval = []
     conditional = ConditionalDependencies(config_file)
     for opt in conditional.conditional_reqs:

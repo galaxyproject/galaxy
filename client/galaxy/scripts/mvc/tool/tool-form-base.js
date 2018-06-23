@@ -70,6 +70,11 @@ export default FormBase.extend({
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
+                    if (self.model.get("listen_to_history")) {
+                        process.then(() => {
+                            self.stopListening(parent.Galaxy.currHistoryPanel.collection);
+                        });
+                    }
                 });
             }
         });

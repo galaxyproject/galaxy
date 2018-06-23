@@ -1,14 +1,17 @@
 import logging
+import time
 
 from sqlalchemy import false, func
 
 from galaxy import util, web
 from galaxy.util import inflector
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
+compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class Admin(object):
@@ -89,8 +92,27 @@ class Admin(object):
                 ok = False
             else:
                 # Create the role
-                role, num_in_groups = trans.app.security_agent.create_role(
-                    name, description, in_users, in_groups, create_group_for_role=create_group_for_role_checked)
+                role = trans.app.model.Role(name=name, description=description, type=trans.app.model.Role.types.ADMIN)
+                trans.sa_session.add(role)
+                # Create the UserRoleAssociations
+                for user in [trans.sa_session.query(trans.app.model.User).get(x) for x in in_users]:
+                    ura = trans.app.model.UserRoleAssociation(user, role)
+                    trans.sa_session.add(ura)
+                # Create the GroupRoleAssociations
+                for group in [trans.sa_session.query(trans.app.model.Group).get(x) for x in in_groups]:
+                    gra = trans.app.model.GroupRoleAssociation(group, role)
+                    trans.sa_session.add(gra)
+                if create_group_for_role_checked:
+                    # Create the group
+                    group = trans.app.model.Group(name=name)
+                    trans.sa_session.add(group)
+                    # Associate the group with the role
+                    gra = trans.model.GroupRoleAssociation(group, role)
+                    trans.sa_session.add(gra)
+                    num_in_groups = len(in_groups) + 1
+                else:
+                    num_in_groups = len(in_groups)
+                trans.sa_session.flush()
                 message = "Role '%s' has been created with %d associated users and %d associated groups.  " \
                     % (role.name, len(in_users), num_in_groups)
                 if create_group_for_role_checked:
@@ -706,6 +728,27 @@ class Admin(object):
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
+
+            compliance_log.info('delete-user-event: %s' % user_id)
+            # See lib/galaxy/webapps/tool_shed/controllers/admin.py
+            pseudorandom_value = str(int(time.time()))
+            email_hash = new_secure_hash(user.email + pseudorandom_value)
+            uname_hash = new_secure_hash(user.username + pseudorandom_value)
+            for role in user.all_roles():
+                print(role, self.app.config.redact_username_during_deletion, self.app.config.redact_email_during_deletion)
+                if self.app.config.redact_username_during_deletion:
+                    role.name = role.name.replace(user.username, uname_hash)
+                    role.description = role.description.replace(user.username, uname_hash)
+
+                if self.app.config.redact_email_during_deletion:
+                    role.name = role.name.replace(user.email, email_hash)
+                    role.description = role.description.replace(user.email, email_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                user.email = email_hash
+            if self.app.config.redact_username_during_deletion:
+                user.username = uname_hash
+
             trans.sa_session.add(user)
             trans.sa_session.flush()
             message += " %s " % user.email
@@ -833,6 +876,7 @@ class Admin(object):
                 return self.create_new_user(trans, **kwd)
             elif operation == "manage roles and groups":
                 return self.manage_roles_and_groups_for_user(trans, **kwd)
+
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)

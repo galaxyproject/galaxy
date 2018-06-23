@@ -291,13 +291,13 @@ class GalaxyRBACAgent(RBACAgent):
             # If item has roles associated with the access permission, we need to start with them.
             access_roles = item.get_access_roles(trans)
             for role in access_roles:
-                if trans.user_is_admin() or self.ok_to_display(trans.user, role):
+                if self.ok_to_display(trans.user, role):
                     roles.append(role)
                     # Each role potentially has users.  We need to find all roles that each of those users have.
                     for ura in role.users:
                         user = ura.user
                         for ura2 in user.roles:
-                            if trans.user_is_admin() or self.ok_to_display(trans.user, ura2.role):
+                            if self.ok_to_display(trans.user, ura2.role):
                                 roles.append(ura2.role)
                     # Each role also potentially has groups which, in turn, have members ( users ).  We need to
                     # find all roles that each group's members have.
@@ -306,7 +306,7 @@ class GalaxyRBACAgent(RBACAgent):
                         for uga in group.users:
                             user = uga.user
                             for ura in user.roles:
-                                if trans.user_is_admin() or self.ok_to_display(trans.user, ura.role):
+                                if self.ok_to_display(trans.user, ura.role):
                                     roles.append(ura.role)
 
         # Omit duplicated roles by converting to set

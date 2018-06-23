@@ -62,7 +62,7 @@ var View = Backbone.View.extend({
                     label: model.get("name")
                 });
             });
-            self.library_select.update(data);
+            self.library_select.update({ data: data });
         });
 
         // add reset handler for fetched library datasets
@@ -79,7 +79,7 @@ var View = Backbone.View.extend({
                     }
                 });
             }
-            self.dataset_list.update(data);
+            self.dataset_list.update({ data: data });
         });
 
         // add change event. fires on trigger

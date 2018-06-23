@@ -16,6 +16,26 @@ log = logging.getLogger(__name__)
 class OIDC(BaseUIController):
 
     @web.expose
+    @web.require_login("list third-party identities")
+    def index(self, trans, **kwargs):
+        """
+        GET /api/authnz/
+            returns a list of third-party identities associated with the user.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+
+        :param kwargs: empty dict
+
+        :rtype: list of dicts
+        :return: a list of third-party identities associated with the user account.
+        """
+        rtv = []
+        for authnz in trans.user.social_auth:
+            rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
+        return rtv
+
+    @web.expose
     def login(self, trans, provider):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."

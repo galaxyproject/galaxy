@@ -26,8 +26,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
     if app.name == 'galaxy':
         can_use_disk_files = True
     else:
-        repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
-        latest_downloadable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(app, repository, repo)
+        latest_downloadable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(app, repository)
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}
     if metadata:
@@ -75,6 +74,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         readme_files_dict[readme_file_name] = text_of_reasonable_length
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
+                    repo = hg_util.get_repo_for_repository(app, repository=repository)
                     ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
                     if ctx:
                         fctx = hg_util.get_file_context_from_ctx(ctx, readme_file_name)

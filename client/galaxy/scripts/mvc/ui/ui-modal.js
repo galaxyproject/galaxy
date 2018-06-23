@@ -10,6 +10,7 @@ export var View = Backbone.View.extend({
         backdrop: true,
         height: null,
         width: null,
+        xlarge: false /* BS4 max-width already expanded in Galaxy, expand even more if true. */,
         closing_events: false,
         closing_callback: null,
         title_separator: true
@@ -128,6 +129,9 @@ export var View = Backbone.View.extend({
         }
         if (this.options.width) {
             this.$dialog.css("width", this.options.width);
+        }
+        if (this.options.xlarge) {
+            this.$dialog.css("max-width", "3000px");
         }
     },
 

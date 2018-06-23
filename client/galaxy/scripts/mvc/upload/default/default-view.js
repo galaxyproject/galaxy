@@ -1,6 +1,7 @@
-import _l from "utils/localization";
 /** Renders contents of the default uploader */
-import Utils from "utils/utils";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+import _l from "utils/localization";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadFtp from "mvc/upload/upload-ftp";
@@ -10,6 +11,10 @@ import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import "utils/uploadbox";
+
+/* global Galaxy */
+/* global $ */
+
 export default Backbone.View.extend({
     // current upload size in bytes
     upload_size: 0,
@@ -198,7 +203,7 @@ export default Backbone.View.extend({
 
     render: function() {
         var message = "";
-        if (this.counter.announce == 0) {
+        if (this.counter.announce === 0) {
             if (this.uploadbox.compatible()) {
                 message = "&nbsp;";
             } else {
@@ -206,7 +211,7 @@ export default Backbone.View.extend({
                     "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
             }
         } else {
-            if (this.counter.running == 0) {
+            if (this.counter.running === 0) {
                 message = `You added ${
                     this.counter.announce
                 } file(s) to the queue. Add more files or click 'Start' to proceed.`;
@@ -216,9 +221,9 @@ export default Backbone.View.extend({
         }
         this.$(".upload-top-info").html(message);
         var enable_reset =
-            this.counter.running == 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
-        var enable_start = this.counter.running == 0 && this.counter.announce > 0;
-        var enable_sources = this.counter.running == 0;
+            this.counter.running === 0 && this.counter.announce + this.counter.success + this.counter.error > 0;
+        var enable_start = this.counter.running === 0 && this.counter.announce > 0;
+        var enable_sources = this.counter.running === 0;
         var show_table = this.counter.announce + this.counter.success + this.counter.error > 0;
         this.btnReset[enable_reset ? "enable" : "disable"]();
         this.btnStart[enable_start ? "enable" : "disable"]();
@@ -289,7 +294,9 @@ export default Backbone.View.extend({
     /** Queue is done */
     _eventComplete: function() {
         this.collection.each(model => {
-            model.get("status") == "queued" && model.set("status", "init");
+            if (model.get("status") == "queued") {
+                model.set("status", "init");
+            }
         });
         this.counter.running = 0;
         this.render();
@@ -350,7 +357,7 @@ export default Backbone.View.extend({
 
     /** Start upload process */
     _eventStart: function() {
-        if (this.counter.announce != 0 && this.counter.running == 0) {
+        if (this.counter.announce !== 0 && this.counter.running === 0) {
             // prepare upload process
             var self = this;
             this.upload_size = 0;
@@ -391,8 +398,7 @@ export default Backbone.View.extend({
 
     /** Remove all */
     _eventReset: function() {
-        if (this.counter.running == 0) {
-            var self = this;
+        if (this.counter.running === 0) {
             this.collection.reset();
             this.counter.reset();
             this.uploadbox.reset();

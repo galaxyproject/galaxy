@@ -161,7 +161,7 @@ class WebApplication(base.WebApplication):
                         self.add_api_controller(controller_name, controller)
 
     def _instantiate_controller(self, T, app):
-        """ Extension point, allow apps to contstruct controllers differently,
+        """ Extension point, allow apps to construct controllers differently,
         really just used to stub out actual controllers for routes testing.
         """
         return T(app)
@@ -601,7 +601,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
             user = self.app.model.User(email=remote_user_email)
-            user.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 12)))
+            user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-']:
@@ -643,6 +643,47 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """
         self.check_user_library_import_dir(user)
 
+    def _associate_user_history(self, user, prev_galaxy_session=None):
+        """
+        Associate the user's last accessed history (if exists) with their new session
+        """
+        history = None
+        try:
+            users_last_session = user.galaxy_sessions[0]
+            last_accessed = True
+        except Exception:
+            users_last_session = None
+            last_accessed = False
+        if (prev_galaxy_session and
+                prev_galaxy_session.current_history and not
+                prev_galaxy_session.current_history.deleted and
+                prev_galaxy_session.current_history.datasets):
+            if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
+                # If the previous galaxy session had a history, associate it with the new
+                # session, but only if it didn't belong to a different user.
+                history = prev_galaxy_session.current_history
+                if prev_galaxy_session.user is None:
+                    # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
+                    for hda in history.datasets:
+                        user.adjust_total_disk_usage(hda.quota_amount(user))
+        elif self.galaxy_session.current_history:
+            history = self.galaxy_session.current_history
+        if (not history and users_last_session and
+                users_last_session.current_history and not
+                users_last_session.current_history.deleted):
+            history = users_last_session.current_history
+        elif not history:
+            history = self.get_history(create=True, most_recent=True)
+        if history not in self.galaxy_session.histories:
+            self.galaxy_session.add_history(history)
+        if history.user is None:
+            history.user = user
+        self.galaxy_session.current_history = history
+        if not last_accessed:
+            # Only set default history permissions if current history is not from a previous session
+            self.app.security_agent.history_set_default_permissions(history, dataset=True, bypass_manage_permission=True)
+        self.sa_session.add_all((prev_galaxy_session, self.galaxy_session, history))
+
     def handle_user_login(self, user):
         """
         Login a new user (possibly newly created)
@@ -661,42 +702,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.galaxy_session = self.__create_new_session(prev_galaxy_session, user)
         if self.webapp.name == 'galaxy':
             cookie_name = 'galaxysession'
-            # Associated the current user's last accessed history (if exists) with their new session
-            history = None
-            try:
-                users_last_session = user.galaxy_sessions[0]
-                last_accessed = True
-            except Exception:
-                users_last_session = None
-                last_accessed = False
-            if (prev_galaxy_session.current_history and not
-                    prev_galaxy_session.current_history.deleted and
-                    prev_galaxy_session.current_history.datasets):
-                if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
-                    # If the previous galaxy session had a history, associate it with the new
-                    # session, but only if it didn't belong to a different user.
-                    history = prev_galaxy_session.current_history
-                    if prev_galaxy_session.user is None:
-                        # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
-                        for hda in history.datasets:
-                            user.adjust_total_disk_usage(hda.quota_amount(user))
-            elif self.galaxy_session.current_history:
-                history = self.galaxy_session.current_history
-            if (not history and users_last_session and
-                    users_last_session.current_history and not
-                    users_last_session.current_history.deleted):
-                history = users_last_session.current_history
-            elif not history:
-                history = self.get_history(create=True, most_recent=True)
-            if history not in self.galaxy_session.histories:
-                self.galaxy_session.add_history(history)
-            if history.user is None:
-                history.user = user
-            self.galaxy_session.current_history = history
-            if not last_accessed:
-                # Only set default history permissions if current history is not from a previous session
-                self.app.security_agent.history_set_default_permissions(history, dataset=True, bypass_manage_permission=True)
-            self.sa_session.add_all((prev_galaxy_session, self.galaxy_session, history))
+            self._associate_user_history(user, prev_galaxy_session)
         else:
             cookie_name = 'galaxycommunitysession'
             self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
@@ -785,7 +791,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 default_history = history
                 break
 
-        # Set or create hsitory.
+        # Set or create history.
         if default_history:
             history = default_history
             self.set_history(history)

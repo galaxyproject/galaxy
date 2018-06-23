@@ -235,6 +235,7 @@ class Configuration(object):
 
         self.expose_user_name = kwargs.get("expose_user_name", False)
         self.expose_user_email = kwargs.get("expose_user_email", False)
+
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
@@ -334,6 +335,7 @@ class Configuration(object):
                                           " you won't be able to upload data or run jobs until you have verified your email address.")
         self.inactivity_box_content = kwargs.get('inactivity_box_content', default_inactivity_box_content)
         self.terms_url = kwargs.get('terms_url', None)
+        self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
         self.instance_resource_url = kwargs.get('instance_resource_url', None)
         self.registration_warning_message = kwargs.get('registration_warning_message', None)
         self.ga_code = kwargs.get('ga_code', None)
@@ -461,9 +463,11 @@ class Configuration(object):
         # allow_path_paste value.
         self.allow_library_path_paste = string_as_bool(kwargs.get('allow_library_path_paste', self.allow_path_paste))
         self.disable_library_comptypes = kwargs.get('disable_library_comptypes', '').lower().split(',')
+        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", False))
         self.check_upload_content = string_as_bool(kwargs.get('check_upload_content', True))
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')
+        self.watch_job_rules = kwargs.get('watch_job_rules', 'false')
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
@@ -641,10 +645,6 @@ class Configuration(object):
         self.statsd_port = int(kwargs.get('statsd_port', 8125))
         self.statsd_prefix = kwargs.get('statsd_prefix', 'galaxy')
         self.statsd_influxdb = string_as_bool(kwargs.get('statsd_influxdb', False))
-        # Statistics and profiling with graphite
-        self.graphite_host = kwargs.get('graphite_host', '')
-        self.graphite_port = int(kwargs.get('graphite_port', 2003))
-        self.graphite_prefix = kwargs.get('graphite_prefix', 'galaxy')
         # Logging with fluentd
         self.fluent_log = string_as_bool(kwargs.get('fluent_log', False))
         self.fluent_host = kwargs.get('fluent_host', 'localhost')
@@ -683,6 +683,45 @@ class Configuration(object):
         self.citation_cache_lock_dir = self.resolve_path(kwargs.get("citation_cache_lock_dir", "database/citations/locks"))
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
+
+        # Compliance/Policy variables
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_ip_address = False
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.redact_user_details_in_bugreport = False
+        self.redact_user_address_during_deletion = False
+        # GDPR compliance mode changes values on a number of variables. Other
+        # policies could change (non)overlapping subsets of these variables.
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
+            self.expose_user_name = False
+            self.expose_user_email = False
+
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_ip_address = True
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+            self.redact_user_details_in_bugreport = True
+            self.redact_user_address_during_deletion = True
+            self.allow_user_deletion = True
+
+            LOGGING_CONFIG_DEFAULT['formatters']['brief'] = {
+                'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+            }
+            LOGGING_CONFIG_DEFAULT['handlers']['compliance_log'] = {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'brief',
+                'filename': 'compliance.log',
+                'backupCount': 0,
+            }
+            LOGGING_CONFIG_DEFAULT['loggers']['COMPLIANCE'] = {
+                'handlers': ['compliance_log'],
+                'level': 'DEBUG',
+                'qualname': 'COMPLIANCE'
+            }
 
     @property
     def sentry_dsn_public(self):

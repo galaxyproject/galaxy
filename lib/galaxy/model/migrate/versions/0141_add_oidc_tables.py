@@ -7,6 +7,8 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, VARCHAR
 
+from galaxy.model.custom_types import JSONType
+
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -51,7 +53,7 @@ oidc_user_authnz_tokens = Table(
     Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
     Column('uid', VARCHAR(255)),
     Column('provider', VARCHAR(32)),
-    Column('extra_data', TEXT),
+    Column('extra_data', JSONType, nullable=True),
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 

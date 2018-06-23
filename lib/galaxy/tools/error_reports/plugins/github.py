@@ -17,6 +17,7 @@ class GithubPlugin(ErrorPlugin):
 
     def __init__(self, **kwargs):
         self.app = kwargs['app']
+        self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         try:
@@ -69,7 +70,7 @@ class GithubPlugin(ErrorPlugin):
 
             # We'll re-use the email error reporter's template since github supports HTML
             error_reporter = EmailErrorReporter(dataset.id, self.app)
-            error_reporter.create_report(job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None))
+            error_reporter.create_report(job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None), redact_user_details_in_bugreport=self.redact_user_details_in_bugreport)
 
             # The HTML report
             error_message = error_reporter.html_report

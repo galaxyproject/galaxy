@@ -2,10 +2,11 @@
 
 Galaxy supports the following authentication mechanisms:
 
-* [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default)
-* [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM.
-* [OpenID](#openid) - authentication with Galaxy as a relying party
-* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server
+* [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
+* [OIDC and OAuth2.0](#OIDC-and-OAuth2.0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
+* [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
+* [OpenID](#openid) - authentication with Galaxy as a relying party;
+* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
 
@@ -14,6 +15,15 @@ Galaxy user interface and API provide functions allowing users to register accou
 
 If deploying Galaxy using the default authentication option, user activation can be enabled also. This is documented
 [below](#user-activation).
+
+## OIDC and OAuth2.0
+Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps: 
+
+1. Define the Galaxy instance on an OIDC identity provider. At the moment, we support Google. To set a Galaxy instance on Google, go to _credentials_ section at [developers console](https://console.developers.google.com/), and configure the instance. At the end, you'll receive _client ID_ and _client secret_ take a note of these two tokens. 
+
+2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. 
+
+**This configuration is explained in details, and with screenshots, at [this page](https://galaxyproject.org/admin/authentication/config/). Also, [at this page](https://galaxyproject.org/admin/authentication/) we explain how a user can benefit from this feature.**
 
 ## Authentication Framework
 

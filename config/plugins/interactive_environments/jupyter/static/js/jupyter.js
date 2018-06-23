@@ -90,7 +90,7 @@ function keep_alive(){
         }
     };
     console.log("IE keepalive worker starting");
-    IES.spin(notebook_access_url, false, success, timeout_error, timeout_error, spin_state);
+    IES.spin(notebook_keepalive_url, false, success, timeout_error, timeout_error, spin_state);
 }
 
 

@@ -41,6 +41,7 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
+from galaxy.util.rules_dsl import RuleSet
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -51,7 +52,15 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
-NO_REPLACEMENT = object()
+
+
+class NoReplacement(object):
+
+    def __str__(self):
+        return "NO_REPLACEMENT singleton"
+
+
+NO_REPLACEMENT = NoReplacement()
 
 
 class WorkflowModule(object):
@@ -718,7 +727,17 @@ class ToolModule(WorkflowModule):
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
-                    extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    collection_type = tool_output.structure.collection_type
+                    if not collection_type and tool_output.structure.collection_type_from_rules:
+                        rule_param = tool_output.structure.collection_type_from_rules
+                        if rule_param in self.state.inputs:
+                            rule_json_str = self.state.inputs[rule_param]
+                            if rule_json_str:  # initialized to None...
+                                rules = rule_json_str
+                                if rules:
+                                    rule_set = RuleSet(rules)
+                                    collection_type = rule_set.collection_type
+                    extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
                 elif tool_output.format_source is not None:

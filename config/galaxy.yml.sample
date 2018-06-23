@@ -52,7 +52,8 @@ uwsgi:
   # --daemon and/or production deployments.
   master: false
 
-  # Path to the application's Python virtual environment.
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
   virtualenv: .venv
 
   # Path to the application's Python library.
@@ -290,6 +291,11 @@ galaxy:
   # wider range of scenarios than the watchdog default.
   #watch_tools: false
 
+  # Set to True to enable monitoring of dynamic job rules. If changes
+  # are found, rules are automatically reloaded. Takes the same values
+  # as the 'watch_tools' option.
+  #watch_job_rules: false
+
   # Enable Galaxy to fetch Docker containers registered with quay.io
   # generated from tool requirements resolved through conda. These
   # containers (when available) have been generated using mulled -
@@ -469,19 +475,19 @@ galaxy:
   #default_job_shell: /bin/bash
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_type: file
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_data_dir: database/citations/data
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
@@ -1052,30 +1058,6 @@ galaxy:
   # prefix with a tag path set to the page url
   #statsd_influxdb: false
 
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_host: null
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_port: 2003
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_prefix: galaxy
-
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
   #library_import_dir: null
@@ -1196,10 +1178,10 @@ galaxy:
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should
   # set a key to be used by the algorithm that encodes and decodes these
-  # values.  It can be any string up to 448 bits long. One simple way to
-  # generate a value for this is with the shell command:   python -c
-  # 'from __future__ import print_function; import time;
-  # print(time.time())' | md5sum | cut -f 1 -d ' '
+  # values. It can be any string with a length between 5 and 56 bytes.
+  # One simple way to generate a value for this is with the shell
+  # command:   python -c 'from __future__ import print_function; import
+  # time; print(time.time())' | md5sum | cut -f 1 -d ' '
   #id_secret: USING THE DEFAULT IS NOT SECURE!
 
   # User authentication can be delegated to an upstream proxy server
@@ -1292,7 +1274,8 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
+  # option will be overridden and set to False.
   #expose_user_name: false
 
   # Expose user list.  Setting this to True will expose the user list to
@@ -1301,7 +1284,8 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
+  # option will be overridden and set to False.
   #expose_user_email: false
 
   # Whitelist for local network addresses for "Upload from URL" dialog.
@@ -1313,6 +1297,18 @@ galaxy:
   # separated list of IP addresses or IP address/mask, e.g.
   # 10.10.10.10,10.0.1.0/24,fd00::/8
   #fetch_url_whitelist: null
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing emails and
+  # usernames from logs and bug reports. It also causes the delete user
+  # admin action to permanently redact their username and password, but
+  # not to delete data associated with the account as this is not
+  # currently easily implementable.  You are responsible for removing
+  # personal data from backups.  This forces expose_user_email and
+  # expose_user_name to be false, and forces user_deletion to be true to
+  # support the right to erasure.  Please read the GDPR section under
+  # the special topics area of the admin documentation.
+  #enable_beta_gdpr: false
 
   # Enable the new interface for installing tools from Tool Shed via the
   # API. Admin menu will list both if enabled.

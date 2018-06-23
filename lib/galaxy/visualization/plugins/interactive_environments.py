@@ -2,11 +2,11 @@ import json
 import logging
 import os
 import random
+import re
 import shlex
 import stat
 import string
 import tempfile
-import time
 import uuid
 from itertools import product
 from subprocess import PIPE, Popen
@@ -16,9 +16,9 @@ import yaml
 from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
-from galaxy.containers import build_container_interfaces
+from galaxy.containers import ContainerPort
+from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
-from galaxy.tools.deps.docker_util import DockerVolume
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
@@ -46,6 +46,7 @@ class InteractiveEnvironmentRequest(object):
         self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
+        self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
@@ -170,12 +171,8 @@ class InteractiveEnvironmentRequest(object):
             # TODO: don't hardcode this, and allow for mapping
             key = '_default_'
         if key:
-            containers = build_container_interfaces(
-                self.attr.galaxy_config.containers_config_file,
-                containers_conf=self.attr.galaxy_config.containers_conf,
-            )
             try:
-                self.attr.container_interface = containers[key]
+                self.attr.container_interface = self.trans.app.containers[key]
             except KeyError:
                 log.error("Unable to load '%s' container interface: invalid key", key)
 
@@ -254,8 +251,14 @@ class InteractiveEnvironmentRequest(object):
             .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
-    def volume(self, host_path, container_path, **kwds):
-        return DockerVolume(host_path, container_path, **kwds)
+    def volume(self, container_path, host_path, **kwds):
+        if self.attr.container_interface is None:
+            return DockerVolume(container_path, host_path, **kwds)
+        else:
+            return self.attr.container_interface.volume_class(
+                container_path,
+                host_path=host_path,
+                mode=kwds.get('mode', 'ro'))
 
     def _get_env_for_run(self, env_override=None):
         if env_override is None:
@@ -360,7 +363,7 @@ class InteractiveEnvironmentRequest(object):
             args['publish_port_random'] = self.attr.docker_connect_port
         return args
 
-    def _idsToVolumes(self, ids):
+    def _ids_to_volumes(self, ids):
         if len(ids.strip()) == 0:
             return []
 
@@ -373,7 +376,7 @@ class InteractiveEnvironmentRequest(object):
             decoded_id = self.trans.security.decode_id(id)
             dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            volumes.append(self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext)))
+            volumes.append(self.volume('/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
         return volumes
 
     def _find_port_mapping(self, port_mappings):
@@ -398,10 +401,19 @@ class InteractiveEnvironmentRequest(object):
         """Legacy launch method for use when the container interface is not enabled
         """
         raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+        redacted_command = raw_cmd
+        if self.attr.redact_username_in_logs:
+            def make_safe(param):
+                if 'USER_EMAIL' in param:
+                    return re.sub('USER_EMAIL=[^ ]*', 'USER_EMAIL=*********', param)
+                else:
+                    return param
+
+            redacted_command = [make_safe(x) for x in raw_cmd]
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
-            ' '.join([shlex_quote(x) for x in raw_cmd])
+            ' '.join([shlex_quote(x) for x in redacted_command])
         ))
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
@@ -443,25 +455,19 @@ class InteractiveEnvironmentRequest(object):
         """
         run_args = self.container_run_args(image, env_override, volumes)
         container = self.attr.container_interface.run_in_container(None, **run_args)
-        attempt = 0
-        container_ports = container.ports
-        while container_ports is None and attempt < 30:
-            # TODO: it would be better to do this in /interactive_environments/ready so the client doesn't block here,
-            # but _find_port_mapping needs certain non-persisted data (the port configured to be published) and the
-            # proxy manager doesn't have an update method, so that'd require bigger changes than I have the time for
-            # right now
-            attempt += 1
-            log.warning("Sleeping for 2 seconds while waiting for container %s ports", container.id)
-            time.sleep(2)
-            container_ports = container.ports
-        if container_ports is None:
-            raise Exception("Failed to determine ports for container '%s' after 30 attempts" % container.id)
-        container_port = self._find_port_mapping(container_ports)
-        log.debug("Container '%s' accessible at: %s:%s", container.id, container_port.hostaddr, container_port.hostport)
+        container_port = container.map_port(self.attr.docker_connect_port)
+        if not container_port:
+            log.warning("Container %s (%s) created but no port information available, readiness check will determine "
+                        "ports", container.name, container.id)
+            container_port = ContainerPort(self.attr.docker_connect_port, None, None, None)
+            # a negated docker_connect_port will be stored in the proxy to indicate that the readiness check should
+            # attempt to determine the port
+        log.debug("Container %s (%s) port %s accessible at: %s:%s", container.name, container.id, container_port.port,
+                  container_port.hostaddr, container_port.hostport)
         self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
             self.trans,
             host=container_port.hostaddr,
-            port=container_port.hostport,
+            port=container_port.hostport or -container_port.port,
             proxy_prefix=self.attr.proxy_prefix,
             route_name=self.attr.viz_id,
             container_ids=[container.id],
@@ -485,7 +491,7 @@ class InteractiveEnvironmentRequest(object):
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of galaxy.tools.deps.docker_util.DockerVolume
+        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
         :param volumes: dictionary of docker volume mounts
 
         """
@@ -500,12 +506,8 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
-        # Do not allow a None volumes
-        if not volumes:
-            volumes = []
-
         if additional_ids is not None:
-            volumes += self._idsToVolumes(additional_ids)
+            volumes += self._ids_to_volumes(additional_ids)
 
         if self.attr.container_interface is None:
             self._launch_legacy(image, env_override, volumes)

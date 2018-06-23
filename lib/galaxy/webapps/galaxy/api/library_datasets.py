@@ -222,6 +222,10 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         """
         if payload:
             kwd.update(payload)
+        action = kwd.get('action', None)
+        if action not in ['remove_restrictions', 'make_private', 'set_permissions']:
+            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value. '
+                                                              'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
@@ -232,10 +236,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
         new_manage_roles_ids = util.listify(kwd.get('manage_ids[]', None))
         new_modify_roles_ids = util.listify(kwd.get('modify_ids[]', None))
-        action = kwd.get('action', None)
-        if action is None:
-            raise exceptions.RequestParameterMissingException('The mandatory parameter "action" is missing.')
-        elif action == 'remove_restrictions':
+        if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
                 raise exceptions.InternalServerError('An error occured while making dataset public.')
@@ -252,14 +253,13 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             # ACCESS DATASET ROLES
             valid_access_roles = []
             invalid_access_roles_ids = []
+            valid_roles_for_dataset, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset)
             if new_access_roles_ids is None:
                 trans.app.security_agent.make_dataset_public(dataset)
             else:
                 for role_id in new_access_roles_ids:
                     role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                    #  Check whether role is in the set of allowed roles
-                    valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset)
-                    if role in valid_roles:
+                    if role in valid_roles_for_dataset:
                         valid_access_roles.append(role)
                     else:
                         invalid_access_roles_ids.append(role_id)
@@ -273,21 +273,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             valid_manage_roles = []
             invalid_manage_roles_ids = []
             new_manage_roles_ids = util.listify(new_manage_roles_ids)
-
-            #  Load all access roles to check
-            active_access_roles = dataset.get_access_roles(trans)
-
             for role_id in new_manage_roles_ids:
                 role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                #  Check whether role is in the set of access roles
-                if role in active_access_roles:
+                if role in valid_roles_for_dataset:
                     valid_manage_roles.append(role)
                 else:
                     invalid_manage_roles_ids.append(role_id)
-
             if len(invalid_manage_roles_ids) > 0:
                 log.warning("The following roles could not be added to the dataset manage permission: " + str(invalid_manage_roles_ids))
-
             manage_permission = {trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles}
             trans.app.security_agent.set_dataset_permission(dataset, manage_permission)
 
@@ -295,28 +288,16 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             valid_modify_roles = []
             invalid_modify_roles_ids = []
             new_modify_roles_ids = util.listify(new_modify_roles_ids)
-
-            #  Load all access roles to check
-            active_access_roles = dataset.get_access_roles(trans)
-
             for role_id in new_modify_roles_ids:
                 role = self.role_manager.get(trans, managers_base.decode_id(self.app, role_id))
-                #  Check whether role is in the set of access roles
-                if role in active_access_roles:
+                if role in valid_roles_for_dataset:
                     valid_modify_roles.append(role)
                 else:
                     invalid_modify_roles_ids.append(role_id)
-
             if len(invalid_modify_roles_ids) > 0:
                 log.warning("The following roles could not be added to the dataset modify permission: " + str(invalid_modify_roles_ids))
-
             modify_permission = {trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles}
             trans.app.security_agent.set_library_item_permission(library_dataset, modify_permission)
-
-        else:
-            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value. '
-                                                              'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
-
         return self._get_current_roles(trans, library_dataset)
 
     @expose_api
@@ -702,7 +683,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
-                        log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
+                        log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
                         raise exceptions.InternalServerError("Unknown error. " + str(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'

@@ -170,7 +170,8 @@ class NavigatesGalaxy(HasDriver):
         finally:
             self.driver.switch_to.default_content()
 
-    def api_get(self, endpoint, data={}, raw=False):
+    def api_get(self, endpoint, data=None, raw=False):
+        data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         if raw:
@@ -429,9 +430,9 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
-            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.wait_for_visible(self.navigation.masthead.selectors.user_email)
+                user_email_element = self.components.masthead.user_email.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
@@ -608,7 +609,7 @@ class NavigatesGalaxy(HasDriver):
         name_element.send_keys(name)
 
     def rule_builder_set_extension(self, extension):
-        self.select2_set_value(".rule-option-extension", extension)
+        self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
 
     def rule_builder_filter_count(self, count=1):
         rule_builder = self.components.rule_builder
@@ -764,6 +765,19 @@ class NavigatesGalaxy(HasDriver):
             if screenshot_name:
                 self.screenshot(screenshot_name)
         rule_builder.mapping_ok.wait_for_and_click()
+
+    def rule_builder_set_source(self, json):
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        self.rule_builder_enter_source_text(json)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_enter_source_text(self, json):
+        rule_builder = self.components.rule_builder
+        text_area_elem = rule_builder.source.wait_for_visible()
+        text_area_elem.clear()
+        text_area_elem.send_keys(json)
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
@@ -941,7 +955,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        workflow_button = row_element.find_element_by_css_selector("a.btn.btn-secondary")
         return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
@@ -949,13 +963,13 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+            workflow_button = workflow_row.find_element_by_css_selector("button.dropdown-toggle")
             workflow_button.click()
 
         click_option()
 
-        menu_element = self.wait_for_selector_visible("ul.action-dpd")
-        menu_options = menu_element.find_elements_by_css_selector("li a")
+        menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
+        menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
@@ -975,17 +989,17 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
         return tags
 
     def workflow_import_submit_url(self, url):
-        form_element = self.wait_for_selector_visible("#center form")
-        url_element = form_element.find_element_by_css_selector("input[type='text']")
+        form_button = self.wait_for_selector_visible("#center input[type='button']")
+        url_element = self.wait_for_selector_visible("#center input[type='text']")
         url_element.send_keys(url)
-        self.click_submit(form_element)
+        form_button.click()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
@@ -1004,16 +1018,25 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
-    def tool_open(self, tool_id):
-        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+    def tool_open(self, tool_id, outer=False):
+        if outer:
+            tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
+        else:
+            tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+
+    def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
+        rules_div_element = self.tool_parameter_div("rules")
+        edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
+        edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
-        if expected_type == "data":
+        if expected_type in ["data", "data_collection"]:
             div_selector = "div.ui-form-element[tour_id$='%s']" % expanded_parameter_id
             self.select2_set_value(div_selector, value)
         else:
@@ -1116,6 +1139,19 @@ class NavigatesGalaxy(HasDriver):
             menu_element.find_element_by_link_text(action.text).click()
 
         _click_action_in_menu()
+
+    def history_multi_view_display_collection_contents(self, collection_hid, collection_type="list"):
+        self.components.history_panel.multi_view_button.wait_for_and_click()
+
+        selector = self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        self.click(selector)
+        next_level_element_selector = selector
+        for i in range(len(collection_type.split(":")) - 1):
+            next_level_element_selector = next_level_element_selector.descendant(".dataset-collection-element")
+            self.wait_for_and_click(next_level_element_selector)
+
+        dataset_selector = next_level_element_selector.descendant(".dataset")
+        self.wait_for_and_click(dataset_selector)
 
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = "%s %s" % (self.history_panel_item_selector(hid), ".visualizations-dropdown")
@@ -1220,7 +1256,9 @@ class NavigatesGalaxy(HasDriver):
             self.click_label('go to the home page')
             assert not self.is_logged_in()
 
-    def run_tour(self, path, skip_steps=[], sleep_on_steps={}, tour_callback=None):
+    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+        skip_steps = skip_steps or []
+        sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
             tour_callback = NullTourCallback()
 
@@ -1247,12 +1285,20 @@ class NavigatesGalaxy(HasDriver):
 
     def tour_wait_for_clickable_element(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_selector_clickable(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
+        element = wait.until(
+            sizzle.sizzle_selector_clickable(selector),
+            timeout_message,
+        )
         return element
 
     def tour_wait_for_element_present(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_presence_of_selector(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
+        element = wait.until(
+            sizzle.sizzle_presence_of_selector(selector),
+            timeout_message,
+        )
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):
@@ -1361,6 +1407,8 @@ class NavigatesGalaxy(HasDriver):
         #                     why.
         # with_click seems to work in all situtations - the enter methods
         # doesn't seem to work with the tool form for some reason.
+        if hasattr(container_selector_or_elem, "selector"):
+            container_selector_or_elem = container_selector_or_elem.selector
         if not hasattr(container_selector_or_elem, "find_element_by_css_selector"):
             container_elem = self.wait_for_selector(container_selector_or_elem)
         else:

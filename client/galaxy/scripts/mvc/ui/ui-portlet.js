@@ -59,7 +59,7 @@ export var View = Backbone.View.extend({
             .attr("id", options.id);
         this.$header[options.title ? "show" : "hide"]();
         this.$title_text.html(options.title);
-        if(options.title_id) {
+        if (options.title_id) {
             this.$title.attr("id", options.title_id);
         }
         _.each([this.$content, this.$body], $el => {

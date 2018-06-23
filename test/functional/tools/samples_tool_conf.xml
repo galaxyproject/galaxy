@@ -97,6 +97,7 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
+  <tool file="identifier_single_in_repeat.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
@@ -106,8 +107,10 @@
   <tool file="fail_writing_work_dir_file.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
+  <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
-  <tool file="paired_collection_map_over_structured_like.xml" />
+  <tool file="collection_paired_structured_like.xml" />
+  <tool file="collection_paired_conditional_structured_like.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
@@ -123,6 +126,7 @@
   <tool file="collection_creates_dynamic_nested_from_json_elements.xml" />
   <tool file="collection_creates_dynamic_list_of_pairs.xml" />
   <tool file="collection_type_source.xml" />
+  <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="cheetah_casting.xml" />
@@ -179,11 +183,13 @@
   <tool file="${model_tools_path}/unzip_collection.xml" />
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
+  <tool file="${model_tools_path}/filter_empty_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
+  <tool file="${model_tools_path}/apply_rules.xml" />
 
 </toolbox>

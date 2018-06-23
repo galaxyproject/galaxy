@@ -40,7 +40,7 @@ class ConfigSerializer(base.ModelSerializer):
             'logo_url'                          : lambda i, k, **c: self.url_for(i.get(k, '/')),
             'logo_src'                          : lambda i, k, **c: self.url_for('/static/images/galaxyIcon_noText.png'),
             'terms_url'                         : _defaults_to(''),
-
+            'myexperiment_target_url'           : _defaults_to("www.myexperiment.org"),
             'wiki_url'                          : _defaults_to(self.app.config.wiki_url),
             'search_url'                        : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/search/"),
             'mailing_lists'                     : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/mailing-lists/"),

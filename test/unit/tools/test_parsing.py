@@ -425,6 +425,22 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
         assert not self._tool_source.parse_hidden()
 
 
+class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/apply_rules.xml")
+    source_contents = None
+
+    def test_tool_type(self):
+        tool_module = self._tool_source.parse_tool_module()
+        assert tool_module[0] == "galaxy.tools"
+        assert tool_module[1] == "ApplyRulesTool"
+        assert self._tool_source.parse_tool_type() == "apply_rules_to_collection"
+
+    def test_outputs(self):
+        outputs, output_collections = self._tool_source.parse_outputs(object())
+        assert len(outputs) == 1
+        assert len(output_collections) == 1
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None

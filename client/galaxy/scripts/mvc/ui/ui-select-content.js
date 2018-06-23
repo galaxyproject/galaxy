@@ -223,8 +223,8 @@ var View = Backbone.View.extend({
     },
 
     /** Update data representing selectable options */
-    update: function(options) {
-        this.model.set("data", options);
+    update: function(input_def) {
+        this.model.set("data", input_def.options);
     },
 
     /** Return the currently selected dataset values */
@@ -333,7 +333,7 @@ var View = Backbone.View.extend({
         var button_width = 0;
         if (this.fields.length > 1) {
             this.$el.append(this.button_type.$el);
-            button_width = `${Math.max(0, this.fields.length * 36)}px`;
+            button_width = `${Math.max(0, this.fields.length * 40)}px`;
         }
         _.each(this.fields, field => {
             self.$el.append(field.$el.css({ "margin-left": button_width }));
@@ -467,7 +467,7 @@ var View = Backbone.View.extend({
         result["batch"] = false;
         var current = this.model.get("current");
         var config = this.config[current];
-        if (config.src == "hdca" && !config.multiple) {
+        if (config.src == "hdca") {
             var hdca = this.history[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;

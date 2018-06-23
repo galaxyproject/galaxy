@@ -46,8 +46,14 @@ $.extend(Connector.prototype, {
                 this.canvas.style.zIndex = "300";
             }
         }
-        this.canvas.setAttribute("handle1-id", handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : "");
-        this.canvas.setAttribute("handle2-id", handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : "");
+        this.canvas.setAttribute(
+            "handle1-id",
+            handle1 && handle1.element.getAttribute ? handle1.element.getAttribute("id") : ""
+        );
+        this.canvas.setAttribute(
+            "handle2-id",
+            handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
+        );
         var relativeLeft = e => $(e).offset().left - canvas_container.offset().left;
         var relativeTop = e => $(e).offset().top - canvas_container.offset().top;
         if (!handle1 || !handle2) {

@@ -41,9 +41,10 @@ for env in $ENVS; do
     # of this requirements file, needed for pipenv < 11.1.2
     pipenv lock -r | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-requirements.txt
     # Fix oscillating environment markers
-    sed -i.orig -e "s/^cffi==\([^;]*\).*$/cffi==\1/" \
-                -e "s/^enum34==\([^;]*\).*$/enum34==\1; python_version < '3.4'/" \
-                -e "s/^funcsigs==\([^;]*\).*$/funcsigs==\1; python_version < '3.3'/" pinned-requirements.txt
+    sed -i.orig -e "s/^cffi==\([^;]\+\).*$/cffi==\1/" \
+                -e "s/^enum34==\([^;]\+\).*$/enum34==\1; python_version < '3.4'/" \
+                -e "s/^funcsigs==\([^;]\+\).*$/funcsigs==\1; python_version < '3.3'/" \
+                -e "s/^py2-ipaddress==\([^;]\+\).*$/py2-ipaddress==\1; python_version < '3'/" pinned-requirements.txt
 done
 
 if [ "$commit" -eq "1" ];

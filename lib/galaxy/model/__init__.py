@@ -22,6 +22,7 @@ from uuid import UUID, uuid4
 from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
+    alias,
     and_,
     func,
     inspect,
@@ -64,6 +65,12 @@ _datatypes_registry = None
 # are going to have different limits so it is likely best to not let
 # this be unlimited - filter in Python if over this limit.
 MAX_IN_FILTER_LENGTH = 100
+
+# The column sizes for job metrics. Note: changing these values does not change the column sizes, a migration must be
+# performed to do that.
+JOB_METRIC_MAX_LENGTH = 1023
+JOB_METRIC_PRECISION = 26
+JOB_METRIC_SCALE = 7
 
 
 class NoConverterException(Exception):
@@ -149,6 +156,8 @@ class UsesCreateAndUpdateTime(object):
 
 class JobLike(object):
 
+    MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
+
     def _init_metrics(self):
         self.text_metrics = []
         self.numeric_metrics = []
@@ -156,15 +165,19 @@ class JobLike(object):
     def add_metric(self, plugin, metric_name, metric_value):
         plugin = unicodify(plugin, 'utf-8')
         metric_name = unicodify(metric_name, 'utf-8')
-        if isinstance(metric_value, numbers.Number):
+        number = isinstance(metric_value, numbers.Number)
+        if number and int(metric_value) <= JobLike.MAX_NUMERIC:
             metric = self._numeric_metric(plugin, metric_name, metric_value)
             self.numeric_metrics.append(metric)
+        elif number:
+            log.warning("Cannot store metric due to database column overflow (max: %s): %s: %s",
+                        JobLike.MAX_NUMERIC, metric_name, metric_value)
         else:
             metric_value = unicodify(metric_value, 'utf-8')
-            if len(metric_value) > 1022:
+            if len(metric_value) > (JOB_METRIC_MAX_LENGTH - 1):
                 # Truncate these values - not needed with sqlite
                 # but other backends must need it.
-                metric_value = metric_value[:1022]
+                metric_value = metric_value[:(JOB_METRIC_MAX_LENGTH - 1)]
             metric = self._text_metric(plugin, metric_name, metric_value)
             self.text_metrics.append(metric)
 
@@ -809,6 +822,15 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
 
+    def resume(self, flush=True):
+        if self.state == self.states.PAUSED:
+            self.set_state(self.states.NEW)
+            object_session(self).add(self)
+            for dataset in self.output_datasets:
+                dataset.info = None
+            if flush:
+                object_session(self).flush()
+
     def to_dict(self, view='collection', system_details=False):
         rval = super(Job, self).to_dict(view=view)
         rval['tool_id'] = self.tool_id
@@ -861,12 +883,14 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
         if self.workflow_invocation_step:
             self.workflow_invocation_step.update()
 
-    def get_destination_configuration(self, config, key, default=None):
+    def get_destination_configuration(self, dest_params, config, key, default=None):
         """ Get a destination parameter that can be defaulted back
         in specified config if it needs to be applied globally.
         """
         param_unspecified = object()
         config_value = (self.destination_params or {}).get(key, param_unspecified)
+        if config_value is param_unspecified:
+            config_value = dest_params.get(key, param_unspecified)
         if config_value is param_unspecified:
             config_value = getattr(config, key, param_unspecified)
         if config_value is param_unspecified:
@@ -1379,7 +1403,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if quota and self.user:
                 disk_usage = sum([d.get_total_size() for d in datasets])
                 self.user.adjust_total_disk_usage(disk_usage)
-
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -1500,10 +1523,18 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             dataset.mark_unhidden()
 
     def resume_paused_jobs(self):
-        for dataset in self.datasets:
-            job = dataset.creating_job
-            if job is not None and job.state == Job.states.PAUSED:
-                job.set_state(Job.states.NEW)
+        job = None
+        for i, job in self.paused_jobs:
+            job.resume(flush=False)
+        if job is not None:
+            # We'll flush once if there was a paused job
+            object_session(job).flush()
+
+    @property
+    def paused_jobs(self):
+        db_session = object_session(self)
+        return db_session.query(Job).filter(Job.history_id == self.id,
+                                            Job.state == Job.states.PAUSED).all()
 
     @hybrid.hybrid_property
     def disk_size(self):
@@ -1579,6 +1610,36 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                          joinedload("tags")))
             self._active_datasets_and_roles = query.all()
         return self._active_datasets_and_roles
+
+    @property
+    def active_visible_datasets_and_roles(self):
+        if not hasattr(self, '_active_visible_datasets_and_roles'):
+            db_session = object_session(self)
+            query = (db_session.query(HistoryDatasetAssociation)
+                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
+                .filter(not_(HistoryDatasetAssociation.deleted))
+                .filter(HistoryDatasetAssociation.visible)
+                .order_by(HistoryDatasetAssociation.table.c.hid.asc())
+                .options(joinedload("dataset"),
+                         joinedload("dataset.actions"),
+                         joinedload("dataset.actions.role"),
+                         joinedload("tags")))
+            self._active_visible_datasets_and_roles = query.all()
+        return self._active_visible_datasets_and_roles
+
+    @property
+    def active_visible_dataset_collections(self):
+        if not hasattr(self, '_active_visible_dataset_collections'):
+            db_session = object_session(self)
+            query = (db_session.query(HistoryDatasetCollectionAssociation)
+                .filter(HistoryDatasetCollectionAssociation.table.c.history_id == self.id)
+                .filter(not_(HistoryDatasetCollectionAssociation.deleted))
+                .filter(HistoryDatasetCollectionAssociation.visible)
+                .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
+                .options(joinedload("collection"),
+                         joinedload("tags")))
+            self._active_visible_dataset_collections = query.all()
+        return self._active_visible_dataset_collections
 
     @property
     def active_contents(self):
@@ -1919,10 +1980,17 @@ class Dataset(StorableObject):
             else:
                 return self._calculate_size()
 
-    def set_size(self):
-        """Sets the size of the data on disk"""
+    def set_size(self, no_extra_files=False):
+        """Sets the size of the data on disk.
+
+        If the caller is sure there are no extra files, pass no_extra_files as True to optimize subsequent
+        calls to get_total_size or set_total_size - potentially avoiding both a database flush and check against
+        the file system.
+        """
         if not self.file_size:
             self.file_size = self._calculate_size()
+            if no_extra_files:
+                self.total_size = self.file_size
 
     def get_total_size(self):
         if self.total_size is not None:
@@ -1990,6 +2058,18 @@ class Dataset(StorableObject):
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
+
+
+def datatype_for_extension(extension, datatypes_registry=None):
+    if datatypes_registry is None:
+        datatypes_registry = _get_datatypes_registry()
+    if not extension or extension == 'auto' or extension == '_sniff_':
+        extension = 'data'
+    ret = datatypes_registry.get_datatype_by_extension(extension)
+    if ret is None:
+        log.warning("Datatype class not found for extension '%s'" % extension)
+        return datatypes_registry.get_datatype_by_extension('data')
+    return ret
 
 
 class DatasetInstance(object):
@@ -2075,14 +2155,7 @@ class DatasetInstance(object):
 
     @property
     def datatype(self):
-        extension = self.extension
-        if not extension or extension == 'auto' or extension == '_sniff_':
-            extension = 'data'
-        ret = _get_datatypes_registry().get_datatype_by_extension(extension)
-        if ret is None:
-            log.warning("Datatype class not found for extension '%s'" % extension)
-            return _get_datatypes_registry().get_datatype_by_extension('data')
-        return ret
+        return datatype_for_extension(self.extension)
 
     def get_metadata(self):
         # using weakref to store parent (to prevent circ ref),
@@ -2090,6 +2163,10 @@ class DatasetInstance(object):
         if not hasattr(self, '_metadata_collection') or self._metadata_collection.parent != self:
             self._metadata_collection = galaxy.model.metadata.MetadataCollection(self)
         return self._metadata_collection
+
+    @property
+    def set_metadata_requires_flush(self):
+        return self.metadata.requires_dataset_id
 
     def set_metadata(self, bunch):
         # Needs to accept a MetadataCollection, a bunch, or a dict
@@ -2122,9 +2199,9 @@ class DatasetInstance(object):
             return galaxy.util.nice_size(self.dataset.get_size())
         return self.dataset.get_size()
 
-    def set_size(self):
+    def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""
-        return self.dataset.set_size()
+        return self.dataset.set_size(**kwds)
 
     def get_total_size(self):
         return self.dataset.get_total_size()
@@ -2481,7 +2558,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True):
         """
         Create a copy of this HDA.
         """
@@ -2501,15 +2578,23 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # update init non-keywords as well
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
-        object_session(self).add(hda)
-        object_session(self).flush()
+        # This next line seems unneeded. -John
         hda.set_size()
-        # Need to set after flushed, as MetadataFiles require dataset.id
+        object_session(self).add(hda)
+        flushed = False
+        # May need to set after flushed, as MetadataFiles require dataset.id
+        if hda.set_metadata_requires_flush:
+            object_session(self).flush()
+            flushed = True
         hda.metadata = self.metadata
+        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            if not flushed:
+                object_session(self).flush()
+
             hda.set_peek()
-        object_session(self).flush()
+        if force_flush:
+            object_session(self).flush()
         return hda
 
     def copy_tags_to(self, copy_tags=None):
@@ -3156,11 +3241,85 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         id=None,
         collection_type=None,
         populated=True,
+        element_count=None
     ):
         self.id = id
         self.collection_type = collection_type
         if not populated:
             self.populated_state = DatasetCollection.populated_states.NEW
+        self.element_count = element_count
+
+    @property
+    def dataset_states_and_extensions_summary(self):
+        if not hasattr(self, '_dataset_states_and_extensions_summary'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_stmt = select([hda.c.extension, dataset.c.state]).select_from(select_from).where(dc.c.id == self.id).distinct()
+            extensions = set()
+            states = set()
+            for extension, state in db_session.execute(select_stmt).fetchall():
+                states.add(state)
+                extensions.add(extension)
+
+            self._dataset_states_and_extensions_summary = (states, extensions)
+
+        return self._dataset_states_and_extensions_summary
+
+    @property
+    def populated_optimized(self):
+        if not hasattr(self, '_populated_optimized'):
+            _populated_optimized = True
+            if ":" not in self.collection_type:
+                _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
+            else:
+                db_session = object_session(self)
+
+                dc = alias(DatasetCollection.table)
+                de = alias(DatasetCollectionElement.table)
+
+                select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+                collection_depth_aliases = [dc]
+
+                depth_collection_type = self.collection_type
+                while ":" in depth_collection_type:
+                    child_collection = alias(DatasetCollection.table)
+                    child_collection_element = alias(DatasetCollectionElement.table)
+                    select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                    select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                    collection_depth_aliases.append(child_collection)
+
+                    de = child_collection_element
+                    depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+                select_stmt = select(list(map(lambda dc: dc.c.populated_state, collection_depth_aliases))).select_from(select_from).where(dc.c.id == self.id).distinct()
+                for populated_states in db_session.execute(select_stmt).fetchall():
+                    for populated_state in populated_states:
+                        if populated_state != DatasetCollection.populated_states.OK:
+                            _populated_optimized = False
+
+            self._populated_optimized = _populated_optimized
+
+        return self._populated_optimized
 
     @property
     def populated(self):
@@ -3233,6 +3392,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
     def copy(self, destination=None, element_destination=None):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
+            element_count=self.element_count
         )
         for element in self.elements:
             element.copy_to_collection(
@@ -3249,6 +3409,7 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             if element.element_object in replacements:
                 if element.element_type == 'hda':
                     element.hda = replacements[element.element_object]
+                    element.hda.visible = False
                 # TODO: handle the case where elements are collections
 
     def set_from_dict(self, new_data):
@@ -4605,10 +4766,6 @@ class UserAuthnzToken(UserMixin):
         return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
     def set_extra_data(self, extra_data=None):
-        # Note: the following unicode conversion is a temporary solution for a
-        # database binding error (InterfaceError: (sqlite3.InterfaceError)).
-        if extra_data is not None:
-            extra_data = str(extra_data)
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self.trans.sa_session.add(self)
             self.trans.sa_session.flush()

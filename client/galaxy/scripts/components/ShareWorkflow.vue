@@ -211,7 +211,7 @@ export default {
         }
     },
     created: function() {
-        let url = Galaxy.root + 'api/workflows/share_workflow?id=' + this.id
+        let url = Galaxy.root + 'api/workflows/sharing?id=' + this.id
         if(this.message !== "" && this.status === "error") {
             this.showError(this.message);
         }
@@ -275,10 +275,10 @@ export default {
             });
         },
         getUrl: function() {
-            return Galaxy.root + "api/workflows/share_workflow?id=" + this.id;
+            return Galaxy.root + "api/workflows/sharing?id=" + this.id;
         },
         submit: function(event) {
-            let url = Galaxy.root + 'api/workflows/share_workflow',
+            let url = Galaxy.root + 'api/workflows/sharing',
                 attr = event.target.name,
                 value = event.target.value;
             $.ajax({
@@ -287,14 +287,14 @@ export default {
                 method: "GET"
             })
             .done(response => {
-                window.location = Galaxy.root + 'workflows/share?id=' + this.id;
+                window.location = Galaxy.root + 'workflows/sharing?id=' + this.id;
             })
             .fail(response => {
                 this.showError(response);
             });
         },
         unshareWorkflow: function(userId) {
-            let url = Galaxy.root + 'api/workflows/share_workflow?id=' + this.id + '&unshare_user=' + userId;
+            let url = Galaxy.root + 'api/workflows/sharing?id=' + this.id + '&unshare_user=' + userId;
             this.ajaxCall(url);
         },
         createUsernameSlugUrl: function() {

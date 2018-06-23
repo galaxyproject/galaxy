@@ -33,11 +33,12 @@ masthead:
 
     user:
       type: xpath
-      selector: '//ul[@id="user"]'
+      selector: '//li[@id="user"]'
 
+    user_menu: 'li#user .dropdown-menu'
     workflow:
       type: xpath
-      selector: '//ul[@id="workflow"]'
+      selector: '//li[@id="workflow"]'
 
     user_email:
       type: xpath
@@ -97,13 +98,13 @@ history_panel:
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
       rerun_button: '${_} .icon-btn.rerun-btn'
-      nametags: '${_} .nametags .label'
+      nametags: '${_} .nametags .badge-tags'
 
   multi_operations:
     selectors:
       show_button: '#current-history-panel .actions .show-selectors-btn'
       action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu.open'
+      action_menu: '.list-action-menu ul.dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -157,6 +158,12 @@ history_panel:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'
     new_size: '(empty)'
+
+tool_panel:
+
+  selectors:
+    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
 
 multi_history_view:
 
@@ -214,6 +221,7 @@ tool_form:
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
     bibtex_area: '.citations-bibtex textarea'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -223,6 +231,11 @@ workflows:
   selectors:
     new_button: '#new-workflow'
     import_button: '#import-workflow'
+
+workflow_run:
+
+  selectors: 
+    input_div: "[step-label='${label}'] .select2-container"
 
 workflow_editor:
 
@@ -260,8 +273,8 @@ tour:
     selectors:
       _: '.popover'
 
-      title: '${_} .popover-title'
-      content: '${_} .popover-content'
+      title: '${_} .popover-header'
+      content: '${_} .popover-body'
       next: '${_} button[data-role="next"]'
       previous: '${_} button[data-role="prev"]'
       end: '${_} button[data-role="end"]'
@@ -376,6 +389,7 @@ rule_builder:
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
     table: '#hot-table .htCore'
+    extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
   selectors:

@@ -11,6 +11,11 @@ class HistoryQuery(object):
         self.collection_type_descriptions = kwargs.get("collection_type_descriptions", None)
 
     @staticmethod
+    def from_collection_type(collection_type, collection_type_descriptions):
+        kwargs = dict(collection_type_descriptions=[collection_type_descriptions.for_collection_type(collection_type)])
+        return HistoryQuery(**kwargs)
+
+    @staticmethod
     def from_parameter(param, collection_type_descriptions):
         """ Take in a tool parameter element.
         """
@@ -48,4 +53,4 @@ class HistoryQuery(object):
             # See note about the way this is sorted above.
             if collection_type_description.is_subcollection_of_type(hdca_collection_type):
                 return collection_type_description
-            return False
+        return False

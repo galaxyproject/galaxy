@@ -147,8 +147,6 @@ class RenameDatasetAction(DefaultJobAction):
                 # Treat . as special symbol (breaks parameter names anyway)
                 # to allow access to repeat elements, for instance first
                 # repeat in cat1 would be something like queries_0.input2.
-                # TODO: update the help text (input_terminals) on the action to
-                # show correct valid inputs.
                 input_file_var = input_file_var.replace(".", "|")
 
                 replacement = input_names.get(input_file_var, "")

@@ -1,6 +1,9 @@
 /**
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
+import * as Backbone from "backbone";
+
+/* global $ */
 export var View = Backbone.View.extend({
     initialize: function(options) {
         this.collection = new Backbone.Collection();
@@ -29,9 +32,9 @@ export var View = Backbone.View.extend({
         var id = this.model.get("current");
         id = this.$(`#${id}`).length > 0 ? id : this.first();
         if (id) {
-            this.$nav.children().removeClass("active");
+            this.$nav.find(".nav-link.active").removeClass("active");
             this.$content.children().removeClass("active");
-            this.$(`#tab-${id}`).addClass("active");
+            this.$(`#tab-${id} .nav-link`).addClass("active");
             this.$(`#${id}`).addClass("active");
         }
         this.$el[this.model.get("visible") ? "fadeIn" : "fadeOut"]("fast");
@@ -106,7 +109,7 @@ export var View = Backbone.View.extend({
             $(this._template_tab(options))
                 .show()
                 .tooltip({
-                    title: options.tooltip,
+                    title: options.tooltip || "",
                     placement: "bottom",
                     container: self.$el
                 })
@@ -141,16 +144,24 @@ export var View = Backbone.View.extend({
     _template: function() {
         return $("<div/>")
             .addClass("ui-tabs tabbable tabs-left")
-            .append($("<ul/>").addClass("tab-navigation nav nav-tabs"))
+            .append(
+                $("<ul/>")
+                    .attr("style", "display: flex")
+                    .addClass("tab-navigation nav nav-tabs")
+            )
             .append($("<div/>").addClass("tab-content"));
     },
 
     /** Tab template */
     _template_tab: function(options) {
         var $tmpl = $("<li/>")
-            .addClass("tab-element")
+            .addClass("tab-element nav-item")
             .attr("id", `tab-${options.id}`)
-            .append($("<a/>").attr("id", `tab-title-link-${options.id}`));
+            .append(
+                $("<a/>")
+                    .addClass("nav-link")
+                    .attr("id", `tab-title-link-${options.id}`)
+            );
         var $href = $tmpl.find("a");
         options.icon &&
             $href.append(

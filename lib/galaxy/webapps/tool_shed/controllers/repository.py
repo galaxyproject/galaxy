@@ -6,6 +6,8 @@ import tempfile
 from datetime import date
 
 from mercurial import (
+    cmdutil,
+    commands,
     mdiff,
     patch
 )
@@ -51,6 +53,17 @@ log = logging.getLogger(__name__)
 
 malicious_error = "  This changeset cannot be downloaded because it potentially produces malicious behavior or contains inappropriate content."
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
+
+
+def get_mercurial_default_options_dict(command):
+    '''Borrowed from repoman - get default parameters for a mercurial command.'''
+    possible = cmdutil.findpossible(command, commands.table)
+    # Mercurial >= 3.4 returns a tuple whose first element is the old return dict
+    if type(possible) is tuple:
+        possible = possible[0]
+    if len(possible) != 1:
+        raise Exception('unable to find mercurial command "%s"' % command)
+    return dict((r[1].replace('-', '_'), r[2]) for r in next(iter(possible.values()))[1][1])
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
@@ -422,9 +435,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         commit_message = escape(kwd.get('commit_message', 'Deleted selected files'))
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo_path = repository.repo_path(trans.app)
         # Update repository files for browsing.
-        hg_util.update_repository(repo)
+        hg_util.update_repository(repo_path)
         changeset_revision = repository.tip(trans.app)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                              id,
@@ -595,7 +608,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         # Default to the current changeset revision.
         update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
         latest_changeset_revision = changeset_revision
@@ -907,7 +920,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     @web.expose
     def download(self, trans, repository_id, changeset_revision, file_type, **kwd):
         """Download an archive of the repository files compressed as zip, gz or bz2."""
-        # FIXME: thgis will currently only download the repository tip, no matter which installable changeset_revision is being viewed.
+        # FIXME: this will currently only download the repository tip, no matter which installable changeset_revision is being viewed.
         # This should be enhanced to use the export method below, which accounts for the currently viewed changeset_revision.
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         # Allow hgweb to handle the download.  This requires the tool shed
@@ -1238,7 +1251,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         has_repository_dependencies_only_if_compiling_contained_td = \
             has_galaxy_utilities_dict['has_repository_dependencies_only_if_compiling_contained_td']
         includes_workflows = has_galaxy_utilities_dict['includes_workflows']
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         # Default to the received changeset revision and ctx_rev.
         update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
         ctx_rev = str(update_to_ctx.rev())
@@ -1315,7 +1328,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository_owner = kwd['owner']
         changeset_revision = kwd['changeset_revision']
         repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
         if ctx:
             return str(ctx.rev())
@@ -1341,8 +1354,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if repository_name is not None and repository_owner is not None:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
             if repository:
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
-                return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository, repo)
+                return metadata_util.get_latest_downloadable_changeset_revision(trans.app, repository)
         return hg_util.INITIAL_CHANGELOG_HASH
 
     @web.json
@@ -1528,7 +1540,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         owner = kwd['owner']
         changeset_revision = kwd['changeset_revision']
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         tool_version_dicts = []
         for changeset in repo.changelog:
             current_changeset_revision = str(repo.changectx(changeset))
@@ -1552,20 +1564,18 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
         repository_id = trans.security.encode_id(repository.id)
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if not repository_metadata:
             # The received changeset_revision is no longer associated with metadata, so get the next changeset_revision in the repository
             # changelog that is associated with metadata.
-            changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository,
-                                                                                        repo,
-                                                                                        after_changeset_revision=changeset_revision)
+            changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, after_changeset_revision=changeset_revision)
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
-        ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
+        repo_path = repository.repo_path(trans.app)
+        ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
         repo_info_dict = repository_util.create_repo_info_dict(app=trans.app,
                                                                repository_clone_url=repository_clone_url,
                                                                changeset_revision=changeset_revision,
-                                                               ctx_rev=str(ctx.rev()),
+                                                               ctx_rev=ctx_rev,
                                                                repository_owner=repository.user.username,
                                                                repository_name=repository.name,
                                                                repository=repository,
@@ -1845,8 +1855,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
         repository_type = kwd.get('repository_type', str(repository.type))
-        repo_dir = repository.repo_path(trans.app)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         repo_name = kwd.get('repo_name', repository.name)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=changeset_revision)
@@ -1967,7 +1976,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous
                 # changeset in the changelog.
                 previous_changeset_revision = \
-                    metadata_util.get_previous_metadata_changeset_revision(repository, repo, changeset_revision, downloadable=False)
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=False)
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, id, previous_changeset_revision)
                     if repository_metadata:
@@ -2066,12 +2075,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined
                 # in a previous changeset in the changelog.
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
                 previous_changeset_revision = \
-                    metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                           repo,
-                                                                           changeset_revision,
-                                                                           downloadable=False)
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=False)
                 if previous_changeset_revision != hg_util.INITIAL_CHANGELOG_HASH:
                     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                                       id,
@@ -2143,9 +2148,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         owner = kwd.get('owner', None)
         changeset_revision = kwd.get('changeset_revision', None)
         repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
         # Get the next installable changeset_revision beyond the received changeset_revision.
-        next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+        next_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
         if next_changeset_revision and next_changeset_revision != changeset_revision:
             return next_changeset_revision
         return ''
@@ -2245,12 +2249,10 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             else:
                 changeset_revision = kwd.get('changeset_revision', None)
             if changeset_revision is not None:
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
                 # Get the lower bound changeset revision.
-                lower_bound_changeset_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                                        repo,
-                                                                                                        changeset_revision,
-                                                                                                        downloadable=True)
+                lower_bound_changeset_revision = \
+                    metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, changeset_revision, downloadable=True)
                 # Build the list of changeset revision hashes.
                 changeset_hashes = []
                 for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo,
@@ -2357,7 +2359,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         commit_message = escape(kwd.get('commit_message', 'Deleted selected files'))
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
         repo_dir = repository.repo_path(trans.app)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repo_path=repo_dir)
         selected_files_to_delete = kwd.get('selected_files_to_delete', '')
         if kwd.get('select_files_to_delete_button', False):
             if selected_files_to_delete:
@@ -2366,7 +2368,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 tip = repository.tip(trans.app)
                 for selected_file in selected_files_to_delete:
                     try:
-                        hg_util.remove_file(repo.ui, repo, selected_file, force=True)
+                        hg_util.remove_file(repo_dir, selected_file, force=True)
                     except Exception as e:
                         log.debug("Error removing the following file using the mercurial API:\n %s" % str(selected_file))
                         log.debug("The error was: %s" % str(e))
@@ -2392,14 +2394,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
-                hg_util.commit_changeset(repo.ui,
-                                         repo,
+                hg_util.commit_changeset(repo_dir,
                                          full_path_to_changeset=repo_dir,
                                          username=trans.user.username,
                                          message=commit_message)
                 suc.handle_email_alerts(trans.app, trans.request.host, repository)
                 # Update the repository files for browsing.
-                hg_util.update_repository(repo)
+                hg_util.update_repository(repo_dir)
                 # Get the new repository tip.
                 if tip == repository.tip(trans.app):
                     message += 'No changes to repository.  '
@@ -2593,8 +2594,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                                                                                             changeset_revision)
             if not repository_metadata:
                 # Get updates to the received changeset_revision if any exist.
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
-                upper_bound_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                upper_bound_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
                 if upper_bound_changeset_revision and upper_bound_changeset_revision != changeset_revision:
                     changeset_revision = upper_bound_changeset_revision
                     repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
@@ -2672,7 +2672,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx(changeset)
@@ -2707,7 +2707,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         ctx = hg_util.get_changectx_for_changeset(repo, ctx_str)
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str(ctx_str)
@@ -2723,7 +2723,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             ctx_child = None
         diffs = []
-        options_dict = hg_util.get_mercurial_default_options_dict('diff')
+        options_dict = get_mercurial_default_options_dict('diff')
         # Not quite sure if the following settings make any difference, but with a combination of them and the size check on each
         # diff, we don't run out of memory when viewing the changelog of the cisortho2 repository on the test tool shed.
         options_dict['maxfile'] = basic_util.MAXDIFFSIZE
@@ -2799,7 +2799,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=changeset_revision)
@@ -2891,7 +2891,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         repo_files_dir = repository.repo_path(trans.app)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_files_dir, create=False)
+        repo = hg_util.get_repo_for_repository(trans.app, repo_path=repo_files_dir)
         tool_metadata_dict = {}
         tool_lineage = []
         tool = None

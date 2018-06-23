@@ -26,7 +26,6 @@ def skip_unless_module(module):
     return unittest.skip(template % module)
 
 
-@integration_util.skip_if_jenkins
 class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def setUp(self):
@@ -114,6 +113,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         output = self._scripts_check_output(script, ["-c", config_file])
         assert "Complete" in output
 
+    @integration_util.skip_if_jenkins
     def test_grt_export(self):
         script = "grt/export.py"
         self._scripts_check_argparse_help(script)

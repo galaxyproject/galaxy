@@ -162,11 +162,15 @@ class DatasetCollectionManager(object):
             raise RequestParameterInvalidException(ERROR_NO_COLLECTION_TYPE)
 
         collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-
+        has_subcollections = collection_type_description.has_subcollections()
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
             elements = self._element_identifiers_to_elements(trans, collection_type_description, element_identifiers)
+        else:
+            if has_subcollections:
+                # Nested collection - recursively create collections as needed.
+                self.__recursively_create_collections_for_elements(trans, elements)
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
@@ -184,7 +188,7 @@ class DatasetCollectionManager(object):
     def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers):
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
-            self.__recursively_create_collections(trans, element_identifiers)
+            self.__recursively_create_collections_for_identifiers(trans, element_identifiers)
         new_collection = False
         for element_identifier in element_identifiers:
             if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
@@ -310,10 +314,10 @@ class DatasetCollectionManager(object):
             context.flush()
         return dataset_collection_instance
 
-    def __recursively_create_collections(self, trans, element_identifiers):
+    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers):
         for index, element_identifier in enumerate(element_identifiers):
             try:
-                if not element_identifier["src"] == "new_collection":
+                if element_identifier.get("src", None) != "new_collection":
                     # not a new collection, keep moving...
                     continue
             except KeyError:
@@ -330,6 +334,30 @@ class DatasetCollectionManager(object):
             element_identifier["__object__"] = collection
 
         return element_identifiers
+
+    def __recursively_create_collections_for_elements(self, trans, elements):
+        if elements is self.ELEMENTS_UNINITIALIZED:
+            return
+
+        new_elements = odict.odict()
+        for key, element in elements.items():
+            if isinstance(element, model.DatasetCollection):
+                continue
+
+            if element.get("src", None) != "new_collection":
+                continue
+
+            # element is a dict with src new_collection and
+            # and odict of named elements
+            collection_type = element.get("collection_type", None)
+            sub_elements = element["elements"]
+            collection = self.create_dataset_collection(
+                trans=trans,
+                collection_type=collection_type,
+                elements=sub_elements,
+            )
+            new_elements[key] = collection
+        elements.update(new_elements)
 
     def __load_elements(self, trans, element_identifiers):
         elements = odict.odict()
@@ -396,6 +424,77 @@ class DatasetCollectionManager(object):
         collection_id = int(trans.app.security.decode_id(encoded_id))
         collection = trans.sa_session.query(trans.app.model.DatasetCollection).get(collection_id)
         return collection
+
+    def apply_rules(self, hdca, rule_set, handle_dataset):
+        hdca_collection = hdca.collection
+        collection_type = hdca_collection.collection_type
+        elements = hdca_collection.elements
+        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+        initial_data, initial_sources = self.__init_rule_data(elements, collection_type_description)
+        data, sources = rule_set.apply(initial_data, initial_sources)
+
+        collection_type = rule_set.collection_type
+        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
+        elements = self._build_elements_from_rule_data(collection_type_description, rule_set, data, sources, handle_dataset)
+        return elements
+
+    def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
+        identifier_columns = rule_set.identifier_columns
+        elements = odict.odict()
+        for data_index, row_data in enumerate(data):
+            # For each row, find place in depth for this element.
+            collection_type_at_depth = collection_type_description
+            elements_at_depth = elements
+
+            for i, identifier_column in enumerate(identifier_columns):
+                identifier = row_data[identifier_column]
+
+                if i + 1 == len(identifier_columns):
+                    # At correct final position in nested structure for this dataset.
+                    if collection_type_at_depth.collection_type == "paired":
+                        if identifier.lower() in ["f", "1", "r1", "forward"]:
+                            identifier = "forward"
+                        elif identifier.lower() in ["r", "2", "r2", "reverse"]:
+                            identifier = "reverse"
+                        else:
+                            raise Exception("Unknown indicator of paired status encountered - only values of F, R, 1, 2, R1, R2, forward, or reverse are allowed.")
+
+                    elements_at_depth[identifier] = handle_dataset(sources[data_index]["dataset"])
+                else:
+                    collection_type_at_depth = collection_type_at_depth.child_collection_type_description()
+                    found = False
+                    if identifier in elements_at_depth:
+                        elements_at_depth = elements_at_depth[identifier]["elements"]
+                        found = True
+
+                    if not found:
+                        sub_collection = {}
+                        sub_collection["src"] = "new_collection"
+                        sub_collection["collection_type"] = collection_type_at_depth.collection_type
+                        sub_collection["elements"] = odict.odict()
+                        elements_at_depth[identifier] = sub_collection
+                        elements_at_depth = sub_collection["elements"]
+
+        return elements
+
+    def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None):
+        parent_identifiers = parent_identifiers or []
+        data, sources = [], []
+        for element in elements:
+            element_object = element.element_object
+            identifiers = parent_identifiers + [element.element_identifier]
+            if not element.is_collection:
+                data.append([])
+                sources.append({"identifiers": identifiers, "dataset": element_object})
+            else:
+                child_collection_type_description = collection_type_description.child_collection_type_description()
+                element_data, element_sources = self.__init_rule_data(
+                    element_object.elements, child_collection_type_description, identifiers
+                )
+                data.extend(element_data)
+                sources.extend(element_sources)
+
+        return data, sources
 
     def __get_history_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         instance_id = int(trans.app.security.decode_id(id))

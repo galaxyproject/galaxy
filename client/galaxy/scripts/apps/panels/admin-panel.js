@@ -19,28 +19,28 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: _l("Data types"),
                         url: "admin/view_datatypes_registry",
-                        id: "admin-link-datatypes",
+                        id: "admin-link-datatypes"
                     },
                     {
                         title: _l("Data tables"),
                         url: "admin/data_tables",
                         target: "__use_router__",
-                        id: "admin-link-data-tables",
+                        id: "admin-link-data-tables"
                     },
                     {
                         title: _l("Display applications"),
                         url: "admin/display_applications",
-                        id: "admin-link-display-applications",
+                        id: "admin-link-display-applications"
                     },
                     {
                         title: _l("Manage jobs"),
                         url: "admin/jobs",
-                        id: "admin-link-jobs",
+                        id: "admin-link-jobs"
                     },
                     {
                         title: _l("Local data"),
                         url: "data_manager",
-                        id: "admin-link-local-data",
+                        id: "admin-link-local-data"
                     }
                 ]
             },
@@ -51,26 +51,26 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("Users"),
                         url: "admin/users",
                         target: "__use_router__",
-                        id: "admin-link-users",
+                        id: "admin-link-users"
                     },
                     {
                         title: _l("Quotas"),
                         url: "admin/quotas",
                         target: "__use_router__",
                         enabled: self.config.enable_quotas,
-                        id: "admin-link-quotas",
+                        id: "admin-link-quotas"
                     },
                     {
                         title: _l("Groups"),
                         url: "admin/groups",
                         target: "__use_router__",
-                        id: "admin-link-groups",
+                        id: "admin-link-groups"
                     },
                     {
                         title: _l("Roles"),
                         url: "admin/roles",
                         target: "__use_router__",
-                        id: "admin-link-roles",
+                        id: "admin-link-roles"
                     },
                     {
                         title: _l("Forms"),
@@ -81,13 +81,7 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("API keys"),
                         url: "admin/api_keys",
                         target: "__use_router__",
-                        id: "admin-link-api-keys",
-                    },
-                    {
-                        title: _l("Impersonate a user"),
-                        url: "admin/impersonate",
-                        enabled: self.config.allow_user_impersonation,
-                        id: "admin-link-impersonate",
+                        id: "admin-link-api-keys"
                     }
                 ]
             },
@@ -158,7 +152,7 @@ var AdminPanel = Backbone.View.extend({
                     var $link = $("<a/>")
                         .attr({ href: self.root + item.url })
                         .text(_l(item.title));
-                    if(item.id) {
+                    if (item.id) {
                         $link.attr("id", item.id);
                     }
                     if (item.target == "__use_router__") {

@@ -10,11 +10,13 @@ import requests
 from pkg_resources import resource_string
 from six import StringIO
 
+from galaxy.tools.verify.test_data import TestDataResolver
 from . import api_asserts
 from .workflows_format_2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
+
 
 # Simple workflow that takes an input and call cat wrapper on it.
 workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
@@ -139,6 +141,7 @@ class BaseDatasetPopulator(object):
 
     def new_dataset(self, history_id, content=None, wait=False, **kwds):
         run_response = self.new_dataset_request(history_id, content=content, wait=wait, **kwds)
+        assert run_response.status_code == 200, "Failed to create new dataset with response: %s" % run_response.content
         return run_response.json()["outputs"][0]
 
     def new_dataset_request(self, history_id, content=None, wait=False, **kwds):
@@ -274,9 +277,14 @@ class BaseDatasetPopulator(object):
         return self._get("remote_files", data={"target": target}).json()
 
     def run_tool_payload(self, tool_id, inputs, history_id, **kwds):
-        if "files_0|file_data" in inputs:
-            kwds["__files"] = {"files_0|file_data": inputs["files_0|file_data"]}
-            del inputs["files_0|file_data"]
+        # Remove files_%d|file_data parameters from inputs dict and attach
+        # as __files dictionary.
+        for key, value in list(inputs.items()):
+            if key.startswith("files_") and key.endswith("|file_data"):
+                if "__files" not in kwds:
+                    kwds["__files"] = {}
+                kwds["__files"][key] = value
+                del inputs[key]
 
         return dict(
             tool_id=tool_id,
@@ -366,6 +374,12 @@ class BaseDatasetPopulator(object):
         if suffix:
             url = "%s%s" % (url, suffix)
         return self._get(url, data=data)
+
+    def ds_entry(self, history_content):
+        src = 'hda'
+        if 'history_content_type' in history_content and history_content['history_content_type'] == "dataset_collection":
+            src = 'hdca'
+        return dict(src=src, id=history_content["id"])
 
 
 class DatasetPopulator(BaseDatasetPopulator):
@@ -792,6 +806,73 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
     def _create_collection(self, payload):
         create_response = self.galaxy_interactor.post("dataset_collections", data=payload)
         return create_response
+
+
+def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+
+    def read_test_data(test_dict):
+        test_data_resolver = TestDataResolver()
+        filename = test_data_resolver.get_filename(test_dict["value"])
+        content = open(filename, "r").read()
+        return content
+
+    inputs = {}
+    label_map = {}
+    has_uploads = False
+
+    for key, value in test_data.items():
+        is_dict = isinstance(value, dict)
+        if is_dict and ("elements" in value or value.get("type", None) in ["list:paired", "list", "paired"]):
+            elements_data = value.get("elements", [])
+            elements = []
+            for element_data in elements_data:
+                identifier = element_data["identifier"]
+                input_type = element_data.get("type", "raw")
+                if input_type == "File":
+                    content = read_test_data(element_data)
+                else:
+                    content = element_data["content"]
+                elements.append((identifier, content))
+            # TODO: make this collection_type
+            collection_type = value["type"]
+            new_collection_kwds = {}
+            if "name" in value:
+                new_collection_kwds["name"] = value["name"]
+            if collection_type == "list:paired":
+                hdca = dataset_collection_populator.create_list_of_pairs_in_history(history_id, **new_collection_kwds).json()
+            elif collection_type == "list":
+                hdca = dataset_collection_populator.create_list_in_history(history_id, contents=elements, **new_collection_kwds).json()
+            else:
+                hdca = dataset_collection_populator.create_pair_in_history(history_id, contents=elements, **new_collection_kwds).json()
+            label_map[key] = dataset_populator.ds_entry(hdca)
+            inputs[key] = hdca
+            has_uploads = True
+        elif is_dict and "type" in value:
+            input_type = value["type"]
+            if input_type == "File":
+                content = read_test_data(value)
+                new_dataset_kwds = {
+                    "content": content
+                }
+                if "name" in value:
+                    new_dataset_kwds["name"] = value["name"]
+                if "file_type" in value:
+                    new_dataset_kwds["file_type"] = value["file_type"]
+                hda = dataset_populator.new_dataset(history_id, **new_dataset_kwds)
+                label_map[key] = dataset_populator.ds_entry(hda)
+                has_uploads = True
+            elif input_type == "raw":
+                label_map[key] = value["value"]
+                inputs[key] = value["value"]
+        elif not is_dict:
+            has_uploads = True
+            hda = dataset_populator.new_dataset(history_id, content=value)
+            label_map[key] = dataset_populator.ds_entry(hda)
+            inputs[key] = hda
+        else:
+            raise ValueError("Invalid test_data def %" % test_data)
+
+    return inputs, label_map, has_uploads
 
 
 def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):

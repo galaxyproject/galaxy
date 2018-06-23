@@ -287,10 +287,8 @@ def guess_ext(fname, sniff_order, is_binary=False):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> from galaxy.datatypes import registry
-    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
-    >>> datatypes_registry = registry.Registry()
-    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> datatypes_registry = example_datatype_registry_for_sample()
     >>> sniff_order = datatypes_registry.sniff_order
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
@@ -310,6 +308,12 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('sequence.fasta')
     >>> guess_ext(fname, sniff_order)
     'fasta'
+    >>> fname = get_test_fname('1.genbank')
+    >>> guess_ext(fname, sniff_order)
+    'genbank'
+    >>> fname = get_test_fname('1.genbank.gz')
+    >>> guess_ext(fname, sniff_order)
+    'genbank.gz'
     >>> fname = get_test_fname('file.html')
     >>> guess_ext(fname, sniff_order)
     'html'
@@ -441,6 +445,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.xmfa')
     >>> guess_ext(fname, sniff_order)
     'xmfa'
+    >>> fname = get_test_fname('test.blib')
+    >>> guess_ext(fname, sniff_order)
+    'blib'
     >>> fname = get_test_fname('test.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'
@@ -456,6 +463,12 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
     'phyloxml'
+    >>> fname = get_test_fname('1.tiff')
+    >>> guess_ext(fname, sniff_order)
+    'tiff'
+    >>> fname = get_test_fname('1.fastqsanger.gz')
+    >>> guess_ext(fname, sniff_order)  # See test_datatype_registry for more compressed type tests.
+    'fastqsanger.gz'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
@@ -597,13 +610,19 @@ class FilePrefix(object):
 
 
 def build_sniff_from_prefix(klass):
+    # Build and attach a sniff function to this class (klass) from the sniff_prefix function
+    # expected to be defined for the class.
     def auto_sniff(self, filename):
         file_prefix = FilePrefix(filename)
         datatype_compressed = getattr(self, "compressed", False)
         if file_prefix.compressed_format and not datatype_compressed:
             return False
-        if datatype_compressed and not file_prefix.compressed_format:
-            return False
+        if datatype_compressed:
+            if not file_prefix.compressed_format:
+                # This not a compressed file we are looking but the type expects it to be
+                # must return False.
+                return False
+
         if hasattr(self, "compressed_format"):
             if self.compressed_format != file_prefix.compressed_format:
                 return False
@@ -688,12 +707,17 @@ def handle_compressed_file(
             # Replace the compressed file with the uncompressed file
             shutil.move(uncompressed, filename)
             uncompressed = filename
-    elif not is_compressed:
+    elif not is_compressed or not check_content:
         is_valid = True
     return is_valid, ext, uncompressed, compressed_type
 
 
-def handle_uploaded_dataset_file(
+def handle_uploaded_dataset_file(*args, **kwds):
+    """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
+    return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
+
+
+def handle_uploaded_dataset_file_internal(
         filename,
         datatypes_registry,
         ext='auto',
@@ -726,7 +750,7 @@ def handle_uploaded_dataset_file(
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
 
-        if not is_binary and convert_to_posix_lines:
+        if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             if convert_spaces_to_tabs:
                 convert_fxn = convert_newlines_sep2tabs

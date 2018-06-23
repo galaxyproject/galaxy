@@ -1,27 +1,26 @@
-<tool id="master2pgSnp" name="MasterVar to pgSnp" hidden="false" version="1.0.0">
-  <description>Convert from MasterVar to pgSnp format</description>
-  <command interpreter="perl">
-    master2pg.pl $indel $input1 > $out_file1
-  </command>
-  <inputs>
-    <param format="tab" name="input1" type="data" label="Complete Genomics MasterVar dataset" />
-    <param name="indel" type="select" label="Convert indels">
-      <option value="" selected="true">no</option>
-      <option value="indel">yes</option>
-    </param>
-  </inputs>
-  <outputs>
-  <data format="interval" name="out_file1" />
-  </outputs>
-  <tests>
-    <test>
-      <param name='input1' value='masterVarTest.txt' ftype='tab' />
-      <param name='indel' value="" />
-      <output name="output" file="masterVar_output.txt" />
-    </test>
-  </tests>
-
-  <help>
+<tool id="master2pgSnp" name="MasterVar to pgSnp" version="1.0.0">
+    <description>Convert from MasterVar to pgSnp format</description>
+    <command>
+perl '$__tool_directory__/master2pg.pl' $indel '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="tabular" label="Complete Genomics MasterVar dataset" />
+        <param name="indel" type="select" label="Convert indels">
+            <option value="" selected="true">no</option>
+            <option value="indel">yes</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="interval" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="masterVarTest.txt" ftype="tabular" />
+            <param name="indel" value="" />
+            <output name="out_file1" file="masterVar_output.txt" />
+        </test>
+    </tests>
+    <help>
 **Dataset formats**
 
 The input dataset is in the MasterVar_ format provided by the Complete Genomics 
@@ -61,6 +60,5 @@ Positions homozygous for the reference are skipped.
    chr1    52237   52238   G       1       7       63
    chr1    53205   53206   C/G     2       7,30    93,127
    etc.
-
-</help>
+    </help>
 </tool>

@@ -1,5 +1,9 @@
 /** This module contains all button views. */
 import Utils from "utils/utils";
+import * as Backbone from "backbone";
+
+/* global $ */
+
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
 var ButtonDefault = Backbone.View.extend({
     initialize: function(options) {
@@ -9,7 +13,7 @@ var ButtonDefault = Backbone.View.extend({
                 id: Utils.uid(),
                 title: "",
                 icon: "",
-                cls: "btn btn-default",
+                cls: "btn btn-secondary",
                 wait: false,
                 wait_text: "Sending...",
                 wait_cls: "btn btn-info",
@@ -29,7 +33,6 @@ var ButtonDefault = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -41,9 +44,9 @@ var ButtonDefault = Backbone.View.extend({
             .off("click")
             .on("click", () => {
                 $(".tooltip").hide();
-                options.onclick && !self.disabled && options.onclick();
+                options.onclick && !this.disabled && options.onclick();
             })
-            .tooltip({ title: options.tooltip, placement: "bottom" });
+            .tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
         this.$progress_bar.addClass("progress-bar").css({ width: `${options.percentage}%` });
         this.$icon.removeClass().addClass("icon fa");
@@ -158,14 +161,13 @@ var ButtonCheck = Backbone.View.extend({
     },
 
     render: function(options) {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
             .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
-                self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
+                this.model.set("value", (this.model.get("value") === 0 && 2) || 0);
                 options.onclick && options.onclick();
             });
         this.$title.html(options.title);
@@ -218,7 +220,6 @@ var ButtonIcon = ButtonDefault.extend({
     },
 
     render: function(options) {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -232,7 +233,7 @@ var ButtonIcon = ButtonDefault.extend({
                 $(".tooltip").hide();
                 !options.disabled && options.onclick && options.onclick();
             });
-        this.$button.addClass("button").tooltip({ title: options.tooltip, placement: "bottom" });
+        this.$button.addClass("button").tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$icon
             .removeClass()
             .addClass("icon fa")
@@ -276,7 +277,6 @@ var ButtonMenu = ButtonDefault.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -289,7 +289,7 @@ var ButtonMenu = ButtonDefault.extend({
         this.$root
             .addClass("root button dropdown-toggle")
             .attr("data-toggle", "dropdown")
-            .tooltip({ title: options.tooltip, placement: "bottom" })
+            .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")
             .on("click", e => {
                 $(".tooltip").hide();
@@ -308,8 +308,8 @@ var ButtonMenu = ButtonDefault.extend({
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
-                .addClass("menu dropdown-menu")
-                .addClass(`pull-${self.model.get("pull")}`)
+                .addClass("menu dropdown-menu dropdown-menu-right")
+                .addClass(`pull-${this.model.get("pull")}`)
                 .attr("role", "menu");
             this.$el.append(this.$menu);
         }
@@ -335,8 +335,8 @@ var ButtonMenu = ButtonDefault.extend({
                             suboptions.onclick();
                         }
                     });
-                self.$menu.append($("<li/>").append($link));
-                suboptions.divider && self.$menu.append($("<li/>").addClass("divider"));
+                this.$menu.append($("<li/>").append($link));
+                suboptions.divider && this.$menu.append($("<li/>").addClass("divider"));
             }
         });
     },

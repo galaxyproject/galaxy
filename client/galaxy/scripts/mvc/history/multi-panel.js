@@ -135,26 +135,16 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         data = _.extend(data || {}, {
             isCurrentHistory: this.currentHistory
         });
-        return $(
-            [
-                '<div class="panel-controls clear flex-row">',
-                this.controlsLeftTemplate({
-                    history: data,
-                    view: this
-                }),
-                //'<button class="btn btn-default">Herp</button>',
-                this.controlsRightTemplate({
-                    history: data,
-                    view: this
-                }),
-                "</div>",
-                '<div class="inner flex-row flex-column-container">',
-                '<div id="history-',
-                data.id,
-                '" class="history-column history-panel flex-column"></div>',
-                "</div>"
-            ].join("")
-        );
+        return $(`
+            <div class="panel-controls mb-1">
+                <div class="flex-row flex-column-container no-gutters justify-content-between">
+                    ${this.controlsLeftTemplate({ history: data, view: this })}
+                    ${this.controlsRightTemplate({ history: data, view: this })}
+                </div>
+            </div>
+            <div class="inner flex-row flex-column-container">
+                <div id="history-${data.id}" class="history-column history-panel flex-column"></div>
+            </div>`);
     },
 
     /** render the panel contained in the column using speed for fx speed */
@@ -186,7 +176,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             });
         },
         "click .purge-history": function() {
-            if (confirm(_l("This will permanently remove the data. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data. Are you sure?"))) {
                 this.model.purge().done(data => {
                     this.render();
                 });
@@ -205,57 +195,51 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     // ------------------------------------------------------------------------ templates
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsLeftTemplate: _.template(
-        [
-            '<div class="pull-left">',
-            "<% if( data.history.isCurrentHistory ){ %>",
-            '<strong class="current-label">',
-            _l("Current History"),
-            "</strong>",
-            "<% } else { %>",
-            '<button class="switch-to btn btn-default">',
-            _l("Switch to"),
-            "</button>",
-            "<% } %>",
-            "</div>"
-        ].join(""),
+        `
+        <div class="text-left col-8">
+            <% if( data.history.isCurrentHistory ){ %>
+                <strong class="current-label">
+                    ${_l("Current History")}
+                </strong>
+            <% } else { %>
+                <button class="switch-to btn btn-secondary">
+                    ${_l("Switch to")}
+                </button>
+            <% } %>
+        </div>`,
         { variable: "data" }
     ),
 
     /** controls template displaying controls above the panel based on this.currentHistory */
     controlsRightTemplate: _.template(
-        [
-            '<div class="pull-right">',
-            "<% if( !data.history.purged ){ %>",
-            '<div class="panel-menu btn-group">',
-            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
-            '<span class="caret"></span>',
-            "</button>",
-            '<ul class="dropdown-menu pull-right" role="menu">',
-            "<% if( !data.history.deleted ){ %>",
-            '<li><a href="javascript:void(0);" class="copy-history">',
-            _l("Copy"),
-            "</a></li>",
-            //'<li><a href="javascript:void(0);" class="publish-history">',
-            //    _l( 'Publish' ),
-            //'</a></li>',
-            '<li><a href="javascript:void(0);" class="delete-history">',
-            _l("Delete"),
-            "</a></li>",
-            "<% } else /* if is deleted */ { %>",
-            '<li><a href="javascript:void(0);" class="undelete-history">',
-            _l("Undelete"),
-            "</a></li>",
-            "<% } %>",
-            "<% if( data.view.purgeAllowed ){ %>",
-            '<li><a href="javascript:void(0);" class="purge-history">',
-            _l("Purge"),
-            "</a></li>",
-            "<% } %>",
-            "</ul>",
-            "</div>",
-            "<% } %>",
-            "</div>"
-        ].join(""),
+        `<div class="text-right col-4">
+            <% if( !data.history.purged ){ %>
+                <div class="panel-menu btn-group">
+                    <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu">
+                        <% if( !data.history.deleted ){ %>
+                            <li><a href="javascript:void(0);" class="copy-history">
+                                ${_l("Copy")}
+                            </a></li>
+                            <li><a href="javascript:void(0);" class="delete-history">
+                                ${_l("Delete")}
+                            </a></li>
+                        <% } else /* if is deleted */ { %>
+                            <li><a href="javascript:void(0);" class="undelete-history">
+                                ${_l("Undelete")}
+                            </a></li>
+                        <% } %>
+                        <% if( data.view.purgeAllowed ){ %>
+                            <li><a href="javascript:void(0);" class="purge-history">
+                                ${_l("Purge")}
+                            </a></li>
+                        <% } %>
+                    </ul>
+                </div>
+            <% } %>
+        </div>`,
         { variable: "data" }
     ),
 
@@ -632,7 +616,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         speed = speed !== undefined ? speed : this.fxSpeed;
 
         this.log(`${this}.render`);
-        this.$el.html(this.mainTemplate(this));
+        this.$el.html(this.mainTemplate);
         this.renderColumns(speed);
 
         // set the columns to full height allowed and set up behaviors for thie multipanel
@@ -654,7 +638,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
         this._addColumns(sortedAndFiltered, speed);
         if (!this.collection.allFetched) {
-            $middle.append(this.loadingIndicatorTemplate(this));
+            $middle.append(this.loadingIndicatorTemplate);
         }
         //TODO: sorta - at least their fx queue has started the re-rendering
         this.trigger("columns-rendered", sortedAndFiltered, this);
@@ -1030,50 +1014,35 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     },
 
     // ------------------------------------------------------------------------ templates
-    mainTemplate: _.template(
-        [
-            '<div class="header flex-column-container">',
-            '<div class="control-column control-column-left flex-column">',
-            '<button class="done btn btn-default" tabindex="1">',
-            _l("Done"),
-            "</button>",
-            '<div id="search-histories" class="search-control"></div>',
-            '<div id="search-datasets" class="search-control"></div>',
-            '<a class="open-more-options btn btn-default" tabindex="3">',
-            '<span class="fa fa-ellipsis-h"></span>',
-            "</a>",
-            "</div>",
-            // feedback
-            '<div class="control-column control-column-center flex-column">',
-            '<div class="header-info">',
-            "</div>",
-            "</div>",
-            '<div class="control-column control-column-right flex-column">',
-            '<button class="create-new btn btn-default" tabindex="4">',
-            _l("Create new"),
-            "</button> ",
-            "</div>",
-            "</div>",
-            // middle - where the columns go
-            '<div class="outer-middle flex-row flex-row-container">',
-            '<div class="middle flex-column-container flex-row"></div>',
-            "</div>",
-            // footer
-            '<div class="footer flex-column-container"></div>'
-        ].join(""),
-        { variable: "view" }
-    ),
+    mainTemplate: `
+        <div class="header flex-column-container">
+            <div class="control-column control-column-left flex-column">
+                <div id="search-histories" class="search-control"></div>
+                <div id="search-datasets" class="search-control"></div>
+                <a class="open-more-options btn btn-secondary" tabindex="3">
+                    <span class="fa fa-ellipsis-h"></span>
+                </a>
+            </div>
+            <div class="control-column control-column-center flex-column">
+                <div class="header-info">
+                </div>
+            </div>
+            <div class="control-column control-column-right flex-column">
+                <button class="create-new btn btn-secondary" tabindex="4">
+                    ${_l("Create new")}
+                </button>
+            </div>
+        </div>
+        <div class="outer-middle flex-row flex-row-container">
+            <div class="middle flex-column-container flex-row"></div>
+        </div>
+        <div class="footer flex-column-container"></div>`,
 
-    loadingIndicatorTemplate: _.template(
-        [
-            '<div class="histories-loading-indicator">',
-            '<span class="fa fa-spin fa-spinner"></span>',
-            _l("Loading histories"),
-            "...",
-            "</div>"
-        ].join(""),
-        { variable: "view" }
-    ),
+    loadingIndicatorTemplate: `
+        <div class="histories-loading-indicator">
+            <span class="fa fa-spin fa-spinner"></span>
+            ${_l("Loading histories")} ...
+        </div>`,
 
     orderDescriptions: {
         update_time: _l("most recent first"),
@@ -1086,16 +1055,16 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     optionsPopoverTemplate: _.template(
         [
-            '<div class="more-options">',
-            '<div class="order btn-group">',
-            '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+            '<div class="more-options d-flex flex-column">',
+            '<div class="order btn-group mb-2">',
+            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
             `${_l("Order histories by")} `,
             '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
             '<span class="caret"></span>',
             "</button>",
             '<ul class="dropdown-menu" role="menu">',
             "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<li><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
+            '<li class="dropdown-item"><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
             "<%- text %>",
             "</a></li>",
             "<% }); %>",
@@ -1106,8 +1075,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             '<%= view.collection.includeDeleted? " checked" : "" %>>',
             _l("Include deleted histories"),
             "</label></div>",
-
-            "<hr />",
 
             '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
             _l("Include deleted datasets"),

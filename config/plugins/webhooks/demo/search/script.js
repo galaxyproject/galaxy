@@ -33,7 +33,7 @@ $(document).ready(function() {
             };
 
             // Open search overlay on click of magnifier icon in the masthead
-            self.parentElement.find( 'ul#searchover a' ).on( 'click', function( e ) {
+            self.parentElement.find( 'ul #searchover a' ).on( 'click', function( e ) {
                 e.preventDefault();
                 e.stopPropagation();
                 if ( $( '.search-screen-overlay' ).is( ':visible' ) ){

@@ -173,7 +173,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Create Release Notes**
 
-    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Amerged+no%3Amilestone)
+    - [ ] Review merged PRs and ensure they all have a milestones attached. [Link](https://github.com/galaxyproject/galaxy/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Amerged+no%3Amilestone+-label%3Amerge+)
     - [ ] Checkout release branch
 
           git checkout release_${version} -b ${version}_release_notes
@@ -229,7 +229,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [ ] **Prepare for next release**
 
-    - [ ] Ensure milestone ``${next_version}`` exists.
+    - [ ] Close milestone ``${version}`` and ensure milestone ``${next_version}`` exists.
     - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
     - [ ] Schedule committer meeting to discuss re-alignment of priorities.
     - [ ] Close this issue.
