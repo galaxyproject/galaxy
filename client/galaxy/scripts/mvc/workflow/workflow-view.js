@@ -85,6 +85,7 @@ export default Backbone.View.extend({
                 window.document.location = self.urls.workflow_index;
             }
         };
+        var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
             self.workflow.check_changes_in_active_form();
@@ -284,6 +285,12 @@ export default Backbone.View.extend({
                     hide_modal();
                 }
                 self.showWorkflowParameters();
+            },
+            error: function(response) {
+                    window.show_modal("Loading workflow failed.", response.err_msg, { Ok: function( response ){
+            window.onbeforeunload = undefined;
+            window.document.location = workflow_index;
+}})
             },
             beforeSubmit: function(data) {
                 show_message("Loading workflow", "progress");
