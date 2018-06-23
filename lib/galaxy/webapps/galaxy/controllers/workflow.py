@@ -637,7 +637,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None):
+    def editor(self, trans, id=None, version=None):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -653,7 +653,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
             .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
-        return trans.fill_template("workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
+        if version is not None:
+            version = int(version)
+        return trans.fill_template("workflow/editor.mako",
+                                   workflows=workflows,
+                                   stored=stored,
+                                   version=version,
+                                   annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
 
     @web.json
     def load_workflow(self, trans, id, version=None):
