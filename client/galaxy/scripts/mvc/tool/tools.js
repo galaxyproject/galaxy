@@ -633,11 +633,6 @@ var ToolSearchView = Backbone.View.extend({
             this.$el.hide();
         }
 
-        // Adjust top for issue 2907 depending on whether the messagebox is visible.
-        if ($("#messagebox").is(":visible")) {
-            this.$el.css("top", "95px");
-        }
-
         this.$el.find("[title]").tooltip();
         return this;
     },

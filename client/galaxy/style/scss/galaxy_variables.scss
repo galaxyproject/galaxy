@@ -4,8 +4,30 @@
 $base-bg: $white;
 $base-text-color: $black;
 
-$side-panel-bg: lighten(black, 95%);
-$layout-border-color: darken($border-default-color, 15%);
+// Masthead
+
+$masthead-height: 2.5rem;
+
+// Side panels
+
+$panel-bg-color: #dfe5f9;
+$panel-text-color: $gray-900;
+$side-panel-bg: $panel-bg-color;
+
+$panel-header-bg-color: $gray-lighter;
+$panel-header-text-color: #555;
+
+$panel-message-height: 2rem; //1.875rem;
+
+$layout_top_padding: 0px;
+$border-default-color_padding: 0px;
+
+$panel_header_height: 2rem;
+$panel_footer_height: 25px;
+
+$layout-border-color: $gray-900; // darken($border-default-color, 15%);
+
+// Forms
 
 $form-heading-bg: $complement-color-3;
 $form-border: $complement-color-3;
@@ -24,7 +46,7 @@ $state-paused-bg: #d9edf7;
 $state-running-border: #aaaa66;
 $state-running-bg: #ffffcc;
 
-$navbar-height: 33px; // 2.062500rem;
+$navbar-height: 36px; // 2.062500rem;
 $navbar-default-bg: $gray-lighter; // JT #f8f8f8;
 $navbar-default-border: darken($navbar-default-bg, $border-darken-percent);
 

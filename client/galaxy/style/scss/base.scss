@@ -89,13 +89,26 @@ body {
 
 // ==== Panel layout styles ====
 
-$panel-message-height: 30px; //1.875rem;
+// Layout the paneled UI using flexbox.
 
-$layout_top_padding: 0px;
-$border-default-color_padding: 0px;
+#everything {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
 
-$panel_header_height: 30px;
-$panel_footer_height: 25px;
+#columns {
+    // Fill extra space in parent
+    flex: 1;
+    // Allow columns to be absolutely positioned inside
+    position: relative;
+}
 
 #background {
     position: absolute;
@@ -110,9 +123,9 @@ $panel_footer_height: 25px;
 }
 
 #messagebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -122,9 +135,9 @@ $panel_footer_height: 25px;
 }
 
 #inactivebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -136,31 +149,19 @@ $panel_footer_height: 25px;
 // Panels
 
 #left,
-#left-border,
 #center,
-#right-border,
 #right {
     position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    bottom: 0px;
+    top: 0;
+    height: 100%;
     overflow: hidden;
     background: #fff;
-}
-#left,
-#center,
-#right,
-#left-border,
-#right-border {
-    // border-top: solid $border-default-color 1px;
 }
 #left {
     left: 0px;
     width: 250px;
     z-index: 200;
     border-right: solid $layout-border-color 1px;
-}
-#left-border {
-    left: 250px;
 }
 #center {
     left: 250 + $border-default-color_padding;
@@ -186,9 +187,7 @@ $panel_footer_height: 25px;
         }
     }
 }
-#right-border {
-    right: 250px;
-}
+
 #right {
     width: 250px;
     right: 0px;
@@ -196,57 +195,62 @@ $panel_footer_height: 25px;
     border-left: solid $layout-border-color 1px;
 }
 
-// If the message box or inactivity box is visible
-body.has-message-box,
-body.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-}
-
-// If both are visible
-body.has-message-box.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: 2 * $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-    #inactivebox {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-}
-
 .unified-panel-header {
     @extend .unselectable;
     height: $panel_header_height;
     z-index: 1000;
     text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-    background: $navbar-default-bg;
+    background: $panel-header-bg-color;
     border-bottom: solid $layout-border-color 1px;
     margin: 0;
     padding: 0;
     padding-right: 10px;
     padding-left: 10px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
 
-    color: #555;
+
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
     .fa {
         font-size: 1.2em;
     }
+
+    .unified-panel-header-inner {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .panel-header-buttons {
+        order: 9999;
+    }
+
+    .panel-header-button {
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        // Fade to maroon on hover
+        &:hover {
+            color: maroon;
+            @include transition(color 0.25s linear);
+        }
+        // Bootstrap style span caret needs positioning
+        .caret {
+            margin-top: 7px;
+        }
+        // Another way to get a caret
+        &.popup {
+            padding-right: 1.75em;
+            background: url(../images/dropdownarrow.png) no-repeat right 7px;
+        }
+    }
 }
 
-.unified-panel-header-inner {
-    padding-top: 8px;
-}
 
 .unified-panel-footer {
     @extend .unselectable;
@@ -348,33 +352,6 @@ div.unified-panel-body-background {
     overflow: auto;
 }
 
-.panel-header-button {
-    color: #333;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    margin: -1px;
-    padding: 1px;
-    margin-top: -0.2em;
-    // border: solid #999 1px;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
-    // Fade to maroon on hover
-    &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
-    }
-    // Bootstrap style span caret needs positioning
-    .caret {
-        margin-top: 7px;
-    }
-    // Another way to get a caret
-    &.popup {
-        padding-right: 1.75em;
-        background: url(../images/dropdownarrow.png) no-repeat right 7px;
-    }
-}
-
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
 #dd-helper {
     background: white;
@@ -423,9 +400,16 @@ div.unified-panel-body-background {
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    background-color: #2c3143;
+    background-color: $base-color-1;
+    height: $masthead-height;
     .navbar-nav {
+        min-height: 100%;
         > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
             &.active {
                 background: black;
             }
@@ -446,21 +430,21 @@ div.unified-panel-body-background {
                 font-weight: bold;
                 font-size: 10px;
                 position: relative;
-                left: 30px;
-                top: -15px;
+                right: 5px;
+                top: 10px;
                 color: gold;
-                height: 0px;
+                width:0px;
             }
         }
     }
     .navbar-brand {
         position: absolute;
         left: 0;
-        top: 0;
+        // top: 0;
         font-family: verdana;
         font-weight: bold;
         font-size: 20px;
-        line-height: 1;
+        // line-height: 1;
         color: white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
@@ -469,7 +453,7 @@ div.unified-panel-body-background {
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            vertical-align: top;
+            // vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
@@ -481,7 +465,7 @@ div.unified-panel-body-background {
 
 .quota-meter-container {
     position: absolute;
-    top: 0;
+    // top: 0;
     right: 0;
     height: 32px;
 }
@@ -1601,8 +1585,12 @@ div.permissionContainer {
 // ==== Tool menu styles
 
 .toolMenuContainer {
-    color: $base-text-color;
-    background: $side-panel-bg;
+    color: $panel-text-color;
+    a {
+      color: $panel-text-color;
+      // text-decoration: none;
+    }
+    background: $panel-bg-color;
     min-height: 100%;
     padding: 35px 10px;
 }
@@ -1671,11 +1659,12 @@ div.toolTitleNoSection {
     font-weight: bold;
 }
 
+// TODO: should be formatted like "controls" in History panel
 #tool-search {
     padding-top: 5px;
     padding-bottom: 10px;
-    position: fixed;
-    top: 65px;
+    position: absolute;
+    top: 0;
     width: 210px;
 }
 
