@@ -109,7 +109,6 @@
                 <social-sharing :url="workflowUrl"
                                 title="Link to a Galaxy workflow: "
                                 quote="Galaxy workflow"
-                                hashtags="usegalaxy"
                                 inline-template>
                     <div class="share-link">
                         <network network="twitter" id="twitter" class="social-link"><i class="fa fa-fw fa-twitter"></i> Twitter </network>
