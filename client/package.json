@@ -104,7 +104,7 @@
     "qunitjs": "^2.4.1",
     "sass-loader": "^6.0.7",
     "sinon": "^4.1.2",
-    "vue-loader": "^14.2.2",
+    "vue-loader": "^15.2.4",
     "vue-styleguidist": "^1.6.1",
     "vue-template-compiler": "2.5.16",
     "webpack": "^3.10.0",
