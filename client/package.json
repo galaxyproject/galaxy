@@ -35,7 +35,7 @@
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.17.0",
     "requirejs": "2",
-    "underscore": "^1.8.3",
+    "underscore": "^1.9.1",
     "vue": "2.5.16"
   },
   "scripts": {
