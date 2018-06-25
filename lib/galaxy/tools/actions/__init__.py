@@ -503,8 +503,9 @@ class DefaultToolAction(object):
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
-        self._record_outputs(job, out_data, output_collections)
+        job_associations = []
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, job_associations)
+        self._record_outputs(job, out_data, output_collections, job_associations)
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps(job_params)
@@ -537,10 +538,15 @@ class DefaultToolAction(object):
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
         job_flush_timer = ExecutionTimer()
         trans.sa_session.flush()
+        job_id = job.id
+        for job_association in job_associations:
+            job_association.job_id = job_id
+            trans.sa_session.add(job_association)
+        trans.sa_session.flush()
         if bulk_job_input_assocs is not None:
             for input_assoc in bulk_job_input_assocs:
-                input_assoc.job_id = job.id
-                assert job.id
+                input_assoc.job_id = job_id
+                assert job_id
 
             t = sa_session.begin()
             try:
@@ -692,7 +698,7 @@ class DefaultToolAction(object):
             job.tool_version = "1.0.0"
         return job, galaxy_session
 
-    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
+    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections, job_associations):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -709,7 +715,7 @@ class DefaultToolAction(object):
                     # FIXME: when recording inputs for special tools (e.g. ModelOperationToolAction),
                     # dataset_collection is actually a DatasetCollectionElement, which can't be added
                     # to a jobs' input_dataset_collection relation, which expects HDCA instances
-                    job.add_input_dataset_collection(name, dataset_collection)
+                    job_associations.append(model.JobToInputDatasetCollectionAssociation(name, dataset_collection))
 
         # If this an input collection is a reduction, we expanded it for dataset security, type
         # checking, and such, but the persisted input must be the original collection
@@ -731,29 +737,24 @@ class DefaultToolAction(object):
             tool.visit_inputs(incoming, restore_reduction_visitor)
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
-            job.add_parameter(name, value)
-        self._record_input_datasets(trans, job, inp_data)
+            job_associations.append(model.JobParameter(name, value))
 
-    def _record_outputs(self, job, out_data, output_collections):
+        for name, dataset in inp_data.items():
+            if dataset:
+                job_associations.append(model.JobToInputDatasetAssociation(name, dataset))
+            else:
+                job_associations.append(model.JobToInputDatasetAssociation(name, None))
+
+    def _record_outputs(self, job, out_data, output_collections, job_associations):
         out_collections = output_collections.out_collections
         out_collection_instances = output_collections.out_collection_instances
         for name, dataset in out_data.items():
-            job.add_output_dataset(name, dataset)
+            job_associations.append(model.JobToOutputDatasetAssociation(name, dataset))
         for name, dataset_collection in out_collections.items():
-            job.add_implicit_output_dataset_collection(name, dataset_collection)
+            job_associations.append(model.JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
         for name, dataset_collection_instance in out_collection_instances.items():
-            job.add_output_dataset_collection(name, dataset_collection_instance)
+            job_associations.append(model.JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
             dataset_collection_instance.job = job
-
-    def _record_input_datasets(self, trans, job, inp_data):
-        for name, dataset in inp_data.items():
-            if dataset:
-                if dataset in trans.sa_session:
-                    job.add_input_dataset(name, dataset=dataset)
-                else:
-                    job.add_input_dataset(name, dataset_id=dataset.id)
-            else:
-                job.add_input_dataset(name, None)
 
     def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
         if output.label:
