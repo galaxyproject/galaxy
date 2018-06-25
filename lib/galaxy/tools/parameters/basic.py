@@ -1521,10 +1521,15 @@ class BaseDataToolParameter(ToolParameter):
                 src = 'dce'
             elif isinstance(value, app.model.HistoryDatasetCollectionAssociation):
                 src = 'hdca'
-            elif hasattr(value, 'id'):
+            elif isinstance(value, app.model.HistoryDatasetAssociation) or hasattr(value, 'id'):
+                # hasattr 'id' fires a query on persistent objects after a flush so better
+                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
+                # nice to drop it.
                 src = 'hda'
             if src is not None:
-                return {'id' : app.security.encode_id(value.id) if use_security else value.id, 'src' : src}
+                object_id = galaxy.model.cached_id(value)
+                return {'id' : app.security.encode_id(object_id) if use_security else object_id, 'src' : src}
+
         if value not in [None, '', 'None']:
             if isinstance(value, list) and len(value) > 0:
                 values = [single_to_json(v) for v in value]
