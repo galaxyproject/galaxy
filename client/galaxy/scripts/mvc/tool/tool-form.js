@@ -206,8 +206,7 @@ var View = Backbone.View.extend({
             _.each(job_def.inputs, (value, key) => {
                 $f.append($("<input/>").attr({ name: key, value: value }));
             });
-            $f
-                .hide()
+            $f.hide()
                 .appendTo("body")
                 .submit()
                 .remove();

@@ -263,7 +263,10 @@ class Workflow {
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
-                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
+                        c.connect(
+                            other_node.output_terminals[x.output_name],
+                            node.input_terminals[k]
+                        );
                         c.redraw();
                     });
                 }

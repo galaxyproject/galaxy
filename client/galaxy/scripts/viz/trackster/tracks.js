@@ -1165,7 +1165,9 @@ var TracksterView = Backbone.View.extend({
             .bind("drag", function(e, d) {
                 var delta = d.offsetX - this.current_x;
                 this.current_x = d.offsetX;
-                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low));
+                var delta_chrom = Math.round(
+                    (delta / view.viewport_container.width()) * (view.max_high - view.max_low)
+                );
                 view.move_delta(-delta_chrom);
             });
 
@@ -1193,7 +1195,7 @@ var TracksterView = Backbone.View.extend({
                 container.scrollTop(new_scroll);
                 d.current_height = e.clientY;
                 d.current_x = d.offsetX;
-                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
+                var delta_chrom = Math.round((delta / view.viewport_container.width()) * (view.high - view.low));
                 view.move_delta(delta_chrom);
             });
         /*
@@ -1232,8 +1234,8 @@ var TracksterView = Backbone.View.extend({
                 var span = view.high - view.low;
                 var width = view.viewport_container.width();
                 view.update_location(
-                    Math.round(min / width * span) + view.low,
-                    Math.round(max / width * span) + view.low
+                    Math.round((min / width) * span) + view.low,
+                    Math.round((max / width) * span) + view.low
                 );
             })
             .bind("dragend", (e, d) => {
@@ -1242,8 +1244,8 @@ var TracksterView = Backbone.View.extend({
                 var span = view.high - view.low;
                 var width = view.viewport_container.width();
                 var old_low = view.low;
-                view.low = Math.round(min / width * span) + old_low;
-                view.high = Math.round(max / width * span) + old_low;
+                view.low = Math.round((min / width) * span) + old_low;
+                view.high = Math.round((max / width) * span) + old_low;
                 $(d.proxy).remove();
                 view.request_redraw();
             });
@@ -1663,8 +1665,8 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
 
         // Overview
-        var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
-        var width_px = (this.high - this.low) / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
+        var left_px = (this.low / (this.max_high - this.max_low)) * this.overview_viewport.width() || 0;
+        var width_px = ((this.high - this.low) / (this.max_high - this.max_low)) * this.overview_viewport.width() || 0;
         var min_width_px = 13;
 
         this.overview_box
@@ -1707,7 +1709,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         var cur_center = span / 2 + this.low;
         var new_half = span / this.zoom_factor / 2;
         if (point) {
-            cur_center = point / this.viewport_container.width() * (this.high - this.low) + this.low;
+            cur_center = (point / this.viewport_container.width()) * (this.high - this.low) + this.low;
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
@@ -1722,7 +1724,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         }
         var span = this.high - this.low;
         var cur_center = span / 2 + this.low;
-        var new_half = span * this.zoom_factor / 2;
+        var new_half = (span * this.zoom_factor) / 2;
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
         this.changed();
@@ -3592,7 +3594,7 @@ extend(LabelTrack.prototype, Track.prototype, {
         var width = this.view.container.width();
         var new_div = $("<div/>").addClass("label-container");
         while (position < view.high) {
-            var screenPosition = Math.floor((position - view.low) / range * width);
+            var screenPosition = Math.floor(((position - view.low) / range) * width);
             new_div.append(
                 $("<div/>")
                     .addClass("pos-label")

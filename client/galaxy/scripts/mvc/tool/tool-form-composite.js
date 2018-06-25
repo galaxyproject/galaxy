@@ -464,7 +464,7 @@ var View = Backbone.View.extend({
                 self.execute_btn.model.set({
                     wait: true,
                     wait_text: "Preparing...",
-                    percentage: (step.index + 1) * 100.0 / self.steps.length
+                    percentage: ((step.index + 1) * 100.0) / self.steps.length
                 });
             }
             Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);

@@ -150,7 +150,7 @@ class CanvasManager {
 
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
 
-                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
+                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             }
@@ -164,7 +164,7 @@ class CanvasManager {
                 var o_h = self.oc.height();
                 var new_x_offset = d.offsetX - self.overview.offset().left;
                 var new_y_offset = d.offsetY - self.overview.offset().top;
-                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
+                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
@@ -236,11 +236,11 @@ class CanvasManager {
         var o_h = oc.height();
         var cc_pos = cc.position();
         ov.css({
-            left: -(cc_pos.left / in_w * o_w),
-            top: -(cc_pos.top / in_h * o_h),
+            left: -((cc_pos.left / in_w) * o_w),
+            top: -((cc_pos.top / in_h) * o_h),
             // Subtract 2 to account for borders (maybe just change box sizing style instead?)
-            width: cv.width() / in_w * o_w - 2,
-            height: cv.height() / in_h * o_h - 2
+            width: (cv.width() / in_w) * o_w - 2,
+            height: (cv.height() / in_h) * o_h - 2
         });
     }
     draw_overview() {
@@ -263,21 +263,21 @@ class CanvasManager {
         var cv_h = this.cv.height();
         if (in_w < cv_w && in_h < cv_h) {
             // Canvas is smaller than viewport
-            o_w = in_w / cv_w * size;
+            o_w = (in_w / cv_w) * size;
             shift_w = (size - o_w) / 2;
-            o_h = in_h / cv_h * size;
+            o_h = (in_h / cv_h) * size;
             shift_h = (size - o_h) / 2;
         } else if (in_w < in_h) {
             // Taller than wide
             shift_h = 0;
             o_h = size;
-            o_w = Math.ceil(o_h * in_w / in_h);
+            o_w = Math.ceil((o_h * in_w) / in_h);
             shift_w = (size - o_w) / 2;
         } else {
             // Wider than tall
             o_w = size;
             shift_w = 0;
-            o_h = Math.ceil(o_w * in_h / in_w);
+            o_h = Math.ceil((o_w * in_h) / in_w);
             shift_h = (size - o_h) / 2;
         }
         canvas_el.parent().css({
@@ -295,10 +295,10 @@ class CanvasManager {
             c.lineWidth = 1;
             var node_element = $(node.element);
             var position = node_element.position();
-            var x = position.left / in_w * o_w;
-            var y = position.top / in_h * o_h;
-            var w = node_element.width() / in_w * o_w;
-            var h = node_element.height() / in_h * o_h;
+            var x = (position.left / in_w) * o_w;
+            var y = (position.top / in_h) * o_h;
+            var w = (node_element.width() / in_w) * o_w;
+            var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
                 c.fillStyle = "#FFCCCC";
                 c.strokeStyle = "#AA6666";

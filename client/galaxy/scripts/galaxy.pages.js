@@ -171,8 +171,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
                         // Set link attributes.
                         var link = $(`a[href=${sStamp}]`, wym._doc.body);
-                        link
-                            .attr(WYMeditor.HREF, sUrl)
+                        link.attr(WYMeditor.HREF, sUrl)
                             .attr(WYMeditor.TITLE, sName)
                             .attr("id", sId);
 

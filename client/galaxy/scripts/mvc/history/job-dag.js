@@ -95,8 +95,7 @@ JobDAG.prototype.read = function _read(data) {
     if (_.has(data, "historyContents") && _.has(data, "jobs") && _.has(data, "tools")) {
         // a job dag is composed of these three elements:
         //  clone the 3 data sources into the DAG, processing the jobs finally using the history and tools
-        self
-            .preprocessHistoryContents(data.historyContents || [])
+        self.preprocessHistoryContents(data.historyContents || [])
             .preprocessTools(data.tools || {})
             .preprocessJobs(data.jobs || []);
 
