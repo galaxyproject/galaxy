@@ -92,7 +92,9 @@ export default {
             optionsShow: false
         };
     },
-    created: function() {this.load()},
+    created: function() {
+        this.load();
+    },
     methods: {
         filtered: function(items) {
             this.nItems = items.length;
@@ -113,7 +115,8 @@ export default {
                     })
                     .catch(e => {
                         if (e.response) {
-                            this.errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                            this.errorMessage =
+                                e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
                         } else {
                             this.errorMessage = "Server unavailable.";
                         }
