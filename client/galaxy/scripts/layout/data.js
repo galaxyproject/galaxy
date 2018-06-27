@@ -9,11 +9,11 @@ export default class Data {
     dialog(callback) {
         var instance = Vue.extend(DataDialog);
         var vm = document.createElement("div");
-        $('body').append(vm);
-        new instance(({
+        $("body").append(vm);
+        new instance({
             propsData: {
                 callback: callback
             }
-        })).$mount(vm);
+        }).$mount(vm);
     }
 }

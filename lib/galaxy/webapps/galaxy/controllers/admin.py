@@ -576,6 +576,20 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
+    def data_types_list(self, trans, **kwd):
+        datatypes = []
+        keys = set()
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        for dtype in sorted(trans.app.datatypes_registry.datatype_elems,
+                           key=lambda dtype: dtype.get('extension')):
+            datatypes.append(dtype.attrib)
+            keys |= set(dtype.attrib)
+        return {'keys': list(keys), 'data': datatypes, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
     def users_list(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -893,13 +907,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.require_admin
     def tool_errors(self, trans, **kwd):
         return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
-
-    @web.expose
-    @web.require_admin
-    def view_datatypes_registry(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_datatypes_registry.mako', message=message, status=status)
 
     @web.expose
     @web.require_admin
