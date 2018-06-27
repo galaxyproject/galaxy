@@ -16,6 +16,7 @@ matrix:
   include:
     - env: TOX_ENV=py34-first_startup
       addons:
+        &py3_addons
         apt:
           packages:
             # For psutil, pyyaml, uwsgi...
@@ -33,7 +34,10 @@ matrix:
         apt:
           packages:
             - ack-grep
+    - env: TOX_ENV=py34-unit
+      addons: *py3_addons
   allow_failures:
+    - env: TOX_ENV=py34-unit
     - env: TOX_ENV=check_python_dependencies
 
 
