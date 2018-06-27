@@ -67,16 +67,15 @@ export default {
                     }
                     // Create column headers from each remaining key and merge
                     // with predefined column headers
-                    columns =
-                        keys.reduce(function(m, k)
-                                    {
-                                        var text = k[0].toUpperCase();
-                                        text += k.slice(1).replace(/_/g," ");
-                                        m.push({"text": text,
-                                                "dataIndex": k});
-                                        return m;
-                                    },
-                                    columns);
+                    columns = keys.reduce(function(m, k) {
+                        var text = k[0].toUpperCase();
+                        text += k.slice(1).replace(/_/g, " ");
+                        m.push({
+                            text: text,
+                            dataIndex: k
+                        });
+                        return m;
+                    }, columns);
                 }
             }
             return columns;
