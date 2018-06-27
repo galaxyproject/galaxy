@@ -910,13 +910,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def view_datatypes_registry(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_datatypes_registry.mako', message=message, status=status)
-
-    @web.expose
-    @web.require_admin
     def display_applications(self, trans, **kwd):
         return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
 
