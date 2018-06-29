@@ -108,7 +108,7 @@ class OIDC(BaseAPIController):
         trans.handle_user_login(user)
         return {"message": message}
 
-    @web.expose
+    @web.expose_api
     @web.require_login("authenticate against the selected identity provider")
     def disconnect(self, trans, provider, **kwargs):
         """
