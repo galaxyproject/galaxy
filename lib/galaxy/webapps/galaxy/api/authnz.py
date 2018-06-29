@@ -7,6 +7,9 @@ from __future__ import absolute_import
 import logging
 
 from galaxy import web
+from galaxy.web import (
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+)
 from galaxy.exceptions import MessageException
 from galaxy.web import url_for
 from galaxy.web.base.controller import BaseAPIController
@@ -36,7 +39,7 @@ class OIDC(BaseAPIController):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
         return rtv
 
-    @web.expose
+    @expose_api_anonymous_and_sessionless
     def login(self, trans, provider):
         if not trans.app.config.enable_oidc:
             raise MessageException(
@@ -44,7 +47,7 @@ class OIDC(BaseAPIController):
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
         return redirect_uri
 
-    @web.expose
+    @expose_api_anonymous_and_sessionless
     def callback(self, trans, provider, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
