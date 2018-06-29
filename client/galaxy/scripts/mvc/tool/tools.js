@@ -684,7 +684,9 @@ var ToolPanelView = Backbone.View.extend({
             model: this.model.get("tool_search")
         });
         search_view.render();
-        self.$el.append(search_view.$el);
+        // FIXME: This is a little ugly because it navigates through the parent
+        //        element, but good enough until this is all `.vue`
+        self.$el.closest(".unified-panel").find(".unified-panel-controls").append(search_view.$el);
 
         // Render panel.
         this.model.get("layout").each(panel_elt => {
@@ -798,14 +800,11 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
 var templates = {
     // the search bar at the top of the tool panel
     tool_search: _.template(
-        [
-            '<input id="tool-search-query" class="search-query parent-width" name="query" ',
-            'placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />',
-            '<a id="search-clear-btn" title="clear search (esc)"> </a>',
-            //TODO: replace with icon
-            '<span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>'
-        ].join("")
-    ),
+        `<input id="tool-search-query" class="search-query parent-width" name="query"
+                placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />
+         <a id="search-clear-btn" title="clear search (esc)"> </a>
+         <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+    `),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')
     panel_section: _.template(
