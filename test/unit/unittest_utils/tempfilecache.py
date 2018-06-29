@@ -28,7 +28,7 @@ class TempFileCache(object):
 
         if contents not in self._content_dict:
             # create a named tmp and write contents to it, return filename
-            tmpfile = tempfile.NamedTemporaryFile(delete=False)
+            tmpfile = tempfile.NamedTemporaryFile(delete=False, mode='w+')
             tmpfile.write(contents)
             tmpfile.close()
             log.debug('created tmpfile.name: %s', tmpfile.name)
