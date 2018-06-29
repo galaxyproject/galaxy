@@ -8,12 +8,12 @@ import logging
 
 from galaxy import web
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
 
-class OIDC(BaseUIController):
+class OIDC(BaseAPIController):
 
     @web.expose
     @web.require_login("list third-party identities")
@@ -42,7 +42,7 @@ class OIDC(BaseUIController):
             log.debug(msg)
             return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        return trans.response.send_redirect(web.url_for(redirect_uri))
+        return redirect_uri
 
     @web.expose
     def callback(self, trans, provider, **kwargs):
@@ -73,18 +73,7 @@ class OIDC(BaseUIController):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return trans.fill_template('/user/login.mako',
-                                   login=user.username,
-                                   header="",
-                                   use_panels=False,
-                                   redirect_url=redirect_url,
-                                   redirect=redirect_url,
-                                   refresh_frames='refresh_frames',
-                                   message="You are now logged in as `{}.`".format(user.username),
-                                   status='done',
-                                   openid_providers=trans.app.openid_providers,
-                                   form_input_auto_focus=True,
-                                   active_view="user")
+        return {"message": message}
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
@@ -99,4 +88,4 @@ class OIDC(BaseUIController):
             return trans.show_error_message(message)
         if redirect_url is None:
             redirect_url = url_for('/')
-        return trans.response.send_redirect(redirect_url)
+        return redirect_url
