@@ -16,6 +16,7 @@ matrix:
   include:
     - env: TOX_ENV=py34-first_startup
       addons:
+        &py3_addons
         apt:
           packages:
             # For psutil, pyyaml, uwsgi...
@@ -33,7 +34,10 @@ matrix:
         apt:
           packages:
             - ack-grep
+    - env: TOX_ENV=py34-unit
+      addons: *py3_addons
   allow_failures:
+    - env: TOX_ENV=py34-unit
     - env: TOX_ENV=check_python_dependencies
 
 
@@ -41,7 +45,7 @@ install:
   - set -e
   - pip install tox
   - |
-    if [ "$TOX_ENV" == "py27-first_startup" ]; then
+    if [ "$TOX_ENV" == "py27-first_startup" -o "$TOX_ENV" == "py34-first_startup" ]; then
         sh scripts/common_startup.sh
         wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
         mv db_gx_rev_0127.sqlite database/universe.sqlite
