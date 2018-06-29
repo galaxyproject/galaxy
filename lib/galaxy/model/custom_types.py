@@ -319,10 +319,10 @@ class UUIDType(TypeDecorator):
             return value
         else:
             if not isinstance(value, uuid.UUID):
-                return "%.32x" % uuid.UUID(value)
+                return uuid.UUID(value).hex
             else:
                 # hexstring
-                return "%.32x" % value
+                return value.hex
 
     def process_result_value(self, value, dialect):
         if value is None:
