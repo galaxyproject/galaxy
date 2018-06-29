@@ -589,8 +589,8 @@ class CRAM(Binary):
     def get_cram_version(self, filename):
         try:
             with open(filename, "rb") as fh:
-                header = fh.read(6)
-            return ord(header[4]), ord(header[5])
+                header = bytearray(fh.read(6))
+            return header[4], header[5]
         except Exception as exc:
             log.warning('%s, get_cram_version Exception: %s', self, exc)
             return -1, -1
