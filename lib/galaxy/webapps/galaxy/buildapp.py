@@ -232,7 +232,7 @@ def populate_api_routes(webapp, app):
                           '/api/authnz/{provider}/login',
                           controller='authnz',
                           action='login',
-                          conditions = dict(method=["GET"]))
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect('authnz_callback',
                           '/api/authnz/{provider}/callback',
                           controller='authnz',
@@ -242,7 +242,7 @@ def populate_api_routes(webapp, app):
                           '/api/authnz/{provider}/disconnect',
                           controller='authnz',
                           action='disconnect',
-                          conditions = dict(method=["GET"]))
+                          conditions=dict(method=["GET"]))
 
     webapp.mapper.resource('role',
                            'roles',
