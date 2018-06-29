@@ -108,7 +108,7 @@ def add_file(dataset, registry, output_path):
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
 
-    if not os.path.getsize(dataset.path) > 0:
+    if check_content and not os.path.getsize(dataset.path) > 0:
         raise UploadProblemException('The uploaded file is empty')
 
     stdout, ext, datatype, is_binary, converted_path = handle_upload(
