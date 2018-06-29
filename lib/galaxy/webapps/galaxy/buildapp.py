@@ -66,12 +66,6 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Force /activate to go to the controller
     webapp.add_route('/activate', controller='user', action='activate')
 
-    # Authentication endpoints.
-    webapp.add_route('/authnz/', controller='authnz', action='index', provider=None)
-    webapp.add_route('/authnz/{provider}/login', controller='authnz', action='login', provider=None)
-    webapp.add_route('/authnz/{provider}/callback', controller='authnz', action='callback', provider=None)
-    webapp.add_route('/authnz/{provider}/disconnect', controller='authnz', action='disconnect', provider=None)
-
     # These two routes handle our simple needs at the moment
     webapp.add_route('/async/{tool_id}/{data_id}/{data_secret}', controller='async', action='index', tool_id=None, data_id=None, data_secret=None)
     webapp.add_route('/{controller}/{action}', action='index')
@@ -229,6 +223,27 @@ def populate_api_routes(webapp, app):
                            name_prefix='group_',
                            path_prefix='/api/groups/{group_id}',
                            parent_resources=dict(member_name='group', collection_name='groups'))
+
+    webapp.mapper.connect('authnz',
+                          '/api/authnz/',
+                          controller='authnz',
+                          action='index')
+    webapp.mapper.connect('authnz_login',
+                          '/api/authnz/{provider}/login',
+                          controller='authnz',
+                          action='login',
+                          conditions = dict(method=["GET"]))
+    webapp.mapper.connect('authnz_callback',
+                          '/api/authnz/{provider}/callback',
+                          controller='authnz',
+                          action='callback',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect('authnz_disconnect',
+                          '/api/authnz/{provider}/disconnect',
+                          controller='authnz',
+                          action='disconnect',
+                          conditions = dict(method=["GET"]))
+
     webapp.mapper.resource('role',
                            'roles',
                            controller='group_roles',
