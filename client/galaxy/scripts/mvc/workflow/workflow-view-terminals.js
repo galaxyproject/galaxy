@@ -140,13 +140,11 @@ var BaseInputTerminalView = TerminalView.extend({
                     $(this).remove();
                 });
             // Position it and show
-            t
-                .css({
-                    top: $(element).offset().top - 2,
-                    left: $(element).offset().left - t.width(),
-                    "padding-right": $(element).width()
-                })
-                .show();
+            t.css({
+                top: $(element).offset().top - 2,
+                left: $(element).offset().left - t.width(),
+                "padding-right": $(element).width()
+            }).show();
         }
     }
 });
@@ -224,7 +222,10 @@ var BaseOutputTerminalView = TerminalView.extend({
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;
-        c.connect(this.el.terminal, h.terminal);
+        c.connect(
+            this.el.terminal,
+            h.terminal
+        );
         return h;
     },
     onDragEnd: function(e, d) {

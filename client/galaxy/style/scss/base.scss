@@ -210,7 +210,6 @@ body {
     display: flex;
     align-items: center;
 
-
     color: $panel-header-text-color;
     a {
         color: $panel-header-text-color;
@@ -250,7 +249,6 @@ body {
         }
     }
 }
-
 
 .unified-panel-footer {
     @extend .unselectable;
@@ -433,7 +431,7 @@ div.unified-panel-body-background {
                 right: 5px;
                 top: 10px;
                 color: gold;
-                width:0px;
+                width: 0px;
             }
         }
     }
@@ -1587,8 +1585,8 @@ div.permissionContainer {
 .toolMenuContainer {
     color: $panel-text-color;
     a {
-      color: $panel-text-color;
-      // text-decoration: none;
+        color: $panel-text-color;
+        // text-decoration: none;
     }
     background: $panel-bg-color;
     min-height: 100%;
