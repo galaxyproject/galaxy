@@ -393,8 +393,10 @@ class Ms2(Text):
         header_lines = []
         while True:
             line = contents.readline()
-            if line is None or len(line) == 0:
-                pass
+            if not line:
+                return False
+            if line.strip() == "":
+                continue
             elif line.startswith('H\t'):
                 header_lines.append(line)
             else:
