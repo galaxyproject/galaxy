@@ -39,7 +39,7 @@
     "vue": "2.5.16"
   },
   "scripts": {
-    "watch": "gulp staging && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
+    "watch": "gulp staging && yarn run save-build-hash && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
     "build": "NODE_ENV=development gulp staging && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp staging && concurrently \"yarn run style\" \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp staging && concurrently \"yarn run style\" \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",
