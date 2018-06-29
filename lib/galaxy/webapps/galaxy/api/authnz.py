@@ -1,5 +1,5 @@
 """
-OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
+OpenID Connect (OIDC) Authentication and Authorization (authnz) API.
 """
 
 from __future__ import absolute_import
@@ -41,6 +41,19 @@ class OIDC(BaseAPIController):
 
     @expose_api_anonymous_and_sessionless
     def login(self, trans, provider):
+        """
+        GET /api/authnz/{provider}/login
+            returns a URL to be used to initiate a user authentication on the given provider.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+
+        :type  provider: string
+        :param provider: The name of the provider which should be used to authenticate a user.
+
+        :rtype:  string
+        :return: A URL that should be to initiated a user authentication process.
+        """
         if not trans.app.config.enable_oidc:
             raise MessageException(
                 err_msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance.")
@@ -49,6 +62,23 @@ class OIDC(BaseAPIController):
 
     @expose_api_anonymous_and_sessionless
     def callback(self, trans, provider, **kwargs):
+        """
+        GET /api/authnz/{provider}/callback
+            This API handles an OIDC identity provider (e.g., Google) callback, which is
+            initiated as a result of calling the URL returned from the `/api/authnz/{provider}/login`.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+
+        :type  provider: string
+        :param provider: The name of the provider which should be used to authenticate a user.
+
+        :param kwargs: keyword arguments returned from the OIDC identity provider. It must contain
+        `state` and `code` arguments, among others.
+
+        :rtype:  string
+        :return: a success/error message as a result of handling the callback.
+        """
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
             raise MessageException(
@@ -81,6 +111,22 @@ class OIDC(BaseAPIController):
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
     def disconnect(self, trans, provider, **kwargs):
+        """
+        Get /api/authnz/{provider}/disconnect
+            Disconnects the logged-in user from the given identity provider (`provider`).
+            For details, see the `disconnect` function in the following path `lib/authnz/psa_authnz.py`.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction.
+
+        :type  provider: string
+        :param provider: The name of the provider which should be used to authenticate a user.
+
+        :param kwargs:
+
+        :rtype:
+        :return:
+        """
         if trans.user is None:
             # Only logged in users are allowed here.
             return
