@@ -72,6 +72,9 @@
     </datatype>
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true"/>
     <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true"/>
+    <datatype extension="intermine_tabular" type="galaxy.datatypes.tabular:TSV" subclass="true" display_in_upload="true">
+      <display file="intermine/intermine_simple.xml"/>
+    </datatype>
     <datatype extension="customtrack" type="galaxy.datatypes.interval:CustomTrack"/>
     <datatype extension="bowtie_color_index" type="galaxy.datatypes.ngsindex:BowtieColorIndex" mimetype="text/html" display_in_upload="false"/>
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="false"/>
