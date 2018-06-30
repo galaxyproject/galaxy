@@ -9,12 +9,16 @@
 <%
     self.active_view="workflow"
     self.overlay_visible=True
+    if version:
+        load_workflow = h.url_for( controller='workflow', action='load_workflow', version=version )
+    else:
+        load_workflow = h.url_for( controller='workflow', action='load_workflow')
     self.editor_config = {
         'id'      : trans.security.encode_id( stored.id ),
         'urls'    : {
             'tool_search'         : h.url_for( '/api/tools' ),
             'get_datatypes'       : h.url_for( '/api/datatypes/mapping' ),
-            'load_workflow'       : h.url_for( controller='workflow', action='load_workflow' ),
+            'load_workflow'       : load_workflow,
             'run_workflow'        : h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
             'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
             'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
