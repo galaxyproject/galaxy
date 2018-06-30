@@ -195,6 +195,12 @@ body {
     border-left: solid $layout-border-color 1px;
 }
 
+#left, #right, .unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
+}
+
 .unified-panel-header {
     @extend .unselectable;
     height: $panel_header_height;
@@ -333,11 +339,9 @@ body {
 }
 
 div.unified-panel-body {
-    position: absolute;
-    top: $panel_header_height;
-    bottom: 0;
     width: 100%;
     padding: 0px;
+    flex: 1;
 }
 
 div.unified-panel-body-background {
@@ -768,17 +772,22 @@ button {
     color: #888;
 }
 
-#search-clear-btn {
-    position: absolute;
-    right: 6px;
-    top: 9px;
-    display: block;
-    font-size: 1.4em !important;
-    text-decoration: none;
-    color: #888;
-    @extend .fa-icon;
-    &:before {
-        content: "\f057";
+#tool-search {
+    position: relative;
+    margin: 10px;
+
+    #search-clear-btn {
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        display: block;
+        font-size: 1.4em !important;
+        text-decoration: none;
+        color: #888;
+        @extend .fa-icon;
+        &:before {
+            content: "\f057";
+        }
     }
 }
 
@@ -1590,7 +1599,7 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    padding: 35px 10px;
+    padding: 5px 10px;
 }
 
 div.toolSectionPad {
@@ -1655,15 +1664,6 @@ div.toolSectionBody div.toolPanelLabel {
 div.toolTitleNoSection {
     padding-bottom: 5px;
     font-weight: bold;
-}
-
-// TODO: should be formatted like "controls" in History panel
-#tool-search {
-    padding-top: 5px;
-    padding-bottom: 10px;
-    position: absolute;
-    top: 0;
-    width: 210px;
 }
 
 // Dataset Display Styles

@@ -53,7 +53,7 @@ var ToolPanel = Backbone.View.extend({
         // if there are tools, render panel and display everything
         var self = this;
         if (this.tool_panel.get("layout").size() > 0) {
-            this.$el.prepend(this.tool_panel_view.$el);
+            this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
             this.tool_panel_view.render();
         }
         // build the dom for the workflow portion of the tool menu

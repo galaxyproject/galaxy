@@ -169,9 +169,9 @@ var View = Backbone.View.extend({
                 <div id="messagebox"/>
                 <div id="inactivebox" class="panel-warning-message" />
                 <div id="columns">
-                    <div id="left" />
+                    <div id="left" class="unified-panel"/>
                     <div id="center" />
-                    <div id="right" />
+                    <div id="right" class="unified-panel" />
                 </div>
             </div>
             <div id="dd-helper" />`

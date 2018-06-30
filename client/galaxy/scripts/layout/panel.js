@@ -43,14 +43,13 @@ var SidePanel = Backbone.View.extend({
 
     /** panel dom template. id is 'right' or 'left' */
     _templateHeader: function(data) {
-        return [
-            '<div class="unified-panel-header" unselectable="on">',
-            '<div class="unified-panel-header-inner">',
-            '<div class="panel-header-buttons" style="float: right"/>',
-            '<div class="panel-header-text"/>',
-            "</div>",
-            "</div>"
-        ].join("");
+        return `<div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <div class="panel-header-buttons" style="float: right"/>
+                        <div class="panel-header-text"/>
+                    </div>
+                </div>
+                <div class="unified-panel-controls"/>`;
     },
 
     /** panel dom template. id is 'right' or 'left' */

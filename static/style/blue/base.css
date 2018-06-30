@@ -1039,8 +1039,7 @@ pre {
   margin-bottom: 1rem;
   background-color: transparent; }
   .table th, .ui-table-striped th,
-  .table td,
-  .ui-table-striped td {
+  .table td, .ui-table-striped td {
     padding: 0.75rem;
     vertical-align: top;
     border-top: 1px solid #bfbfbf; }
@@ -1325,26 +1324,50 @@ select.form-control:focus::-ms-value {
   .form-control-plaintext.form-control-sm, .input-group-sm > .form-control-plaintext.form-control,
   .input-group-sm > .input-group-prepend > .form-control-plaintext.input-group-text,
   .input-group-sm > .input-group-append > .form-control-plaintext.input-group-text,
-  .input-group-sm > .input-group-prepend > .form-control-plaintext.btn, .input-group-sm > .input-group-prepend > input.form-control-plaintext[type="submit"],
-  .input-group-sm > .input-group-prepend > button.form-control-plaintext, .input-group-sm > .input-group-prepend > .form-control-plaintext.action-button, .input-group-sm > .input-group-prepend > .form-control-plaintext.menubutton,
-  .input-group-sm > .input-group-append > .form-control-plaintext.btn, .input-group-sm > .input-group-append > input.form-control-plaintext[type="submit"],
-  .input-group-sm > .input-group-append > button.form-control-plaintext, .input-group-sm > .input-group-append > .form-control-plaintext.action-button, .input-group-sm > .input-group-append > .form-control-plaintext.menubutton, .form-control-plaintext.form-control-lg, .input-group-lg > .form-control-plaintext.form-control,
+  .input-group-sm > .input-group-prepend > .form-control-plaintext.btn,
+  .input-group-sm > .input-group-prepend > input.form-control-plaintext[type="submit"],
+  .input-group-sm > .input-group-prepend >
+  button.form-control-plaintext,
+  .input-group-sm > .input-group-prepend > .form-control-plaintext.action-button,
+  .input-group-sm > .input-group-prepend > .form-control-plaintext.menubutton,
+  .input-group-sm > .input-group-append > .form-control-plaintext.btn,
+  .input-group-sm > .input-group-append > input.form-control-plaintext[type="submit"],
+  .input-group-sm > .input-group-append >
+  button.form-control-plaintext,
+  .input-group-sm > .input-group-append > .form-control-plaintext.action-button,
+  .input-group-sm > .input-group-append > .form-control-plaintext.menubutton, .form-control-plaintext.form-control-lg, .input-group-lg > .form-control-plaintext.form-control,
   .input-group-lg > .input-group-prepend > .form-control-plaintext.input-group-text,
   .input-group-lg > .input-group-append > .form-control-plaintext.input-group-text,
-  .input-group-lg > .input-group-prepend > .form-control-plaintext.btn, .input-group-lg > .input-group-prepend > input.form-control-plaintext[type="submit"],
-  .input-group-lg > .input-group-prepend > button.form-control-plaintext, .input-group-lg > .input-group-prepend > .form-control-plaintext.action-button, .input-group-lg > .input-group-prepend > .form-control-plaintext.menubutton,
-  .input-group-lg > .input-group-append > .form-control-plaintext.btn, .input-group-lg > .input-group-append > input.form-control-plaintext[type="submit"],
-  .input-group-lg > .input-group-append > button.form-control-plaintext, .input-group-lg > .input-group-append > .form-control-plaintext.action-button, .input-group-lg > .input-group-append > .form-control-plaintext.menubutton {
+  .input-group-lg > .input-group-prepend > .form-control-plaintext.btn,
+  .input-group-lg > .input-group-prepend > input.form-control-plaintext[type="submit"],
+  .input-group-lg > .input-group-prepend >
+  button.form-control-plaintext,
+  .input-group-lg > .input-group-prepend > .form-control-plaintext.action-button,
+  .input-group-lg > .input-group-prepend > .form-control-plaintext.menubutton,
+  .input-group-lg > .input-group-append > .form-control-plaintext.btn,
+  .input-group-lg > .input-group-append > input.form-control-plaintext[type="submit"],
+  .input-group-lg > .input-group-append >
+  button.form-control-plaintext,
+  .input-group-lg > .input-group-append > .form-control-plaintext.action-button,
+  .input-group-lg > .input-group-append > .form-control-plaintext.menubutton {
     padding-right: 0;
     padding-left: 0; }
 
 .form-control-sm, .input-group-sm > .form-control,
 .input-group-sm > .input-group-prepend > .input-group-text,
 .input-group-sm > .input-group-append > .input-group-text,
-.input-group-sm > .input-group-prepend > .btn, .input-group-sm > .input-group-prepend > input[type="submit"],
-.input-group-sm > .input-group-prepend > button, .input-group-sm > .input-group-prepend > .action-button, .input-group-sm > .input-group-prepend > .menubutton,
-.input-group-sm > .input-group-append > .btn, .input-group-sm > .input-group-append > input[type="submit"],
-.input-group-sm > .input-group-append > button, .input-group-sm > .input-group-append > .action-button, .input-group-sm > .input-group-append > .menubutton {
+.input-group-sm > .input-group-prepend > .btn,
+.input-group-sm > .input-group-prepend > input[type="submit"],
+.input-group-sm > .input-group-prepend >
+button,
+.input-group-sm > .input-group-prepend > .action-button,
+.input-group-sm > .input-group-prepend > .menubutton,
+.input-group-sm > .input-group-append > .btn,
+.input-group-sm > .input-group-append > input[type="submit"],
+.input-group-sm > .input-group-append >
+button,
+.input-group-sm > .input-group-append > .action-button,
+.input-group-sm > .input-group-append > .menubutton {
   padding: 0.25rem 0.5rem;
   font-size: 0.65625rem;
   line-height: 1.5;
@@ -1353,17 +1376,29 @@ select.form-control:focus::-ms-value {
 select.form-control-sm:not([size]):not([multiple]), .input-group-sm > select.form-control:not([size]):not([multiple]),
 .input-group-sm > .input-group-prepend > select.input-group-text:not([size]):not([multiple]),
 .input-group-sm > .input-group-append > select.input-group-text:not([size]):not([multiple]),
-.input-group-sm > .input-group-prepend > select.btn:not([size]):not([multiple]), .input-group-sm > .input-group-prepend > select.action-button:not([size]):not([multiple]), .input-group-sm > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
-.input-group-sm > .input-group-append > select.btn:not([size]):not([multiple]), .input-group-sm > .input-group-append > select.action-button:not([size]):not([multiple]), .input-group-sm > .input-group-append > select.menubutton:not([size]):not([multiple]) {
+.input-group-sm > .input-group-prepend > select.btn:not([size]):not([multiple]),
+.input-group-sm > .input-group-prepend > select.action-button:not([size]):not([multiple]),
+.input-group-sm > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
+.input-group-sm > .input-group-append > select.btn:not([size]):not([multiple]),
+.input-group-sm > .input-group-append > select.action-button:not([size]):not([multiple]),
+.input-group-sm > .input-group-append > select.menubutton:not([size]):not([multiple]) {
   height: calc(1.48438rem + 2px); }
 
 .form-control-lg, .input-group-lg > .form-control,
 .input-group-lg > .input-group-prepend > .input-group-text,
 .input-group-lg > .input-group-append > .input-group-text,
-.input-group-lg > .input-group-prepend > .btn, .input-group-lg > .input-group-prepend > input[type="submit"],
-.input-group-lg > .input-group-prepend > button, .input-group-lg > .input-group-prepend > .action-button, .input-group-lg > .input-group-prepend > .menubutton,
-.input-group-lg > .input-group-append > .btn, .input-group-lg > .input-group-append > input[type="submit"],
-.input-group-lg > .input-group-append > button, .input-group-lg > .input-group-append > .action-button, .input-group-lg > .input-group-append > .menubutton {
+.input-group-lg > .input-group-prepend > .btn,
+.input-group-lg > .input-group-prepend > input[type="submit"],
+.input-group-lg > .input-group-prepend >
+button,
+.input-group-lg > .input-group-prepend > .action-button,
+.input-group-lg > .input-group-prepend > .menubutton,
+.input-group-lg > .input-group-append > .btn,
+.input-group-lg > .input-group-append > input[type="submit"],
+.input-group-lg > .input-group-append >
+button,
+.input-group-lg > .input-group-append > .action-button,
+.input-group-lg > .input-group-append > .menubutton {
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
   line-height: 1.5;
@@ -1372,8 +1407,12 @@ select.form-control-sm:not([size]):not([multiple]), .input-group-sm > select.for
 select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.form-control:not([size]):not([multiple]),
 .input-group-lg > .input-group-prepend > select.input-group-text:not([size]):not([multiple]),
 .input-group-lg > .input-group-append > select.input-group-text:not([size]):not([multiple]),
-.input-group-lg > .input-group-prepend > select.btn:not([size]):not([multiple]), .input-group-lg > .input-group-prepend > select.action-button:not([size]):not([multiple]), .input-group-lg > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
-.input-group-lg > .input-group-append > select.btn:not([size]):not([multiple]), .input-group-lg > .input-group-append > select.action-button:not([size]):not([multiple]), .input-group-lg > .input-group-append > select.menubutton:not([size]):not([multiple]) {
+.input-group-lg > .input-group-prepend > select.btn:not([size]):not([multiple]),
+.input-group-lg > .input-group-prepend > select.action-button:not([size]):not([multiple]),
+.input-group-lg > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
+.input-group-lg > .input-group-append > select.btn:not([size]):not([multiple]),
+.input-group-lg > .input-group-append > select.action-button:not([size]):not([multiple]),
+.input-group-lg > .input-group-append > select.menubutton:not([size]):not([multiple]) {
   height: calc(2.40625rem + 2px); }
 
 .form-group {
@@ -1645,24 +1684,24 @@ button, .action-button, .menubutton {
     .btn, input[type="submit"],
     button, .action-button, .menubutton {
       transition: none; } }
-  .btn:hover, input:hover[type="submit"],
-  button:hover, .action-button:hover, .menubutton:hover, .btn:focus, input:focus[type="submit"],
+  .btn:hover, input[type="submit"]:hover,
+  button:hover, .action-button:hover, .menubutton:hover, .btn:focus, input[type="submit"]:focus,
   button:focus, .action-button:focus, .menubutton:focus {
     text-decoration: none; }
-  .btn:focus, input:focus[type="submit"],
+  .btn:focus, input[type="submit"]:focus,
   button:focus, .action-button:focus, .menubutton:focus, .btn.focus, input.focus[type="submit"],
   button.focus, .focus.action-button, .focus.menubutton {
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
   .btn.disabled, input.disabled[type="submit"],
-  button.disabled, .disabled.action-button, .disabled.menubutton, .btn:disabled, input:disabled[type="submit"],
+  button.disabled, .disabled.action-button, .disabled.menubutton, .btn:disabled, input[type="submit"]:disabled,
   button:disabled, .action-button:disabled, .menubutton:disabled {
     opacity: 0.65; }
-  .btn:not(:disabled):not(.disabled), input:not(:disabled):not(.disabled)[type="submit"],
+  .btn:not(:disabled):not(.disabled), input[type="submit"]:not(:disabled):not(.disabled),
   button:not(:disabled):not(.disabled), .action-button:not(:disabled):not(.disabled), .menubutton:not(:disabled):not(.disabled) {
     cursor: pointer; }
-  .btn:not(:disabled):not(.disabled):active, input:not(:disabled):not(.disabled):active[type="submit"],
-  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn:not(:disabled):not(.disabled).active, input:not(:disabled):not(.disabled).active[type="submit"],
+  .btn:not(:disabled):not(.disabled):active, input[type="submit"]:not(:disabled):not(.disabled):active,
+  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
   button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled):active {
     background-image: none; }
 
@@ -1672,18 +1711,18 @@ fieldset:disabled a.action-button,
 fieldset:disabled a.menubutton {
   pointer-events: none; }
 
-.btn-primary, input.btn-primary[type="submit"],
+.btn-primary, input[type="submit"].btn-primary,
 button.btn-primary {
   color: #fff;
   background-color: #25537b;
   border-color: #25537b; }
-  .btn-primary:hover, input.btn-primary:hover[type="submit"] {
+  .btn-primary:hover, input[type="submit"].btn-primary:hover {
     color: #fff;
     background-color: #1c3f5e;
     border-color: #193954; }
-  .btn-primary:focus, input.btn-primary:focus[type="submit"], .btn-primary.focus, input.focus.btn-primary[type="submit"] {
+  .btn-primary:focus, input[type="submit"].btn-primary:focus, .btn-primary.focus, input.focus[type="submit"].btn-primary {
     box-shadow: 0 0 0 0.2rem rgba(37, 83, 123, 0.5); }
-  .btn-primary.disabled, input.disabled.btn-primary[type="submit"], .btn-primary:disabled, input.btn-primary:disabled[type="submit"] {
+  .btn-primary.disabled, input.disabled[type="submit"].btn-primary, .btn-primary:disabled, input[type="submit"].btn-primary:disabled {
     color: #fff;
     background-color: #25537b;
     border-color: #25537b; }
@@ -1701,39 +1740,41 @@ button, .action-button, .btn-default, .menubutton {
   color: #212529;
   background-color: #dee2e6;
   border-color: #dee2e6; }
-  .btn-secondary:hover, input:hover[type="submit"],
+  .btn-secondary:hover, input[type="submit"]:hover,
   button:hover, .action-button:hover, .btn-default:hover, .menubutton:hover {
     color: #212529;
     background-color: #c8cfd6;
     border-color: #c1c9d0; }
-  .btn-secondary:focus, input:focus[type="submit"],
+  .btn-secondary:focus, input[type="submit"]:focus,
   button:focus, .action-button:focus, .btn-default:focus, .menubutton:focus, .btn-secondary.focus, input.focus[type="submit"],
   button.focus, .focus.action-button, .focus.btn-default, .focus.menubutton {
     box-shadow: 0 0 0 0.2rem rgba(222, 226, 230, 0.5); }
   .btn-secondary.disabled, input.disabled[type="submit"],
-  button.disabled, .disabled.action-button, .disabled.btn-default, .disabled.menubutton, .btn-secondary:disabled, input:disabled[type="submit"],
+  button.disabled, .disabled.action-button, .disabled.btn-default, .disabled.menubutton, .btn-secondary:disabled, input[type="submit"]:disabled,
   button:disabled, .action-button:disabled, .btn-default:disabled, .menubutton:disabled {
     color: #212529;
     background-color: #dee2e6;
     border-color: #dee2e6; }
-  .btn-secondary:not(:disabled):not(.disabled):active, input:not(:disabled):not(.disabled):active[type="submit"],
-  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .btn-default:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input:not(:disabled):not(.disabled).active[type="submit"],
+  .btn-secondary:not(:disabled):not(.disabled):active, input[type="submit"]:not(:disabled):not(.disabled):active,
+  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .btn-default:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn-secondary:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
   button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .btn-default:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled).active,
   .show > .btn-secondary.dropdown-toggle,
   .show > input.dropdown-toggle[type="submit"],
-  .show > button.dropdown-toggle,
+  .show >
+  button.dropdown-toggle,
   .show > .dropdown-toggle.action-button,
   .show > .dropdown-toggle.btn-default,
   .show > .dropdown-toggle.menubutton {
     color: #212529;
     background-color: #c1c9d0;
     border-color: #bac2cb; }
-    .btn-secondary:not(:disabled):not(.disabled):active:focus, input:not(:disabled):not(.disabled):active:focus[type="submit"],
-    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .btn-default:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input:not(:disabled):not(.disabled).active:focus[type="submit"],
+    .btn-secondary:not(:disabled):not(.disabled):active:focus, input[type="submit"]:not(:disabled):not(.disabled):active:focus,
+    button:not(:disabled):not(.disabled):active:focus, .action-button:not(:disabled):not(.disabled):active:focus, .btn-default:not(:disabled):not(.disabled):active:focus, .menubutton:not(:disabled):not(.disabled):active:focus, .btn-secondary:not(:disabled):not(.disabled).active:focus, input[type="submit"]:not(:disabled):not(.disabled).active:focus,
     button:not(:disabled):not(.disabled).active:focus, .action-button:not(:disabled):not(.disabled).active:focus, .btn-default:not(:disabled):not(.disabled).active:focus, .menubutton:not(:disabled):not(.disabled).active:focus,
     .show > .btn-secondary.dropdown-toggle:focus,
-    .show > input.dropdown-toggle:focus[type="submit"],
-    .show > button.dropdown-toggle:focus,
+    .show > input.dropdown-toggle[type="submit"]:focus,
+    .show >
+    button.dropdown-toggle:focus,
     .show > .dropdown-toggle.action-button:focus,
     .show > .dropdown-toggle.btn-default:focus,
     .show > .dropdown-toggle.menubutton:focus {
@@ -2078,17 +2119,17 @@ button, .action-button, .btn-default, .menubutton {
     color: #868e96;
     pointer-events: none; }
 
-.btn-lg, .btn-group-lg > .btn, .btn-group-lg > input[type="submit"],
-.btn-group-lg > button, .btn-group-lg > .action-button, .btn-group-lg > .menubutton {
+.btn-lg, .btn-group-lg > .btn, .btn-group-lg > input[type="submit"], .btn-group-lg >
+button, .btn-group-lg > .action-button, .btn-group-lg > .menubutton {
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
   line-height: 1.5;
   border-radius: 0.3rem; }
 
-.btn-sm, .btn-group-sm > .btn, .btn-group-sm > input[type="submit"],
-.btn-group-sm > button, .btn-group-sm > .action-button, .btn-group-sm > .menubutton, .btn-xs, .multi-panel-history .control-column .btn, .multi-panel-history .control-column input[type="submit"],
-.multi-panel-history .control-column button, .multi-panel-history .control-column .action-button, .multi-panel-history .control-column .menubutton, .multi-panel-history .history-column .panel-controls .btn, .multi-panel-history .history-column .panel-controls input[type="submit"],
-.multi-panel-history .history-column .panel-controls button, .multi-panel-history .history-column .panel-controls .action-button, .multi-panel-history .history-column .panel-controls .menubutton {
+.btn-sm, .btn-group-sm > .btn, .btn-group-sm > input[type="submit"], .btn-group-sm >
+button, .btn-group-sm > .action-button, .btn-group-sm > .menubutton, .btn-xs, .multi-panel-history .control-column .btn, .multi-panel-history .control-column input[type="submit"], .multi-panel-history .control-column
+button, .multi-panel-history .control-column .action-button, .multi-panel-history .control-column .menubutton, .multi-panel-history .history-column .panel-controls .btn, .multi-panel-history .history-column .panel-controls input[type="submit"], .multi-panel-history .history-column .panel-controls
+button, .multi-panel-history .history-column .panel-controls .action-button, .multi-panel-history .history-column .panel-controls .menubutton {
   padding: 0.25rem 0.5rem;
   font-size: 0.65625rem;
   line-height: 1.5;
@@ -2304,95 +2345,119 @@ input[type="button"].btn-block {
   position: relative;
   display: inline-flex;
   vertical-align: middle; }
-  .btn-group > .btn, .btn-group > input[type="submit"],
-  .btn-group > button, .btn-group > .action-button, .btn-group > .menubutton,
+  .btn-group > .btn, .btn-group > input[type="submit"], .btn-group >
+  button, .btn-group > .action-button, .btn-group > .menubutton,
   .btn-group-vertical > .btn,
   .btn-group-vertical > input[type="submit"],
-  .btn-group-vertical > button,
+  .btn-group-vertical >
+  button,
   .btn-group-vertical > .action-button,
   .btn-group-vertical > .menubutton {
     position: relative;
     flex: 0 1 auto; }
-    .btn-group > .btn:hover, .btn-group > input:hover[type="submit"],
-    .btn-group > button:hover, .btn-group > .action-button:hover, .btn-group > .menubutton:hover,
+    .btn-group > .btn:hover, .btn-group > input[type="submit"]:hover, .btn-group >
+    button:hover, .btn-group > .action-button:hover, .btn-group > .menubutton:hover,
     .btn-group-vertical > .btn:hover,
-    .btn-group-vertical > input:hover[type="submit"],
-    .btn-group-vertical > button:hover,
+    .btn-group-vertical > input[type="submit"]:hover,
+    .btn-group-vertical >
+    button:hover,
     .btn-group-vertical > .action-button:hover,
     .btn-group-vertical > .menubutton:hover {
       z-index: 1; }
-    .btn-group > .btn:focus, .btn-group > input:focus[type="submit"],
-    .btn-group > button:focus, .btn-group > .action-button:focus, .btn-group > .menubutton:focus, .btn-group > .btn:active, .btn-group > input:active[type="submit"],
-    .btn-group > button:active, .btn-group > .action-button:active, .btn-group > .menubutton:active, .btn-group > .btn.active, .btn-group > input.active[type="submit"],
-    .btn-group > button.active, .btn-group > .active.action-button, .btn-group > .action-button:active, .btn-group > .active.menubutton, .btn-group > .menubutton:active,
+    .btn-group > .btn:focus, .btn-group > input[type="submit"]:focus, .btn-group >
+    button:focus, .btn-group > .action-button:focus, .btn-group > .menubutton:focus, .btn-group > .btn:active, .btn-group > input[type="submit"]:active, .btn-group >
+    button:active, .btn-group > .action-button:active, .btn-group > .menubutton:active, .btn-group > .btn.active, .btn-group > input.active[type="submit"], .btn-group >
+    button.active, .btn-group > .active.action-button, .btn-group > .action-button:active, .btn-group > .active.menubutton, .btn-group > .menubutton:active,
     .btn-group-vertical > .btn:focus,
-    .btn-group-vertical > input:focus[type="submit"],
-    .btn-group-vertical > button:focus,
+    .btn-group-vertical > input[type="submit"]:focus,
+    .btn-group-vertical >
+    button:focus,
     .btn-group-vertical > .action-button:focus,
     .btn-group-vertical > .menubutton:focus,
     .btn-group-vertical > .btn:active,
-    .btn-group-vertical > input:active[type="submit"],
-    .btn-group-vertical > button:active,
+    .btn-group-vertical > input[type="submit"]:active,
+    .btn-group-vertical >
+    button:active,
     .btn-group-vertical > .action-button:active,
     .btn-group-vertical > .menubutton:active,
     .btn-group-vertical > .btn.active,
     .btn-group-vertical > input.active[type="submit"],
-    .btn-group-vertical > button.active,
+    .btn-group-vertical >
+    button.active,
     .btn-group-vertical > .active.action-button,
     .btn-group-vertical > .action-button:active,
     .btn-group-vertical > .active.menubutton,
     .btn-group-vertical > .menubutton:active {
       z-index: 1; }
-  .btn-group .btn + .btn, .btn-group input[type="submit"] + .btn, .btn-group button + .btn, .btn-group .action-button + .btn, .btn-group .menubutton + .btn, .btn-group .btn + input[type="submit"], .btn-group input[type="submit"] + input[type="submit"], .btn-group button + input[type="submit"], .btn-group .action-button + input[type="submit"], .btn-group .menubutton + input[type="submit"],
-  .btn-group .btn + button,
-  .btn-group input[type="submit"] + button,
-  .btn-group button + button,
-  .btn-group .action-button + button,
-  .btn-group .menubutton + button, .btn-group .btn + .action-button, .btn-group input[type="submit"] + .action-button, .btn-group button + .action-button, .btn-group .action-button + .action-button, .btn-group .menubutton + .action-button, .btn-group .btn + .menubutton, .btn-group input[type="submit"] + .menubutton, .btn-group button + .menubutton, .btn-group .action-button + .menubutton, .btn-group .menubutton + .menubutton,
+  .btn-group .btn + .btn, .btn-group input[type="submit"] + .btn, .btn-group
+  button + .btn, .btn-group .action-button + .btn, .btn-group .menubutton + .btn, .btn-group .btn + input[type="submit"], .btn-group input[type="submit"] + input[type="submit"], .btn-group
+  button + input[type="submit"], .btn-group .action-button + input[type="submit"], .btn-group .menubutton + input[type="submit"], .btn-group .btn +
+  button, .btn-group input[type="submit"] +
+  button, .btn-group
+  button +
+  button, .btn-group .action-button +
+  button, .btn-group .menubutton +
+  button, .btn-group .btn + .action-button, .btn-group input[type="submit"] + .action-button, .btn-group
+  button + .action-button, .btn-group .action-button + .action-button, .btn-group .menubutton + .action-button, .btn-group .btn + .menubutton, .btn-group input[type="submit"] + .menubutton, .btn-group
+  button + .menubutton, .btn-group .action-button + .menubutton, .btn-group .menubutton + .menubutton,
   .btn-group .btn + .btn-group,
   .btn-group input[type="submit"] + .btn-group,
-  .btn-group button + .btn-group,
+  .btn-group
+  button + .btn-group,
   .btn-group .action-button + .btn-group,
   .btn-group .menubutton + .btn-group,
   .btn-group .btn-group + .btn,
   .btn-group .btn-group + input[type="submit"],
-  .btn-group .btn-group + button,
+  .btn-group .btn-group +
+  button,
   .btn-group .btn-group + .action-button,
   .btn-group .btn-group + .menubutton,
   .btn-group .btn-group + .btn-group,
   .btn-group-vertical .btn + .btn,
   .btn-group-vertical input[type="submit"] + .btn,
-  .btn-group-vertical button + .btn,
+  .btn-group-vertical
+  button + .btn,
   .btn-group-vertical .action-button + .btn,
   .btn-group-vertical .menubutton + .btn,
   .btn-group-vertical .btn + input[type="submit"],
   .btn-group-vertical input[type="submit"] + input[type="submit"],
-  .btn-group-vertical button + input[type="submit"],
+  .btn-group-vertical
+  button + input[type="submit"],
   .btn-group-vertical .action-button + input[type="submit"],
   .btn-group-vertical .menubutton + input[type="submit"],
-  .btn-group-vertical .btn + button,
-  .btn-group-vertical input[type="submit"] + button,
-  .btn-group-vertical button + button,
-  .btn-group-vertical .action-button + button,
-  .btn-group-vertical .menubutton + button,
+  .btn-group-vertical .btn +
+  button,
+  .btn-group-vertical input[type="submit"] +
+  button,
+  .btn-group-vertical
+  button +
+  button,
+  .btn-group-vertical .action-button +
+  button,
+  .btn-group-vertical .menubutton +
+  button,
   .btn-group-vertical .btn + .action-button,
   .btn-group-vertical input[type="submit"] + .action-button,
-  .btn-group-vertical button + .action-button,
+  .btn-group-vertical
+  button + .action-button,
   .btn-group-vertical .action-button + .action-button,
   .btn-group-vertical .menubutton + .action-button,
   .btn-group-vertical .btn + .menubutton,
   .btn-group-vertical input[type="submit"] + .menubutton,
-  .btn-group-vertical button + .menubutton,
+  .btn-group-vertical
+  button + .menubutton,
   .btn-group-vertical .action-button + .menubutton,
   .btn-group-vertical .menubutton + .menubutton,
   .btn-group-vertical .btn + .btn-group,
   .btn-group-vertical input[type="submit"] + .btn-group,
-  .btn-group-vertical button + .btn-group,
+  .btn-group-vertical
+  button + .btn-group,
   .btn-group-vertical .action-button + .btn-group,
   .btn-group-vertical .menubutton + .btn-group,
   .btn-group-vertical .btn-group + .btn,
   .btn-group-vertical .btn-group + input[type="submit"],
-  .btn-group-vertical .btn-group + button,
+  .btn-group-vertical .btn-group +
+  button,
   .btn-group-vertical .btn-group + .action-button,
   .btn-group-vertical .btn-group + .menubutton,
   .btn-group-vertical .btn-group + .btn-group {
@@ -2405,25 +2470,27 @@ input[type="button"].btn-block {
   .btn-toolbar .input-group {
     width: auto; }
 
-.btn-group > .btn:first-child, .btn-group > input:first-child[type="submit"],
-.btn-group > button:first-child, .btn-group > .action-button:first-child, .btn-group > .menubutton:first-child {
+.btn-group > .btn:first-child, .btn-group > input[type="submit"]:first-child, .btn-group >
+button:first-child, .btn-group > .action-button:first-child, .btn-group > .menubutton:first-child {
   margin-left: 0; }
 
-.btn-group > .btn:not(:last-child):not(.dropdown-toggle), .btn-group > input:not(:last-child):not(.dropdown-toggle)[type="submit"],
-.btn-group > button:not(:last-child):not(.dropdown-toggle), .btn-group > .action-button:not(:last-child):not(.dropdown-toggle), .btn-group > .menubutton:not(:last-child):not(.dropdown-toggle),
+.btn-group > .btn:not(:last-child):not(.dropdown-toggle), .btn-group > input[type="submit"]:not(:last-child):not(.dropdown-toggle), .btn-group >
+button:not(:last-child):not(.dropdown-toggle), .btn-group > .action-button:not(:last-child):not(.dropdown-toggle), .btn-group > .menubutton:not(:last-child):not(.dropdown-toggle),
 .btn-group > .btn-group:not(:last-child) > .btn,
 .btn-group > .btn-group:not(:last-child) > input[type="submit"],
-.btn-group > .btn-group:not(:last-child) > button,
+.btn-group > .btn-group:not(:last-child) >
+button,
 .btn-group > .btn-group:not(:last-child) > .action-button,
 .btn-group > .btn-group:not(:last-child) > .menubutton {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0; }
 
-.btn-group > .btn:not(:first-child), .btn-group > input:not(:first-child)[type="submit"],
-.btn-group > button:not(:first-child), .btn-group > .action-button:not(:first-child), .btn-group > .menubutton:not(:first-child),
+.btn-group > .btn:not(:first-child), .btn-group > input[type="submit"]:not(:first-child), .btn-group >
+button:not(:first-child), .btn-group > .action-button:not(:first-child), .btn-group > .menubutton:not(:first-child),
 .btn-group > .btn-group:not(:first-child) > .btn,
 .btn-group > .btn-group:not(:first-child) > input[type="submit"],
-.btn-group > .btn-group:not(:first-child) > button,
+.btn-group > .btn-group:not(:first-child) >
+button,
 .btn-group > .btn-group:not(:first-child) > .action-button,
 .btn-group > .btn-group:not(:first-child) > .menubutton {
   border-top-left-radius: 0;
@@ -2439,11 +2506,15 @@ input[type="button"].btn-block {
   .dropleft .dropdown-toggle-split::before {
     margin-right: 0; }
 
-.btn-sm + .dropdown-toggle-split, .btn-group-sm > .btn + .dropdown-toggle-split, .btn-group-sm > input[type="submit"] + .dropdown-toggle-split, .btn-group-sm > button + .dropdown-toggle-split, .btn-group-sm > .action-button + .dropdown-toggle-split, .btn-group-sm > .menubutton + .dropdown-toggle-split, .btn-xs + .dropdown-toggle-split, .multi-panel-history .control-column .btn + .dropdown-toggle-split, .multi-panel-history .control-column input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .control-column button + .dropdown-toggle-split, .multi-panel-history .control-column .action-button + .dropdown-toggle-split, .multi-panel-history .control-column .menubutton + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .btn + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .action-button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .menubutton + .dropdown-toggle-split {
+.btn-sm + .dropdown-toggle-split, .btn-group-sm > .btn + .dropdown-toggle-split, .btn-group-sm > input[type="submit"] + .dropdown-toggle-split, .btn-group-sm >
+button + .dropdown-toggle-split, .btn-group-sm > .action-button + .dropdown-toggle-split, .btn-group-sm > .menubutton + .dropdown-toggle-split, .btn-xs + .dropdown-toggle-split, .multi-panel-history .control-column .btn + .dropdown-toggle-split, .multi-panel-history .control-column input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .control-column
+button + .dropdown-toggle-split, .multi-panel-history .control-column .action-button + .dropdown-toggle-split, .multi-panel-history .control-column .menubutton + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .btn + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls input[type="submit"] + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls
+button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .action-button + .dropdown-toggle-split, .multi-panel-history .history-column .panel-controls .menubutton + .dropdown-toggle-split {
   padding-right: 0.375rem;
   padding-left: 0.375rem; }
 
-.btn-lg + .dropdown-toggle-split, .btn-group-lg > .btn + .dropdown-toggle-split, .btn-group-lg > input[type="submit"] + .dropdown-toggle-split, .btn-group-lg > button + .dropdown-toggle-split, .btn-group-lg > .action-button + .dropdown-toggle-split, .btn-group-lg > .menubutton + .dropdown-toggle-split {
+.btn-lg + .dropdown-toggle-split, .btn-group-lg > .btn + .dropdown-toggle-split, .btn-group-lg > input[type="submit"] + .dropdown-toggle-split, .btn-group-lg >
+button + .dropdown-toggle-split, .btn-group-lg > .action-button + .dropdown-toggle-split, .btn-group-lg > .menubutton + .dropdown-toggle-split {
   padding-right: 0.75rem;
   padding-left: 0.75rem; }
 
@@ -2451,70 +2522,84 @@ input[type="button"].btn-block {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center; }
-  .btn-group-vertical .btn, .btn-group-vertical input[type="submit"],
-  .btn-group-vertical button, .btn-group-vertical .action-button, .btn-group-vertical .menubutton,
+  .btn-group-vertical .btn, .btn-group-vertical input[type="submit"], .btn-group-vertical
+  button, .btn-group-vertical .action-button, .btn-group-vertical .menubutton,
   .btn-group-vertical .btn-group {
     width: 100%; }
-  .btn-group-vertical > .btn + .btn, .btn-group-vertical > input[type="submit"] + .btn, .btn-group-vertical > button + .btn, .btn-group-vertical > .action-button + .btn, .btn-group-vertical > .menubutton + .btn, .btn-group-vertical > .btn + input[type="submit"], .btn-group-vertical > input[type="submit"] + input[type="submit"], .btn-group-vertical > button + input[type="submit"], .btn-group-vertical > .action-button + input[type="submit"], .btn-group-vertical > .menubutton + input[type="submit"],
-  .btn-group-vertical > .btn + button,
-  .btn-group-vertical > input[type="submit"] + button,
-  .btn-group-vertical > button + button,
-  .btn-group-vertical > .action-button + button,
-  .btn-group-vertical > .menubutton + button, .btn-group-vertical > .btn + .action-button, .btn-group-vertical > input[type="submit"] + .action-button, .btn-group-vertical > button + .action-button, .btn-group-vertical > .action-button + .action-button, .btn-group-vertical > .menubutton + .action-button, .btn-group-vertical > .btn + .menubutton, .btn-group-vertical > input[type="submit"] + .menubutton, .btn-group-vertical > button + .menubutton, .btn-group-vertical > .action-button + .menubutton, .btn-group-vertical > .menubutton + .menubutton,
+  .btn-group-vertical > .btn + .btn, .btn-group-vertical > input[type="submit"] + .btn, .btn-group-vertical >
+  button + .btn, .btn-group-vertical > .action-button + .btn, .btn-group-vertical > .menubutton + .btn, .btn-group-vertical > .btn + input[type="submit"], .btn-group-vertical > input[type="submit"] + input[type="submit"], .btn-group-vertical >
+  button + input[type="submit"], .btn-group-vertical > .action-button + input[type="submit"], .btn-group-vertical > .menubutton + input[type="submit"], .btn-group-vertical > .btn +
+  button, .btn-group-vertical > input[type="submit"] +
+  button, .btn-group-vertical >
+  button +
+  button, .btn-group-vertical > .action-button +
+  button, .btn-group-vertical > .menubutton +
+  button, .btn-group-vertical > .btn + .action-button, .btn-group-vertical > input[type="submit"] + .action-button, .btn-group-vertical >
+  button + .action-button, .btn-group-vertical > .action-button + .action-button, .btn-group-vertical > .menubutton + .action-button, .btn-group-vertical > .btn + .menubutton, .btn-group-vertical > input[type="submit"] + .menubutton, .btn-group-vertical >
+  button + .menubutton, .btn-group-vertical > .action-button + .menubutton, .btn-group-vertical > .menubutton + .menubutton,
   .btn-group-vertical > .btn + .btn-group,
   .btn-group-vertical > input[type="submit"] + .btn-group,
-  .btn-group-vertical > button + .btn-group,
+  .btn-group-vertical >
+  button + .btn-group,
   .btn-group-vertical > .action-button + .btn-group,
   .btn-group-vertical > .menubutton + .btn-group,
   .btn-group-vertical > .btn-group + .btn,
   .btn-group-vertical > .btn-group + input[type="submit"],
-  .btn-group-vertical > .btn-group + button,
+  .btn-group-vertical > .btn-group +
+  button,
   .btn-group-vertical > .btn-group + .action-button,
   .btn-group-vertical > .btn-group + .menubutton,
   .btn-group-vertical > .btn-group + .btn-group {
     margin-top: -1px;
     margin-left: 0; }
-  .btn-group-vertical > .btn:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > input:not(:last-child):not(.dropdown-toggle)[type="submit"],
-  .btn-group-vertical > button:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > .action-button:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > .menubutton:not(:last-child):not(.dropdown-toggle),
+  .btn-group-vertical > .btn:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > input[type="submit"]:not(:last-child):not(.dropdown-toggle), .btn-group-vertical >
+  button:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > .action-button:not(:last-child):not(.dropdown-toggle), .btn-group-vertical > .menubutton:not(:last-child):not(.dropdown-toggle),
   .btn-group-vertical > .btn-group:not(:last-child) > .btn,
   .btn-group-vertical > .btn-group:not(:last-child) > input[type="submit"],
-  .btn-group-vertical > .btn-group:not(:last-child) > button,
+  .btn-group-vertical > .btn-group:not(:last-child) >
+  button,
   .btn-group-vertical > .btn-group:not(:last-child) > .action-button,
   .btn-group-vertical > .btn-group:not(:last-child) > .menubutton {
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0; }
-  .btn-group-vertical > .btn:not(:first-child), .btn-group-vertical > input:not(:first-child)[type="submit"],
-  .btn-group-vertical > button:not(:first-child), .btn-group-vertical > .action-button:not(:first-child), .btn-group-vertical > .menubutton:not(:first-child),
+  .btn-group-vertical > .btn:not(:first-child), .btn-group-vertical > input[type="submit"]:not(:first-child), .btn-group-vertical >
+  button:not(:first-child), .btn-group-vertical > .action-button:not(:first-child), .btn-group-vertical > .menubutton:not(:first-child),
   .btn-group-vertical > .btn-group:not(:first-child) > .btn,
   .btn-group-vertical > .btn-group:not(:first-child) > input[type="submit"],
-  .btn-group-vertical > .btn-group:not(:first-child) > button,
+  .btn-group-vertical > .btn-group:not(:first-child) >
+  button,
   .btn-group-vertical > .btn-group:not(:first-child) > .action-button,
   .btn-group-vertical > .btn-group:not(:first-child) > .menubutton {
     border-top-left-radius: 0;
     border-top-right-radius: 0; }
 
-.btn-group-toggle > .btn, .btn-group-toggle > input[type="submit"],
-.btn-group-toggle > button, .btn-group-toggle > .action-button, .btn-group-toggle > .menubutton,
+.btn-group-toggle > .btn, .btn-group-toggle > input[type="submit"], .btn-group-toggle >
+button, .btn-group-toggle > .action-button, .btn-group-toggle > .menubutton,
 .btn-group-toggle > .btn-group > .btn,
 .btn-group-toggle > .btn-group > input[type="submit"],
-.btn-group-toggle > .btn-group > button,
+.btn-group-toggle > .btn-group >
+button,
 .btn-group-toggle > .btn-group > .action-button,
 .btn-group-toggle > .btn-group > .menubutton {
   margin-bottom: 0; }
-  .btn-group-toggle > .btn input[type="radio"], .btn-group-toggle > input[type="submit"] input[type="radio"], .btn-group-toggle > button input[type="radio"], .btn-group-toggle > .action-button input[type="radio"], .btn-group-toggle > .menubutton input[type="radio"],
+  .btn-group-toggle > .btn input[type="radio"], .btn-group-toggle > input[type="submit"] input[type="radio"], .btn-group-toggle >
+  button input[type="radio"], .btn-group-toggle > .action-button input[type="radio"], .btn-group-toggle > .menubutton input[type="radio"],
   .btn-group-toggle > .btn input[type="checkbox"],
   .btn-group-toggle > input[type="submit"] input[type="checkbox"],
-  .btn-group-toggle > button input[type="checkbox"],
+  .btn-group-toggle >
+  button input[type="checkbox"],
   .btn-group-toggle > .action-button input[type="checkbox"],
   .btn-group-toggle > .menubutton input[type="checkbox"],
   .btn-group-toggle > .btn-group > .btn input[type="radio"],
   .btn-group-toggle > .btn-group > input[type="submit"] input[type="radio"],
-  .btn-group-toggle > .btn-group > button input[type="radio"],
+  .btn-group-toggle > .btn-group >
+  button input[type="radio"],
   .btn-group-toggle > .btn-group > .action-button input[type="radio"],
   .btn-group-toggle > .btn-group > .menubutton input[type="radio"],
   .btn-group-toggle > .btn-group > .btn input[type="checkbox"],
   .btn-group-toggle > .btn-group > input[type="submit"] input[type="checkbox"],
-  .btn-group-toggle > .btn-group > button input[type="checkbox"],
+  .btn-group-toggle > .btn-group >
+  button input[type="checkbox"],
   .btn-group-toggle > .btn-group > .action-button input[type="checkbox"],
   .btn-group-toggle > .btn-group > .menubutton input[type="checkbox"] {
     position: absolute;
@@ -2570,66 +2655,86 @@ input[type="button"].btn-block {
 .input-group-prepend,
 .input-group-append {
   display: flex; }
-  .input-group-prepend .btn, .input-group-prepend input[type="submit"],
-  .input-group-prepend button, .input-group-prepend .action-button, .input-group-prepend .menubutton,
+  .input-group-prepend .btn, .input-group-prepend input[type="submit"], .input-group-prepend
+  button, .input-group-prepend .action-button, .input-group-prepend .menubutton,
   .input-group-append .btn,
   .input-group-append input[type="submit"],
-  .input-group-append button,
+  .input-group-append
+  button,
   .input-group-append .action-button,
   .input-group-append .menubutton {
     position: relative;
     z-index: 2; }
-  .input-group-prepend .btn + .btn, .input-group-prepend input[type="submit"] + .btn, .input-group-prepend button + .btn, .input-group-prepend .action-button + .btn, .input-group-prepend .menubutton + .btn, .input-group-prepend .btn + input[type="submit"], .input-group-prepend input[type="submit"] + input[type="submit"], .input-group-prepend button + input[type="submit"], .input-group-prepend .action-button + input[type="submit"], .input-group-prepend .menubutton + input[type="submit"],
-  .input-group-prepend .btn + button,
-  .input-group-prepend input[type="submit"] + button,
-  .input-group-prepend button + button,
-  .input-group-prepend .action-button + button,
-  .input-group-prepend .menubutton + button, .input-group-prepend .btn + .action-button, .input-group-prepend input[type="submit"] + .action-button, .input-group-prepend button + .action-button, .input-group-prepend .action-button + .action-button, .input-group-prepend .menubutton + .action-button, .input-group-prepend .btn + .menubutton, .input-group-prepend input[type="submit"] + .menubutton, .input-group-prepend button + .menubutton, .input-group-prepend .action-button + .menubutton, .input-group-prepend .menubutton + .menubutton,
+  .input-group-prepend .btn + .btn, .input-group-prepend input[type="submit"] + .btn, .input-group-prepend
+  button + .btn, .input-group-prepend .action-button + .btn, .input-group-prepend .menubutton + .btn, .input-group-prepend .btn + input[type="submit"], .input-group-prepend input[type="submit"] + input[type="submit"], .input-group-prepend
+  button + input[type="submit"], .input-group-prepend .action-button + input[type="submit"], .input-group-prepend .menubutton + input[type="submit"], .input-group-prepend .btn +
+  button, .input-group-prepend input[type="submit"] +
+  button, .input-group-prepend
+  button +
+  button, .input-group-prepend .action-button +
+  button, .input-group-prepend .menubutton +
+  button, .input-group-prepend .btn + .action-button, .input-group-prepend input[type="submit"] + .action-button, .input-group-prepend
+  button + .action-button, .input-group-prepend .action-button + .action-button, .input-group-prepend .menubutton + .action-button, .input-group-prepend .btn + .menubutton, .input-group-prepend input[type="submit"] + .menubutton, .input-group-prepend
+  button + .menubutton, .input-group-prepend .action-button + .menubutton, .input-group-prepend .menubutton + .menubutton,
   .input-group-prepend .btn + .input-group-text,
   .input-group-prepend input[type="submit"] + .input-group-text,
-  .input-group-prepend button + .input-group-text,
+  .input-group-prepend
+  button + .input-group-text,
   .input-group-prepend .action-button + .input-group-text,
   .input-group-prepend .menubutton + .input-group-text,
   .input-group-prepend .input-group-text + .input-group-text,
   .input-group-prepend .input-group-text + .btn,
   .input-group-prepend .input-group-text + input[type="submit"],
-  .input-group-prepend .input-group-text + button,
+  .input-group-prepend .input-group-text +
+  button,
   .input-group-prepend .input-group-text + .action-button,
   .input-group-prepend .input-group-text + .menubutton,
   .input-group-append .btn + .btn,
   .input-group-append input[type="submit"] + .btn,
-  .input-group-append button + .btn,
+  .input-group-append
+  button + .btn,
   .input-group-append .action-button + .btn,
   .input-group-append .menubutton + .btn,
   .input-group-append .btn + input[type="submit"],
   .input-group-append input[type="submit"] + input[type="submit"],
-  .input-group-append button + input[type="submit"],
+  .input-group-append
+  button + input[type="submit"],
   .input-group-append .action-button + input[type="submit"],
   .input-group-append .menubutton + input[type="submit"],
-  .input-group-append .btn + button,
-  .input-group-append input[type="submit"] + button,
-  .input-group-append button + button,
-  .input-group-append .action-button + button,
-  .input-group-append .menubutton + button,
+  .input-group-append .btn +
+  button,
+  .input-group-append input[type="submit"] +
+  button,
+  .input-group-append
+  button +
+  button,
+  .input-group-append .action-button +
+  button,
+  .input-group-append .menubutton +
+  button,
   .input-group-append .btn + .action-button,
   .input-group-append input[type="submit"] + .action-button,
-  .input-group-append button + .action-button,
+  .input-group-append
+  button + .action-button,
   .input-group-append .action-button + .action-button,
   .input-group-append .menubutton + .action-button,
   .input-group-append .btn + .menubutton,
   .input-group-append input[type="submit"] + .menubutton,
-  .input-group-append button + .menubutton,
+  .input-group-append
+  button + .menubutton,
   .input-group-append .action-button + .menubutton,
   .input-group-append .menubutton + .menubutton,
   .input-group-append .btn + .input-group-text,
   .input-group-append input[type="submit"] + .input-group-text,
-  .input-group-append button + .input-group-text,
+  .input-group-append
+  button + .input-group-text,
   .input-group-append .action-button + .input-group-text,
   .input-group-append .menubutton + .input-group-text,
   .input-group-append .input-group-text + .input-group-text,
   .input-group-append .input-group-text + .btn,
   .input-group-append .input-group-text + input[type="submit"],
-  .input-group-append .input-group-text + button,
+  .input-group-append .input-group-text +
+  button,
   .input-group-append .input-group-text + .action-button,
   .input-group-append .input-group-text + .menubutton {
     margin-left: -1px; }
@@ -2658,36 +2763,40 @@ input[type="button"].btn-block {
   .input-group-text input[type="checkbox"] {
     margin-top: 0; }
 
-.input-group > .input-group-prepend > .btn, .input-group > .input-group-prepend > input[type="submit"],
-.input-group > .input-group-prepend > button, .input-group > .input-group-prepend > .action-button, .input-group > .input-group-prepend > .menubutton,
+.input-group > .input-group-prepend > .btn, .input-group > .input-group-prepend > input[type="submit"], .input-group > .input-group-prepend >
+button, .input-group > .input-group-prepend > .action-button, .input-group > .input-group-prepend > .menubutton,
 .input-group > .input-group-prepend > .input-group-text,
 .input-group > .input-group-append:not(:last-child) > .btn,
 .input-group > .input-group-append:not(:last-child) > input[type="submit"],
-.input-group > .input-group-append:not(:last-child) > button,
+.input-group > .input-group-append:not(:last-child) >
+button,
 .input-group > .input-group-append:not(:last-child) > .action-button,
 .input-group > .input-group-append:not(:last-child) > .menubutton,
 .input-group > .input-group-append:not(:last-child) > .input-group-text,
 .input-group > .input-group-append:last-child > .btn:not(:last-child):not(.dropdown-toggle),
-.input-group > .input-group-append:last-child > input:not(:last-child):not(.dropdown-toggle)[type="submit"],
-.input-group > .input-group-append:last-child > button:not(:last-child):not(.dropdown-toggle),
+.input-group > .input-group-append:last-child > input[type="submit"]:not(:last-child):not(.dropdown-toggle),
+.input-group > .input-group-append:last-child >
+button:not(:last-child):not(.dropdown-toggle),
 .input-group > .input-group-append:last-child > .action-button:not(:last-child):not(.dropdown-toggle),
 .input-group > .input-group-append:last-child > .menubutton:not(:last-child):not(.dropdown-toggle),
 .input-group > .input-group-append:last-child > .input-group-text:not(:last-child) {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0; }
 
-.input-group > .input-group-append > .btn, .input-group > .input-group-append > input[type="submit"],
-.input-group > .input-group-append > button, .input-group > .input-group-append > .action-button, .input-group > .input-group-append > .menubutton,
+.input-group > .input-group-append > .btn, .input-group > .input-group-append > input[type="submit"], .input-group > .input-group-append >
+button, .input-group > .input-group-append > .action-button, .input-group > .input-group-append > .menubutton,
 .input-group > .input-group-append > .input-group-text,
 .input-group > .input-group-prepend:not(:first-child) > .btn,
 .input-group > .input-group-prepend:not(:first-child) > input[type="submit"],
-.input-group > .input-group-prepend:not(:first-child) > button,
+.input-group > .input-group-prepend:not(:first-child) >
+button,
 .input-group > .input-group-prepend:not(:first-child) > .action-button,
 .input-group > .input-group-prepend:not(:first-child) > .menubutton,
 .input-group > .input-group-prepend:not(:first-child) > .input-group-text,
 .input-group > .input-group-prepend:first-child > .btn:not(:first-child),
-.input-group > .input-group-prepend:first-child > input:not(:first-child)[type="submit"],
-.input-group > .input-group-prepend:first-child > button:not(:first-child),
+.input-group > .input-group-prepend:first-child > input[type="submit"]:not(:first-child),
+.input-group > .input-group-prepend:first-child >
+button:not(:first-child),
 .input-group > .input-group-prepend:first-child > .action-button:not(:first-child),
 .input-group > .input-group-prepend:first-child > .menubutton:not(:first-child),
 .input-group > .input-group-prepend:first-child > .input-group-text:not(:first-child) {
@@ -3574,7 +3683,8 @@ input[type="button"].btn-block {
   .badge:empty {
     display: none; }
 
-.btn .badge, input[type="submit"] .badge, button .badge, .action-button .badge, .menubutton .badge {
+.btn .badge, input[type="submit"] .badge,
+button .badge, .action-button .badge, .menubutton .badge {
   position: relative;
   top: -1px; }
 
@@ -3610,7 +3720,7 @@ input[type="button"].btn-block {
 .badge-info, .badge-new {
   color: #fff;
   background-color: #1cbceb; }
-  .badge-info[href]:hover, .badge-new[href]:hover, .badge-info[href]:focus, .badge-new[href]:focus {
+  .badge-info[href]:hover, [href].badge-new:hover, .badge-info[href]:focus, [href].badge-new:focus {
     color: #fff;
     text-decoration: none;
     background-color: #119ac3; }
@@ -3618,7 +3728,7 @@ input[type="button"].btn-block {
 .badge-warning, .badge-beta {
   color: #212529;
   background-color: #f69713; }
-  .badge-warning[href]:hover, .badge-beta[href]:hover, .badge-warning[href]:focus, .badge-beta[href]:focus {
+  .badge-warning[href]:hover, [href].badge-beta:hover, .badge-warning[href]:focus, [href].badge-beta:focus {
     color: #212529;
     text-decoration: none;
     background-color: #ce7b08; }
@@ -3714,42 +3824,46 @@ input[type="button"].btn-block {
   .alert-secondary .alert-link {
     color: #6c6e70; }
 
-.alert-success,
-.donemessagelarge,
-.donemessage,
+.alert-success, .donemessagelarge, .donemessage,
 .donemessagesmall {
   color: #146f14;
   background-color: #b1e7b1;
   border-color: #64ce64; }
-  .alert-success hr, .donemessagelarge hr, .donemessage hr, .donemessagesmall hr {
+  .alert-success hr, .donemessagelarge hr, .donemessage hr,
+  .donemessagesmall hr {
     border-top-color: #51c851; }
-  .alert-success .alert-link, .donemessagelarge .alert-link, .donemessage .alert-link, .donemessagesmall .alert-link {
+  .alert-success .alert-link, .donemessagelarge .alert-link, .donemessage .alert-link,
+  .donemessagesmall .alert-link {
     color: #0c440c; }
 
-.alert-info,
-.infomessagelarge,
-.infomessage,
+.alert-info, .infomessagelarge, .infomessage,
 .infomessagesmall,
 .ui-form-help .note {
   color: #11718d;
   background-color: #b0e7f8;
   border-color: #60d0f1; }
-  .alert-info hr, .infomessagelarge hr, .infomessage hr, .infomessagesmall hr, .ui-form-help .note hr {
+  .alert-info hr, .infomessagelarge hr, .infomessage hr,
+  .infomessagesmall hr,
+  .ui-form-help .note hr {
     border-top-color: #49c9ef; }
-  .alert-info .alert-link, .infomessagelarge .alert-link, .infomessage .alert-link, .infomessagesmall .alert-link, .ui-form-help .note .alert-link {
+  .alert-info .alert-link, .infomessagelarge .alert-link, .infomessage .alert-link,
+  .infomessagesmall .alert-link,
+  .ui-form-help .note .alert-link {
     color: #0c4d5f; }
 
-.alert-warning,
-.warningmessagelarge,
-.warningmessage,
+.alert-warning, .warningmessagelarge, .warningmessage,
 .warningmessagesmall,
 .ui-form-help .warning {
   color: #945b0b;
   background-color: #fcdbac;
   border-color: #f9b65a; }
-  .alert-warning hr, .warningmessagelarge hr, .warningmessage hr, .warningmessagesmall hr, .ui-form-help .warning hr {
+  .alert-warning hr, .warningmessagelarge hr, .warningmessage hr,
+  .warningmessagesmall hr,
+  .ui-form-help .warning hr {
     border-top-color: #f8ab41; }
-  .alert-warning .alert-link, .warningmessagelarge .alert-link, .warningmessage .alert-link, .warningmessagesmall .alert-link, .ui-form-help .warning .alert-link {
+  .alert-warning .alert-link, .warningmessagelarge .alert-link, .warningmessage .alert-link,
+  .warningmessagesmall .alert-link,
+  .ui-form-help .warning .alert-link {
     color: #653e07; }
 
 .alert-danger, .errormessagelarge, .error-modal .modal-content, .errormessage,
@@ -3758,9 +3872,13 @@ input[type="button"].btn-block {
   color: #8f3937;
   background-color: #f9c7c6;
   border-color: #f48f8c; }
-  .alert-danger hr, .errormessagelarge hr, .error-modal .modal-content hr, .errormessage hr, .errormessagesmall hr, .ui-form-help .error hr {
+  .alert-danger hr, .errormessagelarge hr, .error-modal .modal-content hr, .errormessage hr,
+  .errormessagesmall hr,
+  .ui-form-help .error hr {
     border-top-color: #f27875; }
-  .alert-danger .alert-link, .errormessagelarge .alert-link, .error-modal .modal-content .alert-link, .errormessage .alert-link, .errormessagesmall .alert-link, .ui-form-help .error .alert-link {
+  .alert-danger .alert-link, .errormessagelarge .alert-link, .error-modal .modal-content .alert-link, .errormessage .alert-link,
+  .errormessagesmall .alert-link,
+  .ui-form-help .error .alert-link {
     color: #6a2a29; }
 
 .alert-light {
@@ -4227,15 +4345,12 @@ button.close {
   .bs-popover-top .arrow, .bs-popover-auto[x-placement^="top"] .arrow {
     bottom: calc((0.5rem + 1px) * -1); }
   .bs-popover-top .arrow::before, .bs-popover-auto[x-placement^="top"] .arrow::before,
-  .bs-popover-top .arrow::after,
-  .bs-popover-auto[x-placement^="top"] .arrow::after {
+  .bs-popover-top .arrow::after, .bs-popover-auto[x-placement^="top"] .arrow::after {
     border-width: 0.5rem 0.5rem 0; }
   .bs-popover-top .arrow::before, .bs-popover-auto[x-placement^="top"] .arrow::before {
     bottom: 0;
     border-top-color: rgba(0, 0, 0, 0.25); }
-  
-  .bs-popover-top .arrow::after,
-  .bs-popover-auto[x-placement^="top"] .arrow::after {
+  .bs-popover-top .arrow::after, .bs-popover-auto[x-placement^="top"] .arrow::after {
     bottom: 1px;
     border-top-color: #fff; }
 
@@ -4247,15 +4362,12 @@ button.close {
     height: 1rem;
     margin: 0.3rem 0; }
   .bs-popover-right .arrow::before, .bs-popover-auto[x-placement^="right"] .arrow::before,
-  .bs-popover-right .arrow::after,
-  .bs-popover-auto[x-placement^="right"] .arrow::after {
+  .bs-popover-right .arrow::after, .bs-popover-auto[x-placement^="right"] .arrow::after {
     border-width: 0.5rem 0.5rem 0.5rem 0; }
   .bs-popover-right .arrow::before, .bs-popover-auto[x-placement^="right"] .arrow::before {
     left: 0;
     border-right-color: rgba(0, 0, 0, 0.25); }
-  
-  .bs-popover-right .arrow::after,
-  .bs-popover-auto[x-placement^="right"] .arrow::after {
+  .bs-popover-right .arrow::after, .bs-popover-auto[x-placement^="right"] .arrow::after {
     left: 1px;
     border-right-color: #fff; }
 
@@ -4264,15 +4376,12 @@ button.close {
   .bs-popover-bottom .arrow, .bs-popover-auto[x-placement^="bottom"] .arrow {
     top: calc((0.5rem + 1px) * -1); }
   .bs-popover-bottom .arrow::before, .bs-popover-auto[x-placement^="bottom"] .arrow::before,
-  .bs-popover-bottom .arrow::after,
-  .bs-popover-auto[x-placement^="bottom"] .arrow::after {
+  .bs-popover-bottom .arrow::after, .bs-popover-auto[x-placement^="bottom"] .arrow::after {
     border-width: 0 0.5rem 0.5rem 0.5rem; }
   .bs-popover-bottom .arrow::before, .bs-popover-auto[x-placement^="bottom"] .arrow::before {
     top: 0;
     border-bottom-color: rgba(0, 0, 0, 0.25); }
-  
-  .bs-popover-bottom .arrow::after,
-  .bs-popover-auto[x-placement^="bottom"] .arrow::after {
+  .bs-popover-bottom .arrow::after, .bs-popover-auto[x-placement^="bottom"] .arrow::after {
     top: 1px;
     border-bottom-color: #fff; }
   .bs-popover-bottom .popover-header::before, .bs-popover-auto[x-placement^="bottom"] .popover-header::before {
@@ -4293,15 +4402,12 @@ button.close {
     height: 1rem;
     margin: 0.3rem 0; }
   .bs-popover-left .arrow::before, .bs-popover-auto[x-placement^="left"] .arrow::before,
-  .bs-popover-left .arrow::after,
-  .bs-popover-auto[x-placement^="left"] .arrow::after {
+  .bs-popover-left .arrow::after, .bs-popover-auto[x-placement^="left"] .arrow::after {
     border-width: 0.5rem 0 0.5rem 0.5rem; }
   .bs-popover-left .arrow::before, .bs-popover-auto[x-placement^="left"] .arrow::before {
     right: 0;
     border-left-color: rgba(0, 0, 0, 0.25); }
-  
-  .bs-popover-left .arrow::after,
-  .bs-popover-auto[x-placement^="left"] .arrow::after {
+  .bs-popover-left .arrow::after, .bs-popover-auto[x-placement^="left"] .arrow::after {
     right: 1px;
     border-left-color: #fff; }
 
@@ -6513,10 +6619,18 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
   img {
     page-break-inside: avoid; }
   p,
-  h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header {
+  h2,
+  h3,
+  .upload-view-default .upload-box .upload-helper,
+  .upload-view-composite .upload-box .upload-helper,
+  .ui-form-composite .ui-form-header {
     orphans: 3;
     widows: 3; }
-  h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header {
+  h2,
+  h3,
+  .upload-view-default .upload-box .upload-helper,
+  .upload-view-composite .upload-box .upload-helper,
+  .ui-form-composite .ui-form-header {
     page-break-after: avoid; }
   @page {
     size: a3; }
@@ -6530,9 +6644,8 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
     border: 1px solid #000; }
   .table, .ui-table-striped {
     border-collapse: collapse !important; }
-    
-    .table td,
-    .ui-table-striped td, .table th, .ui-table-striped th {
+    .table td, .ui-table-striped td,
+    .table th, .ui-table-striped th {
       background-color: #fff !important; }
   .table-bordered th,
   .table-bordered td {
@@ -6561,7 +6674,7 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
   font-weight: normal;
   font-style: normal; }
 
-.fa, .fa-icon, .panel-collapse, #search-clear-btn, .state-icon {
+.fa, .fa-icon, .panel-collapse, #tool-search #search-clear-btn, .state-icon {
   display: inline-block;
   font: normal normal normal 14px/1 FontAwesome;
   font-size: inherit;
@@ -6618,10 +6731,10 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
 .fa-pull-right {
   float: right; }
 
-.fa.fa-pull-left, .fa-pull-left.fa-icon, .fa-pull-left.panel-collapse, .fa-pull-left#search-clear-btn, .fa-pull-left.state-icon {
+.fa.fa-pull-left, .fa-pull-left.fa-icon, .fa-pull-left.panel-collapse, #tool-search .fa-pull-left#search-clear-btn, .fa-pull-left.state-icon {
   margin-right: .3em; }
 
-.fa.fa-pull-right, .fa-pull-right.fa-icon, .fa-pull-right.panel-collapse, .fa-pull-right#search-clear-btn, .fa-pull-right.state-icon {
+.fa.fa-pull-right, .fa-pull-right.fa-icon, .fa-pull-right.panel-collapse, #tool-search .fa-pull-right#search-clear-btn, .fa-pull-right.state-icon {
   margin-left: .3em; }
 
 /* Deprecated as of 4.4.0 */
@@ -6631,10 +6744,10 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
 .pull-left {
   float: left; }
 
-.fa.pull-left, .pull-left.fa-icon, .pull-left.panel-collapse, .pull-left#search-clear-btn, .pull-left.state-icon {
+.fa.pull-left, .pull-left.fa-icon, .pull-left.panel-collapse, #tool-search .pull-left#search-clear-btn, .pull-left.state-icon {
   margin-right: .3em; }
 
-.fa.pull-right, .pull-right.fa-icon, .pull-right.panel-collapse, .pull-right#search-clear-btn, .pull-right.state-icon {
+.fa.pull-right, .pull-right.fa-icon, .pull-right.panel-collapse, #tool-search .pull-right#search-clear-btn, .pull-right.state-icon {
   margin-left: .3em; }
 
 .fa-spin {
@@ -10563,23 +10676,17 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     .ui-portlet .portlet-content .portlet-buttons, .ui-portlet-repeat .portlet-content .portlet-buttons, .ui-portlet-panel .portlet-content .portlet-buttons, .ui-portlet-section .portlet-content .portlet-buttons, .ui-portlet-limited .portlet-content .portlet-buttons, .ui-portlet-narrow .portlet-content .portlet-buttons, .ui-portlet-plain .portlet-content .portlet-buttons {
       margin-top: 10px;
       margin-bottom: 10px; }
-      .ui-portlet .portlet-content .portlet-buttons > .btn, .ui-portlet-repeat .portlet-content .portlet-buttons > .btn, .ui-portlet-panel .portlet-content .portlet-buttons > .btn, .ui-portlet-section .portlet-content .portlet-buttons > .btn, .ui-portlet-limited .portlet-content .portlet-buttons > .btn, .ui-portlet-narrow .portlet-content .portlet-buttons > .btn, .ui-portlet-plain .portlet-content .portlet-buttons > .btn, .ui-portlet .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-repeat .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-panel .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-section .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-limited .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-narrow .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-plain .portlet-content .portlet-buttons > input[type="submit"],
-      .ui-portlet .portlet-content .portlet-buttons > button,
-      .ui-portlet-repeat .portlet-content .portlet-buttons > button,
-      .ui-portlet-panel .portlet-content .portlet-buttons > button,
-      .ui-portlet-section .portlet-content .portlet-buttons > button,
-      .ui-portlet-limited .portlet-content .portlet-buttons > button,
-      .ui-portlet-narrow .portlet-content .portlet-buttons > button,
-      .ui-portlet-plain .portlet-content .portlet-buttons > button, .ui-portlet .portlet-content .portlet-buttons > .action-button, .ui-portlet-repeat .portlet-content .portlet-buttons > .action-button, .ui-portlet-panel .portlet-content .portlet-buttons > .action-button, .ui-portlet-section .portlet-content .portlet-buttons > .action-button, .ui-portlet-limited .portlet-content .portlet-buttons > .action-button, .ui-portlet-narrow .portlet-content .portlet-buttons > .action-button, .ui-portlet-plain .portlet-content .portlet-buttons > .action-button, .ui-portlet .portlet-content .portlet-buttons > .menubutton, .ui-portlet-repeat .portlet-content .portlet-buttons > .menubutton, .ui-portlet-panel .portlet-content .portlet-buttons > .menubutton, .ui-portlet-section .portlet-content .portlet-buttons > .menubutton, .ui-portlet-limited .portlet-content .portlet-buttons > .menubutton, .ui-portlet-narrow .portlet-content .portlet-buttons > .menubutton, .ui-portlet-plain .portlet-content .portlet-buttons > .menubutton {
+      .ui-portlet .portlet-content .portlet-buttons > .btn, .ui-portlet-repeat .portlet-content .portlet-buttons > .btn, .ui-portlet-panel .portlet-content .portlet-buttons > .btn, .ui-portlet-section .portlet-content .portlet-buttons > .btn, .ui-portlet-limited .portlet-content .portlet-buttons > .btn, .ui-portlet-narrow .portlet-content .portlet-buttons > .btn, .ui-portlet-plain .portlet-content .portlet-buttons > .btn, .ui-portlet .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-repeat .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-panel .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-section .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-limited .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-narrow .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-plain .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet .portlet-content .portlet-buttons >
+      button, .ui-portlet-repeat .portlet-content .portlet-buttons >
+      button, .ui-portlet-panel .portlet-content .portlet-buttons >
+      button, .ui-portlet-section .portlet-content .portlet-buttons >
+      button, .ui-portlet-limited .portlet-content .portlet-buttons >
+      button, .ui-portlet-narrow .portlet-content .portlet-buttons >
+      button, .ui-portlet-plain .portlet-content .portlet-buttons >
+      button, .ui-portlet .portlet-content .portlet-buttons > .action-button, .ui-portlet-repeat .portlet-content .portlet-buttons > .action-button, .ui-portlet-panel .portlet-content .portlet-buttons > .action-button, .ui-portlet-section .portlet-content .portlet-buttons > .action-button, .ui-portlet-limited .portlet-content .portlet-buttons > .action-button, .ui-portlet-narrow .portlet-content .portlet-buttons > .action-button, .ui-portlet-plain .portlet-content .portlet-buttons > .action-button, .ui-portlet .portlet-content .portlet-buttons > .menubutton, .ui-portlet-repeat .portlet-content .portlet-buttons > .menubutton, .ui-portlet-panel .portlet-content .portlet-buttons > .menubutton, .ui-portlet-section .portlet-content .portlet-buttons > .menubutton, .ui-portlet-limited .portlet-content .portlet-buttons > .menubutton, .ui-portlet-narrow .portlet-content .portlet-buttons > .menubutton, .ui-portlet-plain .portlet-content .portlet-buttons > .menubutton {
         margin-right: 5px; }
   .ui-portlet .portlet-content.nopadding, .ui-portlet-repeat .portlet-content.nopadding, .ui-portlet-panel .portlet-content.nopadding, .ui-portlet-section .portlet-content.nopadding, .ui-portlet-limited .portlet-content.nopadding, .ui-portlet-narrow .portlet-content.nopadding, .ui-portlet-plain .portlet-content.nopadding,
-  .ui-portlet .portlet-body.nopadding,
-  .ui-portlet-repeat .portlet-body.nopadding,
-  .ui-portlet-panel .portlet-body.nopadding,
-  .ui-portlet-section .portlet-body.nopadding,
-  .ui-portlet-limited .portlet-body.nopadding,
-  .ui-portlet-narrow .portlet-body.nopadding,
-  .ui-portlet-plain .portlet-body.nopadding {
+  .ui-portlet .portlet-body.nopadding, .ui-portlet-repeat .portlet-body.nopadding, .ui-portlet-panel .portlet-body.nopadding, .ui-portlet-section .portlet-body.nopadding, .ui-portlet-limited .portlet-body.nopadding, .ui-portlet-narrow .portlet-body.nopadding, .ui-portlet-plain .portlet-body.nopadding {
     padding: 0px; }
   .ui-portlet .portlet-backdrop, .ui-portlet-repeat .portlet-backdrop, .ui-portlet-panel .portlet-backdrop, .ui-portlet-section .portlet-backdrop, .ui-portlet-limited .portlet-backdrop, .ui-portlet-narrow .portlet-backdrop, .ui-portlet-plain .portlet-backdrop {
     display: none;
@@ -10741,24 +10848,24 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   background: transparent;
   -webkit-appearance: none;
   -moz-border-radius: 0.1875rem; }
-  .ui-input[disabled], .ui-form-element .ui-form-preview[disabled], .ui-form-element-disabled .ui-form-preview[disabled], .ui-input-basic[disabled], .ui-select select[disabled], .ui-select .select2-container .select2-choice[disabled], .ui-textarea[disabled], .ui-options .ui-options-list[disabled], .ui-form-slider .ui-form-slider-text[disabled], .ui-select .select2-container-multi .select2-choices[disabled], .ui-input[readonly], .ui-form-element .ui-form-preview[readonly], .ui-form-element-disabled .ui-form-preview[readonly], .ui-input-basic[readonly], .ui-select select[readonly], .ui-select .select2-container .select2-choice[readonly], .ui-textarea[readonly], .ui-options .ui-options-list[readonly], .ui-form-slider .ui-form-slider-text[readonly], .ui-select .select2-container-multi .select2-choices[readonly],
+  .ui-input[disabled], .ui-form-element [disabled].ui-form-preview, .ui-form-element-disabled [disabled].ui-form-preview, [disabled].ui-input-basic, .ui-select select[disabled], .ui-select .select2-container [disabled].select2-choice, [disabled].ui-textarea, .ui-options [disabled].ui-options-list, .ui-form-slider [disabled].ui-form-slider-text, .ui-select .select2-container-multi [disabled].select2-choices, .ui-input[readonly], .ui-form-element [readonly].ui-form-preview, .ui-form-element-disabled [readonly].ui-form-preview, [readonly].ui-input-basic, .ui-select select[readonly], .ui-select .select2-container [readonly].select2-choice, [readonly].ui-textarea, .ui-options [readonly].ui-options-list, .ui-form-slider [readonly].ui-form-slider-text, .ui-select .select2-container-multi [readonly].select2-choices,
   fieldset[disabled] .ui-input,
-  fieldset[disabled] .ui-form-element .ui-form-preview,
-  .ui-form-element fieldset[disabled] .ui-form-preview,
-  fieldset[disabled] .ui-form-element-disabled .ui-form-preview,
-  .ui-form-element-disabled fieldset[disabled] .ui-form-preview,
+  fieldset[disabled] .ui-form-element .ui-form-preview, .ui-form-element
+  fieldset[disabled] .ui-form-preview,
+  fieldset[disabled] .ui-form-element-disabled .ui-form-preview, .ui-form-element-disabled
+  fieldset[disabled] .ui-form-preview,
   fieldset[disabled] .ui-input-basic,
-  fieldset[disabled] .ui-select select,
-  .ui-select fieldset[disabled] select,
-  fieldset[disabled] .ui-select .select2-container .select2-choice,
-  .ui-select .select2-container fieldset[disabled] .select2-choice,
+  fieldset[disabled] .ui-select select, .ui-select
+  fieldset[disabled] select,
+  fieldset[disabled] .ui-select .select2-container .select2-choice, .ui-select .select2-container
+  fieldset[disabled] .select2-choice,
   fieldset[disabled] .ui-textarea,
-  fieldset[disabled] .ui-options .ui-options-list,
-  .ui-options fieldset[disabled] .ui-options-list,
-  fieldset[disabled] .ui-form-slider .ui-form-slider-text,
-  .ui-form-slider fieldset[disabled] .ui-form-slider-text,
-  fieldset[disabled] .ui-select .select2-container-multi .select2-choices,
-  .ui-select .select2-container-multi fieldset[disabled] .select2-choices {
+  fieldset[disabled] .ui-options .ui-options-list, .ui-options
+  fieldset[disabled] .ui-options-list,
+  fieldset[disabled] .ui-form-slider .ui-form-slider-text, .ui-form-slider
+  fieldset[disabled] .ui-form-slider-text,
+  fieldset[disabled] .ui-select .select2-container-multi .select2-choices, .ui-select .select2-container-multi
+  fieldset[disabled] .select2-choices {
     cursor: not-allowed;
     background-color: #e9ecef; }
 
@@ -11026,7 +11133,7 @@ label {
   margin: auto;
   margin-top: 1em;
   overflow: auto !important; }
-  .library_style_container .fa, .library_style_container .fa-icon, .library_style_container .panel-collapse, .library_style_container #search-clear-btn, .library_style_container .state-icon {
+  .library_style_container .fa, .library_style_container .fa-icon, .library_style_container .panel-collapse, .library_style_container #tool-search #search-clear-btn, #tool-search .library_style_container #search-clear-btn, .library_style_container .state-icon {
     font-size: 12px; }
   .library_style_container .fa-globe,
   .library_style_container .fa-shield,
@@ -12264,7 +12371,10 @@ button.toast-close-button {
 .flex-horizontal-container {
   flex-flow: row nowrap; }
 
-.flex-row, .flex-column, .history-panel > .list-items, .dataset-collection-panel > .list-items {
+.flex-row,
+.flex-column,
+.history-panel > .list-items,
+.dataset-collection-panel > .list-items {
   -webkit-flex: 1 1 auto;
   -ms-flex: 1 1 auto;
   property: 1 1 auto;
@@ -12483,6 +12593,11 @@ body {
   z-index: 200;
   border-left: solid #999 1px; }
 
+#left, #right, .unified-panel {
+  background: #dfe5f9;
+  display: flex;
+  flex-direction: column; }
+
 .unified-panel-header {
   height: 2rem;
   z-index: 1000;
@@ -12499,7 +12614,7 @@ body {
   color: #555; }
   .unified-panel-header a {
     color: #555; }
-  .unified-panel-header .fa, .unified-panel-header .fa-icon, .unified-panel-header .panel-collapse, .unified-panel-header #search-clear-btn, .unified-panel-header .state-icon {
+  .unified-panel-header .fa, .unified-panel-header .fa-icon, .unified-panel-header .panel-collapse, .unified-panel-header #tool-search #search-clear-btn, #tool-search .unified-panel-header #search-clear-btn, .unified-panel-header .state-icon {
     font-size: 1.2em; }
   .unified-panel-header .unified-panel-header-inner {
     width: 100%;
@@ -12588,11 +12703,9 @@ body {
   background: whiteSmoke top repeat-x; }
 
 div.unified-panel-body {
-  position: absolute;
-  top: 2rem;
-  bottom: 0;
   width: 100%;
-  padding: 0px; }
+  padding: 0px;
+  flex: 1; }
 
 div.unified-panel-body-background {
   background: none repeat scroll 0 0 #dfe5f9; }
@@ -12862,8 +12975,7 @@ div.form-row-error-message {
 .ui-form-info {
   color: #666; }
   .form-row .help a,
-  .toolParamHelp a,
-  .ui-form-info a {
+  .toolParamHelp a, .ui-form-info a {
     color: #666; }
 
 .form-row.form-actions {
@@ -12932,16 +13044,19 @@ input[type="password"] {
   font-size: 1.4em;
   color: #888; }
 
-#search-clear-btn {
-  position: absolute;
-  right: 6px;
-  top: 9px;
-  display: block;
-  font-size: 1.4em !important;
-  text-decoration: none;
-  color: #888; }
-  #search-clear-btn:before {
-    content: "\f057"; }
+#tool-search {
+  position: relative;
+  margin: 10px; }
+  #tool-search #search-clear-btn {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    display: block;
+    font-size: 1.4em !important;
+    text-decoration: none;
+    color: #888; }
+    #tool-search #search-clear-btn:before {
+      content: "\f057"; }
 
 .errormessagelarge, .error-modal .modal-content,
 .warningmessagelarge,
@@ -13680,8 +13795,8 @@ div.permissionContainer {
       margin-bottom: 8px; }
   .list-panel .controls .list-actions {
     display: none; }
-    .list-panel .controls .list-actions .btn, .list-panel .controls .list-actions input[type="submit"],
-    .list-panel .controls .list-actions button, .list-panel .controls .list-actions .action-button, .list-panel .controls .list-actions .menubutton {
+    .list-panel .controls .list-actions .btn, .list-panel .controls .list-actions input[type="submit"], .list-panel .controls .list-actions
+    button, .list-panel .controls .list-actions .action-button, .list-panel .controls .list-actions .menubutton {
       padding-top: 2px;
       padding-bottom: 2px;
       font-size: 90%; }
@@ -14343,19 +14458,20 @@ pre.peek {
   .multi-panel-history > .footer {
     width: 100%;
     background-color: lightgrey; }
-    .multi-panel-history > .header .btn, .multi-panel-history > .header input[type="submit"],
-    .multi-panel-history > .header button, .multi-panel-history > .header .action-button, .multi-panel-history > .header .menubutton,
+    .multi-panel-history > .header .btn, .multi-panel-history > .header input[type="submit"], .multi-panel-history > .header
+    button, .multi-panel-history > .header .action-button, .multi-panel-history > .header .menubutton,
     .multi-panel-history > .footer .btn,
     .multi-panel-history > .footer input[type="submit"],
-    .multi-panel-history > .footer button,
+    .multi-panel-history > .footer
+    button,
     .multi-panel-history > .footer .action-button,
     .multi-panel-history > .footer .menubutton {
       height: 21px; }
   .multi-panel-history > .header {
     min-height: 29px;
     max-height: 29px; }
-    .multi-panel-history > .header .more-options .btn, .multi-panel-history > .header .more-options input[type="submit"],
-    .multi-panel-history > .header .more-options button, .multi-panel-history > .header .more-options .action-button, .multi-panel-history > .header .more-options .menubutton {
+    .multi-panel-history > .header .more-options .btn, .multi-panel-history > .header .more-options input[type="submit"], .multi-panel-history > .header .more-options
+    button, .multi-panel-history > .header .more-options .action-button, .multi-panel-history > .header .more-options .menubutton {
       width: 100%;
       height: 26px; }
     .multi-panel-history > .header .more-options input[type="checkbox"] {
@@ -14544,8 +14660,8 @@ pre.peek {
     margin: 0; }
   .collection-creator > *:not(.popover) {
     padding: 0px 8px 0px 8px; }
-  .collection-creator .btn, .collection-creator input[type="submit"],
-  .collection-creator button, .collection-creator .action-button, .collection-creator .menubutton {
+  .collection-creator .btn, .collection-creator input[type="submit"], .collection-creator
+  button, .collection-creator .action-button, .collection-creator .menubutton {
     border-color: #bfbfbf; }
   .collection-creator .vertically-spaced {
     margin-top: 8px; }
@@ -14603,22 +14719,41 @@ pre.peek {
   .collection-creator .choose-filters button {
     width: 100%;
     margin-top: 2px; }
-  .collection-creator .header .alert, .collection-creator .header .errormessagelarge, .collection-creator .header .error-modal .modal-content, .error-modal .collection-creator .header .modal-content,
-  .collection-creator .header .warningmessagelarge,
-  .collection-creator .header .donemessagelarge,
-  .collection-creator .header .infomessagelarge,
-  .collection-creator .header .ui-form-help .error, .ui-form-help .collection-creator .header .error,
-  .collection-creator .header .ui-form-help .warning, .ui-form-help .collection-creator .header .warning,
-  .collection-creator .header .ui-form-help .note, .ui-form-help .collection-creator .header .note, .collection-creator .header .errormessage,
-  .collection-creator .header .warningmessage,
-  .collection-creator .header .donemessage,
-  .collection-creator .header .infomessage,
-  .collection-creator .header .errormessagesmall,
-  .collection-creator .header .warningmessagesmall,
-  .collection-creator .header .donemessagesmall,
-  .collection-creator .header .infomessagesmall {
+  .collection-creator .header .alert, .collection-creator .header .errormessagelarge, .collection-creator .header .error-modal .modal-content, .error-modal .collection-creator .header .modal-content, .collection-creator .header
+  .warningmessagelarge, .collection-creator .header
+  .donemessagelarge, .collection-creator .header
+  .infomessagelarge, .collection-creator .header
+  .ui-form-help .error,
+  .ui-form-help .collection-creator .header .error, .collection-creator .header
+  .ui-form-help .warning,
+  .ui-form-help .collection-creator .header .warning, .collection-creator .header
+  .ui-form-help .note,
+  .ui-form-help .collection-creator .header .note, .collection-creator .header .errormessage, .collection-creator .header
+  .warningmessage, .collection-creator .header
+  .donemessage, .collection-creator .header
+  .infomessage, .collection-creator .header
+  .errormessagesmall, .collection-creator .header
+  .warningmessagesmall, .collection-creator .header
+  .donemessagesmall, .collection-creator .header
+  .infomessagesmall {
     display: none; }
-    .collection-creator .header .alert li, .collection-creator .header .errormessagelarge li, .collection-creator .header .error-modal .modal-content li, .error-modal .collection-creator .header .modal-content li, .collection-creator .header .warningmessagelarge li, .collection-creator .header .donemessagelarge li, .collection-creator .header .infomessagelarge li, .collection-creator .header .ui-form-help .error li, .ui-form-help .collection-creator .header .error li, .collection-creator .header .ui-form-help .warning li, .ui-form-help .collection-creator .header .warning li, .collection-creator .header .ui-form-help .note li, .ui-form-help .collection-creator .header .note li, .collection-creator .header .errormessage li, .collection-creator .header .warningmessage li, .collection-creator .header .donemessage li, .collection-creator .header .infomessage li, .collection-creator .header .errormessagesmall li, .collection-creator .header .warningmessagesmall li, .collection-creator .header .donemessagesmall li, .collection-creator .header .infomessagesmall li {
+    .collection-creator .header .alert li, .collection-creator .header .errormessagelarge li, .collection-creator .header .error-modal .modal-content li, .error-modal .collection-creator .header .modal-content li, .collection-creator .header
+    .warningmessagelarge li, .collection-creator .header
+    .donemessagelarge li, .collection-creator .header
+    .infomessagelarge li, .collection-creator .header
+    .ui-form-help .error li,
+    .ui-form-help .collection-creator .header .error li, .collection-creator .header
+    .ui-form-help .warning li,
+    .ui-form-help .collection-creator .header .warning li, .collection-creator .header
+    .ui-form-help .note li,
+    .ui-form-help .collection-creator .header .note li, .collection-creator .header .errormessage li, .collection-creator .header
+    .warningmessage li, .collection-creator .header
+    .donemessage li, .collection-creator .header
+    .infomessage li, .collection-creator .header
+    .errormessagesmall li, .collection-creator .header
+    .warningmessagesmall li, .collection-creator .header
+    .donemessagesmall li, .collection-creator .header
+    .infomessagesmall li {
       list-style: circle;
       margin-left: 32px; }
   .collection-creator .column {
@@ -15123,7 +15258,7 @@ pre.peek {
   color: #212529;
   background: #dfe5f9;
   min-height: 100%;
-  padding: 35px 10px; }
+  padding: 5px 10px; }
   .toolMenuContainer a {
     color: #212529; }
 
@@ -15178,13 +15313,6 @@ div.toolSectionBody div.toolPanelLabel {
 div.toolTitleNoSection {
   padding-bottom: 5px;
   font-weight: bold; }
-
-#tool-search {
-  padding-top: 5px;
-  padding-bottom: 10px;
-  position: absolute;
-  top: 0;
-  width: 210px; }
 
 #loading_indicator {
   position: fixed;
