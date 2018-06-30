@@ -596,10 +596,11 @@ class FilePrefix(object):
 
     def line_iterator(self):
         s = self.string_io()
+        s_len = len(s.getvalue())
         for line in s:
             if line.endswith("\n") or line.endswith("\r"):
                 yield line
-            elif s.pos == s.len and not self.truncated:
+            elif s.tell() == s_len and not self.truncated:
                 # At the end, return the last line if it wasn't truncated when reading it in.
                 yield line
 
