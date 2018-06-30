@@ -363,7 +363,17 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
-        </div>
+              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                Workflow Version 1
+                        </button>
+
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+
+                                <a class="dropdown-item"  onclick="location.href='http://localhost:32771/workflow/editor?id=f2db41e1fa331b3e&version=1';"  >Version 1</a>
+                                <a class="dropdown-item"  onclick="location.href='http://localhost:32771/workflow/editor?id=f2db41e1fa331b3e&version=2';"   >Version 2</a>
+                                <a class="dropdown-item"  onclick="location.href='http://localhost:32771/workflow/editor?id=f2db41e1fa331b3e&version=3';" >Version 3</a>
+                        </div>
+	</div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
         </div>
