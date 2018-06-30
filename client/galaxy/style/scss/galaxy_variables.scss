@@ -1,31 +1,36 @@
 // Additional variables that are not used by bootstrap but are used
 // in Galaxy stylesheets
 
-$base-bg: $white;
-$base-text-color: $black;
+$base-bg: $body-bg;
+$base-text-color: $text-color;
 
 // Masthead
 
-$masthead-height: 2.5rem;
+$masthead-height: 3rem;
 
 // Side panels
 
-$panel-bg-color: #dfe5f9;
+$panel-bg-color: $gray-100; // #dfe5f9;
 $panel-text-color: $gray-900;
 $side-panel-bg: $panel-bg-color;
 
-$panel-header-bg-color: $gray-lighter;
+$panel-header-bg-color: $gray-100;
 $panel-header-text-color: #555;
 
-$panel-message-height: 2rem; //1.875rem;
+$panel-message-height: 2.5rem; //1.875rem;
+
+// Initial width of left and right panels
+$panel-width: 16rem;
 
 $layout_top_padding: 0px;
 $border-default-color_padding: 0px;
 
-$panel_header_height: 2rem;
+$panel_header_height: 2.5rem;
 $panel_footer_height: 25px;
 
-$layout-border-color: $gray-900; // darken($border-default-color, 15%);
+$layout-border-color: $gray-900;
+// $layout-border: solid $layout-border-color 1px;
+$layout-border: none;
 
 // Forms
 
@@ -47,7 +52,7 @@ $state-running-border: #aaaa66;
 $state-running-bg: #ffffcc;
 
 $navbar-height: 36px; // 2.062500rem;
-$navbar-default-bg: $gray-lighter; // JT #f8f8f8;
+$navbar-default-bg: $gray-100; // JT #f8f8f8;
 $navbar-default-border: darken($navbar-default-bg, $border-darken-percent);
 
 @import "theme/blue.scss";

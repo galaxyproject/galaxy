@@ -65,10 +65,10 @@ $galaxy-bs3-info: #3189a3;
 // Lightening and saturating gets to alert backgrounds that are *very close*
 // to the Boostrap 3 Galaxy styles.
 $brand-primary: $galaxy-bs3-primary;
-$brand-success: saturate(lighten($galaxy-bs3-success, 5%), 30%);
-$brand-info: saturate(lighten($galaxy-bs3-info, 10%), 30%);
-$brand-warning: saturate(lighten($galaxy-bs3-warning, 10%), 30%);
-$brand-danger: saturate(lighten($galaxy-bs3-danger, 10%), 30%);
+$brand-success: #66CC66; // saturate(lighten($galaxy-bs3-success, 5%), 30%);
+$brand-info: #2077B3; // saturate(lighten($galaxy-bs3-info, 10%), 30%);
+$brand-warning: #FE7F02; // saturate(lighten($galaxy-bs3-warning, 10%), 30%);
+$brand-danger: #E31A1E;
 
 // These variables don't actually determine the colors in Bootstrap 4, instead
 // they use a map called $theme-colors, so here we override that
@@ -93,7 +93,7 @@ $theme-color-interval: 5% !default;
 
 // Alerts and states
 
-$alert-bg-level: -13 !default;
+$alert-bg-level: -12 !default;
 $alert-border-level: -6 !default;
 $alert-color-level: 8 !default;
 
@@ -119,19 +119,18 @@ $state-success-border: theme-color-level("success", $alert-border-level);
 // Body text and link colors
 
 $body-bg: $white;
-$text-color: $gray-dark;
+$text-color: $gray-900;
 
-$link-color: #303030;
+$link-color: $black;
 $link-hover-color: darken($link-color, 15%);
 
 // Fonts and sizes
 
-$font-family-sans-serif: "Lucida Grande", verdana, arial, helvetica, sans-serif; //JT "Helvetica Neue", Helvetica, Arial, sans-serif;
-//$font-family-serif: Georgia, "Times New Roman", Times, serif;
+$font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 $font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base: $font-family-sans-serif;
 
-$font-size-base: 0.75rem; // default 1rem
+$font-size-base: 0.8rem; // default 1rem
 
 $h1-font-size: $font-size-base * 2; // default 2.5
 $h2-font-size: $font-size-base * 1.75; // default 2

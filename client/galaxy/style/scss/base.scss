@@ -159,13 +159,13 @@ body {
 }
 #left {
     left: 0px;
-    width: 250px;
+    width: $panel-width;
     z-index: 200;
-    border-right: solid $layout-border-color 1px;
+    border-right: $layout-border;
 }
 #center {
-    left: 250 + $border-default-color_padding;
-    right: 250 + $border-default-color_padding;
+    left: $panel-width;
+    right: $panel-width;
     overflow: hidden;
     z-index: 1;
     .center-container {
@@ -189,10 +189,16 @@ body {
 }
 
 #right {
-    width: 250px;
+    width: $panel-width;
     right: 0px;
     z-index: 200;
-    border-left: solid $layout-border-color 1px;
+    border-left: $layout-border;
+}
+
+#left, #right, .unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
 #left, #right, .unified-panel {
@@ -207,7 +213,7 @@ body {
     z-index: 1000;
     text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
     background: $panel-header-bg-color;
-    border-bottom: solid $layout-border-color 1px;
+    border-bottom: $layout-border;
     margin: 0;
     padding: 0;
     padding-right: 10px;
@@ -256,15 +262,18 @@ body {
     }
 }
 
+.unified-panel-controls {
+    padding: 0px 10px;
+}
+
 .unified-panel-footer {
     @extend .unselectable;
-    position: absolute;
-    bottom: 0;
+    position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
     z-index: 1000; // Above #dd-helper
-    border-top: solid $layout-border-color 1px;
+    border-top: $layout-border;
     background: $navbar-default-bg;
 
     color: #555;
@@ -317,14 +326,14 @@ body {
     line-height: $panel_footer_height;
     width: $panel_footer_height - 5;
     background: none;
-    border-right: solid $layout-border-color 1px;
-    border-top: solid $layout-border-color 1px;
+    border-right: $layout-border;
+    border-top: $layout-border;
     background: $navbar-default-bg;
     &.right {
         left: inherit;
         right: 0;
         border-right: none;
-        border-left: solid $border-default-color 1px;
+        border-left: $layout_border;
         &.right:before {
             content: "\f054";
         }
@@ -376,11 +385,11 @@ div.unified-panel-body-background {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
-    padding-left: 26px;
+    padding-left: 2.5rem;
     background-color: $state-danger-bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
-    background-position: 6px 50%;
+    background-position: .5rem 50%;
 }
 
 .panel-warning-message {
@@ -394,8 +403,12 @@ div.unified-panel-body-background {
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(info_icon.svg);
+    background-size: 1.5rem;
     background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
 }
 
 // Masthead
@@ -1619,7 +1632,8 @@ div.toolSectionDetailsInner {
 }
 
 div.toolSectionTitle {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 1rem;
 }
 
 div.toolPanelLabel {
@@ -1633,10 +1647,9 @@ div.toolPanelLabel {
 div.toolTitle {
     padding-top: 5px;
     padding-bottom: 5px;
-    margin-left: 16px;
+    margin-left: 10px;
     margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
+    display: block;
     .labels {
         float: right;
         margin-left: 2px;
