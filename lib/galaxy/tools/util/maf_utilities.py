@@ -13,7 +13,6 @@ try:
     from string import maketrans
 except ImportError:
     maketrans = str.maketrans
-
 import sys
 import tempfile
 from copy import deepcopy
