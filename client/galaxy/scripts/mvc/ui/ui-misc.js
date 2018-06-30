@@ -79,7 +79,7 @@ export var Message = Backbone.View.extend({
                 }, 3000);
             }
         } else {
-            this.$el.fadeOut();
+            this.$el.hide();
         }
         return this;
     },
