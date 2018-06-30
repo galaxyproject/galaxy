@@ -32,7 +32,7 @@ def test_groom_dataset_content():
             assert b.dataset_content_needs_grooming(input_files[0]) is False
     except AssertionError as e:
         # Grooming modifies files in-place, so the md5 hash comparison has to fail
-        assert 'Unexpected change' in e.message
+        assert 'Unexpected change' in str(e)
         return
     # should not reach this part of the test
     raise Exception('Bam grooming did not occur in-place')
