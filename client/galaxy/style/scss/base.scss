@@ -193,6 +193,7 @@ body {
     right: 0px;
     z-index: 200;
     border-left: solid $layout-border-color 1px;
+}
 
 #left, #right, .unified-panel {
     background: $panel-bg-color;
@@ -773,6 +774,7 @@ button {
 
 #tool-search {
     position: relative;
+    margin: 10px;
 
     #search-clear-btn {
         position: absolute;
