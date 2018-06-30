@@ -35,7 +35,16 @@ export default {
     methods: {
         submit: function(ev) {
             ev.preventDefault();
-            console.debug("HANDLE LOGIN!");
+            axios
+                .post(`${Galaxy.root}user/login`, {username: this.username, password: this.password})
+                .then(response => {
+                    window.console.log(response);
+                })
+                .catch(response => {
+                    window.console.log(response);
+                    let message = response.responseJSON && response.responseJSON.err_msg;
+                    this.errorMessage = message || "Login failed for unkown reason.";
+                });
         }
     }
 };

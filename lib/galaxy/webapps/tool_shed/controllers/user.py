@@ -22,6 +22,112 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
 
     @web.expose
+    def login(self, trans, refresh_frames=[], **kwd):
+        '''Handle Galaxy Log in'''
+        referer = trans.request.referer or ''
+        redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
+        redirect_url = ''  # always start with redirect_url being empty
+        use_panels = util.string_as_bool(kwd.get('use_panels', False))
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        header = ''
+        user = trans.user
+        login = kwd.get('login', '')
+        if user:
+            # Already logged in.
+            redirect_url = redirect
+            message = 'You are already logged in.'
+            status = 'info'
+        elif kwd.get('login_button', False):
+            if trans.webapp.name == 'galaxy' and not refresh_frames:
+                if trans.app.config.require_login:
+                    refresh_frames = ['masthead', 'history', 'tools']
+                else:
+                    refresh_frames = ['masthead', 'history']
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
+            message, status, user, success = self.__validate_login(trans, **kwd)
+            if success:
+                redirect_url = redirect
+        if not user and trans.app.config.require_login:
+            if trans.app.config.allow_user_creation:
+                create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
+                    web.url_for(controller='user', action='create', cntrller='user')
+                if trans.webapp.name == 'galaxy':
+                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", create_account_str)
+                else:
+                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
+            else:
+                if trans.webapp.name == 'galaxy':
+                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", "")
+                else:
+                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
+        return trans.fill_template('/user/login.mako',
+                                   login=login,
+                                   header=header,
+                                   use_panels=use_panels,
+                                   redirect_url=redirect_url,
+                                   redirect=redirect,
+                                   refresh_frames=refresh_frames,
+                                   message=message,
+                                   status=status,
+                                   openid_providers=trans.app.openid_providers,
+                                   form_input_auto_focus=True,
+                                   active_view="user")
+
+    def __validate_login(self, trans, **kwd):
+        """Validates numerous cases that might happen during the login time."""
+        status = kwd.get('status', 'error')
+        login = kwd.get('login', '')
+        password = kwd.get('password', '')
+        referer = trans.request.referer or ''
+        redirect = kwd.get('redirect', referer).strip()
+        success = False
+        user = trans.sa_session.query(trans.app.model.User).filter(or_(
+            trans.app.model.User.table.c.email == login,
+            trans.app.model.User.table.c.username == login
+        )).first()
+        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+        if not user:
+            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
+        elif user.deleted:
+            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' % trans.app.config.error_email_to
+        elif user.external:
+            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' % trans.app.config.error_email_to
+        elif not trans.app.auth_manager.check_password(user, password):
+            message = "Invalid password"
+        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
+            if (trans.app.config.activation_grace_period != 0):  # grace period is ON
+                if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                    message, status = self.resend_verification_email(trans, user.email, user.username)
+                else:  # User is within the grace period, let him log in.
+                    message, success, status = self.proceed_login(trans, user, redirect)
+            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
+                message, status = self.resend_verification_email(trans, user.email, user.username)
+        else:  # activation is OFF
+            pw_expires = trans.app.config.password_expiration_period
+            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
+                # Password is expired, we don't log them in.
+                trans.response.send_redirect(web.url_for(controller='user',
+                                                         action='change_password',
+                                                         message='Your password has expired. Please change it to access Galaxy.',
+                                                         redirect_home=True,
+                                                         status='error'))
+            message, success, status = self.proceed_login(trans, user, redirect)
+            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
+                # If password is about to expire, modify message to state that.
+                expiredate = datetime.today() - user.last_password_change + pw_expires
+                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
+                          (expiredate.days, user.email, redirect, url_for('/'))
+                status = 'warning'
+        return (message, status, user, success)
+
+    @web.expose
     def manage_user_info(self, trans, cntrller, **kwd):
         '''Manage a user's login, password, public username, type, addresses, etc.'''
         params = util.Params(kwd)
