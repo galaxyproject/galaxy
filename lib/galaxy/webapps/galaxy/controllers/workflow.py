@@ -121,6 +121,12 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
     )
     operations = [
         grids.GridOperation(
+            'Run',
+            condition=(lambda item: not item.deleted),
+            allow_multiple=False,
+            url_args=dict(controller='workflows', action="run")
+        ),
+        grids.GridOperation(
             "Import",
             condition=(lambda item: not item.deleted),
             allow_multiple=False,
