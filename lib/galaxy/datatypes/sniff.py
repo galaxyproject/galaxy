@@ -105,7 +105,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> write_result = open(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -133,7 +133,7 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\n3 4\\n")
+    >>> write_result = open(fname, 'wt').write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -170,7 +170,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> write_result = open(fname, 'wt').write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
