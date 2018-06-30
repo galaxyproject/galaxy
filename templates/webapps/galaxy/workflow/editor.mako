@@ -321,7 +321,6 @@
                         %elif isinstance( val, ToolSectionLabel ):
                             ${render_label( val )}
                         %endif
-
                         </div>
                     %endfor
                     ## Data Manager Tools
@@ -364,15 +363,12 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
-              <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                Workflow Version 1
-                        </button>
-
-                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-				 %for i, workflow in enumerate(stored.workflows):
-                                	<a class="dropdown-item"  onclick="location.href=window.location.host + '/workflow/editor?id=f2db41e1fa331b3e&version=${i}';"  >Version ${i}</a>
-                         	 %endfor
-                        </div>
+                <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Workflow Version ${version}</button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+	        %for i, workflow in enumerate(stored.workflows):
+                    <a class="dropdown-item"  onclick=location.href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( stored.id ), version=i )};">Version ${i}</a>
+                %endfor
+                </div>
 	</div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
@@ -382,7 +378,6 @@
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>
-
         <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 20000px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
