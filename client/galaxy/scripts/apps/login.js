@@ -9,10 +9,10 @@ window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("login app");
     $(() => {
-        Galaxy.page = new Page.View(
-            _.extend(options, {
-                Right: Vue.extend(Login)
-            })
-        );
+        Galaxy.page = new Page.View(options);
+        var vm = document.createElement("div");
+        Galaxy.display(vm);
+        var loginInstance = Vue.extend(Login);
+        new loginInstance().$mount(vm);
     });
 };

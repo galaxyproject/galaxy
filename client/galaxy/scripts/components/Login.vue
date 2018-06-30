@@ -1,6 +1,6 @@
 <template>
     <b-form @submit="submit">
-        <b-card title="Welcome to Galaxy, please log in here">
+        <b-card header="Welcome to Galaxy, please log in">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <b-form-group label="Username or Email Address">
                 <b-form-input type="text" v-model="username"/>
