@@ -1,30 +1,30 @@
 <template>
-    <div class="toolForm">
-        <div class="toolFormTitle">
+    <b-card>
+        <h4 slot="header" class="mb-0">
             Citations
-            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-sm btn-secondary citations-to-bibtex" title="Show all in BibTeX format.">
+            <b-button v-if="viewRender" @click="toggleViewRender" title="Show all in BibTeX format.">
                 <i class="fa fa-pencil-square-o"></i>
                 Show BibTeX
-            </button>
-            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-sm btn-secondary citations-to-formatted" title="Return to formatted citation list.">
+            </b-button>
+            <b-button v-else @click="toggleViewRender" title="Return to formatted citation list.">
                 <i class="fa fa-times"></i>
                 Hide BibTeX
-            </button>
+            </b-button>
+        </h4>
+        <div v-if="source === 'histories'" class="infomessage">
+            When writing up your analysis, remember to include all references that should be cited in order
+            to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
         </div>
-        <div class="citations-bibtex toolFormBody citation-padding">
-            <div v-if="source === 'histories'" class="infomessage">
-                When writing up your analysis, remember to include all references that should be cited in order
-                to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
-            </div>
-            <span v-if="viewRender" class="citations-formatted">
-                <p v-html="formattedReferences">
-                </p>
-            </span>
-            <textarea v-else class="citations-bibtex-text">
+        <span v-if="viewRender" class="citations-formatted">
+            <p v-html="formattedReferences">
+            </p>
+        </span>
+        <pre v-else>
+            <code>
                 {{ content }}
-            </textarea>
-        </div>
-    </div>
+            </code>
+        </pre>
+    </b-card>
 </template>
 <script>
 import axios from "axios";
@@ -190,16 +190,7 @@ export default {
 };
 </script>
 <style>
-.citations-formatted {
-    word-wrap: break-word;
-}
-
-.citations-bibtex-text {
-    width: 100%;
-    height: 500px;
-}
-
-.citation-padding {
-    padding: 5px 10px;
+pre code {
+    white-space: pre-wrap;
 }
 </style>
