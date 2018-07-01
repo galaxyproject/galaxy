@@ -13,6 +13,7 @@ import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
+import axios from "axios";
 
 export default FormBase.extend({
     initialize: function(options) {
@@ -114,12 +115,51 @@ export default FormBase.extend({
         var self = this;
         var options = this.model.attributes;
 
+        let in_favorites;
+        if (Galaxy.user.get('preferences').tool_favorites){
+            in_favorites = Galaxy.user.get('preferences').tool_favorites.indexOf(options.id) >= 0;
+        } else{
+            in_favorites = false;
+        }
+        var favorite_button = new Ui.ButtonIcon({
+            icon: "fa-star-o",
+            title: "Favorite",
+            tooltip: "Add to favorites",
+            visible: !Galaxy.user.isAnonymous() && !in_favorites,
+            onclick: () => {
+                axios
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'tool_id': options.id})
+                    .then(response => {
+                        favorite_button.hide();
+                        remove_favorite_button.show();
+                        Galaxy.user.get('preferences').tool_favorites = response.data;
+                    });
+            }
+        });
+
+        var remove_favorite_button = new Ui.ButtonIcon({
+            icon: "fa-star",
+            title: "Added",
+            tooltip: "Remove from favorites",
+            visible: !Galaxy.user.isAnonymous() && in_favorites,
+            onclick: () => {
+                axios
+                    .post(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'tool_id': options.id})
+                    .then(response => {
+                        remove_favorite_button.hide();
+                        favorite_button.show();
+                        Galaxy.user.get('preferences').tool_favorites = response.data;
+                    });
+            }
+        });
+
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
             title: (!options.narrow && "Versions") || null,
             tooltip: "Select another tool version"
         });
+
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
             for (var i in options.versions) {
                 var version = options.versions[i];
@@ -242,7 +282,9 @@ export default FormBase.extend({
 
         return {
             menu: menu_button,
-            versions: versions_button
+            versions: versions_button,
+            favorite: favorite_button,
+            remove_favorite: remove_favorite_button
         };
     },
 

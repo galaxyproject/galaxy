@@ -510,6 +510,38 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         trans.log_event('User information added')
         return {'message': 'User information has been saved.'}
 
+    @expose_api
+    def set_favorite_tool(self, trans, id, payload={}):
+        """Add the tool to user's favorites
+
+        :param tool_id: the tool that users wants to favorite
+        :type  tool_id: str
+        """
+        user = self._get_user(trans, id)
+        tool_id = payload.get('tool_id')
+        favorites = json.loads(user.preferences['tool_favorites']) if 'tool_favorites' in user.preferences else []
+        if tool_id not in favorites:
+            favorites.append(tool_id)
+            user.preferences['tool_favorites'] = json.dumps(favorites)
+            trans.sa_session.flush()
+        return favorites
+
+    @expose_api
+    def remove_favorite_tool(self, trans, id, payload={}, **kwd):
+        """Remove the tool from user's favorites
+
+        :param tool_id: the tool that users wants to remove from favorites
+        :type  tool_id: str
+        """
+        user = self._get_user(trans, id)
+        tool_id = payload.get('tool_id')
+        favorites = json.loads(user.preferences['tool_favorites']) if 'tool_favorites' in user.preferences else []
+        if tool_id in favorites:
+            del favorites[favorites.index(tool_id)]
+            user.preferences['tool_favorites'] = json.dumps(favorites)
+            trans.sa_session.flush()
+        return favorites
+
     def send_verification_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.

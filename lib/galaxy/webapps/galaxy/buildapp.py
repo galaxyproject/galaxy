@@ -695,6 +695,18 @@ def populate_api_routes(webapp, app):
                           action='delete_custom_builds',
                           conditions=dict(method=["DELETE"]))
 
+    webapp.mapper.connect('set_favorite_tool',
+                          '/api/users/{id}/favorites/tools',
+                          controller='users',
+                          action='set_favorite_tool',
+                          conditions=dict(method=["PUT"]))
+
+    webapp.mapper.connect('remove_favorite_tool',
+                          '/api/users/{id}/favorites/tools',
+                          controller='users',
+                          action='remove_favorite_tool',
+                          conditions=dict(method=["POST"]))
+
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
