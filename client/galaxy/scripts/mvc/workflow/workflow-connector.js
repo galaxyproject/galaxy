@@ -42,6 +42,8 @@ $.extend(Connector.prototype, {
         const endRibbon = handle2 && handle2.isMappedOver();
         const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
+        // FIXME: global
+        var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
             canvas_container.append($(this.canvas));
@@ -57,8 +59,8 @@ $.extend(Connector.prototype, {
             "handle2-id",
             handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
         );
-        var relativeLeft = e => $(e).offset().left - canvas_container.offset().left;
-        var relativeTop = e => $(e).offset().top - canvas_container.offset().top;
+        var relativeLeft = e => ($(e).offset().left - canvas_container.offset().left)/canvasZoom;
+        var relativeTop = e => ($(e).offset().top - canvas_container.offset().top)/canvasZoom;
         if (!handle1 || !handle2) {
             return;
         }

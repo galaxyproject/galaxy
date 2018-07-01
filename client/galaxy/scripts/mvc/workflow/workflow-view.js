@@ -790,9 +790,9 @@ export default Backbone.View.extend({
                 var po = $(this)
                     .offsetParent()
                     .offset();
-
-                var x = d.offsetX - po.left;
-                var y = d.offsetY - po.top;
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)
