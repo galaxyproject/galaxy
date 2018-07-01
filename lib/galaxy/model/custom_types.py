@@ -289,12 +289,12 @@ class MetadataType(JSONType):
             return None
         ret = None
         try:
-            ret = metadata_pickler.loads(str(value))
+            ret = metadata_pickler.loads(unicodify(value))
             if ret:
                 ret = dict(ret.__dict__)
         except Exception:
             try:
-                ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
+                ret = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
             except Exception:
                 ret = None
         return ret
