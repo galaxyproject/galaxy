@@ -464,15 +464,15 @@ class Bam(BamNative):
 
     # these can't be used directly - may need BamColumn, BamDict (Bam metadata -> column/dict)
     # OR - see genomic_region_dataprovider
-    # @dataproviders.decorators.dataprovider_factory( 'dataset-column', dataproviders.column.ColumnarDataProvider.settings )
-    # def dataset_column_dataprovider( self, dataset, **settings ):
-    #    settings[ 'comment_char' ] = '@'
-    #    return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
+    # @dataproviders.decorators.dataprovider_factory('dataset-column', dataproviders.column.ColumnarDataProvider.settings)
+    # def dataset_column_dataprovider(self, dataset, **settings):
+    #    settings['comment_char'] = '@'
+    #    return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
 
-    # @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
-    # def dataset_dict_dataprovider( self, dataset, **settings ):
-    #    settings[ 'comment_char' ] = '@'
-    #    return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
+    # @dataproviders.decorators.dataprovider_factory('dataset-dict', dataproviders.column.DictDataProvider.settings)
+    # def dataset_dict_dataprovider(self, dataset, **settings):
+    #    settings['comment_char'] = '@'
+    #    return super(Sam, self).dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
@@ -492,9 +492,9 @@ class Bam(BamNative):
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
         #   or remove altogether...
-        # samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
-        # return dataproviders.dataset.GenomicRegionDataProvider( samtools_source, metadata_source=dataset,
-        #                                                        2, 3, 3, **settings )
+        # samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+        # return dataproviders.dataset.GenomicRegionDataProvider(samtools_source, metadata_source=dataset,
+        #                                                        2, 3, 3, **settings)
 
         # instead, set manually and use in-class column gen
         settings['indeces'] = [2, 3, 3]
@@ -672,11 +672,11 @@ class BcfUncompressed(Bcf):
     Class describing an uncompressed BCF file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( '1.bcf_uncompressed' )
-    >>> BcfUncompressed().sniff( fname )
+    >>> fname = get_test_fname('1.bcf_uncompressed')
+    >>> BcfUncompressed().sniff(fname)
     True
-    >>> fname = get_test_fname( '1.bcf' )
-    >>> BcfUncompressed().sniff( fname )
+    >>> fname = get_test_fname('1.bcf')
+    >>> BcfUncompressed().sniff(fname)
     False
     """
     file_ext = "bcf_uncompressed"
@@ -697,11 +697,11 @@ class H5(Binary):
     Class describing an HDF5 file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.mz5' )
-    >>> H5().sniff( fname )
+    >>> fname = get_test_fname('test.mz5')
+    >>> H5().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> H5().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> H5().sniff(fname)
     False
     """
     file_ext = "h5"
@@ -756,14 +756,14 @@ class Biom2(H5):
     def sniff(self, filename):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> Biom2().sniff(fname)
         True
-        >>> fname = get_test_fname( 'test.mz5' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('test.mz5')
+        >>> Biom2().sniff(fname)
         False
-        >>> fname = get_test_fname( 'wiggle.wig' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> Biom2().sniff(fname)
         False
         """
         if super(Biom2, self).sniff(filename):
@@ -829,17 +829,17 @@ class Cool(H5):
     def sniff(self, filename):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'matrix.cool' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('matrix.cool')
+        >>> Cool().sniff(fname)
         True
-        >>> fname = get_test_fname( 'test.mz5' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('test.mz5')
+        >>> Cool().sniff(fname)
         False
-        >>> fname = get_test_fname( 'wiggle.wig' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> Cool().sniff(fname)
         False
-        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> Cool().sniff(fname)
         False
         """
 
@@ -1297,11 +1297,11 @@ class IdpDB(SQlite):
     Class describing an IDPicker 3 idpDB (sqlite) database
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.idpDB' )
-    >>> IdpDB().sniff( fname )
+    >>> fname = get_test_fname('test.idpDB')
+    >>> IdpDB().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> IdpDB().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> IdpDB().sniff(fname)
     False
     """
     file_ext = "idpdb"
@@ -1497,11 +1497,11 @@ class OxliCountGraph(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliCountGraph().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliCountGraph().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_countgraph.oxlicg" )
-    >>> OxliCountGraph().sniff( fname )
+    >>> fname = get_test_fname("oxli_countgraph.oxlicg")
+    >>> OxliCountGraph().sniff(fname)
     True
     """
     file_ext = 'oxlicg'
@@ -1522,11 +1522,11 @@ class OxliNodeGraph(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliNodeGraph().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliNodeGraph().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_nodegraph.oxling" )
-    >>> OxliNodeGraph().sniff( fname )
+    >>> fname = get_test_fname("oxli_nodegraph.oxling")
+    >>> OxliNodeGraph().sniff(fname)
     True
     """
     file_ext = 'oxling'
@@ -1548,11 +1548,11 @@ class OxliTagSet(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliTagSet().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliTagSet().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_tagset.oxlits" )
-    >>> OxliTagSet().sniff( fname )
+    >>> fname = get_test_fname("oxli_tagset.oxlits")
+    >>> OxliTagSet().sniff(fname)
     True
     """
     file_ext = 'oxlits'
@@ -1569,11 +1569,11 @@ class OxliStopTags(OxliBinary):
     "khmer/tests/test-data/goodversion-k32.stoptags"
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliStopTags().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliStopTags().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_stoptags.oxlist" )
-    >>> OxliStopTags().sniff( fname )
+    >>> fname = get_test_fname("oxli_stoptags.oxlist")
+    >>> OxliStopTags().sniff(fname)
     True
     """
     file_ext = 'oxlist'
@@ -1595,11 +1595,11 @@ class OxliSubset(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliSubset().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliSubset().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_subset.oxliss" )
-    >>> OxliSubset().sniff( fname )
+    >>> fname = get_test_fname("oxli_subset.oxliss")
+    >>> OxliSubset().sniff(fname)
     True
     """
     file_ext = 'oxliss'
@@ -1622,11 +1622,11 @@ class OxliGraphLabels(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliGraphLabels().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliGraphLabels().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_graphlabels.oxligl" )
-    >>> OxliGraphLabels().sniff( fname )
+    >>> fname = get_test_fname("oxli_graphlabels.oxligl")
+    >>> OxliGraphLabels().sniff(fname)
     True
     """
     file_ext = 'oxligl'
@@ -1640,11 +1640,11 @@ class PostgresqlArchive(CompressedArchive):
     Class describing a Postgresql database packed into a tar archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
-    >>> PostgresqlArchive().sniff( fname )
+    >>> fname = get_test_fname('postgresql_fake.tar.bz2')
+    >>> PostgresqlArchive().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> PostgresqlArchive().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> PostgresqlArchive().sniff(fname)
     False
     """
     MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
@@ -1690,8 +1690,8 @@ class Fast5Archive(CompressedArchive):
     Class describing a FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5Archive().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5Archive().sniff(fname)
     True
     """
     MetadataElement(name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
@@ -1744,14 +1744,14 @@ class Fast5ArchiveGz(Fast5Archive):
     Class describing a gzip-compressed FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveGz().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveGz().sniff(fname)
     False
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveGz().sniff(fname)
     False
     """
     file_ext = "fast5.tar.gz"
@@ -1767,14 +1767,14 @@ class Fast5ArchiveBz2(Fast5Archive):
     Class describing a bzip2-compressed FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveBz2().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveBz2().sniff(fname)
     False
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveBz2().sniff(fname)
     False
     """
     file_ext = "fast5.tar.bz2"
@@ -1868,11 +1868,11 @@ class DMND(Binary):
     """
     Class describing an DMND file
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'diamond_db.dmnd' )
-    >>> DMND().sniff( fname )
+    >>> fname = get_test_fname('diamond_db.dmnd')
+    >>> DMND().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> DMND().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> DMND().sniff(fname)
     False
     """
     file_ext = "dmnd"
