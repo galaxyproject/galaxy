@@ -4,10 +4,10 @@
     the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
     initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
 -->
-<tool name="Intermine" id="intermine" tool_type="data_source" version="1.0.0">
+<tool name="InterMine" id="intermine" tool_type="data_source" version="1.0.0">
     <description>server</description>
     <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
-    <inputs action="http://intermine.org/galaxy-integration/im-to-galaxy/" check_values="false" method="get"> 
+    <inputs action="http://registry.intermine.org/im-to-galaxy" check_values="false" method="get"> 
         <display>go to InterMine server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=intermine" />
     </inputs>
