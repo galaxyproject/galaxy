@@ -26,7 +26,6 @@ except ImportError:
 assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
-is_py3k = sys.version_info >= (3, 0)
 
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
