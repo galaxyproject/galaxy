@@ -252,7 +252,8 @@ class XmlToolSource(ToolSource):
             data_dict[output_def.name] = output_def
             return output_def
 
-        map(_parse, out_elem.findall("data"))
+        for _ in out_elem.findall("data"):
+            _parse(_)
 
         for collection_elem in out_elem.findall("collection"):
             name = collection_elem.get("name")

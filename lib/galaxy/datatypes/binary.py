@@ -683,7 +683,7 @@ class BcfUncompressed(Bcf):
 
     def sniff(self, filename):
         try:
-            header = open(filename).read(3)
+            header = open(filename, mode='rb').read(3)
             # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b'BCF':
                 return True
