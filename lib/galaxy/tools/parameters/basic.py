@@ -1650,7 +1650,12 @@ class DataToolParameter(BaseDataToolParameter):
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
                     rval.append(single_value)
                 else:
-                    rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(single_value))
+                    # May be unencoded already.
+                    # try:
+                    decoded_id = trans.security.decode_id(single_value)
+                    # except Exception:
+                    #    decoded_id = single_value
+                    rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_id))
             if found_hdca:
                 for val in rval:
                     if not isinstance(val, trans.app.model.HistoryDatasetCollectionAssociation):
