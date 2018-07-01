@@ -8,7 +8,6 @@ from __future__ import print_function
 import logging
 import os
 import resource
-import string
 import sys
 import tempfile
 from copy import deepcopy
@@ -19,6 +18,11 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = str.maketrans
+
 assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
@@ -26,13 +30,6 @@ is_py3k = sys.version_info >= (3, 0)
 
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
-
-
-def maketrans(x, y):
-    if is_py3k:
-        return str.maketrans(x, y)
-    else:
-        return string.maketrans(x, y)
 
 
 def src_split(src):
