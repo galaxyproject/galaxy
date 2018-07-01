@@ -341,7 +341,7 @@ class ToolStdioRegex(object):
         self.stdout_match = False
         self.stderr_match = False
         # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = 3
         self.desc = ""
 
 
@@ -355,7 +355,7 @@ class ToolStdioExitCode(object):
         self.range_start = float("-inf")
         self.range_end = float("inf")
         # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = 3
         self.desc = ""
 
 
