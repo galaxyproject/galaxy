@@ -28,11 +28,11 @@
 }
 
 // default margins
-$ui-margin-vertical: 5px;
-$ui-margin-vertical-large: 10px;
-$ui-margin-horizontal: 5px;
-$ui-margin-horizontal-small: 4px;
-$ui-margin-horizontal-large: 10px;
+$ui-margin-vertical: $margin-v * 0.25;
+$ui-margin-vertical-large: $margin-v * 0.5;
+$ui-margin-horizontal: $margin-h;
+$ui-margin-horizontal-small: $margin-h * 0.5;
+$ui-margin-horizontal-large: $margin-v * 2;
 
 // helpers
 .ui-clear-float {
@@ -532,26 +532,21 @@ $ui-margin-horizontal-large: 10px;
 
 // portlets
 .ui-portlet {
-    border: solid $form-border 1px;
-    border-radius: $border-radius-base;
+    @extend .card;
     position: relative;
     clear: both;
     width: auto;
     height: auto;
     .portlet-header {
-        background: $form-heading-bg;
-        border-bottom: solid $form-border 1px;
-        padding: 2px 8px;
+        @extend .card-header;
         overflow: visible;
         width: 100%;
         .portlet-title {
             word-wrap: break-word;
-            display: inline;
-            vertical-align: middle;
-            font-weight: bold;
             .portlet-title-text {
+                @extend h4;
                 vertical-align: middle;
-                line-height: 22px;
+                //line-height: 22px;
             }
             .portlet-title-text.no-highlight.collapsible {
                 cursor: pointer;
@@ -570,9 +565,7 @@ $ui-margin-horizontal-large: 10px;
         }
     }
     .portlet-content {
-        height: inherit;
-        padding-left: 10px;
-        padding-right: 10px;
+        @extend .card-body;
         clear: both;
         .portlet-body {
             padding: 0px;

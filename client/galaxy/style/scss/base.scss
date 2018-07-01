@@ -177,7 +177,7 @@ body {
             position: absolute;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: $margin-h $margin-v;
             overflow: auto;
         }
         .center-frame {
@@ -215,9 +215,8 @@ body {
     background: $panel-header-bg-color;
     border-bottom: $layout-border;
     margin: 0;
-    padding: 0;
-    padding-right: 10px;
-    padding-left: 10px;
+    padding: 0 $margin-v;
+    font-size: 1rem;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -227,7 +226,7 @@ body {
         color: $panel-header-text-color;
     }
     .fa {
-        font-size: 1.2em;
+        // font-size: 1.2em;
     }
 
     .unified-panel-header-inner {
@@ -245,6 +244,13 @@ body {
         text-decoration: none;
         display: inline-block;
         cursor: pointer;
+        width: 1.2rem;
+        text-align: center;
+        padding: 0px;
+        &:not(:last-child) {
+            margin-right: 2px;
+        }
+
         // Fade to maroon on hover
         &:hover {
             color: maroon;
@@ -263,7 +269,7 @@ body {
 }
 
 .unified-panel-controls {
-    padding: 0px 10px;
+    padding: 0 $margin-v;
 }
 
 .unified-panel-footer {
@@ -787,7 +793,7 @@ button {
 
 #tool-search {
     position: relative;
-    margin: 10px;
+    margin: 10px 0;
 
     #search-clear-btn {
         position: absolute;
@@ -1612,7 +1618,7 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    padding: 5px 10px;
+    padding: $margin-h $margin-v;
 }
 
 div.toolSectionPad {
