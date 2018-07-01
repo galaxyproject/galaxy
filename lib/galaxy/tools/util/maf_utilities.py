@@ -13,6 +13,7 @@ import sys
 import tempfile
 from copy import deepcopy
 from errno import EMFILE
+
 import bx.align.maf
 import bx.interval_index_file
 import bx.intervals
