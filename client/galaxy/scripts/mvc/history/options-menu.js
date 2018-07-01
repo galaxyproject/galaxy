@@ -202,16 +202,6 @@ var menu = [
         html: _l("Export History to File"),
         href: "history/export_archive?preview=True",
         anon: true
-    },
-
-    {
-        html: _l("Other Actions"),
-        header: true
-    },
-    {
-        html: _l("Import from File"),
-        href: "histories/import",
-        target: "_top"
     }
 ];
 
