@@ -1002,8 +1002,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     :type  is_multi_byte: bool
 
     >>> fname = get_test_fname('4.bed')
-    >>> get_file_peek(fname, LINE_COUNT=1)
-    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
+    >>> assert get_file_peek(fname, LINE_COUNT=1) == u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
