@@ -631,7 +631,7 @@ def __parse_resolvers(xml_content):
 @contextmanager
 def __dependency_manager(xml_content):
     with __test_base_path() as base_path:
-        f = tempfile.NamedTemporaryFile()
+        f = tempfile.NamedTemporaryFile(mode='w')
         f.write(xml_content)
         f.flush()
         dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=f.name)

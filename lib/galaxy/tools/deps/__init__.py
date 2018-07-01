@@ -182,7 +182,7 @@ class DependencyManager(object):
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)
         if len(dep_dict) > 0:
-            return dep_dict.values()[0]
+            return next(iter(dep_dict.values())) # get first dep
         else:
             return NullDependency(name=name, version=version)
 
