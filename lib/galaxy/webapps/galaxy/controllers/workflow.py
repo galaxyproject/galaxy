@@ -653,7 +653,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
             .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
-        if version is not None:
+        if version is None:
+            version = len(stored.workflows) - 1
+        else:
             version = int(version)
         return trans.fill_template("workflow/editor.mako",
                                    workflows=workflows,
