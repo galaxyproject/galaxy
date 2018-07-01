@@ -118,7 +118,7 @@ class CanvasManager {
         this.cv.css('width', `${100 / this.canvasZoom}%` );
         this.cv.css('height', `${100 / this.canvasZoom}%` );
         // Update canvas size
-        self.app.workflow.fit_canvas_to_nodes()
+        this.app.workflow.fit_canvas_to_nodes()
     }
     initZoomControls() {
         var zoomControl = $('<div class="btn-group-vertical"/>').css({
