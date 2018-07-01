@@ -499,7 +499,7 @@ def __test_base_path():
 
 
 def test_parse():
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <tool_shed_packages />
   <galaxy_packages />
 </dependency_resolvers>
@@ -507,7 +507,7 @@ def test_parse():
         assert 'ToolShed' in dependency_resolvers[0].__class__.__name__
         assert 'Galaxy' in dependency_resolvers[1].__class__.__name__
 
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
 </dependency_resolvers>
@@ -515,7 +515,7 @@ def test_parse():
         assert 'Galaxy' in dependency_resolvers[0].__class__.__name__
         assert 'ToolShed' in dependency_resolvers[1].__class__.__name__
 
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
   <galaxy_packages versionless="true" />
@@ -524,7 +524,7 @@ def test_parse():
         assert not dependency_resolvers[0].versionless
         assert dependency_resolvers[2].versionless
 
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <galaxy_packages />
   <tool_shed_packages />
   <galaxy_packages base_path="/opt/galaxy/legacy/"/>
@@ -539,13 +539,13 @@ def test_parse():
 
 
 def test_uses_tool_shed_dependencies():
-    with __dependency_manager('''<dependency_resolvers>
+    with __dependency_manager(b'''<dependency_resolvers>
   <galaxy_packages />
 </dependency_resolvers>
 ''') as dm:
         assert not dm.uses_tool_shed_dependencies()
 
-    with __dependency_manager('''<dependency_resolvers>
+    with __dependency_manager(b'''<dependency_resolvers>
   <tool_shed_packages />
 </dependency_resolvers>
 ''') as dm:
@@ -553,7 +553,7 @@ def test_uses_tool_shed_dependencies():
 
 
 def test_config_module_defaults():
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <modules prefetch="false" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
@@ -563,7 +563,7 @@ def test_config_module_defaults():
 
 def test_config_modulepath():
     # Test reads and splits MODULEPATH if modulepath is not specified.
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <modules find_by="directory" modulepath="/opt/modules/modulefiles:/usr/local/modules/modulefiles" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
@@ -573,7 +573,7 @@ def test_config_modulepath():
 def test_config_MODULEPATH():
     # Test reads and splits MODULEPATH if modulepath is not specified.
     with __environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
-        with __parse_resolvers('''<dependency_resolvers>
+        with __parse_resolvers(b'''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
@@ -584,7 +584,7 @@ def test_config_MODULESHOME():
     # Test fallbacks to read MODULESHOME if modulepath is not specified and
     # neither is MODULEPATH.
     with __environ({"MODULESHOME": "/opt/modules"}, remove="MODULEPATH"):
-        with __parse_resolvers('''<dependency_resolvers>
+        with __parse_resolvers(b'''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
@@ -592,7 +592,7 @@ def test_config_MODULESHOME():
 
 
 def test_config_module_directory_searcher():
-    with __parse_resolvers('''<dependency_resolvers>
+    with __parse_resolvers(b'''<dependency_resolvers>
   <modules find_by="directory" modulepath="/opt/Modules/modulefiles" />
 </dependency_resolvers>
 ''') as dependency_resolvers:
@@ -631,11 +631,11 @@ def __parse_resolvers(xml_content):
 @contextmanager
 def __dependency_manager(xml_content):
     with __test_base_path() as base_path:
-        f = tempfile.NamedTemporaryFile()
-        f.write(xml_content)
-        f.flush()
-        dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=f.name)
-        yield dm
+        with tempfile.NamedTemporaryFile() as tmp:
+            tmp.write(xml_content)
+            tmp.flush()
+            dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=tmp.name)
+            yield dm
 
 
 def __dependency_manager_for_base_path(default_base_path, conf_file=None):
