@@ -62,8 +62,8 @@ CHUNK_SIZE = 65536  # 64k
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
-gzip_magic = '\037\213'
-bz2_magic = 'BZh'
+gzip_magic = b'\x1f\x8b'
+bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
 NULL_CHAR = '\000'
 BINARY_CHARS = [NULL_CHAR]
