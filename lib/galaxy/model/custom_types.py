@@ -59,7 +59,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
@@ -281,7 +281,7 @@ class MetadataType(JSONType):
                     if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
                         log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
