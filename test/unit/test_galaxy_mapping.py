@@ -5,7 +5,7 @@ import uuid
 
 from six import text_type
 
-import galaxy.datatypes
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 
