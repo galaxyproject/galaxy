@@ -14,7 +14,7 @@ try:
     import chronos
 except ImportError as e:
     chronos = None
-    CHRONOS_IMPORT_MSG.format(msg=e.message)
+    CHRONOS_IMPORT_MSG.format(msg=str(e))
 
 
 __all__ = ('ChronosJobRunner',)
@@ -40,7 +40,7 @@ def handle_exception_call(func):
         try:
             return func(*args, **kwargs)
         except chronos_exceptions as e:
-            LOGGER.error(e.message)
+            LOGGER.error(str(e))
 
     return wrapper
 
