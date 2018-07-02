@@ -67,7 +67,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         fake_job = job_dict.keys()[0]
         assert fake_job.id.startswith("fake_")
         assert fake_job.is_fake
-        content_instances = job_dict.values()[0]
+        content_instances = next(iter(job_dict.values()))
         assert content_instances == [(None, hdca)]
 
     def test_implicit_map_job_hdca(self):
