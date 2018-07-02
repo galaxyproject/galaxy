@@ -666,6 +666,7 @@ DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
 def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
+    extra_file_collectors = list(extra_file_collectors)
     if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1
