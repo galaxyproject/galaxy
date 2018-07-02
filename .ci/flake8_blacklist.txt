@@ -2,7 +2,7 @@
 .tox
 .venv
 .venv3
-client/node_modules
+node_modules
 database
 doc/build
 doc/source/conf.py
