@@ -95,7 +95,7 @@ class DatasetRBACPermission(RBACPermission):
 
     def by_role(self, dataset, role):
         permissions = self.by_dataset(dataset)
-        found = list(filter(lambda p: p.role == role,  permissions))
+        found = list(filter(lambda p: p.role == role, permissions))
         if not found:
             return None
         if len(found) > 1:
