@@ -148,7 +148,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         parameter = SelectToolParameter(self.tool, xml)
 
         def get_field_by_name_for_value(name, value, trans, other_values):
-            assert value == b"/old/path/human"
+            assert value == "/old/path/human"
             assert name == "path"
             return ["/old/path/human"]
 
