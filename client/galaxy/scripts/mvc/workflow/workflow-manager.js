@@ -439,6 +439,7 @@ class Workflow {
             return 0;
         }
         // Span of all elements
+        var canvasZoom = this.app.canvas_manager.canvasZoom;
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
         var parent = this.canvas_container.parent();
@@ -457,16 +458,16 @@ class Workflow {
         height = Math.max(height, -top + parent.height());
         // Grow the canvas container
         this.canvas_container.css({
-            left: left,
-            top: top,
+            left: left / canvasZoom,
+            top: top / canvasZoom,
             width: width,
             height: height
         });
         // Move elements back if needed
         this.canvas_container.children().each(function() {
             var p = $(this).position();
-            $(this).css("left", p.left + xmin_delta);
-            $(this).css("top", p.top + ymin_delta);
+            $(this).css("left", ( p.left + xmin_delta ) / canvasZoom );
+            $(this).css("top", ( p.top + ymin_delta) / canvasZoom );
         });
     }
 }
