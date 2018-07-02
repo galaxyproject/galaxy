@@ -87,16 +87,15 @@ class DatasetRBACPermission(RBACPermission):
     def by_dataset(self, dataset):
         self.__assert_action()
         all_permissions = self._all_types_by_dataset(dataset)
-        return filter(lambda p: p.action == self.action_name, all_permissions)
+        return list(filter(lambda p: p.action == self.action_name, all_permissions))
 
-    # TODO: list?
     def by_roles(self, dataset, roles):
         permissions = self.by_dataset(dataset)
-        return filter(lambda p: p.role in roles, permissions)
+        return list(filter(lambda p: p.role in roles, permissions))
 
     def by_role(self, dataset, role):
         permissions = self.by_dataset(dataset)
-        found = filter(lambda p: p.role == role, permissions)
+        found = list(filter(lambda p: p.role == role,  permissions))
         if not found:
             return None
         if len(found) > 1:
