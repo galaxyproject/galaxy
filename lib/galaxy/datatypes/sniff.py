@@ -18,7 +18,10 @@ from six.moves import filter
 from six.moves.urllib.request import urlopen
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import (
+    compression_utils,
+    smart_str
+)
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -74,7 +77,10 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
                 is_compressed = True
             else:
                 try:
-                    if text_type(chunk[:2]) == text_type(util.gzip_magic):
+                    # Convert chunk to a bytestring if it is not already.
+                    # Check if the first 2 bytes of the chunk are equal to the
+                    # gzip magic number.
+                    if smart_str(chunk)[:2] == util.gzip_magic:
                         is_compressed = True
                 except Exception:
                     pass
