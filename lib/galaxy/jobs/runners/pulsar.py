@@ -378,7 +378,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_command_params=remote_command_params,
             )
         except UnsupportedPulsarException as e:
-            job_wrapper.fail(e.message, exception=False)
+            job_wrapper.fail(str(e), exception=False)
             log.exception("failure running job %d", job_wrapper.job_id)
         except Exception:
             job_wrapper.fail("failure preparing job", exception=True)
