@@ -1650,6 +1650,11 @@ class DataToolParameter(BaseDataToolParameter):
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
                     rval.append(single_value)
                 else:
+                    if len(str(single_value)) == 16:
+                        # Could never really have an ID this big anyway - postgres doesn't
+                        # support that for integer column types.
+                        log.warning("Encoded ID where unencoded ID expected.")
+                        single_value = trans.security.decode_id(single_value)
                     rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(single_value))
             if found_hdca:
                 for val in rval:
