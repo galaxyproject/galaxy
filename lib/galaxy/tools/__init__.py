@@ -81,7 +81,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
@@ -363,7 +362,7 @@ class DefaultToolState(object):
         """
         Restore the state from a string
         """
-        values = json_fix(safe_loads(values)) or {}
+        values = safe_loads(values) or {}
         self.page = values.pop("__page__") if "__page__" in values else None
         self.rerun_remap_job_id = values.pop("__rerun_remap_job_id__") if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings(tool.inputs, values, app, ignore_errors=True)
