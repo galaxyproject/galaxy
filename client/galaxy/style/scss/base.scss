@@ -195,7 +195,9 @@ body {
     border-left: solid $layout-border-color 1px;
 }
 
-#left, #right, .unified-panel {
+#left,
+#right,
+.unified-panel {
     background: $panel-bg-color;
     display: flex;
     flex-direction: column;

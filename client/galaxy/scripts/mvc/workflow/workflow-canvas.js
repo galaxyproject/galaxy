@@ -85,8 +85,7 @@ class ScrollPanel {
 }
 
 // Zoom levels to use for zooming the workflow canvas
-const zoomLevels = [ .25, .33, .5, .67, .75, .8, .9,
-                     1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4 ];
+const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 
 // Default zoome level (1)
 const defaultZoomLevel = 7;
@@ -108,29 +107,31 @@ class CanvasManager {
         // Initialize Copy & Paste events
         this.init_copy_paste();
     }
-    setZoom( zoomLevel ) {
+    setZoom(zoomLevel) {
         this.zoomLevel = Math.min(Math.max(0, zoomLevel), zoomLevels.length);
         this.canvasZoom = zoomLevels[this.zoomLevel];
         // Set CSS transform to appropriate zoom level
-        this.cv.css('transform-origin', 'top left');
-        this.cv.css('transform', 'scale(' + this.canvasZoom + ')');
+        this.cv.css("transform-origin", "top left");
+        this.cv.css("transform", "scale(" + this.canvasZoom + ")");
         // Modify canvas size to account for scale
-        this.cv.css('width', `${100 / this.canvasZoom}%` );
-        this.cv.css('height', `${100 / this.canvasZoom}%` );
+        this.cv.css("width", `${100 / this.canvasZoom}%`);
+        this.cv.css("height", `${100 / this.canvasZoom}%`);
         // Update canvas size
-        this.app.workflow.fit_canvas_to_nodes()
+        this.app.workflow.fit_canvas_to_nodes();
     }
     initZoomControls() {
         var zoomControl = $('<div class="btn-group-vertical"/>').css({
-            position: 'absolute',
-            left: '1rem',
-            bottom: '1rem'
+            position: "absolute",
+            left: "1rem",
+            bottom: "1rem"
         });
-        zoomControl.append( $('<div class="btn btn-secondary fa fa-plus"/>').click(
-            () => this.setZoom( this.zoomLevel + 1 ) ) )
-        zoomControl.append( $('<div class="btn btn-secondary fa fa-minus"/>').click(
-            () => this.setZoom( this.zoomLevel - 1 ) ) )
-        this.cv.closest('#workflow-canvas-body').append( zoomControl );
+        zoomControl.append(
+            $('<div class="btn btn-secondary fa fa-plus"/>').click(() => this.setZoom(this.zoomLevel + 1))
+        );
+        zoomControl.append(
+            $('<div class="btn btn-secondary fa fa-minus"/>').click(() => this.setZoom(this.zoomLevel - 1))
+        );
+        this.cv.closest("#workflow-canvas-body").append(zoomControl);
     }
 
     init_drag() {
@@ -167,8 +168,7 @@ class CanvasManager {
                 x_adjust = p.left - o.left;
             })
             .bind("drag", (e, d) => {
-                move((d.offsetX + x_adjust ) / this.canvasZoom,
-                     (d.offsetY + y_adjust) / this.canvasZoom);
+                move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
                 self.app.workflow.fit_canvas_to_nodes();

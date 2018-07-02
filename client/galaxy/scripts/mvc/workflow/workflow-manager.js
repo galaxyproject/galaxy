@@ -466,8 +466,8 @@ class Workflow {
         // Move elements back if needed
         this.canvas_container.children().each(function() {
             var p = $(this).position();
-            $(this).css("left", ( p.left + xmin_delta ) / canvasZoom );
-            $(this).css("top", ( p.top + ymin_delta) / canvasZoom );
+            $(this).css("left", (p.left + xmin_delta) / canvasZoom);
+            $(this).css("top", (p.top + ymin_delta) / canvasZoom);
         });
     }
 }

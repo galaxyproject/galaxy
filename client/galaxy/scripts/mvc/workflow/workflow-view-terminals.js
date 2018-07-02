@@ -202,7 +202,7 @@ var BaseOutputTerminalView = TerminalView.extend({
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
-            $(d.proxy).css({ left: x/canvasZoom, top: y/canvasZoom });
+            $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
             // FIXME: global
             window.workflow_globals.canvas_manager.update_viewport_overlay();

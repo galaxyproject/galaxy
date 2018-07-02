@@ -59,8 +59,8 @@ $.extend(Connector.prototype, {
             "handle2-id",
             handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
         );
-        var relativeLeft = e => ($(e).offset().left - canvas_container.offset().left)/canvasZoom;
-        var relativeTop = e => ($(e).offset().top - canvas_container.offset().top)/canvasZoom;
+        var relativeLeft = e => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
+        var relativeTop = e => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
         if (!handle1 || !handle2) {
             return;
         }
