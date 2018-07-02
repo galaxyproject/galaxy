@@ -10,7 +10,7 @@ var AdminPanel = Backbone.View.extend({
         this.message = options.message;
         this.status = options.status;
         this.model = new Backbone.Model({
-            title: _l("Administration")
+            title: `Galaxy version ${Galaxy.config.version_major}`
         });
         this.categories = new Backbone.Collection([
             {
