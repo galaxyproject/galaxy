@@ -1546,7 +1546,7 @@ class JobWrapper(HasResourceParameters):
         return None
 
     def has_limits(self):
-        has_output_limit = self.app.job_config.limits.output_size > 0
+        has_output_limit = self.app.job_config.limits.output_size and self.app.job_config.limits.output_size > 0
         has_walltime_limit = self.app.job_config.limits.walltime_delta is not None
         return has_output_limit or has_walltime_limit
 
