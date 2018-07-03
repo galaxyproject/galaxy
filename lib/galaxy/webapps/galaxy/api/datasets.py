@@ -93,6 +93,55 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             trans.response.status = 500
         return rval
 
+    @web._future_expose_api
+    def set_permissions(self, trans, dataset_id, payload, **kwargs):
+        """
+        POST /api/datasets/{encoded_dataset_id}/permissions
+        Updates permissions of a dataset.
+
+        , hda_ldda='hda', manage_ids=[], access_ids=[]
+
+        :rtype:     dict
+        :returns:   dictionary containing new permissions
+        """
+        hda_ldda = kwargs.get('hda_ldda', 'hda')
+        try:
+            hda = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        except Exception as e:
+            return str(e)
+
+        access = payload.get('access', [])
+        manage = payload.get('manage', [])
+        params = {
+            'DATASET_MANAGE_PERMISSIONS': manage,
+            'DATASET_ACCESS': access,
+        }
+
+        if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), hda.dataset):
+            payload_permissions = {}
+            for action in trans.app.model.Dataset.permitted_actions.keys():
+                payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(params.get(action))]
+            # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+            # need to ensure that they did not associate roles that would cause accessibility problems.
+            permissions, in_roles, error, message = \
+                trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **payload_permissions)
+            if error:
+                # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+                access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+                permissions[access_action] = hda.dataset.get_access_roles(trans)
+                trans.sa_session.refresh(hda.dataset)
+                raise galaxy_exceptions.RequestParameterInvalidException(message)
+            else:
+                error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+                trans.sa_session.refresh(hda.dataset)
+                if error:
+                    raise galaxy_exceptions.RequestParameterInvalidException(error)
+                else:
+                    return self.hda_serializer.serialize_to_view(hda, view='detailed', user=trans.user, trans=trans)['permissions']
+        else:
+            raise galaxy_exceptions.InsufficientPermissionsException('You are not authorized to change this dataset\'s permissions.')
+
+
     def _dataset_state(self, trans, dataset, **kwargs):
         """
         Returns state of dataset.
