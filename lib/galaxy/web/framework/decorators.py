@@ -186,12 +186,11 @@ def __extract_payload_from_request(trans, func, kwargs):
                 except Exception:
                     # may not actually be json, just continue
                     pass
-        payload = util.recursively_stringify_dictionary_keys(payload)
     else:
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-        payload = util.recursively_stringify_dictionary_keys(loads(trans.request.body))
+        payload = loads(trans.request.body)
     return payload
 
 
