@@ -5,7 +5,6 @@ Support for dynamically modifying output attributes.
 import logging
 import os.path
 import re
-import string
 
 from galaxy import util
 
@@ -559,7 +558,7 @@ class StringFunctionFilter(ToolOutputActionOptionFilter):
         self.column = int(self.column)
         self.function = elem.get("name", None)
         assert self.function in ['lower', 'upper'], "Required function 'name' missing or invalid from StringFunctionFilter"  # add function names as needed
-        self.function = getattr(string, self.function)
+        self.function = getattr(str, self.function)
 
     def filter_options(self, options, other_values):
         rval = []
