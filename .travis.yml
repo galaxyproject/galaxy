@@ -34,7 +34,6 @@ matrix:
     - env: TOX_ENV=py34-unit
       addons: *py3_addons
   allow_failures:
-    - env: TOX_ENV=py34-unit
     - env: TOX_ENV=check_python_dependencies
 
 
