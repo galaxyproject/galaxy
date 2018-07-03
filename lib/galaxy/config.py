@@ -849,7 +849,8 @@ class Configuration(object):
             port = None
         return port
 
-    def _parse_allowed_origin_hostnames(self, kwargs):
+    @staticmethod
+    def _parse_allowed_origin_hostnames(kwargs):
         """
         Parse a CSV list of strings/regexp of hostnames that should be allowed
         to use CORS and will be sent the Access-Control-Allow-Origin header.
@@ -862,7 +863,7 @@ class Configuration(object):
             # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
             if string[0] == '/' and string[-1] == '/':
                 string = string[1:-1]
-                return re.compile(string, flags=(re.UNICODE | re.LOCALE))
+                return re.compile(string, flags=(re.UNICODE))
             return string
 
         return [parse(v) for v in allowed_origin_hostnames if v]
