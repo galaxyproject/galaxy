@@ -33,7 +33,7 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
-from six import binary_type, iteritems, string_types, text_type
+from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
     parse as urlparse,
@@ -234,7 +234,10 @@ def xml_to_string(elem, pretty=False):
     if pretty:
         elem = pretty_print_xml(elem)
     try:
-        return ElementTree.tostring(elem)
+        if PY2:
+            return ElementTree.tostring(elem)
+        else:
+            return ElementTree.tostring(elem, encoding='unicode')
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
@@ -1161,15 +1164,6 @@ def stringify_dictionary_keys(in_dict):
     for key, value in iteritems(in_dict):
         out_dict[str(key)] = value
     return out_dict
-
-
-def recursively_stringify_dictionary_keys(d):
-    if isinstance(d, dict):
-        return dict([(k.encode(DEFAULT_ENCODING), recursively_stringify_dictionary_keys(v)) for k, v in iteritems(d)])
-    elif isinstance(d, list):
-        return [recursively_stringify_dictionary_keys(x) for x in d]
-    else:
-        return d
 
 
 def mkstemp_ln(src, prefix='mkstemp_ln_'):
