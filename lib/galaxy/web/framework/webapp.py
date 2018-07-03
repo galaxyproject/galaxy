@@ -93,8 +93,7 @@ class WebApplication(base.WebApplication):
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache,
-                                          collection_size=500,
-                                          output_encoding='utf-8')
+                                          collection_size=500)
 
     def handle_controller_exception(self, e, trans, **kwargs):
         if isinstance(e, MessageException):
