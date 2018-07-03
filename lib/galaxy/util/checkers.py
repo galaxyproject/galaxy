@@ -78,7 +78,8 @@ def check_gzip(file_path, check_content=True):
     # If the file is Bam, it should already have been detected as such, so we'll just check
     # for sff format.
     try:
-        header = gzip.open(file_path, 'rb').read(4)
+        with gzip.open(file_path, 'rb') as fh:
+            header = fh.read(4)
         if header == b'.sff':
             return (True, True)
     except Exception:
