@@ -2,9 +2,10 @@
     from cgi import escape
     from random import random
     from math import floor
+    import six
     from galaxy.model import Tag, ItemTagAssociation
     from galaxy.web.framework.helpers import iff
-    import six
+    from galaxy.util import unicodify
 %>
 
 ## Render a tagging element if there is a tagged_item.
@@ -53,9 +54,9 @@
 
                     ## Convert tag name, value to unicode.
                     if isinstance( tag_name, str ):
-                        tag_name = unicode( escape( tag_name ), 'utf-8' )
+                        tag_name = unicodify( escape( tag_name ) )
                         if tag_value:
-                            tag_value = unicode( escape( tag_value ), 'utf-8' )
+                            tag_value = unicodify( escape( tag_value ) )
                     if tag_value:
                         tag_str = tag_name + ":" + tag_value
                     else:

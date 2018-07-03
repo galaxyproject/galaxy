@@ -579,6 +579,8 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         else:
             ave_item_rating = item.average_rating
             num_ratings = 2  # just used for pluralization
+        if not ave_item_rating:
+            ave_item_rating = 0
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
