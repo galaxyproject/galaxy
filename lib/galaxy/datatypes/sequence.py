@@ -926,8 +926,9 @@ class Axt(data.Text):
                 if len(hdr) != 9:
                     return False
                 try:
-                    map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
-                except Exception:
+                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
+                        int(_)
+                except ValueError:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False

@@ -1397,7 +1397,7 @@ class ExcelXls(Binary):
 
     def sniff(self, filename):
         mime_type = subprocess.check_output(['file', '--mime-type', filename])
-        return "application/vnd.ms-excel" in mime_type
+        return b"application/vnd.ms-excel" in mime_type
 
     def get_mime(self):
         """Returns the mime type of the datatype"""

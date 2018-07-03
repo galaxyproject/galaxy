@@ -289,7 +289,7 @@ class Obo(Text):
         for line in handle:
             if stanza.match(line.strip()):
                 # a stanza needs to begin with an ID tag
-                if handle.next().startswith('id:'):
+                if next(handle).startswith('id:'):
                     return True
         return False
 
