@@ -341,9 +341,8 @@ class Grid(object):
                     else:
                         link = None
                     target = column.target
-                    value = column.get_value(trans, self, item)
-                    if isinstance(value, str):
-                        value = text_type(value, 'utf-8')
+                    value = unicodify(column.get_value(trans, self, item))
+                    if value:
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,

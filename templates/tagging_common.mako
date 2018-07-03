@@ -1,10 +1,10 @@
 <%!
     from cgi import escape
-    from galaxy.web.framework.helpers import iff
     from random import random
-    from sys import maxint
     from math import floor
     from galaxy.model import Tag, ItemTagAssociation
+    from galaxy.web.framework.helpers import iff
+    import six
 %>
 
 ## Render a tagging element if there is a tagged_item.
@@ -88,7 +88,7 @@
 ## Render tool tagging elements
 <%def name="render_tool_tagging_elements()">
     <%
-        elt_id = int ( floor ( random()*maxint ) )
+        elt_id = int ( floor ( random() * six.MAXSIZE ) )
         tags = trans.app.tag_handler.get_tool_tags()
     %>
     ${self.render_tagging_element_html(elt_id=elt_id, \
@@ -104,7 +104,7 @@
 <%def name="render_community_tagging_element(tagged_item=None, elt_context=None, use_toggle_link=False, tag_click_fn='default_tag_click_fn')">
     ## Build HTML.
     <%
-        elt_id = int ( floor ( random()*maxint ) )
+        elt_id = int ( floor ( random() * six.MAXSIZE ) )
         community_tags = trans.app.tag_handler.get_community_tags( item=tagged_item, limit=5 )
     %>
     ${self.render_tagging_element_html(elt_id=elt_id, \
@@ -125,7 +125,7 @@
     <%
         # Useful ids.
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
-        elt_id = int ( floor ( random()*maxint ) )
+        elt_id = int ( floor ( random() * six.MAXSIZE ) )
 
         # Get list of user's item tags. TODO: implement owner_tags for all taggable objects and use here.
         item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
