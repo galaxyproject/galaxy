@@ -49,7 +49,7 @@ class InteractiveEnvironmentRequest(object):
         self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
-        self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
