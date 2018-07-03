@@ -1530,7 +1530,7 @@ class JobWrapper(HasResourceParameters):
         return sizes
 
     def check_limits(self, runtime=None):
-        if self.app.job_config.limits.output_size > 0:
+        if self.app.job_config.limits.output_size and self.app.job_config.limits.output_size > 0:
             for outfile, size in self.get_output_sizes():
                 if size > self.app.job_config.limits.output_size:
                     log.warning('(%s) Job output size %s has exceeded the global output size limit', self.get_id_tag(), os.path.basename(outfile))
