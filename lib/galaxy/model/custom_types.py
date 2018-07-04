@@ -59,7 +59,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
@@ -281,7 +281,7 @@ class MetadataType(JSONType):
                     if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
                         log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
@@ -289,12 +289,12 @@ class MetadataType(JSONType):
             return None
         ret = None
         try:
-            ret = metadata_pickler.loads(str(value))
+            ret = metadata_pickler.loads(unicodify(value))
             if ret:
                 ret = dict(ret.__dict__)
         except Exception:
             try:
-                ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
+                ret = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
             except Exception:
                 ret = None
         return ret
@@ -319,10 +319,8 @@ class UUIDType(TypeDecorator):
             return value
         else:
             if not isinstance(value, uuid.UUID):
-                return "%.32x" % uuid.UUID(value)
-            else:
-                # hexstring
-                return "%.32x" % value
+                value = uuid.UUID(value)
+            return value.hex
 
     def process_result_value(self, value, dialect):
         if value is None:

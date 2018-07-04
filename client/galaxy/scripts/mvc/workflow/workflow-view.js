@@ -774,10 +774,9 @@ export default Backbone.View.extend({
         buttons.prependTo($f.find(".toolFormTitle"));
         width += buttons.width() + 10;
         $f.css("width", width);
-        $f
-            .bind("dragstart", () => {
-                self.workflow.activate_node(node);
-            })
+        $f.bind("dragstart", () => {
+            self.workflow.activate_node(node);
+        })
             .bind("dragend", function() {
                 self.workflow.node_changed(this);
                 self.workflow.fit_canvas_to_nodes();
@@ -791,9 +790,9 @@ export default Backbone.View.extend({
                 var po = $(this)
                     .offsetParent()
                     .offset();
-
-                var x = d.offsetX - po.left;
-                var y = d.offsetY - po.top;
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)

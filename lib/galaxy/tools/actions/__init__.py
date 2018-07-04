@@ -442,7 +442,6 @@ class DefaultToolAction(object):
                             "__object__": element,
                             "name": output_part_def.element_identifier,
                         })
-                        log.info(element_identifiers)
 
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty

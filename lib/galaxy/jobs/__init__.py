@@ -380,7 +380,7 @@ class JobConfiguration(ConfiguresHandlers):
 
         :returns: List of parameter elements.
         """
-        if tool_id and tool_type is 'default':
+        if tool_id and tool_type in ('default', 'manage_data'):
             # TODO: Only works with exact matches, should handle different kinds of ids
             # the way destination lookup does.
             resource_group = None

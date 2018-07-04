@@ -265,8 +265,7 @@ class TextToolParameter(ToolParameter):
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
     """
 
     def __init__(self, tool, input_source):
@@ -310,10 +309,8 @@ class IntegerToolParameter(TextToolParameter):
     >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
-    >>> type(p.from_json("10", trans))
-    <type 'int'>
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
+    >>> assert type(p.from_json("10", trans)) == int
     >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
@@ -386,10 +383,8 @@ class FloatToolParameter(TextToolParameter):
     >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
-    >>> type(p.from_json("36.1", trans))
-    <type 'float'>
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
+    >>> assert type(p.from_json("36.1", trans)) == float
     >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
@@ -462,8 +457,7 @@ class BooleanToolParameter(ToolParameter):
     >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
     >>> print(p.from_json('true'))
     True
     >>> print(p.to_param_dict_string(True))
@@ -676,8 +670,7 @@ class HiddenToolParameter(ToolParameter):
     >>> p = HiddenToolParameter(None, XML('<param name="_name" type="hidden" value="_value"/>'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
 
     def __init__(self, tool, input_source):
@@ -704,8 +697,7 @@ class ColorToolParameter(ToolParameter):
     _name
     >>> print(p.to_param_dict_string("#fdeada"))
     #fdeada
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
     >>> print(p.to_param_dict_string("#fdeada"))
     (253, 234, 218)
@@ -743,8 +735,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     >>> p = BaseURLToolParameter(None, XML('<param name="_name" type="base_url" value="_value"/>'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
 
     def __init__(self, tool, input_source):
@@ -1162,7 +1153,8 @@ class ColumnListParameter(SelectToolParameter):
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
             dataset = other_values.get(self.data_ref, None)
             try:
-                head = open(dataset.get_file_name(), 'r').readline()
+                with open(dataset.get_file_name(), 'r') as f:
+                    head = f.readline()
                 cnames = head.rstrip().split('\t')
                 column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
@@ -1658,6 +1650,11 @@ class DataToolParameter(BaseDataToolParameter):
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
                     rval.append(single_value)
                 else:
+                    if len(str(single_value)) == 16:
+                        # Could never really have an ID this big anyway - postgres doesn't
+                        # support that for integer column types.
+                        log.warning("Encoded ID where unencoded ID expected.")
+                        single_value = trans.security.decode_id(single_value)
                     rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(single_value))
             if found_hdca:
                 for val in rval:

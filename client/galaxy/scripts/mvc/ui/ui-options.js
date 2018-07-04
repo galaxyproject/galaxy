@@ -163,8 +163,7 @@ var Base = Backbone.View.extend({
             if (new_value !== null) {
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, v => {
-                    self
-                        .$(`input[value="${v}"]`)
+                    self.$(`input[value="${v}"]`)
                         .first()
                         .prop("checked", true);
                 });

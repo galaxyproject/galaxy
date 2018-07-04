@@ -94,7 +94,7 @@ function drawDownwardEquilateralTriangle(ctx, down_vertex_x, down_vertex_y, side
     var x1 = down_vertex_x - side_len / 2;
 
     var x2 = down_vertex_x + side_len / 2;
-    var y = down_vertex_y - Math.sqrt(side_len * 3 / 2);
+    var y = down_vertex_y - Math.sqrt((side_len * 3) / 2);
 
     // Draw and fill.
     ctx.beginPath();
@@ -219,7 +219,7 @@ class LinePainter extends Painter {
         ctx.save();
 
         // Pixel position of 0 on the y axis
-        var y_zero = Math.round(height + min_value / vertical_range * height);
+        var y_zero = Math.round(height + (min_value / vertical_range) * height);
 
         // Horizontal line to denote x-axis
         if (mode !== "Intensity") {
@@ -280,7 +280,7 @@ class LinePainter extends Painter {
             // Draw point.
             if (mode === "Histogram") {
                 // y becomes the bar height in pixels, which is the negated for canvas coords
-                y = Math.round(y / vertical_range * height_px);
+                y = Math.round((y / vertical_range) * height_px);
                 ctx.fillRect(x_scaled, y_zero, delta_x_px, -y);
             } else if (mode === "Intensity") {
                 var saturation = (y - min_value) / vertical_range;
@@ -296,7 +296,7 @@ class LinePainter extends Painter {
                 // mode is Coverage/Line or Filled.
 
                 // Scale Y value.
-                y = Math.round(height_px - (y - min_value) / vertical_range * height_px);
+                y = Math.round(height_px - ((y - min_value) / vertical_range) * height_px);
                 if (in_path) {
                     ctx.lineTo(x_scaled, y);
                 } else {
@@ -1246,7 +1246,7 @@ class ArcLinkedFeaturePainter extends LinkedFeaturePainter {
     get_top_padding(width) {
         var view_range = this.view_end - this.view_start;
         var w_scale = width / view_range;
-        return Math.min(128, Math.ceil(this.longest_feature_length / 2 * w_scale));
+        return Math.min(128, Math.ceil((this.longest_feature_length / 2) * w_scale));
     }
 
     draw_connector(ctx, block1_start, block1_end, block2_start, block2_end, y_start) {
@@ -1477,7 +1477,7 @@ class DiagonalHeatmapPainter extends Painter {
         ctx.save();
 
         // Draw into triangle, then rotate and scale
-        ctx.rotate(-45 * Math.PI / 180);
+        ctx.rotate((-45 * Math.PI) / 180);
         ctx.scale(invsqrt2, invsqrt2);
 
         // Paint track.

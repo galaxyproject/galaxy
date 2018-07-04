@@ -10,7 +10,7 @@ var AdminPanel = Backbone.View.extend({
         this.message = options.message;
         this.status = options.status;
         this.model = new Backbone.Model({
-            title: _l("Administration")
+            title: `Galaxy version ${Galaxy.config.version_major}`
         });
         this.categories = new Backbone.Collection([
             {
@@ -18,7 +18,8 @@ var AdminPanel = Backbone.View.extend({
                 items: [
                     {
                         title: _l("Data types"),
-                        url: "admin/view_datatypes_registry",
+                        url: "admin/data_types",
+                        target: "__use_router__",
                         id: "admin-link-datatypes"
                     },
                     {

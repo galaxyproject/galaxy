@@ -3908,7 +3908,7 @@ conditionals are accessed using a hash named after the conditional.
           <param name="vcf_output" type="boolean" checked="false" label="VCF output"
             truevalue="--vcf" falsevalue="" />
         </when>
-      <conditional>
+      </conditional>
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />

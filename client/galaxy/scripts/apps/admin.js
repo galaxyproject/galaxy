@@ -10,6 +10,7 @@ import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
 import DataTables from "components/admin/DataTables.vue";
+import DataTypes from "components/admin/DataTypes.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
@@ -27,7 +28,8 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/data_tables": "show_data_tables"
+            "(/)admin/data_tables": "show_data_tables",
+            "(/)admin/data_types": "show_data_types"
         },
 
         authenticate: function() {
@@ -92,6 +94,12 @@ window.app = function app(options, bootstrapped) {
             var vueMount = document.createElement("div");
             this.page.display(vueMount);
             new Vue(DataTables).$mount(vueMount);
+        },
+
+        show_data_types: function() {
+            var vueMount = document.createElement("div");
+            this.page.display(vueMount);
+            new Vue(DataTypes).$mount(vueMount);
         },
 
         show_forms: function() {

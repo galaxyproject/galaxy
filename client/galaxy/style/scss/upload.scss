@@ -2,7 +2,6 @@
     position: relative;
     width: 31px;
     height: 21px;
-    top: -4px;
     cursor: pointer;
     -moz-border-radius: $border-radius-base;
     border-radius: $border-radius-base;
@@ -30,8 +29,8 @@
     }
     .panel-header-button {
         position: absolute;
-        top: 4px;
-        right: 8px;
+        width: 31px;
+        text-align: center;
         font-size: 1.2em;
         padding: 0px;
     }

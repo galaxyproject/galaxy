@@ -5,7 +5,7 @@ import uuid
 
 from six import text_type
 
-import galaxy.datatypes
+import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 
@@ -128,7 +128,6 @@ class MappingTests(unittest.TestCase):
     def test_display_name(self):
 
         def assert_display_name_converts_to_unicode(item, name):
-            assert not isinstance(item.name, text_type)
             assert isinstance(item.get_display_name(), text_type)
             assert item.get_display_name() == name
 

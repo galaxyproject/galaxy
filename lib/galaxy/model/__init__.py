@@ -1403,7 +1403,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if quota and self.user:
                 disk_usage = sum([d.get_total_size() for d in datasets])
                 self.user.adjust_total_disk_usage(disk_usage)
-
             sa_session.add_all(datasets)
             if flush:
                 sa_session.flush()
@@ -1981,10 +1980,17 @@ class Dataset(StorableObject):
             else:
                 return self._calculate_size()
 
-    def set_size(self):
-        """Sets the size of the data on disk"""
+    def set_size(self, no_extra_files=False):
+        """Sets the size of the data on disk.
+
+        If the caller is sure there are no extra files, pass no_extra_files as True to optimize subsequent
+        calls to get_total_size or set_total_size - potentially avoiding both a database flush and check against
+        the file system.
+        """
         if not self.file_size:
             self.file_size = self._calculate_size()
+            if no_extra_files:
+                self.total_size = self.file_size
 
     def get_total_size(self):
         if self.total_size is not None:
@@ -2158,6 +2164,10 @@ class DatasetInstance(object):
             self._metadata_collection = galaxy.model.metadata.MetadataCollection(self)
         return self._metadata_collection
 
+    @property
+    def set_metadata_requires_flush(self):
+        return self.metadata.requires_dataset_id
+
     def set_metadata(self, bunch):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
@@ -2189,9 +2199,9 @@ class DatasetInstance(object):
             return galaxy.util.nice_size(self.dataset.get_size())
         return self.dataset.get_size()
 
-    def set_size(self):
+    def set_size(self, **kwds):
         """Sets and gets the size of the data on disk"""
-        return self.dataset.set_size()
+        return self.dataset.set_size(**kwds)
 
     def get_total_size(self):
         return self.dataset.get_total_size()
@@ -2548,7 +2558,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True):
         """
         Create a copy of this HDA.
         """
@@ -2568,15 +2578,23 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # update init non-keywords as well
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
-        object_session(self).add(hda)
-        object_session(self).flush()
+        # This next line seems unneeded. -John
         hda.set_size()
-        # Need to set after flushed, as MetadataFiles require dataset.id
+        object_session(self).add(hda)
+        flushed = False
+        # May need to set after flushed, as MetadataFiles require dataset.id
+        if hda.set_metadata_requires_flush:
+            object_session(self).flush()
+            flushed = True
         hda.metadata = self.metadata
+        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
-            # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+            if not flushed:
+                object_session(self).flush()
+
             hda.set_peek()
-        object_session(self).flush()
+        if force_flush:
+            object_session(self).flush()
         return hda
 
     def copy_tags_to(self, copy_tags=None):

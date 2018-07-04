@@ -228,16 +228,20 @@ def main(argv):
             if job[2] in blacklisted_tools:
                 continue
 
-            handle_job.write(str(job[0]))  # id
-            handle_job.write('\t')
-            handle_job.write(job[2])  # tool_id
-            handle_job.write('\t')
-            handle_job.write(job[3])  # tool_version
-            handle_job.write('\t')
-            handle_job.write(job[4])  # state
-            handle_job.write('\t')
-            handle_job.write(str(job[5]))  # create_time
-            handle_job.write('\n')
+            try:
+                handle_job.write(str(job[0]))  # id
+                handle_job.write('\t')
+                handle_job.write(job[2])  # tool_id
+                handle_job.write('\t')
+                handle_job.write(job[3])  # tool_version
+                handle_job.write('\t')
+                handle_job.write(job[4])  # state
+                handle_job.write('\t')
+                handle_job.write(str(job[5]))  # create_time
+                handle_job.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
+                continue
             # meta counts
             job_state_data[job[4]] += 1
             active_users[job[1]] += 1
@@ -310,19 +314,22 @@ def main(argv):
             if dataset_id is None:
                 continue
 
-            handle_datasets.write(str(job[0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(hda_id))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(hdas[hda_id][1]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(datasets[dataset_id][0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(job[2]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(filetype))
-            handle_datasets.write('\n')
-
+            try:
+                handle_datasets.write(str(job[0]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(hda_id))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(hdas[hda_id][1]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(datasets[dataset_id][0]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(job[2]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(filetype))
+                handle_datasets.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
+                continue
     handle_datasets.close()
     annotate('export_datasets_end')
 
@@ -342,14 +349,18 @@ def main(argv):
             if job_tool_map[metric[0]] in blacklisted_tools:
                 continue
 
-            handle_metric_num.write(str(metric[0]))
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[1])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[2])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(str(metric[3]))
-            handle_metric_num.write('\n')
+            try:
+                handle_metric_num.write(str(metric[0]))
+                handle_metric_num.write('\t')
+                handle_metric_num.write(metric[1])
+                handle_metric_num.write('\t')
+                handle_metric_num.write(metric[2])
+                handle_metric_num.write('\t')
+                handle_metric_num.write(str(metric[3]))
+                handle_metric_num.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
+                continue
     handle_metric_num.close()
     annotate('export_metric_num_end')
 
@@ -369,14 +380,18 @@ def main(argv):
             if job_tool_map[param[0]] in blacklisted_tools:
                 continue
 
-            sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
+            try:
+                sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
 
-            handle_params.write(str(param[0]))
-            handle_params.write('\t')
-            handle_params.write(param[1])
-            handle_params.write('\t')
-            handle_params.write(json.dumps(sanitized))
-            handle_params.write('\n')
+                handle_params.write(str(param[0]))
+                handle_params.write('\t')
+                handle_params.write(param[1])
+                handle_params.write('\t')
+                handle_params.write(json.dumps(sanitized))
+                handle_params.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_params' row. Ignoring the row.", exc_info=True)
+                continue
     handle_params.close()
     annotate('export_params_end')
 

@@ -1464,14 +1464,14 @@ class ToolsTestCase(api.ApiTestCase):
                 "input": {'values': [dict(src="hdca", id=hdca_id)]},
                 "how|filter_source": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
             }
-            self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)
+            implicit_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['implicit_collections']
+            discarded_collection, filtered_collection = implicit_collections
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             history_contents = self.dataset_populator._get_contents_request(history_id).json()
             # We should have a final collection count of 3 (2 nested collections, plus the input collection)
             new_collections = len([c for c in history_contents if c['history_content_type'] == 'dataset_collection']) - 1
             assert new_collections == 2, "Expected to generate 4 new, filtered collections, but got %d collections" % new_collections
-            filtered_collection = history_contents[7]
-            assert filtered_collection['collection_type'] == 'list:list', filtered_collection
+            assert filtered_collection['collection_type'] == discarded_collection['collection_type'] == 'list:list', filtered_collection
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_collection['hid'])
             assert collection_details['element_count'] == 2
             first_collection_level = collection_details['elements'][0]

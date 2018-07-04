@@ -931,7 +931,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def fill_template_mako(self, filename, template_lookup=None, **kwargs):
         template_lookup = template_lookup or self.webapp.mako_template_lookup
         template = template_lookup.get_template(filename)
-        template.output_encoding = 'utf-8'
 
         data = dict(caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
         data.update(self.template_context)
@@ -940,7 +939,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
     def stream_template_mako(self, filename, **kwargs):
         template = self.webapp.mako_template_lookup.get_template(filename)
-        template.output_encoding = 'utf-8'
         data = dict(caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
         data.update(self.template_context)
         data.update(kwargs)

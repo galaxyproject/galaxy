@@ -55,7 +55,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         assert len(job_dict) == 1
         fake_job = job_dict.keys()[0]
         assert fake_job.id.startswith("fake_")
-        datasets = job_dict.values()[0]
+        datasets = list(job_dict.values())[0]
         assert datasets == [(None, hda)]
 
     def test_fake_job_hdca(self):

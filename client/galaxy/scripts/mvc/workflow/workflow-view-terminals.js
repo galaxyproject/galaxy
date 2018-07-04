@@ -140,13 +140,11 @@ var BaseInputTerminalView = TerminalView.extend({
                     $(this).remove();
                 });
             // Position it and show
-            t
-                .css({
-                    top: $(element).offset().top - 2,
-                    left: $(element).offset().left - t.width(),
-                    "padding-right": $(element).width()
-                })
-                .show();
+            t.css({
+                top: $(element).offset().top - 2,
+                left: $(element).offset().left - t.width(),
+                "padding-right": $(element).width()
+            }).show();
         }
     }
 });
@@ -196,13 +194,15 @@ var BaseOutputTerminalView = TerminalView.extend({
     },
     onDrag: function(e, d) {
         var onmove = () => {
+            // FIXME: global
+            var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
             var po = $(d.proxy)
                 .offsetParent()
                 .offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
-            $(d.proxy).css({ left: x, top: y });
+            $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
             // FIXME: global
             window.workflow_globals.canvas_manager.update_viewport_overlay();
@@ -224,7 +224,10 @@ var BaseOutputTerminalView = TerminalView.extend({
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;
-        c.connect(this.el.terminal, h.terminal);
+        c.connect(
+            this.el.terminal,
+            h.terminal
+        );
         return h;
     },
     onDragEnd: function(e, d) {
