@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import logging
-import new
 
 try:
     from nose.tools import nottest
@@ -100,7 +99,7 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
 
                 all_versions_test_count += 1
 
-            # The new.classobj function returns a new class object, with name name, derived
+            # Create new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
-            new_class_obj = new.classobj(str(name), baseclasses, namespace)
+            new_class_obj = type(str(name), baseclasses, namespace)
             G[name] = new_class_obj
