@@ -5,7 +5,7 @@ from abc import (
 
 import six
 
-from galaxy.jobs.error_level import StdioErrorLevel
+from .error_level import StdioErrorLevel
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
