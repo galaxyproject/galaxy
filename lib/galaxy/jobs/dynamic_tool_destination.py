@@ -529,7 +529,7 @@ class RuleValidator(object):
         """
 
         if "upper_bound" in rule and "lower_bound" in rule:
-            if rule["rule_type"] == "file_size":
+            if rule["rule_type"] in ("file_size", "records"):
                 upper_bound = str_to_bytes(rule["upper_bound"])
                 lower_bound = str_to_bytes(rule["lower_bound"])
             else:
@@ -543,6 +543,8 @@ class RuleValidator(object):
                     error += " Setting lower_bound to 0!"
                     lower_bound = 0
                     rule["lower_bound"] = 0
+                else:
+                    lower_bound = float('inf')
                 if verbose:
                     log.debug(error)
                 valid_rule = False
