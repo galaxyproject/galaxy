@@ -511,6 +511,9 @@ class Tool(Dictifiable):
         if self.tool_type not in ["default", "manage_data"]:
             return True
 
+        if self.tool_type == "manage_data" and self.profile < 18.09:
+            return True
+
         config = self.app.config
         preserve_python_environment = config.preserve_python_environment
         if preserve_python_environment == "always":
