@@ -7,8 +7,11 @@ from traceback import format_exc
 import paste.httpexceptions
 from six import string_types
 
-from galaxy import util
 from galaxy.exceptions import error_codes, MessageException
+from galaxy.util import (
+    parse_non_hex_float,
+    unicodify
+)
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 
@@ -182,7 +185,7 @@ def __extract_payload_from_request(trans, func, kwargs):
                     # note: parse_non_hex_float only needed here for single string values where something like
                     # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings
                     # in larger JSON structures where quoting prevents this (further below)
-                    payload[k] = loads(v, parse_float=util.parse_non_hex_float)
+                    payload[k] = loads(v, parse_float=parse_non_hex_float)
                 except Exception:
                     # may not actually be json, just continue
                     pass
@@ -190,7 +193,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-        payload = loads(trans.request.body)
+        payload = loads(unicodify(trans.request.body))
     return payload
 
 
