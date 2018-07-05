@@ -4593,7 +4593,7 @@ response to this directive.
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="data_stype" type="xs:string">
+        <xs:attribute name="data_style" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
           </xs:annotation>
