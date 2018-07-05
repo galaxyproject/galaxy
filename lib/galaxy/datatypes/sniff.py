@@ -109,7 +109,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
-    ...     fh.write("1 2\\r3 4")
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -138,7 +138,7 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
-    ...     fh.write("1 2\\n3 4\\n")
+    ...     _ = fh.write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -176,7 +176,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
-    ...     fh.write("1 2\\r3 4")
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -419,7 +419,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'dmnd'
     >>> fname = get_test_fname('1.xls')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
     >>> guess_ext(fname, sniff_order)
@@ -467,7 +467,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'ttl'
     >>> fname = get_test_fname('1.hdt')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'hdt'
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)

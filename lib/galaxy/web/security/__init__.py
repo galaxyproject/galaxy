@@ -14,7 +14,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 MAXIMUM_ID_SECRET_BITS = 448
-MAXIMUM_ID_SECRET_LENGTH = MAXIMUM_ID_SECRET_BITS / 8
+MAXIMUM_ID_SECRET_LENGTH = int(MAXIMUM_ID_SECRET_BITS / 8)
 KIND_TOO_LONG_MESSAGE = "Galaxy coding error, keep encryption 'kinds' smaller to utilize more bites of randomness from id_secret values."
 
 

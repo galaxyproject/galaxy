@@ -372,21 +372,13 @@ class SortRuleDefinition(BaseRuleDefinition):
 
         sortable = zip(data, sources)
 
-        def sort_func(a, b):
-            a_val = a[0][target]
-            b_val = b[0][target]
+        def sort_func(item):
+            a_val = item[0][target]
             if numeric:
                 a_val = float(a_val)
-                b_val = float(b_val)
+            return a_val
 
-            if a_val < b_val:
-                return -1
-            elif b_val < a_val:
-                return 1
-            else:
-                return 0
-
-        sorted_data = sorted(sortable, sort_func)
+        sorted_data = sorted(sortable, key=sort_func)
 
         new_data = []
         new_sources = []

@@ -1202,7 +1202,7 @@ class Tool(Dictifiable):
                     log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
-                                       output_encoding='utf-8', default_filters=['decode.utf8'],
+                                       default_filters=['decode.utf8'],
                                        encoding_errors='replace')
             except Exception:
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
@@ -1220,7 +1220,7 @@ class Tool(Dictifiable):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [Template(rst_to_html(help_header + x + help_footer),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
+                                                    input_encoding='utf-8',
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
@@ -2301,16 +2301,16 @@ class DataManagerTool(OutputParameterJSONTool):
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
         assert self.allow_user_access(user), "You must be an admin to access this tool."
-        history = user.data_manager_histories
-        if not history:
+        dm_history_associations = user.data_manager_histories
+        if not dm_history_associations:
             # create
             if create:
                 history = _create_data_manager_history(user)
             else:
                 history = None
         else:
-            for history in reversed(history):
-                history = history.history
+            for dm_history_association in reversed(dm_history_associations):
+                history = dm_history_association.history
                 if not history.deleted:
                     break
             if history.deleted:

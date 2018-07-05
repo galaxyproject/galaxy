@@ -178,7 +178,7 @@ class HDT(binary.Binary, Triples):
 
     def sniff(self, filename):
         with open(filename, "rb") as f:
-            if f.read(4) == "$HDT":
+            if f.read(4) == b"$HDT":
                 return True
 
     def set_peek(self, dataset, is_multi_byte=False):

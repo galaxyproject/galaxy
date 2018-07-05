@@ -29,7 +29,8 @@ from galaxy.managers import context
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp
+    safe_str_cmp,
+    unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework import (
@@ -93,8 +94,7 @@ class WebApplication(base.WebApplication):
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache,
-                                          collection_size=500,
-                                          output_encoding='utf-8')
+                                          collection_size=500)
 
     def handle_controller_exception(self, e, trans, **kwargs):
         if isinstance(e, MessageException):
@@ -346,7 +346,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """Convenience method for setting a session cookie"""
         # The galaxysession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
-        self.response.cookies[name] = value
+        self.response.cookies[name] = unicodify(value)
         self.response.cookies[name]['path'] = path
         self.response.cookies[name]['max-age'] = 3600 * 24 * age  # 90 days
         tstamp = time.localtime(time.time() + 3600 * 24 * age)

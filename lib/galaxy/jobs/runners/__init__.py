@@ -60,7 +60,7 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner(object):
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: x >= 0, default=0))
+    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner

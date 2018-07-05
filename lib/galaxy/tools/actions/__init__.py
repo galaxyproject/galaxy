@@ -242,7 +242,7 @@ class DefaultToolAction(object):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get("dbkey", "?")
-        for name, data in reversed(inp_data.items()):
+        for name, data in reversed(list(inp_data.items())):
             if not data:
                 data = NoneDataset(datatypes_registry=app.datatypes_registry)
                 continue
@@ -615,7 +615,7 @@ class DefaultToolAction(object):
 
     def _get_on_text(self, inp_data):
         input_names = []
-        for data in reversed(inp_data.values()):
+        for data in reversed(list(inp_data.values())):
             if getattr(data, "hid", None):
                 input_names.append('data %s' % data.hid)
 
