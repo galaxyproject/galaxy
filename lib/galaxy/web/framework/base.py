@@ -12,7 +12,7 @@ import time
 import types
 
 import routes
-import webob
+import webob.exc
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste import httpexceptions
 from paste.request import get_cookies
@@ -459,7 +459,7 @@ class Response(object):
         Return status line in format appropriate for WSGI `start_response`
         """
         if isinstance(self.status, int):
-            exception = httpexceptions.get_exception(self.status)
+            exception = webob.exc.status_map.get(self.status)
             return "%d %s" % (exception.code, exception.title)
         else:
             return self.status

@@ -129,6 +129,6 @@ vine==1.1.4
 warlock==1.2.0
 wcwidth==0.1.7; sys_platform != 'win32'
 webencodings==0.5.1
-webob==1.4.2
+webob==1.8.2
 whoosh==2.7.4
 wrapt==1.10.11

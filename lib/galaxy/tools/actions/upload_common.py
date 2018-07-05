@@ -372,7 +372,7 @@ def create_paramfile(trans, uploaded_datasets):
             if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
                 _chown(uploaded_dataset.path)
         tool_params.append(params)
-    with tempfile.NamedTemporaryFile(prefix='upload_params_', delete=False) as fh:
+    with tempfile.NamedTemporaryFile(mode="w", prefix='upload_params_', delete=False) as fh:
         json_file_path = fh.name
         dump(tool_params, fh)
     return json_file_path
