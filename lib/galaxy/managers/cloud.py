@@ -177,12 +177,12 @@ class CloudManager(sharable.SharableModelManager):
         staging_file_name = os.path.abspath(os.path.join(
             trans.app.config.new_file_path,
             "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
-        staging_file = open(staging_file_name, "w+")
-        key.save_content(staging_file)
 
-        datasets = []
-        with open(staging_file_name, "r") as f:
-            content = f.read()
+        with open(staging_file_name, "w+b") as staging_file:
+            key.save_content(staging_file)
+            staging_file.seek(0)
+            datasets = []
+            content = staging_file.read()
             headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
 
             input_file = FieldStorage(headers=headers)
@@ -212,7 +212,6 @@ class CloudManager(sharable.SharableModelManager):
                 hids.update({staging_file: output['out_data'][0][1].hid})
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
-        staging_file.close()
         os.remove(staging_file_name)
         return datasets
 
