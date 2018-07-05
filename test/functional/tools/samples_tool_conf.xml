@@ -29,6 +29,7 @@
   <tool file="tool_provided_metadata_9.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_with_paths.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />

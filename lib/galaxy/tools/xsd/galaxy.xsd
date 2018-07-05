@@ -4549,7 +4549,7 @@ the path to the file created with this directive.</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the <configfiles> tag set. It tells Galaxy to
-write out a JSON representation of the tool parameters .
+write out a JSON representation of the tool parameters.
 
 *Example*
 
@@ -4573,6 +4573,9 @@ the specified name (i.e. ``inputs.json``).
 
 A contrived example of a tool that uses this is the test tool
 [inputs_as_json.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json.xml).
+
+By default this file will not contain paths for data or collection inputs. To include simple
+paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4588,6 +4591,11 @@ response to this directive.
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="data_stype" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

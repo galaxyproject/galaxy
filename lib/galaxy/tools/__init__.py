@@ -803,7 +803,8 @@ class Tool(Dictifiable):
                 name = inputs_elem.get("name")
                 filename = inputs_elem.get("filename", None)
                 format = inputs_elem.get("format", "json")
-                content = dict(format=format)
+                data_style = inputs_elem.get("data_style", "skip")
+                content = dict(format=format, handle_files=data_style)
                 self.config_files.append((name, filename, content))
             for conf_elem in conf_parent_elem.findall("configfile"):
                 name = conf_elem.get("name")
