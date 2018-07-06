@@ -40,7 +40,7 @@ class CloudController(BaseAPIController):
         return 'Not Implemented'
 
     @expose_api
-    def download(self, trans, payload, **kwargs):
+    def copy_from(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/download
             Downloads a given object from a given cloud-based bucket.
@@ -108,7 +108,7 @@ class CloudController(BaseAPIController):
         return rtv
 
     @expose_api
-    def upload(self, trans, payload, **kwargs):
+    def copy_to(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/upload
             Uploads a given dataset to a given cloud-based bucket.

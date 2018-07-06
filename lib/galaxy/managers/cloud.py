@@ -132,7 +132,7 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def download(self, trans, history_id, provider, bucket, obj, credentials):
+    def copy_from(self, trans, history_id, provider, bucket, obj, credentials):
         """
         Implements the logic of downloading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -215,5 +215,5 @@ class CloudManager(sharable.SharableModelManager):
         os.remove(staging_file_name)
         return datasets
 
-    def upload(self, dataset, provider, bucket, obj):
+    def copy_to(self, dataset, provider, bucket, obj):
         raise NotImplementedError

@@ -232,10 +232,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/histories/shared_with_me', action='shared_with_me', controller="histories")
 
     webapp.mapper.resource('cloud', 'cloud', path_prefix='/api')
-    webapp.mapper.connect('cloud_download',
-                          '/api/cloud/download',
+    webapp.mapper.connect('cloud_storage_copy_from',
+                          '/api/cloud/storage/copy-from',
                           controller='cloud',
-                          action='download',
+                          action='copy_from',
                           conditions=dict(method=["POST"]))
 
     _add_item_tags_controller(webapp,
