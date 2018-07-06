@@ -17,24 +17,24 @@ certifi==2018.4.16
 cffi==1.11.5
 chardet==3.0.4
 cheetah3==3.1.0
-cliff==2.11.0
+cliff==2.13.0; python_version >= '2.6'
 cloudbridge==0.3.3
-cmd2==0.8.4
+cmd2==0.8.8
 contextlib2==0.5.5; python_version < '3.5'
 cryptography==2.2.2
 debtcollector==1.19.0
-decorator==4.2.1
-deprecation==2.0.1
+decorator==4.3.0
+deprecation==2.0.5
 dictobj==0.4
 docopt==0.6.2
 docutils==0.14
-dogpile.cache==0.6.5
+dogpile.cache==0.6.6
 enum34==1.1.6; python_version < '3.4'
 fabric3==1.14.post1
 funcsigs==1.0.2; python_version < '3.3'
 functools32==3.2.3.post2; python_version == '2.7'
 future==0.16.0
-futures==3.2.0; python_version == '2.7' or python_version == '2.6'
+futures==3.2.0; python_version == '2.6' or python_version == '2.7'
 galaxy-sequence-utils==1.1.2
 globus-sdk==1.3.0
 h5py==2.6.0
@@ -46,34 +46,34 @@ jmespath==0.9.3
 jsonpatch==1.23
 jsonpointer==2.0
 jsonschema==2.6.0
-keystoneauth1==3.4.0
+keystoneauth1==3.9.0
 kombu==4.1.0
 mako==1.0.7
 markupsafe==1.0
 mercurial==3.7.3; python_version < '3'
-monotonic==1.4
+monotonic==1.5
 msgpack==0.5.6
-munch==2.3.1
+munch==2.3.2
 netaddr==0.7.19
 netifaces==0.10.7
 nose==1.3.7
 numpy==1.14.2
 oauthlib==2.0.7
-openstacksdk==0.12.0
-os-client-config==1.29.0
+openstacksdk==0.14.0
+os-client-config==1.31.2
 os-service-types==1.2.0
 osc-lib==1.10.0
-oslo.config==6.0.2
+oslo.config==6.3.0
 oslo.i18n==3.20.0
-oslo.serialization==2.25.0
-oslo.utils==3.36.0
+oslo.serialization==2.27.0
+oslo.utils==3.36.3
 packaging==17.1
 paramiko==2.4.1
 parsley==1.3
 paste==2.0.3
 pastedeploy==1.5.2
 pastescript==2.0.2
-pbr==4.0.4
+pbr==4.1.0
 positional==1.2.1
 prettytable==0.7.2
 psutil==5.4.3
@@ -88,10 +88,10 @@ pyjwt==1.6.1
 pykwalify==1.6.1
 pynacl==1.2.1
 pyparsing==2.2.0
-pyperclip==1.6.0
+pyperclip==1.6.2
 pysam==0.14.1
 python-cinderclient==2.0.1
-python-dateutil==2.7.2
+python-dateutil==2.7.3
 python-genomespaceclient==0.2
 python-glanceclient==2.6.0
 python-keystoneclient==3.10.0
@@ -100,7 +100,7 @@ python-neutronclient==6.1.0
 python-novaclient==7.0.0
 python-openid==2.2.5
 python-swiftclient==3.3.0
-pytz==2018.4
+pytz==2018.5
 pyyaml==3.12
 repoze.lru==0.7
 requests-oauthlib==0.8.0
@@ -110,7 +110,7 @@ requestsexceptions==1.4.0
 retrying==1.3.3
 rfc3986==1.1.0
 routes==2.4.1
-simplejson==3.13.2
+simplejson==3.16.0
 six==1.11.0
 social-auth-core==1.5.0
 sqlalchemy-migrate==0.11.0
@@ -118,7 +118,7 @@ sqlalchemy-utils==0.33.2
 sqlalchemy==1.2.6
 sqlparse==0.2.4
 stevedore==1.28.0
-subprocess32==3.5.0; python_version < '3.0'
+subprocess32==3.5.2; python_version < '3.0'
 svgwrite==1.1.12
 tempita==0.5.2
 tzlocal==1.5.1
