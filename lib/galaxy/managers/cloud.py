@@ -134,7 +134,7 @@ class CloudManager(sharable.SharableModelManager):
 
     def copy_from(self, trans, history_id, provider, bucket, obj, credentials):
         """
-        Implements the logic of downloading a file from a cloud-based storage (e.g., Amazon S3)
+        Implements the logic of copying a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
