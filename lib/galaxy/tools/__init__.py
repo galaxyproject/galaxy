@@ -508,7 +508,10 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type != "default":
+        if self.tool_type not in ["default", "manage_data"]:
+            return True
+
+        if self.tool_type == "manage_data" and self.profile < 18.09:
             return True
 
         config = self.app.config
