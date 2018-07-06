@@ -231,7 +231,11 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/histories/published', action='published', controller="histories", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/histories/shared_with_me', action='shared_with_me', controller="histories")
 
-    webapp.mapper.resource('cloud', 'cloud', path_prefix='/api')
+    webapp.mapper.connect('cloud_storage',
+                          '/api/cloud/storage/',
+                          controller='cloud',
+                          action='index',
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect('cloud_storage_copy_from',
                           '/api/cloud/storage/copy-from',
                           controller='cloud',

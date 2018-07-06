@@ -29,7 +29,7 @@ class CloudController(BaseAPIController):
     @expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud
+        * GET /api/cloud/storage
             Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
         :param trans:
         :param kwargs:
