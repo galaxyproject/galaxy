@@ -99,8 +99,6 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         POST /api/datasets/{encoded_dataset_id}/permissions
         Updates permissions of a dataset.
 
-        , hda_ldda='hda', manage_ids=[], access_ids=[]
-
         :rtype:     dict
         :returns:   dictionary containing new permissions
         """
