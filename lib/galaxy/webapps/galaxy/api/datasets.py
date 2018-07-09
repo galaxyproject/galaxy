@@ -139,7 +139,6 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         else:
             raise galaxy_exceptions.InsufficientPermissionsException('You are not authorized to change this dataset\'s permissions.')
 
-
     def _dataset_state(self, trans, dataset, **kwargs):
         """
         Returns state of dataset.
