@@ -1,7 +1,7 @@
 grt:
     # Register at https://telescope.galaxyproject.org to obtain an Instance ID and API key
-    instance_id: 
-    api_key: 
+    instance_id:
+    api_key:
 
     # Galaxy Project offers a public galactic-radio-telescope instance, however
     # you are free to run your own if you need. We would love it if you were
@@ -21,6 +21,23 @@ sanitization:
     tools:
         - __SET_METADATA__
         - upload1
+        - ucsc_table_direct1
+        - ucsc_table_direct_archaea1
+        - ebi_sra_main
+        - modENCODEfly
+        - intermine
+        - flymine
+        - modmine
+        - mousemine
+        - ratmine
+        - yeastmine
+        - modENCODEworm
+        - wormbase
+        - zebrafishmine
+        - eupathdb
+        - hbvar
+        - genomespace_importer
+        - genomespace_exporter
     # Or you can blacklist individual parameters from being submitted, e.g. if
     # you have API keys as a tool parameter.
     tool_params:

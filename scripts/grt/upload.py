@@ -71,6 +71,5 @@ def main(argv):
                 logging.critical("Non-OK response: %s", r.status_code)
 
 
-
 if __name__ == '__main__':
     main(sys.argv)
