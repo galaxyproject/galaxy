@@ -319,7 +319,7 @@ ${ job.command_line | h }</pre>
                         <td>${ dependency['environment_path'] | h }</td>
                         %elif 'path' in dependency:
                         <td>${ dependency['path'] | h }</td>
-                        %else
+                        %else:
                         <td></td>
                         %endif
                     %endif
