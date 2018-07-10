@@ -274,17 +274,13 @@ ${ job.command_line | h }</pre>
 %if trans.user_is_admin():
 <h3>Destination Parameters</h3>
     <table class="tabletip">
-        <thead>
-        <tr>
-            <th>Runner</th><th>${ job.job_runner_name }</th>
-        </tr>
-        </thead>
         <tbody>
-            <tr><td>Runner Job ID</td><td>${ job.job_runner_external_id }</td></tr>
-            <tr><td>Handler</td><td>${ job.handler }</td></tr>
+            <tr><th scope="row">Runner</th><td>${ job.job_runner_name }</td></tr>
+            <tr><th scope="row">Runner Job ID</th><td>${ job.job_runner_external_id }</td></tr>
+            <tr><th scope="row">Handler</th><td>${ job.handler }</td></tr>
             %if job.destination_params:
             %for (k, v) in job.destination_params.items():
-                <tr><td>${ k | h }</td>
+                <tr><th scope="row">${ k | h }</th>
                     <td>
                         %if str(k) in ('nativeSpecification', 'rank', 'requirements'):
                         <pre style="white-space: pre-wrap; word-wrap: break-word;">${ v | h }</pre>
