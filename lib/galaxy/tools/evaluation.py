@@ -561,12 +561,13 @@ class ToolEvaluator(object):
             return content, True
 
         content_format = content["format"]
+        handle_files = content["handle_files"]
         if content_format != "json":
             template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
             message = template % content_format
             raise Exception(message)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
