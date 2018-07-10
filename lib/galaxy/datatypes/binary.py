@@ -1510,8 +1510,8 @@ class IdpDB(SQlite):
 
 class GAFASQLite(SQlite):
     """Class describing a GAFA SQLite database"""
-    MetadataElement(name='gafa_schema_version', default='0.1.0', param=MetadataParameter, desc='GAFA schema version',
-                    readonly=True, visible=True, no_value='0.1.0')
+    MetadataElement(name='gafa_schema_version', default='0.3.0', param=MetadataParameter, desc='GAFA schema version',
+                    readonly=True, visible=True, no_value='0.3.0')
     file_ext = 'gafa.sqlite'
 
     def set_meta(self, dataset, overwrite=True, **kwd):
