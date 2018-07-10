@@ -276,12 +276,10 @@ ${ job.command_line | h }</pre>
     <table class="tabletip">
         <thead>
         <tr>
-            <th>Key</th>
-            <th>Value</th>
+            <th>Runner</th><th>${ job.job_runner_name }</th>
         </tr>
         </thead>
         <tbody>
-            <tr><td>Runner</td><td>${ job.job_runner_name }</td></tr>
             <tr><td>Runner Job ID</td><td>${ job.job_runner_external_id }</td></tr>
             <tr><td>Handler</td><td>${ job.handler }</td></tr>
             %if job.destination_params:
@@ -297,7 +295,6 @@ ${ job.command_line | h }</pre>
                 </tr>
             %endfor
             %endif
-
         </tbody>
     </table>
 %endif
