@@ -149,7 +149,7 @@ find_server() {
             exit 1
         fi
         [ "$server_config" != "none" ] && arg_getter_args="-c \"$server_config\""
-        [ -n "$server_app" ] && arg_getter_args="--app $server_app"
+        [ -n "$server_app" ] && arg_getter_args="$arg_getter_args --app $server_app"
         run_server="$UWSGI"
         server_args=
         if [ -z "$stop_daemon_arg_set" -a -z "$restart_arg_set" ]; then
