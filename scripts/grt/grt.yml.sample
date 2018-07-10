@@ -21,23 +21,6 @@ sanitization:
     tools:
         - __SET_METADATA__
         - upload1
-        - ucsc_table_direct1
-        - ucsc_table_direct_archaea1
-        - ebi_sra_main
-        - modENCODEfly
-        - intermine
-        - flymine
-        - modmine
-        - mousemine
-        - ratmine
-        - yeastmine
-        - modENCODEworm
-        - wormbase
-        - zebrafishmine
-        - eupathdb
-        - hbvar
-        - genomespace_importer
-        - genomespace_exporter
     # Or you can blacklist individual parameters from being submitted, e.g. if
     # you have API keys as a tool parameter.
     tool_params:
