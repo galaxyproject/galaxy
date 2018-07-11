@@ -6,6 +6,7 @@
     -ms-user-select: none; /* IE10+ */
 }
 
+// prevents transitions i.e. when reseting a progress bar
 .no-transition {
     -webkit-transition: none !important;
     -moz-transition: none !important;
@@ -14,6 +15,7 @@
     transition: none !important;
 }
 
+// rotates an element i.e. used for font-awesome icons
 .fa-rotate-45 {
     -webkit-transform: rotate(45deg);
     -moz-transform: rotate(45deg);
@@ -33,11 +35,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-clear-float {
     clear: both !important;
     float: none !important;
-}
-
-.ui-tags {
-    word-wrap: break-word;
-    padding-right: 25px;
 }
 
 .ui-column {
@@ -82,14 +79,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         .buttons {
             float: right;
         }
-    }
-}
-
-.ui-modal-styled {
-    @extend .ui-modal;
-    ul {
-        list-style-type: square;
-        padding: 5px 25px;
     }
 }
 

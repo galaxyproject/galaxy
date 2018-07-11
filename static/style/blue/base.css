@@ -10575,10 +10575,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   clear: both !important;
   float: none !important; }
 
-.ui-tags {
-  word-wrap: break-word;
-  padding-right: 25px; }
-
 .ui-column .ui-column-left {
   width: 49%;
   float: left; }
@@ -10598,23 +10594,19 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   display: none;
   word-wrap: break-word; }
 
-.ui-modal, .ui-modal-styled {
+.ui-modal {
   display: none;
   overflow: auto; }
-  .ui-modal .modal-header.no-separator, .ui-modal-styled .modal-header.no-separator {
+  .ui-modal .modal-header.no-separator {
     border: none !important;
     padding-bottom: 0px !important; }
-  .ui-modal .modal-backdrop, .ui-modal-styled .modal-backdrop {
+  .ui-modal .modal-backdrop {
     z-index: -1;
     opacity: 0.5; }
-  .ui-modal .modal-body, .ui-modal-styled .modal-body {
+  .ui-modal .modal-body {
     position: static; }
-  .ui-modal .modal-footer .buttons, .ui-modal-styled .modal-footer .buttons {
+  .ui-modal .modal-footer .buttons {
     float: right; }
-
-.ui-modal-styled ul {
-  list-style-type: square;
-  padding: 5px 25px; }
 
 .ui-button-default {
   float: right; }
