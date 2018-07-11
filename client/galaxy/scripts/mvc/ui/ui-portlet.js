@@ -15,7 +15,6 @@ export var View = Backbone.View.extend({
                 buttons: null,
                 body: null,
                 scrollable: true,
-                nopadding: false,
                 operations: null,
                 collapsible: false,
                 collapsible_button: false,
@@ -62,9 +61,6 @@ export var View = Backbone.View.extend({
         if (options.title_id) {
             this.$title.attr("id", options.title_id);
         }
-        _.each([this.$content, this.$body], $el => {
-            $el[options.nopadding ? "addClass" : "removeClass"]("no-padding");
-        });
 
         // render title icon
         if (options.icon) {
