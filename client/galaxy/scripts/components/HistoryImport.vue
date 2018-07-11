@@ -45,8 +45,8 @@ export default {
                             response.data.message
                         }&status=success`;
                     })
-                    .catch(response => {
-                        let message = response.responseJSON && response.responseJSON.err_msg;
+                    .catch(error => {
+                        let message = error.response.data && error.response.data.err_msg;
                         this.errorMessage = message || "Import failed for unkown reason.";
                     });
             }
