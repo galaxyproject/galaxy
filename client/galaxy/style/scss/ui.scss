@@ -152,30 +152,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: right;
 }
 
-// side panel
-.ui-side-panel {
-    color: $base-text-color;
-    background: $side-panel-bg;
-    padding: 10px;
-    min-height: 100%;
-    .ui-side-section-title {
-        font-weight: bold;
-    }
-    .ui-side-section-body {
-        .ui-side-section-body-title {
-            padding-top: 5px;
-            padding-bottom: 5px;
-            margin-left: 16px;
-            margin-right: 10px;
-            display: list-item;
-            list-style: square outside;
-        }
-        .ui-side-section-body-title:last-child {
-            padding-bottom: 15px;
-        }
-    }
-}
-
 // panel
 .ui-panel {
     .ui-panel-table {
