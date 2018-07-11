@@ -93,16 +93,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-// icons
-.ui-icon {
-    font-size: 1.2em;
-    width: 1.2em;
-}
-.ui-icon-button {
-    @extend .ui-icon;
-    cursor: pointer;
-}
-
 // buttons
 .ui-button-default {
     float: right;
