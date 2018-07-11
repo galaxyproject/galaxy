@@ -25,7 +25,7 @@ export default Backbone.View.extend({
             icon: "fa fa-gear",
             tooltip: "Change settings.",
             $el: $("<div/>")
-                .append(new Ui.Label({ title: "Provide a title:" }).$el)
+                .append("<label><b>Provide a title</b><label>")
                 .append(this.title.$el)
                 .append(
                     $("<div/>")

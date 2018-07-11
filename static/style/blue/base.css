@@ -10568,9 +10568,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   clear: both !important;
   float: none !important; }
 
-.ui-label {
-  font-weight: bold; }
-
 .ui-tags {
   word-wrap: break-word;
   padding-right: 25px; }
