@@ -172,24 +172,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 // tabs
-.ui-tabs {
-    .tab-operations {
-        float: right;
-        margin-bottom: 4px;
-        .ui-button-icon {
-            margin-left: 4px;
-        }
-    }
-    .tab-element {
-        cursor: pointer;
-    }
-    .tab-icon {
-        font-size: 1.1em;
-        margin-right: $ui-margin-horizontal;
-    }
-    .tab-delete {
-        font-size: 0.8em;
-        margin-left: $ui-margin-horizontal;
+.tabbable {
+    .nav-item {
         cursor: pointer;
     }
 }
