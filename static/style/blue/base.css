@@ -10571,12 +10571,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   clear: both !important;
   float: none !important; }
 
-.ui-error {
-  -moz-border-radius: 0.1875rem;
-  border-radius: 0.1875rem;
-  background: #f4a3a5;
-  padding: 0.375rem; }
-
 .ui-label {
   font-weight: bold; }
 

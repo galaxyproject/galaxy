@@ -95,7 +95,7 @@ export default Backbone.View.extend({
         // render error messages
         var error_text = this.model.get("error_text");
         this.$error[error_text ? "show" : "hide"]();
-        this.$el[error_text ? "addClass" : "removeClass"]("ui-error");
+        this.$el[error_text ? "addClass" : "removeClass"]("alert alert-danger");
         this.$error_text.html(error_text);
         // render backdrop
         this.$backdrop[this.model.get("backdrop") ? "show" : "hide"]();
@@ -134,7 +134,7 @@ export default Backbone.View.extend({
             .addClass("ui-form-element")
             .append(
                 $("<div/>")
-                    .addClass("ui-form-error ui-error")
+                    .addClass("ui-form-error")
                     .append($("<span/>").addClass("fa fa-arrow-down"))
                     .append($("<span/>").addClass("ui-form-error-text"))
             )

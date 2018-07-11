@@ -40,14 +40,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: none !important;
 }
 
-// non-interactive elements
-.ui-error {
-    -moz-border-radius: $border-radius-base;
-    border-radius: $border-radius-base;
-    background: $state-danger-bg;
-    padding: $ui-margin-vertical;
-}
-
 .ui-label {
     font-weight: bold;
 }
