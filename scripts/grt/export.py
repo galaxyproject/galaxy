@@ -135,7 +135,7 @@ def main(argv):
                         help="Set the logging level", default='warning')
     parser.add_argument("-b", "--batch-size", type=int, default=1000,
                         help="Batch size for sql queries")
-    parser.add_argument("-m", "--max-records", type=int, default=0,
+    parser.add_argument("-m", "--max-records", type=int, default=5000000,
                         help="Maximum number of records to include in a single report. This option should ONLY be used when reporting historical data. Setting this may require running GRT multiple times to capture all historical logs.")
     populate_config_args(parser)
 

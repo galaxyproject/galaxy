@@ -1,7 +1,7 @@
 grt:
     # Register at https://telescope.galaxyproject.org to obtain an Instance ID and API key
-    instance_id: 
-    api_key: 
+    instance_id:
+    api_key:
 
     # Galaxy Project offers a public galactic-radio-telescope instance, however
     # you are free to run your own if you need. We would love it if you were
