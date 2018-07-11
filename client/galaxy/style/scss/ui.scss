@@ -152,25 +152,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: right;
 }
 
-// panel
-.ui-panel {
-    .ui-panel-table {
-        margin-left: 20px;
-        margin-right: 20px;
-        .ui-panel-icon {
-            margin: 10px;
-            margin-right: 20px;
-            font-size: 1.6em;
-        }
-        .ui-panel-anchor {
-            font-weight: bold;
-        }
-    }
-    .ui-panel-footer {
-        margin-top: 10px;
-    }
-}
-
 // tabs
 .tabbable {
     .nav-item {

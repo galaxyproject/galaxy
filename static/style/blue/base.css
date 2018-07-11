@@ -10658,19 +10658,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   padding-right: 3px !important;
   float: right; }
 
-.ui-panel .ui-panel-table {
-  margin-left: 20px;
-  margin-right: 20px; }
-  .ui-panel .ui-panel-table .ui-panel-icon {
-    margin: 10px;
-    margin-right: 20px;
-    font-size: 1.6em; }
-  .ui-panel .ui-panel-table .ui-panel-anchor {
-    font-weight: bold; }
-
-.ui-panel .ui-panel-footer {
-  margin-top: 10px; }
-
 .tabbable .nav-item {
   cursor: pointer; }
 
