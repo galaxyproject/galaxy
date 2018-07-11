@@ -11029,7 +11029,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
       border-bottom-width: 0;
       border-top-color: #ffffff; }
 
-.ui-input, .ui-form-element .ui-form-preview, .ui-form-element-disabled .ui-form-preview, .ui-input-basic, .ui-select select, .ui-select .select2-container .select2-choice, .ui-textarea, .ui-options .ui-options-list, .ui-form-slider .ui-form-slider-text, .ui-select .select2-container-multi .select2-choices {
+.ui-input, .ui-form-element .ui-form-preview, .ui-form-element-disabled .ui-form-preview, .ui-input-basic, .ui-select select, .ui-select .select2-container .select2-choice, .ui-textarea, .ui-options .ui-options-list, .ui-select .select2-container-multi .select2-choices {
   width: 100%;
   display: block;
   height: calc(1.95rem + 2px);
@@ -11043,7 +11043,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   background: transparent;
   -webkit-appearance: none;
   -moz-border-radius: 0.1875rem; }
-  .ui-input[disabled], .ui-form-element [disabled].ui-form-preview, .ui-form-element-disabled [disabled].ui-form-preview, [disabled].ui-input-basic, .ui-select select[disabled], .ui-select .select2-container [disabled].select2-choice, [disabled].ui-textarea, .ui-options [disabled].ui-options-list, .ui-form-slider [disabled].ui-form-slider-text, .ui-select .select2-container-multi [disabled].select2-choices, .ui-input[readonly], .ui-form-element [readonly].ui-form-preview, .ui-form-element-disabled [readonly].ui-form-preview, [readonly].ui-input-basic, .ui-select select[readonly], .ui-select .select2-container [readonly].select2-choice, [readonly].ui-textarea, .ui-options [readonly].ui-options-list, .ui-form-slider [readonly].ui-form-slider-text, .ui-select .select2-container-multi [readonly].select2-choices,
+  .ui-input[disabled], .ui-form-element [disabled].ui-form-preview, .ui-form-element-disabled [disabled].ui-form-preview, [disabled].ui-input-basic, .ui-select select[disabled], .ui-select .select2-container [disabled].select2-choice, [disabled].ui-textarea, .ui-options [disabled].ui-options-list, .ui-select .select2-container-multi [disabled].select2-choices, .ui-input[readonly], .ui-form-element [readonly].ui-form-preview, .ui-form-element-disabled [readonly].ui-form-preview, [readonly].ui-input-basic, .ui-select select[readonly], .ui-select .select2-container [readonly].select2-choice, [readonly].ui-textarea, .ui-options [readonly].ui-options-list, .ui-select .select2-container-multi [readonly].select2-choices,
   fieldset[disabled] .ui-input,
   fieldset[disabled] .ui-form-element .ui-form-preview, .ui-form-element
   fieldset[disabled] .ui-form-preview,
@@ -11057,8 +11057,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   fieldset[disabled] .ui-textarea,
   fieldset[disabled] .ui-options .ui-options-list, .ui-options
   fieldset[disabled] .ui-options-list,
-  fieldset[disabled] .ui-form-slider .ui-form-slider-text, .ui-form-slider
-  fieldset[disabled] .ui-form-slider-text,
   fieldset[disabled] .ui-select .select2-container-multi .select2-choices, .ui-select .select2-container-multi
   fieldset[disabled] .select2-choices {
     cursor: not-allowed;
@@ -11108,18 +11106,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     content: "\f1db"; }
   .ui-options .ui-options-list input[type="radio"]:checked + label:before {
     content: "\f192"; }
-
-.ui-form-slider {
-  display: inline-block;
-  width: 100%; }
-  .ui-form-slider .ui-form-slider-left {
-    float: left;
-    width: 100px; }
-  .ui-form-slider .ui-form-slider-element {
-    width: calc(100% - 110px);
-    float: left;
-    top: 8px;
-    left: 10px; }
 
 .ui-radiobutton {
   top: -2px; }

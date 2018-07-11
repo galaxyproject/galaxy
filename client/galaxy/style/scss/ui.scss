@@ -743,26 +743,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-form-slider {
-    display: inline-block;
-    width: 100%;
-    .ui-form-slider-text {
-        @extend .ui-input;
-    }
-
-    .ui-form-slider-left {
-        float: left;
-        width: 100px;
-    }
-
-    .ui-form-slider-element {
-        width: calc(100% - 110px);
-        float: left;
-        top: 8px;
-        left: 10px;
-    }
-}
-
 .ui-radiobutton {
     top: -2px;
     input {
