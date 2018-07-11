@@ -40,28 +40,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: none !important;
 }
 
-// margins
-.ui-margin-top {
-    padding-top: $ui-margin-vertical !important;
-}
-
-.ui-margin-top-large {
-    padding-top: $ui-margin-vertical-large !important;
-}
-
-.ui-margin-bottom {
-    margin-bottom: $ui-margin-vertical !important;
-}
-
-.ui-margin-right {
-    margin-right: $ui-margin-horizontal-small !important;
-}
-
-.ui-margin-both {
-    @extend .ui-margin-top;
-    @extend .ui-margin-bottom;
-}
-
 // non-interactive elements
 .ui-error {
     -moz-border-radius: $border-radius-base;

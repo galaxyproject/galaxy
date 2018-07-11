@@ -242,7 +242,7 @@ export var Upload = Backbone.View.extend({
                 .append(
                     (this.$file = $("<input/>")
                         .attr("type", "file")
-                        .addClass("ui-margin-bottom"))
+                        .addClass("mb-1"))
                 )
                 .append(
                     (this.$text = $("<textarea/>")

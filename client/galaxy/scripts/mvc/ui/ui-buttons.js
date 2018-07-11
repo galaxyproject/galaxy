@@ -53,13 +53,13 @@ var ButtonDefault = Backbone.View.extend({
         this.$title.removeClass().addClass("title");
         if (options.wait) {
             this.$el.addClass(options.wait_cls).prop("disabled", true);
-            this.$icon.addClass("fa-spinner fa-spin ui-margin-right");
+            this.$icon.addClass("fa-spinner fa-spin mr-1");
             this.$title.html(options.wait_text);
         } else {
             this.$el.addClass(options.cls);
             this.$icon.addClass(options.icon);
             this.$title.html(options.title);
-            options.icon && options.title && this.$icon.addClass("ui-margin-right");
+            options.icon && options.title && this.$icon.addClass("mr-1");
         }
     },
 
@@ -173,7 +173,7 @@ var ButtonCheck = Backbone.View.extend({
         this.$title.html(options.title);
         this.$icon
             .removeClass()
-            .addClass("icon fa ui-margin-right")
+            .addClass("icon fa mr-1")
             .addClass(options.icons[options.value]);
     },
 
@@ -239,7 +239,7 @@ var ButtonIcon = ButtonDefault.extend({
             .addClass("icon fa")
             .addClass(options.icon);
         this.$title.addClass("title").html(options.title);
-        options.icon && options.title && this.$icon.addClass("ui-margin-right");
+        options.icon && options.title && this.$icon.addClass("mr-1");
     }
 });
 
@@ -304,7 +304,7 @@ var ButtonMenu = ButtonDefault.extend({
             .removeClass()
             .addClass("title")
             .html(options.title);
-        options.icon && options.title && this.$icon.addClass("ui-margin-right");
+        options.icon && options.title && this.$icon.addClass("mr-1");
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")

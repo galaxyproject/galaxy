@@ -82,7 +82,7 @@ export default FormBase.extend({
         if (!this.model.get("collapsible")) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-margin-top-large")
+                    .addClass("mt-2")
                     .append(this._footer())
             );
         }

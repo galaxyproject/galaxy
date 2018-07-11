@@ -33,7 +33,7 @@
                                     <div class="icon-dropdown fa fa-caret-down"/>
                                 </div>
                                 <button type="button" class="ui-button-default ui-float-left btn btn-primary" @click="create(plugin)">
-                                    <i class="icon fa fa-check ui-margin-right"/>
+                                    <i class="icon fa fa-check"/>
                                     <span class="title">Create Visualization</span>
                                 </button>
                             </div>

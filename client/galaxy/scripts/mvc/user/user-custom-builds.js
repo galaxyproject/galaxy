@@ -45,14 +45,14 @@ var View = Backbone.View.extend({
                         .append(
                             $("<h4/>")
                                 .text("System Installed Builds")
-                                .addClass("ui-margin-top")
+                                .addClass("mt-1")
                         )
                         .append(this.installed_builds.$el))
                 )
                 .append(
                     $("<h4/>")
                         .text("Add a Custom Build")
-                        .addClass("ui-margin-top")
+                        .addClass("mt-1")
                 )
                 .append(
                     $("<span/>")
@@ -61,7 +61,7 @@ var View = Backbone.View.extend({
                             $("<div/>")
                                 .addClass("ui-column-left")
                                 .append(this.message.$el)
-                                .append((this.$form = $("<div/>").addClass("ui-margin-top")))
+                                .append((this.$form = $("<div/>").addClass("mt-1")))
                         )
                         .append((this.$help = $("<div/>").addClass("ui-column-right")))
                 )

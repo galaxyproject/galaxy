@@ -142,7 +142,7 @@ var View = Backbone.View.extend({
     _template: function(options) {
         return (
             '<div class="ui-list">' +
-            '<div class="ui-margin-top">' +
+            '<div class="mt-1">' +
             '<span class="ui-list-button"/>' +
             '<span class="ui-list-select"/>' +
             "</div>" +

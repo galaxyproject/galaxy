@@ -29,7 +29,7 @@ export default Backbone.View.extend({
                 .append(this.title.$el)
                 .append(
                     $("<div/>")
-                        .addClass("ui-form-info ui-margin-bottom")
+                        .addClass("ui-form-info")
                         .html("This title will appear in the list of 'Saved Visualizations'.")
                 )
                 .append(new Settings(this.app).$el)
