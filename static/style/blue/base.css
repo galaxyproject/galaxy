@@ -11183,27 +11183,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
       padding-top: 85px;
       padding-bottom: 5px; }
 
-.ui-list .ui-list-select {
-  float: left;
-  width: calc(100% - 30px); }
-
-.ui-list .ui-list-button .ui-button-icon {
-  margin-top: 3px;
-  margin-right: 5px;
-  float: left; }
-
-.ui-list .ui-list-message,
-.ui-list .ui-list-portlet {
-  clear: both;
-  padding-top: 1px; }
-
-.ui-list .ui-list-id {
-  cursor: pointer;
-  margin-top: 5px; }
-  .ui-list .ui-list-id .ui-list-delete {
-    font-size: 1.2em;
-    margin-right: 5px; }
-
 .ui-gs-select-file .ui-gs-filename-textbox {
   float: right;
   width: calc(100% - 76px); }

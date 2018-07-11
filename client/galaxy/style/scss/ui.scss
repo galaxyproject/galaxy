@@ -842,33 +842,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-list {
-    .ui-list-select {
-        float: left;
-        width: calc(100% - 30px);
-    }
-    .ui-list-button {
-        .ui-button-icon {
-            margin-top: 3px;
-            margin-right: 5px;
-            float: left;
-        }
-    }
-    .ui-list-message,
-    .ui-list-portlet {
-        clear: both;
-        padding-top: 1px;
-    }
-    .ui-list-id {
-        cursor: pointer;
-        margin-top: 5px;
-        .ui-list-delete {
-            font-size: 1.2em;
-            margin-right: 5px;
-        }
-    }
-}
-
 .ui-gs-select-file {
     .ui-gs-filename-textbox {
         float: right;
