@@ -2,6 +2,7 @@
 Manager and serializer for cloud-based storages.
 """
 
+import datetime
 import logging
 import os
 import random
@@ -215,5 +216,55 @@ class CloudManager(sharable.SharableModelManager):
         os.remove(staging_file_name)
         return datasets
 
-    def copy_to(self, dataset, provider, bucket, obj):
-        raise NotImplementedError
+    def copy_to(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+        """
+        Implements the logic of copying dataset(s) belonging to a given history to a given cloud-based storage
+        (e.g., Amazon S3).
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type  history_id: string
+        :param history_id: the (encoded) id of history from which the object should be copied.
+
+        :type  provider: string
+        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
+        `SUPPORTED_PROVIDERS` variable.
+
+        :type  bucket: string
+        :param bucket: the name of a bucket to which data should be copied (e.g., a bucket name on AWS S3).
+
+        :type  credentials: dict
+        :param credentials: a dictionary containing all the credentials required to authenticated to the
+        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+
+        :type  dataset_ids: set
+        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given history which
+        should be copied to the given provider. If not provided, Galaxy copies all the datasets belonging to the
+        given history.
+
+        :type  overwrite_existing: boolean
+        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the dataset
+        to be copied already exist in the bucket, Galaxy replaces the existing object with the dataset to
+        be copied. If set to "False", Galaxy appends datatime to the dataset name to prevent overwriting
+        existing, if any, object.
+
+        :rtype:     void
+        :return:    void
+        """
+        if CloudProviderFactory is None:
+            raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+        connection = self._configure_provider(provider, credentials)
+
+        bucket_obj = connection.object_store.get(bucket)
+        if bucket_obj is None:
+            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
+
+        history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        for hda in history.datasets:
+            if dataset_ids is None or hda.dataset.id in dataset_ids:
+                object_label = hda.name
+                if overwrite_existing is False and bucket_obj.get(object_label) is not None:
+                    object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+                created_obj = bucket_obj.create_object(object_label)
+                created_obj.upload_from_file(hda.dataset.get_file_name())
