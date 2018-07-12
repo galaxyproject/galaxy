@@ -141,7 +141,12 @@ def add_file(dataset, registry, output_path):
         # Move the dataset to its "real" path. converted_path is a tempfile so we move it even if purge_source is False.
         if purge_source or converted_path:
             try:
-                shutil.move(converted_path or dataset.path, output_path)
+                # If user has indicated that the original file to be purged and have converted_path tempfile
+                if purge_source and converted_path:
+                    shutil.move(converted_path, output_path)
+                    os.remove(dataset.path)
+                else:
+                    shutil.move(converted_path or dataset.path, output_path)
             except OSError as e:
                 # We may not have permission to remove the input
                 if e.errno != errno.EACCES:
