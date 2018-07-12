@@ -185,7 +185,8 @@ var HistoryView = _super.extend(
             return faIconButton({
                 title: _l("Operations on multiple datasets"),
                 classes: "show-selectors-btn",
-                faIcon: "fa-check-square-o"
+                faIcon: "fa-check-square-o",
+                tooltipConfig: { placement: "top" }
             }).prependTo($where.find(".controls .actions"));
         },
 
@@ -574,11 +575,11 @@ HistoryView.prototype.templates = (() => {
 
             '<div class="list-actions">',
             '<div class="btn-group">',
-            '<button class="select-all btn btn-default"',
+            '<button class="select-all btn btn-secondary"',
             'data-mode="select">',
             _l("All"),
             "</button>",
-            '<button class="deselect-all btn btn-default"',
+            '<button class="deselect-all btn btn-secondary"',
             'data-mode="select">',
             _l("None"),
             "</button>",

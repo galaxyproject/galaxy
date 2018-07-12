@@ -1,5 +1,5 @@
 configparser==3.5.0; python_version < '3.2'
-enum34==1.1.6; python_version <= '2.7'
+enum34==1.1.6; python_version < '3.4'
 flake8-import-order==0.17.1
 flake8==3.5.0
 mccabe==0.6.1

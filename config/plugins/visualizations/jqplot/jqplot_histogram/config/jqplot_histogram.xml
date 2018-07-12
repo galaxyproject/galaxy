@@ -6,7 +6,7 @@
     </macros>
     <description>Derives a discrete histogram from tabular data using R and renders a regular bar diagram using jqPlot hosted at http://www.jqplot.com.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" load="jqplot_histogram"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_histogram"/>
     <specs>
         <expand macro="specs"/>
         <confirm>True</confirm>

@@ -79,7 +79,7 @@ export var Message = Backbone.View.extend({
                 }, 3000);
             }
         } else {
-            this.$el.fadeOut();
+            this.$el.hide();
         }
         return this;
     },
@@ -187,28 +187,46 @@ export var Hidden = Backbone.View.extend({
 /** Creates an input element which switches between select and text field */
 export var TextSelect = Backbone.View.extend({
     initialize: function(options) {
-        this.text = new Input(options);
-        var classes = {
-            "checkboxes": Checkbox,
-            "radio": Radio,
-            "radiobutton": RadioButton
-        }
-        var SelectClass = classes[options.display] || Select;
-        this.select = new SelectClass.View(options);
-        this.setElement($("<div/>").append(this.select.$el)
-                                   .append(this.text.$el));
-        this.update(options.data);
+        this.select = new options.SelectClass.View(options);
+        this.model = this.select.model;
+        this.text = new Input({
+            onchange: this.model.get("onchange")
+        });
+        this.on("change", () => {
+            if (this.model.get("onchange")) {
+                this.model.get("onchange")(this.value());
+            }
+        });
+        this.setElement(
+            $("<div/>")
+                .append(this.select.$el)
+                .append(this.text.$el)
+        );
+        this.update(options);
+    },
+    wait: function() {
+        this.select.wait();
+    },
+    unwait: function() {
+        this.select.unwait();
     },
     value: function(new_val) {
         var element = this.textmode ? this.text : this.select;
         return element.value(new_val);
     },
-    update: function(options) {
+    update: function(input_def) {
+        var data = input_def.data;
+        if (!data) {
+            data = [];
+            _.each(input_def.options, option => {
+                data.push({ label: option[0], value: option[1] });
+            });
+        }
         var v = this.value();
-        this.textmode = !$.isArray(options) || options.length === 0;
+        this.textmode = input_def.textable && (!$.isArray(data) || data.length === 0);
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
-        this.select.update(options);
+        this.select.update({ data: data });
         this.value(v);
     }
 });

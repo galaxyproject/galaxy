@@ -31,19 +31,10 @@ class DatatypesController(BaseAPIController):
                     return [ext for ext in datatypes_registry.datatypes_by_extension]
             else:
                 rval = []
-                for elem in datatypes_registry.datatype_elems:
-                    if not asbool(elem.get('display_in_upload')) and upload_only:
+                for datatype_info_dict in datatypes_registry.datatype_info_dicts:
+                    if not datatype_info_dict.get('display_in_upload') and upload_only:
                         continue
-                    keys = ['extension', 'description', 'description_url']
-                    dictionary = {}
-                    for key in keys:
-                        dictionary[key] = elem.get(key)
-                    extension = elem.get('extension')
-                    if extension in datatypes_registry.datatypes_by_extension:
-                        composite_files = datatypes_registry.datatypes_by_extension[extension].composite_files
-                        if composite_files:
-                            dictionary['composite_files'] = [_.dict() for _ in composite_files.values()]
-                    rval.append(dictionary)
+                    rval.append(datatype_info_dict)
                 return rval
         except Exception as exception:
             log.error('could not get datatypes: %s', str(exception), exc_info=True)

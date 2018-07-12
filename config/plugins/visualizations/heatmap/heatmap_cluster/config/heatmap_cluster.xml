@@ -5,7 +5,7 @@
         <import>../../heatmap_default/config/heatmap_shared.xml</import>
     </macros>
     <description>Applies hierarchical clustering to a matrix using R. The data has to be provided in 3-column format. The result is displayed as clustered heatmap.</description>
-    <entry_point entry_point_type="chart" src="../heatmap_default/static/script.js" load="heatmap_cluster"/>
+    <entry_point entry_point_type="chart" src="../../heatmap_default/static/script.js" load="heatmap_cluster"/>
     <expand macro="shared"/>
     <specs>
         <tag>svg</tag>

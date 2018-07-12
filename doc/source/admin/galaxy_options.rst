@@ -446,6 +446,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``watch_job_rules``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to True to enable monitoring of dynamic job rules. If changes
+    are found, rules are automatically reloaded. Takes the same values
+    as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -834,8 +846,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``file``
 :Type: str
@@ -847,8 +859,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/data``
 :Type: str
@@ -860,8 +872,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/lock``
 :Type: str
@@ -2170,54 +2182,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~
-``graphite_host``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~
-``graphite_port``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``2003``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~
-``graphite_prefix``
-~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``galaxy``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~
 ``library_import_dir``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -2476,10 +2440,11 @@
     Galaxy encodes various internal values when these values will be
     output in some format (for example, in a URL or cookie).  You
     should set a key to be used by the algorithm that encodes and
-    decodes these values.  It can be any string up to 448 bits long.
-    One simple way to generate a value for this is with the shell
-    command:   python -c 'from __future__ import print_function;
-    import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+    decodes these values. It can be any string with a length between 5
+    and 56 bytes. One simple way to generate a value for this is with
+    the shell command:   python -c 'from __future__ import
+    print_function; import time; print(time.time())' | md5sum | cut -f
+    1 -d ' '
 :Default: ``USING THE DEFAULT IS NOT SECURE!``
 :Type: str
 
@@ -2693,7 +2658,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2709,7 +2675,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2729,6 +2696,26 @@
     10.10.10.10,10.0.1.0/24,fd00::/8
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables GDPR Compliance mode. This makes several changes to the
+    way Galaxy logs and exposes data externally such as removing
+    emails and usernames from logs and bug reports. It also causes the
+    delete user admin action to permanently redact their username and
+    password, but not to delete data associated with the account as
+    this is not currently easily implementable.  You are responsible
+    for removing personal data from backups.  This forces
+    expose_user_email and expose_user_name to be false, and forces
+    user_deletion to be true to support the right to erasure.  Please
+    read the GDPR section under the special topics area of the admin
+    documentation.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2917,6 +2904,36 @@
 :Description:
     If OpenID is enabled, consumer cache directory to use.
 :Default: ``database/openid_consumer_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``enable_oidc``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables OpenID Connect (OIDC) support.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``oidc_config_file``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC configuration file.
+:Default: ``config/oidc_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC backends configuration file.
+:Default: ``config/oidc_backends_config.xml``
 :Type: str
 
 

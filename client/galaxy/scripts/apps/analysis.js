@@ -1,5 +1,5 @@
-import jQuery from "jquery";
-var $ = jQuery;
+import $ from "jquery";
+import "bootstrap";
 import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
@@ -8,12 +8,14 @@ import HistoryPanel from "./panels/history-panel";
 import Page from "layout/page";
 import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
+import Sharing from "components/Sharing.vue";
 import UserPreferences from "mvc/user/user-preferences";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import WorkflowImport from "components/WorkflowImport.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import HistoryList from "mvc/history/history-list";
@@ -56,18 +58,20 @@ window.app = function app(options, bootstrapped) {
             "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
+            "(/)pages(/)sharing(/)": "show_pages_sharing",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
-            "(/)visualizations/show/(:visualization_id)": "show_visualizations_client",
+            "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
-            "(/)workflows/import_workflow": "show_import_workflow",
-            "(/)workflows/run(/)": "show_run",
+            "(/)workflows/import": "show_workflows_import",
+            "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
+            "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
@@ -126,6 +130,19 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_visualizations_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Visualizations",
+                    model_class: "Visualization"
+                }
+            }).$mount(vm);
+        },
+
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
@@ -167,6 +184,19 @@ window.app = function app(options, bootstrapped) {
                     redirect: "histories/list"
                 })
             );
+        },
+
+        show_histories_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Histories",
+                    model_class: "History"
+                }
+            }).$mount(vm);
         },
 
         show_histories_import: function() {
@@ -235,6 +265,19 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_pages_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Pages",
+                    model_class: "Page"
+                }
+            }).$mount(vm);
+        },
+
         show_plugins: function() {
             var pluginListInstance = Vue.extend(PluginList);
             var vm = document.createElement("div");
@@ -256,12 +299,15 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
-        show_run: function() {
+        show_workflows_run: function() {
             this._loadWorkflow();
         },
 
-        show_import_workflow: function() {
-            this.page.display(new Workflows.ImportWorkflowView());
+        show_workflows_import: function() {
+            var workflowImportInstance = Vue.extend(WorkflowImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new workflowImportInstance().$mount(vm);
         },
 
         show_custom_builds: function() {

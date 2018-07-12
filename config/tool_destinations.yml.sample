@@ -3,7 +3,7 @@
 #
 # Under tools is where you put the IDs of the tools. Tool IDs must be
 # distinct. In each tool is a list of rules, each of which contain rule-specific
-# paremeters. Dynamic Tool Destination is set up to allow and fix a few light errors
+# parameters. Dynamic Tool Destination is set up to allow and fix a few light errors
 # in the config, but it's best to follow the specified template.
 #
 # default_destination, the second key property, specifies which global destination
@@ -101,7 +101,7 @@
 #
 # **The rule will allow the lower_bound, up to but not including the upper_bound
 #
-# The third rule_type is arguments, which has arguments as a mandatory parameter ontop of
+# The third rule_type is arguments, which has arguments as a mandatory parameter on top of
 # the base mandatory parameters. The arguments parameter is specified using the following
 # template:
 #

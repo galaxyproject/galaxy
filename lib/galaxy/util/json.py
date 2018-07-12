@@ -8,25 +8,14 @@ import math
 import random
 import string
 
-from six import iteritems, string_types, text_type
+from six import iteritems, string_types
 
-__all__ = ("safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
+__all__ = ("safe_dumps", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
 
 log = logging.getLogger(__name__)
 
 to_json_string = json.dumps
 from_json_string = json.loads
-
-
-def json_fix(val):
-    if isinstance(val, list):
-        return [json_fix(v) for v in val]
-    elif isinstance(val, dict):
-        return dict([(json_fix(k), json_fix(v)) for (k, v) in iteritems(val)])
-    elif isinstance(val, text_type):
-        return val.encode("utf8")
-    else:
-        return val
 
 
 def swap_inf_nan(val):
@@ -83,6 +72,18 @@ def safe_dumps(*args, **kwargs):
     if kwargs.get('escape_closing_tags', True):
         return dumped.replace('</', '<\\/')
     return dumped
+
+
+def safe_dumps_formatted(obj):
+    """Attempt to format an object for display.
+
+    If serialization fails, the object's string representation will be returned instead.
+    """
+    try:
+        return safe_dumps(obj, sort_keys=True, indent=4, separators=(',', ': '))
+    except TypeError:
+        log.warning("JSON serialization failed for object: %s", str(obj))
+        return str(obj)
 
 
 # Methods for handling JSON-RPC

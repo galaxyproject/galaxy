@@ -4,13 +4,14 @@ var path = require("path");
 var scriptsBase = path.join(__dirname, "galaxy/scripts");
 var libsBase = path.join(scriptsBase, "libs");
 
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+
 // libraries used on almost every page
 var commonLibs = [
     "polyfills",
     // jquery et al
     "jquery",
     "libs/jquery/jquery.migrate",
-    // jquery plugins
     "libs/jquery/jquery.autocomplete",
     "libs/jquery/jquery.event.hover",
     "libs/jquery/jquery.event.drag",
@@ -23,8 +24,8 @@ var commonLibs = [
     "libs/jquery/jstorage",
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
-    "libs/bootstrap",
-    "libs/bootstrap-tour",
+    "bootstrap",
+    "bootstrap-tour",
     "vue",
     // mvc
     "libs/underscore",
@@ -72,7 +73,7 @@ let buildconfig = {
             },
             {
                 test: /\.js$/,
-                exclude: [/(node_modules\/(?!(vue-handsontable-official)\/)|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -86,6 +87,13 @@ let buildconfig = {
                         loader: "expose-loader",
                         options: "$"
                     }
+                ]
+            },
+            {
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader'
                 ]
             }
         ]
@@ -113,8 +121,9 @@ let buildconfig = {
             "window.jQuery": "jquery",
             _: "underscore",
             Backbone: "libs/backbone"
-        })
+        }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
+        new VueLoaderPlugin()
     ]
 };
 

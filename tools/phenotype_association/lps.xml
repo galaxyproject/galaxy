@@ -1,179 +1,159 @@
 <tool id="hgv_lps" name="LPS" version="1.0.0">
-  <description>LASSO-Patternsearch algorithm</description>
+    <description>LASSO-Patternsearch algorithm</description>
+    <requirements>
+        <requirement type="package">lps_tool</requirement>
+    </requirements>
 
-  <command interpreter="bash">
-    lps_tool_wrapper.sh $lambda_fac $input_file $label_column $output_file $log_file
-    Initialization 0
-    #if $advanced.options == "true":
-      Sample $advanced.sample
-      Verbosity $advanced.verbosity
-      Standardize $advanced.standardize
-      initialLambda $advanced.initialLambda
-      #if $advanced.continuation.continuation == "1":
+    <command>
+bash '$__tool_directory__/lps_tool_wrapper.sh' $lambda_fac '$input_file' $label_column '$output_file' '$log_file'
+Initialization 0
+#if $advanced.options == "true":
+    Sample $advanced.sample
+    Verbosity $advanced.verbosity
+    Standardize $advanced.standardize
+    initialLambda $advanced.initialLambda
+    #if $advanced.continuation.continuation == "1":
         Continuation $advanced.continuation.continuation
         continuationSteps $advanced.continuation.continuationSteps
         accurateIntermediates $advanced.continuation.accurateIntermediates
-      #end if
-      printFreq $advanced.printFreq
-      #if $advanced.newton.newton == "1":
+    #end if
+    printFreq $advanced.printFreq
+    #if $advanced.newton.newton == "1":
         Newton $advanced.newton.newton
         NewtonThreshold $advanced.newton.newtonThreshold
-      #end if
-      HessianSampleFraction $advanced.hessianSampleFraction
-      BB 0
-      Monotone 0
-      FullGradient $advanced.fullGradient
-      GradientFraction $advanced.gradientFraction
-      InitialAlpha $advanced.initialAlpha
-      AlphaIncrease $advanced.alphaIncrease
-      AlphaDecrease $advanced.alphaDecrease
-      AlphaMax $advanced.alphaMax
-      c1 $advanced.c1
-      MaxIter $advanced.maxIter
-      StopTol $advanced.stopTol
-      IntermediateTol $advanced.intermediateTol
-      FinalOnly $advanced.finalOnly
     #end if
-  </command>
+    HessianSampleFraction $advanced.hessianSampleFraction
+    BB 0
+    Monotone 0
+    FullGradient $advanced.fullGradient
+    GradientFraction $advanced.gradientFraction
+    InitialAlpha $advanced.initialAlpha
+    AlphaIncrease $advanced.alphaIncrease
+    AlphaDecrease $advanced.alphaDecrease
+    AlphaMax $advanced.alphaMax
+    c1 $advanced.c1
+    MaxIter $advanced.maxIter
+    StopTol $advanced.stopTol
+    IntermediateTol $advanced.intermediateTol
+    FinalOnly $advanced.finalOnly
+#end if
+    </command>
 
-  <inputs>
-    <param name="input_file" type="data" format="tabular" label="Dataset"/>
-    <param name="label_column" type="data_column" data_ref="input_file" numerical="true" label="Label column" help="Column containing outcome labels: +1 or -1."/>
-    <param name="lambda_fac" label="Lambda_fac" type="float" value="0.03" help="Target value of the regularization parameter, expressed as a fraction of the calculated lambda_max.">
-      <validator type="in_range" message="0.00 &lt; lambda_fac &lt;= 1.00" min="0.00" max="1.00"/>
-    </param>
-    <conditional name="advanced">
-      <param name="options" type="select" label="Advanced Options">
-        <option value="false" selected="true">Hide advanced options</option>
-        <option value="true">Show advanced options</option>
-      </param>
-      <when value="false">
-        <!-- no options -->
-      </when>
-      <when value="true">
-        <!-- HARDCODED: 'Sample' we don't support passing an array -->
-        <param name="sample" type="float" value="1.0" label="Sample fraction" help="Sample this fraction of the data set.">
-          <validator type="in_range" message="0.0 &lt;= sample &lt;= 1.0" min="0.0" max="1.0"/>
+    <inputs>
+        <param name="input_file" type="data" format="tabular" label="Dataset"/>
+        <param name="label_column" type="data_column" data_ref="input_file" numerical="true" label="Label column" help="Column containing outcome labels: +1 or -1."/>
+        <param name="lambda_fac" label="Lambda_fac" type="float" value="0.03" help="Target value of the regularization parameter, expressed as a fraction of the calculated lambda_max.">
+            <validator type="in_range" message="0.00 &lt; lambda_fac &lt;= 1.00" min="0.00" max="1.00"/>
         </param>
-        <!-- HARDCODED: 'Initialization' = 0 :: Initialize at beta=0 -->
-        <param name="verbosity" type="select" format="integer" label="Verbosity">
-          <option value="0" selected="true">Little output</option>
-          <option value="1">More output</option>
-          <option value="2">Still more output</option>
-        </param>
-        <param name="standardize" type="select" format="integer" label="Standardize" help="Scales and shifts each column so that it has mean zero and variance 1.">
-          <option value="0" selected="true">Don't standardize</option>
-          <option value="1">Standardize</option>
-        </param>
-        <param name="initialLambda" type="float" value="0.8" label="Initial lambda" help="First value of lambda to be used in the continuation scheme, expressed as a fraction of lambda_max.">
-          <validator type="in_range" message="0.0 &lt; initialLambda &lt; 1.0" min="0.0" max="1.0"/>
-        </param>
-        <conditional name="continuation">
-          <param name="continuation" type="select" format="integer" label="Continuation" help="Use continuation strategy to start with a larger value of lambda, decreasing it successively to lambda_fac.">
-            <option value="0" selected="true">Don't use continuation</option>
-            <option value="1">Use continuation</option>
-          </param>
-          <when value="0">
-            <!-- no options -->
-          </when>
-          <when value="1">
-            <param name="continuationSteps" type="integer" value="5" label="Continuation steps" help="Number of lambda values to use in continuation &lt;em&gt;prior&lt;/em&gt; to target value lambda_fac."/>
-
-            <param name="accurateIntermediates" type="select" format="integer" label="Accurate intermediates" help="Indicates whether accurate solutions are required for lambda values other than the target value lambda_fac.">
-              <option value="0" selected="true">Don't need accurate intemediates</option>
-              <option value="1">Calculate accurate intermediates</option>
+        <conditional name="advanced">
+            <param name="options" type="select" label="Advanced Options">
+                <option value="false" selected="true">Hide advanced options</option>
+                <option value="true">Show advanced options</option>
             </param>
-          </when>
-        </conditional> <!-- name="continuation" -->
-        <param name="printFreq" type="integer" value="1" label="Print frequency" help="Print a progress report every NI iterations, where NI is the supplied value of this parameter.">
-          <validator type="in_range" message="printFreq &gt;= 1" min="1"/>
-        </param>
-        <conditional name="newton">
-          <param name="newton" type="select" format="integer" label="Projected Newton steps">
-            <option value="0" selected="true">No Newton steps</option>
-            <option value="1">Try projected Newton steps</option>
-          </param>
-          <when value="0">
-            <!-- no options -->
-          </when>
-          <when value="1">
-            <param name="newtonThreshold" type="integer" value="500" label="Newton threshold" help="Maximum size of free variable subvector for Newton."/>
-          </when>
-        </conditional>
-        <param name="hessianSampleFraction" type="float" value="1.0" label="Hessian sample fraction" help="Fraction of terms to use in approximate Hessian calculation.">
-          <validator type="in_range" message="0.01 &lt; hessianSampleFraction &lt;= 1.00" min="0.01" max="1.00"/>
-        </param>
-        <!-- HARDCODED: 'BB' = 0 :: don't use Barzilai-Borwein steps -->
-        <!-- HARDCODED: 'Monotone' = 0 :: don't force monotonicity -->
-        <param name="fullGradient" type="select" format="integer" label="Partial gradient vector selection">
-          <option value="0">Use randomly selected partial gradient, including current active components ("biased")</option>
-          <option value="1">Use full gradient vector at every step</option>
-          <option value="2">Randomly selected partial gradient, without regard to current active set ("unbiased")</option>
-        </param>
-        <param name="gradientFraction" type="float" value="0.1" label="Gradient fraction" help="Fraction of inactive gradient vector to evaluate.">
-          <validator type="in_range" message="0.0 &lt; gradientFraction &lt;= 1" min="0.0" max="1.0"/>
-        </param>
-        <param name="initialAlpha" type="float" value="1.0" label="Initial value of alpha"/>
-        <param name="alphaIncrease" type="float" value="2.0" label="Alpha increase" help="Factor by which to increase alpha after descent not obtained."/>
-        <param name="alphaDecrease" type="float" value="0.8" label="Alpha decrease" help="Factor by which to decrease alpha after successful first-order step."/>
-        <param name="alphaMax" type="float" value="1e12" label="Alpha max" help="Maximum value of alpha; terminate with error if we exceed this."/>
-        <param name="c1" type="float" value="1e-3" help="Parameter defining the margin by which the first-order step is required to decrease before being taken.">
-          <validator type="in_range" message="0.0 &lt; c1 &lt; 1.0" min="0.0" max="1.0"/>
-        </param>
-        <param name="maxIter" type="integer" value="10000" label="Maximum number of iterations" help="Terminate with error if we exceed this."/>
-        <param name="stopTol" type="float" value="1e-6" label="Stop tolerance" help="Convergence tolerance for target value of lambda."/>
-        <param name="intermediateTol" type="float" value="1e-4" label="Intermediate tolerance" help="Convergence tolerance for intermediate values of lambda."/>
-        <param name="finalOnly" type="select" format="integer" label="Final only">
-          <option value="0" selected="true">Return information for all intermediate values</option>
-          <option value="1">Just return information at the last lambda</option>
-        </param>
-      </when> <!-- value="advanced" -->
-    </conditional> <!-- name="advanced" -->
-  </inputs>
+            <when value="false" />
+            <when value="true">
+                <!-- HARDCODED: 'Sample' we don't support passing an array -->
+                <param name="sample" type="float" min="0.0" max="1.0" value="1.0" label="Sample fraction" help="Sample this fraction of the data set" />
+                <!-- HARDCODED: 'Initialization' = 0 :: Initialize at beta=0 -->
+                <param name="verbosity" type="select" format="integer" label="Verbosity">
+                    <option value="0" selected="true">Little output</option>
+                    <option value="1">More output</option>
+                    <option value="2">Still more output</option>
+                </param>
+                <param name="standardize" type="select" format="integer" label="Standardize" help="Scales and shifts each column so that it has mean zero and variance 1.">
+                    <option value="0" selected="true">Don't standardize</option>
+                    <option value="1">Standardize</option>
+                </param>
+                <param name="initialLambda" type="float" min="0.0" max="1.0" value="0.8" label="Initial lambda" help="First value of lambda to be used in the continuation scheme, expressed as a fraction of lambda_max" />
+                <conditional name="continuation">
+                    <param name="continuation" type="select" format="integer" label="Continuation" help="Use continuation strategy to start with a larger value of lambda, decreasing it successively to lambda_fac.">
+                        <option value="0" selected="true">Don't use continuation</option>
+                        <option value="1">Use continuation</option>
+                    </param>
+                    <when value="0" />
+                    <when value="1">
+                        <param name="continuationSteps" type="integer" value="5" label="Continuation steps" help="Number of lambda values to use in continuation &lt;em&gt;prior&lt;/em&gt; to target value lambda_fac."/>
+                        <param name="accurateIntermediates" type="select" format="integer" label="Accurate intermediates" help="Indicates whether accurate solutions are required for lambda values other than the target value lambda_fac.">
+                            <option value="0" selected="true">Don't need accurate intemediates</option>
+                            <option value="1">Calculate accurate intermediates</option>
+                        </param>
+                    </when>
+                </conditional> <!-- name="continuation" -->
+                <param name="printFreq" type="integer" min="1" value="1" label="Print frequency" help="Print a progress report every NI iterations, where NI is the supplied value of this parameter" />
+                <conditional name="newton">
+                    <param name="newton" type="select" format="integer" label="Projected Newton steps">
+                        <option value="0" selected="true">No Newton steps</option>
+                        <option value="1">Try projected Newton steps</option>
+                    </param>
+                    <when value="0" />
+                    <when value="1">
+                        <param name="newtonThreshold" type="integer" value="500" label="Newton threshold" help="Maximum size of free variable subvector for Newton."/>
+                    </when>
+                </conditional>
+                <param name="hessianSampleFraction" type="float" min="0.01" max="1.00" value="1.0" label="Hessian sample fraction" help="Fraction of terms to use in approximate Hessian calculation" />
+                <!-- HARDCODED: 'BB' = 0 :: don't use Barzilai-Borwein steps -->
+                <!-- HARDCODED: 'Monotone' = 0 :: don't force monotonicity -->
+                <param name="fullGradient" type="select" format="integer" label="Partial gradient vector selection">
+                    <option value="0">Use randomly selected partial gradient, including current active components ("biased")</option>
+                    <option value="1">Use full gradient vector at every step</option>
+                    <option value="2">Randomly selected partial gradient, without regard to current active set ("unbiased")</option>
+                </param>
+                <param name="gradientFraction" type="float" min="0.0" max="1.0" value="0.1" label="Gradient fraction" help="Fraction of inactive gradient vector to evaluate" />
+                <param name="initialAlpha" type="float" value="1.0" label="Initial value of alpha"/>
+                <param name="alphaIncrease" type="float" value="2.0" label="Alpha increase" help="Factor by which to increase alpha after descent not obtained."/>
+                <param name="alphaDecrease" type="float" value="0.8" label="Alpha decrease" help="Factor by which to decrease alpha after successful first-order step."/>
+                <param name="alphaMax" type="float" value="1e12" label="Alpha max" help="Maximum value of alpha; terminate with error if we exceed this."/>
+                <param name="c1" type="float" min="0.0" max="1.0" value="1e-3" help="Parameter defining the margin by which the first-order step is required to decrease before being taken" />
+                <param name="maxIter" type="integer" value="10000" label="Maximum number of iterations" help="Terminate with error if we exceed this."/>
+                <param name="stopTol" type="float" value="1e-6" label="Stop tolerance" help="Convergence tolerance for target value of lambda."/>
+                <param name="intermediateTol" type="float" value="1e-4" label="Intermediate tolerance" help="Convergence tolerance for intermediate values of lambda."/>
+                <param name="finalOnly" type="select" format="integer" label="Final only">
+                    <option value="0" selected="true">Return information for all intermediate values</option>
+                    <option value="1">Just return information at the last lambda</option>
+                </param>
+            </when> <!-- value="advanced" -->
+        </conditional> <!-- name="advanced" -->
+    </inputs>
 
-  <outputs>
-    <data name="output_file" format="tabular" label="${tool.name} on ${on_string}: results"/>
-    <data name="log_file" format="txt" label="${tool.name} on ${on_string}: log"/>
-  </outputs>
+    <outputs>
+        <data name="output_file" format="tabular" label="${tool.name} on ${on_string}: results"/>
+        <data name="log_file" format="txt" label="${tool.name} on ${on_string}: log"/>
+    </outputs>
 
-  <requirements>
-    <requirement type="package">lps_tool</requirement>
-  </requirements>
+    <tests>
+        <test>
+            <param name="input_file" value="lps_arrhythmia.tabular"/>
+            <param name="label_column" value="280"/>
+            <param name="lambda_fac" value="0.03"/>
+            <param name="options" value="true"/>
+            <param name="sample" value="1.0"/>
+            <param name="verbosity" value="1"/>
+            <param name="standardize" value="0"/>
+            <param name="initialLambda" value="0.9"/>
+            <param name="continuation" value="1"/>
+            <param name="continuationSteps" value="10"/>
+            <param name="accurateIntermediates" value="0"/>
+            <param name="printFreq" value="1"/>
+            <param name="newton" value="1"/>
+            <param name="newtonThreshold" value="500"/>
+            <param name="hessianSampleFraction" value="1.0"/>
+            <param name="fullGradient" value="1"/>
+            <param name="gradientFraction" value="0.5"/>
+            <param name="initialAlpha" value="1.0"/>
+            <param name="alphaIncrease" value="2.0"/>
+            <param name="alphaDecrease" value="0.8"/>
+            <param name="alphaMax" value="1e12"/>
+            <param name="c1" value="1e-3"/>
+            <param name="maxIter" value="2500"/>
+            <param name="stopTol" value="1e-6"/>
+            <param name="intermediateTol" value="1e-6"/>
+            <param name="finalOnly" value="0"/>
+            <output name="output_file" file="lps_arrhythmia_beta.tabular"/>
+            <output name="log_file" file="lps_arrhythmia_log.txt"/>
+        </test>
+    </tests>
 
-  <tests>
-    <test>
-      <param name="input_file" value="lps_arrhythmia.tabular"/>
-      <param name="label_column" value="280"/>
-      <param name="lambda_fac" value="0.03"/>
-      <param name="options" value="true"/>
-      <param name="sample" value="1.0"/>
-      <param name="verbosity" value="1"/>
-      <param name="standardize" value="0"/>
-      <param name="initialLambda" value="0.9"/>
-      <param name="continuation" value="1"/>
-      <param name="continuationSteps" value="10"/>
-      <param name="accurateIntermediates" value="0"/>
-      <param name="printFreq" value="1"/>
-      <param name="newton" value="1"/>
-      <param name="newtonThreshold" value="500"/>
-      <param name="hessianSampleFraction" value="1.0"/>
-      <param name="fullGradient" value="1"/>
-      <param name="gradientFraction" value="0.5"/>
-      <param name="initialAlpha" value="1.0"/>
-      <param name="alphaIncrease" value="2.0"/>
-      <param name="alphaDecrease" value="0.8"/>
-      <param name="alphaMax" value="1e12"/>
-      <param name="c1" value="1e-3"/>
-      <param name="maxIter" value="2500"/>
-      <param name="stopTol" value="1e-6"/>
-      <param name="intermediateTol" value="1e-6"/>
-      <param name="finalOnly" value="0"/>
-      <output name="ouput_file" file="lps_arrhythmia_beta.tabular"/>
-      <output name="log_file" file="lps_arrhythmia_log.txt"/>
-    </test>
-  </tests>
-
-  <help>
+    <help>
 **Dataset formats**
 
 The input and output datasets are tabular_.  The columns are described below.
@@ -270,18 +250,6 @@ Website: http://pages.cs.wisc.edu/~swright/LPS/
       number of iterations required:     43
     etc.
 
------
-
-**References**
-
-Koh K, Kim S-J, Boyd S. (2007)
-An interior-point method for large-scale l1-regularized logistic regression.
-Journal of Machine Learning Research. 8:1519-1555.
-
-Shi W, Wahba G, Wright S, Lee K, Klein R, Klein B. (2008)
-LASSO-Patternsearch algorithm with application to ophthalmology and genomic data.
-Stat Interface. 1(1):137-153.
-
 <!--
 Wright S, Novak R, Figueiredo M. (2009)
 Sparse reconstruction via separable approximation.
@@ -299,25 +267,18 @@ Wright S. (2010)
 Accelerated block-coordinate relaxation for regularized optimization.
 Technical Report. University of Wisconsin. August 10, 2010.
 -->
-
-  </help>
-  <citations>
-    <citation type="bibtex">@ARTICLE{Kim07aninterior-point,
+    </help>
+    <citations>
+        <citation type="bibtex">
+@ARTICLE{Kim07aninterior-point,
     author = {Seung-jean Kim and Kwangmoo Koh and Michael Lustig and Stephen Boyd and Dimitry Gorinevsky},
     title = {An interior-point method for large-scale l1-regularized logistic regression},
     journal = {Journal of Machine Learning Research},
     year = {2007},
     volume = {8},
     pages = {1519--1555},
-}</citation>
-    <citation type="bibtex">@ARTICLE{Shi08lasso-patternsearchalgorithm,
-    author = {Weiliang Shi and Grace Wahba and Stephen Wright and Kristine Lee and Ronald Klein and Barbara Klein},
-    title = {LASSO-Patternsearch Algorithm with Application to Ophthalmology and Genomic Data},
-    journal= {Stat Interface},
-    year = {2008},
-    volume = {1},
-    number = {1},
-    pages = {137--153}
-}</citation>
-  </citations>
+}
+        </citation>
+        <citation type="doi">10.4310/SII.2008.v1.n1.a12</citation>
+    </citations>
 </tool>

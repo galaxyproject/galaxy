@@ -6,7 +6,7 @@
     </macros>
     <description>Renders a line chart using jqPlot hosted at http://www.jqplot.com.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../jqplot_bar/static/script.js" load="jqplot_line"/>
+    <entry_point entry_point_type="chart" src="../../jqplot_bar/static/script.js" css="../../jqplot_bar/static/script.css" load="jqplot_line"/>
     <specs>
         <expand macro="specs"/>
     </specs>

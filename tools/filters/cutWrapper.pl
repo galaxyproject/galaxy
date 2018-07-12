@@ -28,7 +28,7 @@ foreach ( split /,/, $ARGV[1] ) {
     $start =~ s/c//ig;
     $end =~ s/c//ig;
     for $i ($start .. $end) {
-       push (@columns, $i); 
+       push (@columns, $i);
     }
   }
 }
@@ -47,7 +47,7 @@ my $column_delimiters_href = {
 
 $del = $column_delimiters_href->{$ARGV[2]};
 
-open (OUT, ">$ARGV[3]") or die "Cannot create $ARGV[2]:$!\n";
+open (OUT, ">$ARGV[3]") or die "Cannot create $ARGV[3]:$!\n";
 open (IN,  "<$ARGV[0]") or die "Cannot open $ARGV[0]:$!\n";
 
 while (my $line=<IN>) {
@@ -62,7 +62,7 @@ while (my $line=<IN>) {
        } else {
          push(@out, ".");
        }
-     }    
+     }
      print OUT join("\t",@out), "\n";
      @out = ();
    }
@@ -70,7 +70,7 @@ while (my $line=<IN>) {
 
 #while (<IN>) {
 #  chop;
-#  @in = split /$del/; 
+#  @in = split /$del/;
 #  foreach $field (@columns) {
 #    if (defined($in[$field-1])) {
 #      push(@out, $in[$field-1]);
@@ -84,4 +84,3 @@ while (my $line=<IN>) {
 close IN;
 
 close OUT;
-    

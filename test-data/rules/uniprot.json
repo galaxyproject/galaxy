@@ -25,7 +25,7 @@
       "type": "add_column_regex",
       "target_column": 0,
       "expression": ".*",
-      "replacement": "http://www.uniprot.org/uniprot/$&.fasta"
+      "replacement": "http://www.uniprot.org/uniprot/\\0.fasta"
     }
   ],
   "mapping": [

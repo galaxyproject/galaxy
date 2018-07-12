@@ -1,5 +1,5 @@
 <%
-    root = h.url_for( "/" )
+    root = h.url_for( "/static/" )
     app_root = root + "plugins/visualizations/unipept/static/"
 %>
 

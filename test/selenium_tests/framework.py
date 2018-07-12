@@ -290,7 +290,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         self.driver = get_driver()
         # New workflow index page does not degrade well to smaller sizes, needed
         # to increase this.
-        self.driver.set_window_size(1280, 900)
+        # Needed to up the height for paired list creator being taller in BS4 branch.
+        self.driver.set_window_size(1280, 1000)
 
         self._setup_galaxy_logging()
 
@@ -381,6 +382,12 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+    def workflow_upload_yaml_with_random_name(self, content, **kwds):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
 
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
@@ -503,9 +510,9 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route):
+    def _get(self, route, data={}):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
     def _post(self, route, data={}):

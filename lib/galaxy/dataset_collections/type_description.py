@@ -39,12 +39,22 @@ class CollectionTypeDescription(object):
     'list'
     >>> nested_type_description.effective_collection_type_description(paired_type_description).collection_type
     'list'
+    >>> nested_type_description.child_collection_type()
+    'paired'
     """
 
     def __init__(self, collection_type, collection_type_description_factory):
         self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
         self.__has_subcollections = self.collection_type.find(":") > 0
+
+    def child_collection_type(self):
+        rank_collection_type = self.rank_collection_type()
+        return self.collection_type[len(rank_collection_type) + 1:]
+
+    def child_collection_type_description(self):
+        child_collection_type = self.child_collection_type()
+        return self.collection_type_description_factory.for_collection_type(child_collection_type)
 
     def effective_collection_type_description(self, subcollection_type):
         effective_collection_type = self.effective_collection_type(subcollection_type)

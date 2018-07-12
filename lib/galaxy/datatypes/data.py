@@ -16,6 +16,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import (
     compression_utils,
     FILENAME_VALID_CHARS,
@@ -115,15 +116,6 @@ class Data(object):
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
         self.display_applications = odict()
-
-    @property
-    def validate_mode(self):
-        """Indicate that a sniffer should run, even if disabled.
-
-        Some sniffers (e.g. fastq.gz) work but are not enabled for certain reasons, but when running a sniffer to
-        "validate" a selected filetype, those sniffers should be enabled.
-        """
-        return os.environ.get('GALAXY_SNIFFER_VALIDATE_MODE', '0') == '1'
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -940,7 +932,7 @@ class Newick(Text):
     """New Hampshire/Newick Format"""
     edam_data = "data_0872"
     edam_format = "format_1910"
-    file_ext = "nhx"
+    file_ext = "newick"
 
     def __init__(self, **kwd):
         """Initialize foobar datatype"""
@@ -961,6 +953,7 @@ class Newick(Text):
         return ['phyloviz']
 
 
+@build_sniff_from_prefix
 class Nexus(Text):
     """Nexus format as used By Paup, Mr Bayes, etc"""
     edam_data = "data_0872"
@@ -974,15 +967,9 @@ class Nexus(Text):
     def init_meta(self, dataset, copy_from=None):
         Text.init_meta(self, dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
-        with open(filename, "r") as f:
-            firstline = f.readline().upper()
-
-        if "#NEXUS" in firstline:
-            return True
-        else:
-            return False
+        return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
     def get_visualizations(self, dataset):
         """
@@ -1015,8 +1002,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     :type  is_multi_byte: bool
 
     >>> fname = get_test_fname('4.bed')
-    >>> get_file_peek(fname, LINE_COUNT=1)
-    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
+    >>> assert get_file_peek(fname, LINE_COUNT=1) == u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very

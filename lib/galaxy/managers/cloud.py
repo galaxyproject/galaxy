@@ -2,7 +2,6 @@
 Manager and serializer for cloud-based storages.
 """
 
-import datetime
 import logging
 import os
 import random
@@ -133,9 +132,9 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def download(self, trans, history_id, provider, bucket, obj, credentials):
+    def copy_from(self, trans, history_id, provider, bucket, obj, credentials):
         """
-        Implements the logic of downloading a file from a cloud-based storage (e.g., Amazon S3)
+        Implements the logic of copying a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
@@ -178,12 +177,12 @@ class CloudManager(sharable.SharableModelManager):
         staging_file_name = os.path.abspath(os.path.join(
             trans.app.config.new_file_path,
             "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
-        staging_file = open(staging_file_name, "w+")
-        key.save_content(staging_file)
 
-        datasets = []
-        with open(staging_file_name, "r") as f:
-            content = f.read()
+        with open(staging_file_name, "w+b") as staging_file:
+            key.save_content(staging_file)
+            staging_file.seek(0)
+            datasets = []
+            content = staging_file.read()
             headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
 
             input_file = FieldStorage(headers=headers)
@@ -213,59 +212,8 @@ class CloudManager(sharable.SharableModelManager):
                 hids.update({staging_file: output['out_data'][0][1].hid})
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
-        staging_file.close()
         os.remove(staging_file_name)
         return datasets
 
-    def upload(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
-        """
-        Implements the logic of uploading dataset(s) belonging to a given history to a given cloud-based storage
-        (e.g., Amazon S3).
-
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans: Galaxy web transaction
-
-        :type  history_id: string
-        :param history_id: the (encoded) id of history from which the object should be uploaded.
-
-        :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
-
-        :type  bucket: string
-        :param bucket: the name of a bucket to which data should be uploaded (e.g., a bucket name on AWS S3).
-
-        :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
-
-        :type  dataset_ids: set
-        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given history which
-        should be uploaded to the given provider. If not provided, Galaxy uploads all the datasets belonging to the
-        given history.
-
-        :type  overwrite_existing: boolean
-        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the dataset
-        to be uploaded already exist in the bucket, Galaxy replaces the existing object with the dataset to
-        be uploaded. If set to "False", Galaxy appends datatime to the dataset name to prevent overwriting
-        existing, if any, object.
-
-        :rtype:     void
-        :return:    void
-        """
-        if CloudProviderFactory is None:
-            raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-        connection = self._configure_provider(provider, credentials)
-
-        bucket_obj = connection.object_store.get(bucket)
-        if bucket_obj is None:
-            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
-
-        history = trans.sa_session.query(trans.app.model.History).get(history_id)
-        for hda in history.datasets:
-            if dataset_ids is None or hda.dataset.id in dataset_ids:
-                object_label = hda.name
-                if overwrite_existing is False and bucket_obj.get(object_label) is not None:
-                    object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-                created_obj = bucket_obj.create_object(object_label)
-                created_obj.upload_from_file(hda.dataset.get_file_name())
+    def copy_to(self, dataset, provider, bucket, obj):
+        raise NotImplementedError

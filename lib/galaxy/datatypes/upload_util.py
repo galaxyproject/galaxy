@@ -1,5 +1,11 @@
+import os
+
 from galaxy.datatypes import sniff
-from galaxy.datatypes.binary import Binary
+from galaxy.util.checkers import (
+    check_binary,
+    is_single_file_zip,
+    is_zip,
+)
 
 
 class UploadProblemException(Exception):
@@ -8,40 +14,76 @@ class UploadProblemException(Exception):
         self.message = message
 
 
-def handle_unsniffable_binary_check(data_type, ext, path, name, is_binary, requested_ext, check_content, registry):
-    """Return modified values of data_type and ext if unsniffable binary encountered.
+def handle_upload(
+    registry,
+    path,  # dataset.path
+    requested_ext,  # dataset.file_type
+    name,  # dataset.name,
+    tmp_prefix,
+    tmp_dir,
+    check_content,
+    link_data_only,
+    in_place,
+    auto_decompress,
+    convert_to_posix_lines,
+    convert_spaces_to_tabs,
+):
+    stdout = None
+    converted_path = None
 
-    Throw UploadProblemException if content problems or extension mismatches occur.
+    # Does the first 1K contain a null?
+    is_binary = check_binary(path)
 
-    Precondition: check_binary called returned True.
-    """
-    if is_binary or registry.is_extension_unsniffable_binary(requested_ext):
-        # We have a binary dataset, but it is not Bam, Sff or Pdf
-        data_type = 'binary'
-        parts = name.split(".")
-        if len(parts) > 1:
-            ext = parts[-1].strip().lower()
-            is_ext_unsniffable_binary = registry.is_extension_unsniffable_binary(ext)
-            if check_content and not is_ext_unsniffable_binary:
-                raise UploadProblemException('The uploaded binary file contains inappropriate content')
+    # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
+    # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
+    if not link_data_only:
+        if auto_decompress and is_zip(path) and not is_single_file_zip(path):
+            stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
+        try:
+            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file_internal(
+                path,
+                registry,
+                ext=requested_ext,
+                tmp_prefix=tmp_prefix,
+                tmp_dir=tmp_dir,
+                in_place=in_place,
+                check_content=check_content,
+                is_binary=is_binary,
+                auto_decompress=auto_decompress,
+                uploaded_file_ext=os.path.splitext(name)[1].lower().lstrip('.'),
+                convert_to_posix_lines=convert_to_posix_lines,
+                convert_spaces_to_tabs=convert_spaces_to_tabs,
+            )
+        except sniff.InappropriateDatasetContentError as exc:
+            raise UploadProblemException(str(exc))
+    elif requested_ext == 'auto':
+        ext = sniff.guess_ext(path, registry.sniff_order, is_binary=is_binary)
+    else:
+        ext = requested_ext
 
-            elif is_ext_unsniffable_binary and requested_ext != ext:
-                err_msg = "You must manually set the 'File Format' to '%s' when uploading %s files." % (ext, ext)
-                raise UploadProblemException(err_msg)
-    return data_type, ext
+    # The converted path will be the same as the input path if no conversion was done (or in-place conversion is used)
+    converted_path = None if converted_path == path else converted_path
 
+    # Validate datasets where the filetype was explicitly set using the filetype's sniffer (if any)
+    if requested_ext != 'auto':
+        datatype = registry.get_datatype_by_extension(requested_ext)
+        # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
+        if check_content and hasattr(datatype, 'sniff') and not datatype.sniff(path):
+            stdout = ("Warning: The file 'Type' was set to '{ext}' but the file does not appear to be of that"
+                      " type".format(ext=requested_ext))
 
-def handle_sniffable_binary_check(data_type, ext, path, registry):
-    """Return modified values of data_type and ext if sniffable binary encountered.
+    # Handle unsniffable binaries
+    if is_binary and ext == 'binary':
+        upload_ext = os.path.splitext(name)[1].lower().lstrip('.')
+        if registry.is_extension_unsniffable_binary(upload_ext):
+            stdout = ("Warning: The file's datatype cannot be determined from its contents and was guessed based on"
+                     " its extension, to avoid this warning, manually set the file 'Type' to '{ext}' when uploading"
+                     " this type of file".format(ext=upload_ext))
+            ext = upload_ext
+        else:
+            stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
+                      " manually")
 
-    Precondition: check_binary called returned True.
-    """
-    # Sniff the data type
-    guessed_ext = sniff.guess_ext(path, registry.sniff_order)
-    # Set data_type only if guessed_ext is a binary datatype
-    datatype = registry.get_datatype_by_extension(guessed_ext)
-    if isinstance(datatype, Binary):
-        data_type = guessed_ext
-        ext = guessed_ext
+    datatype = registry.get_datatype_by_extension(ext)
 
-    return data_type, ext
+    return stdout, ext, datatype, is_binary, converted_path

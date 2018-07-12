@@ -14,12 +14,13 @@ from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
-from galaxy.datatypes.sniff import iter_headers
+from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
 from galaxy.util import nice_size, string_as_bool
 
 log = logging.getLogger(__name__)
 
 
+@build_sniff_from_prefix
 class Html(Text):
     """Class describing an html file"""
     edam_format = "format_2331"
@@ -37,7 +38,7 @@ class Html(Text):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in html format
 
@@ -49,13 +50,14 @@ class Html(Text):
         >>> Html().sniff( fname )
         True
         """
-        headers = iter_headers(filename, None)
+        headers = iter_headers(file_prefix, None)
         for i, hdr in enumerate(headers):
             if hdr and hdr[0].lower().find('<html>') >= 0:
                 return True
         return False
 
 
+@build_sniff_from_prefix
 class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
@@ -72,30 +74,27 @@ class Json(Text):
         """Returns the mime type of the datatype"""
         return 'application/json'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
             Try to load the string with the json module. If successful it's a json file.
         """
-        return self._looks_like_json(filename)
+        return self._looks_like_json(file_prefix)
 
-    def _looks_like_json(self, filename):
+    def _looks_like_json(self, file_prefix):
         # Pattern used by SequenceSplitLocations
-        if os.path.getsize(filename) < 50000:
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
             try:
-                json.load(open(filename, "r"))
+                json.loads(file_prefix.contents_header)
                 return True
             except Exception:
                 return False
         else:
-            with open(filename, "r") as fh:
-                while True:
-                    # Grab first chunk of file and see if it looks like json.
-                    start = fh.read(100).strip()
-                    if start:
-                        # simple types are valid JSON as well - but would such a file
-                        # be interesting as JSON in Galaxy?
-                        return start.startswith("[") or start.startswith("{")
+            start = file_prefix.string_io().read(100).strip()
+            if start:
+                # simple types are valid JSON as well - but would such a file
+                # be interesting as JSON in Galaxy?
+                return start.startswith("[") or start.startswith("{")
             return False
 
     def display_peek(self, dataset):
@@ -105,6 +104,7 @@ class Json(Text):
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class Ipynb(Json):
     file_ext = "ipynb"
 
@@ -116,13 +116,14 @@ class Ipynb(Json):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
             Try to load the string with the json module. If successful it's a json file.
         """
-        if self._looks_like_json(filename):
+        if self._looks_like_json(file_prefix):
             try:
-                ipynb = json.load(open(filename))
+                with open(file_prefix.filename) as f:
+                    ipynb = json.load(f)
                 if ipynb.get('nbformat', False) is not False and ipynb.get('metadata', False):
                     return True
                 else:
@@ -161,6 +162,7 @@ class Ipynb(Json):
         pass
 
 
+@build_sniff_from_prefix
 class Biom1(Json):
     """
         BIOM version 1.0 file format description
@@ -186,13 +188,13 @@ class Biom1(Json):
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         is_biom = False
-        if self._looks_like_json(filename):
-            is_biom = self._looks_like_biom(filename)
+        if self._looks_like_json(file_prefix):
+            is_biom = self._looks_like_biom(file_prefix)
         return is_biom
 
-    def _looks_like_biom(self, filepath, load_size=50000):
+    def _looks_like_biom(self, file_prefix, load_size=50000):
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
@@ -201,7 +203,7 @@ class Biom1(Json):
         is_biom = False
         segment_size = int(load_size / 2)
         try:
-            with open(filepath, "r") as fh:
+            with open(file_prefix.filename, "r") as fh:
                 prev_str = ""
                 segment_str = fh.read(segment_size)
                 if segment_str.strip().startswith('{'):
@@ -255,6 +257,7 @@ class Biom1(Json):
                         pass
 
 
+@build_sniff_from_prefix
 class Obo(Text):
     """
         OBO file format description
@@ -272,25 +275,26 @@ class Obo(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
             Try to guess the Obo filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
         """
         stanza = re.compile(r'^\[.*\]$')
-        with open(filename) as handle:
-            first_line = handle.readline()
-            if not first_line.startswith('format-version:'):
-                return False
+        handle = file_prefix.string_io()
+        first_line = handle.readline()
+        if not first_line.startswith('format-version:'):
+            return False
 
-            for line in handle:
-                if stanza.match(line.strip()):
-                    # a stanza needs to begin with an ID tag
-                    if handle.next().startswith('id:'):
-                        return True
+        for line in handle:
+            if stanza.match(line.strip()):
+                # a stanza needs to begin with an ID tag
+                if next(handle).startswith('id:'):
+                    return True
         return False
 
 
+@build_sniff_from_prefix
 class Arff(Text):
     """
         An ARFF (Attribute-Relation File Format) file is an ASCII text file that describes a list of instances sharing a set of attributes.
@@ -312,31 +316,31 @@ class Arff(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
             Try to guess the Arff filetype.
             It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
         """
-        with open(filename) as handle:
-            relation_found = False
-            attribute_found = False
-            for line_count, line in enumerate(handle):
-                if line_count > 1000:
-                    # only investigate the first 1000 lines
-                    return False
-                line = line.strip()
-                if not line:
-                    continue
+        handle = file_prefix.string_io()
+        relation_found = False
+        attribute_found = False
+        for line_count, line in enumerate(handle):
+            if line_count > 1000:
+                # only investigate the first 1000 lines
+                return False
+            line = line.strip()
+            if not line:
+                continue
 
-                start_string = line[:20].upper()
-                if start_string.startswith("@RELATION"):
-                    relation_found = True
-                elif start_string.startswith("@ATTRIBUTE"):
-                    attribute_found = True
-                elif start_string.startswith("@DATA"):
-                    # @DATA should be the last data block
-                    if relation_found and attribute_found:
-                        return True
+            start_string = line[:20].upper()
+            if start_string.startswith("@RELATION"):
+                relation_found = True
+            elif start_string.startswith("@ATTRIBUTE"):
+                attribute_found = True
+            elif start_string.startswith("@DATA"):
+                # @DATA should be the last data block
+                if relation_found and attribute_found:
+                    return True
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -543,11 +547,12 @@ class SnpSiftDbNSFP(Text):
                 dataset.blurb = 'file purged from disc'
 
 
+@build_sniff_from_prefix
 class IQTree(Text):
     """IQ-TREE format"""
     file_ext = 'iqtree'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Detect the IQTree file
 
@@ -567,7 +572,4 @@ class IQTree(Text):
         >>> IQTree().sniff(fname)
         False
         """
-        with open(filename, 'r') as fio:
-            return fio.read(7) == "IQ-TREE"
-
-        return False
+        return file_prefix.startswith("IQ-TREE")

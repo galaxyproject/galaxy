@@ -8,7 +8,7 @@
     ##data = list( hda.datatype.dataset_column_dataprovider( hda, limit=10000 ) )
 
     # Use root for resource loading.
-    root = h.url_for( '/' )
+    root = h.url_for( '/static/' )
 %>
 ## ----------------------------------------------------------------------------
 

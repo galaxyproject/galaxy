@@ -1,5 +1,5 @@
 <template>
-  <base-grid :is-loaded="isLoaded" :columns="columns">
+  <base-grid :is-loaded="isLoaded" :columns="columns" id="data-tables-grid">
     <template slot="title">
       Current data table registry contains {{ rows.length }} data tables
     </template>

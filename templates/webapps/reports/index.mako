@@ -36,7 +36,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'><span>Reports</span>
             <a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}">
-                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-default primary-button" type="button"><span class="fa fa-home"></span></button>
+                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-secondary primary-button" type="button"><span class="fa fa-home"></span></button>
             </a>
         </div>
     </div>

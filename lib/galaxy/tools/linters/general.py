@@ -1,7 +1,10 @@
 """This module contains a linting functions for general aspects of the tool."""
 import re
 
+import packaging.version
+
 ERROR_VERSION_MSG = "Tool version is missing or empty."
+WARN_VERSION_MSG = "Tool version [%s] is not compliant with PEP 440."
 VALID_VERSION_MSG = "Tool defines a version [%s]."
 
 ERROR_NAME_MSG = "Tool name is missing or empty."
@@ -21,8 +24,11 @@ lint_tool_types = ["*"]
 def lint_general(tool_source, lint_ctx):
     """Check tool version, name, and id."""
     version = tool_source.parse_version()
+    parsed_version = packaging.version.parse(version)
     if not version:
         lint_ctx.error(ERROR_VERSION_MSG)
+    elif isinstance(parsed_version, packaging.version.LegacyVersion):
+        lint_ctx.warn(WARN_VERSION_MSG % version)
     else:
         lint_ctx.valid(VALID_VERSION_MSG % version)
 

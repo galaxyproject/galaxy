@@ -5,6 +5,7 @@
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">newick</test>
             <test test_attr="ext" result_type="datatype">nhx</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
@@ -12,7 +13,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="static/script.js"/>
+    <entry_point entry_point_type="chart" src="script.js"/>
     <settings>
         <input>
             <label>Tree types</label>

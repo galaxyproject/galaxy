@@ -6,7 +6,7 @@
     </macros>
     <description>Renders a scatter plot using NVD3 hosted at http://www.nvd3.org.</description>
     <expand macro="data"/>
-    <entry_point entry_point_type="chart" src="../nvd3_bar/static/nvd3.js" css="../nvd3_bar/static/nvd3.css" load="nvd3_bar_stacked"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_bar_stacked"/>
     <specs>
         <expand macro="specs"/>
         <use_panels>no</use_panels>

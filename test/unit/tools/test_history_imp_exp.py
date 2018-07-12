@@ -147,9 +147,9 @@ class HistoryArchive(object):
             f.write(contents)
         # TarFile.add() (via TarFile.gettarinfo()) strips leading '/' and is
         # unsuitable for our purposes
-        ti = self.tar_file.gettarinfo(fileobj=open(path))
+        ti = self.tar_file.gettarinfo(fileobj=open(path, 'rb'))
         ti.name = self._arcname(fname)
-        self.tar_file.addfile(ti, fileobj=open(path))
+        self.tar_file.addfile(ti, fileobj=open(path, 'rb'))
 
     def write_link(self, fname, target):
         self._create_parent(fname)

@@ -91,7 +91,7 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'bool',
     }),
     ('virtualenv', {
-        'desc': """Path to the application's Python virtual environment.""",
+        'desc': """Path to the application's Python virtual environment. If using Conda for Galaxy's framework dependencies (not tools!), do not set this.""",
         'default': '.venv',
         'type': 'str',
     }),

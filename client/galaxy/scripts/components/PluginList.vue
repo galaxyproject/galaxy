@@ -59,7 +59,7 @@ export default {
             name: null,
             error: null,
             fixed: false
-        }
+        };
     },
     created() {
         let url = `${Galaxy.root}api/plugins`;
@@ -69,13 +69,14 @@ export default {
             this.selected = dataset_id;
             url += `?dataset_id=${dataset_id}`;
         }
-        axios.get(url)
-        .then(response => {
-            this.plugins = response.data;
-        })
-        .catch(e => {
-            this.error = this._errorMessage(e);
-        })
+        axios
+            .get(url)
+            .then(response => {
+                this.plugins = response.data;
+            })
+            .catch(e => {
+                this.error = this._errorMessage(e);
+            });
     },
     methods: {
         select: function(plugin) {
@@ -84,17 +85,18 @@ export default {
             } else {
                 let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
                 if (history_id) {
-                    axios.get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
-                    .then(response => {
-                        this.name = plugin.name;
-                        this.hdas = response.data && response.data.hdas;
-                        if (this.hdas && this.hdas.length > 0) {
-                            this.selected = this.hdas[0].id;
-                        }
-                    })
-                    .catch(e => {
-                        this.error = this._errorMessage(e);
-                    })
+                    axios
+                        .get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
+                        .then(response => {
+                            this.name = plugin.name;
+                            this.hdas = response.data && response.data.hdas;
+                            if (this.hdas && this.hdas.length > 0) {
+                                this.selected = this.hdas[0].id;
+                            }
+                        })
+                        .catch(e => {
+                            this.error = this._errorMessage(e);
+                        });
                 } else {
                     this.error = "This option requires an accessible history.";
                 }
@@ -109,9 +111,11 @@ export default {
             }
         },
         match: function(plugin) {
-            return !this.search ||
-                   plugin.name.indexOf(this.search) != -1 ||
-                   (plugin.description && plugin.description.indexOf(this.search) != -1);
+            return (
+                !this.search ||
+                plugin.name.indexOf(this.search) != -1 ||
+                (plugin.description && plugin.description.indexOf(this.search) != -1)
+            );
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
@@ -131,6 +135,6 @@ export default {
 }
 .ui-float-left {
     float: left;
-    margin-top:10px;
+    margin-top: 10px;
 }
 </style>

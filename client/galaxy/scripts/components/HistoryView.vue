@@ -1,20 +1,20 @@
 <template>
     <div id="structured-history-view">
         <div id="history-view-controls" class="clear"> 
-            <div class="pull-left">
+            <div class="float-left">
                 <span v-if="historyHistory['purged'] == false" >
                     <span v-if="historyData.user_is_owner == false" >
-                        <button id="import" class="btn btn-default">Import and start using history</button>
+                        <button id="import" class="btn btn-secondary">Import and start using history</button>
                     </span>
-                    <span v-if="historyData.history_is_current == false">
-                        <button id="switch-history" class="btn btn-default" v-on:click="switchHistory">Switch to this history</button>
+                    <span v-if="historyData.user_is_owner && historyData.history_is_current == false">
+                        <button id="switch-history" class="btn btn-secondary" v-on:click="switchHistory">Switch to this history</button>
                     </span>
-                    <button id="show-structure" class="btn btn-default" v-on:click="showStructure">Show structure</button>
+                    <button id="show-structure" class="btn btn-secondary" v-on:click="showStructure">Show structure</button>
                 </span>
             </div>
-            <div class="pull-right">
-                <button id="toggle-deleted" class="btn btn-default">Include deleted</button>
-                <button id="toggle-hidden" class="btn btn-default">Include hidden</button>
+            <div class="float-right">
+                <button id="toggle-deleted" class="btn btn-secondary">Include deleted</button>
+                <button id="toggle-hidden" class="btn btn-secondary">Include hidden</button>
             </div>
         </div>
         <div v-for="error in errorMessages">

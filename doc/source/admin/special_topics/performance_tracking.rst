@@ -41,16 +41,6 @@ The statsD configuration requires setting the following options in the ``galaxy`
       statsd_port: 8125
       statsd_prefix: galaxy
 
-And the graphite configuration is very similar:
-
-.. code-block:: yaml
-
-    galaxy:
-      # ...
-      graphite_host: 127.0.0.1
-      graphite_port: 2003
-      graphite_prefix: galaxy
-
 Most people visualize the statistics using something like `Grafana <https://grafana.com/>`__:
 
 .. image:: grafana.png

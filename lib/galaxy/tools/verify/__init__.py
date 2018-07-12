@@ -91,7 +91,7 @@ def verify(
             if attributes is None:
                 attributes = {}
             compare = attributes.get('compare', 'diff')
-            if attributes.get('ftype', None) == 'bam':
+            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
                 local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                 local_name = local_fh.name
             if compare == 'diff':

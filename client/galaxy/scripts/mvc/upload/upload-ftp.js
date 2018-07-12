@@ -11,15 +11,23 @@ export default Backbone.View.extend({
             class_remove: "upload-icon-button fa fa-check-square-o",
             class_partial: "upload-icon-button fa fa-minus-square-o",
             help_enabled: true,
+            oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>don't have a Galaxy password</strong> please go to <a href="${
+                Galaxy.root
+            }user/reset_password" target="_blank">this</a> page and request a password for your Galaxy account.`,
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
                 options.ftp_upload_site
-            }</strong> using your Galaxy credentials.`,
+            }</strong> using your Galaxy credentials.
+            For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.`,
             collection: null,
             onchange: function() {},
             onadd: function() {},
             onremove: function() {}
         }).set(options);
+
         this.collection = this.model.get("collection");
+        if (Galaxy.config.enable_oidc) {
+            this.model.set("help_text", this.model.get("help_text") + this.model.get("oidc_text"));
+        }
         this.setElement(this._template());
         this.$content = this.$(".upload-ftp-content");
         this.$wait = this.$(".upload-ftp-wait");

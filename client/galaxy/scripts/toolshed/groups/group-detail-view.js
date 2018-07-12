@@ -42,7 +42,7 @@ const GroupDetailView = Backbone.View.extend({
     render: function() {
         const template = this.templateRow();
         this.$el.html(template({ group: this.model }));
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
     },
 
@@ -55,7 +55,7 @@ const GroupDetailView = Backbone.View.extend({
                 'A group of <%= group.get("members").length %> members with <%= group.get("repositories").length %> repositories and a total of <%= group.get("total_downloads") %> combined repository clones.</p>',
 
                 "<h3>Members</h3>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 "<th>Name</th>",
                 "<th>Repositories</th>",
@@ -79,7 +79,7 @@ const GroupDetailView = Backbone.View.extend({
                 "</table>",
 
                 "<h3>Repositories</h3>",
-                '<table class="grid table table-condensed">',
+                '<table class="grid table table-sm">',
                 "<thead>",
                 "<th>Name</th>",
                 "<th>Description</th>",

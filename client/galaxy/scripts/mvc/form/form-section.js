@@ -26,7 +26,8 @@ var View = Backbone.View.extend({
     },
 
     /** Add a new input element */
-    add: function(input_def) {
+    add: function(input) {
+        var input_def = jQuery.extend({}, input);
         input_def.id = Utils.uid();
         this.app.input_list[input_def.id] = input_def;
         switch (input_def.type) {
@@ -48,11 +49,18 @@ var View = Backbone.View.extend({
     _addConditional: function(input_def) {
         var self = this;
         input_def.test_param.id = input_def.id;
+        input_def.test_param.textable = false;
         this.app.model.get("sustain_conditionals") && (input_def.test_param.disabled = true);
         var field = this._addRow(input_def.test_param);
-
         // set onchange event for test parameter
-        field.model &&
+        if (field.model) {
+            // add conditional sub sections
+            for (var i in input_def.cases) {
+                var sub_section = new View(this.app, {
+                    inputs: input_def.cases[i].inputs
+                });
+                this._append(sub_section.$el.addClass("ui-form-section"), `${input_def.id}-section-${i}`);
+            }
             field.model.set("onchange", value => {
                 var selectedCase = self.app.data.matchCase(input_def, value);
                 for (var i in input_def.cases) {
@@ -73,17 +81,9 @@ var View = Backbone.View.extend({
                 }
                 self.app.trigger("change");
             });
-
-        // add conditional sub sections
-        for (var i in input_def.cases) {
-            var sub_section = new View(this.app, {
-                inputs: input_def.cases[i].inputs
-            });
-            this._append(sub_section.$el.addClass("ui-form-section"), `${input_def.id}-section-${i}`);
+            // trigger refresh on conditional input field after all input elements have been created
+            field.trigger("change");
         }
-
-        // trigger refresh on conditional input field after all input elements have been created
-        field.trigger("change");
     },
 
     /** Add a repeat block */

@@ -68,9 +68,8 @@ def check_gzip(file_path, check_content=True):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
     try:
-        temp = open(file_path, "U")
-        magic_check = temp.read(2)
-        temp.close()
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(2)
         if magic_check != util.gzip_magic:
             return (False, False)
     except Exception:
@@ -79,7 +78,8 @@ def check_gzip(file_path, check_content=True):
     # If the file is Bam, it should already have been detected as such, so we'll just check
     # for sff format.
     try:
-        header = gzip.open(file_path).read(4)
+        with gzip.open(file_path, 'rb') as fh:
+            header = fh.read(4)
         if header == b'.sff':
             return (True, True)
     except Exception:
@@ -100,9 +100,8 @@ def check_gzip(file_path, check_content=True):
 
 def check_bz2(file_path, check_content=True):
     try:
-        temp = open(file_path, "U")
-        magic_check = temp.read(3)
-        temp.close()
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(3)
         if magic_check != util.bz2_magic:
             return (False, False)
     except Exception:

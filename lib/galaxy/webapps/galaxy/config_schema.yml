@@ -355,6 +355,15 @@ mapping:
           a less efficient monitoring scheme that may work in wider range of scenarios
           than the watchdog default.
 
+      watch_job_rules:
+        type: str
+        default: false
+        required: false
+        desc: |
+          Set to True to enable monitoring of dynamic job rules. If changes are
+          found, rules are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
+
       enable_beta_mulled_containers:
         type: bool
         default: false
@@ -641,7 +650,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_data_dir:
@@ -650,7 +659,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_lock_dir:
@@ -659,7 +668,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       collect_outputs_from:
@@ -906,7 +915,7 @@ mapping:
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
-         
+
       default_locale:
         type: str
         default: auto
@@ -1620,41 +1629,6 @@ mapping:
           Instead of sending prefix + dot-separated-path, Galaxy will send
           prefix with a tag path set to the page url
 
-      graphite_host:
-        type: str
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_port:
-        type: int
-        default: 2003
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_prefix:
-        type: str
-        default: galaxy
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
       library_import_dir:
         type: str
         default: null
@@ -1847,8 +1821,8 @@ mapping:
         desc: |
           Galaxy encodes various internal values when these values will be output in
           some format (for example, in a URL or cookie).  You should set a key to be
-          used by the algorithm that encodes and decodes these values.  It can be any
-          string up to 448 bits long.
+          used by the algorithm that encodes and decodes these values. It can be any
+          string with a length between 5 and 56 bytes.
           One simple way to generate a value for this is with the shell command:
             python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
 
@@ -2008,6 +1982,9 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
+          If enable_beta_gdpr is set to True, then this option will be
+          overridden and set to False.
+
       expose_user_email:
         type: bool
         default: false
@@ -2019,6 +1996,9 @@ mapping:
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
+
+          If enable_beta_gdpr is set to True, then this option will be
+          overridden and set to False.
 
       fetch_url_whitelist:
         type: str
@@ -2032,6 +2012,25 @@ mapping:
           It should be a comma separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
+      enable_beta_gdpr:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing emails and
+          usernames from logs and bug reports. It also causes the delete user
+          admin action to permanently redact their username and password, but
+          not to delete data associated with the account as this is not
+          currently easily implementable.
+
+          You are responsible for removing personal data from backups.
+
+          This forces expose_user_email and expose_user_name to be false, and
+          forces user_deletion to be true to support the right to erasure.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.
       enable_beta_ts_api_install:
         type: bool
         default: true
@@ -2169,6 +2168,27 @@ mapping:
         required: false
         desc: |
           If OpenID is enabled, consumer cache directory to use.
+
+      enable_oidc:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables and disables OpenID Connect (OIDC) support.
+
+      oidc_config_file:
+        type: str
+        default: config/oidc_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC configuration file.
+
+      oidc_backends_config_file:
+        type: str
+        default: config/oidc_backends_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC backends configuration file.
 
       auth_config_file:
         type: str
@@ -2673,4 +2693,3 @@ mapping:
         required: false
         desc: |
           persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-

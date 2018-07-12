@@ -26,6 +26,7 @@ export var View = Backbone.View.extend({
 
         // link all dom elements
         this.$body = this.$(".portlet-body");
+        this.$title = this.$(".portlet-title");
         this.$title_text = this.$(".portlet-title-text");
         this.$title_icon = this.$(".portlet-title-icon");
         this.$header = this.$(".portlet-header");
@@ -58,6 +59,9 @@ export var View = Backbone.View.extend({
             .attr("id", options.id);
         this.$header[options.title ? "show" : "hide"]();
         this.$title_text.html(options.title);
+        if (options.title_id) {
+            this.$title.attr("id", options.title_id);
+        }
         _.each([this.$content, this.$body], $el => {
             $el[options.nopadding ? "addClass" : "removeClass"]("no-padding");
         });

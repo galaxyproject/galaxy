@@ -4,8 +4,85 @@ import galaxy.model
 
 log = getLogger(__name__)
 
-ROLES_UNSET = object()
-INVALID_STATES = [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED]
+
+def set_dataset_matcher_factory(trans, tool):
+    trans.dataset_matcher_factory = DatasetMatcherFactory(trans, tool)
+
+
+def unset_dataset_matcher_factory(trans):
+    trans.dataset_matcher_factory = None
+
+
+def get_dataset_matcher_factory(trans):
+    dataset_matcher_factory = getattr(trans, "dataset_matcher_factory", None)
+    return dataset_matcher_factory or DatasetMatcherFactory(trans)
+
+
+class DatasetMatcherFactory(object):
+    """"""
+
+    def __init__(self, trans, tool=None):
+        self._trans = trans
+        self._tool = tool
+        self._data_inputs = []
+        self._matches_format_cache = {}
+        if tool:
+            valid_input_states = tool.valid_input_states
+        else:
+            valid_input_states = galaxy.model.Dataset.valid_input_states
+        self.valid_input_states = valid_input_states
+        can_process_summary = False
+        if tool is not None:
+            for input in tool.inputs.values():
+                self._collect_data_inputs(input)
+
+            require_public = self._tool and self._tool.tool_type == 'data_destination'
+            if not require_public and self._data_inputs:
+                can_process_summary = True
+                for data_input in self._data_inputs:
+                    if data_input.options:
+                        can_process_summary = False
+                        break
+        self._can_process_summary = can_process_summary
+
+    def matches_any_format(self, hda_extension, formats):
+        for format in formats:
+            if self.matches_format(hda_extension, format):
+                return True
+        return False
+
+    def matches_format(self, hda_extension, format):
+        # cache datatype checking combinations for fast recall
+        if hda_extension not in self._matches_format_cache:
+            self._matches_format_cache[hda_extension] = {}
+
+        formats = self._matches_format_cache[hda_extension]
+        if format not in formats:
+            datatype = galaxy.model.datatype_for_extension(hda_extension, datatypes_registry=self._trans.app.datatypes_registry)
+            formats[format] = datatype.matches_any([format])
+
+        return formats[format]
+
+    def _collect_data_inputs(self, input):
+        type_name = input.type
+        if type_name == "repeat" or type_name == "upload_dataset" or type_name == "section":
+            for child_input in input.inputs.values():
+                self._collect_data_inputs(child_input)
+        elif type_name == "conditional":
+            for case in input.cases:
+                for child_input in case.inputs.values():
+                    self._collect_data_inputs(child_input)
+        elif type_name == "data" or type_name == "data_collection":
+            self._data_inputs.append(input)
+
+    def dataset_matcher(self, param, other_values):
+        return DatasetMatcher(self, self._trans, param, other_values)
+
+    def dataset_collection_matcher(self, dataset_matcher):
+        if self._can_process_summary:
+            return SummaryDatasetCollectionMatcher(self, self._trans, dataset_matcher)
+        else:
+            return DatasetCollectionMatcher(self._trans, dataset_matcher)
 
 
 class DatasetMatcher(object):
@@ -17,34 +94,21 @@ class DatasetMatcher(object):
     and permission handling.
     """
 
-    def __init__(self, trans, param, value, other_values):
+    def __init__(self, dataset_matcher_factory, trans, param, other_values):
+        self.dataset_matcher_factory = dataset_matcher_factory
         self.trans = trans
         self.param = param
         self.tool = param.tool
-        self.value = value
-        self.current_user_roles = ROLES_UNSET
-        filter_value = None
+        filter_values = set()
         if param.options and other_values:
             try:
-                filter_value = param.options.get_options(trans, other_values)[0][0]
+                for v in param.options.get_options(trans, other_values):
+                    filter_values.add(v[0])
             except IndexError:
                 pass  # no valid options
-        self.filter_value = filter_value
+        self.filter_values = filter_values
 
-    def hda_accessible(self, hda, check_security=True):
-        """ Does HDA correspond to dataset that is an a valid state and is
-        accessible to user.
-        """
-        dataset = hda.dataset
-        has_tool = self.tool
-        if has_tool:
-            valid_input_states = self.tool.valid_input_states
-        else:
-            valid_input_states = galaxy.model.Dataset.valid_input_states
-        state_valid = dataset.state in valid_input_states
-        return state_valid and (not check_security or self.__can_access_dataset(dataset))
-
-    def valid_hda_match(self, hda, check_implicit_conversions=True, check_security=False):
+    def valid_hda_match(self, hda, check_implicit_conversions=True):
         """ Return False of this parameter can not be matched to the supplied
         HDA, otherwise return a description of the match (either a
         HdaDirectMatch describing a direct match or a HdaImplicitMatch
@@ -52,7 +116,7 @@ class DatasetMatcher(object):
         """
         rval = False
         formats = self.param.formats
-        if hda.datatype.matches_any(formats):
+        if self.dataset_matcher_factory.matches_any_format(hda.extension, formats):
             rval = HdaDirectMatch(hda)
         else:
             if not check_implicit_conversions:
@@ -62,8 +126,6 @@ class DatasetMatcher(object):
                 original_hda = hda
                 if converted_dataset:
                     hda = converted_dataset
-                if check_security and not self.__can_access_dataset(hda.dataset):
-                    return False
                 rval = HdaImplicitMatch(hda, target_ext, original_hda)
             else:
                 return False
@@ -71,43 +133,27 @@ class DatasetMatcher(object):
             return False
         return rval
 
-    def hda_match(self, hda, check_implicit_conversions=True, check_security=True, ensure_visible=True):
+    def hda_match(self, hda, check_implicit_conversions=True, ensure_visible=True):
         """ If HDA is accessible, return information about whether it could
         match this parameter and if so how. See valid_hda_match for more
         information.
         """
-        accessible = self.hda_accessible(hda, check_security=check_security)
-        if accessible and (not ensure_visible or hda.visible or (self.selected(hda) and not hda.implicitly_converted_parent_datasets)):
+        dataset = hda.dataset
+        valid_state = dataset.state in self.dataset_matcher_factory.valid_input_states
+        if valid_state and (not ensure_visible or hda.visible):
             # If we are sending data to an external application, then we need to make sure there are no roles
             # associated with the dataset that restrict its access from "public".
             require_public = self.tool and self.tool.tool_type == 'data_destination'
-            if require_public and not self.trans.app.security_agent.dataset_is_public(hda.dataset):
-                return False
-            if self.filter(hda):
+            if require_public and not self.trans.app.security_agent.dataset_is_public(dataset):
                 return False
             return self.valid_hda_match(hda, check_implicit_conversions=check_implicit_conversions)
-
-    def selected(self, hda):
-        """ Given value for DataToolParameter, is this HDA "selected".
-        """
-        value = self.value
-        if value and str(value[0]).isdigit():
-            return hda.id in map(int, value)
-        else:
-            return value and hda in value
 
     def filter(self, hda):
         """ Filter out this value based on other values for job (if
         applicable).
         """
         param = self.param
-        return param.options and param.get_options_filter_attribute(hda) != self.filter_value
-
-    def __can_access_dataset(self, dataset):
-        # Lazily cache current_user_roles.
-        if self.current_user_roles is ROLES_UNSET:
-            self.current_user_roles = self.trans.get_current_user_roles()
-        return self.trans.app.security_agent.can_access_dataset(self.current_user_roles, dataset)
+        return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
 
 
 class HdaDirectMatch(object):
@@ -138,10 +184,59 @@ class HdaImplicitMatch(object):
         return True
 
 
+class HdcaDirectMatch(object):
+    implicit_conversion = False
+
+    def __init__(self):
+        pass
+
+
+class HdcaImplicitMatch(object):
+    implicit_conversion = True
+
+    def __init__(self):
+        pass
+
+
+class SummaryDatasetCollectionMatcher(object):
+
+    def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
+        self.dataset_matcher_factory = dataset_matcher_factory
+        self._trans = trans
+        self.dataset_matcher = dataset_matcher
+
+    def hdca_match(self, history_dataset_collection_association):
+        dataset_collection = history_dataset_collection_association.collection
+
+        if not dataset_collection.populated_optimized:
+            return False
+
+        (states, extensions) = dataset_collection.dataset_states_and_extensions_summary
+        for state in states:
+            if state not in self.dataset_matcher_factory.valid_input_states:
+                return False
+
+        formats = self.dataset_matcher.param.formats
+        uses_implicit_conversion = False
+        for extension in extensions:
+            if self.dataset_matcher_factory.matches_any_format(extension, formats):
+                continue
+
+            datatypes_registry = self._trans.app.datatypes_registry
+            converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(extension, formats)
+            if not converted_ext:
+                return False
+            else:
+                uses_implicit_conversion = True
+
+        return HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch()
+
+
 class DatasetCollectionMatcher(object):
 
-    def __init__(self, dataset_matcher):
+    def __init__(self, trans, dataset_matcher):
         self.dataset_matcher = dataset_matcher
+        self._trans = trans
 
     def __valid_element(self, element):
         # Simplify things for now and assume these are hdas and not implicit
@@ -158,14 +253,11 @@ class DatasetCollectionMatcher(object):
         if not hda:
             return False
         hda_match = self.dataset_matcher.hda_match(hda, ensure_visible=False)
-        return hda_match and not hda_match.implicit_conversion
+        return hda_match
 
-    def hdca_match(self, history_dataset_collection_association, reduction=False):
+    def hdca_match(self, history_dataset_collection_association):
         dataset_collection = history_dataset_collection_association.collection
-        if reduction and dataset_collection.collection_type.find(":") > 0:
-            return False
-        else:
-            return self.dataset_collection_match(dataset_collection)
+        return self.dataset_collection_match(dataset_collection)
 
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it
@@ -174,11 +266,16 @@ class DatasetCollectionMatcher(object):
             return False
 
         valid = True
+        uses_implicit_conversion = False
         for element in dataset_collection.elements:
-            if not self.__valid_element(element):
+            match_element = self.__valid_element(element)
+            if not match_element:
                 valid = False
                 break
-        return valid
+            elif match_element.implicit_conversion:
+                uses_implicit_conversion = True
+
+        return valid and (HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch())
 
 
-__all__ = ('DatasetMatcher', 'DatasetCollectionMatcher')
+__all__ = ('get_dataset_matcher_factory', 'set_dataset_matcher_factory', 'unset_dataset_matcher_factory')

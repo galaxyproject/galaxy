@@ -12,7 +12,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="static/ngl.js"/>
+    <entry_point entry_point_type="chart" src="ngl.js"/>
     <settings>
         <input>
             <label>Quality</label>

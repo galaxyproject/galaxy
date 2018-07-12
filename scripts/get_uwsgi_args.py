@@ -23,7 +23,7 @@ ALIASES = {
     'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('virtualenv', 'pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': (),
@@ -86,13 +86,14 @@ def _get_uwsgi_args(cliargs, kwargs):
     uwsgi_kwargs = load_app_properties(config_file=config_file, config_section='uwsgi')
     args = []
     defaults = {
-        'virtualenv': os.environ.get('VIRTUAL_ENV', './.venv'),
         'pythonpath': 'lib',
         'threads': '4',
         'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
         'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
                        '/static={here}/static'.format(here=os.getcwd())),
+        'static-safe': ('{here}/config/plugins/visualizations'.format(here=os.getcwd()),
+                        '{here}/config/plugins/interactive_environments'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
@@ -102,6 +103,9 @@ def _get_uwsgi_args(cliargs, kwargs):
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
         __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=cliargs.app))
+    # only include virtualenv if it's set/exists, otherwise this breaks conda-env'd Galaxy
+    if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
+        __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
             __add_arg(args, arg, defaults[arg])

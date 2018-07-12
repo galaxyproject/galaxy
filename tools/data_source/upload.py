@@ -16,12 +16,7 @@ from six.moves.urllib.request import urlopen
 from galaxy import util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.upload_util import UploadProblemException
-from galaxy.util.checkers import (
-    check_binary,
-    is_single_file_zip,
-    is_zip,
-)
+from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
 
 assert sys.version_info[:2] >= (2, 7)
 
@@ -65,8 +60,6 @@ def add_file(dataset, registry, output_path):
     ext = None
     compression_type = None
     line_count = None
-    converted_path = None
-    stdout = None
     link_data_only_str = dataset.get('link_data_only', 'copy_files')
     if link_data_only_str not in ['link_to_files', 'copy_files']:
         raise UploadProblemException("Invalid setting '%s' for option link_data_only - upload request misconfigured" % link_data_only_str)
@@ -115,67 +108,23 @@ def add_file(dataset, registry, output_path):
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
 
-    if not os.path.getsize(dataset.path) > 0:
+    if check_content and not os.path.getsize(dataset.path) > 0:
         raise UploadProblemException('The uploaded file is empty')
 
-    # Does the first 1K contain a null?
-    is_binary = check_binary(dataset.path)
-
-    # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
-    # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
-    if not link_data_only:
-        if is_zip(dataset.path) and not is_single_file_zip(dataset.path):
-            stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
-        try:
-            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file(
-                dataset.path,
-                registry,
-                ext=dataset.file_type,
-                tmp_prefix='data_id_%s_upload_' % dataset.dataset_id,
-                tmp_dir=output_adjacent_tmpdir(output_path),
-                in_place=in_place,
-                check_content=check_content,
-                is_binary=is_binary,
-                auto_decompress=auto_decompress,
-                uploaded_file_ext=os.path.splitext(dataset.name)[1].lower().lstrip('.'),
-                convert_to_posix_lines=dataset.to_posix_lines,
-                convert_spaces_to_tabs=dataset.space_to_tab,
-            )
-        except sniff.InappropriateDatasetContentError as exc:
-            raise UploadProblemException(str(exc))
-    elif dataset.file_type == 'auto':
-        # Link mode can't decompress anyway, so enable sniffing for keep-compressed datatypes even when auto_decompress
-        # is enabled
-        os.environ['GALAXY_SNIFFER_VALIDATE_MODE'] = '1'
-        ext = sniff.guess_ext(dataset.path, registry.sniff_order, is_binary=is_binary)
-        os.environ.pop('GALAXY_SNIFFER_VALIDATE_MODE')
-
-    # The converted path will be the same as the input path if no conversion was done (or in-place conversion is used)
-    converted_path = None if converted_path == dataset.path else converted_path
-
-    # Validate datasets where the filetype was explicitly set using the filetype's sniffer (if any)
-    if dataset.file_type != 'auto':
-        datatype = registry.get_datatype_by_extension(dataset.file_type)
-        # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
-        os.environ['GALAXY_SNIFFER_VALIDATE_MODE'] = '1'
-        if hasattr(datatype, 'sniff') and not datatype.sniff(dataset.path):
-            stdout = ("Warning: The file 'Type' was set to '{ext}' but the file does not appear to be of that"
-                      " type".format(ext=dataset.file_type))
-        os.environ.pop('GALAXY_SNIFFER_VALIDATE_MODE')
-
-    # Handle unsniffable binaries
-    if is_binary and ext == 'binary':
-        upload_ext = os.path.splitext(dataset.name)[1].lower().lstrip('.')
-        if registry.is_extension_unsniffable_binary(upload_ext):
-            stdout = ("Warning: The file's datatype cannot be determined from its contents and was guessed based on"
-                     " its extension, to avoid this warning, manually set the file 'Type' to '{ext}' when uploading"
-                     " this type of file".format(ext=upload_ext))
-            ext = upload_ext
-        else:
-            stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
-                      " manually")
-
-    datatype = registry.get_datatype_by_extension(ext)
+    stdout, ext, datatype, is_binary, converted_path = handle_upload(
+        registry=registry,
+        path=dataset.path,
+        requested_ext=dataset.file_type,
+        name=dataset.name,
+        tmp_prefix='data_id_%s_upload_' % dataset.dataset_id,
+        tmp_dir=output_adjacent_tmpdir(output_path),
+        check_content=check_content,
+        link_data_only=link_data_only,
+        in_place=in_place,
+        auto_decompress=auto_decompress,
+        convert_to_posix_lines=dataset.to_posix_lines,
+        convert_spaces_to_tabs=dataset.space_to_tab,
+    )
 
     # Strip compression extension from name
     if compression_type and not getattr(datatype, 'compressed', False) and dataset.name.endswith('.' + compression_type):

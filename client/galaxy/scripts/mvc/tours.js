@@ -1,29 +1,40 @@
-import _l from "utils/localization";
 /**
  *  This is the primary galaxy tours definition, currently only used for
  *  rendering a tour menu.
  */
+import _l from "utils/localization";
+// The following must remain staged out of libs and not sourced from
+// node_modules, until TDTs are bundled.
+import * as Backbone from "libs/backbone";
+import * as _ from "libs/underscore";
+import "libs/bootstrap-tour";
+
+/* global $ */
+/* global Galaxy */
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
-import "libs/bootstrap-tour";
 let Tour = window.Tour;
 
 var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
 
-var tourpage_template = `<h2>Galaxy Tours</h2>
-<p>This page presents a list of interactive tours available on this Galaxy server.
-Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
+const TOURPAGE_TEMPLATE = `
+    <h2>Galaxy Tours</h2>
+    <p>This page presents a list of interactive tours available on this Galaxy server.
+    Select any tour to get started (and remember, you can click 'End Tour' at any time).</p>
 
-<div class="col-12 btn-group" role="group" aria-label="Tag selector">
-    <% _.each(tourtagorder, function(tag) { %>
-    <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
-        <%- tag %>
-    </button>
-    <% }); %>
+<div class="row mb-3">
+    <div class="col-12 btn-group" role="group" aria-label="Tag selector">
+        <% _.each(tourtagorder, function(tag) { %>
+        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
+            <%- tag %>
+        </button>
+        <% }); %>
+    </div>
 </div>
 
 <% _.each(tourtagorder, function(tourtagkey) { %>
-<div tag="<%- tourtagkey %>" style="display: block;">
+<div tag="<%- tourtagkey %>" class="row mb-3">
+    <div class="col-12">
     <% var tourtag = tourtags[tourtagkey]; %>
     <h4>
         <%- tourtag.name %>
@@ -32,24 +43,25 @@ Select any tour to get started (and remember, you can click 'End Tour' at any ti
     <% _.each(tourtag.tours, function(tour) { %>
         <li class="list-group-item">
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
-                <%- tour.name || tour.id %>
+                <%- tour.attributes.name || tour.id %>
             </a>
              - <%- tour.attributes.description || "No description given." %>
              <% _.each(tour.attributes.tags, function(tag) { %>
-                <span class="label label-primary sm-label-pad">
+                <span class="badge badge-primary">
                     <%- tag.charAt(0).toUpperCase() + tag.slice(1) %>
                 </span>
              <% }); %>
         </li>
     <% }); %>
     </ul>
+    </div>
 </div>
 <% }); %>`;
 
 var tour_opts = {
     storage: window.sessionStorage,
     onEnd: function() {
-        sessionStorage.removeItem("activeGalaxyTour");
+        window.sessionStorage.removeItem("activeGalaxyTour");
     },
     delay: 150, // Attempts to make it look natural
     orphan: true
@@ -124,7 +136,7 @@ export var ToursView = Backbone.View.extend({
     },
 
     render: function() {
-        var tpl = _.template(tourpage_template);
+        var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
         _.each(this.model.models, tour => {
@@ -175,7 +187,7 @@ export var ToursView = Backbone.View.extend({
 
 export function giveTourWithData(data) {
     let hookedTourData = hooked_tour_from_data(data);
-    sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
+    window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
     let tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
     // Always clean restart, since this is a new, explicit execution.
@@ -193,7 +205,7 @@ export function giveTourById(tour_id) {
 }
 
 export function activeGalaxyTourRunner() {
-    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
+    var et = JSON.parse(window.sessionStorage.getItem("activeGalaxyTour"));
     if (et) {
         et = hooked_tour_from_data(et);
         if (et && et.steps) {

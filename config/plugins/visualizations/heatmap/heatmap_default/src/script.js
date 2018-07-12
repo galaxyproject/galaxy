@@ -9,7 +9,6 @@ var Series = window.bundleEntries.chartUtilities.Series;
 var Datasets = window.bundleEntries.chartUtilities.Datasets;
 var Jobs = window.bundleEntries.chartUtilities.Jobs;
 
-window.d3 = d3;
 var CommonWrapper = Backbone.View.extend({
     optionsDefault: {
         margin: {
@@ -495,8 +494,7 @@ _.extend(window.bundleEntries || {}, {
                 options.dataset_id = dataset.id;
                 options.dataset_groups = dataset_groups;
                 options.render = function(canvas_id, groups) {
-                    /* Where does HeatMap come from? It isn't in any local scope here. */
-                    new HeatMap({
+                    new CommonWrapper({
                         chart: options.chart,
                         canvas_id: canvas_id,
                         groups: groups

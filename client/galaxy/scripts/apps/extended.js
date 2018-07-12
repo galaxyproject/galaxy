@@ -1,3 +1,5 @@
+import $ from "jquery";
+import "bootstrap";
 import GalaxyApp from "galaxy";
 import WorkflowView from "mvc/workflow/workflow-view";
 import Trackster from "viz/trackster";
@@ -12,7 +14,6 @@ import Modal from "mvc/ui/ui-modal";
 import pagesEditorOnload from "galaxy.pages";
 import Data from "mvc/dataset/data";
 import History from "mvc/history/history-model";
-import StructureView from "mvc/history/history-structure-view";
 import HistoryContents from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
 import HistoryView from "mvc/history/history-view";
@@ -26,7 +27,6 @@ import * as run_stats from "reports/run_stats";
 import ToolshedGroups from "toolshed/toolshed.groups";
 
 /* global Galaxy */
-/* global $ */
 
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
@@ -103,7 +103,6 @@ export const bundleEntries = {
     HistoryCopyDialog,
     HistoryViewAnnotated,
     Trackster,
-    StructureView,
     HDAListItemEdit,
     HDAModel,
     GalaxyApp,

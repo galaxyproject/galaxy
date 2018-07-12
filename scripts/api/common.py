@@ -7,7 +7,6 @@ import json
 import logging
 import sys
 
-from Crypto.Cipher import Blowfish
 from six.moves.urllib.error import HTTPError
 from six.moves.urllib.request import Request, urlopen
 
@@ -185,16 +184,3 @@ def delete(api_key, url, data, return_formatted=True):
     print('Response')
     print('--------')
     print(r)
-
-
-def encode_id(config_id_secret, obj_id):
-    """
-    utility method to encode ID's
-    """
-    id_cipher = Blowfish.new(config_id_secret)
-    # Convert to string
-    s = str(obj_id)
-    # Pad to a multiple of 8 with leading "!"
-    s = ("!" * (8 - len(s) % 8)) + s
-    # Encrypt
-    return id_cipher.encrypt(s).encode('hex')

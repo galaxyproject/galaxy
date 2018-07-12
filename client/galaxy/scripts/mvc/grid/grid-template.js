@@ -1,18 +1,33 @@
 // dependencies
 import Utils from "utils/utils";
+import * as _ from "underscore";
+
+/* global $ */
+
 // grid view templates
 export default {
     // template
     grid: function(options) {
-        var tmpl = "";
+        let tmpl;
         if (options.embedded) {
             tmpl = this.grid_header(options) + this.grid_table(options);
         } else {
-            tmpl = `<div class="loading-elt-overlay"></div><table><tr><td width="75%">${this.grid_header(
-                options
-            )}</td><td></td><td></td></tr><tr><td width="100%" id="grid-message" valign="top"></td><td></td><td></td></tr></table>${this.grid_table(
-                options
-            )}`;
+            tmpl = `
+                <div class="loading-elt-overlay"></div>
+                <table class="grid-table">
+                    <tr>
+                        <td width="75%">${this.grid_header(options)}</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td width="100%" id="grid-message" valign="top"></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+                ${this.grid_table(options)}
+            `;
         }
 
         // add info text
@@ -40,7 +55,11 @@ export default {
     grid_header: function(options) {
         var tmpl = '<div class="grid-header">';
         if (!options.embedded) {
-            tmpl += `<h2>${options.title}</h2>`;
+            let id_str = "";
+            if (options.title_id) {
+                id_str += ` id="${options.title_id}"`;
+            }
+            tmpl += `<h2${id_str}>${options.title}</h2>`;
         }
         if (options.global_actions) {
             tmpl += '<ul class="manage-table-actions">';
@@ -156,20 +175,14 @@ export default {
                     var target = column_settings.target;
 
                     // unescape value
-                    if (jQuery.type(value) === "string") {
+                    if ($.type(value) === "string") {
                         value = value.replace(/\/\//g, "/");
                     }
 
                     // Attach popup menu?
-                    var id = "";
-                    var cls = "";
+                    var popup_id = "";
                     if (column.attach_popup) {
-                        id = `grid-${item.encode_id}-popup`;
-                        cls = "menubutton";
-                        if (link !== "") {
-                            cls += " split";
-                        }
-                        cls += " popup";
+                        popup_id = `grid-${item.encode_id}-popup`;
                     }
 
                     // Check for row wrapping
@@ -177,19 +190,20 @@ export default {
 
                     // Determine cell content
                     if (column.delayed) {
-                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
-                    } else if (link) {
-                        if (options.operations.length !== 0) {
-                            tmpl += `<div id="${id}" class="${cls}" style="float: left;">`;
-                        }
-                        tmpl += `<a class="menubutton-label use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
-                        if (options.operations.length !== 0) {
-                            tmpl += "</div>";
-                        }
-                    } else {
-                        tmpl += `<div id="${id}" class="${cls}"><label id="${column.label_id_prefix}${
+                        tmpl += `<div class="delayed-value-${column.key}" data-id="${
                             item.encode_id
-                        }" for="${item.encode_id}">${value || ""}</label></div>`;
+                        }" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                    } else if (column.attach_popup && link) {
+                        tmpl += `<div class="btn-group">
+                                    <button class="btn btn-secondary use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
+                                    <button id="${popup_id}" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown"/>
+                                </div>`;
+                    } else if (column.attach_popup) {
+                        tmpl += `<button id="${popup_id}" class="btn dropdown-toggle" data-toggle="dropdown">${value}</button>`;
+                    } else if (link) {
+                        tmpl += `<a class="use-target" target="${target}" href="${link}" onclick="return false;">${value}</a>`;
+                    } else {
+                        tmpl += `<label>${value || ""}</label>`;
                     }
                     tmpl += "</td>";
                 }
@@ -253,27 +267,27 @@ export default {
 
             if (min_page > 1) {
                 tmpl +=
-                    '<span class="page-link" id="page-link-1"><a href="javascript:void(0);" page_num="1" onclick="return false;">1</a></span> ...';
+                    '<span class="page-link-grid" id="page-link-1"><a href="javascript:void(0);" page_num="1" onclick="return false;">1</a></span> ...';
             }
 
             // create page urls
             for (var page_index = min_page; page_index < max_page + 1; page_index++) {
                 if (page_index == options.cur_page_num) {
-                    tmpl += `<span class="page-link inactive-link" id="page-link-${page_index}">${page_index}</span>`;
+                    tmpl += `<span class="page-link-grid inactive-link" id="page-link-${page_index}">${page_index}</span>`;
                 } else {
-                    tmpl += `<span class="page-link" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
+                    tmpl += `<span class="page-link-grid" id="page-link-${page_index}"><a href="javascript:void(0);" onclick="return false;" page_num="${page_index}">${page_index}</a></span>`;
                 }
             }
 
             // show last page
             if (max_page < num_pages) {
-                tmpl += `...<span class="page-link" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
+                tmpl += `...<span class="page-link-grid" id="page-link-${num_pages}"><a href="javascript:void(0);" onclick="return false;" page_num="${num_pages}">${num_pages}</a></span>`;
             }
             tmpl += "</span>";
 
             // Show all link
             tmpl += `
-                    <span class="page-link" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
+                    <span class="page-link-grid" id="show-all-link-span"> | <a href="javascript:void(0);" onclick="return false;" page_num="all">Show All</a></span>
                     </td>
                 </tr>`;
         }
@@ -456,7 +470,7 @@ export default {
             var column_filter = filters[column_key];
             if (column_filter) {
                 // identify type
-                var type = jQuery.type(column_filter);
+                var type = $.type(column_filter);
 
                 // single filter value
                 if (type == "string") {

@@ -11,6 +11,10 @@ _:  # global stuff
   selectors:
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
+    left_panel_drag: '#left-panel-drag'
+    left_panel_collapse: '#left-panel-collapse'
+    right_panel_drag: '#right-panel-drag'
+    right_panel_collapse: '#right-panel-collapse'
 
   messages:
     selectors:
@@ -29,11 +33,12 @@ masthead:
 
     user:
       type: xpath
-      selector: '//ul[@id="user"]'
+      selector: '//li[@id="user"]'
 
+    user_menu: 'li#user .dropdown-menu'
     workflow:
       type: xpath
-      selector: '//ul[@id="workflow"]'
+      selector: '//li[@id="workflow"]'
 
     user_email:
       type: xpath
@@ -49,6 +54,7 @@ masthead:
     visualization: 'Visualization'
     help: 'Help'
     user: 'User'
+    admin: 'Admin'
 
     # user menu
     register: 'Register'
@@ -92,13 +98,13 @@ history_panel:
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
       rerun_button: '${_} .icon-btn.rerun-btn'
-      nametags: '${_} .nametags .label'
+      nametags: '${_} .nametags .badge-tags'
 
   multi_operations:
     selectors:
       show_button: '#current-history-panel .actions .show-selectors-btn'
       action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu.open'
+      action_menu: '.list-action-menu ul.dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -152,6 +158,12 @@ history_panel:
     tooltip_name: 'Click to rename history'
     new_name: 'Unnamed history'
     new_size: '(empty)'
+
+tool_panel:
+
+  selectors:
+    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
 
 multi_history_view:
 
@@ -209,6 +221,7 @@ tool_form:
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
     bibtex_area: '.citations-bibtex textarea'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:
     generate_tour: 'Generate Tour'
@@ -219,16 +232,83 @@ workflows:
     new_button: '#new-workflow'
     import_button: '#import-workflow'
 
+workflow_run:
+
+  selectors: 
+    input_div: "[step-label='${label}'] .select2-container"
+
+workflow_editor:
+
+  node:
+    selectors:
+      _: "[node-label='${label}']"
+
+      title: '${_} .nodeTitle'
+      destroy: '${_} .node-destroy'
+      clone: '${_} .node-clone'
+
+      output_terminal: "${_} [output-name='${name}']"
+      input_terminal: "${_} [input-name='${name}']"
+
+      input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
+
+  selectors:
+    canvas_body: '#workflow-canvas-body'
+    canvas_title: '#workflow-canvas-title'
+    edit_name: '#edit-attributes #workflow-name'
+
+    tool_menu: '#workflow-tool-menu'
+    tool_menu_section_link: '#title___workflow__${section_name}__ a span'
+    tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
+
+    label_input: "[tour_id='__label'] input"
+    annotation_input: "[tour_id='__annotation'] textarea"
+
+    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+
+    connector_destroy_callout: '.callout .fa-times'
+
 tour:
   popover:
     selectors:
       _: '.popover'
 
-      title: '${_} .popover-title'
-      content: '${_} .popover-content'
+      title: '${_} .popover-header'
+      content: '${_} .popover-body'
       next: '${_} button[data-role="next"]'
       previous: '${_} button[data-role="prev"]'
       end: '${_} button[data-role="end"]'
+
+admin:
+
+  index:
+    selectors:
+      datatypes: '#admin-link-datatypes'
+      data_tables: '#admin-link-data-tables'
+      display_applications: '#admin-link-display-applications'
+      jobs: '#admin-link-jobs'
+      local_data: '#admin-link-local-data'
+      users: '#admin-link-users'
+      quotas: '#admin-link-quotas'
+      groups: '#admin-link-groups'
+      roles: '#admin-link-roles'
+      api_keys: '#admin-link-api-keys'
+      impersonate: '#admin-link-impersonate'
+
+  selectors:
+    # TODO: place betters IDS or something on this in these grids in the DOM
+    datatypes_grid: '#datatypes-grid'
+    data_tables_grid: '#data-tables-grid'
+    display_applications_grid: '#display-applications-grid'
+    update_jobs: 'form[name="jobs"]'
+    data_managers_title: '#data-managers-title'
+    users_grid: '#users-grid'
+    users_grid_create_button: '.manage-table-actions .action-button'
+    groups_grid_create_button: '.manage-table-actions .action-button'
+    registration_form: 'form[name="registration"]'
+    groups_grid: '#groups-grid'
+    roles_grid: '#roles-grid'
+    groups_create_view: '#create-group'
 
 libraries:
 
@@ -309,6 +389,7 @@ rule_builder:
     view_source: '.rule-builder-view-source'
     source: '.rule-source'
     table: '#hot-table .htCore'
+    extension_select: '.rule-footer-extension-group .extension-select'
 
 charts:
   selectors:
