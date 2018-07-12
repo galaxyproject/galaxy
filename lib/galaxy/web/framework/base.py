@@ -150,7 +150,7 @@ class WebApplication(object):
         controller_name = map_match.pop('controller', None)
         controller = controllers.get(controller_name, None)
         if controller is None:
-            raise httpexceptions.HTTPNotFound("No controller for " + path_info)
+            raise webob.exc.HTTPNotFound("No controller for " + path_info)
         # Resolve action method on controller
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
@@ -159,18 +159,18 @@ class WebApplication(object):
         if method is None and not use_default:
             # Skip default, we do this, for example, when we want to fail
             # through to another mapper.
-            raise httpexceptions.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound("No action for " + path_info)
         if method is None:
             # no matching method, we try for a default
             method = getattr(controller, 'default', None)
         if method is None:
-            raise httpexceptions.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound("No action for " + path_info)
         # Is the method exposed
         if not getattr(method, 'exposed', False):
-            raise httpexceptions.HTTPNotFound("Action not exposed for " + path_info)
+            raise webob.exc.HTTPNotFound("Action not exposed for " + path_info)
         # Is the method callable
         if not callable(method):
-            raise httpexceptions.HTTPNotFound("Action not callable for " + path_info)
+            raise webob.exc.HTTPNotFound("Action not callable for " + path_info)
         return (controller_name, controller, action, method)
 
     def handle_request(self, environ, start_response, body_renderer=None):
@@ -187,7 +187,7 @@ class WebApplication(object):
             environ['is_api_request'] = False
             controllers = self.controllers
         if map_match is None:
-            raise httpexceptions.HTTPNotFound("No route for " + path_info)
+            raise webob.exc.HTTPNotFound("No route for " + path_info)
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -203,7 +203,7 @@ class WebApplication(object):
             # We don't use default methods if there's a clientside match for this route.
             use_default = client_match is None
             controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers, use_default=use_default)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             # Failed, let's check client routes
             if not environ['is_api_request'] and client_match is not None:
                 controller_name, controller, action, method = self._resolve_map_match(client_match, path_info, controllers)
@@ -442,8 +442,8 @@ class Response(object):
         Send an HTTP redirect response to (target `url`)
         """
         if "\n" in url or "\r" in url:
-            raise httpexceptions.HTTPInternalServerError("Invalid redirect URL encountered.")
-        raise httpexceptions.HTTPFound(url.encode('utf-8'), headers=self.wsgi_headeritems())
+            raise webob.exc.HTTPInternalServerError("Invalid redirect URL encountered.")
+        raise webob.exc.HTTPFound(url, headers=self.wsgi_headeritems())
 
     def wsgi_headeritems(self):
         """

@@ -4,13 +4,13 @@ Contains functionality needed in every web interface
 import logging
 import re
 
-from paste.httpexceptions import (
+from six import string_types
+from sqlalchemy import true
+from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
     HTTPNotImplemented
 )
-from six import string_types
-from sqlalchemy import true
 
 from galaxy import (
     exceptions,

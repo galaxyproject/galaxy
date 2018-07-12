@@ -11,8 +11,8 @@ import zipfile
 from cgi import escape
 from inspect import isclass
 
-import paste
 import six
+import webob.exc
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
@@ -391,7 +391,7 @@ class Data(object):
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
             else:
-                return paste.httpexceptions.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
+                return webob.exc.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
         self._clean_and_set_mime_type(trans, data.get_mime())
 
         trans.log_event("Display dataset id: %s" % str(data.id))
@@ -406,7 +406,7 @@ class Data(object):
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(data.file_name)
         if not os.path.exists(data.file_name):
-            raise paste.httpexceptions.HTTPNotFound("File Not Found (%s)." % data.file_name)
+            raise webob.exc.HTTPNotFound("File Not Found (%s)." % data.file_name)
         max_peek_size = 1000000  # 1 MB
         if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html

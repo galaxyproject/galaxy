@@ -25,7 +25,7 @@ import logging
 import re
 
 import routes
-from paste import httpexceptions
+import webob.exc
 from six.moves.urllib.parse import urlparse
 
 from galaxy.util import smart_str
@@ -160,7 +160,7 @@ class BatchMiddleware(object):
         try:
             response = self.galaxy.handle_request(environ, start_response, body_renderer=self.body_renderer)
         # handle errors from galaxy.handle_request (only 404s)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             response = dict(status=404, headers=self._default_headers(), body={})
         return response
 

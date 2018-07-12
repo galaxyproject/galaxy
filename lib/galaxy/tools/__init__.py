@@ -13,8 +13,8 @@ from datetime import datetime
 from xml.etree import ElementTree
 
 import packaging.version
+import webob.exc
 from mako.template import Template
-from paste import httpexceptions
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
@@ -1418,8 +1418,8 @@ class Tool(Dictifiable):
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
                 completed_job=completed_job,
             )
-        except httpexceptions.HTTPFound as e:
-            # if it's a paste redirect exception, pass it up the stack
+        except webob.exc.HTTPFound as e:
+            # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:
             return False, e
