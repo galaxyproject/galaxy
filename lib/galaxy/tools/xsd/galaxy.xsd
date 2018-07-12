@@ -1340,6 +1340,11 @@ The functional test tool
 provides a demonstration of using this tag.
 
 ```xml
+<outputs>
+    <data format="tabular" name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" assign_primary_output="true" />
+    </data>
+</outputs>
 <test>
   <param name="num_param" value="7" />
   <param name="input" ftype="txt" value="simple_line.txt"/>
