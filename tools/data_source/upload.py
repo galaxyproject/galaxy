@@ -36,10 +36,7 @@ def file_err(msg, dataset):
 
 
 def safe_dict(d):
-    """
-    Recursively clone json structure with UTF-8 dictionary keys
-    http://mellowmachines.com/blog/2009/06/exploding-dictionary-with-unicode-keys-as-python-arguments/
-    """
+    """Recursively clone json structure with UTF-8 dictionary keys."""
     if isinstance(d, dict):
         return dict([(k.encode('utf-8'), safe_dict(v)) for k, v in d.items()])
     elif isinstance(d, list):
