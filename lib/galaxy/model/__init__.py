@@ -72,7 +72,7 @@ JOB_METRIC_MAX_LENGTH = 1023
 JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
-AUTO_PROPAGATED_TAGS = ["name"]
+AUTO_PROPAGATED_TAGS = ["name", "group"]
 
 
 class NoConverterException(Exception):

@@ -2321,6 +2321,54 @@ test_data:
             assert content["history_content_type"] == "dataset_collection", content
             assert not content["visible"]
 
+    @skip_without_tool("cat")
+    def test_tag_auto_propagation(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - label: first_cat
+    tool_id: cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        add_tags:
+            - "name:treated1fb"
+            - "group:condition:treated"
+            - "group:type:single-read"
+            - "machine:illumina"
+  - label: second_cat
+    tool_id: cat
+    state:
+      input1:
+        $link: first_cat#out_file1
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+
+            details0 = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            tags = details0["tags"]
+            assert len(tags) == 4, details0
+            assert "name:treated1fb" in tags, tags
+            assert "group:condition:treated" in tags, tags
+            assert "group:type:single-read" in tags, tags
+            assert "machine:illumina" in tags, tags
+
+            details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=3, wait=True, assert_ok=True)
+            tags = details1["tags"]
+            assert len(tags) == 3, details1
+            assert "name:treated1fb" in tags, tags
+            assert "group:condition:treated" in tags, tags
+            assert "group:type:single-read" in tags, tags
+            assert "machine:illumina" not in tags, tags
+
     @skip_without_tool("collection_creates_pair")
     def test_run_add_tag_on_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
