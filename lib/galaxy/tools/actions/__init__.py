@@ -206,7 +206,7 @@ class DefaultToolAction(object):
             if not data:
                 continue
 
-            for tag in [t for t in data.tags if t.user_tname == 'name']:
+            for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
         # grap tags from incoming HDCAs
@@ -215,7 +215,7 @@ class DefaultToolAction(object):
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
-                    for tag in [t for t in collection.tags if t.user_tname == 'name']:
+                    for tag in collection.auto_propagated_tags:
                         preserved_tags[tag.value] = tag
 
         return history, inp_data, inp_dataset_collections, preserved_tags

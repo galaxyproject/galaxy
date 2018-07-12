@@ -71,6 +71,8 @@ MAX_IN_FILTER_LENGTH = 100
 JOB_METRIC_MAX_LENGTH = 1023
 JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
+# Tags that get automatically propagated from inputs to outputs when running jobs.
+AUTO_PROPAGATED_TAGS = ["name"]
 
 
 class NoConverterException(Exception):
@@ -127,6 +129,10 @@ class HasTags(object):
             new_tag_assoc = source_tag_assoc.copy()
             new_tag_assoc.user = target_user
             self.tags.append(new_tag_assoc)
+
+    @property
+    def auto_propagated_tags(self):
+        return [t for t in self.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
 
 
 class HasName(object):
