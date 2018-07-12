@@ -202,7 +202,7 @@ class DatasetCollectionManager(object):
         tags = tags or {}
         implicit_inputs = implicit_inputs or []
         for _, v in implicit_inputs:
-            for tag in [t for t in v.tags if t.user_tname == 'name']:
+            for tag in v.auto_propagated_tags:
                 tags[tag.value] = tag
         for _, tag in tags.items():
             dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
