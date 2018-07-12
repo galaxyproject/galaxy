@@ -1,7 +1,6 @@
 """
 A simple WSGI application/framework.
 """
-import cgi  # For FieldStorage
 import io
 import logging
 import os.path
@@ -12,6 +11,7 @@ import time
 import types
 
 import routes
+import webob.compat
 import webob.exc
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste import httpexceptions
@@ -328,7 +328,8 @@ class DefaultWebTransaction(object):
             return None
 
 
-class FieldStorage(cgi.FieldStorage):
+class FieldStorage(webob.compat.cgi_FieldStorage):
+
     def make_file(self, binary=None):
         # For request.params, override cgi.FieldStorage.make_file to create persistent
         # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
@@ -346,7 +347,8 @@ class FieldStorage(cgi.FieldStorage):
             self.read_lines_to_eof()
 
 
-cgi.FieldStorage = FieldStorage
+webob.compat.cgi_FieldStorage = FieldStorage
+webob.request.cgi_FieldStorage = FieldStorage
 
 
 class Request(webob.Request):

@@ -5,7 +5,6 @@ import shlex
 import socket
 import subprocess
 import tempfile
-from cgi import FieldStorage
 from json import dump, dumps
 
 from six import StringIO
@@ -14,6 +13,7 @@ try:
     from urlparse import urlparse
 except ImportError:
     from urllib.parse import urlparse
+from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
 from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
@@ -114,7 +114,7 @@ def persist_uploads(params, trans):
         new_files = []
         for upload_dataset in params['files']:
             f = upload_dataset['file_data']
-            if isinstance(f, FieldStorage):
+            if isinstance(f, cgi_FieldStorage):
                 assert not isinstance(f.file, StringIO)
                 assert f.file.name != '<fdopen>'
                 local_filename = util.mkstemp_ln(f.file.name, 'upload_file_data_')
