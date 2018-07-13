@@ -228,29 +228,32 @@ class CloudManager(sharable.SharableModelManager):
         :param history_id: the (encoded) id of history from which the object should be copied.
 
         :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
+        :param provider: the name of cloud-based resource provided. A list of supported providers
+                         is given in `SUPPORTED_PROVIDERS` variable.
 
         :type  bucket: string
-        :param bucket: the name of a bucket to which data should be copied (e.g., a bucket name on AWS S3).
+        :param bucket: the name of a bucket to which data should be copied (e.g., a bucket
+                       name on AWS S3).
 
         :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :param credentials: a dictionary containing all the credentials required to authenticated
+                            to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
         :type  dataset_ids: set
-        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given history which
-        should be copied to the given provider. If not provided, Galaxy copies all the datasets belonging to the
-        given history.
+        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given
+                            history which should be copied to the given provider. If not provided,
+                            Galaxy copies all the datasets belonging to the given history.
 
         :type  overwrite_existing: boolean
-        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the dataset
-        to be copied already exist in the bucket, Galaxy replaces the existing object with the dataset to
-        be copied. If set to "False", Galaxy appends datatime to the dataset name to prevent overwriting
-        existing, if any, object.
+        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the
+                                   dataset to be copied already exist in the bucket, Galaxy replaces
+                                   the existing object with the dataset to be copied. If set to
+                                   "False", Galaxy appends datetime to the dataset name to prevent
+                                   overwriting the existing object.
 
-        :rtype:     void
-        :return:    void
+        :rtype:  list
+        :return: A list of labels for the objects that were uploaded.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -261,6 +264,7 @@ class CloudManager(sharable.SharableModelManager):
             raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        uploaded = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
@@ -268,3 +272,5 @@ class CloudManager(sharable.SharableModelManager):
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket_obj.create_object(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
+                uploaded.append(object_label)
+        return uploaded

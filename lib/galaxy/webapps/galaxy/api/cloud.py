@@ -116,28 +116,29 @@ class CloudController(BaseAPIController):
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
-        :type  payload: dict
+        :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
             *   history_id              the (encoded) id of history from which the object should be copied.
-            *   provider:               the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
+            *   provider:               the name of a cloud-based resource provider (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:                 the name of a bucket to which data should be copied (e.g., a bucket name on AWS S3).
             *   credentials:            a dictionary containing all the credentials required to authenticated to the
                                         specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
                                         "access_key": YOUR_AWS_ACCESS_TOKEN}).
             *   dataset_ids:            [Optional; default: None]
-                                        A list of encoded dataset IDs belonging to the specified history,
-                                        which should be copied to the given bucket. If not provided, Galaxy copies
+                                        A list of encoded dataset IDs belonging to the specified history
+                                        that should be copied to the given bucket. If not provided, Galaxy copies
                                         all the datasets belonging the specified history.
             *   overwrite_existing:     [Optional; default: False]
                                         A boolean value. If set to "True", and an object with same name of the dataset
                                         to be copied already exist in the bucket, Galaxy replaces the existing object
-                                        with the dataset to be copied. If set to "False", Galaxy appends datatime
-                                        to the dataset name to prevent overwriting existing, if any, object.
+                                        with the dataset to be copied. If set to "False", Galaxy appends datetime
+                                        to the dataset name to prevent overwriting an existing object.
 
         :param kwargs:
 
-        :rtype:  string
-        :return: a message confirming successful copy from Galaxy to a cloud-based storage.
+        :rtype:  dictionary
+        :return: Information about the copied datasets, including uploaded_dataset_labels
+                 and destination bucket name.
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
@@ -179,11 +180,12 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        self.cloud_manager.upload(trans=trans,
-                                  history_id=history_id,
-                                  provider=provider,
-                                  bucket=bucket,
-                                  credentials=credentials,
-                                  dataset_ids=dataset_ids,
-                                  overwrite_existing=payload.get("overwrite_existing", False))
-        return 'The selected dataset(s) are uploaded successfully!'
+        uploaded = self.cloud_manager.copy_to(trans=trans,
+                                              history_id=history_id,
+                                              provider=provider,
+                                              bucket=bucket,
+                                              credentials=credentials,
+                                              dataset_ids=dataset_ids,
+                                              overwrite_existing=payload.get("overwrite_existing", False))
+        return {'uploaded_dataset_labels': uploaded,
+                'bucket_name': bucket}
