@@ -270,6 +270,10 @@ var Collection = Backbone.Collection.extend({
                         url: "custom_builds"
                     },
                     {
+                        title: _l("Custom Builds (Vue)"),
+                        url: "custom_builds_vue"
+                    },
+                    {
                         title: _l("Logout"),
                         url: `user/logout?session_csrf_token=${Galaxy.session_csrf_token}`,
                         target: "_top",
