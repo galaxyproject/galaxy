@@ -1524,7 +1524,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
     def resume_paused_jobs(self):
         job = None
-        for i, job in self.paused_jobs:
+        for job in self.paused_jobs:
             job.resume(flush=False)
         if job is not None:
             # We'll flush once if there was a paused job
