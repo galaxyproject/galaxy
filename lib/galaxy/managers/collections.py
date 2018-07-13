@@ -46,11 +46,11 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None):
+    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
         dataset_collection = self.precreate_dataset_collection(structure, allow_unitialized_element=implicit_output_name is not None)
         instance = self._create_instance_for_collection(
-            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False, tags=tags
         )
         return instance
 
@@ -148,7 +148,14 @@ class DatasetCollectionManager(object):
             log.exception(message)
             raise MessageException(message)
 
-        tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
+        # Tags may be coming in as a dictionary or tag model objects if copying them from other
+        # existing Galaxy objects or as a list of strings if the tags are coming from user supplied
+        # values.
+        if isinstance(tags, list):
+            assert implicit_inputs is None, implicit_inputs
+            tags = self.tag_manager.add_tags_from_list(trans.user, dataset_collection_instance, tags)
+        else:
+            tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,

@@ -95,6 +95,7 @@ def _fetch_target(upload_config, target):
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
         info = item.get("info", None)
+        tags = item.get("tags", [])
         object_id = item.get("object_id", None)
         link_data_only = upload_config.link_data_only
         if "link_data_only" in item:
@@ -146,6 +147,8 @@ def _fetch_target(upload_config, target):
             rval["info"] = info
         if object_id is not None:
             rval["object_id"] = object_id
+        if tags:
+            rval["tags"] = tags
         return rval
 
     elements = elements_tree_map(_resolve_src, items)

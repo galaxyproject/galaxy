@@ -227,10 +227,15 @@ class ToolsUploadTestCase(api.ApiTestCase):
             datasets = run_response.json()["outputs"]
             assert datasets[0].get("genome_build") == "hg19", datasets[0]
 
-    def test_fetch_dbkey(self):
+    def test_fetch_metadata(self):
         table = ONE_TO_SIX_WITH_SPACES
-        details = self._upload_and_get_details(table, api='fetch', dbkey="hg19")
+        details = self._upload_and_get_details(table, api='fetch', dbkey="hg19", info="cool upload", tags=["name:data", "group:type:paired-end"])
         assert details.get("genome_build") == "hg19"
+        assert details.get("misc_info") == "cool upload", details
+        tags = details.get("tags")
+        assert len(tags) == 2, details
+        assert "group:type:paired-end" in tags
+        assert "name:data" in tags
 
     def test_upload_multiple_files_1(self):
         with self.dataset_populator.test_history() as history_id:

@@ -274,11 +274,16 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
     return ldda
 
 
-def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None):
+def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
     if library_bunch:
-        return __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
     else:
-        return __new_history_upload(trans, uploaded_dataset, history=history, state=state)
+        upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
+
+    if tag_list:
+        trans.app.tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list)
+
+    return upload_target_dataset_instance
 
 
 def get_uploaded_datasets(trans, cntrller, params, dataset_upload_inputs, library_bunch=None, history=None):

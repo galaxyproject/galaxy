@@ -189,12 +189,13 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(create_response, 400)
 
     def test_upload_collection(self):
-        elements = [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]
+        elements = [{"src": "files", "dbkey": "hg19", "info": "my cool bed", "tags": ["name:data1", "group:condition:treated", "machine:illumina"]}]
         targets = [{
             "destination": {"type": "hdca"},
             "elements": elements,
             "collection_type": "list",
             "name": "Test upload",
+            "tags": ["name:collection1"]
         }]
         payload = {
             "history_id": self.history_id,
@@ -204,10 +205,16 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
         self.assertEquals(hdca["name"], "Test upload")
+        hdca_tags = hdca["tags"]
+        assert len(hdca_tags) == 1
+        assert "name:collection1" in hdca_tags
         assert len(hdca["elements"]) == 1, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "4.bed"
-        assert element0["object"]["file_size"] == 61
+        dataset0 = element0["object"]
+        assert dataset0["file_size"] == 61
+        dataset_tags = dataset0["tags"]
+        assert len(dataset_tags) == 3, dataset0
 
     def test_upload_nested(self):
         elements = [{"name": "samp1", "elements": [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]}]
