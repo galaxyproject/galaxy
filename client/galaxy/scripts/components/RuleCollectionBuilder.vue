@@ -343,6 +343,10 @@
                         <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
                     </select2>
                 </div>
+                <label v-if="showAddNameTag">
+                    {{ l("Add nametag for name") }}:
+                </label>
+                <input type="checkbox" v-model="addNameTag" v-if="showAddNameTag"/>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
                     <b-input class="collection-name"
                     :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover v-model="collectionName" />
@@ -932,6 +936,7 @@ export default {
             genomes: [],
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
+            addNameTag: false,
             orientation: orientation
         };
     },
@@ -1005,6 +1010,12 @@ export default {
                 this.importType == "collections" &&
                 this.elementsType != "collection_contents" &&
                 !this.mappingAsDict.collection_name
+            );
+        },
+        showAddNameTag() {
+            return (
+                this.importType == "collections" &&
+                this.elementsType != "collection_contents"
             );
         },
         titleFinish() {
@@ -1464,6 +1475,9 @@ export default {
                             collection_type: collectionType,
                             name: collectionName
                         };
+                        if (this.addNameTag) {
+                            target["tags"] = ["name:" + collectionName];
+                        }
                         targets.push(target);
                     }
                 } else {
@@ -1738,6 +1752,29 @@ export default {
                 const infoColumn = mappingAsDict.info.columns[0];
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
+            }
+            const tags = [];
+            if (mappingAsDict.tags) {
+                const tagColumns = mappingAsDict.tags.columns;
+                for (var tagColumn of tagColumns) {
+                    const tag = data[dataIndex][tagColumn];
+                    tags.push(tag);
+                }
+            }
+            if (mappingAsDict.group_tags) {
+                const groupTagColumns = mappingAsDict.group_tags.columns;
+                for (var groupTagColumn of groupTagColumns) {
+                    const tag = data[dataIndex][groupTagColumn];
+                    tags.push("group:" + tag);
+                }
+            }
+            if (mappingAsDict.name_tag) {
+                const nameTagColumn = mappingAsDict.name_tag.columns[0];
+                const nameTag = data[dataIndex][nameTagColumn];
+                tags.push("name:" + nameTag);
+            }
+            if (tags.length > 0) {
+                res["tags"] = tags;
             }
             return res;
         }
