@@ -40,9 +40,8 @@ export default {
                 .then(response => {
                     window.console.log(response);
                 })
-                .catch(response => {
-                    window.console.log(response);
-                    let message = response.responseJSON && response.responseJSON.err_msg;
+                .catch(error => {
+                    let message = error.response.data && error.response.data.err_msg;
                     this.errorMessage = message || "Login failed for unkown reason.";
                 });
         }

@@ -439,52 +439,53 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         #csrf_check = trans.check_csrf_token()
         #if csrf_check:
         #    return csrf_check
-        username = payload.get("username", "")
-        password = payload.get("password", "")
-        status = None
-        message = None
+        payload = payload or {}
+        username = payload.get("username")
+        password = payload.get("password")
+        if username is None or password is None:
+            return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
             trans.app.model.User.table.c.email == username,
             trans.app.model.User.table.c.username == username
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
-        if user:
-            self.message_exception(trans, "This account has been marked deleted, contact your local Galaxy administrator to restore the account.")
+        if user is None:
+            return self.message_exception(trans, "This account has been marked deleted, contact your local Galaxy administrator to restore the account.")
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
                 message += " Contact: %s" % trans.app.config.error_email_to
-            return trans.show_error_message(message)
+            return self.message_exception(trans, message)
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
                 message += " Contact: %s" % trans.app.config.error_email_to
-            return trans.show_error_message(message)
+            return self.message_exception(trans, message)
         elif not trans.app.auth_manager.check_password(user, password):
-            return trans.show_error_message("Invalid password.")
+            return self.message_exception(trans, "Invalid password.")
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if (trans.app.config.activation_grace_period != 0):  # grace period is ON
                 if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
                     message, status = self.resend_verification_email(trans, user.email, user.username)
-                    return trans.show_error_message(message)
+                    return self.message_exception(trans, message)
                 else:  # User is within the grace period, let him log in.
-                    message, success, status = self.proceed_login(trans, user, redirect)
+                    trans.handle_user_login(user)
+                    trans.log_event("User logged in")
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email(trans, user.email, user.username)
-                return trans.show_error_message(message)
+                return self.message_exception(trans, message)
         else:  # activation is OFF
             pw_expires = trans.app.config.password_expiration_period
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
-                return trans.show_error_message("Your password has expired. Please change it to access Galaxy.")
-            message, success, status = self.proceed_login(trans, user, redirect)
+                return self.message_exception(trans, "Your password has expired. Please change it to access Galaxy.")
+            trans.handle_user_login(user)
+            trans.log_event("User logged in")
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
-                message = "You are now logged in as %s. Your password will expire in %s days.<br>You can <a target='_top' href='%s'>go back to the page you were visiting</a> or <a target='_top' href='%s'>go to the home page</a>." % \
-                          (expiredate.days, user.email, redirect, url_for('/'))
-                status = "warning"
-        return {"message": message, "status": status}
+                return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
+        return {"message": "User logged in."}
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
