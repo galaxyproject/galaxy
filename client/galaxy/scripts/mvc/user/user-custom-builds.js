@@ -189,6 +189,9 @@ var View = Backbone.View.extend({
                     cls: "btn btn-primary ui-clear-float",
                     onclick: function() {
                         var data = form.data.create();
+
+                        console.log('DATA', data);
+
                         if (!data.id || !data.name) {
                             self.message.update({
                                 message: "All inputs are required.",
