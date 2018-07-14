@@ -1,16 +1,24 @@
 <template>
-    <b-form @submit="submit">
-        <b-card header="Welcome to Galaxy, please log in">
-            <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-            <b-form-group label="Username or Email Address">
-                <b-form-input type="text" v-model="username"/>
-            </b-form-group>
-            <b-form-group label="Password">
-                <b-form-input type="password" v-model="password"/>
-            </b-form-group>
-            <b-button type="submit">Login</b-button>
-        </b-card>
-    </b-form>
+    <div>
+        <b-form @submit="submit">
+            <b-card header="Welcome to Galaxy, please log in">
+                <b-alert :show="showErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+                <b-form-group label="Username or Email Address">
+                    <b-form-input type="text" v-model="username"/>
+                </b-form-group>
+                <b-form-group label="Password">
+                    <b-form-input type="password" v-model="password"/>
+                </b-form-group>
+                <b-button type="submit">Login</b-button>
+            </b-card>
+        </b-form>
+        <br>
+        <b-embed v-if="show_welcome_with_login"
+            type="iframe"
+            aspect="16by9"
+            :src="welcome_url"
+        ></b-embed>
+    </div>
 </template>
 <script>
 import axios from "axios";
@@ -20,6 +28,16 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
+    props: {
+        show_welcome_with_login: {
+            type: Boolean,
+            required: false
+        },
+        welcome_url: {
+            type: String,
+            required: false
+        }
+    },
     data() {
         return {
             username: null,
@@ -28,7 +46,7 @@ export default {
         };
     },
     computed: {
-        hasErrorMessage() {
+        showErrorMessage() {
             return this.errorMessage != null;
         }
     },

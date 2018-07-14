@@ -13,6 +13,6 @@ window.app = function app(options, bootstrapped) {
         var vm = document.createElement("div");
         Galaxy.display(vm);
         var loginInstance = Vue.extend(Login);
-        new loginInstance().$mount(vm);
+        new loginInstance({propsData: options}).$mount(vm);
     });
 };
