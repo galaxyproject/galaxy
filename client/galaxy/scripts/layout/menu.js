@@ -235,7 +235,7 @@ var Collection = Backbone.Collection.extend({
                     menu: [
                         {
                             title: _l("Login"),
-                            url: "user/login",
+                            url: "login",
                             target: "_top",
                             noscratchbook: true
                         },

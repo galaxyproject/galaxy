@@ -38,7 +38,7 @@ export default {
             axios
                 .post(`${Galaxy.root}user/login`, {username: this.username, password: this.password})
                 .then(response => {
-                    window.console.log(response);
+                    window.location = `${Galaxy.root}`;
                 })
                 .catch(error => {
                     let message = error.response.data && error.response.data.err_msg;
