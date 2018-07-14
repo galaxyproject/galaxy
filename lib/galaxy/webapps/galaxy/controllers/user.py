@@ -442,7 +442,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         payload = payload or {}
         username = payload.get("username")
         password = payload.get("password")
-        if username is None or password is None:
+        if not username or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
             trans.app.model.User.table.c.email == username,
