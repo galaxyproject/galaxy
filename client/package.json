@@ -37,7 +37,7 @@
     "requirejs": "2",
     "underscore": "^1.9.1",
     "vue": "2.5.16",
-    "vue-select": "^2.4.0"
+    "vue-multiselect": "^2.1.0"
   },
   "scripts": {
     "watch": "gulp staging && yarn run save-build-hash && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
