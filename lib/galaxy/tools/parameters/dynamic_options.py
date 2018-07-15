@@ -470,7 +470,7 @@ class DynamicOptions(object):
             for field in from_parameter.split('.'):
                 obj = getattr(obj, field)
             if transform_lines:
-                obj = eval(transform_lines, globals(), locals())
+                obj = eval(transform_lines, {'self': self, 'obj': obj})
             return self.parse_file_fields(obj)
         self.tool_param = tool_param
         self.columns = {}
