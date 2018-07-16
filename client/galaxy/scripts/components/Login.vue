@@ -56,6 +56,9 @@ export default {
             axios
                 .post(`${Galaxy.root}user/login`, {username: this.username, password: this.password})
                 .then(response => {
+                    if (response.data.message) {
+                        alert(response.data.message);
+                    }
                     window.location = `${Galaxy.root}`;
                 })
                 .catch(error => {
