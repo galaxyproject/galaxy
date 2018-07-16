@@ -3,7 +3,6 @@ import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
-import Vue from "vue";
 
 var View = Backbone.View.extend({
     el: "body",
