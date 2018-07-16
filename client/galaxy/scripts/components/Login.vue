@@ -2,12 +2,13 @@
     <div>
         <b-form @submit="submit">
             <b-card header="Welcome to Galaxy, please log in">
-                <b-alert :show="showErrorMessage" variant="danger" v-html="errorMessage"/>
+                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
                 <b-form-group label="Username or Email Address">
                     <b-form-input type="text" v-model="username"/>
                 </b-form-group>
                 <b-form-group label="Password">
                     <b-form-input type="password" v-model="password"/>
+                    <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
                 </b-form-group>
                 <b-button type="submit">Login</b-button>
             </b-card>
@@ -42,12 +43,13 @@ export default {
         return {
             username: null,
             password: null,
-            errorMessage: null
+            messageText: null,
+            messageVariant: null
         };
     },
     computed: {
-        showErrorMessage() {
-            return this.errorMessage != null;
+        messageShow() {
+            return this.messageText != null;
         }
     },
     methods: {
@@ -62,8 +64,23 @@ export default {
                     window.location = `${Galaxy.root}`;
                 })
                 .catch(error => {
+                    this.messageVariant = "danger";
                     let message = error.response.data && error.response.data.err_msg;
-                    this.errorMessage = message || "Login failed for unkown reason.";
+                    this.messageText = message || "Login failed for unkown reason.";
+                });
+        },
+        reset: function(ev) {
+            ev.preventDefault();
+            axios
+                .post(`${Galaxy.root}api/users/reset_password`, {email: this.username})
+                .then(response => {
+                    this.messageVariant = "info";
+                    this.messageText = response.data.message;
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    let message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Password reset failed for unkown reason.";
                 });
         }
     }

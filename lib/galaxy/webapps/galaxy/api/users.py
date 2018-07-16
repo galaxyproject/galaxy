@@ -14,6 +14,7 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     false,
+    func,
     or_,
     true
 )
@@ -40,6 +41,7 @@ from galaxy.util import (
     listify
 )
 from galaxy.util.odict import odict
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import (
     _future_expose_api as expose_api,
     _future_expose_api_anonymous as expose_api_anonymous,
@@ -56,6 +58,19 @@ from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
+
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
+
+%s
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
 
 
 class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -633,6 +648,52 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 trans.log_event('User change password')
                 return {'message': 'Password has been saved.'}
         raise MessageException('Failed to determine user, access denied.')
+
+    @expose_api_anonymous_and_sessionless
+    def reset_password(self, trans, payload, **kwd):
+        """Reset the user's password. Send an email with token that allows a password change."""
+        if trans.app.config.smtp_server is None:
+            return MessageException("Mail is not configured for this Galaxy instance "
+                                    "and password reset information cannot be sent. "
+                                    "Please contact your local Galaxy administrator.")
+        payload = payload or {}
+        email = payload.get("email")
+        if not email:
+            raise MessageException("Please provide your email.")
+        message = validate_email(trans, email, check_dup=False)
+        if message:
+            raise MessageException(message)
+        else:
+            # Default to a non-userinfo-leaking response message
+            message = ("Your reset request for %s has been received.  "
+                       "Please check your email account for more instructions.  "
+                       "If you do not receive an email shortly, please contact an administrator." % email)
+            reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+            if not reset_user:
+                # Perform a case-insensitive check only if the user wasn't found
+                reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+            if reset_user:
+                prt = trans.app.model.PasswordResetToken(reset_user)
+                trans.sa_session.add(prt)
+                trans.sa_session.flush()
+                host = trans.request.host.split(':')[0]
+                if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+                    host = socket.getfqdn()
+                reset_url = url_for(controller='user',
+                                    action="change_password",
+                                    token=prt.token, qualified=True)
+                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                  reset_url)
+                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail(frm, email, subject, body, trans.app.config)
+                    trans.sa_session.add(reset_user)
+                    trans.sa_session.flush()
+                    trans.log_event('User reset password: %s' % email)
+                except Exception as e:
+                    raise MessageException("Failed to submit email. Please contact the administrator: %s" % str(e))
+        return {"message": "Reset link has been sent to your email."}
 
     @expose_api
     def get_permissions(self, trans, id, payload={}, **kwd):
