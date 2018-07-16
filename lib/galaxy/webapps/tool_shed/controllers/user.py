@@ -428,3 +428,69 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/reset_password.mako',
                                    message=message,
                                    status=status)
+
+    @web.expose
+    def change_password(self, trans, token=None, **kwd):
+        """
+        Provides a form with which one can change their password.  If token is
+        provided, don't require current password.
+
+        NOTE: This endpoint has been temporarily returned to the user
+        controller, and will go away once there is a suitable replacement.
+        """
+        status = None
+        message = kwd.get('message', '')
+        user = None
+        if kwd.get('change_password_button', False):
+            password = kwd.get('password', '')
+            confirm = kwd.get('confirm', '')
+            current = kwd.get('current', '')
+            token_result = None
+            if token:
+                # If a token was supplied, validate and set user
+                token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+                if token_result and token_result.expiration_time > datetime.utcnow():
+                    user = token_result.user
+                else:
+                    return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
+            else:
+                # The user is changing their own password, validate their current password
+                (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current)
+                if ok:
+                    user = trans.user
+                else:
+                    status = 'error'
+            if user:
+                # Validate the new password
+                message = validate_password(trans, password, confirm)
+                if message:
+                    status = 'error'
+                else:
+                    # Save new password
+                    user.set_password_cleartext(password)
+                    # if we used a token, invalidate it and log the user in.
+                    if token_result:
+                        trans.handle_user_login(token_result.user)
+                        token_result.expiration_time = datetime.utcnow()
+                        trans.sa_session.add(token_result)
+                    # Invalidate all other sessions
+                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add(other_galaxy_session)
+                    trans.sa_session.add(user)
+                    trans.sa_session.flush()
+                    trans.log_event("User change password")
+                    if kwd.get('display_top', False) == 'True':
+                        return trans.response.send_redirect(url_for('/', message='Password has been changed'))
+                    else:
+                        return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
+        # Yes, this intentionally uses the template moved to tool_shed for right now, until it is removed.
+        return trans.fill_template('/webapps/tool_shed/user/change_password.mako',
+                                   token=token,
+                                   status=status,
+                                   message=message,
+                                   display_top=kwd.get('redirect_home', False))
+
